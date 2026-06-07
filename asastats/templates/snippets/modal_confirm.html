@@ -1,0 +1,11 @@
+{% load static %}{% load i18n %}{% load core_extras %}
+<div id="id_modalconfirm" class="modal">
+  <div id="id_confirmcontent" class="modal-content center-align">
+    <h3>Please confirm</h3>
+    <p id="id_pconfirm"></p>
+  </div>
+  <div class="modal-footer">
+    <a href="#!" class="modal-close waves-effect btn-flat brd" id="id_cclose">Close<i class="material-icons right" aria-hidden="true">{{ "cancel"|get_styling:"icon" }}</i></a>
+    <button class="primaryAction modal-close waves-effect btn-flat brd" id="id_confirm" name="confirm" type="button">Yes<i class="material-icons right" aria-hidden="true">{{ "yes"|get_styling:"icon" }}</i></button>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+{% extends 'account/base_auth.html' %}
+{% load i18n %}{% load static %}
+{% block title %}Signup page - ASA Stats{% endblock %}
+{% block description %}Sign up for a ASA Stats account by an email and password or by connecting a social media provider.{% endblock %}
+{% block keywords %}authentication,user,sign,signup,sign up,email,password,social media{% endblock %}
+{% block main_header_text %}Signup for ASA Stats account{% endblock %}
+{% block signup_tab %}href="#"{% endblock %}
+
+{% block header_text %}Sign up{% endblock %}
+
+{% block form_header %}<form class="signup" id="signup_form" method="POST" action="{% url 'account_signup' %}">
+    {% endblock %}
+
+    {% block secondary_action %}
+    <a class="secondaryAction waves-effect waves-light btn-flat col s12 m8 offset-m2"
+        href="{% url 'account_login' %}">Already have an account?</a>
+    <p class="col s12 m8 offset-m2 center-align">
+        By clicking Sign up button on this page, you agree to the <a href="https://www.asastats.com/auth_terms.html" target="_blank" rel="noopener" title="ASA Stats Terms of Use">Terms of use</a> and that you have read the ASA Stats 
+        <a href="https://www.asastats.com/auth_terms.html" target="_blank" rel="noopener" title="ASA Stats Privacy Policy">Privacy Policy</a>, including use of cookies.</p>
+    {% endblock %}
+
+    {% block submit_text %}Sign up{% endblock %}
+
+{% block otherfooter %}
+<script type="application/ld+json">{% include "jsonld/account/signup.jsonld" %}</script>
+{% endblock %}

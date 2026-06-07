@@ -1,0 +1,21 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} Per-asset metadata panel (the left-hand sidebar in the open accordion).
+
+   Required context:
+     asaitem  serialized asaitem dict (for .price)
+     asset    asaitem.asset dict
+{% endcomment %}
+<div class="col s12 m3 pull-m9 left-align asal">
+  <span class="title">{{ asset.name }}</span><br />
+  <a href="https://allo.info/{% if asset.id != 0 %}asset/{{ asset.id }}{% endif %}" target="_blank" title="Show in Allo">{% if asset.id != 0 %}{{ asset.id }}{% else %}Allo{% endif %}</a>{% if asset.id != 0 %}&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span>{% endif %} <br />
+  <span>Unit name: {{ asset.unit }}</span> <br />
+  <span>Total supply: {{ asset.total|floatformat:'g' }}</span> <br />
+  <span>Decimals: {{ asset.decimals }}</span> <br />
+  {% if asaitem.price %}
+    <span>Price for unit: </span><span class="val6 unitprice" data-val="{{ asaitem.price }}" data-unit="{{ asset.unit }}">{{ asaitem.price|floatformat:'-6g' }} ALGO</span> <br />
+  {% endif %}
+  {% if asset.url %}
+    <span class="truncate">URL: <a href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener" title="Official URL">{{ asset.url }}</a></span> <br />
+  {% endif %}
+</div>

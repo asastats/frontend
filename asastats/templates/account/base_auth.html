@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+{% load core_extras %}
+{% block content %}
+<div class="row col s12 m10 offset-m1 l8 offset-l2">
+    <h1 class="center-align">{% block main_header_text %}{% endblock %}</h1>
+{% block form_header %}{% endblock %}
+{% csrf_token %}
+  <div class="col s12 m6 offset-m3">
+    <ul class="tabs">
+      <li class="tab col s6"><a {% block signup_tab %}target="_self" href="{% url 'account_signup' %}"{% endblock %}>Sign up</a></li>
+      <li class="tab col s6"><a {% block login_tab %}target="_self" href="{% url 'account_login' %}"{% endblock %}>Log in</a></li>
+    </ul>
+  </div>
+  <div class="col s12 m6 push-m6">
+        <h3 class="center-align">{% block header_text %}{% endblock %}</h3>
+        <div class="center-align">
+            <div class="divider col s12 m10 offset-m1"></div>
+            <div class="row center-align">
+                {% for field in form %}
+                    <div class="input-field col s12 m10 offset-m1">
+                        {% if field.errors %}<span class="myred-text">{{ field.errors|escape }}</span>{% endif %}
+                        {% if field.name|has_styling %}<i class="material-icons prefix" aria-hidden="true">{{ field.name|get_styling:"icon" }}</i>{% endif %}
+                        {% if field.name != 'remember' %}
+                          {{ field }}
+                          {{ field.label_tag }}
+                        {% else %}
+                          <div>
+                          <label title="Remember me on this computer">
+                            <input name="remember" type="checkbox"{% if form.initial.remember %} checked="checked"{% endif %}>
+                            <span>Remember me</span>
+                          </label>
+                          </div>
+                        {% endif %}{% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% if form.non_field_errors %}<div class="col s12 m10 offset-m1"><span class="myred-text">{{ form.non_field_errors }}</span></div>{% endif %}
+        </div>
+  </div>
+  <div class="col s12 m6 pull-m6 center-align">
+      <h3>Use social media</h3>
+      <div class="row">
+          <div class="divider col s12"></div><br>
+          <div class="valign-wrapper col s12 social">
+            <img src="{% static 'img/social/discord.png' %}" alt="Discord logo" /> <a class="waves-effect waves-dark btn-flat" role="button" id="id_discord" href="/accounts/discord/login/">Sign in with Discord</a>
+          </div>
+          <div class="valign-wrapper col s12 social">
+            <img src="{% static 'img/social/twitter.png' %}" alt="X logo" /> <a class="waves-effect waves-dark btn-flat" role="button" id="id_twitter" href="/accounts/twitter_oauth2/login/">Sign in with X</a>
+          </div>
+          <div class="valign-wrapper col s12 social">
+            <img src="{% static 'img/social/reddit.png' %}" alt="Reddit logo" /> <a class="waves-effect waves-dark btn-flat" role="button" id="id_reddit" href="/accounts/reddit/login/">Sign in with Reddit</a>
+          </div>
+          <div class="valign-wrapper col s12 social">
+            <img src="{% static 'img/social/github.png' %}" alt="GitHub logo" /> <a class="waves-effect waves-dark btn-flat" role="button" id="id_github" href="/accounts/github/login/">Sign in with GitHub</a>
+          </div>
+          <div class="valign-wrapper col s12 social">
+            <img src="{% static 'img/social/google.png' %}" alt="Google logo" /> <a class="waves-effect waves-dark btn-flat" role="button" id="id_google" href="/accounts/google/login/">Sign in with Google</a>
+          </div>
+      </div>
+  </div>
+  <div class="divider col s12"></div>
+  {% if redirect_field_value %}<input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />{% endif %}
+  <div class="row center-align col s12 m8 offset-m2">
+      {% block secondary_action %}{% endblock %}
+  </div>
+  <div class="row center-align col s12">
+      <button class="primaryAction waves-effect btn-flat auth" type="submit">{% block submit_text %}{% endblock %} <i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></button>
+  </div>
+</form>
+</div>
+{% endblock %}

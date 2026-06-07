@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}ASA Stats - Features{% endblock %}
+{% block description %}Tools for Tracking, Evaluating, and Acting on Your Algorand Portfolio{% endblock %}
+{% block keywords %}asastats,Algorand,features,data integration,NFT pricing,AI,deep network,bundles,user widgets,feature-driven development,API,governance,DAO,Kubernetes{% endblock %}
+{% block content %}
+<h1 class="center-align">ASA Stats Features</h1>
+<h5 class="center-align">Tools for Tracking, Evaluating, and Acting on Your Algorand Portfolio</h5>
+<div class="row left-align">
+  <p>ASA Stats provides a full-stack solution for ASA and NFT management — from wallet overviews to advanced DeFi analytics and trading tools. Whether you’re a casual user or a professional builder, these features give you real-time visibility and control.
+  <br></p>
+  <h2>Live Features</h2>
+  <p>These features are fully developed and available to all users (some with tiered access):
+  <br></p>
+  <h4 id="tracker">Portfolio Tracker</h4>
+  <div class="col s12">
+    <p>
+    ASASTATS is used for:<br>
+    <br>
+    &#8226; View full ASA & NFT holdings for any <strong>Algorand address</strong><br>
+    &#8226; Track values in <strong>ALGO, USD</strong><br>
+    &#8226; Analyze <strong>wallets, liquidity pools, staked funds</strong>, and more — all in one place<br>
+    <br>
+   </p>
+  </div>
+  <h4 id="user-bundles">User Bundles</h4>
+  <div class="col s12">
+    <p>
+    &#8226; Combine multiple addresses (or .algo names) into one <strong>portfolio view</strong><br>
+    &#8226; Create up to 38 bundles (Cluster tier); 3 bundle always available for free users<br>
+    <br>
+   </p>
+  </div>
+  <h4 id="valuation">Real-Time ASA & NFT Valuation</h4>
+  <div class="col s12">
+    <p>
+    &#8226; Fetch live prices from <strong>DEXs like Tinyman, Pact, and Humble</strong><br>
+    &#8226; Consolidate data from swaps, vaults, and liquidity pools<br>
+    &#8226; <strong>NFT collections auto-aggregated</strong>, with floor and estimated value<br>
+    <br>
+   </p>
+  </div>
+  <h4 id="api">API v2 Access</h4>
+  <div class="col s12">
+    <p>
+    &#8226; Get programmable access to the same valuation engine used on-site<br>
+    &#8226; Query bundles, addresses, and NFTs via REST API (JSON/XML/YAML)<br>
+    &#8226; Available to <strong>Asastatser+ tiers</strong> and all DAO governors<br>
+    <br>
+   </p>
+  </div>
+  <h4 id="csv">CSV Export</h4>
+  <div class="col s12">
+    <p>
+    &#8226; Export transactions by address, wallet group, or bundle<br>
+    &#8226; Filter by asset type, protocol, or value threshold<br>
+    &#8226; Planned tax-compliant CSV formatting under development<br>
+    <br>
+   </p>
+  </div>
+  <h2>In Beta / Preview Mode</h2>
+  <h4 id="historical">Historical Portfolio Charts</h4>
+  <div class="col s12">
+    <p>    
+    &#8226; Visualize portfolio value over time<br>
+    &#8226; Currently rolling out as <strong>“Historic Data” widget</strong><br>
+    <br>
+   </p>
+  </div>
+  <h4 id="nft-pricing">NFT Pricing Model (AI-assisted)</h4>
+  <div class="col s12">
+    <p>    
+    &#8226; Beta model trained on real market data + metadata rarity<br>
+    &#8226; Continually retrained based on new listing and sale patterns<br>
+    <br>
+   </p>
+  </div>
+  <h4 id="public-bundles">Bundle Sharing (Public URLs)</h4>
+  <div class="col s12">
+    <p>    
+    &#8226; Reserve public URLs for bundles<br>
+    &#8226; Public views display real-time value, allocation, and asset labels<br>
+    &#8226; Part of a future release phase<br>
+    <br>
+   </p>
+  </div>
+  <h2>Feature Requests & Community Input</h2>
+  <p>ASA Stats development is <strong>driven by user demand</strong>. Most new features originate from:<br>
+  <br>
+  &#8226; GitHub issues<br>
+  &#8226; Community proposals<br>
+  &#8226; Rewarded contributions (via ASASTATS tokens)<br>
+  <br>
+  Got a feature idea or improvement request? Submit a <a href="https://github.com/asastats/channel/issues" target="_blank" rel="noopener" title="Visit issues section of our GitHub">GitHub Issue</a>.<br>
+  </p>
+  
+</div>
+{% endblock %}
+{% block otherfooter %}<script type="application/ld+json">{% include "jsonld/features.jsonld" %}</script>{% endblock %}

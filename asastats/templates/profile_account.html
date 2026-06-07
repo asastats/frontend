@@ -1,0 +1,23 @@
+{% extends 'base_home.html' %}
+{% load static %}
+{% load i18n %}
+{% load core_extras %}
+{% block title %}Profile account page - ASA Stats{% endblock %}
+{% block description %}This is your profile account page where you can see your subscription tier or deactivate your account.{% endblock %}
+{% block keywords %}account,profile account,user account,user,profile{% endblock %}
+{% block page_header %}{{ user.profile.name }} profile account{% endblock %}
+{% block middle_section %}
+<div class="row col s12 m7 midrow">
+  <div class="row col s12">
+    <span>Active tier: </span><span class="mylight-text">{{ user.profile.tier_name|upper }}</span>
+  </div>
+</div>
+<div class="row col s12 m5">
+  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>&nbsp;
+  <div class="row col s12">
+    <br><br>
+    If you want to deactivate your account <a href="{% url 'deactivate_profile' %}" id="id_deactivate">click here</a>
+  </div>
+</div>
+{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Account{% endblock %}

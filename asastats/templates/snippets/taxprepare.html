@@ -1,0 +1,39 @@
+{% load core_extras %}<form method="POST" action="." id="process_form">
+{% csrf_token %}
+<div class="input-field col s12">
+  <div class="col s12">
+  {% for radio in form.provider %}
+    <div class="col s6 m3">
+    <p{% if radio.choice_label != "Koinly" %} class="tooltipped providertip" data-position="bottom" data-tooltip="Not implemented yet"{% endif %}>
+      <label>
+      {{ radio.tag }}
+        <span>{{ radio.choice_label }}</span>
+      </label>
+    </p>
+    </div>
+  {% endfor %}
+  </div>
+  <div class="col s12">
+    <div class="col s6 center-align">
+    <p{% if form.use_mve.help_text %} class="tooltipped providertip" data-position="top" data-tooltip="{{ form.use_mve.help_text|safe }}"{% endif %}>
+      <label>
+        {{ form.use_mve }}
+        <span>{{ form.use_mve.label }}</span>
+      </label>
+    </p>
+    </div> 
+    <div class="col s6 center-align">
+      <p{% if form.non_zero.help_text %} class="tooltipped providertip" data-position="top" data-tooltip="{{ form.non_zero.help_text|safe }}"{% endif %}>
+        <label>
+          {{ form.non_zero }}
+          <span>{{ form.non_zero.label }}</span>
+        </label>
+      </p>
+      </div>
+    </div>
+</div>
+{% if form.non_field_errors %}<div class="col s12"><span class="myred-text">{{form.non_field_errors}}</span></div>{% endif %}
+<div class="col s12 m8 push-m2 center-align">
+  <button class="waves-effect waves-mydark btn whenmoon" id="process" type="submit">Process</button>
+</div>
+</form>

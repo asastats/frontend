@@ -1,0 +1,16 @@
+{% extends 'base_home.html' %}
+{% load static %}
+{% load account %}
+
+{% block middle_section %}
+<div class="row col s12 center-align">
+    {% block account_already %}
+        {% if user.is_authenticated %}
+            {% include "account/snippets/already_logged_in.html" %}
+        {% endif %}
+    {% endblock %}
+    {% block account_top %}{% endblock %}
+    {% block account_middle %}{% endblock %}
+    {% block account_bottom %}{% endblock %}
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'account/base.html' %}
+{% load i18n %}
+{% load core_extras %}
+{% block title %}Inactive account - ASA Stats{% endblock %}
+{% block description %}Your www.asastats.com account is inactive.{% endblock %}
+{% block keywords %}inactive account,account,authentication{% endblock %}
+{% block page_header %}Account inactive{% endblock %}
+
+{% block account_already %}{% endblock %}
+
+{% block account_middle %}
+{% if user.is_active %}
+    <p>This account is active.</p>
+{% else %}
+    <p>This account is inactive.</p>
+{% endif %}
+{% include "account/snippets/bottom_buttons.html" %}
+{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Inactive
+{% endblock %}

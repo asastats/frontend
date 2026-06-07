@@ -1,0 +1,43 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} Per-asset ASA list. Iterates account.asaitems (passed in as ``asaitems``)
+   and renders each item as a collapsible row. Per-program rendering is
+   delegated to ``snippets/asas/program.html`` so this template stays small.
+
+   Required context:
+     asaitems   list of serialized asaitem dicts from account.asaitems
+     colors     {asset_id: "0"|"1"|...} color-slot map from prepare_base_charts
+     pricealgo  decimal string (account.total.pricealgo) for ALGO Balance row
+{% endcomment %}
+<div class="col s12">
+  <ul class="collapsible asasec">
+    {% for asaitem in asaitems %}
+      {% with asset=asaitem.asset %}
+        <li id="f{{ asset.id }}" class="fitem">
+          <div class="collapsible-header token{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
+            <span>&nbsp;{{ asaitem.amount|amount_repr:asset.decimals }}&nbsp;&nbsp;<span class="unit">{{ asset.unit }}</span></span>
+            <div class="icondiv">
+              <img src="{% static asaitem|asa_icon %}" alt="{{ asset.name }} logo" class="circle asaicon" />
+            </div>
+            <div class="right">
+              &nbsp;<span class="val" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }} ALGO</span>
+            </div>
+          </div>
+          <div class="collapsible-body">
+            <ul class="collection">
+              <li id="{{ asset.id }}" class="collection-item fitem">
+                <div class="col s12 m9 push-m3 right-align asar">
+                  {% for prog in asaitem.programs %}
+                    {% include "snippets/asas/program.html" with prog=prog asset=asset price=asaitem.price pricealgo=pricealgo forloop_counter=forloop.counter %}
+                  {% endfor %}
+                  {% include "snippets/asas/links.html" with asset=asset %}
+                </div>
+                {% include "snippets/asas/meta.html" with asaitem=asaitem asset=asset %}
+              </li>
+            </ul>
+          </div>
+        </li>
+      {% endwith %}
+    {% endfor %}
+  </ul>
+</div>

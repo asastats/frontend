@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load core_extras %}
+{% block content %}
+<div class="row">
+  <div class="center-align">
+    <h2>Log out</h2>
+    <p>Are you sure you want to log out?</p>
+
+    <form method="post" action="{% url 'account_logout' %}">
+      {% csrf_token %}
+      {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+      {% endif %}
+      <div class="row center-align col s12">
+          <button id="id_confirm_logout" class="primaryAction waves-effect waves-light btn-large" type="submit">Logout<i class="material-icons right" aria-hidden="true">{{ 'logout'|get_styling:"icon" }}</i></button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

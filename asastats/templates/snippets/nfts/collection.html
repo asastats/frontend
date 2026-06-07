@@ -1,0 +1,30 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} One collapsible row for one NFT collection.
+
+   Required context:
+     coll         serialized nftcollection dict (value, name, amount, nfts)
+     nft_colors   {collection_name: color_slot} map
+{% endcomment %}
+<li id="f{{ coll.name|slugify }}" class="fitem">
+  <div class="collapsible-header nft{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
+    <div class="nftleft col s6">
+      <span>&nbsp;{{ coll.amount|floatformat:'-4g' }}&nbsp;from&nbsp;</span><span class="unit">{{ coll.name }}</span>&nbsp;&nbsp;
+    </div>
+    <div class="nftmid col s12 center-align">
+      {% for row in coll.nfts %}
+        <img id="t{{ row.nft.id }}" src="{% static row.nft.thumbnail %}" alt="{{ row.nft.name }} thumbnail" class="nfticon" data-path="{% static row.nft.image %}" />
+      {% endfor %}
+    </div>
+    <div class="nftright col s6 right-align">
+      <small><sub>BETA</sub></small>&nbsp;<span class="val" data-val="{{ coll.value }}">{{ coll.value|floatformat:'2g' }} ALGO</span>
+    </div>
+  </div>
+  <div class="collapsible-body">
+    <ul class="collection">
+      {% for row in coll.nfts %}
+        {% include "snippets/nfts/item.html" with row=row %}
+      {% endfor %}
+    </ul>
+  </div>
+</li>

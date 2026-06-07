@@ -1,0 +1,18 @@
+{
+  "@context": "http://schema.org",
+  "@type": "WebPage",
+  "name": "Disclaimer",
+  "url": "https://www.asastats.com/disclaimer/",
+  "@id": "https://www.asastats.com/#disclaimer",
+  "description": "Disclaimer for the www.asastats.com website",
+  "isPartOf":{
+      "@type": "WebSite",
+      "@id":"https://www.asastats.com/#site",
+      "name": "ASA Stats"
+  },
+  "publisher": {
+      "@type": "Organization",
+      "@id": "https://www.asastats.com/#org",
+      "name": "ASA Stats"
+  }
+}

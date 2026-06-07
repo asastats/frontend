@@ -1,0 +1,171 @@
+{% extends 'base.html' %}{% load static %}{% load core_extras %}
+{% block otherheader %}<meta name="format-detection" content="telephone=no">{% endblock %}
+{% block banner %}
+{% if banner %}
+<div class="container">
+  <div class="row" style="margin-bottom: 0;">
+    <div class="col s12 m8 push-m2 center-align" style="padding-top: 0.75rem;">
+      <a href="{{ banner.url }}" target="_blank" rel="noopener sponsored">
+        <img src="{% static banner.image %}" alt="{{ banner.alt }}" class="responsive-img">
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block content %}
+{{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
+{% with total=account.total system=account.system_info account_info=account.account_info %}
+<h1 class="center-align tooltipped pricetip" data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }} data-total={{ total.totalusdc }} data-totalwnft={{ total.total }} data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }} data-tooltip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</h1>
+{% if system.warning %}
+  <h2 class="center-align myred-text">{{ system.warning }}</h2>
+{% endif %}
+{% if is_bundle %}
+  <h{% if bundle|length > 5 %}5{% else %}4{% endif %} class="center-align flow-text">
+  {% for addr in bundle %} <a href="{% url 'address' addr %}" target="_blank" title="Open address {{ addr }}">{{ addr|short_address }}</a> {% endfor %}
+  </h{% if bundle|length > 5 %}5{% else %}4{% endif %}>
+{% else %}
+  <h4 class="center-align flow-text truncate"><a href="https://allo.info/account/{{ address.0 }}" target="_blank" title="Open address in Allo">{{ address.0 }}</a></h4>
+{% endif %}
+
+<div class="col s12 center-align">
+  {% if is_bundle %}
+    {% with historic=bundle|historic_data %}
+    {% if deployment_capabilities.permission|export_capability:historic.1 %}
+      {% if user.profile|historic_access:historic.1 %}
+      <a class="waves-effect waves-mydark btn-flat" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>&emsp;
+      {% endif %}
+      {% if user.profile|export_access:historic.1 %}
+      <a class="waves-effect waves-mydark btn-flat{% if finished_tax %} myred-text{% endif %}" href="{% url 'export_bundle' bundle|bundle_hash %}" title="{% if finished_tax %}Download CSV file {% else %}Create and download CSV file{% endif %}">
+        {% if finished_tax %}Download processed CSV files{% else %}CSV export{% endif %}</a>&emsp;
+      {% endif %}
+    {% endif %}
+    {% endwith %}
+  {% else %}
+    {% if deployment_capabilities.permission|export_capability:1 %}
+      {% if user.profile|historic_access:1 %}
+      <a class="waves-effect waves-mydark btn-flat" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>&emsp;
+      {% endif %}
+      {% if user.profile|export_access:1 %}
+      <a class="waves-effect waves-mydark btn-flat{% if finished_tax %} myred-text{% endif %}" href="{% url 'export_address' address.0 %}" title="{% if finished_tax %}Download CSV file {% else %}Create and download CSV file{% endif %}">
+        {% if finished_tax %}Download processed CSV file{% else %}CSV export{% endif %}</a>&emsp;
+      {% endif %}
+    {% endif %}
+  {% endif %}
+  {% if account_info.online %}<span title="{% if is_bundle %}One or more addresses are{% else %}Address is{% endif %} participating in Algorand consensus"><span class="btn-flat mysuccess-text disabled">Online</span></span>&emsp;{% endif %}
+</div>
+
+{% if system.information %}<h5 class="center-align mysuccess-text">{{ system.information }}</h5>{% endif %}
+<div class="row flex-stack">
+  <div class="col s12 consolidated">
+    <ul id="id-cons" class="collapsible consolidated">
+      <li id="li-cons" class="active consolidated">
+        <div id="id-cons-header" class="collapsible-header consolidated" data-balance={{ consolidated.balance }} data-staked={{ consolidated.staked }} data-liquidity={{ consolidated.liquidity }} data-defi={{ consolidated.defi }}>
+          <div class="col s12 center-align">
+            <div class="col s6 m4 xl2 cons">
+              <span class="cons-text">Balance</span><br>
+              <span class="cons-value val" data-val="{{ consolidated.balance }}">{{ consolidated.balance|floatformat:"2g" }} ALGO</span>
+            </div>
+            <div class="col s6 m4 xl2 cons">
+              <span class="cons-text">Staked</span><br>
+              <span class="cons-value val" data-val="{{ consolidated.staked }}">{{ consolidated.staked|floatformat:"2g" }} ALGO</span>
+            </div>
+            <div class="col s6 m4 xl2 cons">
+              <span class="cons-text">Liquidity</span><br>
+              <span class="cons-value val" data-val="{{ consolidated.liquidity }}">{{ consolidated.liquidity|floatformat:"2g" }} ALGO</span>
+            </div>
+            <div class="col s6 m4 xl2 cons">
+              <span class="cons-text">DeFi</span><br>
+              <span class="cons-value val" data-val="{{ consolidated.defi }}">{{ consolidated.defi|floatformat:"2g" }} ALGO</span>
+            </div>
+            <div class="col s6 m4 xl2 cons">
+              <span class="cons-text">NFT estimated</span><br>
+              <span class="cons-value val" data-val="{{ total.nft }}">{{ total.nft|floatformat:"2g" }} ALGO</span>
+            </div>
+            <div class="col s6 m4 xl2 cons">
+              <span class="cons-text">NFT floor</span><br>
+              <span class="cons-value val" data-val="{{ consolidated.nftfloor }}">{{ consolidated.nftfloor|floatformat:"2g" }} ALGO</span>
+            </div>
+          </div>
+        </div>
+        <div id="id-cons-body" class="collapsible-body consolidated">
+          <div class="col s12 charts">
+            <div class="col s12 m6 xl5 offset-xl1 chart-container valign-wrapper">
+              <div id="id-legend-distchart" class="col s2 legend"></div>
+              <div class="col s10 canvas"><canvas id="id-distchart" width="500" height="{{ distchart|dist_height }}"></canvas></div>
+            </div>
+            <div id="id-chart-ratio" class="col s12 m6 xl5 offset-xl1 chart-container scale-transition valign-wrapper">
+              <div id="id-legend-ratiochart" class="col s3 legend"></div>
+              <div class="col s9 canvas"><canvas id="id-ratiochart" width="500" height="500"></canvas></div>
+            </div>
+            <div id="id-chart-ratiofloor" class="col s12 m6 xl5 offset-xl1 chart-container scale-transition valign-wrapper">
+              <div id="id-legend-ratiochartfloor" class="col s3 legend"></div>
+              <div class="col s9 canvas"><canvas id="id-ratiochartfloor" width="500" height="500"></canvas></div>
+            </div>
+          </div>
+          <div class="col s12 charts">
+            <div class="col s12 m6 xl5 offset-xl1 chart-container valign-wrapper">
+              <div id="id-legend-asachart" class="col s3 legend"></div>
+              <div class="col s9 canvas"><canvas id="id-asachart" width="500" height="500"></canvas></div>
+            </div>
+            <div id="id-chart-nft" class="col s12 m6 xl5 offset-xl1 chart-container scale-transition valign-wrapper">
+              <div id="id-legend-nftchart" class="col s3 legend"></div>
+              <div class="col s9 canvas"><canvas id="id-nftchart" width="500" height="500"></canvas></div>
+            </div>
+            <div id="id-chart-nftfloor" class="col s12 m6 xl5 offset-xl1 chart-container scale-transition valign-wrapper">
+              <div id="id-legend-nftfloorchart" class="col s3 legend"></div>
+              <div class="col s9 canvas"><canvas id="id-nftfloorchart" width="500" height="500"></canvas></div>
+            </div>
+          </div>
+          <div class="col s12 right-align">
+            <div class="floor algous">
+              <label title="Show NFT floor values pie chart">
+                <input type="checkbox">
+                <span>NFT floor chart</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div class="col s12 center-align cons-expand">
+    <span>Click totals to show charts</span>
+  </div>
+  <div class="col s12 valign-wrapper">
+    <div class="col s6 input-field filter">
+      <input placeholder="Filter" id="filter" type="text" class="validate">
+    </div>
+    <div class="col s6 right-align algous">
+      <div class="totalnonft">
+        <label title="Show total value without NFTs">
+          <input type="checkbox">
+          <span>Total without NFTs</span>
+        </label>
+      </div>
+      <div class="refresh">
+        <label title="Check for auto-refresh after 60 seconds of inactivity">
+          <input type="checkbox">
+          <span>Auto-refresh</span>
+        </label>
+      </div>
+      <div class="switch">
+      <label>
+        ALGO
+        <input type="checkbox">
+        <span class="lever"></span>
+        USD
+      </label>
+      </div>
+    </div>
+  </div>
+  {% include "snippets/asas.html" with asaitems=account.asaitems colors=colors pricealgo=total.pricealgo %}
+  {% if account.nftcollections %}{% include "snippets/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors %}{% endif %}
+  {% include "snippets/nonval.html" with notevals=account.notevals %}
+</div>
+{% endwith %}
+{% endblock %}
+{% block otherfooter %}
+<script src="{% static 'js/chart.min002.js' %}"></script>
+<script src="{% static 'js/address.min030.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% load i18n %}{% autoescape off %}Welcome to ASA Stats!
+
+We're glad to have you here. After clicking on the link below, you'll be redirected to your home page on our website.
+
+{{ activate_url }}
+
+Find us on social media and let your friends, family and colleagues know about ASA Stats.
+
+{{ activate_url }}
+
+{% endautoescape %}

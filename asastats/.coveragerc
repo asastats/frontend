@@ -1,0 +1,17 @@
+[run]
+source = .
+omit =
+    */tests/*
+    permissiondapp/*
+    widgets/*
+    manage.py
+    */__init__.py
+    */migrations/*
+    */asgi.py
+    */wsgi.py
+    */settings/*.py
+    */nameservice/anssdk/*
+
+[report]
+exclude_lines =
+    if __name__ == .__main__.:

@@ -1,0 +1,18 @@
+{
+  "@context": "http://schema.org",
+  "@type": "WebPage",
+  "name": "Features",
+  "url": "https://www.asastats.com/features/",
+  "@id": "https://www.asastats.com/#features",
+  "description": "Tools for Tracking, Evaluating, and Acting on Your Algorand Portfolio.",
+  "isPartOf":{
+      "@type": "WebSite",
+      "@id":"https://www.asastats.com/#site",
+      "name": "ASA Stats"
+  },
+  "publisher": {
+      "@type": "Organization",
+      "@id": "https://www.asastats.com/#org",
+      "name": "ASA Stats"
+  }
+}

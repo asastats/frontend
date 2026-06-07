@@ -1,0 +1,28 @@
+{% extends 'base_bundlename.html' %}
+{% load i18n %}
+{% load core_extras %}
+{% block title %}{{ bundlename.name }} - ASA Stats{% endblock %}
+{% block description %}{{ bundlename.name }} - edit bundle name and related addresses.{% endblock %}
+{% block keywords %}bundle name,edit bundle name,input{% endblock %}
+{% block page_header %}{{ bundlename.name }}{% endblock %}
+
+{% block extra_bundlename_data %}
+<div class="row col s12 center-align">
+    <br>
+    <span>Created on:</span>
+    <br>
+    <span id="id_created">{{ bundlename.short_created }}</span>
+    <br>
+    <span>Modified on:</span>
+    <br>
+    <span id="id_modified">{{ bundlename.short_modified }}</span>
+    <br>
+    <a href="{% url 'bundlename_delete' bundlename.name %}" id="id_delete">Delete bundle name</a>
+    <br><br>
+</div>
+{% endblock %}
+{% block bundlename_submit_text %}Update{% endblock %}
+
+{% block active_link %}{% if element == bundlename %}active{% endif %}{% endblock %}
+
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; Bundle name{% endblock %}

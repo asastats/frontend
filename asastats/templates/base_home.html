@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+  {% block start_form %}{% endblock %}
+  <div class="col s12 m10 push-m2">
+    <div class="card-panel homeheader">
+      <h2><span>{% block page_header %}{% endblock %}</span></h2>
+    </div>
+    <div class="row col s12 midrow">
+      <div class="col s12 center-align midcol">
+          {% block middle_section %}{% endblock %}
+      </div>
+    </div>
+  </div>
+  <div class="col s12 m2 pull-m10">
+      <div class="col s12 right-align breadcrumbs">
+          {% block breadcrumbs %}{% endblock %}
+      </div>
+      {% block left_section %}{% endblock %}
+  </div>
+  {% block end_form %}{% endblock %}
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}ASA Stats sitemap{% endblock %}
+{% block description %}Lists available pages on the ASA Stats website.{% endblock %}
+{% block keywords %}asastats,Algorand,about,tokenomuics,faq,features,subscriptions,disclaimer{% endblock %}
+
+{% block content %}
+<div class="row">
+<h1 class="center-align">Sitemap</h1>
+<div class="col s12 center-align">
+<div class="col m12 l6">
+<h3>Public pages</h3>
+<ul>
+{% for url in urlset %}
+    <div class="col m12 l6 center-align">
+    {% if url.item.1|length > 0 %}
+        {% if url.item.0 == "assets_file" %}
+            <li><a href="{{ url.location }}">{{ url.item.1.0 }}</a></li>
+        {% elif url.item.0 == "html_file" %}
+            <li><a href="{{ url.location }}">{% if "privacy" in url.item.1.0 %}Privacy Policy{% else %}Terms of Use{% endif %} </a></li>
+        {% endif %}
+    {% else %}
+        {% if url.item.0 == "about" %}
+            <li><a href="{{ url.location }}">About</a></li>
+        {% elif url.item.0 == "tokenomics" %}
+            <li><a href="{{ url.location }}">Tokenomics</a></li>
+        {% elif url.item.0 == "subscriptions" %}
+            <li><a href="{{ url.location }}">Subscriptions page</a></li>
+        {% elif url.item.0 == "faq" %}
+            <li><a href="{{ url.location }}">FAQ page</a></li>
+        {% elif url.item.0 == "features" %}
+            <li><a href="{{ url.location }}">Features page</a></li>
+        {% elif url.item.0 == "disclaimer" %}
+            <li><a href="{{ url.location }}">Disclaimer</a></li>
+        {% elif url.item.0 == "asm_privacy" %}
+            <li><a href="{{ url.location }}">ASA Stats Mobile Policy Privacy</a></li>
+        {% elif url.item.0 == "index" %}
+            <li><a href="{{ url.location }}">Index page</a></li>
+        {% endif %}
+    {% endif %}
+    </div>
+{% endfor %}
+</div>
+</ul>
+</div>
+<div class="col m12 l6">
+<h3>Private pages</h3>
+<ul>
+    <li><a href="{% url 'account_reset_password' %}">Reset your password</a></li>
+    <li><a href="{% url 'account_signup' %}">User signup</a></li>
+    <li><a href="{% url 'account_login' %}">User login</a></li>
+    {% if user.is_authenticated %}
+    <li><a href="{% url 'account_change_password' %}">Change your password</a></li>
+    <li><a href="{% url 'home' %}">Home page</a></li>
+    <li><a href="{% url 'profile' %}">Profile page</a></li>
+    <li><a href="{% url 'account_email' %}">Your emails</a></li>
+    <li><a href="{% url 'socialaccount_connections' %}">Your social accounts</a></li>
+    <li><a href="{% url 'bundlename_add' %}">Add bundle name</a></li>
+    {% endif %}
+</ul>
+</div>
+</div>
+{% endblock %}
+{% block otherfooter %}<script type="application/ld+json">{% include "jsonld/disclaimer.jsonld" %}</script>{% endblock %}

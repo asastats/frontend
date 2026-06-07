@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /$
+Allow: /about
+Allow: /tokenomics
+Allow: /faq
+Allow: /disclaimer
+Allow: /features
+Allow: /subscriptions
+Allow: /sitemap
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.png$
+Allow: /*.pdf$
+Disallow: /
+Sitemap: https://www.asastats.com/sitemap.xml

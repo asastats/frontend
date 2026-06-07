@@ -1,0 +1,20 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} Per-collection NFT list.
+
+   Required context:
+     nftcollections   list of serialized nftcollection dicts, already sorted
+                      descending by collection value by the API serializer
+                      (so valued collections appear before unvalued ones
+                      naturally, matching the legacy template's two-pass
+                      ordering without needing the split).
+     nft_colors       {collection_name: "0"|"1"|...} color-slot map from
+                      prepare_base_charts_from_serialized_data
+{% endcomment %}
+<div class="col s12">
+  <ul class="collapsible nftsec">
+    {% for coll in nftcollections %}
+      {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors %}
+    {% endfor %}
+  </ul>
+</div>

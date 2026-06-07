@@ -1,0 +1,107 @@
+{% extends 'base.html' %}{% load static %}{% load core_extras %}
+{% block otherheader %}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ASA Stats" />
+    <meta property="og:url" content="https://www.asastats.com/" />
+    <meta property="og:description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out." />
+    <meta property="og:image" content="http://www.asastats.com/asastats-logo1200.jpg" />
+    <meta property="og:image:url" content="http://www.asastats.com/asastats-logo1200.jpg" />
+    <meta property="og:image:secure_url" content="https://www.asastats.com/asastats-logo1200.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="1200" />
+    <meta property="og:image:alt" content="ASA Stats logo" />
+    <meta property="og:video" content="https://www.youtube.com/v/M8_dWMNWmCo" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:url" content="https://www.asastats.com/" />
+    <meta name="twitter:title" content="ASA Stats" />
+    <meta name="twitter:description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development." />
+    <meta name="twitter:site" content="@asastatscom" />
+    <meta name="twitter:creator" content="@asastatscom" />
+    <meta name="twitter:image" content="https://www.asastats.com/asastats-logo1200.jpg" />
+    <meta name="twitter:image:alt" content="ASA Stats logo" />
+{% endblock %}
+{% block header %}{% endblock %}
+{% block content %}
+<div class="row center-align">
+  <div class="col s12 m8 push-m2">
+    <a href="/"><img id="logo" class="responsive-img" src="{% static 'logo.png' %}" alt="ASA Stats logo"></a>
+  </div>
+  <div class="row">
+    <div class="col s12">
+      <h1 class="center-align index flow-text truncate">{{ header }}</h1>
+    </div>
+    <form method="POST" action="." id="id_form">
+      {% csrf_token %}
+      <div class="input-field col s12 m8 push-m2">
+        <img class="prefix" src="{% static 'img/expand.png' %}" alt="Click to expand">
+        <input id="id_address"{% if form.bundle.errors %} value="{{ form.bundle.errors.0|escape }}"{% endif %} name="address" maxlength="58" autofocus="autofocus" placeholder="Enter Algorand address" type="text">
+        {% if form.address.errors %}<span class="myred-text">{{ form.address.errors|escape }}</span>{% endif %}
+        {{ form.bundle.as_hidden }}
+        {% if form.bundle.errors %}
+        <div class="col s12">
+          <div class="col s6">
+          <p>
+            <label>
+              <input id="ans" class="ns with-gap" name="ns" type="radio"  />
+              <img class="nsicon" src="{% static 'icons/providers/ans.png' %}" alt="Algorand name service">
+            </label>
+          </p>
+          </div>
+          <div class="col s6">
+          <p>
+            <label>
+              <input id="nfd" class="ns with-gap" name="ns" type="radio" />
+              <img class="nsicon" src="{% static 'icons/providers/nfd.png' %}" alt="NF Domains">
+            </label>
+          </p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="col s8 push-s2">
+        <div class="indeterminate"></div>
+      </div>
+      {% if form.non_field_errors and "Multiple" not in form.non_field_errors.0 %}<div class="col s12"><span class="myred-text">{{form.non_field_errors}}</span></div>{% endif %}
+      <div class="col s12 m8 push-m2 center-align">
+        <button class="waves-effect waves-mydark btn whenmoon" id="whenmoon" type="submit">When Moon</button>
+      </div>
+      {% if banner %}
+      <div class="col s12 m8 push-m2 center-align" style="margin-top: 1.5rem;">
+        <a href="{{ banner.url }}" target="_blank" rel="noopener sponsored">
+          <img src="{% static banner.image %}" alt="{{ banner.alt }}" class="responsive-img">
+        </a>
+      </div>
+      {% endif %}
+    </form>
+    {% if user.is_authenticated %}
+    <div class="col col s12 m8 push-m2 bundlenames">
+      <br>
+      {% for bundlename in user.profile.bundlenames %}
+      <div class="col s6 m4 l3">
+        <div class="hoverable bundlename">
+          <a href="{% url 'bundle_name' bundlename.name %}" target="_blank" title="Evaluate bundle">
+            <h5 class="center-align bundlename">{{ bundlename.name }}</h5>
+          </a>
+        </div>
+        {% if bundlename.can_access_historic_widget %}
+        <div class="center-align">
+          {% if bundlename.public %}<i class="material-icons left" aria-hidden="true">{{ 'public'|get_styling:"icon" }}</i>{% endif %}
+          <a href="{% url 'historic' bundlename.bundle %}" target="_blank" title="Process and show bundle's historic data">Historic data</a>
+        </div>
+        {% elif bundlename.public %}
+        <div class="center-align">
+          <i class="material-icons" aria-hidden="true">{{ 'public'|get_styling:"icon" }}</i>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block otherfooter %}
+<script type="application/ld+json">{% include "jsonld/index.jsonld" %}</script>
+<script src="{% static 'js/index.min002.js' %}"></script>
+{% endblock %}

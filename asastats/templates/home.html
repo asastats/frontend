@@ -1,0 +1,54 @@
+{% extends 'base_home.html' %}
+{% load i18n %}{% load static %}{% load core_extras %}
+{% block title %}Home page - ASA Stats{% endblock %}
+{% block description %}This is your home page of the www.asastats.com website and all of your bundle names are listed here.{% endblock %}
+{% block keywords %}home,home page,homepage,bundle names{% endblock %}
+{% block page_header %}{{ profile.name }}'s home page{% endblock %}
+
+{% block left_section %}
+<div class="collection home">
+    <a href="{% url 'profile' %}" class="collection-item" id="id_profile">
+        <span>{{ profile.name }}<i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i></span>
+        <p>{{ user.username }}<br>
+            {{ user.email }}
+        </p>
+    </a>
+</div>
+<br><br>
+{% endblock %}
+
+{% block middle_section %}
+{% if user.profile.show_sort_and_filter %}
+<div class="col s12" id="id_panel">
+  {% include "snippets/home_sorting.html" %}
+  {% include "snippets/home_filtering.html" %}
+</div>
+<div class="divider col s12"></div>
+{% endif %}
+{% if user.profile.address == "" %}<br><span class="myred-text">To begin using additional features, you must add and authorize your subscription/DAO address on the <a href="{% url 'profile' %}">profile page</a>.</span><br>{% endif %}
+<div class="col s12 bundlenames">
+  {% include "snippets/home_bundlenames.html" with collection=profile.bundlenames %}
+</div>
+<div class="col s12">
+  <br><a class="waves-effect waves-mydark btn whenmoon" id="id_add" role="button" href="{% url 'bundlename_add' %}">Add bundle name<i class="material-icons right" aria-hidden="true">{{ 'bundlename'|get_styling:"icon" }}</i></a>
+  <br>&nbsp;
+</div>
+{% if messages %}
+<div class="row col s12 m8 offset-m2">
+  {% for message in messages %}
+    {% if "error" in message.tags %}
+    <div><span class="myred-text">{{ message }}</span></div>
+    {% else %}
+    <div class="chip mydark myredlight-text z-depth-1">
+        {{ message }}
+        <i class="material-icons close" aria-hidden="true">close</i>
+    </div>   
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+{% block breadcrumbs %}Home{% endblock %}
+{% block otherfooter %}
+<script src="{% static 'js/home.min001.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base_bundlename.html' %}
+{% load i18n %}
+{% load core_extras %}
+{% block title %}Delete bundle name - ASA Stats{% endblock %}
+{% block description %}{{ bundlename.name }} - delete bundle name from databnase.{% endblock %}
+{% block keywords %}bundle name,delete,remove{% endblock %}
+{% block page_header %}{{ bundlename.name }}{% endblock %}
+{% block bundlename_top %}
+<h5 class="myred-text">Are you sure you want to delete this bundle name?</h5>
+<div class="row col s12">
+  <p>Please keep in mind that bundle name deletion is irreversible.</p>
+</div>
+{% endblock %}
+{% block bundlename_submit_text %}Delete{% endblock %}
+{% block bundlename_submit_color %} myred-text{% endblock %}
+{% block back_button %}<a class="waves-effect btn-flat" href="{% url 'bundlename_edit' bundlename.name %}">Back<i class="material-icons right" aria-hidden="true">{{ 'home'|get_styling:"icon" }}</i></a>{% endblock %}
+{% block active_link %}{% if element == bundlename %}active{% endif %}{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'bundlename_edit' bundlename.name %}">Bundle name</a> &raquo; Delete{% endblock %}

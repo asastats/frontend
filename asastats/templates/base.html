@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">{% load static %}{% load i18n %}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{% block title %}ASA Stats{% endblock %}</title>
+    <meta name="description" content="{% block description %}ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.{% endblock %}">
+    <meta name="keywords" content="{% block keywords %}asastats,Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount{% endblock %}">
+    {% block otherheader %}{% endblock %}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald|Nunito">
+    <link href="{% static 'css/materialize.min002.css' %}" type="text/css" rel="stylesheet" media="screen">
+    <link href="{% static 'css/style.min041.css' %}" type="text/css" rel="stylesheet" media="screen">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#ababab">
+    <meta name="msapplication-TileColor" content="#ababab">
+    <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+<script>
+  var mode = '{{ mode }}' || localStorage.getItem('mode') || 'light';
+  document.body.classList.add(mode);
+</script>
+{% block header %}
+<header>
+  <nav class="z-depth-0">
+      <div class="nav-wrapper container">
+          {% block navigation %}
+          <a href="/" class="brand-logo"><img id="brand" src="{% static 'asastats.png' %}" alt="ASA Stats logo"></a>
+          <a href="#" data-target="slide-out" class="sidenav-trigger button-collapse"><img src="{% static 'img/menu.png' %}" alt="Menu"></a>
+          <ul class="right hide-on-med-and-down" id="nav-mobile">
+            {% if user.is_authenticated %}
+            <li><a href="{% url 'home' %}">Home</a></li>
+            <li><a href="{% url 'swagger-ui' %}">API</a></li>
+            <li><a id="logout" href="{% url 'account_logout' %}">Logout</a></li>
+            {% else %}
+            <li><a href="#modalLogin" class="modal-trigger">Log in</a></li>
+            <li><a href="{% url 'swagger-ui' %}">API</a></li>
+            <li><a href="{% url 'subscriptions' %}">Subscriptions</a></li>
+            {% endif %}
+          </ul>
+          <ul class="sidenav" id="slide-out">
+            {% if user.is_authenticated %}
+            <li><a href="{% url 'home' %}">Home</a></li>
+            {% else %}
+            <li><a href="#modalLogin" class="modal-trigger">Log in</a></li>
+            {% endif %}
+            <li><a href="{% url 'about' %}">About</a></li>
+            <li><a href="{% url 'tokenomics' %}">Tokenomics</a></li>
+            <li><a href="{% url 'subscriptions' %}">Subscriptions</a></li>
+            <li><a href="{% url 'swagger-ui' %}">API</a></li>
+            <li><a href="{% url 'faq' %}">FAQ</a></li>
+            <li><a href="{% url 'features' %}">Features</a></li>
+            <li><a href="{% url 'disclaimer' %}">Disclaimer</a></li>
+            {% if user.is_authenticated %}
+            <li><a href="{% url 'account_logout' %}">Logout</a></li>
+            {% endif %}
+          </ul>
+          {% endblock %}
+      </div>
+  </nav>
+</header>
+{% endblock %}
+{% block banner %}{% endblock %}
+<main>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+<footer class="page-footer">
+  <div class="container">
+    <div class="col s12 center-align socfooter">
+      <a class="frmbtn liqbtn" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener" title="ALGO-ASASTATS liquidity pool on Pact"></a>
+      <a class="frmbtn liq2btn" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener" title="ALGO-ASASTATS liquidity pool on Tinyman"></a>
+    </div>
+    <div class="col s12 center-align socfooter">
+      <a class="scbtn iosbtn" href="https://apps.apple.com/us/app/asa-stats-mobile/id6443547246" target="_blank" rel="noopener" title="ASA Stats Mobile on App Store"></a>
+      <a class="scbtn andrbtn" href="https://play.google.com/store/apps/details?id=com.asastats.app" target="_blank" rel="noopener" title="ASA Stats Mobile on Play Store"></a>
+      <a class="scbtn dark-toggle brightbtn" href="#" title="Dark/bright side of the Moon"></a>
+      <a class="scbtn twitbtn" href="https://twitter.com/asastatscom" target="_blank" rel="noopener" title="@asastatscom on X platform"></a>
+      <a class="scbtn dscrbtn" href="https://discord.gg/Vjx7w7pAC7" target="_blank" rel="noopener" title="Join our Discord server"></a>
+      <a class="scbtn rdtbtn" href="https://www.reddit.com/r/asastats" target="_blank" rel="noopener" title="r/asastats on Reddit"></a>
+      <a class="scbtn medbtn" href="https://medium.com/@asastats" target="_blank" rel="noopener" title="ASA Stats on Medium"></a>
+      <a class="scbtn githbtn" href="https://github.com/asastats" target="_blank" rel="noopener" title="ASA Stats on GitHub"></a>
+    </div>
+  </div>
+  <div id="footer" class="footer-copyright" data-mode="{{ mode }}">
+      <div class="container center-align">
+        <a href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener" title="Buy ASA Stats Token on Pact">Buy ASASTATS</a>
+        {% if user.is_authenticated %}
+        &emsp;&emsp;<a href="{% url 'home' %}">Home</a>
+        {% else %}
+        &emsp;&emsp;<a href="#modalLogin" class="modal-trigger">Log in</a>
+        {% endif %}
+        &emsp;&emsp;<a href="{% url 'about' %}">About</a>
+        &emsp;&emsp;<a href="{% url 'tokenomics' %}">Tokenomics</a>
+        &emsp;&emsp;<a href="{% url 'subscriptions' %}">Subscriptions</a>
+        &emsp;&emsp;<a href="{% url 'swagger-ui' %}">API</a>
+        &emsp;&emsp;<a href="{% url 'faq' %}">FAQ</a>
+        &emsp;&emsp;<a href="{% url 'features' %}">Features</a>
+        &emsp;&emsp;<a href="https://www.asastats.com/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a>
+        &emsp;&emsp;<a href="{% url 'disclaimer' %}">Disclaimer</a>
+        {% if user.is_authenticated %}
+        &emsp;&emsp;<a href="{% url 'account_logout' %}">Logout</a>
+        {% endif %}
+        &emsp;&emsp;<span class="txt mydark-text">&copy;&nbsp;2026&nbsp;ASA&nbsp;Stats</span>
+      </div>
+  </div>
+</footer>
+{% include "snippets/modal_login.html" %}
+<script src="{% static 'js/jquery-2.2.4.min.js' %}"></script>
+<script src="{% static 'js/materialize.min.js' %}"></script>
+<script src="{% static 'js/site.min010.js' %}"></script>
+{% block otherfooter %}{% endblock %}
+</body>
+</html>

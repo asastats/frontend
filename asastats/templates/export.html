@@ -1,0 +1,40 @@
+{% extends 'base.html' %}{% load static %}{% load core_extras %}
+{% block otherheader %}<meta name="format-detection" content="telephone=no">{% endblock %}
+{% block content %}
+<div class="row center-align">
+  <div class="row">
+    <div class="col s12">
+      <h1 class="center-align">Export to CSV</h1>
+      {% if bundle %}
+        <h4 class="center-align flow-text">
+        {% for addr in bundle %}&nbsp;<a href="{% url 'export_address' addr %}" target="_blank" title="CSV report for address {{ addr }}">{{ addr|short_address }}</a>&nbsp;{% endfor %}
+        </h4>
+      {% else %}
+        <h4 class="center-align flow-text truncate"><a href="https://allo.info/account/{{ url_value }}" target="_blank" title="Open address in Allo">{{ address.0 }}</a></h4>
+      {% endif %}
+    </div>
+    {% if finished_tax %}
+      {% include "snippets/taxfinished.html" with bundle=bundle url_value=url_value report=finished_tax %}
+    {% elif url_value in processing_tax %}
+      {% include "snippets/taxprocessing.html" with bundle=bundle url_value=url_value %}
+    {% else %}
+      {% include "snippets/taxprepare.html" %}
+    {% endif %}
+    <div class="col s8 push-s2">
+      <div class="indeterminate"></div>
+    </div>
+    <div class="col s12 m8 push-m2 center-align">
+      {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block otherfooter %}
+<script src="{% static 'js/tax.min001.js' %}"></script>
+{% endblock %}

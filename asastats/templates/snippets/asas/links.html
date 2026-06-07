@@ -1,0 +1,26 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} External price-screener links for one asset.
+
+   Required context:
+     asset    asaitem.asset dict (must carry .links from the serializer)
+
+   The legacy template hand-coded Vestige/Haystack/CMC/LCW/DSC anchors with
+   per-asset branches and an explicit Lofty/anmc opt-out. In API 2.0 the
+   serializer already populates asset.links with the right set per asset,
+   so this partial is a straight loop.
+
+   Phase 5c-fixes / W4 — the Lofty/anmc opt-out is template-side: skip
+   the whole block if the asset name contains "Lofty" or the unit starts
+   with "anmc". These assets are tokenized real estate / mortgage products
+   whose price screeners (Vestige, Haystack, LCW, DSC) return meaningless
+   data, so the old template hid them entirely.
+{% endcomment %}
+{% if "Lofty" not in asset.name and asset.unit|slice:":4" != "anmc" %}
+  {% for ld in asset.links %}
+    <a href="{{ ld.link }}" target="_blank" title="{{ ld.title }}">
+      <img class="provider" src="{% static ld.provider.name|provider_icon %}" alt="{{ ld.provider.name }} logo" />
+    </a>{% if not forloop.last %}&nbsp;&nbsp;{% endif %}
+  {% endfor %}
+  {% if asset.links %}<br />{% endif %}
+{% endif %}

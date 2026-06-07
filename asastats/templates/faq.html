@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}ASA Stats - FAQ page{% endblock %}
+{% block description %}Frequently asked questions about ASA Stats project and ASASTATS token.{% endblock %}
+{% block keywords %}asastats,Algorand,ASA,project,token,questions,answers,features,inquiries,requests{% endblock %}
+{% block content %}
+<div class="row left-align">
+<h1 class="center-align">Frequently Asked Questions</h1>
+   <div class="col s12">
+    <h2 class="left-align">General Users</h2>
+    <ul class="collection">
+      <li class="collection-item">
+      <p><strong>What is ASA Stats?</strong>
+      <br><br>ASA Stats is a <strong>real-time portfolio tracker</strong> for all Algorand Standard Assets (ASAs) and NFTs. It calculates live valuations, tracks assets across wallets, DeFi platforms, and smart contracts, and supports analytics via API and mobile apps.
+      </p>
+      </li>
+      <li class="collection-item">
+      <p><strong>Is ASA Stats free?</strong>
+      <br><br>Yes. Basic portfolio tracking is always free — no login or wallet connection is required. Premium features are available via <strong>subscription</strong>.
+      </p>
+      </li>
+      <li class="collection-item">
+      <p><strong>Do I need to connect my wallet?</strong>
+      <br><br>No. Simply enter any Algorand address or .algo domain to start tracking. Wallet connection is required for <strong>subscription payments</strong>, <strong>governance</strong>, and <strong>accessing advanced user functionalities</strong>.
+      </p>
+      </li>
+      <li class="collection-item">
+      <p><strong>What are “bundles”?</strong>
+      <br><br>Bundles let you <strong>group multiple addresses</strong> into one portfolio view. You can create and name bundles (e.g. “My Wallets”, “NFT Treasury”) and track them as one unit. Bundle limits depend on your subscription tier.
+      </p>
+      </li>
+    </ul>
+   </div>
+   <div class="col s12">
+    <h2 class="left-align">Token Holders</h2>
+    <ul class="collection">
+      <li class="collection-item">
+        <p><strong>What is the ASASTATS token used for?</strong>
+        <br><br>ASASTATS (Asset ID: 393537671) is the platform’s utility token. It’s used to:<br>
+        <br>
+        &#8226; Pay for subscriptions<br>
+        &#8226; Unlock premium features and API access<br>
+        &#8226; Stake for DAO governance (note: DAO access is currently closed)<br>
+        &#8226; Earn in the community rewards program<br>
+        </p>
+      </li>
+      <li class="collection-item">
+        <p><strong>Is the DAO live?</strong>
+        <br><br>Yes. The ASA Stats DAO is active and manages treasury access and permissions. <strong>DAO membership is currently closed</strong> — it was issued to those who staked 500,000 ASASTATS over a 10-month period.
+        </p>
+      </li>
+      <li class="collection-item">
+        <p><strong>Can I still become a governor?</strong>
+        <br><br>Not currently. Per the <a href="https://medium.com/@asastats/dao-subscription-and-governance-staking-updates-c2d3244f4c03" target="_blank" rel="noopener" title="Read the Medium article">New DAO Seat Model</a>, new seats can only be created via DAO vote. You can still access full functionality by subscribing to the <strong>Cluster tier</strong>.
+        </p>
+      </li>
+      <li class="collection-item">
+        <p><strong>Where can I buy ASASTATS?</strong>
+        <br><br>You can swap for ASASTATS on Algorand DEXs like <a href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener" title="Buy ASASTATS on Pact">Pact</a> or <a href="https://app.tinyman.org/swap?asset_in=0&asset_out=393537671" target="_blank" rel="noopener" title="Buy ASASTATS on Tinyman">Tinyman</a>.
+        </p>
+      </li>
+    </ul>      
+   </div>
+  <div class="col s12">
+    <h2 class="left-align">Developers</h2>
+    <ul class="collection">
+      <li class="collection-item">
+        <p><strong>Is there an API?</strong>
+        <br><br>Yes. ASA Stats provides a robust v2 <strong>API</strong> for querying ASA/NFT valuations, wallet holdings, and bundle data.
+        <br><br>
+        📘 Explore → <a href="https://www.asastats.com/api/v2/schema/swagger-ui/" target="_blank" rel="noopener" title="Visit Swagger UI index page of the ASA Stats API">Swagger UI</a> → <a href="https://www.asastats.com/api/v2/schema/redoc/" target="_blank" rel="noopener" title="Visit Redoc index page of the ASA Stats API">Redoc</a>
+        </p>
+      </li>
+      <li class="collection-item">
+        <p><strong>How do I get an API key?</strong>
+        <br><br>Subscribe at the <strong>Asastatser tier</strong> or higher, or become a DAO governor.
+        <br><br>Once subscribed, log in and your <strong>API key is auto-generated</strong> based on your wallet’s permissions.
+        </p>
+      </li>
+      <li class="collection-item">
+        <p><strong>Can I publish widgets or apps?</strong>
+        <br><br>Yes. <strong>Professional</strong> and <strong>Cluster</strong> tier users can create and submit custom widgets to integrate into ASA Stats. Approved widgets may be listed and rewarded via DAO grants or community incentives.
+        </p>        
+      </li>
+    </ul>
+  </div>
+  <div class="col s12">
+    <h2 class="left-align">Subscriptions & Access</h2>
+    <ul class="collection">
+      <li class="collection-item">
+      <p><strong>How are subscriptions handled?</strong>
+      <br><br>Subscriptions are powered by <strong>ASASTATS tokens</strong> and managed through <strong>Subtopia smart contracts</strong> on-chain.
+      <br><br>Once you pay for a tier, your wallet’s permission level is automatically updated.
+      <br><br>📘 View <a href="https://www.asastats.com/subscriptions/" target="_blank" rel="noopener" title="Visit ASA Stats subscriptions page">Subscription Plans</a>
+      </p>      
+      </li>
+      <li class="collection-item">
+      <p><strong>Can I upgrade or cancel my subscription?</strong>
+      <br><br>Yes. Subscriptions are month-to-month. Cancel or upgrade anytime by stopping payment or selecting a higher tier.
+      </p>      
+      </li>
+      <li class="collection-item">
+      <p><strong>I’m stuck or found a bug. What should I do?</strong>
+      <br><br>&#8226; First, check <a href="https://github.com/asastats/channel/issues" target="_blank" rel="noopener" title="Visit issues section in our GitHub">GitHub Issues</a> to see if it’s known<br>
+      &#8226; If not, create a new issue or ask in our <a href="https://discord.gg/Vjx7w7pAC7" target="_blank" rel="noopener" title="Open ASA Stats Discord channel">Discord</a>, <a href="https://www.reddit.com/r/asastats" target="_blank" rel="noopener" title="Visit r/asastats subreddit">Reddit</a>, or <a href="https://twitter.com/asastatscom" target="_blank" rel="noopener" title="Go to the ASA Stats X profile page">ping us on X</a>.<br>
+      &#8226; Verified bugs and helpful contributions may earn <strong>token rewards</strong> from the community pool<br>
+      </p>      
+      </li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
+{% block otherfooter %}<script type="application/ld+json">{% include "jsonld/faq.jsonld" %}</script>{% endblock %}

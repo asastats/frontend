@@ -1,0 +1,694 @@
+body {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  /* background-color: #fff; */
+}
+
+body.dark {
+  background-color: #2b2b2b;
+  color: #fff;
+}
+
+body.dark nav {
+  background-color: #2b2b2b !important;
+}
+
+body.dark nav ul a {
+  color: #ababab;
+}
+
+body.dark input {
+  color: #fff;
+}
+
+body.dark textarea {
+  color: #fff;
+}
+
+body.dark .modal .modal-content, body.dark .modal .modal-footer, body.dark .card, body.dark .card-content, body.dark .card-action {
+  background-color: #2b2b2b;
+}
+
+body.dark .material-tooltip {
+  color: #2b2b2b;
+  background: #ababab;
+}
+
+body.dark .divider {
+  opacity: 0.2;
+}
+
+body.dark .sidenav {
+  background-color: #2b2b2b;
+}
+
+body.dark .sidenav li a:not(.subheader) {
+  color: #00c896;
+}
+
+body.dark .sidenav li a:not(.subheader):hover {
+  background-color: #575757;
+}
+
+body.dark .sidenav li a.subheader {
+  color: #575757;
+}
+
+body.dark .collapsible-header {
+  background-color: #2b2b2b;
+}
+
+body.dark .page-footer {
+  background-color: #2b2b2b;
+}
+
+body.dark .footer-copyright {
+  background-color: #2b2b2b;
+}
+
+body.dark .collection .collection-item {
+  background-color: #2b2b2b;
+}
+
+body.dark .z-depth-1, body.dark .card {
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.85);
+}
+
+body.dark span.bundlename {
+  color: #ababab;
+}
+
+@font-face {
+  font-family: 'Material Icons';
+  font-display: fallback;
+  font-style: normal;
+  font-weight: 400;
+  src: url(../iconfont/MaterialIcons-Regular.eot);
+  /* For IE6-8 */
+  src: local('Material Icons'), local('MaterialIcons-Regular'), url(../iconfont/MaterialIcons-Regular.woff2) format('woff2'), url(../iconfont/MaterialIcons-Regular.woff) format('woff'), url(../iconfont/MaterialIcons-Regular.ttf) format('truetype');
+}
+
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  /* Preferred icon size */
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  /* Support for all WebKit browsers. */
+  -webkit-font-smoothing: antialiased;
+  /* Support for Safari and Chrome. */
+  text-rendering: optimizeLegibility;
+  /* Support for Firefox. */
+  -moz-osx-font-smoothing: grayscale;
+  /* Support for IE. */
+  font-feature-settings: 'liga';
+}
+
+html {
+  font-family: Nunito, sans-serif;
+}
+
+.btn, .btn-flat, h1, h2, h3, h4, h5, h6 {
+  font-family: Oswald, sans-serif;
+}
+
+h1 {
+  margin: .8rem 0 .5rem 0;
+}
+
+.modal, .card, .card-content, .card-action  {
+  background-color: white;
+}
+
+h1.index {
+  font-size: 1.15rem;
+  line-height: 110%;
+  margin: 0.7666666667rem 0 0.46rem 0;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+.nav-wrapper .brand-logo img {
+  height: 64px;
+  margin-left: 12px;
+}
+
+nav {
+  height: 64px;
+  border-bottom: 0;
+  background-color: #ffffff !important;
+}
+
+nav ul a:hover {
+  background-color: transparent;
+  color: #00c896 !important;
+  text-shadow: none;
+}
+
+.sidenav {
+  width: 200px;
+}
+
+.sidenav-overlay {
+  z-index: 1;
+}
+
+.page-footer, .page-footer .footer-copyright {
+  background: #fff;
+}
+
+.whenmoon {
+  color: #575757;
+}
+
+textarea.materialize-textarea {
+  height: 7rem;
+}
+
+strong {
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .flex-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .charts {
+    order: 3;
+  }
+}
+
+.row .col.chart {
+  padding: 0;
+}
+
+.algous {
+  padding-right: 1rem;
+}
+
+.icondiv {
+  position: absolute;
+  left: 50%;
+  margin-top: -28px;
+  margin-left: -16px;
+}
+
+.nftdiv {
+  margin-top: -28px;
+}
+
+.asaicon {
+  width: 32px;
+  height: 32px;
+}
+
+.material-tooltip {
+  padding: 0;
+}
+
+.nfticon {
+  width: 32px;
+  height: 32px;
+  object-fit: scale-down;
+}
+
+.provider {
+  width: 20px;
+  height: 20px;
+}
+
+.prefix, .nsicon {
+  cursor: pointer;
+}
+
+div.card-panel.homeheader {
+  padding-top: 4px;
+  padding-bottom: 8px;
+  background-color: transparent;
+}
+
+.card .card-content.home {
+  padding: 4px;
+}
+
+.card .card-content .card-title.home {
+  line-height: 1.4rem;
+  font-size: 1.2rem;
+}
+
+.breadcrumbs {
+  margin-top: 1em;
+}
+
+.card.small {
+  height: 120px;
+}
+
+span.home {
+  line-height: 1.4rem;
+  font-size: 1.2rem;
+}
+
+span.badge.z-depth-1 {
+  min-width: 1.5rem;
+}
+
+div .token {
+  word-wrap: break-word;
+}
+
+h5.center-align.bundlename {
+  margin-top: 0.5rem;
+}
+
+#id_panel {
+  padding: 0;
+}
+
+.col.bundlenames {
+  padding: 0;
+}
+
+.filter {
+  margin-bottom: 0;
+}
+
+.filter input[type=text] {
+  height: 2rem;
+}
+
+span.sort {
+  font-size: 0.75rem;
+}
+
+/* .collection .collection-item {
+  padding: 0 4px;
+} */
+
+.collection .collection-item.avatar {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.collapsible-body {
+  padding: .5rem 0;
+}
+
+.col.asa {
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+}
+
+.col.asal {
+  padding-left: 0;
+}
+
+.col.asar {
+  padding-right: 0;
+}
+
+.balance {
+  border: 1px solid #ababab;
+}
+
+.price, .unitprice, .tdist, .copy {
+  cursor: pointer;
+}
+
+.price:hover, .unitprice:hover {
+  color: #00c896 !important;
+}
+
+.tdist:hover {
+  color: #ff3769 !important;
+}
+
+.myred-text.tdist:hover {
+  color: #ababab !important;
+}
+
+.hidden {
+  display: none;
+}
+
+div.socfooter {
+  line-height: 0;
+}
+
+#id_panel {
+  padding: 0;
+}
+
+.social img {
+  width: 32px;
+  margin-right: 16px;
+}
+
+/* to satisfy rules for using facebook logo */
+
+.social .btn-flat {
+  padding: 0 12px;
+}
+
+/* for modal window login */
+
+.socialsmall img {
+  width: 24px;
+  margin-right: 12px;
+}
+
+/* for modal window login */
+
+.socialsmall .btn-flat {
+  padding: 0 8px;
+}
+
+/* allauth emails page */
+
+.unverified {
+  color: #ff3769;
+}
+
+.verified {
+  color: #ababab;
+}
+
+.primary {
+  color: #00c896;
+}
+
+.scbtn {
+  width: 32px;
+  height: 32px;
+  text-indent: -99999px;
+  border: 0;
+  margin: 0 4px 0 4px;
+  color: #ababab;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.scbtn:hover {
+  background-position: 0 0;
+}
+
+.twitbtn {
+  background: url(../img/social/social-c.png) 0 -32px;
+}
+
+.twitbtn:hover {
+  background-position: 0 0;
+}
+
+.rdtbtn {
+  background: url(../img/social/social-c.png) -32px -32px;
+}
+
+.rdtbtn:hover {
+  background-position: -32px 0;
+}
+
+.dscrbtn {
+  background: url(../img/social/social-c.png) -64px -32px;
+}
+
+.dscrbtn:hover {
+  background-position: -64px 0;
+}
+
+.githbtn {
+  background: url(../img/social/social-c.png) -96px -32px;
+}
+
+.githbtn:hover {
+  background-position: -96px 0;
+}
+
+.iosbtn {
+  background: url(../img/social/social-c.png) -128px -32px;
+}
+
+.iosbtn:hover {
+  background-position: -128px 0;
+}
+
+.andrbtn {
+  background: url(../img/social/social-c.png) -160px -32px;
+}
+
+.andrbtn:hover {
+  background-position: -160px 0;
+}
+
+.medbtn {
+  background: url(../img/social/social-c.png) -192px -32px;
+}
+
+.medbtn:hover {
+  background-position: -192px 0;
+}
+
+.brightbtn {
+  background: url(../img/moon32.png) 0 -32px;
+}
+
+.brightbtn:hover {
+  background-position: 0 0;
+}
+
+.darkbtn {
+  background: url(../img/moon32.png) -32px -32px;
+}
+
+.darkbtn:hover {
+  background-position: -32px 0;
+}
+
+.stkbtn {
+  width: 133px;
+  height: 32px;
+  text-indent: -99999px;
+  border: 0;
+  margin: 0 4px 0 4px;
+  color: #575757;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.stkbtn:hover {
+  background-position: 0 0;
+}
+
+.govbtn {
+  background: url(../img/staking5.png) 0 -32px;
+}
+
+.govbtn:hover {
+  background-position: 0 0;
+}
+
+.frmbtn {
+  width: 133px;
+  height: 32px;
+  text-indent: -99999px;
+  border: 0;
+  margin: 0 4px 0 4px;
+  color: #575757;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.stkbtn:hover {
+  background-position: 0 0;
+}
+
+.liqbtn {
+  background: url(../img/farming4.png) 0 -32px;
+}
+
+.liqbtn:hover {
+  background-position: 0 0;
+}
+
+.input-field.filter {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.collapsible-header.token {
+  border-left: 3px solid #ababab;
+  display: block;
+}
+
+.collapsible-header.nft {
+  border-left: 3px solid #ababab;
+  display: flex;
+  padding-top: 15px;
+  padding-bottom: 5px;
+}
+
+.collapsible-body.nft {
+  border: none;
+}
+
+.row .col.nftleft, .row .col.nftmid, .row .col.nftright {
+  padding: 0;
+}
+
+.row .col.nftmid {
+  margin-top: -5px;
+}
+
+.collection .collection-item {
+  border-bottom: none;
+}
+
+.collection .collection-item .col {
+  padding-bottom: 8px;
+}
+
+
+.token.calgo {
+  border-left-color: #005a34;
+}
+
+.token.c0 {
+  border-left-color: #e6194b;
+}
+
+.token.c1 {
+  border-left-color: #3cb44b;
+}
+
+.token.c2 {
+  border-left-color: #ffe119;
+}
+
+.token.c3 {
+  border-left-color: #4363d8;
+}
+
+.token.c4 {
+  border-left-color: #f58231;
+}
+
+.token.c5 {
+  border-left-color: #42d4f4;
+}
+
+.token.c6 {
+  border-left-color: #f032e6;
+}
+
+.token.c7 {
+  border-left-color: #fabed4;
+}
+
+.token.c8 {
+  border-left-color: #469990;
+}
+
+.token.c9 {
+  border-left-color: #dcbeff;
+}
+
+.token.c10 {
+  border-left-color: #9a6324;
+}
+
+.token.c11 {
+  border-left-color: #fffac8;
+}
+
+.token.c12 {
+  border-left-color: #800000;
+}
+
+.token.c13 {
+  border-left-color: #aaffc3;
+}
+
+.token.c14 {
+  border-left-color: #000075;
+}
+
+.token.c15 {
+  border-left-color: #a9a9a9;
+}
+
+.nft.c0 {
+  border-left-color: #500000;
+}
+
+.nft.c1 {
+  border-left-color: #003300;
+}
+
+.nft.c2 {
+  border-left-color: #6e5e00;
+}
+
+.nft.c3 {
+  border-left-color: #000052;
+}
+
+.nft.c4 {
+  border-left-color: #610000;
+}
+
+.nft.c5 {
+  border-left-color: #00506d;
+}
+
+.nft.c6 {
+  border-left-color: #5b005e;
+}
+
+.nft.c7 {
+  border-left-color: #703e52;
+}
+
+.nft.c8 {
+  border-left-color: #00221b;
+}
+
+.nft.c9 {
+  border-left-color: #573f76;
+}
+
+.nft.c10 {
+  border-left-color: #2a0000;
+}
+
+.nft.c11 {
+  border-left-color: #767347;
+}
+
+.nft.c12 {
+  border-left-color: #280000;
+}
+
+.nft.c13 {
+  border-left-color: #1e7543;
+}
+
+.nft.c14 {
+  border-left-color: #00000a;
+}
+
+.nft.c15 {
+  border-left-color: #2f2f2f;
+}

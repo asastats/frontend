@@ -1,0 +1,28 @@
+{% load i18n %}
+<div class="col s6 m3 left-align push-m3">
+  <label>
+    <input class="with-gap" name="sort" type="radio" id="id_name" checked />
+    <span>Name</span>
+  </label><br>
+  <label>
+    <input class="with-gap" name="sort" type="radio" id="id_size" />
+    <span>Size</span>
+  </label>
+</div>
+<div class="col s6 m3 left-align push-m3">
+  <label>
+    <input class="with-gap" name="sort" type="radio" id="id_created"  />
+    <span>Created</span>
+  </label><br>
+  <label>
+    <input class="with-gap" name="sort" type="radio" id="id_modified" />
+    <span>Modified</span>
+  </label>
+</div>
+<div class="col s6 m3 pull-m6">
+  <span class="sort">Sort by:</span><br>
+  <label>
+    <input class="filled-in" type="checkbox" id="id_desc" />
+    <span>Descending</span>
+  </label>
+</div>

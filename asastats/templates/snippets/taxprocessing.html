@@ -1,0 +1,9 @@
+{% load core_extras %}
+<div class="col s12 m8 push-m2 center-align">
+    <h4>Your CSV report is being processed...</h4><br>
+    {% if bundle %}
+    <a class="waves-effect waves-mydark btn whenmoon" id="back" href="{% url 'bundle' url_value %}" title="Evaluate bundle">Back</a>
+    {% else %}
+    <a class="waves-effect waves-mydark btn whenmoon" id="back" href="{% url 'address' url_value %}" title="Evaluate address">Back</a>
+    {% endif %}
+</div>

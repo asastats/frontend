@@ -1,0 +1,60 @@
+{% load core_extras %}
+<div class="col s12 m8 push-m2 center-align">
+    <h4>Your CSV report is ready for download</h4>
+    {% if analysis_tax %}
+    {% if analysis_tax.non_eligible %}<p class="myred-text">{{ analysis_tax.non_eligible|length }} of the specified addresses {{ analysis_tax.non_eligible|length|pluralize:"is,are" }} not eligible for processing in our engine.</p>{% endif %}
+    {% if analysis_tax.locked %}<p class="myred-text">{{ analysis_tax.locked|length }} of the specified addresses {{ analysis_tax.locked|length|pluralize:"is,are" }} currently locked by another process.</p>{% endif %}
+    {% if analysis_tax.errors or analysis_tax.unprocessed %}
+       <p class="myred-text">The engine has {% if analysis_tax.errors %}thrown {{ analysis_tax.errors }} error{{ analysis_tax.errors|pluralize:"s" }}{% endif %}{% if analysis_tax.unprocessed %}{% if analysis_tax.errors %} and {% endif %}failed to process {{ analysis_tax.unprocessed }} transaction{{ analysis_tax.unprocessed|pluralize:"s" }}.{% else %}.{% endif %}</p>
+      {% endif %}
+      {% if analysis_tax.file_error %}<p class="myred-text">{{ analysis_tax.file_error|length }} of the specified addresses resulted with the file error.</p>{% endif %}
+      {% if analysis_tax.errors or analysis_tax.unprocessed or file_error %}<p class="mysuccess-text">Our team is looking into the issue(s).</p>{% endif %}
+    {% else %}
+    <p class="center-align mysuccess-text">No issues encountered during the process!<br></p>
+    {% endif %}
+    <h5>Agreement statement</h5>
+    <p>By using the CSV export functionality of our portfolio tracker, you acknowledge and accept the following terms:<br><br>
+      1) We strongly recommend that you consult with a tax advisor or other qualified professional prior to making any decisions or taking any actions based on the information provided in this report.<br><br>
+      2) ASA Stats shall not be held liable for any loss, damages, or expenses incurred as a result of using the information in this report. This includes but is not limited to losses resulting from negligence, system errors, or other unforeseen circumstances.<br><br>
+      3) In the event that the data in this report does not align with the actual state due to errors within our engine or an error in the Algorand Indexer instance ASA Stats uses to fetch data, ASA Stats shall not be responsible for any inaccuracies or the resulting consequences.<br><br>
+      By continuing to use ASA Stats CSV export functionality, you confirm that you have read, understood, and accepted these terms and conditions.</p>
+    <form method="POST" action="." id="download_form">
+      {% csrf_token %}
+      <div class="input-field col s12">
+        <div class="col s12">
+        <div class="col s12">
+          <label title="Please agree before downloading the file">
+          <input type="checkbox" name="agree" />
+          <span>I agree</span>
+          </label>
+        </div>
+        </div>
+      </div>
+      {% if form.agree.errors %}<div class="col s12"><span class="myred-text errorlist">You must agree before downloading the file!</span></div>{% endif %}
+      <div class="col s4">
+        <button class="waves-effect waves-mydark btn whenmoon" id="download" name="download" value="1" type="submit">Download</button>
+      </div>
+      <div class="col s4">
+        <button class="waves-effect waves-mydark btn whenmoon" id="refresh" name="refresh" value="1" type="submit">Refresh</button>
+      </div>
+      <div class="col s4">
+        {% if bundle %}
+        <a class="waves-effect waves-mydark btn whenmoon" id="back" href="{% url 'bundle' url_value %}" title="Evaluate bundle">Back</a>
+        {% else %}
+        <a class="waves-effect waves-mydark btn whenmoon" id="back" href="{% url 'address' url_value %}" title="Evaluate address">Back</a>
+        {% endif %}
+      </div>
+    </form>
+    <div class="col s12"><br></div>
+    <br><p>Please use our official channel on GitHub or our community channels to report any errors 
+      that you've discovered throughout your analysis, to inform us about the problems you've encountered 
+      while importing the report file(s) into the tax software, to suggest solutions to the issues 
+      you have with the report, as well as to provide general feedback.</p>
+      <div class="col s12 center-align socfooter">
+        <a class="scbtn githbtn" href="https://github.com/asastats/channel/issues/new/choose" target="_blank" rel="noopener" title="Create an issue in ASA Stats Channel on GitHub"></a>
+        <a class="scbtn twitbtn" href="https://twitter.com/asastatscom" target="_blank" rel="noopener" title="@asastatscom on X platform"></a>
+        <a class="scbtn dscrbtn" href="https://discord.com/channels/906917846754418770/1209176713485881384" target="_blank" rel="noopener" title="Add a comment in the #tax-report channel in our Discord server"></a>
+        <a class="scbtn rdtbtn" href="https://www.reddit.com/r/asastats" target="_blank" rel="noopener" title="r/asastats on Reddit"></a>
+      </div>
+</div>
+  

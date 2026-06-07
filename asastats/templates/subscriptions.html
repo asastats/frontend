@@ -1,0 +1,546 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}ASA Stats - Subscription Plans{% endblock %}
+{% block description %}ASA Stats Subscription Plans - subscribe to one of our tiers to use the ASA Stats advanced features.{% endblock %}
+{% block keywords %}asastats,Algorand,subscription plans,subscription tiers,subscribe{% endblock %}
+{% block content %}
+<h1 class="center-align">Subscription Plans</h1>
+<h5 class="center-align">Unlock More Power with ASASTATS</h5>
+<div class="row left-align">
+  <p><br>ASA Stats offers a free-tier portfolio tracker with real-time valuations — and optional paid plans for users who want more control, analytics, and integrations. Subscriptions are powered by <strong>ASASTATS tokens</strong> and managed transparently through <strong>on-chain smart contracts</strong> via Subtopia.<br>
+  <br>
+  Whether you’re managing a single wallet or operating a DeFi dashboard, there’s a plan that fits.
+  </p>
+  <h3 id="free">Always Free for Everyone</h3>
+  <div class="col s12">
+    <p>You can use ASA Stats without logging in or paying anything.<br>
+    <br>✅ Real-time valuations for any Algorand address<br>
+    ✅ View up to 5 address combined<br>
+    ✅ Consolidated portfolio view of assets across wallets, DeFi protocols, and smart contracts<br>
+    ✅ CSV Export transactions up to 5 address<br>
+    ✅ NFT collection summaries<br>
+    ❌ No API access, no advanced user widgets<br>
+    <br>
+    Try it now → <a href="https://www.asastats.com" target="_blank" rel="noopener" title="Go to the ASA Stats index page">Launch Dashboard</a>
+    <br>
+    </p>
+  </div>
+  <h3 id="tiers">Subscription Tiers</h3>
+  <div class="col s12">
+    <p>All subscription payments are made in ASASTATS (token ID: 393537671) and processed via <strong>Subtopia smart contracts</strong>. Subscriptions grant <strong>automated, on-chain permission access</strong> for features.<br>
+    <br>
+    <br>
+    </p>
+  </div>
+  <h3 id="how-it-works">How Subscriptions Work (Under the Hood)</h3>
+  <div class="col s12">
+    <p>ASA Stats uses:<br>
+    <br>
+    &#8226; <strong>Subtopia smart contracts</strong> (per tier) for subscription validation<br>
+    &#8226; The <strong>Permission dApp</strong> to map wallets to access levels<br>
+    &#8226; Automatic <strong>refresh of your tier</strong> based on your wallet state<br>
+    <br>
+    All verification is on-chain and permissionless.
+    <br>
+    <br>
+    </p>
+  </div>
+  <h3 id="howto">How to Subscribe</h3>
+  <div class="col s12">
+    <p>
+    1. Hold enough ASASTATS in your wallet.<br>
+    2. Select your tier from the Subscription Model below and confirm payment via WalletConnect<br>
+    3. Your permission level updates automatically<br>
+    <br>
+    You can view or manage your tier at any time through the dashboard.
+    <br>
+    <br>
+    </p>
+  </div>
+  <h3 id="models">Subscription Models</h3>
+  <div id="user" class="col s12">
+    <div class="col m6 l3">
+      <br>
+      <div class="card medium">
+        <div class="card-content center-align">
+          <h5>Intro</h5>
+          <br>
+          <p>Basic subscription tier that allows only a very reduced set of additional functionalities<br>
+          </p>
+        </div>
+        <div class="card-action center-align">
+          <strong>2500 ASASTATS / Month</strong><br>
+          <br>
+          <a class="waves-effect waves-mydark btn whenmoon" href="https://subtopia.io/subscription/2685642641" target="_blank" rel="noopener" title="Subscribe to Intro tier on Subtopia.io">SUBSCRIBE</a>
+        </div>
+      </div>
+      <div class="checks">
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Selling Price Optimisation</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>NFT Pricing Model</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>User Bundles: 3</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundled Addresses: up to 8</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundle Naming</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundle URL: Private</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Bundles sorting/filtering</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Website Theme</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>User Widgets</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Historic widget</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>API Access</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>API Endpoints</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Publish ASA Stats User Widgets</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Custom Domain Name</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Dedicated Kubernetes Cluster</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Order Development of a user widget</span>
+          </label>
+        </p>
+      </div>
+    </div>
+    <div class="col m6 l3">
+      <br>
+      <div class="card medium">
+        <div class="card-content center-align">
+          <h5>Asastatser</h5>
+          <br>
+          <p>Tier for early adopters and Algorand Enthusiasts<br>
+          </p>
+        </div>
+        <div class="card-action center-align">
+          <strong>18,000 ASASTATS / Month</strong><br>
+          <br>
+          <a class="waves-effect waves-mydark btn whenmoon" href="https://subtopia.io/subscription/2685654686" target="_blank" rel="noopener" title="Subscribe to Asastatser tier on Subtopia.io">SUBSCRIBE</a>
+        </div>
+      </div>
+      <div class="checks">
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Selling Price Optimisation</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>NFT Pricing Model</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>User Bundles: 8</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundled Addresses: up to 15</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundle Naming</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundle URL: Public</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Website Theme: Initial Set</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>User Widgets: Initial Set</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Historic widget: single address</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>API Access: Rate-Limited</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>API Endpoints: Restricted</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Bundles sorting/filtering</span>
+          </label>
+        </p>        
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Publish ASA Stats User Widgets</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Custom Domain Name</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Dedicated Kubernetes Cluster</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Order Development of a user widget</span>
+          </label>
+        </p>
+      </div>
+    </div>
+    <div class="col m6 l3">
+      <br>
+      <div class="card medium">
+        <div class="card-content center-align">
+          <h5>Professional</h5>
+          <br>
+          <p>Ideal for trading professionals, bringing advanced user widgets suitable for ASA trading in real-time<br>
+          </p>
+        </div>
+        <div class="card-action center-align">
+          <strong>38,000 ASASTATS / Month</strong><br>
+          <br>
+          <a class="waves-effect waves-mydark btn whenmoon" href="https://subtopia.io/subscription/2685656754" target="_blank" rel="noopener" title="Subscribe to Professional tier on Subtopia.io">SUBSCRIBE</a>
+        </div>
+      </div>
+      <div class="checks">
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Selling Price Optimisation</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>NFT Pricing Model</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>User Bundles: 18</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundled Addresses: up to 35</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundle Naming</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundle URL: Public</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundles sorting/filtering</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Website Theme: Distinctive</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>User Widgets: Specialized</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Historic widget: up to 5 addresses in bundle</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>API Access: Rate-Limited</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>API Endpoints: Comprehensive</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Publish ASA Stats User Widgets*</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Custom Domain Name</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Dedicated Kubernetes Cluster</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" />
+            <span>Order Development of a user widget</span>
+          </label>
+        </p>
+        * Conditional
+      </div>
+    </div>
+    <div class="col m6 l3">
+      <br>
+      <div class="card medium">
+        <div class="card-content center-align">
+          <h5>Cluster</h5>
+          <br>
+          <p>Ideal for developers and IT companies. Leverage ASA Stats API & resources to build complete software solutions<br>
+          </p>
+        </div>
+        <div class="card-action center-align">
+          <strong>500,000 ASASTATS / Month</strong><br>
+          <br>
+          <a class="waves-effect waves-mydark btn whenmoon" href="https://subtopia.io/subscription/2685660411" target="_blank" rel="noopener" title="Subscribe to Cluster tier on Subtopia.io">SUBSCRIBE</a>
+        </div>
+      </div>
+      <div class="checks">
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Selling Price Optimisation</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>NFT Pricing Model</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>User Bundles: 38</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundled Addresses: up to 100</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundle Naming</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundle URL: Public</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Bundles sorting/filtering</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked"  />
+            <span>Website Theme: Distinctive</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked"  />
+            <span>User Widgets: Specialized</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Historic widget: up to 10 addresses in bundle</span>
+          </label>
+        </p>        
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked"  />
+            <span>API Access: Unlimited</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>API Endpoints: Comprehensive</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Publish ASA Stats User Widgets*</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Custom Domain Name</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Dedicated Kubernetes Cluster</span>
+          </label>
+        </p>
+        <p>
+          <label>
+            <input type="checkbox" class="filled-in" checked="checked" />
+            <span>Order Development of a user widget</span>
+          </label>
+        </p>
+        * Conditional
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row center-align">
+  <div id="free" class="col s12 center-align">
+    <div class="col m6 l3 push-m3 push-l4">
+      <br>
+      <div class="card medium">
+        <div class="card-content center-align">
+          <h5>Free</h5>
+          <br>
+          <p>Basic ASA Stats functionalities will always be free to use for everyone.<br>
+          </p>
+        </div>
+        <div class="card-action center-align">
+          <strong>0 ASASTATS / Month</strong><br>
+          <br>          
+          <a class="waves-effect waves-mydark btn whenmoon" href="/" target="_blank" rel="noopener" title="Start using ASA Stast">START</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block otherfooter %}
+<script src="{% static 'js/subscriptions.min001.js' %}"></script>
+<script type="application/ld+json">{% include "jsonld/subscriptions.jsonld" %}</script>
+{% endblock %}

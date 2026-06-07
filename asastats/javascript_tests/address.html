@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ASA Stats</title>
+    <meta name="description" content="ASA Stats shows the current value of all assets located in any Algorand account.">
+    <meta name="keywords" content="asastats,Algorand,ASA,token,coin,evaluate,calculate,value,price,NFT,balance,account,address,amount">
+    <script>
+      const mode = localStorage.getItem('mode') || 'light';
+      document.body.className = mode;
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald|Nunito">
+    <link href="/static/css/materialize.css" type="text/css" rel="stylesheet" media="screen">
+    <link href="/static/css/style.css" type="text/css" rel="stylesheet" media="screen">
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#ababab">
+    <meta name="msapplication-TileColor" content="#ababab">
+    <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+
+<header>
+  <nav class="z-depth-0">
+      <div class="nav-wrapper container">
+          <a href="/" class="brand-logo"><img id="brand" src="/static/asastats.png" alt="ASA Stats logo"></a>
+          <a href="#" data-target="slide-out" class="sidenav-trigger button-collapse"><img src="/static/img/menu.png" alt="Menu"></a>
+          <ul class="right hide-on-med-and-down" id="nav-mobile">
+            <li><a href="/about/">About</a></li>
+            <li><a href="/tokenomics/">Tokenomics</a></li>
+          </ul>
+          <ul class="sidenav" id="slide-out">
+            <li><a href="/about/">About</a></li>
+            <li><a href="/tokenomics/">Tokenomics</a></li>
+            <li><a href="/faq/">Faq</a></li>
+            <li><a href="/disclaimer/">Disclaimer</a></li>
+          </ul>
+      </div>
+  </nav>
+</header>
+
+<main>
+  <div class="container">
+    
+<script id="asachart" type="application/json">{"labels": ["OPUL", "GEMS", "BOARD", "SMILE", "FRKL", "Tacos", "HDL", "ABSKT", "SWED", "AGNR", "KTNC", "others"], "datasets": [{"label": "ASA data", "data": ["36.62", "22.29", "15.98", "9.97", "4.18", "2.39", "2.38", "2.02", "1.63", "1.28", "0.53", "0.74"], "backgroundColor": ["#e6194B", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#42d4f4", "#f032e6", "#fabed4", "#469990", "#dcbeff", "#9A6324", "#ababab"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="nftchart" type="application/json">{"labels": ["NFT (in December)"], "datasets": [{"label": "NFT data", "data": ["100.00"], "backgroundColor": ["#ababab"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="ratiochart" type="application/json">{"labels": ["ALGO", "ASA", "NFT"], "datasets": [{"label": "ALGO/ASA ratio data", "data": ["91.62", "8.38", "0.00"], "backgroundColor": ["#005a34", "#575757", "#ababab"], "borderWidth": 1, "hoverOffset": 0}]}</script>
+<h1 class="center-align tooltipped" data-tooltip='2,631.34 USD'>1,559.42 ALGO</h1>
+<h4 class="center-align flow-text truncate">LXJ3Q6RZ2TJ6VCJDFMSM4ZVNYYYE4KVSL3N2TYR23PLNCJCIXBM3NYTBYE</h4>
+<div class="row">
+  <div class="col s12">
+    <div class="col s12 m6 l4">
+      <canvas id="id-ratiochart" width="500" height="400"></canvas>
+    </div>
+    <div class="col s12 m6 l4">
+      <canvas id="id-asachart" width="500" height="400"></canvas>
+    </div>
+    <div class="col s12 m6 l4">
+      <canvas id="id-nftchart" width="500" height="400"></canvas>
+    </div>
+  </div>
+  <div class="col s12 right-align">
+    <span class="balance">Balance: 1,428.76 ALGO</span>
+  </div>
+  <div class="col s12">
+    <ul class="collapsible">
+      
+      
+      <li>
+        <div class="collapsible-header token c0">
+          
+          <span>&nbsp;15.2730&nbsp;&nbsp;<span class="unit">OPUL</span></span>
+          <div class="icondiv"><img src="/static/icons/287867876.png" alt="Opulous logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;47.84 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">Opulous</span><br>
+              <a href="https://allo.info/asset/287867876" target="_blank" title="Show in Allo">287867876</a> <br>
+              <span>Unit name: OPUL</span> <br>
+              <span>Total supply: 500,000,000</span> <br>
+              <span>Decimals: 10</span> <br>
+              <span>URL: </span><a href="https://opulous.org/" target="_blank" title="Official URL">https://opulous.org/</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>47.84 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=287867876&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>3.13263527 OPUL/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c1">
+          
+          <span>&nbsp;50.0760&nbsp;&nbsp;<span class="unit">GEMS</span></span>
+          <div class="icondiv"><img src="/static/icons/230946361.png" alt="AlgoGems logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;29.12 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">AlgoGems</span><br>
+              <a href="https://allo.info/asset/230946361" target="_blank" title="Show in Allo">230946361</a> <br>
+              <span>Unit name: GEMS</span> <br>
+              <span>Total supply: 10,000,000</span> <br>
+              <span>Decimals: 6</span> <br>
+              <span>URL: </span><a href="https://www.algogems.io" target="_blank" title="Official URL">https://www.algogems.io</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>5.86 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=230946361&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.58152543 GEMS/ALGO</span> <br>
+                  <br>
+                
+              
+                
+                  
+                  <span>23.26 ALGO</span> <br>
+                  <a href="https://app.yieldly.finance/pools?id=419301793" target="_blank" title="Go to Yieldly staking">Yieldly GEMS-GEMS</a> <br>
+                  <span>40 GEMS</span> <br>
+                  <br>
+                  
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c2">
+          
+          <span>&nbsp;26,979.0470&nbsp;&nbsp;<span class="unit">BOARD</span></span>
+          <div class="icondiv"><img src="/static/icons/342889824.png" alt="Board logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;20.88 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">Board</span><br>
+              <a href="https://allo.info/asset/342889824" target="_blank" title="Show in Allo">342889824</a> <br>
+              <span>Unit name: BOARD</span> <br>
+              <span>Total supply: 10,000,000,000</span> <br>
+              <span>Decimals: 6</span> <br>
+              <span>URL: </span><a href="https://boardofficial.com" target="_blank" title="Official URL">https://boardofficial.com</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  
+                  <span>10.44 ALGO</span> <br>
+                  
+                  <a href="https://app.tinyman.org/#/pool/342889824/0" target="_blank" title="Go to Tinyman pool">Tinyman pool BOARD-ALGO</a> <br>
+                  
+                  <span>26,979.05 BOARD</span> <br>
+                  <br>
+                  
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c3">
+          
+          <span>&nbsp;2,515.5452&nbsp;&nbsp;<span class="unit">SMILE</span></span>
+          <div class="icondiv"><img src="/static/icons/300208676.png" alt="Smile Coin logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;13.03 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">Smile Coin</span><br>
+              <a href="https://allo.info/asset/300208676" target="_blank" title="Show in Allo">300208676</a> <br>
+              <span>Unit name: SMILE</span> <br>
+              <span>Total supply: 10,000,000,000</span> <br>
+              <span>Decimals: 6</span> <br>
+              <span>URL: </span><a href="https://smilecoin.us" target="_blank" title="Official URL">https://smilecoin.us</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  
+                  <span>13.03 ALGO</span> <br>
+                  <a href="https://app.yieldly.finance/pools?id=373819681" target="_blank" title="Go to Yieldly staking">Yieldly SMILE-SMILE</a> <br>
+                  <span>2,515.55 SMILE</span> <br>
+                  <br>
+                  
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c4">
+          
+          <span>&nbsp;5,140&nbsp;&nbsp;<span class="unit">FRKL</span></span>
+          <div class="icondiv"><img src="/static/icons/241759159.png" alt="Freckle logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;5.46 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">Freckle</span><br>
+              <a href="https://allo.info/asset/241759159" target="_blank" title="Show in Allo">241759159</a> <br>
+              <span>Unit name: FRKL</span> <br>
+              <span>Total supply: 1,000,000,000,000,000</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://freckle.sbhelper.com" target="_blank" title="Official URL">https://freckle.sbhelper.com</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>5.46 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=241759159&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.00106248 FRKL/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c5">
+          
+          <span>&nbsp;117,000&nbsp;&nbsp;<span class="unit">Tacos</span></span>
+          <div class="icondiv"><img src="/static/icons/329110405.png" alt="TacoCoin logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;3.12 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">TacoCoin</span><br>
+              <a href="https://allo.info/asset/329110405" target="_blank" title="Show in Allo">329110405</a> <br>
+              <span>Unit name: Tacos</span> <br>
+              <span>Total supply: 10,000,000,000</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="Dorastacos.com" target="_blank" title="Official URL">Dorastacos.com</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>3.12 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=329110405&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.00002664 Tacos/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c6">
+          
+          <span>&nbsp;20&nbsp;&nbsp;<span class="unit">HDL</span></span>
+          <div class="icondiv"><img src="/static/icons/137594422.png" alt="HEADLINE logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;3.11 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">HEADLINE</span><br>
+              <a href="https://allo.info/asset/137594422" target="_blank" title="Show in Allo">137594422</a> <br>
+              <span>Unit name: HDL</span> <br>
+              <span>Total supply: 25,000,000</span> <br>
+              <span>Decimals: 6</span> <br>
+              <span>URL: </span><a href="headline.dev" target="_blank" title="Official URL">headline.dev</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>3.11 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=137594422&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.15547515 HDL/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c7">
+          
+          <span>&nbsp;300&nbsp;&nbsp;<span class="unit">ABSKT</span></span>
+          <div class="icondiv"><img src="/static/icons/empty.png" alt="AlgoBasket logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;2.64 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">AlgoBasket</span><br>
+              <a href="https://allo.info/asset/353409462" target="_blank" title="Show in Allo">353409462</a> <br>
+              <span>Unit name: ABSKT</span> <br>
+              <span>Total supply: 10,000,000,000</span> <br>
+              <span>Decimals: 4</span> <br>
+              <span>URL: </span><a href="https://AlgoBasket.io" target="_blank" title="Official URL">https://AlgoBasket.io</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>2.64 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=353409462&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.00880309 ABSKT/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c8">
+          
+          <span>&nbsp;66.5283&nbsp;&nbsp;<span class="unit">SWED</span></span>
+          <div class="icondiv"><img src="/static/icons/empty.png" alt="69,420 Coin logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;2.14 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">69,420 Coin</span><br>
+              <a href="https://allo.info/asset/280627218" target="_blank" title="Show in Allo">280627218</a> <br>
+              <span>Unit name: SWED</span> <br>
+              <span>Total supply: 69,420</span> <br>
+              <span>Decimals: 6</span> <br>
+              
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>2.14 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=280627218&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.03209546 SWED/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c9">
+          
+          <span>&nbsp;700&nbsp;&nbsp;<span class="unit">AGNR</span></span>
+          <div class="icondiv"><img src="/static/icons/empty.png" alt="Algoneer logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;1.67 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">Algoneer</span><br>
+              <a href="https://allo.info/asset/305992851" target="_blank" title="Show in Allo">305992851</a> <br>
+              <span>Unit name: AGNR</span> <br>
+              <span>Total supply: 10,000,000</span> <br>
+              <span>Decimals: 3</span> <br>
+              <span>URL: </span><a href="https://www.algoneer.net/" target="_blank" title="Official URL">https://www.algoneer.net/</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>1.67 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=305992851&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.00238248 AGNR/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token c10">
+          
+          <span>&nbsp;10,000&nbsp;&nbsp;<span class="unit">KTNC</span></span>
+          <div class="icondiv"><img src="/static/icons/empty.png" alt="KittenCoin logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;0.69 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">KittenCoin</span><br>
+              <a href="https://allo.info/asset/361671874" target="_blank" title="Show in Allo">361671874</a> <br>
+              <span>Unit name: KTNC</span> <br>
+              <span>Total supply: 1,000,000,000</span> <br>
+              <span>Decimals: 5</span> <br>
+              <span>URL: </span><a href="https://robertmm25.wixsite.com/website" target="_blank" title="Official URL">https://robertmm25.wixsite.com/website</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>0.69 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=361671874&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.00006867 KTNC/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token">
+          
+          <span>&nbsp;1&nbsp;&nbsp;<span class="unit">Eure🍋</span></span>
+          <div class="icondiv"><img src="/static/icons/empty.png" alt="G^1 Eureka Lemon 🍋 logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;0.45 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">G^1 Eureka Lemon 🍋</span><br>
+              <a href="https://allo.info/asset/281003863" target="_blank" title="Show in Allo">281003863</a> <br>
+              <span>Unit name: Eure🍋</span> <br>
+              <span>Total supply: 9,007,199,254,740,991</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://video.wixstatic.com/video/f3a429_457fb01a10954f40a71dfee71bb49c32/720p/mp4/file.mp4" target="_blank" title="Official URL">https://video.wixstatic.com/video/f3a429_457fb01a10954f40a71dfee71bb49c32/720p/mp4/file.mp4</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>0.45 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=281003863&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.44683700 Eure🍋/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token">
+          
+          <span>&nbsp;34&nbsp;&nbsp;<span class="unit">Coup🎫</span></span>
+          <div class="icondiv"><img src="/static/icons/281003266.png" alt="NFT Grocery Store Coupon 🎫 logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;0.38 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">NFT Grocery Store Coupon 🎫</span><br>
+              <a href="https://allo.info/asset/281003266" target="_blank" title="Show in Allo">281003266</a> <br>
+              <span>Unit name: Coup🎫</span> <br>
+              <span>Total supply: 9,007,199,254,740,991</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://static.wixstatic.com/media/f3a429_1913db8389cf4407bd04fd077c072869~mv2.png" target="_blank" title="Official URL">https://static.wixstatic.com/media/f3a429_1913db8389cf4407bd04fd077c072869~mv2.png</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>0.38 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=281003266&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.01104697 Coup🎫/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      <li>
+        <div class="collapsible-header token">
+          
+          <span>&nbsp;5.3672&nbsp;&nbsp;<span class="unit">ARCC</span></span>
+          <div class="icondiv"><img src="/static/icons/163650.png" alt="Asia Reserve Currency Coin logo" class="circle asaicon"></div>
+          
+          <div class="right">&nbsp;0.15 ALGO</div>
+        </div>
+        <div class="collapsible-body">
+          <ul class="collection">
+            <li class="collection-item">
+              <div class="col s6 left-align">
+              
+              <span class="title">Asia Reserve Currency Coin</span><br>
+              <a href="https://allo.info/asset/163650" target="_blank" title="Show in Allo">163650</a> <br>
+              <span>Unit name: ARCC</span> <br>
+              <span>Total supply: 88,616,203,378</span> <br>
+              <span>Decimals: 6</span> <br>
+              <span>URL: </span><a href="https://arcc.io" target="_blank" title="Official URL">https://arcc.io</a>
+              </div>
+              <div class="col s6 right-align">
+              
+                
+                  <span>0.15 ALGO</span> <br>
+                  <a href="https://app.tinyman.org/#/swap?asset_in=163650&asset_out=0" target="_blank" title="Go to Tinyman swap">Tinyman swap</a> <br>
+                  <span>0.02788792 ARCC/ALGO</span> <br>
+                  <br>
+                
+              
+              
+              </div>
+            </li>
+          </ul>
+        </div>
+      </li>
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+    </ul>
+  </div>
+  
+  <div class="col s12">
+    <ul class="collapsible">
+      <li>
+        <div class="collapsible-header">Not evaluated</div>
+        <div class="collapsible-body">
+          <ul class="collection">
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="Lofty 10917 St Mark Ave logo" class="circle asaicon">
+              <span class="title">Lofty 10917 St Mark Ave</span> <br>
+              <a href="https://allo.info/asset/411484181" target="_blank" title="Show in Allo">411484181</a> <br>
+              <span>Amount: 2</span> <br>
+              <span>Unit name: LFTY0076</span> <br>
+              <span>Total supply: 2,748</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://asset.lofty.ai/LFTY0076" target="_blank" title="Official URL">https://asset.lofty.ai/LFTY0076</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="Lofty 3878 Windermere Rd logo" class="circle asaicon">
+              <span class="title">Lofty 3878 Windermere Rd</span> <br>
+              <a href="https://allo.info/asset/393401013" target="_blank" title="Show in Allo">393401013</a> <br>
+              <span>Amount: 1</span> <br>
+              <span>Unit name: LFTY0046</span> <br>
+              <span>Total supply: 2,792</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://asset.lofty.ai/LFTY0046" target="_blank" title="Official URL">https://asset.lofty.ai/LFTY0046</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="Official AKITA NFT logo" class="circle asaicon">
+              <span class="title">Official AKITA NFT</span> <br>
+              <a href="https://allo.info/asset/388950186" target="_blank" title="Show in Allo">388950186</a> <br>
+              <span>Amount: 2</span> <br>
+              <span>Unit name: AKITAnft</span> <br>
+              <span>Total supply: 10,000</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://bit.ly/AKITAnft" target="_blank" title="Official URL">https://bit.ly/AKITAnft</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="Algonautz 031 - Voidnautz logo" class="circle asaicon">
+              <span class="title">Algonautz 031 - Voidnautz</span> <br>
+              <a href="https://allo.info/asset/365265468" target="_blank" title="Show in Allo">365265468</a> <br>
+              <span>Amount: 1</span> <br>
+              <span>Unit name: AZ031</span> <br>
+              <span>Total supply: 3</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://ipfs.io/ipfs/QmafQ7JQXdWP24L48ePztNEXTz4PvqripRHmtgmSUxDXmy" target="_blank" title="Official URL">https://ipfs.io/ipfs/QmafQ7JQXdWP24L48ePztNEXTz4PvqripRHmtgmSUxDXmy</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="TinymanPool1.1 BOARD-ALGO logo" class="circle asaicon">
+              <span class="title">TinymanPool1.1 BOARD-ALGO</span> <br>
+              <a href="https://allo.info/asset/359414344" target="_blank" title="Show in Allo">359414344</a> <br>
+              <span>Amount: 399.1071</span> <br>
+              <span>Unit name: TM1POOL</span> <br>
+              <span>Total supply: 18,446,744,073,709</span> <br>
+              <span>Decimals: 6</span> <br>
+              <span>URL: </span><a href="https://tinyman.org" target="_blank" title="Official URL">https://tinyman.org</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="ALGO Governors - Q4 2021 logo" class="circle asaicon">
+              <span class="title">ALGO Governors - Q4 2021</span> <br>
+              <a href="https://allo.info/asset/354246661" target="_blank" title="Show in Allo">354246661</a> <br>
+              <span>Amount: 1</span> <br>
+              <span>Unit name: AlGvQ421</span> <br>
+              <span>Total supply: 100</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://ipfs.io/ipfs/bafybeidu2ofzfts4hl6m3r2fmvdpu7qbvzbvnwp2izzzeewqv4itnmkoti" target="_blank" title="Official URL">https://ipfs.io/ipfs/bafybeidu2ofzfts4hl6m3r2fmvdpu7qbvzbvnwp2izzzeewqv4itnmkoti</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="ALGO Governors  logo" class="circle asaicon">
+              <span class="title">ALGO Governors </span> <br>
+              <a href="https://allo.info/asset/353048393" target="_blank" title="Show in Allo">353048393</a> <br>
+              <span>Amount: 1</span> <br>
+              <span>Unit name: AlGuv</span> <br>
+              <span>Total supply: 2,500</span> <br>
+              <span>Decimals: 0</span> <br>
+              
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="Curator Coin logo" class="circle asaicon">
+              <span class="title">Curator Coin</span> <br>
+              <a href="https://allo.info/asset/319473667" target="_blank" title="Show in Allo">319473667</a> <br>
+              <span>Amount: 20,000</span> <br>
+              <span>Unit name: CURATOR</span> <br>
+              <span>Total supply: 1,000,000,000</span> <br>
+              <span>Decimals: 5</span> <br>
+              <span>URL: </span><a href="https://www.algocurator.com/" target="_blank" title="Official URL">https://www.algocurator.com/</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="Algofest21 logo" class="circle asaicon">
+              <span class="title">Algofest21</span> <br>
+              <a href="https://allo.info/asset/317434432" target="_blank" title="Show in Allo">317434432</a> <br>
+              <span>Amount: 1</span> <br>
+              <span>Unit name: fest</span> <br>
+              <span>Total supply: 620</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://ipfs.io/ipfs/bafkreibb2jll4vxzkgaoh7nize5qqr5gm5ygju5lrdc665rlhr2ovmyyue" target="_blank" title="Official URL">https://ipfs.io/ipfs/bafkreibb2jll4vxzkgaoh7nize5qqr5gm5ygju5lrdc665rlhr2ovmyyue</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/empty.png" alt="G^2 Sweet Watermelon 🍉 logo" class="circle asaicon">
+              <span class="title">G^2 Sweet Watermelon 🍉</span> <br>
+              <a href="https://allo.info/asset/281004528" target="_blank" title="Show in Allo">281004528</a> <br>
+              <span>Amount: 1</span> <br>
+              <span>Unit name: Swee🍉</span> <br>
+              <span>Total supply: 9,007,199,254,740,991</span> <br>
+              <span>Decimals: 0</span> <br>
+              <span>URL: </span><a href="https://video.wixstatic.com/video/f3a429_80fbe7d7b01d42cdad0bdaa295116257/720p/mp4/file.mp4" target="_blank" title="Official URL">https://video.wixstatic.com/video/f3a429_80fbe7d7b01d42cdad0bdaa295116257/720p/mp4/file.mp4</a>
+              
+            </li>
+          
+          
+          
+            <li class="collection-item avatar">
+              
+              <img src="/static/icons/226701642.png" alt="Yieldly logo" class="circle asaicon">
+              <span class="title">Yieldly</span> <br>
+              <a href="https://allo.info/asset/226701642" target="_blank" title="Show in Allo">226701642</a> <br>
+              <span>Amount: 0</span> <br>
+              <span>Unit name: YLDY</span> <br>
+              <span>Total supply: 10,000,000,000</span> <br>
+              <span>Decimals: 6</span> <br>
+              
+              
+            </li>
+          
+          
+          </ul>
+        </div>
+      </li>
+    </ul>
+  </div>
+  
+</div>
+
+  </div>
+</main>
+<footer class="page-footer">
+  <div class="col s12 center-align socfooter">
+      <a class="scbtn dark-toggle brightbtn" href="#" title="Dark/bright side of the Moon"></a>
+      <a class="scbtn twitbtn" href="https://twitter.com/asastatscom" target="_blank" rel="noopener" title="@asastatscom on X platform"></a>
+      <a class="scbtn dscrbtn" href="https://discord.gg/Vjx7w7pAC7" target="_blank" rel="noopener" title="Join our Discord server"></a>
+      <a class="scbtn rdtbtn" href="https://www.reddit.com/r/asastats" target="_blank" rel="noopener" title="r/asastats on Reddit"></a>
+      <a class="scbtn githbtn" href="https://github.com/asastats" target="_blank" rel="noopener" title="ASA Stats on GitHub"></a>
+  </div>
+  <div class="footer-copyright">
+      <div class="container center-align">
+        <a href="/about/">About</a>
+        &emsp;&emsp;<a href="/tokenomics/">Tokenomics</a>
+        &emsp;&emsp;<a href="/faq/">FAQ</a>
+        &emsp;&emsp;<a href="/disclaimer/">Disclaimer</a>
+        &emsp;&emsp;<span class="txt mydark-text">&copy; 2021 ASA Stats</span>
+      </div>
+  </div>
+</footer>
+
+
+<script src="../static/js/jquery-2.2.4.min.js"></script>
+<script src="../static/js/materialize.min.js"></script>
+<script src="../static/js/site.js"></script>
+
+
+<script src="../static/js/chart.min.js"></script>
+<script src="../static/js/address.js"></script>
+
+</body>
+</html>

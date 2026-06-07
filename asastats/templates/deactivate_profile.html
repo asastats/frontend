@@ -1,0 +1,34 @@
+{% extends 'base_home.html' %}
+{% load i18n %}
+{% load core_extras %}
+{% block page_header %}Deactivate account{% endblock %}
+
+{% block middle_section %}
+<p>{% blocktrans %}
+    To deactivate your account you must enter the characters from the image. If you can't recognize provided characters try another combination by refreshing the page.
+{% endblocktrans %}</p>
+<form id="deactivate_profile" method="POST" action=".">
+    <div class="row center-align">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="input-field col s4 offset-s4">
+                {% if field.errors %}<span class="myred-text">{{ field.errors|escape }}</span>{% endif %}
+                {{ field }}
+            </div>
+        {% endfor %}
+    </div>
+    <div class="row center-align col s12">
+        <p>{% blocktrans %}After you submit this form your account will be deactivated and scheduled for deleting.{% endblocktrans %}</p>
+    </div>
+    <div class="row center-align col s12">
+        <button class="primaryAction waves-effect waves-mydark myred btn whenmoon" name="action" type="submit">Deactivate<i class="material-icons right" aria-hidden="true">{{ 'deactivate'|get_styling:"icon" }}</i></button>
+    </div>
+    <div class="divider col s12 m8 offset-m2"></div>
+    <div class="row center-align col s12">
+        <br>
+        <a class="waves-effect btn-flat" id="id_back" role="button" href="{% url 'profile' %}">Back<i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i></a>
+    </div>
+</form>
+{% endblock %}
+
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Deactivate{% endblock %}

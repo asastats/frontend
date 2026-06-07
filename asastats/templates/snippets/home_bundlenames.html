@@ -1,0 +1,30 @@
+{% load core_extras %} {% for bundlename in collection %}
+<div
+  class="col s6 m3 cardiv"
+  data-name="{{ bundlename.name }}"
+  data-addresses="{{ bundlename.addresses }}"
+  data-created="{{ bundlename.str_created }}"
+  data-modified="{{ bundlename.str_modified }}"
+  data-size="{{ bundlename.size }}"
+>
+  <h5 class="center-align">
+    <a href="{% url 'bundle_name' bundlename.name %}" target="_blank" title="Evaluate bundle">{{ bundlename.name }}</a>
+  </h5>
+  {% if bundlename.can_access_historic_widget %}
+  <div class="center-align">
+    <a href="{% url 'historic' bundlename.bundle %}" target="_blank" title="Process and show bundle's historic data">Historic data</a>
+  </div>
+  {% endif %}
+  <a href="{% url 'bundlename_edit' bundlename.name %}">
+    <div class="card hoverable small" title="{{ bundlename.description }}">
+      <div class="card-content mydark-text home">
+        {% if bundlename.public %}<i class="material-icons left" aria-hidden="true">{{ 'public'|get_styling:"icon" }}</i>{% endif %}
+        <span class="badge z-depth-1">{{ bundlename.size }}</span>
+        <p class="bundlename">
+          {{ bundlename.addresses|short_addresses }}
+        </p>
+      </div>
+    </div>
+  </a>
+</div>
+{% endfor %}

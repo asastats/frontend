@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /home/
+Disallow: /profile/
+Allow: /accounts/signup/
+Allow: /accounts/login/
+Allow: /accounts/password/reset/
+Allow: /api/v2/schema/
+Sitemap: https://www.asastats.com/sitemap.xml

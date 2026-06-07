@@ -1,0 +1,71 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} One NFT row inside an open collection accordion.
+
+   Required context:
+     row   one item from collection.nfts (value, nft, amount, price)
+{% endcomment %}
+{% with nft=row.nft amount=row.amount price=row.price %}
+<li id="{{ nft.id }}" class="collection-item fitem">
+  <div class="col s12">
+    <div class="col col s6 l3 left-align push-l5">
+      {% if nft.unit %}<span>{{ nft.unit }}</span>{% endif %}&nbsp;<span>{{ amount }}/{{ nft.total }}</span> <br />
+      <span class="title">{{ nft.name }}</span><br />
+      <a href="https://allo.info/asset/{{ nft.id }}" target="_blank" title="Show in Allo">{{ nft.id }}</a>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span> <br />
+      {% if nft.title %}<span>Title: {{ nft.title }}</span> <br />{% endif %}
+      {% if nft.rarity %}<span>Rarity: {{ nft.rarity }}</span> <br />{% endif %}
+    </div>
+    <div class="col s6 l4 right-align push-l5">
+      <small><sub>BETA</sub></small>&nbsp;<span>Estimated value: </span><span class="val" data-val="{{ price }}">&nbsp;{{ price|floatformat:'2g' }} ALGO</span><br />
+      <br />
+      {% if nft.listings %}
+        {% for ls in nft.listings %}
+          <span>{% if 'AB2' in ls.market.name %}Escrowed by {% else %}Listed at {% endif %}<a href="{{ ls.link }}" target="_blank" title="{{ ls.market.name }} link to NFT">{{ ls.market.name }}</a>: </span>
+          <span class="z-depth-2">&nbsp;<span class="val" data-val="{{ ls.price }}">{{ ls.price|floatformat:'2g' }} ALGO</span></span><br />
+        {% endfor %}
+        <br />
+      {% endif %}
+      {% if nft.last_purchase %}
+        <span>Last purchase: </span> <span class="val" data-val="{{ nft.last_purchase.price }}">&nbsp;{{ nft.last_purchase.price|floatformat:'2g' }} ALGO</span> <br /><span class="epoch" data-epoch="{{ nft.last_purchase.epoch }}"></span><a href="{{ nft.last_purchase.link }}" target="_blank" title="Show purchase in Allo">{{ nft.last_purchase.market.name }}</a><br />
+      {% endif %}
+      {% if nft.max_purchase and nft.max_purchase.price > nft.last_purchase.price %}
+        <span>Max purchase: </span> <span class="val" data-val="{{ nft.max_purchase.price }}">&nbsp;{{ nft.max_purchase.price|floatformat:'2g' }} ALGO</span> <br /><span class="epoch" data-epoch="{{ nft.max_purchase.epoch }}"></span><a href="{{ nft.max_purchase.link }}" target="_blank" title="Show purchase in Allo">{{ nft.max_purchase.market.name }}</a><br />
+      {% endif %}
+      {% if nft.floor %}
+        {% with floor=nft.floor.0 %}
+        <span>Floor price: </span> <span class="val" data-val="{{ floor.price }}">&nbsp;{{ floor.price|floatformat:'2g' }} ALGO</span> <br /><a href="{{ floor.link }}" target="_blank" title="{{ floor.market.name }} link to NFT">{{ floor.market.name }}</a><br />
+        {% endwith %}
+      {% endif %}
+    </div>
+    <div class="col s8 offset-s2 l5 pull-l7 center-align">
+      {% with primary_url=nft.urls.0 secondary_url=nft.urls.1 %}
+      <a href="{% if primary_url.typ == 'Vault' or primary_url.typ == 'Locked' %}{{ secondary_url.url }}{% else %}{{ primary_url.url }}{% endif %}" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="{% static 'nft.png' %}" data-src="{% static nft.image %}" alt="{{ nft.name }} link" class="responsive-img hoverable nft" /></a>
+      {% endwith %}
+    </div>
+    {% if nft.traits %}
+      <div class="col s12 l7 left-align">
+        <br />
+        {% for tr in nft.traits %}
+          <div class="col s6 left-align truncate">
+            <span><strong>{{ tr.name }}</strong></span>:&nbsp;<span>{{ tr.value }}</span><br />
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% for url in nft.urls %}
+      <div class="col s12 l7 left-align">
+        <div class="col s12 left-align">
+          <span class="truncate">{{ url.typ }}: <a href="{% if not url.url|slice:':4' in 'http,ipfs' %}https://{% endif %}{{ url.url }}" target="_blank" title="Visit additional NFT's URL">{{ url.url }}</a></span>
+        </div>
+      </div>
+    {% endfor %}
+    {% if nft.description %}
+      <div class="col s12 left-align">
+        <div class="col s12 left-align">
+          <span>Description: {{ nft.description }}</span> <br />
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</li>
+{% endwith %}

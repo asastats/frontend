@@ -1,0 +1,16 @@
+{% load i18n %}
+{% load core_extras %}
+<br>
+<div class="divider col s12 m8 offset-m2"></div>
+<div class="row center-align col s12">
+<br>
+{% if user.is_authenticated %}
+    {% if where == 'back' %}
+        <a class="waves-effect btn-flat" id="id_back" role="button" href="{% url 'profile' %}">Back<i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i></a>
+    {% else %}
+        <a class="waves-effect btn-flat" id="id_home" role="button" href="{% url 'home' %}">Home<i class="material-icons right" aria-hidden="true">{{ 'home'|get_styling:"icon" }}</i></a>
+    {% endif %}
+{% else %}
+    <a class="waves-effect btn-flat" id="id_start" role="button" href="{% url 'account_login' %}">Log in<i class="material-icons right" aria-hidden="true">{{ 'cta'|get_styling:"icon" }}</i></a>
+{% endif %}
+</div>

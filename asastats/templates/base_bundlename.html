@@ -1,0 +1,47 @@
+{% extends 'base_home.html' %}
+{% load i18n %}
+{% load static %}
+{% load core_extras %}
+{% block middle_section %}
+<form method="POST" action="" id="id_form">
+  <div class="row col s12 m9 midrow">
+    {% block bundlename_top %}{% endblock %}
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="input-field col s12 wide">
+      {% if field.name == "public" %}
+        <p class="tooltipped publictip" data-position="top" data-tooltip="{{ form.public.help_text|safe }}">
+          <label>
+            {{ field }}
+            <span>{{ field.label }}</span>
+          </label>
+        </p>
+      {% else %}
+        {{ field }}
+        {{ field.label_tag }}
+        {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+      {% endif %}
+      {% if field.errors %}<span class="myred-text">{{ field.errors }}</span>{% endif %}
+      </div>
+    {% endfor %}
+    {% if form.non_field_errors %}<div class="col s12"><span class="myred-text">{{form.non_field_errors}}</span></div>{% endif %}
+  </div>
+  <div class="row col s12 m3">
+    <br>
+    {% block back_button %}<a class="waves-effect btn-flat" href="{% url 'home' %}">Back<i class="material-icons right" aria-hidden="true">{{ 'home'|get_styling:"icon" }}</i></a>{% endblock %}
+    <button class="primaryAction waves-effect btn-flat submit{% block bundlename_submit_color %}{% endblock %}" id="id_submit" type="submit">{% block bundlename_submit_text %}{% endblock %}<i class="material-icons right" aria-hidden="true">{{ 'save'|get_styling:"icon" }}</i></button>
+    {% block extra_bundlename_data %}{% endblock %}
+  </div>
+</form>
+{% endblock %}
+
+{% block left_section %}
+{% load core_extras %}
+<div class="collection home">
+{% for element in object.profile.bundlenames %}
+  <a href="{% url 'bundlename_edit' element.name %}" class="collection-item {% block active_link %}{% endblock %}">
+    <span class="title">{{ element.name }}</span>
+  </a>
+{% endfor %}
+</div>
+{% endblock %}

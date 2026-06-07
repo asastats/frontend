@@ -1,0 +1,133 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} Per-program panel for one entry under an asaitem.
+
+   Required context:
+     prog            one item from asaitem.programs (dict with keys
+                     program, value, amount, distribution, proxy, linked)
+     asset           the parent asaitem.asset dict
+     price           the parent asaitem.price (ALGO per 1 unit of asset);
+                     used to render the per-row price line
+     pricealgo       account.total.pricealgo (used by ALGO Balance row only)
+     forloop_counter parent loop's forloop.counter (for unique distid IDs)
+
+   Phase 5c-fixes:
+     - W1: distribution-bearing rows now use class ``asar`` initially;
+       the toggle JS swaps to ``z-depth-1`` on expand click.
+     - W2 (revised): Balance rows (non-ALGO) are now structured like
+       generic rows — they get the same ``tdist`` / ``data-distid``
+       toggle and the same distribution panel. Clicking the row reveals
+       its distribution entries (e.g. "Tinyman2 swap" + "Pact swap"
+       for HAY's Balance program). The first distribution entry's
+       link is no longer rendered as a stand-alone provider line.
+     - W3: distribution sub-rows render per-row price line.
+     - W5: "Source LP token" linked-data rows filtered out.
+     - W6: "Type/Balance: amount unit" line renders AFTER linked rows.
+{% endcomment %}
+{% with program=prog.program %}
+{% if program.type == "Balance" and asset.id == 0 %}
+  {% comment %} ALGO-Balance is its own thing: minimal layout with a link to Allo,
+     an ``[Available: X ALGO]`` sub-row from prog.linked, and a per-ALGO USD
+     price line from the account-level pricealgo. No distribution panel.
+     {% endcomment %}
+  <a href="https://allo.info/{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to Allo"><span class="balance">&nbsp;Balance:&nbsp;</span></a>
+  <span class="val" data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span> <br />
+  {% for ld in prog.linked %}
+    {% if ld.text == "Available" %}
+      <span>[Available: <span>{{ ld.value|floatformat:'2g' }} ALGO</span>]</span> <br />
+    {% endif %}
+  {% endfor %}
+  <span class="val pricealgo" data-val="{{ pricealgo }}">{{ pricealgo|floatformat:'6g' }} USD/ALGO</span> <br />
+  <br />
+{% else %}
+  {% comment %} Generic program panel (including non-ALGO Balance rows). Dispatches
+     on prog.distribution for the two-panel layout (left: summary, right:
+     breakdown). The W2-revised approach uses this for Balance too — the only
+     difference between Balance and other types is the bottom line: "Balance:
+     X UNIT" + price line for Balance, "Type: X UNIT" for others. {% endcomment %}
+  {% with dist=prog.distribution counter=forloop_counter|stringformat:"s" is_balance=program.type|cut:" "|lower|slice:":7" %}
+    {% with distid_base=program.type|slugify|add:"-"|add:counter has_breakdown=dist|length %}
+      <div class="col s12 asa">
+        {% comment %} W1 — initial class is always ``asar``; the toggle JS swaps to
+           ``z-depth-1`` when the user expands. {% endcomment %}
+        <div class="col s6 push-s6 m5 push-m7 right-align asar">
+          {% comment %} W7 — negative-value programs (Borrowed, Loss, Debt)
+             render the ALGO value inside parens with ``myred-text`` styling,
+             matching the legacy template's display for keys like ``ffb``,
+             ``afb``, ``gab``, ``gl``. The trigger is purely numeric:
+             ``prog.value < 0``. Inside the parens we display the absolute
+             value — the parens + red styling already convey the negative
+             semantics, and the legacy template did the same. {% endcomment %}
+          {% if prog.value|is_negative %}
+            <span class="myred-text">(<span class="val myred-text{% if has_breakdown %} tdist{% endif %}"
+                {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
+                data-val="{{ prog.value }}">{{ prog.value|abs_value|floatformat:'2g' }} ALGO</span>)</span> <br />
+          {% else %}
+            <span class="val{% if has_breakdown %} tdist{% endif %}"
+                {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
+                data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span> <br />
+          {% endif %}
+          {% if program.url %}
+            <a href="{{ program.url }}" target="_blank" title="{{ program|program_url_title }}">{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</a> <br />
+          {% elif program.name %}
+            <span>{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</span> <br />
+          {% endif %}
+          {% comment %} W5/W6 — render linked rows BEFORE the "Type/Balance: amount
+             unit" line, and filter out "Source LP token" rows. {% endcomment %}
+          {% for ld in prog.linked %}
+            {% if ld.text != "Source LP token" %}
+              {% if ld.link %}
+                <a href="{{ ld.link }}" target="_blank" title="{{ ld.text }}">{{ ld.text }}</a>
+              {% else %}
+                <span>{{ ld.text }}</span>
+              {% endif %}
+              {% if ld.value %}: <span>{{ ld.value|floatformat:'-6g' }}{% if ld.info %} {{ ld.info }}{% endif %}</span>{% endif %}
+              {% if ld.amount %} (<span>{{ ld.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span>){% endif %}
+              <br />
+            {% endif %}
+          {% endfor %}
+          {% comment %} The bottom amount-line. For "Balance" programs it gets a
+             green-styled ``balance`` label; for everything else it's plain text
+             with "Type: amount unit". W7 — for negative-amount programs the
+             ``amount unit`` portion is wrapped in parens with ``myred-text``
+             styling. Followed by the per-row price line in both cases (W2 for
+             Balance, W3 for the generic flow's per-distribution rows below). {% endcomment %}
+          {% if asset.id != 0 and prog.amount %}
+            {% if program.type == "Balance" %}
+              <span class="balance">&nbsp;Balance:&nbsp;</span> <span>{{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span> <br />
+              {% if price %}<span class="price" data-unit="{{ asset.unit }}" data-val="{{ price }}">{{ price|floatformat:'-8g' }} ALGO/{{ asset.unit }}</span> <br />{% endif %}
+            {% elif prog.amount|is_negative %}
+              <span>{{ program.type }}:</span> (<span class="myred-text">{{ prog.amount|abs_value|amount_repr:asset.decimals }} {{ asset.unit }}</span><span>)</span> <br />
+            {% else %}
+              <span>{{ program.type }}: {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span> <br />
+            {% endif %}
+          {% endif %}
+        </div>
+        {% if has_breakdown %}
+          <div id="d-{{ distid_base }}-{{ asset.id }}" class="col s6 pull-s6 m7 pull-m5 right-align hidden">
+            {% for d in dist %}
+              <div class="col s12 asa">
+                {% with dlink=d.link %}
+                  {% if dlink.url %}
+                    <a href="{{ dlink.url }}" target="_blank" title="{{ dlink.text }}">{{ dlink.text }}</a>&nbsp;&nbsp;<span class="val" data-val="{{ d.value }}">{{ d.value|floatformat:'2g' }} ALGO</span> <br />
+                  {% else %}
+                    <span>{{ dlink.text|default:"" }}</span>&nbsp;&nbsp;<span class="val" data-val="{{ d.value }}">{{ d.value|floatformat:'2g' }} ALGO</span> <br />
+                  {% endif %}
+                {% endwith %}
+                {% if d.amount %}
+                  <span>{{ d.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span> <br />
+                {% endif %}
+                {% comment %} W3 — per-distribution price line, e.g.
+                   "0.10966392 USDC/ALGO". The value is 1/price (asset units
+                   per 1 ALGO). Skipped for ALGO and when price missing. {% endcomment %}
+                {% if price and asset.id != 0 %}<span class="price" data-unit="{{ asset.unit }}" data-val="{{ price }}">{{ price|invert_price|floatformat:'-8g' }} {{ asset.unit }}/ALGO</span> <br />{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      <br />
+    {% endwith %}
+  {% endwith %}
+{% endif %}
+{% endwith %}

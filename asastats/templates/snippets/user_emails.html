@@ -1,0 +1,14 @@
+{% load core_extras %}
+{% load i18n %}
+<div class="row col s12">
+{% for email in emails %}
+    <div class="chip {{ bg_color }} z-depth-1">
+        <span class="{{ text_color }}">{{ email }}</span>
+    </div>
+{% endfor %}
+</div>
+{% if button == 1 %}
+    <div class="row col s12">
+        <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'account_email' %}" id="id_emails">{% trans "Emails" context "button" %}<i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></a>
+    </div>
+{% endif %}

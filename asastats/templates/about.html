@@ -1,0 +1,74 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}ASA Stats - About us{% endblock %}
+{% block description %}Real-Time Asset Tracking. Community-Governed. Built for the Algorand Ecosystem.{% endblock %}
+{% block keywords %}asastats,Algorand,ASA,NFT,mission,goals,values,beliefs,people,team,DAO{% endblock %}
+{% block content %}
+<h1 class="center-align">About us</h1>
+<h5 class="center-align">Real-Time Asset Tracking. Community-Governed. Built for the Algorand Ecosystem.</h5>
+<div class="row left-align">
+  <h3 id="mission">Our Mission</h3>
+  <div class="col s12">
+    <p>To deliver real-time valuations and complete asset visibility for every ASA and NFT on Algorand — empowering users, developers, and investors to manage portfolios with confidence, transparency, and full data sovereignty.<br>
+    <br></p>
+  </div>
+  <h3 id="offer">What We Offer</h3>
+  <div class="col s12">
+    <p>✅ Real-time ASA & NFT valuations from all major Algorand DEXs<br>
+      ✅ Comprehensive portfolio tracking across wallets, DeFi protocols, and smart contracts<br>
+      ✅ Bundle management — group and label multiple addresses with custom names<br>
+      ✅ Mobile apps for iOS and Android<br>
+      ✅ Developer API (v2) — fetch valuations, bundle data, NFT pricing, and more<br>
+      ✅ DAO-backed governance — limited-access, decentralized structure with no central owner<br>
+      <br>
+    <br></p>
+  </div>
+  <h3 id="dao">DAO Governance (2026)</h3>
+  <div class="col s12">
+    <p>The ASA Stats DAO is live, with core infrastructure and treasury now operating under a limited-governor model.<br>
+    </p>
+    <h4>Current State</h4>
+    <p>
+    &#8226; DAO governance was established through long-term staking of ≥500,000 ASASTATS over 10 months.<br>
+    &#8226; The initial governor cohort is fixed; no new seats are currently being added.<br>
+    &#8226; DAO privileges are active via on-chain smart contracts (Permission, Subtopia).<br>
+    &#8226; On-chain proposal voting is in development and planned for release in a future update.<br>
+    </p>
+    <h4>Why Access Is Limited</h4>
+    <p>“The DAO is intended to remain stable. New seats will be added only under specific proposals, voted on by existing governors. Membership is intentionally exclusive, transparent, and locked unless expanded through formal on-chain governance.” — <a href="https://medium.com/@asastats/dao-subscription-and-governance-staking-updates-c2d3244f4c03" target="_blank" rel="noopener" title="Read the full article on Medium">ASA Stats Medium: New DAO Seat Model</a>
+      <br>
+      <br>
+      <a href="https://github.com/asastats/dao-discussion/discussions" target="_blank" rel="noopener" title="Visit discussions section in our GitHub">DAO Governance discussions</a> are all publicly available on GitHub.<br>
+    </p>
+  </div>
+  <h3 id="principles">Infrastructure & Design Principles</h3>
+  <div class="col s12">
+    <p>
+    &#8226; Near real-time block sync<br>
+    &#8226; Direct-chain data reads (not reliant on third-party APIs)<br>
+    &#8226; Planned custom Kubernetes scaling for high uptime and user traffic surges<br>
+    <br>
+    Everything shown in the platform’s UI is powered by the same API available to developers and advanced users.
+    </p>
+  </div>
+  <h3 id="team">Team & Funding</h3>
+  <div class="col s12">
+    <p>Founded by Ivica Paleka, a senior software engineer with 25+ years of experience. ASA Stats is now transitioning into its second phase of decentralized development.<br>
+    &#8226; Received two grants from the Algorand Foundation<br>
+    &#8226; Completed a presale to fund core infrastructure and DAO formation<br>
+    &#8226; Delivered its Phase 1 roadmap, with DAO infrastructure online and on-chain access models implemented<br>
+    &#8226; DAO voting and treasury expansion are part of the next development phase<br>
+    <br>
+    “ASA Stats no longer belongs to one person — it belongs to its governors and users.”
+  </div>
+  <h3 id="driven">Community-Driven, Feature-Led</h3>
+  <div class="col s12">
+    &#8226; Most features originate from public GitHub discussions<br>
+    &#8226; ASASTATS token rewards are granted for valid feature requests, bug reports, and contributions<br>
+    &#8226; Feature rollouts follow a transparent, milestone-driven roadmap<br>
+    &#8226; Community developers can build and publish custom widgets and tools via the ASA Stats API and platform extensions<br>
+    <br>
+    View the Full Roadmap on GitHub → <a href="https://github.com/asastats/docs/blob/main/roadmap.md" target="_blank" rel="noopener" title="Read the roadmap page in our GitHub">https://github.com/asastats/docs/blob/main/roadmap.md</a> 
+  </div>  
+</div>
+{% endblock %}
+{% block otherfooter %}<script type="application/ld+json">{% include "jsonld/about.jsonld" %}</script>{% endblock %}

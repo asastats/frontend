@@ -1,0 +1,34 @@
+{% extends 'base_home.html' %}
+{% load static %}
+{% load i18n %}
+{% load core_extras %}
+{% block title %}API token data - ASA Stats{% endblock %}
+{% block description %}This is the page where you can see and refresh your API token.{% endblock %}
+{% block keywords %}account,API,API token,API token refresh,API token access{% endblock %}
+{% block page_header %}ASA Stats API token{% endblock %}
+{% block middle_section %}
+<div class="row col s12 m7 midrow">
+  <div class="row col s12 left-align">
+    {% if refresh %}
+    <span>Refresh token:</span><br><br>
+    <span class="token">{{ refresh }}</span>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span>
+    <br><br>
+    {% endif %}
+    {% if access %}
+    <span>Access token:</span><br><br>
+    <span class="token">{{ access }}</span>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span>
+    <br><br>
+    {% endif %}
+  </div>
+  <div class="row col s12">
+    <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_api' %}?refresh=yes" id="id_obtain">Obtain token pair</a>
+  </div>
+</div>
+<div class="row col s12 m5">
+  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>&nbsp;
+  <br><br>
+  <span>Active tier: </span><span class="mylight-text">{{ user.profile.tier_name|upper }}</span>
+  <br><br>
+</div>
+{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; API&nbsp;token{% endblock %}

@@ -1,0 +1,35 @@
+{% load static %}{% load core_extras %}
+{% comment %} Non-valuated assets section.
+
+   Required context:
+     notevals  list of serialized noteval dicts from account.notevals.
+               Each entry has the same shape as an asaitem (asset + amount +
+               programs) but its value is unknown to our pricing pipeline.
+{% endcomment %}
+{% if notevals %}
+<div class="col s12">
+  <ul class="collapsible notevalsec">
+    <li>
+      <div class="collapsible-header">{{ notevals|length }} not evaluated</div>
+      <div class="collapsible-body">
+        <ul class="collection">
+        {% for noteval in notevals %}
+          {% with asset=noteval.asset %}
+          <li id="{{ asset.id }}" class="collection-item avatar fitem">
+            <img src="{% static noteval|asa_icon %}" alt="{{ asset.name }} logo" class="circle asaicon">
+            <span class="title">{{ asset.name }}</span> <br>
+            <a href="https://allo.info/asset/{{ asset.id }}" target="_blank" title="Show in Allo">{{ asset.id }}</a>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span> <br>
+            <span>Amount: {{ noteval.amount|amount_repr:asset.decimals }}</span> <br>
+            <span>Unit name: {{ asset.unit }}</span> <br>
+            <span>Total supply: {{ asset.total|floatformat:"g" }}</span> <br>
+            <span>Decimals: {{ asset.decimals }}</span> <br>
+            {% if asset.url %}<span class="truncate" >URL: <a href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener" title="Official URL">{{ asset.url }}</a></span> <br>{% endif %}
+          </li>
+          {% endwith %}
+        {% endfor %}
+        </ul>
+      </div>
+    </li>
+  </ul>
+</div>
+{% endif %}

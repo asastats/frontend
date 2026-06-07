@@ -1,0 +1,119 @@
+{% extends 'base_home.html' %}
+{% load static %}
+{% load i18n %}
+{% load core_extras %}
+{% block title %}Profile page - ASA Stats{% endblock %}
+{% block description %}This is your user's profile page where you can edit your data, together with your connected emails and social media accounts.{% endblock %}
+{% block keywords %}profile,edit profile,user data,user profile{% endblock %}
+{% block page_header %}Edit profile data{% endblock %}
+{% block middle_section %}
+<form method="POST" enctype="multipart/form-data" action="." id="id_form">
+    <div class="row col s12 m7 midrow">
+    {% csrf_token %}
+    {% for field in form.visible_fields %}
+    <div class="input-field col s12 m6 left-align">
+        {{ field }}
+        {{ field.label_tag }}
+        {% if field.errors %}<span class="myred-text">{{ field.errors|escape }}</span>{% endif %}
+        {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+    </div>
+    {% endfor %}
+    {% for field in form.hidden_fields %}
+      {{ field }}
+    {% endfor %}
+    {% if form.non_field_errors %}<div class="col s12"><span class="myred-text">{{ form.non_field_errors }}</span></div>{% endif %}
+    <fieldset class="profile">
+        {{ profile_form.management_form }}
+        {% for form in profile_form %}
+            {% for field in form.visible_fields %}
+                {% if field.name != 'DELETE' %}
+                <div class="input-field col s12 left-align">
+                  {{ field }}
+                  {{ field.label_tag }}
+                  {% if field.errors %}<span class="myred-text">{{ field.errors|escape }}</span>{% endif %}
+                  {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+
+            <div class="input-field col s12 left-align">
+              {% if form.initial.address %}
+                {% if form.instance.profile.authorized %}
+                <span><a href="https://allo.info/tx/{{ form.instance.profile.authorized }}" target="_blank" rel="noopener" title="Address authorization transaction in allo.info">Address is authorized</a></span>
+                {% else %}
+                  <div class="input-field col s12 m6 center-align">
+                    <span class="myred-text">Address is not authorized</span>
+                  </div>
+                  <div class="input-field col s12 m6 center-align">
+                    <a class="waves-effect btn-flat" href="{% url 'profile_authorize' %}"><i class="material-icons right" aria-hidden="true">{{ 'fingerprint'|get_styling:"icon" }}</i>Authorize</a>&nbsp;
+                  </div>
+                {% endif %}
+              {% endif %}
+            </div>
+            <div class="input-field col s12 left-align">
+              <span>Permission: {{ form.instance.profile.permission|integer_comma }}</span>
+            </div>
+            {% if form.instance.profile.votes %}
+            <div class="input-field col s12 left-align">
+              <span>DAO votes: {{ form.instance.profile.votes|integer_comma }}</span>
+            </div>
+            {% endif %}
+            {% if form.instance.profile.authorized %}
+            <div class="input-field col s12 left-align">
+              <a class="waves-effect btn-flat" href="{% url 'profile_permission_fetch' %}"><i class="material-icons right" aria-hidden="true">{{ 'refresh'|get_styling:"icon" }}</i>Refetch</a>&nbsp;
+            </div>
+            {% endif %}
+            {% for field in form.hidden_fields %}
+              {{ field }}
+            {% endfor %}
+            {% if form.non_field_errors %}<div class="col s12"><span class="myred-text">{{ form.non_field_errors }}</span></div>{% endif %}
+        {% endfor %}
+    </fieldset>
+    {% if subscriptions %}
+    <br>
+    <h5>Subscription</h5>
+    <div class="row col s12 left-align">
+        {% for link, text in subscriptions.items %}
+        <p><span>{{ link|safe }}: </span><span{% if text == "EXPIRED" %} class="myred-text"{% endif %}>{{ text }}</span></p>
+        {% endfor %}
+    </div>
+    <div class="divider col s12"></div>
+    {% endif %}
+    {% if messages %}
+    <br>
+    <div class="row col s12 m8 offset-m2">
+        {% for message in messages %}
+        <div class="chip mydark myredlight-text z-depth-1">
+            {{ message }}
+            <i class="material-icons close" aria-hidden="true">close</i>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}    
+    </div>
+    <div class="row col s12 m5">
+        <a class="waves-effect btn-flat" href="{% url 'home' %}"><i class="material-icons right" aria-hidden="true">{{ 'home'|get_styling:"icon" }}</i>Back</a>&nbsp;
+        <button class="primaryAction waves-effect btn-flat submit" id="id_submit" type="submit"><i class="material-icons right" aria-hidden="true">{{ 'save'|get_styling:"icon" }}</i>Update</button>
+        <br><br>
+        <div class="row col s12">
+            <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'account_change_password' %}" id="id_changepassword">Password<i class="material-icons right" aria-hidden="true">{{ 'password'|get_styling:"icon" }}</i></a>
+        </div>
+        <div class="row col s12">
+            <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'account_email' %}" id="id_emails">Emails<i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></a>
+        </div>
+        <div class="row col s12">
+            <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'socialaccount_connections' %}" id="id_connections">Social<i class="material-icons right" aria-hidden="true">{{ 'social'|get_styling:"icon" }}</i></a>
+        </div>
+    </div>
+</form>
+{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; Profile{% endblock %}
+{% block left_section %}
+<div class="row col s12 right-align">
+  <br>
+  <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_account' %}" id="id_profile_account">Account<i class="material-icons right" aria-hidden="true">{{ 'account'|get_styling:"icon" }}</i></a>
+</div>
+<div class="row col s12 right-align">
+  <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_api' %}" id="id_profile_api">API token<i class="material-icons right" aria-hidden="true">{{ 'api'|get_styling:"icon" }}</i></a>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'account/base.html' %}
+{% load static %}
+{% load i18n %}
+{% load core_extras %}
+{% load account %}
+{% block title %}Add or change email - ASA Stats{% endblock %}
+{% block description %}Here on this page you can add, change or delete emails associated with your www.asastats.com account.{% endblock %}
+{% block keywords %}email,user,change email,add email,delete email{% endblock %}
+
+{% block page_header %}Profile email addresses{% endblock %}
+
+{% block account_already %}{% endblock %}
+
+{% block account_top %}
+{% if user.emailaddress_set.all %}
+    <p>The following email addresses are associated with your account:</p>
+    <form class="email_list" id="account_email" method="POST" action="{% url 'account_email' %}">
+        <div class="row center-align">
+            {% csrf_token %}
+            {% for emailaddress in user.emailaddress_set.all %}
+                <p>
+                  <label>
+                    <input name="email" type="radio" {% if emailaddress.primary or user.emailaddress_set.count == 1 %}checked{%endif %} value="{{ emailaddress.email }}" />
+                    <span>{{ emailaddress.email }}</span>
+                    {% if emailaddress.verified %}
+                    &emsp;<span class="verified">Verified</span>
+                    {% else %}
+                    &emsp;<span class="unverified">Unverified</span>
+                    {% endif %}
+                    {% if emailaddress.primary %}
+                    &emsp;<span class="primary">Primary</span>
+                    {% endif %}
+                  </label>
+                </p>
+            {% endfor %}
+        </div>
+        <div class="row center-align col s12">
+            <button class="waves-effect btn-flat" type="submit" name="action_primary">Make primary<i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></button>
+            <button class="waves-effect btn-flat" type="submit" name="action_send">Re-send verification<i class="material-icons right" aria-hidden="true">{{ 'submit'|get_styling:"icon" }}</i></button>
+            <button class="waves-effect btn-flat" type="submit" name="action_remove">Remove<i class="material-icons right" aria-hidden="true">{{ 'remove'|get_styling:"icon" }}</i></button>
+        </div>
+    </form>
+{% else %}
+    <p><strong>Warning:</strong> You currently do not have any email address set up. You should add an email address so you can receive notifications, reset your password, etc.</p>
+{% endif %}
+{% endblock %}
+
+{% block account_middle %}
+{% if messages %}
+<div class="row col s12">
+    {% for message in messages %}
+    <div class="chip mydark myredlight-text z-depth-1">
+        {{ message }}
+        <i class="material-icons close" aria-hidden="true">close</i>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+<div class="divider col s12"></div>
+<br>
+<form class="add_email" id="add_email" method="POST" action="{% url 'account_email' %}">
+    <div class="row center-align">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="input-field col s12 m8 offset-m2">
+                {% if field.errors %}<span class="myred-text">{{ field.errors|escape }}</span>{% endif %}
+                {% if field.name|has_styling %}<i class="material-icons prefix" aria-hidden="true">{{ field.name|get_styling:"icon" }}</i>{% endif %}
+                {{ field }}
+                {{ field.label_tag }}
+                {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
+            </div>
+        {% endfor %}
+    </div>
+    {% if form.non_field_errors %}<div class="col s12"><span class="myred-text">{{ form.non_field_errors }}</span></div>{% endif %}
+    {% if redirect_field_value %}<input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />{% endif %}
+    <div class="row center-align col s12">
+        <button class="primaryAction waves-effect waves-mydark btn whenmoon" type="submit" name="action_add">Add email<i class="material-icons right" aria-hidden="true">{{ 'add_circle'|get_styling:"icon" }}</i></button>
+    </div>
+</form>
+{% endblock %}
+
+{% block account_bottom %}
+{% include "account/snippets/bottom_buttons.html" with where="back" %}
+{% include "snippets/modal_confirm.html" %}
+{% endblock %}
+
+{% block breadcrumbs %}
+<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Emails
+{% endblock %}
+{% block otherfooter %}
+<script src="{% static 'js/emails.min001.js' %}"></script>
+{% endblock %}
+

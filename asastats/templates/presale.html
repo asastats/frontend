@@ -1,0 +1,29 @@
+{% extends 'base.html' %}{% load static %}
+{% block title %}ASA Stats - Update page{% endblock %}
+{% block description %}Update page{% endblock %}
+{% block keywords %}asastats,Algorand,update{% endblock %}
+{% block content %}
+<h1 class="center-align">Update your address</h1>
+<div class="row center-align">
+    <form method="POST">{% csrf_token %}
+      <p><label for="id_handle">Handle:</label> <input type="text" name="handle" value="{{ form.instance.handle }}" maxlength="50" required id="id_handle" readonly></p>
+      <p><label for="id_address">Address:</label> <input type="text" name="address" value="{{ form.instance.address }}" maxlength="58" id="id_address"></p>
+      <p>
+        <label>
+          <input type="checkbox" name="warranty" id="id_warranty" />
+          <span>By acquiring, engaging, holding, or participating in ASASTATS, the ASA Stats service, and any other affiliated content connected to such parties you agree to not holding ASA Stats team liable. You also agree that the team is presenting the products “as is” and is not required to provide any support or services. We suggest everyone do their due diligence to understand any risks that might be associated.</span>
+        </label>
+      </p>
+      <p>
+        <label>
+          <input type="checkbox" name="citizen" id="id_citizen" />
+          <span>I represent and warrant that I am not a citizen or resident of the United States of America or any other country whose legislation conflicts with the present sale of ASASTATS token and/or the ASA Stats Project in general.</span>
+        </label>
+      </p>
+      <div class="col s12 m8 push-m2 center-align">
+        <button class="waves-effect waves-mydark btn black-text" type="submit">Submit</button>
+      </div>
+
+    </form>
+</div>
+{% endblock %}

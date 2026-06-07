@@ -1,0 +1,34 @@
+{
+    "@context": "http://schema.org",
+    "@type": "WebPage",
+    "name": "Sign up",
+    "url": "https://www.asastats.com/accounts/signup/",
+    "@id": "https://www.asastats.com/#signup",
+    "description": "Sign up for a ASA Stats account by an email and password or by connecting a social media provider",
+    "isPartOf":{
+        "@type": "WebSite",
+        "@id":"https://www.asastats.com/#site",
+        "name": "ASA Stats"
+    },
+    "publisher": {
+        "@type": "Organization",
+        "@id": "https://www.asastats.com/#org",
+        "name": "www.ASA Stats.com"
+    },
+    "hasPart": [
+        {
+            "@type": "WebPage",
+            "name": "Log in page",
+            "url": "https://www.asastats.com/accounts/login/",
+            "@id": "https://www.asastats.com/#login",
+            "description": "You can log in to your ASA Stats account either with your email and password or by a connected social media provider."
+        },
+        {
+            "@type": "WebPage",
+            "name": "Reset password page",
+            "url": "https://www.asastats.com/accounts/password/reset/",
+            "@id": "https://www.asastats.com/#password-reset",
+            "description": "You can initiate your account password reset on this page."
+        }
+    ]
+}

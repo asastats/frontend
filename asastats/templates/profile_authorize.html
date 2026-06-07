@@ -1,0 +1,62 @@
+{% extends 'base_home.html' %}
+{% load static %}
+{% load i18n %}
+{% load core_extras %}
+{% block title %}Authorize user address - ASA Stats{% endblock %}
+{% block description %}This is the page where you can authorize provided public Algorand address in order to get your permission value from the ASA Stats Permission dApp.{% endblock %}
+{% block keywords %}account,authorization,public,Algorand address,permission,Permission dApp{% endblock %}
+{% block page_header %}Algorand address authorization{% endblock %}
+{% block middle_section %}
+<div class="row col s12 m7 midrow">
+
+  <div class="row col s12">
+    Please use your wallet to authorize the following address you've provided:
+    <blockquote>
+      {{ user.profile.address }}
+    </blockquote>
+
+    To authorize it in our system, you need to send 0 ALGO transaction from that address to our Administration pool address:
+    <blockquote>
+      E7TR4BUASOGSHRRE2IBUHTHSNZGKU2DQDU5UF77L7VBITNVQGW5SCMS7OI
+    </blockquote>
+    <div class="row col s8 offset-s2">
+      <img class="responsive-img" src="/static/img/admpool-qrcode.png" alt="QR code of the ASA Stats Administration pool address">
+    </div>
+  </div>
+  <div class="row col s12">
+    For us to identify you correctly, you have to add the following text to the transaction <span class="myred-text">NOTE</span> field:
+    <blockquote>
+      {{ user.profile.address_authorization_note|lower }}
+    </blockquote>
+    <br>
+    After the transaction is confirmed on the blockchain, please click the button below and your address will be authorized. 
+    <br>
+    <br>
+  </p>
+  </div>
+  <div class="row col s12">
+    <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_authorize_check' %}" id="id_check">Check transaction</a>
+  </div>
+  {% if messages %}
+  <div class="row col s12 m8 offset-m2">
+    {% for message in messages %}
+      {% if "error" in message.tags %}
+      <div><span class="myred-text">{{ message }}</span></div>
+      {% else %}
+      <div class="chip mydark myredlight-text z-depth-1">
+          {{ message }}
+          <i class="material-icons close" aria-hidden="true">close</i>
+      </div>   
+      {% endif %}
+    {% endfor %}
+  </div>
+  <br>
+  <br>  
+  {% endif %}
+</div>
+<div class="row col s12 m5">
+  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>&nbsp;
+  <br>
+</div>
+{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Authorize&nbsp;address{% endblock %}
