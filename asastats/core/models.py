@@ -9,9 +9,6 @@ from django.db import models
 from django.db.models.functions import Lower
 from django.http import Http404
 from django.urls import reverse
-from widgets.inhouse.historic.permissions import (
-    can_access as can_access_historic_widget,
-)
 
 from utils.constants.users import (
     DUPLICATE_BUNDLE_ERROR,
@@ -30,6 +27,9 @@ from utils.userhelpers import (
     slugified_bundle_name,
     truncated_timestamp_and_address,
     unique_hash_from_number,
+)
+from widgets.inhouse.historic.permissions import (
+    can_access as can_access_historic_widget,
 )
 
 
