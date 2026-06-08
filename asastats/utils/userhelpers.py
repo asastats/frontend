@@ -11,11 +11,11 @@ from algosdk.error import AlgodHTTPError
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from hashids import Hashids
-
 from permissiondapp.dapp.config import (
     SUBSCRIPTION_PERMISSIONS,
     SUBTOPIA_URL_PREFIX,
 )
+
 from utils.clients import algod_instance, indexer_instance, search_transactions
 from utils.constants.users import (
     ADDRESS_AND_ALGO_NAME_URL_PATH_ERROR,

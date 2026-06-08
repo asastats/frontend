@@ -17,10 +17,10 @@ Including another URLconf
 from django.conf import settings
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path, re_path
+from widgets import urls as widget_urls
 
 from api import urls as api_urls
 from core import urls as core_urls
-from widgets import urls as widget_urls
 
 from .sitemaps import PrioritizedStaticViewSitemap, StaticViewSitemap
 

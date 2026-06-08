@@ -9,8 +9,6 @@ import pytest
 from algosdk.error import AlgodHTTPError
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-
-from core.models import Profile
 from permissiondapp.dapp.config import (
     SUBTOPIA_ASASTATSER_APP_ID,
     SUBTOPIA_CLUSTER_APP_ID,
@@ -18,6 +16,8 @@ from permissiondapp.dapp.config import (
     SUBTOPIA_PROFESSIONAL_APP_ID,
     SUBTOPIA_URL_PREFIX,
 )
+
+from core.models import Profile
 from utils.constants.users import (
     ADDRESS_AND_ALGO_NAME_URL_PATH_ERROR,
     ADMPOOL_ADDRESS,

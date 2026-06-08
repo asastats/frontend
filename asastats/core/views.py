@@ -28,6 +28,7 @@ from django.views.generic import CreateView, DetailView, UpdateView
 from django.views.generic.base import RedirectView, TemplateView
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import DeleteView, FormView
+from permissiondapp.dapp.network import fetch_subscriptions_for_address
 from redis import BusyLoadingError
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -53,7 +54,6 @@ from core.permissions import (
     CanAddBundleNameMixin,
     CanUseBundleNamesMixin,
 )
-from permissiondapp.dapp.network import fetch_subscriptions_for_address
 from utils.charts import (
     prepare_base_charts_from_serialized_data,
     prepare_consolidated_charts_from_serialized_data,
