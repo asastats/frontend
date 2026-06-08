@@ -70,3 +70,26 @@ def download_export(bundle):
 def reset_export(bundle):
     """Delete the backend export archive and reset its status for ``bundle``."""
     return _request("DELETE", f"/api/v2/exports/{bundle}/").json()
+
+
+def engine_request(scope, method, path, allowed_scopes, **kwargs):
+    """Call a scoped engine endpoint on behalf of a widget.
+
+    The widget builds its own ``path``; this primitive adds the deployment
+    credential (via :func:`_request`) and refuses any scope the widget did not
+    declare in its manifest ``engine_endpoints``.
+
+    :param scope: engine scope this call requires, e.g. "historic:evaluate"
+    :type scope: str
+    :param method: HTTP method
+    :type method: str
+    :param path: engine path beneath the API root
+    :type path: str
+    :param allowed_scopes: the widget manifest's declared engine endpoints
+    :type allowed_scopes: list
+    :return: :class:`requests.Response`
+    """
+    if scope not in allowed_scopes:
+        raise BackendError(f"Scope '{scope}' not declared by widget.")
+
+    return _request(method, path, **kwargs)

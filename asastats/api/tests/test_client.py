@@ -7,6 +7,7 @@ from api.client import (
     _headers,
     _request,
     download_export,
+    engine_request,
     export_status,
     fetch_capabilities,
     fetch_price,
@@ -149,3 +150,21 @@ class TestApiClientFunctions:
         assert returned == mocked_request.return_value.json.return_value
         mocked_request.assert_called_once()
         mocked_request.assert_called_with("DELETE", f"/api/v2/exports/{bundle}/")
+
+
+class TestApiClientEngineRequest:
+    """Testing class for :py:func:`api.client.engine_request`."""
+
+    def test_api_client_engine_request_for_undeclared_scope(self, mocker):
+        mocked = mocker.patch("api.client._request")
+        with pytest.raises(BackendError):
+            engine_request("historic:evaluate", "POST", "/p/", ["historic:process"])
+        mocked.assert_not_called()
+
+    def test_api_client_engine_request_delegates_for_declared_scope(self, mocker):
+        mocked = mocker.patch("api.client._request")
+        returned = engine_request(
+            "historic:evaluate", "POST", "/p/", ["historic:evaluate"], json={"a": 1}
+        )
+        assert returned == mocked.return_value
+        mocked.assert_called_once_with("POST", "/p/", json={"a": 1})
