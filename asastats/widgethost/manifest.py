@@ -172,3 +172,28 @@ def can_access(profile_permission, required_permission, size):
     if required is None:
         return False
     return profile_permission >= required
+
+
+def addresses_limit_for_permission(required_permission, profile_permission):
+    """Return the largest address count `profile_permission` qualifies for.
+
+    Returns 0 when the permission clears no band (or for a bare-integer gate),
+    which the historic widget uses to choose between its denial messages.
+
+    :param required_permission: integer or ordered band list from the manifest
+    :type required_permission: int or list
+    :param profile_permission: the user's permission integer
+    :type profile_permission: int
+    :var allowed: largest qualifying max_addresses, defaulting to zero
+    :type allowed: int
+    :var band: currently evaluated permission band mapping
+    :type band: dict
+    :return: int
+    """
+    if isinstance(required_permission, int):
+        return 0
+    allowed = 0
+    for band in required_permission:
+        if profile_permission >= band["permission"]:
+            allowed = band["max_addresses"]
+    return allowed

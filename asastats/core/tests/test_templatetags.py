@@ -461,3 +461,16 @@ class TestFiltersAbsValue:
         result = amount_repr(abs_value(-10092956), 6)
         # 10092956 / 1e6 = 10.092956
         assert "10.092956" in result
+
+
+class TestCoreExtrasHistoricAccess:
+    """Testing class for :py:func:`core.templatetags.core_extras.historic_access`."""
+
+    def test_core_extras_historic_access_for_profile(self, mocker):
+        profile = mocker.MagicMock()
+        profile.can_access_historic_widget.return_value = True
+        assert historic_access(profile, 3) is True
+        profile.can_access_historic_widget.assert_called_once_with(3)
+
+    def test_core_extras_historic_access_for_none(self):
+        assert historic_access(None, 3) is False

@@ -5,6 +5,7 @@ import pytest
 from widgethost.manifest import (
     Manifest,
     ManifestError,
+    addresses_limit_for_permission,
     can_access,
     load_manifest,
     required_permission_for_size,
@@ -156,3 +157,19 @@ class TestWidgethostManifestCanAccess:
 
     def test_widgethost_manifest_can_access_for_insufficient_permission(self):
         assert can_access(0, HISTORIC_BANDS, 1) is False
+
+
+class TestWidgethostManifestAddressesLimitForPermission:
+    """Testing class for :py:func:`...manifest.addresses_limit_for_permission`."""
+
+    def test_widgethost_manifest_addresses_limit_for_permission_for_integer(self):
+        assert addresses_limit_for_permission(500, 999) == 0
+
+    def test_widgethost_manifest_addresses_limit_for_permission_first_band(self):
+        assert addresses_limit_for_permission(HISTORIC_BANDS, 23299689438) == 1
+
+    def test_widgethost_manifest_addresses_limit_for_permission_all_bands(self):
+        assert addresses_limit_for_permission(HISTORIC_BANDS, 3236067977500) == 10
+
+    def test_widgethost_manifest_addresses_limit_for_permission_none(self):
+        assert addresses_limit_for_permission(HISTORIC_BANDS, 0) == 0

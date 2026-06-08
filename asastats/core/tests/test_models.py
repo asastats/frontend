@@ -2012,15 +2012,12 @@ class TestProfileModel:
         assert user.profile.name == "abs"
 
     # # WIDGETS
-    # # can_access_historic_widget
-    @pytest.mark.django_db
-    def test_profile_model_can_access_historic(self, mocker):
-        mocked_access = mocker.patch("core.models.can_access_historic_widget")
-        user = user_model.objects.create(email="historic@abc.com")
-        size = 5
-        returned = user.profile.can_access_historic_widget(size)
-        assert returned == mocked_access.return_value
-        mocked_access.assert_called_once_with(user.profile, size)
+    # @pytest.mark.django_db
+    def test_core_models_profile_can_access_historic_widget(self, mocker):
+        gate = mocker.patch("core.models.can_access_widget", return_value=True)
+        profile = Profile()
+        assert profile.can_access_historic_widget(3) is True
+        gate.assert_called_once_with("historic", profile, 3)
 
 
 class TestBundleNameModel:
@@ -2407,15 +2404,12 @@ class TestBundleNameModel:
     # # WIDGETS
     # # can_access_historic_widget
     @pytest.mark.django_db
-    def test_bundlename_model_can_access_historic_property(self, mocker):
-        mocked_access = mocker.patch("core.models.can_access_historic_widget")
-        user = user_model.objects.create()
-        addresses = f"{TEST_ADDRESS3} {TEST_ADDRESS2} {TEST_ADDRESS}"
-        bundlename = BundleName.objects.create(
-            profile=user.profile,
-            name="bundlename-a5",
-            addresses=addresses,
+    def test_core_models_bundlename_can_access_historic_widget(self, mocker):
+        gate = mocker.patch("core.models.can_access_widget", return_value=False)
+        bundle = BundleName.__new__(BundleName)
+        bundle.profile = mocker.MagicMock()
+        mocker.patch.object(
+            BundleName, "size", new_callable=mocker.PropertyMock, return_value=7
         )
-        returned = bundlename.can_access_historic_widget()
-        assert returned == mocked_access.return_value
-        mocked_access.assert_called_once_with(user.profile, 3)
+        assert bundle.can_access_historic_widget() is False
+        gate.assert_called_once_with("historic", bundle.profile, 7)

@@ -28,9 +28,7 @@ from utils.userhelpers import (
     truncated_timestamp_and_address,
     unique_hash_from_number,
 )
-from widgets.inhouse.historic.permissions import (
-    can_access as can_access_historic_widget,
-)
+from widgethost.access import can_access_widget
 
 
 class Profile(models.Model):
@@ -449,9 +447,11 @@ class Profile(models.Model):
     def can_access_historic_widget(self, size):
         """Return True if historic data for bundle can be accessed by user.
 
+        :param size: number of Algorand addresses in the bundle
+        :type size: int
         :return: Boolean
         """
-        return can_access_historic_widget(self, size)
+        return can_access_widget("historic", self, size)
 
 
 class BundleName(models.Model):
@@ -595,6 +595,6 @@ class BundleName(models.Model):
     def can_access_historic_widget(self):
         """Return True if historic data for bundle can be accessed by user.
 
-        :return: str
+        :return: Boolean
         """
-        return can_access_historic_widget(self.profile, self.size)
+        return can_access_widget("historic", self.profile, self.size)

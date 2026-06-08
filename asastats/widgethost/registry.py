@@ -1,19 +1,15 @@
-"""Discovery and wiring of widgets from their manifests.
+"""Discovery of widgets from their manifests.
 
-Replaces hand-editing of ``widgets/urls.py`` and ``widgets/routing.py``. Those
-modules call :func:`widget_urlpatterns` / :func:`widget_websocket_urlpatterns`,
-which discover every ``widget.toml`` under the widgets package and assemble the
-route and consumer lists. Each widget declares its own paths and route names in
-its manifest, so the assembled URLs match the widget's own front-end; the
-registry imposes no extra prefix or namespace.
+Each widget keeps its own ``urls.py`` / ``routing.py`` (regex routes that the
+existing ``widgets/urls.py`` and ``widgets/routing.py`` already auto-include).
+This module replaces the hand-maintained ``INHOUSE_WIDGETS`` / ``THIRDPARTY_WIDGETS``
+lists with manifest discovery: the presence of a ``widget.toml`` registers a widget.
 """
 
-import importlib
 from pathlib import Path
 
-from django.urls import path
-
 import widgets
+
 from widgethost.manifest import load_manifest
 
 WIDGETS_PACKAGE = "widgets"
@@ -48,73 +44,51 @@ def discover_manifests():
     return manifests
 
 
-def _import_attribute(dotted_package, reference):
-    """Import and return the attribute named by `reference` in the package.
+def discover_widgets():
+    """Return discovered inhouse and thirdparty widget identifiers.
 
-    :param dotted_package: dotted Python path of the widget package
-    :type dotted_package: str
-    :param reference: module-and-attribute reference, e.g. "views.HistoricView"
-    :type reference: str
-    :var module_name: attribute's module reference within the widget package
-    :type module_name: str
-    :var attribute_name: attribute name within the module
-    :type attribute_name: str
-    :var module: imported module object
-    :type module: module
-    :return: object
-    """
-    module_name, attribute_name = reference.rsplit(".", 1)
-    module = importlib.import_module(f"{dotted_package}.{module_name}")
-    return getattr(module, attribute_name)
-
-
-def widget_urlpatterns():
-    """Assemble and return the URL patterns for every discovered widget.
-
-    :var patterns: collection of assembled widget route patterns
-    :type patterns: list
-    :var dotted: dotted Python path of a widget package
-    :type dotted: str
+    :var inhouse: collection of discovered inhouse widget identifiers
+    :type inhouse: list
+    :var thirdparty: collection of discovered thirdparty widget identifiers
+    :type thirdparty: list
     :var manifest: a discovered widget's parsed manifest
     :type manifest: :class:`widgethost.manifest.Manifest`
-    :var route: a single route declaration from the manifest
-    :type route: dict
-    :var view: imported view class for a route
-    :type view: object
-    :return: list
+    :return: two-tuple
     """
-    patterns = []
-    for dotted, manifest in discover_manifests():
-        for route in manifest.routes:
-            view = _import_attribute(dotted, route["view"])
-            patterns.append(
-                path(
-                    route["path"],
-                    view.as_view(manifest=manifest),
-                    name=route["name"],
-                )
-            )
-    return patterns
+    inhouse, thirdparty = [], []
+    for _, manifest in discover_manifests():
+        if manifest.origin == "inhouse":
+            inhouse.append(manifest.id)
+        else:
+            thirdparty.append(manifest.id)
+    return inhouse, thirdparty
 
 
-def widget_websocket_urlpatterns():
-    """Assemble and return the websocket patterns for every discovered widget.
+_manifests_by_id = None
 
-    :var patterns: collection of assembled widget consumer patterns
-    :type patterns: list
-    :var dotted: dotted Python path of a widget package
-    :type dotted: str
-    :var manifest: a discovered widget's parsed manifest
-    :type manifest: :class:`widgethost.manifest.Manifest`
-    :var consumer_route: a single consumer declaration from the manifest
-    :type consumer_route: dict
-    :var consumer: imported consumer class for a route
-    :type consumer: object
-    :return: list
+
+def manifests_by_id(refresh=False):
+    """Return discovered manifests keyed by id, building the cache once.
+
+    :param refresh: rebuild the cache instead of reusing it
+    :type refresh: bool
+    :var _manifests_by_id: process-wide cache of id to manifest
+    :type _manifests_by_id: dict
+    :return: dict
     """
-    patterns = []
-    for dotted, manifest in discover_manifests():
-        for consumer_route in manifest.consumers:
-            consumer = _import_attribute(dotted, consumer_route["consumer"])
-            patterns.append(path(consumer_route["path"], consumer.as_asgi()))
-    return patterns
+    global _manifests_by_id
+    if _manifests_by_id is None or refresh:
+        _manifests_by_id = {
+            manifest.id: manifest for _, manifest in discover_manifests()
+        }
+    return _manifests_by_id
+
+
+def manifest_for(widget_id):
+    """Return the manifest for `widget_id`, or None when it is not installed.
+
+    :param widget_id: unique widget identifier
+    :type widget_id: str
+    :return: :class:`widgethost.manifest.Manifest`
+    """
+    return manifests_by_id().get(widget_id)
