@@ -421,39 +421,107 @@ class TestUtilsHelpersGeneralPublicFunctions:
         assert bundle_from_addresses(addresses) == result
 
     # # check_bundle_addresses
-    def test_utils_helpers_check_bundle_addresses_returns_empty_string_for_empty(self):
-        assert check_bundle_addresses("") == ""
-
     def test_utils_helpers_check_bundle_addresses_returns_addresses(self, mocker):
         bundle = "foobar"
         addresses = "foo bar"
-        mocked_model = mocker.patch("core.models.BundleName")
-        mocked_query = mocked_model.objects.filter.return_value.values_list.return_value
-        mocked_query.first.return_value = addresses
+        mocked_cache = mocker.patch("utils.helpers.redis_instance")
+        mocked = mocker.patch("utils.helpers.cached_bundle", return_value=addresses)
         returned = check_bundle_addresses(bundle)
         assert returned == addresses
-        mocked_model.objects.filter.assert_called_once_with(bundle=bundle)
-        mocked_model.objects.filter.return_value.values_list.assert_called_once_with(
-            "addresses", flat=True
-        )
+        mocked.assert_called_once()
+        mocked.assert_called_with(bundle, mocked_cache.return_value)
+        mocked_cache.assert_called_once()
+        mocked_cache.assert_called_with()
+
+    def test_utils_helpers_check_bundle_addresses_uses_provided_cache_client(
+        self, mocker
+    ):
+        bundle = "foobar"
+        addresses = "foo bar"
+        cache_client = mocker.MagicMock()
+        mocked_cache = mocker.patch("utils.helpers.redis_instance")
+        mocked = mocker.patch("utils.helpers.cached_bundle", return_value=addresses)
+        returned = check_bundle_addresses(bundle, cache_client=cache_client)
+        assert returned == addresses
+        mocked.assert_called_once()
+        mocked.assert_called_with(bundle, cache_client)
+        mocked_cache.assert_not_called()
 
     def test_utils_helpers_check_bundle_addresses_returns_empty_string_if_not_exists(
         self, mocker
     ):
         bundle = "foobar"
-        mocked_model = mocker.patch("core.models.BundleName")
-        mocked_query = mocked_model.objects.filter.return_value.values_list.return_value
-        mocked_query.first.return_value = None
+        mocker.patch("utils.helpers.redis_instance")
+        mocker.patch("utils.helpers.cached_bundle", return_value=False)
         returned = check_bundle_addresses(bundle)
         assert returned == ""
 
     # # create_bundle
-    def test_utils_helpers_create_bundle_returns_bundle_from_addresses(self, mocker):
+    def test_utils_helpers_create_bundle_doesnt_update_cache_if_it_exist(self, mocker):
         addresses = "foo bar"
         mocked_bundle = mocker.patch("utils.helpers.bundle_from_addresses")
-        returned = create_bundle(addresses)
-        assert returned == mocked_bundle.return_value
-        mocked_bundle.assert_called_once_with(addresses)
+        mocked_redis = mocker.patch("utils.helpers.redis_instance")
+        mocked_cached = mocker.patch("utils.helpers.cached_bundle")
+        mocked_cupdate = mocker.patch("utils.helpers.cupdate_bundle")
+        create_bundle(addresses)
+        mocked_bundle.assert_called_once()
+        mocked_bundle.assert_called_with(addresses)
+        mocked_cached.assert_called_once()
+        mocked_cached.assert_called_with(
+            mocked_bundle.return_value,
+            mocked_redis.return_value,
+        )
+        mocked_redis.assert_called_once()
+        mocked_redis.assert_called_with()
+        mocked_cupdate.assert_not_called()
+
+    def test_utils_helpers_create_bundle_updates_cache(self, mocker):
+        addresses = "foo bar"
+        mocked_bundle = mocker.patch("utils.helpers.bundle_from_addresses")
+        mocked_redis = mocker.patch("utils.helpers.redis_instance")
+        mocker.patch("utils.helpers.cached_bundle", return_value=False)
+        mocked_cupdate = mocker.patch("utils.helpers.cupdate_bundle")
+        create_bundle(addresses)
+        mocked_bundle.assert_called_once()
+        mocked_bundle.assert_called_with(addresses)
+        mocked_cupdate.assert_called_once()
+        mocked_cupdate.assert_called_with(
+            mocked_bundle.return_value,
+            addresses,
+            mocked_redis.return_value,
+        )
+        calls = [
+            mocker.call(),
+            mocker.call(replica=False),
+        ]
+        mocked_redis.assert_has_calls(calls, any_order=False)
+        assert mocked_redis.call_count == 2
+
+    def test_utils_helpers_create_bundle_checks_cache_with_provided_client(
+        self, mocker
+    ):
+        addresses = "foo bar"
+        mocked_bundle = mocker.patch("utils.helpers.bundle_from_addresses")
+        cache_client = mocker.MagicMock()
+        mocked_redis = mocker.patch("utils.helpers.redis_instance")
+        mocked_cached = mocker.patch("utils.helpers.cached_bundle", return_value=False)
+        mocked_cupdate = mocker.patch("utils.helpers.cupdate_bundle")
+        create_bundle(addresses, cache_client=cache_client)
+        mocked_bundle.assert_called_once()
+        mocked_bundle.assert_called_with(addresses)
+        mocked_cached.assert_called_once()
+        mocked_cached.assert_called_with(
+            mocked_bundle.return_value,
+            cache_client,
+        )
+        mocked_cupdate.assert_called_once()
+        mocked_cupdate.assert_called_with(
+            mocked_bundle.return_value,
+            addresses,
+            mocked_redis.return_value,
+        )
+        mocked_redis.assert_called_once()
+        mocked_redis.assert_called_with(replica=False)
 
     # # random_slogan
     def test_utils_helpers_random_slogan_calls_random_choice(self):

@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
+
 import sys
 from datetime import timedelta
 from pathlib import Path
@@ -317,9 +318,6 @@ INDEXER_TOKEN = get_env_variable("INDEXER_TOKEN", "")
 
 ALGORAND_NODE_PATH = "/var/lib/algorand/"
 ALGORAND_NODE_PATH_LIQUIDITY = ALGORAND_NODE_PATH
-
-# --- Deployment cache / queue ---
-REDIS_URL = get_env_variable("REDIS_URL", "redis://localhost:6379/0")
 
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379

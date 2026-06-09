@@ -1,7 +1,11 @@
 """Testing module for :py:mod:`widgethost.registry` module."""
 
 import widgethost.registry as registry
-from widgethost.registry import discover_manifests, discover_widgets, manifest_for
+from widgethost.registry import (
+    discover_manifests,
+    discover_widgets,
+    manifest_for,
+)
 
 
 class TestWidgethostRegistryDiscoverManifests:

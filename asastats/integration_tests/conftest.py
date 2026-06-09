@@ -7,7 +7,6 @@ import pytest
 import requests
 from django.conf import settings
 
-
 TEST_ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 
 # Confirm against the engine's manage.py setdefault. Your frontend uses a settings
@@ -44,9 +43,7 @@ def backend_server():
     if "VIRTUAL_ENV" in os.environ:
         backend_env["VIRTUAL_ENV"] = os.path.expanduser("~/dev/venvs/backend")
 
-    log = tempfile.NamedTemporaryFile(
-        mode="w+", suffix=".backend.log", delete=False
-    )
+    log = tempfile.NamedTemporaryFile(mode="w+", suffix=".backend.log", delete=False)
     process = subprocess.Popen(
         [backend_python, backend_manage, "runserver", "8001", "--noreload"],
         env=backend_env,

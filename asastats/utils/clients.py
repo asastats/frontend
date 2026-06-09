@@ -2,9 +2,9 @@
 
 import time
 
-import redis
 from algosdk.v2client import algod, indexer
 from django.conf import settings
+from redis import Redis
 
 
 def algod_instance():
@@ -23,14 +23,19 @@ def indexer_instance():
     return indexer.IndexerClient(settings.INDEXER_TOKEN, settings.INDEXER_URL)
 
 
-def redis_instance(replica=True):
-    """Create and return a Redis client from the configured cache URL.
+def redis_instance(replica=False):
+    """Return Redis client instance.
 
-    :param replica: kept for signature compatibility with the former engine client
-    :type replica: bool
-    :return: :class:`redis.Redis`
+    :param replica: should client instantiate replica cache or not
+    :type replica: Boolean
+    :return: :class:`Redis`
     """
-    return redis.from_url(settings.REDIS_URL)
+    return Redis(
+        host=settings.REDIS_HOST if replica else settings.REDIS_PRIMARY_HOST,
+        port=settings.REDIS_PORT,
+        db=settings.REDIS_DB,
+        password=settings.REDIS_AUTH,
+    )
 
 
 def search_transactions(params, indexer_client=None, delay=0.05, limit=1000):

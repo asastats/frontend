@@ -13,6 +13,7 @@ from api.data import (
     API_EXAMPLE_ADDRESS1,
     API_EXAMPLE_ADDRESS2,
     API_EXAMPLE_ADDRESS3,
+    API_EXAMPLE_ADDRESS5,
     API_EXAMPLE_BUNDLE1,
     API_EXAMPLE_BUNDLE2,
     API_EXAMPLE_NFD_NAME1,
@@ -527,7 +528,10 @@ class TestApiV2BundleView(BaseView):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == data
         mocked_validate.assert_called_once_with(bundle)
-        mocked_fetch.assert_called_once_with(validated_bundle, "")
+        mocked_fetch.assert_called_once_with(
+            validated_bundle,
+            f"{API_EXAMPLE_ADDRESS1} {API_EXAMPLE_ADDRESS5} {API_EXAMPLE_ADDRESS3} {API_EXAMPLE_ADDRESS2}",
+        )
 
 
 class TestApiV2NfdNameView(BaseView):

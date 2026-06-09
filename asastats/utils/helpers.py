@@ -20,7 +20,8 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 
 from nameservice.main import check_name
-from utils.clients import algod_instance
+from utils.cache import cached_bundle, cupdate_bundle
+from utils.clients import algod_instance, redis_instance
 from utils.constants.core import (
     ASASTATS_SLOGANS,
     BANNERS,
@@ -195,28 +196,35 @@ def bundle_from_addresses(addresses):
 
 
 def check_bundle_addresses(bundle, cache_client=False):
-    """Resolve a bundle hash to its space-separated addresses.
+    """Return addresses from cache client associated with provided bundle.
 
-    The open app owns this mapping (BundleName), not the engine cache.
-
-    :param bundle: 40-hex bundle hash
-    :return: space-separated addresses, or "" if the hash is unknown locally
+    :param bundle: hash value associated with target addresses
+    :type bundle: str
+    :param cache_client: Redis client instance
+    :type cache_client: :class:`Redis`
+    :return: str
     """
-    if not bundle:
-        return ""
-    from core.models import BundleName  # local import avoids an app-loading cycle
-
-    return (
-        BundleName.objects.filter(bundle=bundle)
-        .values_list("addresses", flat=True)
-        .first()
-        or ""
-    )
+    cached = cached_bundle(bundle, cache_client or redis_instance())
+    return cached if cached is not False else ""
 
 
 def create_bundle(addresses, cache_client=False):
-    """Return the bundle hash for ``addresses`` (no local cache write needed)."""
-    return bundle_from_addresses(addresses)
+    """Return bundle hash from `addreses` and update cache if needed.
+
+    :param addresses: Algorand addresses separated by spaces
+    :type addresses: string
+    :param cache_client: Redis client instance
+    :type cache_client: :class:`Redis`
+    :var bundle: hash made from provided addresses
+    :type bundle: str
+    :return: str
+    """
+    bundle = bundle_from_addresses(addresses)
+    cache_client = cache_client or redis_instance()
+    if not cached_bundle(bundle, cache_client):
+        cache_client = redis_instance(replica=False)
+        cupdate_bundle(bundle, addresses, cache_client)
+    return bundle
 
 
 def random_slogan():

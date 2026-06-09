@@ -1,5 +1,7 @@
 """Testing module for :py:mod:`utils.clients` module."""
 
+from django.conf import settings
+
 from utils.clients import (
     algod_instance,
     indexer_instance,
@@ -32,12 +34,33 @@ class TestUtilsClientsFunctions:
         )
 
     # # redis_instance
-    def test_utils_clients_redis_instance_functionality(self, mocker):
-        mocked_settings = mocker.patch("utils.clients.settings")
-        mocked_redis = mocker.patch("utils.clients.redis")
+    def test_utils_clients_redis_instance_instantiate_replica_redis_client(
+        self, mocker
+    ):
+        mocked_redis = mocker.patch("utils.clients.Redis")
         returned = redis_instance()
-        assert returned == mocked_redis.from_url.return_value
-        mocked_redis.from_url.assert_called_once_with(mocked_settings.REDIS_URL)
+        mocked_redis.assert_called_once()
+        mocked_redis.assert_called_with(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_AUTH,
+        )
+        assert mocked_redis.return_value == returned
+
+    def test_utils_clients_redis_instance_instantiate_primary_redis_client(
+        self, mocker
+    ):
+        mocked_redis = mocker.patch("utils.clients.Redis")
+        returned = redis_instance(replica=False)
+        mocked_redis.assert_called_once()
+        mocked_redis.assert_called_with(
+            host=settings.REDIS_PRIMARY_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_AUTH,
+        )
+        assert mocked_redis.return_value == returned
 
     # # search_transactions
     def test_utils_clients_search_transactions_returns_single_page(self, mocker):

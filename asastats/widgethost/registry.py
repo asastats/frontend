@@ -9,7 +9,6 @@ lists with manifest discovery: the presence of a ``widget.toml`` registers a wid
 from pathlib import Path
 
 import widgets
-
 from widgethost.manifest import load_manifest
 
 WIDGETS_PACKAGE = "widgets"
