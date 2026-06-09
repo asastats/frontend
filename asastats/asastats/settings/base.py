@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
-
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -23,6 +23,13 @@ load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+# permissiondapp is a submodule whose dapp/ modules import their siblings with bare
+# names (e.g. `from config import ...`), expecting dapp/ to be the import root — the
+# way the submodule runs under its own CI. Put dapp/ on sys.path so those imports
+# resolve when asastats imports permissiondapp.dapp.*, without editing the submodule.
+PERMISSIONDAPP_DAPP = BASE_DIR.parent / "permissiondapp" / "dapp"
+if PERMISSIONDAPP_DAPP.is_dir() and str(PERMISSIONDAPP_DAPP) not in sys.path:
+    sys.path.insert(0, str(PERMISSIONDAPP_DAPP))
 
 DATABASE_HOST = get_env_variable("DATABASE_HOST", "localhost")
 
