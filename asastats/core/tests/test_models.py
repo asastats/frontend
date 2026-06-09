@@ -2406,10 +2406,11 @@ class TestBundleNameModel:
     @pytest.mark.django_db
     def test_core_models_bundlename_can_access_historic_widget(self, mocker):
         gate = mocker.patch("core.models.can_access_widget", return_value=False)
-        bundle = BundleName.__new__(BundleName)
-        bundle.profile = mocker.MagicMock()
-        mocker.patch.object(
-            BundleName, "size", new_callable=mocker.PropertyMock, return_value=7
+        user = user_model.objects.create()
+        bundlename = BundleName.objects.create(
+            profile=user.profile,
+            name="bundlename-a7",
+            addresses=f"{TEST_ADDRESS} {TEST_ADDRESS2} {TEST_ADDRESS3}",
         )
-        assert bundle.can_access_historic_widget() is False
-        gate.assert_called_once_with("historic", bundle.profile, 7)
+        assert bundlename.can_access_historic_widget() is False
+        gate.assert_called_once_with("historic", user.profile, 3)
