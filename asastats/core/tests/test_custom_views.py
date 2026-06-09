@@ -1577,7 +1577,7 @@ class TestProfileApiView:
         assert ProfileApiView.template_name == "profile_api.html"
 
 
-class TestProfileApiView(BaseView):
+class TestDbProfileApiView(BaseView):
     """Testing class for :class:`core.views.ProfileApiView`."""
 
     def test_core_views_profileapiview_get_context_data_for_refresh(self, mocker):
