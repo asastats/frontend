@@ -2,15 +2,17 @@
 source = .
 omit =
     */tests/*
-    permissiondapp/*
-    widgets/*
-    manage.py
+    asastats/permissiondapp/*
+    asastats/widgets/*
+    asastats/manage.py
     */__init__.py
     */migrations/*
     */asgi.py
     */wsgi.py
     */settings/*.py
-    */nameservice/anssdk/*
+    asastats/nameservice/anssdk/*
+    asastats/functional_tests/*
+    asastats/integration_tests/*
 
 [report]
 exclude_lines =
