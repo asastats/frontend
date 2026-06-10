@@ -3,8 +3,8 @@
 app_name: asastats
 django_settings: "{{ app_name }}.settings.testing"
 
-site_name: testin2.example.com
-project_name: testing2.example.com
+site_name: testing.example.com
+project_name: testing.example.com
 env_name: "testing_asastats"
 
 github_user: asastats
