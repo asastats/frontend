@@ -165,24 +165,24 @@ SOCIALACCOUNT_PROVIDERS = {
     # https://discord.com/developers/applications
     "discord": {
         "APP": {
-            "client_id": get_env_variable("DISCORD_APPLICATION_ID"),
-            "secret": get_env_variable("DISCORD_SECRET"),
-            "key": get_env_variable("DISCORD_PUBLIC_KEY"),
+            "client_id": get_env_variable("DISCORD_APPLICATION_ID", ""),
+            "secret": get_env_variable("DISCORD_SECRET", ""),
+            "key": get_env_variable("DISCORD_PUBLIC_KEY", ""),
         }
     },
     # https://developer.x.com/en/portal/projects-and-apps
     "twitter_oauth2": {
         "APP": {
-            "client_id": get_env_variable("TWITTER_CLIENT_ID"),
-            "secret": get_env_variable("TWITTER_SECRET"),
+            "client_id": get_env_variable("TWITTER_CLIENT_ID", ""),
+            "secret": get_env_variable("TWITTER_SECRET", ""),
             "key": "",
         }
     },
     # https://www.reddit.com/prefs/apps/
     "reddit": {
         "APP": {
-            "client_id": get_env_variable("REDDIT_CLIENT_ID"),
-            "secret": get_env_variable("REDDIT_SECRET"),
+            "client_id": get_env_variable("REDDIT_CLIENT_ID", ""),
+            "secret": get_env_variable("REDDIT_SECRET", ""),
             "key": "",
         },
         "SCOPE": ["identity"],
@@ -192,16 +192,16 @@ SOCIALACCOUNT_PROVIDERS = {
     "github": {
         "VERIFIED_EMAIL": True,
         "APP": {
-            "client_id": get_env_variable("GITHUB_CLIENT_ID"),
-            "secret": get_env_variable("GITHUB_SECRET"),
+            "client_id": get_env_variable("GITHUB_CLIENT_ID", ""),
+            "secret": get_env_variable("GITHUB_SECRET", ""),
             "key": "",
         },
     },
     # https://console.developers.google.com/
     "google": {
         "APP": {
-            "client_id": get_env_variable("GOOGLE_CLIENT_ID"),
-            "secret": get_env_variable("GOOGLE_SECRET"),
+            "client_id": get_env_variable("GOOGLE_CLIENT_ID", ""),
+            "secret": get_env_variable("GOOGLE_SECRET", ""),
             "key": "",
         },
         "SCOPE": [
@@ -279,7 +279,7 @@ REST_FRAMEWORK = {
 
 
 # --- Rotated secrets ---
-SIMPLE_JWT_KEY = get_env_variable("SIMPLE_JWT_KEY")
+SIMPLE_JWT_KEY = get_env_variable("SIMPLE_JWT_KEY", "")
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=365),
@@ -306,14 +306,14 @@ SPECTACULAR_SETTINGS = {
 }
 
 # --- ASA Stats backend ---
-ASASTATS_API_URL = get_env_variable("ASASTATS_API_URL")
-ASASTATS_API_KEY = get_env_variable("ASASTATS_API_KEY")
+ASASTATS_API_URL = get_env_variable("ASASTATS_API_URL", "https://api.asastats.com")
+ASASTATS_API_KEY = get_env_variable("ASASTATS_API_KEY", "")
 ASASTATS_API_TIMEOUT = int(get_env_variable("ASASTATS_API_TIMEOUT", 30))
 
 # --- Algorand (public/private) ---
-ALGOD_URL = get_env_variable("ALGOD_URL")
+ALGOD_URL = get_env_variable("ALGOD_URL", "https://mainnet-api.algonode.cloud")
 ALGOD_TOKEN = get_env_variable("ALGOD_TOKEN", "")
-INDEXER_URL = get_env_variable("INDEXER_URL")
+INDEXER_URL = get_env_variable("INDEXER_URL", "https://mainnet-idx.algonode.cloud")
 INDEXER_TOKEN = get_env_variable("INDEXER_TOKEN", "")
 
 ALGORAND_NODE_PATH = "/var/lib/algorand/"
@@ -330,7 +330,7 @@ CSRF_TRUSTED_ORIGINS = ["https://*.asastats.com"]
 ASGI_APPLICATION = "asastats.asgi.application"
 
 # # WIDGETS
-WIDGETS_API_TOKEN = get_env_variable("WIDGETS_API_TOKEN")
+WIDGETS_API_TOKEN = get_env_variable("WIDGETS_API_TOKEN", "")
 
 INHOUSE_WIDGETS = ["historic"]
 THIRDPARTY_WIDGETS = []

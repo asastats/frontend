@@ -71,7 +71,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/asastats_db
         run: |
-          # Explicitly name this output coverage-main.xml
           pytest -k "not integration_tests" --cov=. --cov-report=xml:coverage-main.xml --cov-report=term-missing
 
       - name: Run widgets submodule tests
@@ -79,7 +78,6 @@ jobs:
           PYTHONPATH: asastats
           COVERAGE_RCFILE: asastats/widgets/.coveragerc
         run: |
-          # Explicitly name this output coverage-widgets.xml
           pytest asastats/widgets -c asastats/widgets/pytest.ini --cov=widgets --cov-report=xml:coverage-widgets.xml --cov-report=term-missing
 
       - name: Upload merged coverage to Codecov
