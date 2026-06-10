@@ -14,13 +14,22 @@
       changed_when: false
       failed_when: admin_user_check.rc != 0
 
-    - name: Assert the Redis service is running and enabled
+    - name: Assert the web cache Redis instance is running and enabled
       ansible.builtin.assert:
         that:
-          - "ansible_facts.services['redis-server.service'].state == 'running'"
-          - "ansible_facts.services['redis-server.service'].status == 'enabled'"
-        fail_msg: "Redis service is not running or not enabled"
-        success_msg: "Redis service is running and enabled"
+          - "ansible_facts.services['redis_' + redis_port | string + '.service'].state == 'running'"
+          - "ansible_facts.services['redis_' + redis_port | string + '.service'].status == 'enabled'"
+        fail_msg: "Web cache Redis (port {{ redis_port }}) is not running or not enabled"
+        success_msg: "Web cache Redis (port {{ redis_port }}) is running and enabled"
+
+    - name: "Verify the web cache instance answers on port {{ redis_port }}"
+      ansible.builtin.command: >
+        redis-cli -p {{ redis_port }}
+        -a redispwd ping
+      register: redis_ping
+      changed_when: false
+      failed_when: "'PONG' not in redis_ping.stdout"
+      no_log: true
 
     - name: Verify PostgreSQL user exists
       ansible.builtin.command: >
@@ -62,24 +71,24 @@
         fail_msg: "Gunicorn service is not running"
         success_msg: "Gunicorn service is running"
 
-    - name: Fetch the Django admin login page from nginx (renders without backend)
+    - name: Fetch the Django home/about page from nginx to verify server is up
       ansible.builtin.uri:
-        url: "http://localhost/admin/login/"
+        url: "http://localhost/about/"
         return_content: true
         status_code: [200]
-      register: verify_admin_login
+      register: verify_about
       changed_when: false
 
     - name: Ensure admin login page responded with HTML
       ansible.builtin.assert:
         that:
-          - "'<html' in verify_admin_login.content.lower()"
-        fail_msg: "Nginx did not return the Django admin login HTML page."
-        success_msg: "Nginx served the Django admin login page."
+          - "'<html' in verify_about.content.lower()"
+        fail_msg: "Nginx did not return the Django about HTML page."
+        success_msg: "Nginx served the Django about page."
 
     - name: Verify a collected static asset is served
       ansible.builtin.uri:
-        url: "http://localhost/static/admin/css/base.css"
+        url: "http://localhost/static/static/logo.png"
         status_code: [200]
       register: verify_static_asset
       changed_when: false

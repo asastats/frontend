@@ -14,13 +14,22 @@
       changed_when: false
       failed_when: admin_user_check.rc != 0
 
-    - name: Assert the Redis service is running and enabled
+    - name: Assert the web cache Redis instance is running and enabled
       ansible.builtin.assert:
         that:
-          - "ansible_facts.services['redis-server.service'].state == 'running'"
-          - "ansible_facts.services['redis-server.service'].status == 'enabled'"
-        fail_msg: "Redis service is not running or not enabled"
-        success_msg: "Redis service is running and enabled"
+          - "ansible_facts.services['redis_' + redis_port | string + '.service'].state == 'running'"
+          - "ansible_facts.services['redis_' + redis_port | string + '.service'].status == 'enabled'"
+        fail_msg: "Web cache Redis (port {{ redis_port }}) is not running or not enabled"
+        success_msg: "Web cache Redis (port {{ redis_port }}) is running and enabled"
+
+    - name: "Verify the web cache instance answers on port {{ redis_port }}"
+      ansible.builtin.command: >
+        redis-cli -p {{ redis_port }}
+        -a redispwd ping
+      register: redis_ping
+      changed_when: false
+      failed_when: "'PONG' not in redis_ping.stdout"
+      # no_log: true
 
     - name: Verify PostgreSQL user exists
       ansible.builtin.command: >

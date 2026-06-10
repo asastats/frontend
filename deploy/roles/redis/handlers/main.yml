@@ -1,13 +1,9 @@
 ---
-- name: Restart redis
+- name: Enable and restart web cache
   ansible.builtin.systemd:
-    name: redis
+    name: "redis_{{ redis_port }}.service"
     state: restarted
+    enabled: true
+    daemon_reload: true
   become: true
-  listen: "Restart redis"
-
-- name: Reboot machine
-  ansible.builtin.reboot:
-    reboot_timeout: 3600
-  become: true
-  listen: "Reboot machine"
+  listen: "Enable and restart web cache"

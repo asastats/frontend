@@ -34,6 +34,10 @@ Required application keys (see `roles/projectsetup/tasks/environment.yml`):
 email keys. `asastats/.env-example` should ship placeholder values for every
 required key so CI/Molecule can boot the app without a live backend.
 
+The `redis` role provisions a **second** Redis instance on port `6380`
+(`redis_port`), leaving any existing `6379` server untouched. Point the app's
+`REDIS_URL` at it, e.g. `redis://:<REDIS_PASSWORD>@127.0.0.1:6380/0`.
+
 ## Run
 
 ```bash

@@ -5,5 +5,5 @@
 - name: Import Redis tuning tasks
   ansible.builtin.import_tasks: tuning.yml
 
-- name: Import Redis configuration tasks
-  ansible.builtin.import_tasks: config.yml
+- name: Import web cache (second instance) tasks
+  ansible.builtin.import_tasks: web_cache.yml
