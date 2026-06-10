@@ -10,8 +10,8 @@ env_name: "{{ host_alias }}_{{ app_name }}"
 logo_name: asastats
 
 # Repository (forker clones their own fork; driven from the deploy .env file)
-github_user: "{{ hostvars['localhost'].env_vars.GITHUB_USER }}"
-repo_name: "{{ hostvars['localhost'].env_vars.REPO_NAME | default('asastats') }}"
+github_user: "{{ hostvars['localhost'].env_vars.GITHUB_USER | default('asastats') }}"
+repo_name: "{{ hostvars['localhost'].env_vars.REPO_NAME | default('frontend') }}"
 repository_url: "https://github.com/{{ github_user }}/{{ repo_name }}.git"
 
 # Default administrator user on the host machine
