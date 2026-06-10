@@ -519,6 +519,11 @@ class TestApiV2BundleView(BaseView):
         mocked_validate = mocker.patch(
             "api.views.validate_bundle", return_value=validated_bundle
         )
+        addresses = (
+            f"{API_EXAMPLE_ADDRESS1} {API_EXAMPLE_ADDRESS5} "
+            f"{API_EXAMPLE_ADDRESS3} {API_EXAMPLE_ADDRESS2}"
+        )
+        mocker.patch("utils.helpers.cached_bundle", return_value=addresses)
         data = mocker.MagicMock()
         mocked_fetch = mocker.patch(
             "api.views.fetch_and_serialize_account", return_value=data
@@ -530,7 +535,7 @@ class TestApiV2BundleView(BaseView):
         mocked_validate.assert_called_once_with(bundle)
         mocked_fetch.assert_called_once_with(
             validated_bundle,
-            f"{API_EXAMPLE_ADDRESS1} {API_EXAMPLE_ADDRESS5} {API_EXAMPLE_ADDRESS3} {API_EXAMPLE_ADDRESS2}",
+            addresses,
         )
 
 
