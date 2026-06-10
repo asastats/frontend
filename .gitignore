@@ -10,6 +10,7 @@ docs/_build
 .VSCodeCounter
 *.code-workspace
 .scannerwork
+coverage.xml
 asastats/javascript_tests/coverage/
 node_modules
 .npmrc
