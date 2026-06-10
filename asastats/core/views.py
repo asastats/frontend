@@ -1058,14 +1058,6 @@ class ProfileDisplay(DetailView):
         if self.request.user.profile.authorized:
             algod_client = algod_instance()
 
-            # # # TESTNET
-            # from algosdk.v2client.algod import AlgodClient
-
-            # algod_client = AlgodClient(
-            #     "", "https://testnet-api.4160.nodely.dev", headers={"User-Agent": "algosdk"}
-            # )
-            # # # TESTNET
-
             subscriptions = fetch_subscriptions_for_address(
                 algod_client, self.request.user.profile.address
             )

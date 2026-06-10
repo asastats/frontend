@@ -14,7 +14,7 @@ permissions:
   checks: write
 
 jobs:
-  django:
+  main:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
