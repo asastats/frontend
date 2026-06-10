@@ -1,0 +1,46 @@
+---
+# Project constants
+app_name: asastats
+django_settings: "{{ app_name }}.settings.{{ host_alias }}"
+
+# Project variables (SITE_NAME is forker-configurable via the deploy .env file)
+site_name: "{{ hostvars['localhost'].env_vars.SITE_NAME | default('tracker.example.com') }}"
+project_name: "{{ site_name }}"
+env_name: "{{ host_alias }}_{{ app_name }}"
+logo_name: asastats
+
+# Repository (forker clones their own fork; driven from the deploy .env file)
+github_user: "{{ hostvars['localhost'].env_vars.GITHUB_USER }}"
+repo_name: "{{ hostvars['localhost'].env_vars.REPO_NAME | default('asastats') }}"
+repository_url: "https://github.com/{{ github_user }}/{{ repo_name }}.git"
+
+# Default administrator user on the host machine
+admin_user: "{{ hostvars['localhost'].env_vars.ADMIN_USER }}"
+admin_user_group: "{{ admin_user }}"
+admin_home_directory: "/home/{{ admin_user }}/"
+admin_email: "{{ hostvars['localhost'].env_vars.ADMIN_EMAIL }}"
+
+# Identity used to connect to host machine(s)
+local_path_to_public_key: "{{ env_vars.PUBLIC_KEY_LOCAL_PATH | default('~/.ssh/id_rsa.pub') }}"
+
+# Django application variables
+webapp_user: "{{ hostvars['localhost'].env_vars.WEBAPP_USER }}"
+webapp_group: "{{ hostvars['localhost'].env_vars.WEBAPP_GROUP | default('webapps') }}"
+
+projects_path: /var/www/
+site_path: "{{ projects_path }}{{ site_name }}"
+
+gunicorn_workers: 5  # cpu_count() * 2 + 1 is the suggestion
+
+log_level: debug
+
+# System variables
+opt_folder: "/home/{{ admin_user }}/opt/"
+
+postgresql_version: 16
+database_backup_folder: "/home/{{ admin_user }}/backups/"
+
+lynis_version: 3.1.6
+
+# Which requirements layer to install on the server
+requirements_filename: production.txt

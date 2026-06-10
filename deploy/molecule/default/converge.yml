@@ -1,0 +1,7 @@
+---
+- name: Run converge
+  import_playbook: "../shared/converge.yml"
+  vars:
+    env_files:
+      - "{{ playbook_dir }}/../../.env.testing"
+      - "{{ playbook_dir }}/../../../asastats/.env.testing"

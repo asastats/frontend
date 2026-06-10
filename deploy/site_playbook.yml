@@ -1,0 +1,96 @@
+---
+# ──────────────────────────────────────────────
+# PLAY 1: Load .env variables (always executed)
+# ──────────────────────────────────────────────
+- name: Load environment from .env files
+  hosts: all
+  connection: local
+  gather_facts: false
+  run_once: true
+  any_errors_fatal: true
+  tags: always
+  vars:
+    env_name_lookup: "{{ ansible_limit | default('testing') }}"
+    env_files:
+      - ".env.{{ env_name_lookup }}"
+      - "{{ playbook_dir }}/../asastats/.env.{{ env_name_lookup }}"
+
+  tasks:
+    - name: Verify env files exist (ignore missing optional ones)
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ env_files }}"
+      register: env_file_check
+
+    - name: Read contents of .env files
+      ansible.builtin.slurp:
+        path: "{{ item.item }}"
+      loop: "{{ env_file_check.results }}"
+      when: item.stat.exists
+      register: env_slurped
+
+    - name: Convert .env to dict
+      ansible.builtin.set_fact:
+        env_vars: "{{ env_vars | default({}) | combine(parsed_one, recursive=True) }}"
+      vars:
+        decoded: "{{ item.content | b64decode }}"
+        yaml_style: |
+          {% for line in decoded.splitlines() %}
+          {%   if line.strip() and not line.strip().startswith('#') %}
+          {%     set parts = line.split('=', 1) %}
+          {{ parts[0] }}: {{ parts[1] | default('') | to_json }}
+          {%   endif %}
+          {% endfor %}
+        parsed_one: "{{ yaml_style | from_yaml }}"
+      loop: "{{ env_slurped.results }}"
+      when: item.skipped is not defined
+
+    - name: Export env_vars to localhost hostvars
+      ansible.builtin.add_host:
+        name: localhost
+        env_vars: "{{ env_vars }}"
+      delegate_to: localhost
+      changed_when: false
+
+# ────────────────────────────────────────
+# PLAY 2: Bootstrap admin user (if needed)
+# ────────────────────────────────────────
+- name: Create admin_user if missing
+  hosts: all
+  gather_facts: false
+  vars:
+    ansible_user: "{{ superuser | default('root') }}"
+    ansible_ssh_common_args: "-o IdentitiesOnly=yes"
+  tasks:
+    - name: Check if root can connect (quietly)
+      ansible.builtin.ping:
+      register: root_connection_check
+      ignore_unreachable: true
+      ignore_errors: true
+      changed_when: false
+      no_log: true
+
+    - name: Stop processing this play if root is not reachable
+      ansible.builtin.meta: end_play
+      when: root_connection_check.unreachable is defined or root_connection_check.failed
+
+    - name: Include createuser role
+      ansible.builtin.include_role:
+        name: createuser
+
+# ──────────────────────────────────────────────
+# PLAY 3: Provision host (roles)
+# ──────────────────────────────────────────────
+- name: Provisioning of the asastats portfolio tracker
+  hosts: all
+  vars:
+    ansible_user: "{{ hostvars['localhost'].env_vars.ADMIN_USER }}"
+  roles:
+    - role: setuphost
+    - role: redis
+    - role: postgresql
+    - role: projectsetup
+    - role: gunicorn
+    # - role: websockets   # roadmap: Daphne/Channels server
+    - role: nginx
+    - role: hardening

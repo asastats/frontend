@@ -1,0 +1,35 @@
+---
+- name: "Clone source repository with submodules for {{ project_name }}"
+  ansible.builtin.git:
+    repo: "{{ repository_url }}"
+    dest: "{{ site_path }}/source"
+    version: main
+    recursive: true
+    umask: "027"
+  become: true
+  become_user: "{{ webapp_user }}"
+  notify: "Reload web server"
+  tags: [repository, update-project-code]
+
+- name: "Install Python requirements (no upgrades) for {{ project_name }}"
+  ansible.builtin.pip:
+    requirements: >-
+      {{ site_path }}/source/{{ app_name }}/requirements/{{ requirements_filename }}
+    executable: "{{ site_path }}/venv/bin/pip"
+    state: present
+  become: true
+  become_user: "{{ webapp_user }}"
+  when: "'upgrade' not in ansible_run_tags"
+  tags: [requirements, update-project-code]
+
+- name: "Upgrade Python packages based on requirements (pip --upgrade)"
+  ansible.builtin.pip:
+    requirements: >-
+      {{ site_path }}/source/{{ app_name }}/requirements/{{ requirements_filename }}
+    executable: "{{ site_path }}/venv/bin/pip"
+    state: forcereinstall
+    extra_args: "--upgrade"
+  become: true
+  become_user: "{{ webapp_user }}"
+  when: "'upgrade' in ansible_run_tags"
+  tags: [requirements, update-project-code, upgrade]

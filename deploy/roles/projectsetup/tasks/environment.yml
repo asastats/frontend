@@ -1,0 +1,47 @@
+---
+- name: Create app's environment file
+  vars:
+    env_var_keys:
+      # Django core
+      - SECRET_KEY
+      - ALLOWED_HOSTS
+      - DATABASE_NAME
+      - DATABASE_USER
+      - DATABASE_PASSWORD
+      # ASA Stats backend boundary (closed-source server)
+      - ASASTATS_API_URL
+      - ASASTATS_API_KEY
+      - ASASTATS_API_TIMEOUT
+      # Public Algorand access (forker points these at public nodes)
+      - ALGOD_URL
+      - ALGOD_TOKEN
+      - INDEXER_URL
+      - INDEXER_TOKEN
+      # Deployment's own cache
+      - REDIS_URL
+      # Inbound API the app serves to its own frontend/widgets
+      - SIMPLE_JWT_KEY
+      # Social / wallet authentication providers
+      - GOOGLE_CLIENT_ID
+      - GOOGLE_SECRET
+      - GITHUB_CLIENT_ID
+      - GITHUB_SECRET
+      - REDDIT_CLIENT_ID
+      - REDDIT_SECRET
+      - TWITTER_CLIENT_ID
+      - TWITTER_SECRET
+      # Email
+      - EMAIL_HOST
+      - EMAIL_HOST_USER
+      - EMAIL_HOST_PASSWORD
+      - EMAIL_DEFAULT_FROM
+  ansible.builtin.template:
+    src: environment_file
+    dest: "{{ site_path }}/source/{{ app_name }}/.env"
+    owner: "{{ webapp_user }}"
+    group: "{{ webapp_group }}"
+    mode: "0600"
+  become: true
+  become_user: "{{ webapp_user }}"
+  notify: "Reload web server"
+  tags: [repository, update-project-code]

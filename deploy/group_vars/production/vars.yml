@@ -1,0 +1,3 @@
+---
+host_alias: production
+log_level: info

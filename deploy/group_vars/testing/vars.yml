@@ -1,0 +1,4 @@
+---
+host_alias: testing
+log_level: debug
+requirements_filename: testing.txt

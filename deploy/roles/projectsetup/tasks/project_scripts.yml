@@ -1,0 +1,61 @@
+---
+- name: Create project management command scripts
+  ansible.builtin.template:
+    src: managementcommand.sh
+    dest: "{{ site_path }}/scripts/{{ item }}.sh"
+    owner: "{{ webapp_user }}"
+    group: "{{ webapp_group }}"
+    mode: "0700"
+  loop:
+    - migrate
+    - collectstatic
+    - clearsessions
+  become: true
+  become_user: "{{ webapp_user }}"
+  tags: [project-setup, create-scripts]
+
+- name: Run migrate management command
+  ansible.builtin.shell: |
+    set -o pipefail
+    echo "yes" | ./migrate.sh
+  args:
+    chdir: "{{ site_path }}/scripts/"
+    executable: /bin/bash
+  become: true
+  become_user: "{{ webapp_user }}"
+  register: projectsetup_migrate_command
+  changed_when: "'No migrations to apply' not in projectsetup_migrate_command.stdout"
+  tags: [project-setup, postgresql-create, run-project-scripts, update-project-code]
+
+- name: Run collectstatic management command
+  ansible.builtin.shell: |
+    set -o pipefail
+    echo "yes" | ./collectstatic.sh
+  args:
+    chdir: "{{ site_path }}/scripts/"
+    executable: /bin/bash
+  become: true
+  become_user: "{{ webapp_user }}"
+  register: projectsetup_collectstatic_command
+  changed_when: "'0 static files copied to' not in projectsetup_collectstatic_command.stdout"
+  tags: [project-setup, run-project-scripts, update-project-code]
+
+- name: Ensure SHELL variable is present in crontab
+  ansible.builtin.cron:
+    name: SHELL
+    env: true
+    value: /bin/bash
+  become: true
+  become_user: "{{ webapp_user }}"
+  tags: [project-setup, cronjobs]
+
+- name: Create weekly clearsessions cron job
+  ansible.builtin.cron:
+    weekday: "2"
+    hour: "5"
+    minute: "47"
+    name: "{{ project_name }} clearsessions (weekly)"
+    user: "{{ webapp_user }}"
+    job: ": Clear sessions weekly ; /usr/bin/nice -n 10 {{ site_path }}/scripts/clearsessions.sh"
+  become: true
+  tags: [project-setup, cronjobs]

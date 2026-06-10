@@ -1,0 +1,6 @@
+ansible
+ansible-compat
+ansible-lint
+molecule
+molecule-plugins[docker]
+psycopg[binary]
