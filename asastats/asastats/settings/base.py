@@ -324,6 +324,8 @@ REDIS_PORT = 6379
 REDIS_PORT_LOCAL = 6380
 REDIS_DB = 0
 
+REDIS_AUTH = get_env_variable("REDIS_AUTH", "")
+
 CSRF_TRUSTED_ORIGINS = ["https://*.asastats.com"]
 
 # Channels

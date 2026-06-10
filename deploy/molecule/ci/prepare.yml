@@ -54,12 +54,18 @@
       become: true
       when: not pg_cluster.stat.exists
 
-    - name: Allow postgres local connections via trust (Molecule only)
+    - name: Allow postgres socket connections via trust (Molecule only)
       ansible.builtin.lineinfile:
         path: "/etc/postgresql/{{ pg_major_version }}/main/pg_hba.conf"
         regexp: '^local\s+all\s+postgres\s+'
         line: 'local   all             postgres                                trust'
-        insertafter: '^# TYPE'
+      notify: Restart PostgreSQL
+
+    - name: Allow postgres TCP connections via trust (Molecule only)
+      ansible.builtin.lineinfile:
+        path: "/etc/postgresql/{{ pg_major_version }}/main/pg_hba.conf"
+        insertbefore: BOF
+        line: 'host    all             postgres        127.0.0.1/32            trust'
       notify: Restart PostgreSQL
 
     - name: Apply PostgreSQL handler immediately

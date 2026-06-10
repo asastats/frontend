@@ -62,24 +62,24 @@
         fail_msg: "Gunicorn service is not running"
         success_msg: "Gunicorn service is running"
 
-    - name: Fetch the Django admin login page from nginx (renders without backend)
+    - name: Fetch the Django home/about page from nginx to verify server is up
       ansible.builtin.uri:
-        url: "http://localhost/admin/login/"
+        url: "http://localhost/about/"
         return_content: true
         status_code: [200]
-      register: verify_admin_login
+      register: verify_about
       changed_when: false
 
     - name: Ensure admin login page responded with HTML
       ansible.builtin.assert:
         that:
-          - "'<html' in verify_admin_login.content.lower()"
-        fail_msg: "Nginx did not return the Django admin login HTML page."
-        success_msg: "Nginx served the Django admin login page."
+          - "'<html' in verify_about.content.lower()"
+        fail_msg: "Nginx did not return the Django about HTML page."
+        success_msg: "Nginx served the Django about page."
 
     - name: Verify a collected static asset is served
       ansible.builtin.uri:
-        url: "http://localhost/static/admin/css/base.css"
+        url: "http://localhost/static/static/logo.png"
         status_code: [200]
       register: verify_static_asset
       changed_when: false

@@ -6,7 +6,7 @@
   become: true
   tags: [create-user]
 
-- name: Create admin_user
+- name: "Create admin user {{ admin_user }}"
   ansible.builtin.user:
     name: "{{ admin_user }}"
     group: "{{ admin_user_group }}"

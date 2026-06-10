@@ -36,6 +36,8 @@ provisioner:
         ansible_user: root
         is_molecule_test: true
         host_alias: testing
-        # Hardcoded to match the values in asastats/.env-example
-        database_user: exampledbuser
-        database_name: exampledb
+        # Hardcoded to match the values in /.env-example
+        env_name: testing_asastats
+        admin_user: admin_user
+        database_user: postgres
+        database_name: asastats_db

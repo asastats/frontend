@@ -7,6 +7,8 @@ site_name: testing.example.com
 project_name: testing.example.com
 env_name: "testing_asastats"
 
+logo_name: asastats
+
 github_user: asastats
 repo_name: frontend
 repository_url: "https://github.com/{{ github_user }}/{{ repo_name }}.git"
