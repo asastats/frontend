@@ -24,11 +24,11 @@
 
     - name: "Verify the web cache instance answers on port {{ redis_port }}"
       ansible.builtin.command: >
-        redis-cli -p {{ redis_port }} ping
+        redis-cli -p {{ redis_port }} -a redispwd ping
       register: redis_ping
       changed_when: false
       failed_when: "'PONG' not in redis_ping.stdout"
-      # no_log: true
+      no_log: true
 
     - name: Verify PostgreSQL user exists
       ansible.builtin.command: >
@@ -78,7 +78,7 @@
       register: verify_about
       changed_when: false
 
-    - name: Ensure admin login page responded with HTML
+    - name: Ensure about page responded with HTML
       ansible.builtin.assert:
         that:
           - "'<html' in verify_about.content.lower()"

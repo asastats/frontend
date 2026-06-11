@@ -1,4 +1,10 @@
-"""Module containing Permission dApp update functions and classes."""
+"""Module containing the user-permissions update daemon.
+
+Relocated from ``utils/permissions.py``. The loop is provider-agnostic: it
+periodically calls the configured permission provider's ``refresh()``. With no
+provider configured the refresh is a no-op, so forks that do not need a
+permissions daemon can simply not run the command that drives this.
+"""
 
 import os
 import signal
@@ -14,7 +20,7 @@ exit_signal = False
 
 
 # # PROCESS
-def _process_permission_dapp():
+def _refresh_permissions():
     """Run the configured permission backend's periodic update.
 
     :return: None
@@ -57,7 +63,7 @@ def _initializer():
 
 
 def run_permissions_update():
-    """Run infinite loop and update Permission dApp boxes."""
+    """Run infinite loop and update user permissions."""
     signal.signal(signal.SIGINT, _exit_gracefully)
     signal.signal(signal.SIGTERM, _exit_gracefully)
 
@@ -74,7 +80,7 @@ def run_permissions_update():
             async_results = []
 
             try:
-                async_results.append(pool.apply_async(_process_permission_dapp))
+                async_results.append(pool.apply_async(_refresh_permissions))
             except Exception as e:
                 main_logger.exception(e)
 

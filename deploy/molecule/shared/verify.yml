@@ -79,7 +79,7 @@
       register: verify_about
       changed_when: false
 
-    - name: Ensure admin login page responded with HTML
+    - name: Ensure about page responded with HTML
       ansible.builtin.assert:
         that:
           - "'<html' in verify_about.content.lower()"

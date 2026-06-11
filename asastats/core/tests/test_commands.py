@@ -57,16 +57,16 @@ class TestDeleteDeactivatedCommand:
         mocked_delete.assert_called_once_with()
 
 
-class TestPermissionDappUpdaterCommand:
+class TestPermissionUpdaterCommand:
     """Testing class for management command
 
-    :py:mod:`core.management.commands.permissiondappupdater`."""
+    :py:mod:`core.management.commands.permissionsupdater`."""
 
-    def test_permissiondappupdater_command_output(self, mocker):
+    def test_permissionupdater_command_output(self, mocker):
         mocked_run = mocker.patch(
-            "core.management.commands.permissiondappupdater.run_permissions_update"
+            "core.management.commands.permissionsupdater.run_permissions_update"
         )
         with mock.patch("django.core.management.base.OutputWrapper.write") as output:
-            call_command("permissiondappupdater")
-            output.assert_called_once_with("Permission dApp updater exited")
+            call_command("permissionsupdater")
+            output.assert_called_once_with("Permissions updater exited")
         mocked_run.assert_called_once_with()
