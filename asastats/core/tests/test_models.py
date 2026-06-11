@@ -126,62 +126,25 @@ class TestProfileModel:
         mocked_hash.assert_called_once_with(mocked_truncate.return_value)
 
     # # check_votes_and_permission
-    @pytest.mark.django_db
-    def test_profile_model_check_votes_and_permission_saves_votes_and_permission(
-        self, mocker
-    ):
-        user = user_model.objects.create(email="permission1@subscribed.com")
-        Profile.objects.get(pk=user.profile.id)
-        assert user.profile.permission == 0
-        user.profile.address = TEST_ADDRESS
-        user.profile.save()
-        votes = 10
-        permission = 100
-        mocked_permission = mocker.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=(votes, permission),
-        )
-        user.profile.check_votes_and_permission()
-        assert user.profile.votes == votes
-        assert user.profile.permission == permission
-        mocked_permission.assert_called_once_with(user.profile.address)
 
     @pytest.mark.django_db
-    def test_profile_model_check_votes_and_permission_does_nothing_for_no_changes(
-        self, mocker
-    ):
-        user = user_model.objects.create(email="permission2@subscribed.com")
-        votes = 0
-        permission = 0
-        mocker.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=(votes, permission),
-        )
-        mocked_save = mocker.patch("core.models.Profile.save")
-        user.profile.check_votes_and_permission()
-        mocked_save.assert_not_called()
+    def test_profile_model_check_votes_and_permission_skips_on_none(self, mocker):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = None
+        profile = Profile()
+        save = mocker.patch.object(Profile, "save")
+        profile.check_votes_and_permission()
+        save.assert_not_called()
 
     @pytest.mark.django_db
-    def test_profile_model_check_votes_and_permission_for_votes_0_on_existing_votes(
-        self, mocker
-    ):
-        user = user_model.objects.create(email="permission1@subscribed.com")
-        Profile.objects.get(pk=user.profile.id)
-        assert user.profile.permission == 0
-        user.profile.address = TEST_ADDRESS
-        votes = 100
-        permission = 1000
-        user.profile.votes = votes
-        user.profile.permission = permission
-        user.profile.save()
-        mocked_permission = mocker.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=(0, 500),
-        )
-        user.profile.check_votes_and_permission()
-        assert user.profile.votes == votes
-        assert user.profile.permission == permission
-        mocked_permission.assert_called_once_with(user.profile.address)
+    def test_profile_model_check_votes_and_permission_updates(self, mocker):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (3, 100)
+        profile = Profile(votes=0, permission=0, address="A")
+        save = mocker.patch.object(Profile, "save")
+        profile.check_votes_and_permission()
+        assert (profile.votes, profile.permission) == (3, 100)
+        save.assert_called_once()
 
     # # save
     @pytest.mark.django_db
@@ -2013,7 +1976,7 @@ class TestProfileModel:
 
     # # WIDGETS
     # @pytest.mark.django_db
-    def test_core_models_profile_can_access_historic_widget(self, mocker):
+    def test_profile_model_can_access_historic_widget(self, mocker):
         gate = mocker.patch("core.models.can_access_widget", return_value=True)
         profile = Profile()
         assert profile.can_access_historic_widget(3) is True

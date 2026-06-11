@@ -10,6 +10,7 @@ from django.db.models.functions import Lower
 from django.http import Http404
 from django.urls import reverse
 
+from core.permission_provider import get_permission_provider
 from utils.constants.users import (
     DUPLICATE_BUNDLE_ERROR,
     DUPLICATE_BUNDLE_NAME_ERROR,
@@ -22,7 +23,6 @@ from utils.constants.users import (
 )
 from utils.helpers import bundle_from_addresses, create_bundle
 from utils.userhelpers import (
-    address_votes_and_permission_from_permission_dapp,
     is_system_reserved_url_path,
     slugified_bundle_name,
     truncated_timestamp_and_address,
@@ -73,18 +73,20 @@ class Profile(models.Model):
     def check_votes_and_permission(self):
         """Check and possibly update profile with new votes and permission values.
 
+        :var result: provider's (votes, permission) pair, or None
+        :type result: tuple
         :var votes: user's governance votes count
         :type votes: int
         :var permission: user's permission on website
         :type permission: int
         """
-        votes, permission = address_votes_and_permission_from_permission_dapp(
-            self.address
-        )
+        result = get_permission_provider().votes_and_permission(self.address)
+        if result is None:
+            return
+        votes, permission = result
         if self.votes != votes or self.permission != permission:
             if self.votes and votes == 0:
                 return
-
             self.votes = votes
             self.permission = permission
             self.save()

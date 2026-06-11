@@ -17,14 +17,12 @@ from utils.permissions import (
 class TestUtilsPermissionsProcessFunctions:
     """Testing class for :class:`utils.permissions` process functions."""
 
-    # # _process_permission_dapp
-    def test_utils_permissions_process_permission_dapp_functionality(self, mocker):
-        mocked_check = mocker.patch(
-            "utils.permissions.check_and_update_permission_dapp_boxes"
-        )
+    def test_utils_permissions_process_permission_dapp_calls_refresh(self, mocker):
+        provider = mocker.patch(
+            "utils.permissions.get_permission_provider"
+        ).return_value
         _process_permission_dapp()
-        mocked_check.assert_called_once()
-        mocked_check.assert_called_with()
+        provider.refresh.assert_called_once_with()
 
 
 class TestUtilsPermissionsHelperFunctions:

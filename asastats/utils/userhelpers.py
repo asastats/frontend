@@ -1,81 +1,24 @@
 """Module containing helper functions for authenticated users."""
 
-import base64
 import logging
 import re
 import unicodedata
-from datetime import UTC, datetime
 
-from algosdk.encoding import decode_address
-from algosdk.error import AlgodHTTPError
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from hashids import Hashids
 
-from permissiondapp.dapp.config import (
-    SUBSCRIPTION_PERMISSIONS,
-    SUBTOPIA_URL_PREFIX,
-)
-from utils.clients import algod_instance, indexer_instance, search_transactions
+from utils.clients import indexer_instance, search_transactions
 from utils.constants.users import (
     ADDRESS_AND_ALGO_NAME_URL_PATH_ERROR,
     ADMPOOL_ADDRESS,
     ADMPOOL_AUTHORIZATION_MIN_ROUND,
     HASHIDS_SALT,
     MANDATORY_VALUES_SIZE,
-    PERMISSION_APP_ID,
 )
 from utils.helpers import base64_to_utf, check_algorand_address
 
 logger = logging.getLogger(__name__)
-
-
-# # SUBSCRIPTIONS
-def _format_days_diff_message(timestamp):
-    """Return formatted message with difference in days between `timestamp` and now.
-
-    :param timestamp: seconds since epoch value to compare with now
-    :type timestamp: int
-    :param delta: difference between provided timestamp and now
-    :type delta: :class:`datetime.timedelta`
-    :return: str
-    """
-    delta = datetime.fromtimestamp(timestamp, UTC) - datetime.now(UTC)
-    return f"expires in {delta.days} days" if delta.days >= 0 else "EXPIRED"
-
-
-def _format_tier_name_as_link(tier_name):
-    """Return formatted message with difference in days between `timestamp` and now.
-
-    :param tier_name: subscription tier name
-    :type tier_name: str
-    :var app_id: subscription tier's decentralized application identifier
-    :type app_id: int
-    :return: str
-    """
-    app_id = next(
-        app_id
-        for app_id, (_, _, name) in SUBSCRIPTION_PERMISSIONS.items()
-        if name == tier_name
-    )
-
-    return (
-        f'<a href="{SUBTOPIA_URL_PREFIX}{app_id}" target="_blank" rel="noopener" '
-        f'title="Open Subtopia.io subscription tier page">{tier_name} tier</a>'
-    )
-
-
-def formatted_subscription_timestamps(subscriptions):
-    """Return provided subscriptions with values in a form of days left.
-
-    :param subscriptions: collection of tier names and expiration epochs
-    :type subscriptions: dict
-    :return: dict
-    """
-    return {
-        _format_tier_name_as_link(tier_name): _format_days_diff_message(timestamp)
-        for tier_name, timestamp in subscriptions.items()
-    }
 
 
 # # VALUES
@@ -145,92 +88,7 @@ def _values_offset_and_length_pairs(docs_data_size):
     )
 
 
-def deserialize_values_data(data):
-    """Return collection of integer values deserialized from base64 encoded `data`.
-
-    :param data: base64 encoded values collection
-    :type data: str
-    :var decoded: base64 decoded values collection
-    :type decoded: bytes
-    :var offset: current value's offset/position in encoded data
-    :type offset: int
-    :var length: current value's size in bytes
-    :type length: int
-    :return: list
-    """
-    decoded = base64.b64decode(data)
-    return [
-        _extract_uint(decoded, offset, length)
-        for offset, length in _values_offset_and_length_pairs(
-            len(decoded) - MANDATORY_VALUES_SIZE
-        )
-    ]
-
-
-def deserialized_permission_dapp_box_value(client, app_id, box_name):
-    """Fetch `box_name`  value and return deserialized values from it.
-
-    :param client: Algorand Node client instance
-    :type client: :class:`AlgodClient`
-    :param app_id: Permission dApp identifier
-    :type app_id: int
-    :param box_name: base64 encoded box name
-    :type box_name: str
-    :var response: fetch application box call's response
-    :type response: :class:`AtomicTransactionResponse`
-    :return: list
-    """
-    try:
-        response = client.application_box_by_name(app_id, box_name)
-    except AlgodHTTPError:
-        return None
-
-    return deserialize_values_data(
-        base64.b64decode(response.get("value")).decode("utf8")
-    )
-
-
 # # HELPERS
-def address_votes_and_permission_from_permission_dapp(address):
-    """Fetch and return votes and permission from Permission dApp for `address˙.
-
-    :param address: public Algorand address
-    :type address: str
-    :var algod_client: Algorand Node client instance
-    :type algod_client: :class:`AlgodClient`
-    :var box_name: base64 encoded box name
-    :type box_name: str
-    :var values: collection of user's votes and permission values
-    :type values: list
-    :return: two-tuple
-    """
-    algod_client = algod_instance()
-
-    # # # TESTNET
-    # from algosdk.v2client.algod import AlgodClient
-
-    # algod_client = AlgodClient(
-    #     "", "https://testnet-api.4160.nodely.dev", headers={"User-Agent": "algosdk"}
-    # )
-    # # # TESTNET
-
-    box_name = box_name_from_address(address)
-    values = deserialized_permission_dapp_box_value(
-        algod_client, PERMISSION_APP_ID, box_name
-    )
-    return values[:2] if values is not None else (0, 0)
-
-
-def box_name_from_address(address):
-    """Return string representation of base64 encoded public Algorand `address`.
-
-    :param address: governance seat address
-    :type address: str
-    :return: bytes
-    """
-    return decode_address(address)
-
-
 def check_authorization_transaction(profile):
     """Fetch and return provided `profile` address' authorization transaction ID.
 

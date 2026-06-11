@@ -47,18 +47,17 @@ from core.helpers import (
     start_export,
 )
 from core.models import BundleName, Profile
+from core.permission_provider import get_permission_provider
 from core.permissions import (
     CanAccessApiMixin,
     CanAccessAuthorizeMixin,
     CanAddBundleNameMixin,
     CanUseBundleNamesMixin,
 )
-from permissiondapp.dapp.network import fetch_subscriptions_for_address
 from utils.charts import (
     prepare_base_charts_from_serialized_data,
     prepare_consolidated_charts_from_serialized_data,
 )
-from utils.clients import algod_instance
 from utils.constants.core import (
     CACHE_TTL_ADDRESS,
     CACHE_TTL_CUSTOM_ADDRESS,
@@ -78,10 +77,7 @@ from utils.helpers import (
     random_slogan,
     weighted_randomized_banner,
 )
-from utils.userhelpers import (
-    check_authorization_transaction,
-    formatted_subscription_timestamps,
-)
+from utils.userhelpers import check_authorization_transaction
 
 from .forms import AddressForm, ExportDownloadForm, ExportForm
 
@@ -1056,15 +1052,11 @@ class ProfileDisplay(DetailView):
         """
         context = super().get_context_data(*args, **kwargs)
         if self.request.user.profile.authorized:
-            algod_client = algod_instance()
-
-            subscriptions = fetch_subscriptions_for_address(
-                algod_client, self.request.user.profile.address
+            subscriptions = get_permission_provider().subscriptions(
+                self.request.user.profile.address
             )
             if subscriptions:
-                context["subscriptions"] = formatted_subscription_timestamps(
-                    subscriptions
-                )
+                context["subscriptions"] = subscriptions
         return context
 
     def get_form(self, form_class=None):

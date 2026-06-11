@@ -336,3 +336,5 @@ WIDGETS_API_TOKEN = get_env_variable("WIDGETS_API_TOKEN", "")
 
 INHOUSE_WIDGETS = ["historic"]
 THIRDPARTY_WIDGETS = []
+
+PERMISSION_PROVIDER = "core.permission_providers.permissiondapp.PermissionDappProvider"

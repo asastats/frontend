@@ -6,9 +6,7 @@ import time
 from datetime import UTC, datetime
 from multiprocessing import Pool
 
-from permissiondapp.dapp.foundation import (
-    check_and_update_permission_dapp_boxes,
-)
+from core.permission_provider import get_permission_provider
 from utils.constants.core import PERMISSIONS_TTL, QUARTER
 from utils.helpers import create_multiprocess_logger, pause
 
@@ -17,8 +15,11 @@ exit_signal = False
 
 # # PROCESS
 def _process_permission_dapp():
-    """Call updating poermission dApp boxes routine."""
-    check_and_update_permission_dapp_boxes()
+    """Run the configured permission backend's periodic update.
+
+    :return: None
+    """
+    get_permission_provider().refresh()
 
 
 # # MAIN
