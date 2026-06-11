@@ -1,3 +1,8 @@
 {% for key in env_var_keys if key in hostvars['localhost'].env_vars %}
 {{ key }}={{ hostvars['localhost'].env_vars[key] }}
 {% endfor %}
+{#- Redis wiring derived from the deployment so the app's cache password #}
+{#- always matches the requirepass set on the {{ redis_port }} instance. #}
+REDIS_HOST=127.0.0.1
+REDIS_PORT_LOCAL={{ redis_port }}
+REDIS_AUTH={{ hostvars['localhost'].env_vars.REDIS_PASSWORD }}

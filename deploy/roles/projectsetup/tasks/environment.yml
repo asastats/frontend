@@ -17,8 +17,6 @@
       - ALGOD_TOKEN
       - INDEXER_URL
       - INDEXER_TOKEN
-      # Deployment's own cache
-      - REDIS_URL
       # Inbound API the app serves to its own frontend/widgets
       - SIMPLE_JWT_KEY
       # Social / wallet authentication providers

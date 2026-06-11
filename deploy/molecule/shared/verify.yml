@@ -71,7 +71,7 @@
         fail_msg: "Gunicorn service is not running"
         success_msg: "Gunicorn service is running"
 
-    - name: Fetch the Django home/about page from nginx to verify server is up
+    - name: Fetch the Django about page from nginx to verify the app responds
       ansible.builtin.uri:
         url: "http://localhost/about/"
         return_content: true

@@ -1,0 +1,11 @@
+---
+- name: Write systemd permissions updater service script
+  ansible.builtin.template:
+    src: permissionsupdater-systemd.service
+    dest: "/etc/systemd/system/permissionsupdater-{{ env_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: "Enable and restart permissionsupdater"
+  tags: [permissionsupdater, project-services]

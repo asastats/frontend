@@ -12,3 +12,12 @@
     state: reloaded
   become: true
   listen: "Reload web server"
+
+- name: Enable and restart permissionsupdater
+  ansible.builtin.systemd:
+    name: "permissionsupdater-{{ env_name }}"
+    state: restarted
+    daemon_reload: true
+    enabled: true
+  become: true
+  listen: "Enable and restart permissionsupdater"

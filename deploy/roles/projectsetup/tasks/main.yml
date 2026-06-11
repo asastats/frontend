@@ -13,3 +13,7 @@
 
 - name: Import project management scripts setup tasks
   ansible.builtin.import_tasks: project_scripts.yml
+
+- name: Import optional project services (permissions updater)
+  ansible.builtin.import_tasks: project_services.yml
+  when: permissionsupdater_enabled | bool
