@@ -1,7 +1,5 @@
 """Django settings module used in production."""
 
-from urllib.parse import quote
-
 from redis import ConnectionPool
 
 from .base import *
@@ -34,18 +32,6 @@ DATABASES = {
             "passfile": get_env_variable("PGPASSFILE"),
         },
     }
-}
-
-REDIS_PASSWORD_ESCAPED = quote(REDIS_AUTH, safe="")
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [
-                f"redis://:{REDIS_PASSWORD_ESCAPED}@{REDIS_HOST}:{REDIS_PORT_LOCAL}/0"
-            ],
-        },
-    },
 }
 
 CACHES = {

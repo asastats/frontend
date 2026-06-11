@@ -11,7 +11,7 @@ INTERNAL_IPS = ("127.0.0.1",)
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6380/1",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT_LOCAL}/1",
         "OPTIONS": {
             "PASSWORD": f"{REDIS_AUTH}",
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
@@ -19,6 +19,7 @@ CACHES = {
         "KEY_PREFIX": "asastats",
     }
 }
+
 CACHE_TTL = 60 * 90  # Cache time to live is 90 minutes.
 
 ALGORAND_NODE_PATH = "/var/lib/algorand/"

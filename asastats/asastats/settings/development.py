@@ -82,6 +82,7 @@ CACHES = {
     }
 }
 
+
 # CACHES = {
 #     "default": {
 #         "BACKEND": "django_redis.cache.RedisCache",
@@ -99,19 +100,5 @@ CACHE_TTL = 60 * 90  # Cache time to live is 90 minutes.
 USE_CACHED_NODE_DATA = False
 
 # ALGORAND_NODE_PATH = "/opt/node/data/"
-
-# REDIS_PORT = 6380
-REDIS_PRIMARY_HOST = "localhost"
-REDIS_AUTH = "maysmple1pass3-word"
-REDIS_PORT_LOCAL = 6379
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [f"redis://:{REDIS_AUTH}@{REDIS_HOST}:{REDIS_PORT_LOCAL}/0"],
-        },
-    },
-}
 
 ASASTATS_API_URL = "http://127.0.0.1:8001"

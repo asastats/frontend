@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import sys
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import quote
 
 from dotenv import load_dotenv
 
@@ -321,15 +322,29 @@ ALGORAND_NODE_PATH_LIQUIDITY = ALGORAND_NODE_PATH
 
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
-REDIS_PORT_LOCAL = 6380
 REDIS_DB = 0
 
+REDIS_PRIMARY_HOST = get_env_variable("REDIS_PRIMARY_HOST", "localhost")
+REDIS_PORT_LOCAL = int(get_env_variable("REDIS_PORT_LOCAL", "6380"))
 REDIS_AUTH = get_env_variable("REDIS_AUTH", "")
 
 CSRF_TRUSTED_ORIGINS = ["https://*.asastats.com"]
 
 # Channels
 ASGI_APPLICATION = "asastats.asgi.application"
+
+REDIS_PASSWORD_ESCAPED = quote(REDIS_AUTH, safe="")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                f"redis://:{REDIS_PASSWORD_ESCAPED}@{REDIS_HOST}:{REDIS_PORT_LOCAL}/0"
+            ],
+        },
+    },
+}
+
 
 # # WIDGETS
 WIDGETS_API_TOKEN = get_env_variable("WIDGETS_API_TOKEN", "")

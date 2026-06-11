@@ -24,7 +24,8 @@
 
     - name: "Verify the web cache instance answers on port {{ redis_port }}"
       ansible.builtin.command: >
-        redis-cli -p {{ redis_port }} -a redispwd ping
+        redis-cli -p {{ redis_port }}
+        -a {{ hostvars['localhost'].env_vars.REDIS_PASSWORD }} ping
       register: redis_ping
       changed_when: false
       failed_when: "'PONG' not in redis_ping.stdout"
