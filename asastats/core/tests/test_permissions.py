@@ -41,8 +41,7 @@ class TestCorePermissionBaseMixins:
         ) as mocked_super:
             returned = base.handle_no_permission()
             assert returned == mocked_super.return_value
-            mocked_super.assert_called_once()
-            mocked_super.assert_called_with()
+            mocked_super.assert_called_once_with()
 
     def test_subscriberedirection_handle_no_permission_redirects_on_exception(
         self, mocker
@@ -55,8 +54,7 @@ class TestCorePermissionBaseMixins:
             mocked_super.side_effect = PermissionDenied("", "", 0)
             returned = base.handle_no_permission()
         assert returned == mocked_redirect.return_value
-        mocked_redirect.assert_called_once()
-        mocked_redirect.assert_called_with("subscriptions")
+        mocked_redirect.assert_called_once_with("subscriptions")
 
     # # BundleNamesRedirection
     def test_bundlenamesredirection_is_subclass_of_userpassestestmixin(
@@ -74,8 +72,7 @@ class TestCorePermissionBaseMixins:
         ) as mocked_super:
             returned = base.handle_no_permission()
             assert returned == mocked_super.return_value
-            mocked_super.assert_called_once()
-            mocked_super.assert_called_with()
+            mocked_super.assert_called_once_with()
 
     # # ProfileRedirection
     def test_profileredirection_is_subclass_of_userpassestestmixin(
@@ -93,8 +90,7 @@ class TestCorePermissionBaseMixins:
         ) as mocked_super:
             returned = base.handle_no_permission()
             assert returned == mocked_super.return_value
-            mocked_super.assert_called_once()
-            mocked_super.assert_called_with()
+            mocked_super.assert_called_once_with()
 
     def test_profileredirection_handle_no_permission_redirects_on_exception(
         self, mocker
@@ -107,8 +103,7 @@ class TestCorePermissionBaseMixins:
             mocked_super.side_effect = PermissionDenied("", "", 0)
             returned = base.handle_no_permission()
         assert returned == mocked_redirect.return_value
-        mocked_redirect.assert_called_once()
-        mocked_redirect.assert_called_with("profile")
+        mocked_redirect.assert_called_once_with("profile")
 
 
 class TestCorePermissionUserMixins(BaseView):
@@ -133,15 +128,12 @@ class TestCorePermissionUserMixins(BaseView):
         ):
             mocked_super.side_effect = PermissionDenied("", "", 0)
             returned = view.handle_no_permission()
-            mocked_safe.assert_called_once()
-            mocked_safe.assert_called_with(ADJUST_BUNDLE_NAMES_SIZE_ERROR)
-            mocked_messages.error.assert_called_once()
-            mocked_messages.error.assert_called_with(
+            mocked_safe.assert_called_once_with(ADJUST_BUNDLE_NAMES_SIZE_ERROR)
+            mocked_messages.error.assert_called_once_with(
                 self.request, mocked_safe.return_value
             )
         assert returned == mocked_redirect.return_value
-        mocked_redirect.assert_called_once()
-        mocked_redirect.assert_called_with("home")
+        mocked_redirect.assert_called_once_with("home")
 
     def test_bundlenamesredirection_handle_no_permission_redirects_to_subscriptions(
         self, mocker
@@ -165,8 +157,7 @@ class TestCorePermissionUserMixins(BaseView):
             mocked_safe.assert_not_called()
             mocked_messages.assert_not_called()
         assert returned == mocked_redirect.return_value
-        mocked_redirect.assert_called_once()
-        mocked_redirect.assert_called_with("subscriptions")
+        mocked_redirect.assert_called_once_with("subscriptions")
 
 
 class TestCorePermissionMixins:
@@ -185,8 +176,7 @@ class TestCorePermissionMixins:
         mixin = CanAccessApiMixin()
         mixin.request = mocker.MagicMock()
         mixin.test_func()
-        mixin.request.user.profile.can_access_api.assert_called_once()
-        mixin.request.user.profile.can_access_api.assert_called_with()
+        mixin.request.user.profile.can_access_api.assert_called_once_with()
 
     # # CanAccessAuthorizeMixin
     def test_core_permissions_canaccessauthorizemixin_is_subclass_of_profileredirection(
@@ -201,8 +191,7 @@ class TestCorePermissionMixins:
         mixin = CanAccessAuthorizeMixin()
         mixin.request = mocker.MagicMock()
         mixin.test_func()
-        mixin.request.user.profile.can_access_authorize.assert_called_once()
-        mixin.request.user.profile.can_access_authorize.assert_called_with()
+        mixin.request.user.profile.can_access_authorize.assert_called_once_with()
 
     # # CanAddBundleNameMixin
     def test_core_permissions_canaddbundlenamemixin_is_subclass_of_subscriberedirection(
@@ -217,8 +206,7 @@ class TestCorePermissionMixins:
         mixin = CanAddBundleNameMixin()
         mixin.request = mocker.MagicMock()
         mixin.test_func()
-        mixin.request.user.profile.can_add_bundle_name.assert_called_once()
-        mixin.request.user.profile.can_add_bundle_name.assert_called_with()
+        mixin.request.user.profile.can_add_bundle_name.assert_called_once_with()
 
     # # CanUseBundleNamesMixin
     def test_core_permissions_canusebundlenamesmixin_is_subclass_of_homeredirection(
@@ -233,5 +221,4 @@ class TestCorePermissionMixins:
         mixin = CanUseBundleNamesMixin()
         mixin.request = mocker.MagicMock()
         mixin.test_func()
-        mixin.request.user.profile.can_use_bundle_names.assert_called_once()
-        mixin.request.user.profile.can_use_bundle_names.assert_called_with()
+        mixin.request.user.profile.can_use_bundle_names.assert_called_once_with()

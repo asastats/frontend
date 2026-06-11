@@ -428,10 +428,8 @@ class TestUtilsHelpersGeneralPublicFunctions:
         mocked = mocker.patch("utils.helpers.cached_bundle", return_value=addresses)
         returned = check_bundle_addresses(bundle)
         assert returned == addresses
-        mocked.assert_called_once()
-        mocked.assert_called_with(bundle, mocked_cache.return_value)
-        mocked_cache.assert_called_once()
-        mocked_cache.assert_called_with()
+        mocked.assert_called_once_with(bundle, mocked_cache.return_value)
+        mocked_cache.assert_called_once_with()
 
     def test_utils_helpers_check_bundle_addresses_uses_provided_cache_client(
         self, mocker
@@ -443,8 +441,7 @@ class TestUtilsHelpersGeneralPublicFunctions:
         mocked = mocker.patch("utils.helpers.cached_bundle", return_value=addresses)
         returned = check_bundle_addresses(bundle, cache_client=cache_client)
         assert returned == addresses
-        mocked.assert_called_once()
-        mocked.assert_called_with(bundle, cache_client)
+        mocked.assert_called_once_with(bundle, cache_client)
         mocked_cache.assert_not_called()
 
     def test_utils_helpers_check_bundle_addresses_returns_empty_string_if_not_exists(
@@ -464,15 +461,12 @@ class TestUtilsHelpersGeneralPublicFunctions:
         mocked_cached = mocker.patch("utils.helpers.cached_bundle")
         mocked_cupdate = mocker.patch("utils.helpers.cupdate_bundle")
         create_bundle(addresses)
-        mocked_bundle.assert_called_once()
-        mocked_bundle.assert_called_with(addresses)
-        mocked_cached.assert_called_once()
-        mocked_cached.assert_called_with(
+        mocked_bundle.assert_called_once_with(addresses)
+        mocked_cached.assert_called_once_with(
             mocked_bundle.return_value,
             mocked_redis.return_value,
         )
-        mocked_redis.assert_called_once()
-        mocked_redis.assert_called_with()
+        mocked_redis.assert_called_once_with()
         mocked_cupdate.assert_not_called()
 
     def test_utils_helpers_create_bundle_updates_cache(self, mocker):
@@ -482,10 +476,8 @@ class TestUtilsHelpersGeneralPublicFunctions:
         mocker.patch("utils.helpers.cached_bundle", return_value=False)
         mocked_cupdate = mocker.patch("utils.helpers.cupdate_bundle")
         create_bundle(addresses)
-        mocked_bundle.assert_called_once()
-        mocked_bundle.assert_called_with(addresses)
-        mocked_cupdate.assert_called_once()
-        mocked_cupdate.assert_called_with(
+        mocked_bundle.assert_called_once_with(addresses)
+        mocked_cupdate.assert_called_once_with(
             mocked_bundle.return_value,
             addresses,
             mocked_redis.return_value,
@@ -507,21 +499,17 @@ class TestUtilsHelpersGeneralPublicFunctions:
         mocked_cached = mocker.patch("utils.helpers.cached_bundle", return_value=False)
         mocked_cupdate = mocker.patch("utils.helpers.cupdate_bundle")
         create_bundle(addresses, cache_client=cache_client)
-        mocked_bundle.assert_called_once()
-        mocked_bundle.assert_called_with(addresses)
-        mocked_cached.assert_called_once()
-        mocked_cached.assert_called_with(
+        mocked_bundle.assert_called_once_with(addresses)
+        mocked_cached.assert_called_once_with(
             mocked_bundle.return_value,
             cache_client,
         )
-        mocked_cupdate.assert_called_once()
-        mocked_cupdate.assert_called_with(
+        mocked_cupdate.assert_called_once_with(
             mocked_bundle.return_value,
             addresses,
             mocked_redis.return_value,
         )
-        mocked_redis.assert_called_once()
-        mocked_redis.assert_called_with(replica=False)
+        mocked_redis.assert_called_once_with(replica=False)
 
     # # random_slogan
     def test_utils_helpers_random_slogan_calls_random_choice(self):

@@ -83,10 +83,12 @@ class Profile(models.Model):
         result = get_permission_provider().votes_and_permission(self.address)
         if result is None:
             return
+
         votes, permission = result
         if self.votes != votes or self.permission != permission:
             if self.votes and votes == 0:
                 return
+
             self.votes = votes
             self.permission = permission
             self.save()

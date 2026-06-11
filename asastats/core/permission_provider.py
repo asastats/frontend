@@ -70,6 +70,7 @@ def get_permission_provider():
     dotted = getattr(settings, "PERMISSION_PROVIDER", None)
     if not dotted:
         return PermissionProvider()
+
     return import_string(dotted)()
 
 

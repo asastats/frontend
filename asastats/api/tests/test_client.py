@@ -37,8 +37,7 @@ class TestApiClientFunctions:
         mocked_requests.request.return_value.status_code = 200
         returned = _request("GET", "/path/")
         assert returned == mocked_requests.request.return_value
-        mocked_requests.request.assert_called_once()
-        mocked_requests.request.assert_called_with(
+        mocked_requests.request.assert_called_once_with(
             "GET",
             "https://api.test/path/",
             headers=mocked_headers.return_value,
@@ -73,8 +72,7 @@ class TestApiClientFunctions:
         mocked_request.return_value.json.return_value = {"price": 0.25}
         returned = fetch_price()
         assert returned == 0.25
-        mocked_request.assert_called_once()
-        mocked_request.assert_called_with("GET", "/api/v2/price/")
+        mocked_request.assert_called_once_with("GET", "/api/v2/price/")
 
     # # fetch_serialized_account
     def test_api_client_fetch_serialized_account_without_addresses(self, mocker):
@@ -82,8 +80,7 @@ class TestApiClientFunctions:
         mocked_request = mocker.patch("api.client._request")
         returned = fetch_serialized_account(value)
         assert returned == mocked_request.return_value.json.return_value
-        mocked_request.assert_called_once()
-        mocked_request.assert_called_with(
+        mocked_request.assert_called_once_with(
             "GET", f"/api/v2/internal/accounts/{value}/", params=None
         )
 
@@ -93,8 +90,7 @@ class TestApiClientFunctions:
         mocked_request = mocker.patch("api.client._request")
         returned = fetch_serialized_account(value, addresses)
         assert returned == mocked_request.return_value.json.return_value
-        mocked_request.assert_called_once()
-        mocked_request.assert_called_with(
+        mocked_request.assert_called_once_with(
             "GET",
             f"/api/v2/internal/accounts/{value}/",
             params={"addresses": addresses},
@@ -105,8 +101,7 @@ class TestApiClientFunctions:
         mocked_request = mocker.patch("api.client._request")
         returned = fetch_capabilities()
         assert returned == mocked_request.return_value.json.return_value
-        mocked_request.assert_called_once()
-        mocked_request.assert_called_with("GET", "/api/v2/capabilities/")
+        mocked_request.assert_called_once_with("GET", "/api/v2/capabilities/")
 
     # # start_export
     def test_api_client_start_export_functionality(self, mocker):
@@ -115,8 +110,7 @@ class TestApiClientFunctions:
         mocked_request = mocker.patch("api.client._request")
         returned = start_export(value, addresses)
         assert returned == mocked_request.return_value.json.return_value
-        mocked_request.assert_called_once()
-        mocked_request.assert_called_with(
+        mocked_request.assert_called_once_with(
             "POST",
             "/api/v2/exports/",
             json={"bundle": value, "addresses": addresses},
@@ -128,8 +122,9 @@ class TestApiClientFunctions:
         mocked_request = mocker.patch("api.client._request")
         returned = export_status(bundle)
         assert returned == mocked_request.return_value.json.return_value
-        mocked_request.assert_called_once()
-        mocked_request.assert_called_with("GET", f"/api/v2/exports/{bundle}/status/")
+        mocked_request.assert_called_once_with(
+            "GET", f"/api/v2/exports/{bundle}/status/"
+        )
 
     # # download_export
     def test_api_client_download_export_functionality(self, mocker):
@@ -137,8 +132,7 @@ class TestApiClientFunctions:
         mocked_request = mocker.patch("api.client._request")
         returned = download_export(bundle)
         assert returned == mocked_request.return_value.content
-        mocked_request.assert_called_once()
-        mocked_request.assert_called_with(
+        mocked_request.assert_called_once_with(
             "GET", f"/api/v2/exports/{bundle}/download/", stream=True
         )
 
@@ -148,8 +142,7 @@ class TestApiClientFunctions:
         mocked_request = mocker.patch("api.client._request")
         returned = reset_export(bundle)
         assert returned == mocked_request.return_value.json.return_value
-        mocked_request.assert_called_once()
-        mocked_request.assert_called_with("DELETE", f"/api/v2/exports/{bundle}/")
+        mocked_request.assert_called_once_with("DELETE", f"/api/v2/exports/{bundle}/")
 
 
 class TestApiClientEngineRequest:

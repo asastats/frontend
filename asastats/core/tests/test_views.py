@@ -273,10 +273,8 @@ class HomePageTest(TestCase):
         )
         self.user.set_password("12345o")
         self.user.save()
-        with mock.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=[0, 0],
-        ):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
             self.client.login(username="testprofile", password="12345o")
 
     def test_home_page_uses_home_template(self):
@@ -336,10 +334,8 @@ class EditProfilePageTest(TestCase):
         )
         self.user.set_password("12345o")
         self.user.save()
-        with mock.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=[0, 0],
-        ):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
             self.client.login(username="profilepage", password="12345o")
 
     def post_invalid_input(self):
@@ -424,10 +420,8 @@ class ProfileAccountPageTest(TestCase):
         )
         self.user.set_password("12345o")
         self.user.save()
-        with mock.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=[0, 0],
-        ):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
             self.client.login(username="profile_account", password="12345o")
 
     def test_profile_page_profile_account_uses_profile_account_template(self):
@@ -447,10 +441,8 @@ class DeactivateProfilePageTest(TestCase):
         )
         self.user.set_password("12345o")
         self.user.save()
-        with mock.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=[0, 0],
-        ):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
             self.client.login(username="deactivate_profile", password="12345o")
 
     def post_invalid_input(self):
@@ -536,10 +528,11 @@ class BundleNameAddPageTest(TestCase):
         self.user.save()
         self.user.profile.permission = 258_885_438_201
         self.user.profile.save()
-        with mock.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=[self.user.profile.votes, self.user.profile.permission],
-        ):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [
+                self.user.profile.votes,
+                self.user.profile.permission,
+            ]
             self.client.login(username="testuser", password="12345o")
 
     def post_invalid_input(self):
@@ -691,10 +684,8 @@ class BundleNameEditPageTest(TestCase):
             profile=self.user.profile, name="BundleName name", addresses=TEST_ADDRESS2
         )
         self.bundlename.save()
-        with mock.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=[0, 0],
-        ):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
             self.client.login(username="bundlenameedit1", password="12345o")
 
     def post_invalid_input(self):
@@ -753,10 +744,8 @@ class BundleNameDeletePageTest(TestCase):
             profile=self.user.profile, name="BundleName name", addresses=TEST_ADDRESS2
         )
         self.bundlename.save()
-        with mock.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=[0, 0],
-        ):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
             self.client.login(username="bundlenamedelete1", password="12345o")
 
     def test_bundlename_delete_uses_bundlename_delete_template(self):
@@ -794,10 +783,8 @@ class BundleNamePageTest(TestCase):
             name="mybundle",
             addresses=f"{TEST_ADDRESS2} {TEST_ADDRESS3}",
         )
-        with mock.patch(
-            "core.models.address_votes_and_permission_from_permission_dapp",
-            return_value=[0, 0],
-        ):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
             self.client.login(username="bundlename1", password="12345o")
 
     def test_bundlename_redirects_to_home_page_for_no_bundle(self):

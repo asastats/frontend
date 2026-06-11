@@ -169,10 +169,8 @@ class TestUserHelpersValuesFunctions:
         )
         returned = _values_offset_and_length_pairs(docs_data_size)
         assert returned == starting + docs
-        mocked_starting.assert_called_once()
-        mocked_starting.assert_called_with()
-        mocked_docs.assert_called_once()
-        mocked_docs.assert_called_with(docs_data_size)
+        mocked_starting.assert_called_once_with()
+        mocked_docs.assert_called_once_with(docs_data_size)
 
 
 class TestUtilsUserHelpersFunctions:
@@ -226,10 +224,8 @@ class TestUtilsUserHelpersFunctions:
         )
         returned = check_authorization_transaction(profile)
         assert returned == ""
-        mocked_client.assert_called_once()
-        mocked_client.assert_called_with()
-        profile.address_authorization_note.assert_called_once()
-        profile.address_authorization_note.assert_called_with()
+        mocked_client.assert_called_once_with()
+        profile.address_authorization_note.assert_called_once_with()
         calls = [
             mocker.call(params, indexer_client, delay=0.05),
             mocker.call(params, indexer_client, next_page=next_token1, delay=0.05),
@@ -283,10 +279,8 @@ class TestUtilsUserHelpersFunctions:
         )
         returned = check_authorization_transaction(profile)
         assert returned == ""
-        mocked_client.assert_called_once()
-        mocked_client.assert_called_with()
-        profile.address_authorization_note.assert_called_once()
-        profile.address_authorization_note.assert_called_with()
+        mocked_client.assert_called_once_with()
+        profile.address_authorization_note.assert_called_once_with()
         calls = [
             mocker.call(params, indexer_client, delay=0.05),
             mocker.call(params, indexer_client, next_page=next_token1, delay=0.05),
@@ -339,10 +333,8 @@ class TestUtilsUserHelpersFunctions:
         )
         returned = check_authorization_transaction(profile)
         assert returned == transaction_id
-        mocked_client.assert_called_once()
-        mocked_client.assert_called_with()
-        profile.address_authorization_note.assert_called_once()
-        profile.address_authorization_note.assert_called_with()
+        mocked_client.assert_called_once_with()
+        profile.address_authorization_note.assert_called_once_with()
         calls = [
             mocker.call(params, indexer_client, delay=0.05),
             mocker.call(params, indexer_client, next_page=next_token1, delay=0.05),
@@ -394,10 +386,8 @@ class TestUtilsUserHelpersFunctions:
         )
         returned = check_authorization_transaction(profile)
         assert returned == transaction_id
-        mocked_client.assert_called_once()
-        mocked_client.assert_called_with()
-        profile.address_authorization_note.assert_called_once()
-        profile.address_authorization_note.assert_called_with()
+        mocked_client.assert_called_once_with()
+        profile.address_authorization_note.assert_called_once_with()
         calls = [
             mocker.call(params, indexer_client, delay=0.05),
             mocker.call(params, indexer_client, next_page=next_token1, delay=0.05),
@@ -500,8 +490,7 @@ class TestUtilsUserHelpersFunctions:
         with pytest.raises(ValidationError) as exception:
             validate_address_or_algo_name_url_path(url_path)
         assert str(exception.value) == f"['{ADDRESS_AND_ALGO_NAME_URL_PATH_ERROR}']"
-        mocked_check.assert_called_once()
-        mocked_check.assert_called_with(url_path)
+        mocked_check.assert_called_once_with(url_path)
 
     def test_utils_userhelpers_validate_address_or_algo_name_url_path_functionality(
         self, mocker
@@ -511,5 +500,4 @@ class TestUtilsUserHelpersFunctions:
             "utils.userhelpers.check_algorand_address", return_value=""
         )
         validate_address_or_algo_name_url_path(url_path)
-        mocked_check.assert_called_once()
-        mocked_check.assert_called_with(url_path)
+        mocked_check.assert_called_once_with(url_path)

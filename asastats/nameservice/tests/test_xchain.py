@@ -52,8 +52,7 @@ class TestNameServiceXChainPrivateFunctions:
         returned = _compiled_evm_address(evm_address, algod_client)
 
         assert returned == expected_bytes
-        mock_normalize.assert_called_once()
-        mock_normalize.assert_called_with(evm_address)
+        mock_normalize.assert_called_once_with(evm_address)
         algod_client.compile.assert_called_once()
 
         # Verify the template substitution contains the owner_hex
@@ -84,10 +83,8 @@ class TestNameServiceXChainPublicFunctions:
         returned = check_evm_address(evm_address, algod_client)
 
         assert returned == algorand_address
-        mock_compiled.assert_called_once()
-        mock_compiled.assert_called_with(evm_address, algod_client)
-        mock_lsig_class.assert_called_once()
-        mock_lsig_class.assert_called_with(compiled_bytes)
+        mock_compiled.assert_called_once_with(evm_address, algod_client)
+        mock_lsig_class.assert_called_once_with(compiled_bytes)
         mock_lsig_instance.address.assert_called_once()
 
     @pytest.mark.parametrize(
@@ -110,6 +107,5 @@ class TestNameServiceXChainPublicFunctions:
 
         # Should return the original EVM address upon catching an ALGOD exception
         assert returned == evm_address
-        mock_compiled.assert_called_once()
-        mock_compiled.assert_called_with(evm_address, algod_client)
+        mock_compiled.assert_called_once_with(evm_address, algod_client)
         mock_lsig_class.assert_not_called()

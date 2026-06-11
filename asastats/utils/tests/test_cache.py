@@ -14,8 +14,7 @@ class TestBundleCacheFunctions:
         cache_client.get.return_value = None
         returned = cached_bundle(bundle, cache_client)
         assert returned is False
-        cache_client.get.assert_called_once()
-        cache_client.get.assert_called_with(bundle)
+        cache_client.get.assert_called_once_with(bundle)
 
     def test_utils_cache_cached_bundle_returns_false_for_valueerror(self, mocker):
         cache_client = mocker.MagicMock()
@@ -26,8 +25,7 @@ class TestBundleCacheFunctions:
         value.decode.side_effect = ValueError("")
         returned = cached_bundle(bundle, cache_client)
         assert returned is False
-        cache_client.get.assert_called_once()
-        cache_client.get.assert_called_with(key)
+        cache_client.get.assert_called_once_with(key)
 
     def test_utils_cache_cached_bundle_returns_addresses(self, mocker):
         cache_client = mocker.MagicMock()
@@ -43,5 +41,4 @@ class TestBundleCacheFunctions:
         bundle, addresses = "bundle", "address1 address2"
         key = f"{bundle}"
         cupdate_bundle(bundle, addresses, cache_client)
-        cache_client.set.assert_called_once()
-        cache_client.set.assert_called_with(key, addresses)
+        cache_client.set.assert_called_once_with(key, addresses)

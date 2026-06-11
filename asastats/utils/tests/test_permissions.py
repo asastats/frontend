@@ -65,11 +65,9 @@ class TestUtilsPermissionsHelperFunctions:
         mocked_logger = mocker.patch("utils.permissions.create_multiprocess_logger")
         with mock.patch("utils.permissions.os.getpid") as mocked_pid:
             _initializer()
-            mocked_pid.assert_called_once()
-            mocked_pid.assert_called_with()
+            mocked_pid.assert_called_once_with()
         assert utils.permissions.logger == mocked_logger.return_value
-        mocked_logger.assert_called_once()
-        mocked_logger.assert_called_with(mocked_pid.return_value)
+        mocked_logger.assert_called_once_with(mocked_pid.return_value)
 
 
 class TestUtilsPermissionsRunPermissionsUpdate:
@@ -116,18 +114,14 @@ class TestUtilsPermissionsRunPermissionsUpdate:
             ]
             mocked_signal.assert_has_calls(calls, any_order=True)
             assert mocked_signal.call_count == 2
-            mocked_logger.assert_called_once()
-            mocked_logger.assert_called_with(
+            mocked_logger.assert_called_once_with(
                 mocked_pid.return_value, prefix="permissions"
             )
-            mocked_pool.assert_called_once()
-            mocked_pool.assert_called_with(
+            mocked_pool.assert_called_once_with(
                 processes=1, initializer=utils.permissions._initializer
             )
-            mock_close.assert_called_once()
-            mock_close.assert_called_with()
-            mock_join.assert_called_once()
-            mock_join.assert_called_with()
+            mock_close.assert_called_once_with()
+            mock_join.assert_called_once_with()
             mock_apply.assert_not_called()
 
     def test_utils_permissions_run_permissions_update_doesnt_log(self, mocker):
@@ -145,13 +139,13 @@ class TestUtilsPermissionsRunPermissionsUpdate:
             mock_async.return_value.wait.side_effect = _exit_gracefully
             run_permissions_update()
             mock_apply.assert_called_once()
-            mock_apply.assert_called_with(
+            mock_apply.assert_called_once_with(
                 utils.permissions._check_interval_passed, [None]
             )
             mock_async.return_value.get.assert_called_once()
-            mock_async.return_value.get.assert_called_with()
+            mock_async.return_value.get.assert_called_once_with()
             mock_async.return_value.wait.assert_called_once()
-            mock_async.return_value.wait.assert_called_with()
+            mock_async.return_value.wait.assert_called_once_with()
             mocked_logger.return_value.warning.assert_not_called()
 
     def test_utils_permissions_run_permissions_update_logs_timeout(self, mocker):
@@ -182,7 +176,9 @@ class TestUtilsPermissionsRunPermissionsUpdate:
             mock_async.return_value.wait.assert_has_calls(calls, any_order=True)
             assert mock_async.return_value.wait.call_count == 2
             mocked_logger.return_value.warning.assert_called_once()
-            mocked_logger.return_value.warning.assert_called_with("Cycle duration: 80")
+            mocked_logger.return_value.warning.assert_called_once_with(
+                "Cycle duration: 80"
+            )
 
     def test_utils_permissions_run_permissions_update_logs_apply_async_error(
         self, mocker

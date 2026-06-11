@@ -35,10 +35,8 @@ class TestNameServiceAnsFunctions:
         mocked_resolver.return_value.resolve_name.return_value = name_info
         name = name.lower().replace("/ans", "")
         assert check_name(name, algod_client) == name
-        mocked_resolver.assert_called_once()
-        mocked_resolver.assert_called_with(algod_client)
-        mocked_resolver.return_value.resolve_name.assert_called_once()
-        mocked_resolver.return_value.resolve_name.assert_called_with(name)
+        mocked_resolver.assert_called_once_with(algod_client)
+        mocked_resolver.return_value.resolve_name.assert_called_once_with(name)
 
     def test_nameservice_ans_check_name_resolves_uppercases_name(self, mocker):
         mocked_resolver = mocker.patch("nameservice.ans.AnsResolver")
@@ -47,10 +45,8 @@ class TestNameServiceAnsFunctions:
         name_info = {"found": False}
         mocked_resolver.return_value.resolve_name.return_value = name_info
         assert check_name(name, algod_client) == name
-        mocked_resolver.assert_called_once()
-        mocked_resolver.assert_called_with(algod_client)
-        mocked_resolver.return_value.resolve_name.assert_called_once()
-        mocked_resolver.return_value.resolve_name.assert_called_with(name.lower())
+        mocked_resolver.assert_called_once_with(algod_client)
+        mocked_resolver.return_value.resolve_name.assert_called_once_with(name.lower())
 
     def test_nameservice_ans_check_name_returns_name_for_not_registered_name(
         self, mocker
@@ -61,10 +57,8 @@ class TestNameServiceAnsFunctions:
         name_info = {"found": False}
         mocked_resolver.return_value.resolve_name.return_value = name_info
         assert check_name(name, algod_client) == name
-        mocked_resolver.assert_called_once()
-        mocked_resolver.assert_called_with(algod_client)
-        mocked_resolver.return_value.resolve_name.assert_called_once()
-        mocked_resolver.return_value.resolve_name.assert_called_with(name)
+        mocked_resolver.assert_called_once_with(algod_client)
+        mocked_resolver.return_value.resolve_name.assert_called_once_with(name)
 
     def test_nameservice_ans_check_name_returns_owner_for_registered_name(self, mocker):
         mocked_resolver = mocker.patch("nameservice.ans.AnsResolver")
@@ -74,7 +68,5 @@ class TestNameServiceAnsFunctions:
         name_info = {"found": True, "owner": owner}
         mocked_resolver.return_value.resolve_name.return_value = name_info
         assert check_name(name, algod_client) == owner
-        mocked_resolver.assert_called_once()
-        mocked_resolver.assert_called_with(algod_client)
-        mocked_resolver.return_value.resolve_name.assert_called_once()
-        mocked_resolver.return_value.resolve_name.assert_called_with(name)
+        mocked_resolver.assert_called_once_with(algod_client)
+        mocked_resolver.return_value.resolve_name.assert_called_once_with(name)

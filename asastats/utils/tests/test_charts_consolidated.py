@@ -1014,16 +1014,12 @@ class TestUtilsChartConsolidatedPublicFunctions:
         mocked_data.asset_called_with(serialized_data)
         mocked_totals.asset_called_once()
         mocked_totals.asset_called_with(consolidated_data)
-        mocked_dist.assert_called_once()
-        mocked_dist.assert_called_with(asas, values, consolidated_data)
-        mocked_ratio.assert_called_once()
-        mocked_ratio.assert_called_with(total, consolidated_totals)
-        mocked_nftfloor.assert_called_once()
-        mocked_nftfloor.assert_called_with(
+        mocked_dist.assert_called_once_with(asas, values, consolidated_data)
+        mocked_ratio.assert_called_once_with(total, consolidated_totals)
+        mocked_nftfloor.assert_called_once_with(
             consolidated_data.nftfloor, {}, label="NFT floor data"
         )
-        mocked_assign.assert_called_once()
-        mocked_assign.assert_called_with(mocked_nftfloor.return_value, nft_colors)
+        mocked_assign.assert_called_once_with(mocked_nftfloor.return_value, nft_colors)
 
     # # prepare_consolidated_charts_from_assets_data
     def test_utils_charts_prepare_consolidated_charts_from_assets_data_functionality(

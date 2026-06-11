@@ -39,8 +39,7 @@ class TestUtilsClientsFunctions:
     ):
         mocked_redis = mocker.patch("utils.clients.Redis")
         returned = redis_instance()
-        mocked_redis.assert_called_once()
-        mocked_redis.assert_called_with(
+        mocked_redis.assert_called_once_with(
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
             db=settings.REDIS_DB,
@@ -53,8 +52,7 @@ class TestUtilsClientsFunctions:
     ):
         mocked_redis = mocker.patch("utils.clients.Redis")
         returned = redis_instance(replica=False)
-        mocked_redis.assert_called_once()
-        mocked_redis.assert_called_with(
+        mocked_redis.assert_called_once_with(
             host=settings.REDIS_PRIMARY_HOST,
             port=settings.REDIS_PORT,
             db=settings.REDIS_DB,

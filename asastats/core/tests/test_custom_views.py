@@ -1746,21 +1746,18 @@ class TestDbProfileDisplayView(BaseUserCreatedView):
 
         self.request.user.profile.authorized = "authorized"
         self.request.user.profile.address = TEST_ADDRESS2
-        mocked_client = mocker.patch("core.views.algod_instance")
+        mocked_provider = mocker.patch("core.views.get_permission_provider")
         subscriptions = mocker.MagicMock()
-        mocked_fetch = mocker.patch(
-            "core.views.fetch_subscriptions_for_address", return_value=subscriptions
-        )
-        mocked_format = mocker.patch("core.views.formatted_subscription_timestamps")
+        mocked_provider.return_value.subscriptions.return_value = subscriptions
 
         # Run.
         view_object = view.get(self.request)
 
         # Check.
-        assert view_object.context_data["subscriptions"] == mocked_format.return_value
-        mocked_client.assert_called_once_with()
-        mocked_fetch.assert_called_once_with(mocked_client.return_value, TEST_ADDRESS2)
-        mocked_format.assert_called_once_with(subscriptions)
+        assert view_object.context_data["subscriptions"] == subscriptions
+        mocked_provider.return_value.subscriptions.assert_called_once_with(
+            TEST_ADDRESS2
+        )
 
     def test_core_views_profiledisplay_get_context_data_for_no_subscriptions(
         self, mocker
@@ -1771,20 +1768,18 @@ class TestDbProfileDisplayView(BaseUserCreatedView):
 
         self.request.user.profile.authorized = "authorized"
         self.request.user.profile.address = TEST_ADDRESS2
-        mocked_client = mocker.patch("core.views.algod_instance")
-        mocked_fetch = mocker.patch(
-            "core.views.fetch_subscriptions_for_address", return_value=None
-        )
-        mocked_format = mocker.patch("core.views.formatted_subscription_timestamps")
+        mocked_provider = mocker.patch("core.views.get_permission_provider")
+        mocked_provider.return_value.subscriptions.return_value = None
 
         # Run.
         view_object = view.get(self.request)
 
         # Check.
         assert view_object.context_data.get("subscriptions") is None
-        mocked_client.assert_called_once_with()
-        mocked_fetch.assert_called_once_with(mocked_client.return_value, TEST_ADDRESS2)
-        mocked_format.assert_not_called()
+        mocked_provider.assert_called_once_with()
+        mocked_provider.return_value.subscriptions.assert_called_once_with(
+            TEST_ADDRESS2
+        )
 
     def test_core_views_profiledisplay_get_context_data_checks_subscriptions_non_auth(
         self, mocker
@@ -1793,16 +1788,14 @@ class TestDbProfileDisplayView(BaseUserCreatedView):
         view = ProfileDisplay()
         view = self.setup_view(view, self.request)
 
-        mocked_client = mocker.patch("core.views.algod_instance")
-        mocked_fetch = mocker.patch("core.views.fetch_subscriptions_for_address")
+        mocked_provider = mocker.patch("core.views.get_permission_provider")
 
         # Run.
         view_object = view.get(self.request)
 
         # Check.
         assert view_object.context_data.get("subscriptions") is None
-        mocked_client.assert_not_called()
-        mocked_fetch.assert_not_called()
+        mocked_provider.assert_not_called()
 
     def test_core_views_profiledisplay_get_form_fills_form_with_user_data(self):
         # Setup view

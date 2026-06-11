@@ -23,8 +23,7 @@ class TestApMainFunctions:
         mocked_extract = mocker.patch("api.main.extract_account_entities")
         returned = account_entities(serialized_data)
         assert returned == mocked_extract.return_value
-        mocked_extract.assert_called_once()
-        mocked_extract.assert_called_with(serialized_data)
+        mocked_extract.assert_called_once_with(serialized_data)
 
     # # fetch_and_serialize_account
     def test_api_main_fetch_and_serialize_account_functionality(self, mocker):
@@ -32,16 +31,14 @@ class TestApMainFunctions:
         mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
         returned = fetch_and_serialize_account(bundle, addresses)
         assert returned == mocked_fetch.return_value
-        mocked_fetch.assert_called_once()
-        mocked_fetch.assert_called_with(bundle, addresses)
+        mocked_fetch.assert_called_once_with(bundle, addresses)
 
     def test_api_main_fetch_and_serialize_account_for_single_address(self, mocker):
         bundle = API_EXAMPLE_ADDRESS1
         mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
         returned = fetch_and_serialize_account(bundle)
         assert returned == mocked_fetch.return_value
-        mocked_fetch.assert_called_once()
-        mocked_fetch.assert_called_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "")
 
     # # filtered_asaitem
     def test_api_main_filtered_asaitem_for_usd(self, mocker):
@@ -61,10 +58,8 @@ class TestApMainFunctions:
         )
         returned = filtered_asaitem(asset_id, serialized_data, query_params)
         assert returned == converted
-        mocked_extract.assert_called_once()
-        mocked_extract.assert_called_with(asset_id, asaitems)
-        mocked_convert.assert_called_once()
-        mocked_convert.assert_called_with([asaitem], pricealgo)
+        mocked_extract.assert_called_once_with(asset_id, asaitems)
+        mocked_convert.assert_called_once_with([asaitem], pricealgo)
 
     def test_api_main_filtered_asaitem_functionality(self, mocker):
         asset_id = mocker.MagicMock()
@@ -76,8 +71,7 @@ class TestApMainFunctions:
         mocked_convert = mocker.patch("api.main.convert_asaitems_values_to_usd")
         returned = filtered_asaitem(asset_id, serialized_data, query_params)
         assert returned == asaitem
-        mocked_extract.assert_called_once()
-        mocked_extract.assert_called_with(asset_id, asaitems)
+        mocked_extract.assert_called_once_with(asset_id, asaitems)
         mocked_convert.assert_not_called()
 
     # # filtered_nftcollection
@@ -100,10 +94,8 @@ class TestApMainFunctions:
         )
         returned = filtered_nftcollection(collection, serialized_data, query_params)
         assert returned == converted
-        mocked_extract.assert_called_once()
-        mocked_extract.assert_called_with(collection, nftcollections)
-        mocked_convert.assert_called_once()
-        mocked_convert.assert_called_with([nftcollection], pricealgo)
+        mocked_extract.assert_called_once_with(collection, nftcollections)
+        mocked_convert.assert_called_once_with([nftcollection], pricealgo)
 
     def test_api_main_filtered_nftcollection_functionality(self, mocker):
         collection = mocker.MagicMock()
@@ -117,8 +109,7 @@ class TestApMainFunctions:
         mocked_convert = mocker.patch("api.main.convert_nftcollections_values_to_usd")
         returned = filtered_nftcollection(collection, serialized_data, query_params)
         assert returned == nftcollection
-        mocked_extract.assert_called_once()
-        mocked_extract.assert_called_with(collection, nftcollections)
+        mocked_extract.assert_called_once_with(collection, nftcollections)
         mocked_convert.assert_not_called()
 
     # # filtered_nftitem
@@ -139,10 +130,8 @@ class TestApMainFunctions:
         )
         returned = filtered_nftitem(nft_id, serialized_data, query_params)
         assert returned == converted
-        mocked_extract.assert_called_once()
-        mocked_extract.assert_called_with(nft_id, nftcollections)
-        mocked_convert.assert_called_once()
-        mocked_convert.assert_called_with([nftitem], pricealgo)
+        mocked_extract.assert_called_once_with(nft_id, nftcollections)
+        mocked_convert.assert_called_once_with([nftitem], pricealgo)
 
     def test_api_main_filtered_nftitem_functionality(self, mocker):
         nft_id = mocker.MagicMock()
@@ -154,8 +143,7 @@ class TestApMainFunctions:
         mocked_convert = mocker.patch("api.main.convert_items_values_to_usd")
         returned = filtered_nftitem(nft_id, serialized_data, query_params)
         assert returned == nftitem
-        mocked_extract.assert_called_once()
-        mocked_extract.assert_called_with(nft_id, nftcollections)
+        mocked_extract.assert_called_once_with(nft_id, nftcollections)
         mocked_convert.assert_not_called()
 
     # # processed_account
@@ -179,8 +167,7 @@ class TestApMainFunctions:
         mocked_convert = mocker.patch("api.main.convert_account_values_to_usd")
         returned = processed_account(serialized_data, query_params)
         assert returned == mocked_top.return_value
-        mocked_top.assert_called_once()
-        mocked_top.assert_called_with(serialized_data, 0)
+        mocked_top.assert_called_once_with(serialized_data, 0)
         mocked_headers.assert_not_called()
         mocked_convert.assert_not_called()
 
@@ -200,12 +187,9 @@ class TestApMainFunctions:
         mocked_convert = mocker.patch("api.main.convert_account_values_to_usd")
         returned = processed_account(serialized_data, query_params)
         assert returned == mocked_convert.return_value
-        mocked_top.assert_called_once()
-        mocked_top.assert_called_with(serialized_data, 10)
-        mocked_headers.assert_called_once()
-        mocked_headers.assert_called_with(mocked_top.return_value)
-        mocked_convert.assert_called_once()
-        mocked_convert.assert_called_with(headers_serialized_data, pricealgo)
+        mocked_top.assert_called_once_with(serialized_data, 10)
+        mocked_headers.assert_called_once_with(mocked_top.return_value)
+        mocked_convert.assert_called_once_with(headers_serialized_data, pricealgo)
 
     # # processed_asaitems
     def test_api_main_processed_asaitems_for_no_query_params(self, mocker):
@@ -264,16 +248,11 @@ class TestApMainFunctions:
         mocked_convert = mocker.patch("api.main.convert_asaitems_values_to_usd")
         returned = processed_asaitems(serialized_data, query_params)
         assert returned == mocked_convert.return_value
-        mocked_provider.assert_called_once()
-        mocked_provider.assert_called_with("provider", asaitems)
-        mocked_program.assert_called_once()
-        mocked_program.assert_called_with("program", mocked_provider.return_value)
-        mocked_type.assert_called_once()
-        mocked_type.assert_called_with("type", mocked_program.return_value)
-        mocked_headers.assert_called_once()
-        mocked_headers.assert_called_with(asaitems_type[:10])
-        mocked_convert.assert_called_once()
-        mocked_convert.assert_called_with(mocked_headers.return_value, pricealgo)
+        mocked_provider.assert_called_once_with("provider", asaitems)
+        mocked_program.assert_called_once_with("program", mocked_provider.return_value)
+        mocked_type.assert_called_once_with("type", mocked_program.return_value)
+        mocked_headers.assert_called_once_with(asaitems_type[:10])
+        mocked_convert.assert_called_once_with(mocked_headers.return_value, pricealgo)
 
     # # processed_nftcollections
     def test_api_main_processed_nftcollections_for_no_query_params(self, mocker):
@@ -330,14 +309,10 @@ class TestApMainFunctions:
         mocked_convert = mocker.patch("api.main.convert_nftcollections_values_to_usd")
         returned = processed_nftcollections(serialized_data, query_params)
         assert returned == mocked_convert.return_value
-        mocked_market.assert_called_once()
-        mocked_market.assert_called_with("market", nftcollections)
-        mocked_type.assert_called_once()
-        mocked_type.assert_called_with("type", mocked_market.return_value)
-        mocked_headers.assert_called_once()
-        mocked_headers.assert_called_with(nftcollections_type[:10])
-        mocked_convert.assert_called_once()
-        mocked_convert.assert_called_with(mocked_headers.return_value, pricealgo)
+        mocked_market.assert_called_once_with("market", nftcollections)
+        mocked_type.assert_called_once_with("type", mocked_market.return_value)
+        mocked_headers.assert_called_once_with(nftcollections_type[:10])
+        mocked_convert.assert_called_once_with(mocked_headers.return_value, pricealgo)
 
     # # processed_nftitems
     def test_api_main_processed_nftitems_for_no_query_params(self, mocker):
@@ -370,8 +345,7 @@ class TestApMainFunctions:
             {"value": "5.0"},
             {"value": "0.1"},
         ]
-        mocked_nftitems.assert_called_once()
-        mocked_nftitems.assert_called_with(nftcollections)
+        mocked_nftitems.assert_called_once_with(nftcollections)
         mocked_market.assert_not_called()
         mocked_type.assert_not_called()
         mocked_headers.assert_not_called()
@@ -407,8 +381,7 @@ class TestApMainFunctions:
             {"value": "5.0"},
             {"value": "0.1"},
         ]
-        mocked_nftitems.assert_called_once()
-        mocked_nftitems.assert_called_with(nftcollections)
+        mocked_nftitems.assert_called_once_with(nftcollections)
         mocked_market.assert_not_called()
         mocked_type.assert_not_called()
         mocked_headers.assert_not_called()
@@ -447,16 +420,11 @@ class TestApMainFunctions:
         mocked_convert = mocker.patch("api.main.convert_items_values_to_usd")
         returned = processed_nftitems(serialized_data, query_params)
         assert returned == mocked_convert.return_value
-        mocked_nftitems.assert_called_once()
-        mocked_nftitems.assert_called_with(nftcollections)
-        mocked_market.assert_called_once()
-        mocked_market.assert_called_with("market", mocked_nftitems.return_value)
-        mocked_type.assert_called_once()
-        mocked_type.assert_called_with("type", mocked_market.return_value)
-        mocked_headers.assert_called_once()
-        mocked_headers.assert_called_with(mocked_type.return_value)
-        mocked_convert.assert_called_once()
-        mocked_convert.assert_called_with(
+        mocked_nftitems.assert_called_once_with(nftcollections)
+        mocked_market.assert_called_once_with("market", mocked_nftitems.return_value)
+        mocked_type.assert_called_once_with("type", mocked_market.return_value)
+        mocked_headers.assert_called_once_with(mocked_type.return_value)
+        mocked_convert.assert_called_once_with(
             [
                 {"value": "1000"},
                 {"value": "250.40"},

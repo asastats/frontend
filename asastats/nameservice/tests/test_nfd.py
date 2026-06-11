@@ -44,8 +44,9 @@ class TestNameServiceNfdV1Functions:
         algod_client.account_info.return_value = {"apps-local-state": state}
         returned = _app_id_from_logicsig(logic_sig, algod_client)
         assert returned == app_id
-        algod_client.account_info.assert_called_once()
-        algod_client.account_info.assert_called_with(logic_sig.address.return_value)
+        algod_client.account_info.assert_called_once_with(
+            logic_sig.address.return_value
+        )
 
     # # _logicsig_from_name
     @pytest.mark.parametrize(
@@ -58,8 +59,7 @@ class TestNameServiceNfdV1Functions:
         mocked = mocker.patch("nameservice.nfd.LogicSigAccount")
         returned = _logicsig_from_name("name/", name, NFD_APP_ID)
         assert returned == mocked.return_value
-        mocked.assert_called_once()
-        mocked.assert_called_with(bytecode)
+        mocked.assert_called_once_with(bytecode)
 
     # # _logicsig_from_name
     @pytest.mark.parametrize(
@@ -85,8 +85,7 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_boxes.return_value = {}
         returned = _check_boxes_addresses(v2_app_id, algod_client)
         assert returned == []
-        algod_client.application_boxes.assert_called_once()
-        algod_client.application_boxes.assert_called_with(v2_app_id)
+        algod_client.application_boxes.assert_called_once_with(v2_app_id)
 
     def test_nameservice_nfd_check_boxes_addresses_for_no_related_box(self, mocker):
         algod_client = mocker.MagicMock()
@@ -95,8 +94,7 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_boxes.return_value = {"boxes": [box]}
         returned = _check_boxes_addresses(v2_app_id, algod_client)
         assert returned == []
-        algod_client.application_boxes.assert_called_once()
-        algod_client.application_boxes.assert_called_with(v2_app_id)
+        algod_client.application_boxes.assert_called_once_with(v2_app_id)
 
     @pytest.mark.parametrize(
         "exception",
@@ -115,10 +113,8 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_box_by_name.side_effect = exception
         returned = _check_boxes_addresses(v2_app_id, algod_client)
         assert returned == []
-        algod_client.application_boxes.assert_called_once()
-        algod_client.application_boxes.assert_called_with(v2_app_id)
-        algod_client.application_box_by_name.assert_called_once()
-        algod_client.application_box_by_name.assert_called_with(
+        algod_client.application_boxes.assert_called_once_with(v2_app_id)
+        algod_client.application_box_by_name.assert_called_once_with(
             v2_app_id, b"v.caAlgo.0.as"
         )
 
@@ -174,8 +170,7 @@ class TestNameServiceNfdV2Functions:
                 }
             )
         )
-        algod_client.application_boxes.assert_called_once()
-        algod_client.application_boxes.assert_called_with(v2_app_id)
+        algod_client.application_boxes.assert_called_once_with(v2_app_id)
         calls = [
             mocker.call(v2_app_id, b"v.caAlgo.0.as"),
         ]
@@ -207,8 +202,7 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_info.side_effect = exception
         returned = _app_state_from_box(v2_app_id, algod_client)
         assert returned == []
-        algod_client.application_info.assert_called_once()
-        algod_client.application_info.assert_called_with(v2_app_id)
+        algod_client.application_info.assert_called_once_with(v2_app_id)
 
     def test_nameservice_nfd_app_state_from_box_returns_empty_list_for_no_state(
         self, mocker
@@ -218,8 +212,7 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_info.return_value = {"params": {"global-state": []}}
         returned = _app_state_from_box(v2_app_id, algod_client)
         assert returned == []
-        algod_client.application_info.assert_called_once()
-        algod_client.application_info.assert_called_with(v2_app_id)
+        algod_client.application_info.assert_called_once_with(v2_app_id)
 
     def test_nameservice_nfd_app_state_from_box_functionality(self, mocker):
         algod_client = mocker.MagicMock()
@@ -228,8 +221,8 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_info.return_value = {"params": {"global-state": state}}
         returned = _app_state_from_box(v2_app_id, algod_client)
         assert returned == state
-        algod_client.application_info.assert_called_once()
-        algod_client.application_info.assert_called_with(v2_app_id)
+
+        algod_client.application_info.assert_called_once_with(v2_app_id)
 
     # # _box_name_for_algo_name
     @pytest.mark.parametrize(
@@ -440,8 +433,7 @@ class TestNameServiceNfdCommonFunctions:
             "nameservice.nfd._app_state_from_box", return_value=app_state
         )
         assert _app_state_for_algo_name(name, v2_app_id, algod_client) == app_state
-        mocked_app_box.assert_called_once()
-        mocked_app_box.assert_called_with(v2_app_id, algod_client)
+        mocked_app_box.assert_called_once_with(v2_app_id, algod_client)
         mocked_lsig.assert_not_called()
 
     def test_nameservice_nfd_app_state_for_algo_name_for_non_existing_name(
@@ -459,12 +451,9 @@ class TestNameServiceNfdCommonFunctions:
         v2_app_id = 505050
         returned = _app_state_for_algo_name(name, v2_app_id, algod_client)
         assert returned == []
-        mocked_app_box.assert_called_once()
-        mocked_app_box.assert_called_with(v2_app_id, algod_client)
-        mocked_lsig.assert_called_once()
-        mocked_lsig.assert_called_with("name/", name, NFD_APP_ID)
-        mocked_app_lsig.assert_called_once()
-        mocked_app_lsig.assert_called_with(mocked_lsig.return_value, algod_client)
+        mocked_app_box.assert_called_once_with(v2_app_id, algod_client)
+        mocked_lsig.assert_called_once_with("name/", name, NFD_APP_ID)
+        mocked_app_lsig.assert_called_once_with(mocked_lsig.return_value, algod_client)
         algod_client.application_info.assert_not_called()
 
     def test_nameservice_nfd_app_state_for_algo_name_returns_app_state_v1(self, mocker):
@@ -487,14 +476,10 @@ class TestNameServiceNfdCommonFunctions:
         v2_app_id = 505050
         returned = _app_state_for_algo_name(name, v2_app_id, algod_client)
         assert returned == app_state
-        mocked_app_box.assert_called_once()
-        mocked_app_box.assert_called_with(v2_app_id, algod_client)
-        mocked_lsig.assert_called_once()
-        mocked_lsig.assert_called_with("name/", name, NFD_APP_ID)
-        mocked_app_lsig.assert_called_once()
-        mocked_app_lsig.assert_called_with(mocked_lsig.return_value, algod_client)
-        algod_client.application_info.assert_called_once()
-        algod_client.application_info.assert_called_with(app_id)
+        mocked_app_box.assert_called_once_with(v2_app_id, algod_client)
+        mocked_lsig.assert_called_once_with("name/", name, NFD_APP_ID)
+        mocked_app_lsig.assert_called_once_with(mocked_lsig.return_value, algod_client)
+        algod_client.application_info.assert_called_once_with(app_id)
 
 
 class TestNameServiceNfdPublicFunctions:
@@ -517,10 +502,8 @@ class TestNameServiceNfdPublicFunctions:
         algod_client.application_box_by_name.side_effect = exception
         returned = nfd_app_id_from_algo_name(name, algod_client)
         assert returned is None
-        mocked_box.assert_called_once()
-        mocked_box.assert_called_with(name)
-        algod_client.application_box_by_name.assert_called_once()
-        algod_client.application_box_by_name.assert_called_with(
+        mocked_box.assert_called_once_with(name)
+        algod_client.application_box_by_name.assert_called_once_with(
             NFD_APP_ID, mocked_box.return_value
         )
 
@@ -534,10 +517,8 @@ class TestNameServiceNfdPublicFunctions:
         algod_client.application_box_by_name.return_value = {"value": value}
         returned = nfd_app_id_from_algo_name(name, algod_client)
         assert returned is None
-        mocked_box.assert_called_once()
-        mocked_box.assert_called_with(name)
-        algod_client.application_box_by_name.assert_called_once()
-        algod_client.application_box_by_name.assert_called_with(
+        mocked_box.assert_called_once_with(name)
+        algod_client.application_box_by_name.assert_called_once_with(
             NFD_APP_ID, mocked_box.return_value
         )
 
@@ -560,10 +541,8 @@ class TestNameServiceNfdPublicFunctions:
         algod_client.application_box_by_name.return_value = {"value": value}
         returned = nfd_app_id_from_algo_name(name, algod_client)
         assert returned is None
-        mocked_box.assert_called_once()
-        mocked_box.assert_called_with(name)
-        algod_client.application_box_by_name.assert_called_once()
-        algod_client.application_box_by_name.assert_called_with(
+        mocked_box.assert_called_once_with(name)
+        algod_client.application_box_by_name.assert_called_once_with(
             NFD_APP_ID, mocked_box.return_value
         )
 
@@ -577,10 +556,8 @@ class TestNameServiceNfdPublicFunctions:
         algod_client.application_box_by_name.return_value = {"value": value}
         returned = nfd_app_id_from_algo_name(name, algod_client)
         assert returned == 0
-        mocked_box.assert_called_once()
-        mocked_box.assert_called_with(name)
-        algod_client.application_box_by_name.assert_called_once()
-        algod_client.application_box_by_name.assert_called_with(
+        mocked_box.assert_called_once_with(name)
+        algod_client.application_box_by_name.assert_called_once_with(
             NFD_APP_ID, mocked_box.return_value
         )
 
@@ -595,10 +572,8 @@ class TestNameServiceNfdPublicFunctions:
         algod_client.application_info.return_value = {"params": {"global-state": state}}
         returned = nfd_app_id_from_algo_name(name, algod_client)
         assert returned == app_id
-        mocked_box.assert_called_once()
-        mocked_box.assert_called_with(name)
-        algod_client.application_box_by_name.assert_called_once()
-        algod_client.application_box_by_name.assert_called_with(
+        mocked_box.assert_called_once_with(name)
+        algod_client.application_box_by_name.assert_called_once_with(
             NFD_APP_ID, mocked_box.return_value
         )
 
@@ -627,10 +602,8 @@ class TestNameServiceNfdPublicFunctions:
         algo_name = "foobar.algo"
         name = f"{algo_name}/nfd"
         assert check_name(name, algod_client) == name
-        mocked_app.assert_called_once()
-        mocked_app.assert_called_with(algo_name, algod_client)
-        mocked_state.assert_called_once()
-        mocked_state.assert_called_with(algo_name, v2_app_id, algod_client)
+        mocked_app.assert_called_once_with(algo_name, algod_client)
+        mocked_state.assert_called_once_with(algo_name, v2_app_id, algod_client)
         mocked_addresses.assert_not_called()
 
     def test_nameservice_nfd_check_name_for_v1_not_found(self, mocker):
@@ -650,12 +623,9 @@ class TestNameServiceNfdPublicFunctions:
         algo_name = "foobar.algo"
         name = f"{algo_name}/nfd"
         assert check_name(name, algod_client) == name
-        mocked_app.assert_called_once()
-        mocked_app.assert_called_with(algo_name, algod_client)
-        mocked_state.assert_called_once()
-        mocked_state.assert_called_with(algo_name, v2_app_id, algod_client)
-        mocked_addresses.assert_called_once()
-        mocked_addresses.assert_called_with(app_state, [])
+        mocked_app.assert_called_once_with(algo_name, algod_client)
+        mocked_state.assert_called_once_with(algo_name, v2_app_id, algod_client)
+        mocked_addresses.assert_called_once_with(app_state, [])
         mocked_boxes.assert_not_called()
 
     def test_nameservice_nfd_check_name_for_v1_found_addresses(self, mocker):
@@ -675,12 +645,9 @@ class TestNameServiceNfdPublicFunctions:
         algod_client = mocker.MagicMock()
         name = "foobar.algo"
         assert check_name(name, algod_client) == addresses
-        mocked_app.assert_called_once()
-        mocked_app.assert_called_with(name, algod_client)
-        mocked_state.assert_called_once()
-        mocked_state.assert_called_with(name, v2_app_id, algod_client)
-        mocked_addresses.assert_called_once()
-        mocked_addresses.assert_called_with(app_state, [])
+        mocked_app.assert_called_once_with(name, algod_client)
+        mocked_state.assert_called_once_with(name, v2_app_id, algod_client)
+        mocked_addresses.assert_called_once_with(app_state, [])
         mocked_boxes.assert_not_called()
 
     def test_nameservice_nfd_check_name_for_v2_not_found(self, mocker):
@@ -700,14 +667,10 @@ class TestNameServiceNfdPublicFunctions:
         algo_name = "foobar.algo"
         name = f"{algo_name}/nfd"
         assert check_name(name, algod_client) == name
-        mocked_app.assert_called_once()
-        mocked_app.assert_called_with(algo_name, algod_client)
-        mocked_state.assert_called_once()
-        mocked_state.assert_called_with(algo_name, v2_app_id, algod_client)
-        mocked_boxes.assert_called_once()
-        mocked_boxes.assert_called_with(v2_app_id, algod_client)
-        mocked_addresses.assert_called_once()
-        mocked_addresses.assert_called_with(app_state, mocked_boxes.return_value)
+        mocked_app.assert_called_once_with(algo_name, algod_client)
+        mocked_state.assert_called_once_with(algo_name, v2_app_id, algod_client)
+        mocked_boxes.assert_called_once_with(v2_app_id, algod_client)
+        mocked_addresses.assert_called_once_with(app_state, mocked_boxes.return_value)
 
     def test_nameservice_nfd_check_name_for_v2_found_addresses(self, mocker):
         v2_app_id = 505050
@@ -726,14 +689,10 @@ class TestNameServiceNfdPublicFunctions:
         algod_client = mocker.MagicMock()
         name = "foobar.algo"
         assert check_name(name, algod_client) == addresses
-        mocked_app.assert_called_once()
-        mocked_app.assert_called_with(name, algod_client)
-        mocked_state.assert_called_once()
-        mocked_state.assert_called_with(name, v2_app_id, algod_client)
-        mocked_boxes.assert_called_once()
-        mocked_boxes.assert_called_with(v2_app_id, algod_client)
-        mocked_addresses.assert_called_once()
-        mocked_addresses.assert_called_with(app_state, mocked_boxes.return_value)
+        mocked_app.assert_called_once_with(name, algod_client)
+        mocked_state.assert_called_once_with(name, v2_app_id, algod_client)
+        mocked_boxes.assert_called_once_with(v2_app_id, algod_client)
+        mocked_addresses.assert_called_once_with(app_state, mocked_boxes.return_value)
 
     def test_nameservice_nfd_check_name_returns_address_for_uppercased_name(
         self, mocker
