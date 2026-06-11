@@ -34,9 +34,13 @@ Required application keys (see `roles/projectsetup/tasks/environment.yml`):
 email keys. `asastats/.env-example` should ship placeholder values for every
 required key so CI/Molecule can boot the app without a live backend.
 
-The `redis` role provisions a **second** Redis instance on port `6380`
-(`redis_port`), leaving any existing `6379` server untouched. Point the app's
-`REDIS_URL` at it, e.g. `redis://:<REDIS_PASSWORD>@127.0.0.1:6380/0`.
+The `redis` role provisions a **second** Redis instance, leaving any existing
+`6379` server untouched. Its port comes from `REDIS_PORT_LOCAL` in the deploy
+`.env` (default `6380`) and is rendered into the app's `.env` as
+`REDIS_PORT_LOCAL`, so the instance and the app's cache always agree. The
+app's `REDIS_AUTH` is derived from the same `REDIS_PASSWORD` used for the
+instance's `requirepass`. Do not set `REDIS_PORT` (6379) to steer this — that
+refers to the existing server the deploy does not manage.
 
 ## Run
 

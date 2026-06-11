@@ -46,7 +46,7 @@ lynis_version: 3.1.6
 requirements_filename: production.txt
 
 # Web cache runs as a SECOND Redis instance so the existing 6379 server is untouched
-redis_port: 6380
+redis_port: "{{ hostvars['localhost'].env_vars.REDIS_PORT_LOCAL | default(6380) }}"
 redis_data_dir: "/var/lib/redis{{ redis_port }}"
 
 # Set to true to provision the permissionsupdater systemd service
