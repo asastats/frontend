@@ -140,6 +140,34 @@ class TestWalletVerifyAPIView:
 
         assert response.status_code == 200
         assert response.data["success"] is True
+        assert response.data["permission_pending"] is False
+        user.profile.refresh_from_db()
+        assert user.profile.authorized == "good"
+        assert user.profile.auth_method == "algorand_wallet"
+        assert WalletNonce.objects.get(nonce="good").used is True
+
+    @pytest.mark.django_db
+    def test_walletauth_verifyview_authorizes_when_permission_refresh_fails(
+        self, mocker
+    ):
+        user = make_authorized_user()
+        WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="good")
+        mocker.patch.dict(
+            "walletauth.views.VERIFIERS", {"algorand": _FakeVerifier(result=TEST_ADDRESS)}
+        )
+        mocker.patch(
+            "core.models.Profile.check_votes_and_permission",
+            side_effect=RuntimeError("algod unreachable"),
+        )
+        request = APIRequestFactory().post(
+            "/verify/", {"nonce": "good", "chain": "algorand"}, format="json"
+        )
+        force_authenticate(request, user=user)
+        response = WalletVerifyAPIView.as_view()(request)
+
+        assert response.status_code == 200
+        assert response.data["success"] is True
+        assert response.data["permission_pending"] is True
         user.profile.refresh_from_db()
         assert user.profile.authorized == "good"
         assert user.profile.auth_method == "algorand_wallet"

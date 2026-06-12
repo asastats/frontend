@@ -117,7 +117,9 @@ class WalletVerifyAPIView(APIView):
         :type nonce_obj: :class:`walletauth.models.WalletNonce`
         :var proven: proven Algorand address returned by the verifier
         :type proven: str | None
-        :return: JSON ``{"success": bool, "redirect_url": str}``
+        :var refreshed: whether the permission value was refreshed in-band
+        :type refreshed: bool
+        :return: JSON ``{"success": bool, "redirect_url": str, "permission_pending": bool}``
         :rtype: :class:`rest_framework.response.Response`
         """
         profile = request.user.profile
@@ -170,11 +172,24 @@ class WalletVerifyAPIView(APIView):
             )
 
         nonce_obj.mark_used()
-        profile.update_authorized(
+        refreshed = profile.update_authorized(
             nonce_obj.nonce, method=AUTH_METHOD_BY_CHAIN.get(chain, "algorand_wallet")
         )
-        logger.info("walletauth: address authorized via %s wallet", chain)
+        logger.info(
+            "walletauth: address authorized via %s wallet (permission_pending=%s)",
+            chain,
+            not refreshed,
+        )
 
         # Always redirect to the profile page; never honor a client-supplied
-        # next target, to avoid open-redirect.
-        return Response({"success": True, "redirect_url": reverse("profile")})
+        # next target, to avoid open-redirect. ``permission_pending`` signals the
+        # authorization succeeded but the permission value could not be refreshed
+        # yet (e.g. the permission provider was unreachable); it reconciles on the
+        # next login via the post_login signal.
+        return Response(
+            {
+                "success": True,
+                "redirect_url": reverse("profile"),
+                "permission_pending": not refreshed,
+            }
+        )

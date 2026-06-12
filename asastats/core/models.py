@@ -1,5 +1,6 @@
 """Module containing website's ORM models."""
 
+import logging
 from collections import Counter
 
 from algosdk.constants import ADDRESS_LEN
@@ -30,6 +31,8 @@ from utils.userhelpers import (
     unique_hash_from_number,
 )
 from widgethost.access import can_access_widget
+
+logger = logging.getLogger(__name__)
 
 
 class Profile(models.Model):
@@ -132,18 +135,36 @@ class Profile(models.Model):
         return "Cluster"
 
     def update_authorized(self, proof, method="escrow"):
-        """Record an authorization proof and refresh permission.
+        """Record an authorization proof and best-effort refresh permission.
+
+        The authorization is always persisted; a failing permission refresh is
+        logged and swallowed so the authorization is never lost. Permission then
+        reconciles on the next login (post_login) or a later refresh.
 
         :param proof: provenance string (escrow txid, or the consumed nonce)
         :type proof: str
         :param method: one of "escrow", "algorand_wallet", "evm_xchain"
         :type method: str
+        :var refreshed: whether the permission refresh completed
+        :type refreshed: bool
+        :return: True if permission was refreshed, False to reconcile later
+        :rtype: bool
         """
         self.authorized = proof
         self.auth_method = method
         self.authorized_at = timezone.now()
-        self.check_votes_and_permission()
+        refreshed = True
+        try:
+            self.check_votes_and_permission()
+        except Exception:  # noqa: BLE001 - permission refresh is best-effort
+            logger.exception(
+                "Permission refresh failed for profile pk=%s; authorization "
+                "recorded, permission will reconcile on next login/refresh.",
+                self.pk,
+            )
+            refreshed = False
         self.save()
+        return refreshed
 
     # # PERMISSIONS
     def _bundlename_limit_data(

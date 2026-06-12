@@ -126,7 +126,6 @@ class TestProfileModel:
         mocked_hash.assert_called_once_with(mocked_truncate.return_value)
 
     # # check_votes_and_permission
-
     @pytest.mark.django_db
     def test_profile_model_check_votes_and_permission_skips_on_none(self, mocker):
         provider = mocker.patch("core.models.get_permission_provider").return_value
@@ -215,15 +214,44 @@ class TestProfileModel:
 
     # # update_authorized
     @pytest.mark.django_db
-    def test_profile_model_update_authorized_functionality(self, mocker):
-        user = user_model.objects.create(email="update_authorized@example.com")
-        user.profile.address = TEST_ADDRESS
-        user.profile.save()
-        transaction_id = "S5BH36JWJXD3NPOTTNNU3FOPUY53I6B4JXIFYU2K3HCXCV2ARZRA"
-        mocked_check = mocker.patch("core.models.Profile.check_votes_and_permission")
-        user.profile.update_authorized(transaction_id)
-        assert user.profile.authorized == transaction_id
-        mocked_check.assert_called_once_with()
+    def test_profile_model_update_authorized_records_and_refreshes(self, mocker):
+        user = user_model.objects.create(username="auth_ok")
+        refresh = mocker.patch("core.models.Profile.check_votes_and_permission")
+
+        result = user.profile.update_authorized("proof123", method="algorand_wallet")
+
+        user.profile.refresh_from_db()
+        assert result is True
+        assert user.profile.authorized == "proof123"
+        assert user.profile.auth_method == "algorand_wallet"
+        assert user.profile.authorized_at is not None
+        refresh.assert_called_once()
+
+    @pytest.mark.django_db
+    def test_profile_model_update_authorized_persists_when_refresh_fails(self, mocker):
+        user = user_model.objects.create(username="auth_degraded")
+        mocker.patch(
+            "core.models.Profile.check_votes_and_permission",
+            side_effect=RuntimeError("algod unreachable"),
+        )
+
+        result = user.profile.update_authorized("proof456", method="escrow")
+
+        user.profile.refresh_from_db()
+        assert result is False
+        assert user.profile.authorized == "proof456"
+        assert user.profile.auth_method == "escrow"
+        assert user.profile.authorized_at is not None
+
+    @pytest.mark.django_db
+    def test_profile_model_update_authorized_defaults_to_escrow(self, mocker):
+        user = user_model.objects.create(username="auth_legacy")
+        mocker.patch("core.models.Profile.check_votes_and_permission")
+
+        user.profile.update_authorized("txid789")
+
+        user.profile.refresh_from_db()
+        assert user.profile.auth_method == "escrow"
 
     # # PERMISSIONS
     # # _bundlename_limit_data
