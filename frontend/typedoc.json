@@ -1,0 +1,22 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src"],
+  "entryPointStrategy": "expand",
+  "out": "../docs/api/frontend_api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "tsconfig": "./tsconfig.json",
+  "includeVersion": false,
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts", 
+    "**/__mocks__/**",
+    "**/setupTests.ts",
+    "**/vite-env.d.ts"
+  ],
+  "excludeExternals": true,
+  "excludePrivate": false,
+  "excludeProtected": false,
+  "categorizeByGroup": false,
+  "hideGenerator": true,
+  "readme": "none"
+}

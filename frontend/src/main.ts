@@ -13,7 +13,7 @@ const DEFAULT_API_BASE = "/api/v2/wallet";
  * network selector: ASA Stats authorizes on mainnet only.
  */
 export class App {
-  /** The wallet manager, or null until {@link App.init} runs. */
+  /** The wallet manager, or null until `App.init()` runs. */
   walletManager: WalletManager | null = null;
   /** Bound wallet components, retained for cleanup. */
   private walletComponents: WalletComponent[] = [];
