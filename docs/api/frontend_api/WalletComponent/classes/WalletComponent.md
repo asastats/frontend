@@ -6,7 +6,7 @@
 
 # Class: WalletComponent
 
-Defined in: [WalletComponent.ts:32](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L32)
+Defined in: [WalletComponent.ts:32](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L32)
 
 Manages a single Algorand wallet's connection and the address-authorization
 flow for the ASA Stats authorize page.
@@ -35,7 +35,7 @@ component.bind(document.getElementById("wallet-pera")!);
 
 > **new WalletComponent**(`wallet`, `manager`, `apiBase?`): `WalletComponent`
 
-Defined in: [WalletComponent.ts:51](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L51)
+Defined in: [WalletComponent.ts:51](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L51)
 
 #### Parameters
 
@@ -69,7 +69,7 @@ Base path of the walletauth API (default
 
 > `private` **apiBase**: `string`
 
-Defined in: [WalletComponent.ts:38](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L38)
+Defined in: [WalletComponent.ts:38](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L38)
 
 Base path of the walletauth API endpoints.
 
@@ -79,7 +79,7 @@ Base path of the walletauth API endpoints.
 
 > `private` **element**: `HTMLElement` \| `null` = `null`
 
-Defined in: [WalletComponent.ts:42](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L42)
+Defined in: [WalletComponent.ts:42](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L42)
 
 The bound DOM root of this wallet's card, or null before `bind`.
 
@@ -89,7 +89,7 @@ The bound DOM root of this wallet's card, or null before `bind`.
 
 > **manager**: `WalletManager`
 
-Defined in: [WalletComponent.ts:36](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L36)
+Defined in: [WalletComponent.ts:36](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L36)
 
 The wallet manager, used here for its configured algod client.
 
@@ -99,7 +99,7 @@ The wallet manager, used here for its configured algod client.
 
 > `private` `optional` **unsubscribe?**: () => `void`
 
-Defined in: [WalletComponent.ts:40](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L40)
+Defined in: [WalletComponent.ts:40](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L40)
 
 Unsubscribe handle returned by `wallet.subscribe`.
 
@@ -113,7 +113,7 @@ Unsubscribe handle returned by `wallet.subscribe`.
 
 > **wallet**: `BaseWallet`
 
-Defined in: [WalletComponent.ts:34](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L34)
+Defined in: [WalletComponent.ts:34](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L34)
 
 The wallet instance this component manages.
 
@@ -123,7 +123,7 @@ The wallet instance this component manages.
 
 > **addEventListeners**(): `void`
 
-Defined in: [WalletComponent.ts:319](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L319)
+Defined in: [WalletComponent.ts:319](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L319)
 
 Wires click and change delegation on the card root.
 
@@ -140,7 +140,7 @@ a change on the account `<select>` updates the active account.
 
 > **auth**(): `Promise`\<`void`\>
 
-Defined in: [WalletComponent.ts:229](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L229)
+Defined in: [WalletComponent.ts:229](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L229)
 
 Authorizes the active account against the backend.
 
@@ -160,7 +160,7 @@ branch slot in without a request reshape.
 
 > **bind**(`element`): `void`
 
-Defined in: [WalletComponent.ts:69](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L69)
+Defined in: [WalletComponent.ts:69](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L69)
 
 Binds the component to its card element and wires event listeners.
 
@@ -182,7 +182,7 @@ The wallet card root (`#wallet-<id>`).
 
 > **connect**(): `Promise`\<`void`\>
 
-Defined in: [WalletComponent.ts:163](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L163)
+Defined in: [WalletComponent.ts:163](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L163)
 
 Connects the wallet.
 
@@ -196,7 +196,7 @@ Connects the wallet.
 
 > **destroy**(): `void`
 
-Defined in: [WalletComponent.ts:350](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L350)
+Defined in: [WalletComponent.ts:350](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L350)
 
 Tears down the wallet state subscription.
 
@@ -212,7 +212,7 @@ Should be called when the component is discarded to avoid leaks.
 
 > **disconnect**(): `Promise`\<`void`\>
 
-Defined in: [WalletComponent.ts:168](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L168)
+Defined in: [WalletComponent.ts:168](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L168)
 
 Disconnects the wallet and clears its session.
 
@@ -226,7 +226,7 @@ Disconnects the wallet and clears its session.
 
 > `private` **getCsrfToken**(): `string`
 
-Defined in: [WalletComponent.ts:182](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L182)
+Defined in: [WalletComponent.ts:182](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L182)
 
 Reads the CSRF token from the cookie, falling back to a hidden input.
 
@@ -242,7 +242,7 @@ The CSRF token, or an empty string when none is present.
 
 > `private` **render**(`state`): `void`
 
-Defined in: [WalletComponent.ts:89](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L89)
+Defined in: [WalletComponent.ts:89](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L89)
 
 Reflects the current wallet state into the card's controls.
 
@@ -291,7 +291,7 @@ Whether the wallet is connected.
 
 > **setActive**(): `Promise`\<`void`\>
 
-Defined in: [WalletComponent.ts:173](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L173)
+Defined in: [WalletComponent.ts:173](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L173)
 
 Makes this wallet the active wallet for signing.
 
@@ -305,7 +305,7 @@ Makes this wallet the active wallet for signing.
 
 > **setActiveAccount**(`event`): `Promise`\<`void`\>
 
-Defined in: [WalletComponent.ts:307](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L307)
+Defined in: [WalletComponent.ts:307](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L307)
 
 Sets the active account from the dropdown selection.
 
@@ -327,7 +327,7 @@ The `change` event from the account `<select>`.
 
 > `private` **showError**(`message`): `void`
 
-Defined in: [WalletComponent.ts:203](https://github.com/asastats/frontend/blob/1358ff18af3207cca9c36080dadd759d3a4bf397/frontend/src/WalletComponent.ts#L203)
+Defined in: [WalletComponent.ts:203](https://github.com/asastats/frontend/blob/main/frontend/src/WalletComponent.ts#L203)
 
 Surfaces an error to the user via a Materialize toast when available,
 otherwise appends a transient message node to the card.

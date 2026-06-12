@@ -4,6 +4,7 @@
   "entryPointStrategy": "expand",
   "out": "../docs/api/frontend_api",
   "plugin": ["typedoc-plugin-markdown"],
+  "gitRevision": "main",
   "tsconfig": "./tsconfig.json",
   "includeVersion": false,
   "exclude": [

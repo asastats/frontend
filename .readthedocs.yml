@@ -13,9 +13,9 @@ build:
   jobs:
     pre_build:
       # Use npm ci for reproducible installs (uses package-lock.json)
-      - npm --prefix frontend ci --include=dev
+      - npm --prefix frontend install
       # Generate TypeDoc docs
-      - npm --prefix frontend run docs
+      - npm --prefix frontend run build:docs
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
