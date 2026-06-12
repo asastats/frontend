@@ -126,6 +126,7 @@
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Authorize&nbsp;address{% endblock %}
 {% block otherfooter %}
+  {% if wallet_test_mode %}<script>window.__WALLET_TEST__ = true;</script>{% endif %}
   {{ block.super }}
   <script>
     document.addEventListener('DOMContentLoaded', function () {

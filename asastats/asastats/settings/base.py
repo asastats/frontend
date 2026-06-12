@@ -354,3 +354,5 @@ INHOUSE_WIDGETS = ["historic"]
 THIRDPARTY_WIDGETS = []
 
 PERMISSION_PROVIDER = "core.permission_providers.permissiondapp.PermissionDappProvider"
+
+WALLET_TEST_MODE = False   # default; set True only in the functional-test settings

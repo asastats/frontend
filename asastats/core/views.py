@@ -993,6 +993,7 @@ class ProfileAuthorizeView(CanAccessAuthorizeMixin, TemplateView):
         """
         context = super().get_context_data(*args, **kwargs)
         context["wallets"] = ALGORAND_WALLETS
+        context["wallet_test_mode"] = settings.WALLET_TEST_MODE
         return context
 
 

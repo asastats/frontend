@@ -159,3 +159,25 @@ describe("App failure handling", () => {
     expect(errorDiv.style.display).toBe("block");
   });
 });
+
+/*
+ * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * SECTION: Test harness gate
+ * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ */
+describe("App test harness gate", () => {
+  it("loads the mock wallet harness when the flag is set", async () => {
+    const install = jest.fn();
+    jest.doMock("./walletTestHarness", () => ({ install }));
+    (window as any).__WALLET_TEST__ = true;
+
+    jest.isolateModules(() => {
+      require("./main");
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(install).toHaveBeenCalled();
+    delete (window as any).__WALLET_TEST__;
+    jest.dontMock("./walletTestHarness");
+  });
+});

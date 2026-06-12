@@ -93,3 +93,10 @@ export class App {
 
 // Initialize the application.
 new App();
+
+// Test-only: when the page sets `window.__WALLET_TEST__` (emitted solely under
+// settings.WALLET_TEST_MODE), lazy-load the mock wallet harness. The dynamic
+// import is code-split into its own chunk, so production never fetches it.
+if ((window as any).__WALLET_TEST__) {
+  import("./walletTestHarness").then((m) => m.install());
+}

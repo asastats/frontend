@@ -102,3 +102,5 @@ USE_CACHED_NODE_DATA = False
 # ALGORAND_NODE_PATH = "/opt/node/data/"
 
 ASASTATS_API_URL = "http://127.0.0.1:8001"
+
+WALLET_TEST_MODE=True
