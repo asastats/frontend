@@ -187,4 +187,3 @@ WALLET_CONNECT_NONCE_PREFIX = "asastats-auth:"
 # Network pinning for the off-chain signature (defense in depth).
 MAINNET_GENESIS_ID = "mainnet-v1.0"
 MAINNET_GENESIS_HASH = "wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8="
-

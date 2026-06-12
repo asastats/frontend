@@ -2,6 +2,7 @@
 
 import base64
 
+import pytest
 from algosdk import account, encoding
 from algosdk.transaction import PaymentTxn, SignedTransaction, SuggestedParams
 
@@ -14,6 +15,7 @@ from walletauth.verifiers import (
     AlgorandSignedTxnVerifier,
     EvmXChainVerifier,
     NotSupported,
+    WalletProofVerifier,
 )
 
 NONCE = "deadbeefcafe0001"
@@ -54,9 +56,7 @@ def fake_algod(auth_addr=None):
 
 
 def verify(stxn, address, nonce=NONCE, algod_factory=None):
-    verifier = AlgorandSignedTxnVerifier(
-        algod_factory=algod_factory or fake_algod()
-    )
+    verifier = AlgorandSignedTxnVerifier(algod_factory=algod_factory or fake_algod())
     return verifier.verify(
         address=address,
         nonce=nonce,
@@ -150,8 +150,7 @@ class TestAlgorandSignedTxnVerifier:
         signature = base64.b64encode(txn.raw_sign(signer_secret)).decode()
         stxn = SignedTransaction(txn, signature, authorizing_address=signer)
         assert (
-            verify(stxn, rekeyed, algod_factory=fake_algod(auth_addr=signer))
-            == rekeyed
+            verify(stxn, rekeyed, algod_factory=fake_algod(auth_addr=signer)) == rekeyed
         )
 
     def test_algorand_verifier_rekey_lookup_failure_returns_none(self):
@@ -165,6 +164,23 @@ class TestAlgorandSignedTxnVerifier:
             raise RuntimeError("algod down")
 
         assert verify(stxn, rekeyed, algod_factory=boom) is None
+
+    # # _network_ok
+    def test_algorand_verifier_network_ok_normalizes_bytes_genesis_hash(self):
+        secret, address = account.generate_account()
+        stxn = make_self_payment(address, make_note()).sign(secret)
+        txn = stxn.transaction
+        txn.genesis_hash = base64.b64decode(MAINNET_GENESIS_HASH)
+        verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
+        assert verifier._network_ok(txn) is True
+
+    def test_algorand_verifier_network_ok_rejects_wrong_bytes_genesis_hash(self):
+        secret, address = account.generate_account()
+        stxn = make_self_payment(address, make_note()).sign(secret)
+        txn = stxn.transaction
+        txn.genesis_hash = b"z" * 32
+        verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
+        assert verifier._network_ok(txn) is False
 
     # # configuration
     def test_algorand_verifier_skips_genesis_when_unset(self):
@@ -194,20 +210,29 @@ class TestAlgorandSignedTxnVerifier:
         assert proven == address
 
 
-class TestEvmXChainVerifier:
-    """Testing class for the deferred :class:`EvmXChainVerifier` verifier."""
+class TestWalletProofVerifier:
+    """Testing class for the :class:`WalletProofVerifier` interface."""
 
     # # verify
-    def test_evm_verifier_raises_not_supported(self):
-        verifier = EvmXChainVerifier()
-        try:
-            verifier.verify(
+    def test_walletauth_walletproofverifier_verify_raises_not_implemented(self):
+        with pytest.raises(NotImplementedError):
+            WalletProofVerifier().verify(
                 address="A" * 58,
                 nonce=NONCE,
                 prefix=WALLET_CONNECT_NONCE_PREFIX,
                 payload={},
             )
-            raised = False
-        except NotSupported:
-            raised = True
-        assert raised
+
+
+class TestEvmXChainVerifier:
+    """Testing class for the deferred :class:`EvmXChainVerifier` verifier."""
+
+    # # verify
+    def test_evm_verifier_raises_not_supported(self):
+        with pytest.raises(NotSupported):
+            EvmXChainVerifier().verify(
+                address="A" * 58,
+                nonce=NONCE,
+                prefix=WALLET_CONNECT_NONCE_PREFIX,
+                payload={},
+            )

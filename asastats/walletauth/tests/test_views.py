@@ -153,7 +153,8 @@ class TestWalletVerifyAPIView:
         user = make_authorized_user()
         WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="good")
         mocker.patch.dict(
-            "walletauth.views.VERIFIERS", {"algorand": _FakeVerifier(result=TEST_ADDRESS)}
+            "walletauth.views.VERIFIERS",
+            {"algorand": _FakeVerifier(result=TEST_ADDRESS)},
         )
         mocker.patch(
             "core.models.Profile.check_votes_and_permission",
@@ -174,6 +175,18 @@ class TestWalletVerifyAPIView:
         assert WalletNonce.objects.get(nonce="good").used is True
 
     @pytest.mark.django_db
+    def test_walletauth_verifyview_rejects_missing_nonce(self, mocker):
+        user = make_authorized_user()
+        mocker.patch("core.models.Profile.check_votes_and_permission")
+        request = APIRequestFactory().post(
+            "/verify/", {"chain": "algorand"}, format="json"
+        )
+        force_authenticate(request, user=user)
+        response = WalletVerifyAPIView.as_view()(request)
+        assert response.status_code == 400
+        assert response.data["error"] == "Missing nonce"
+
+    @pytest.mark.django_db
     def test_walletauth_verifyview_rejects_unknown_nonce(self, mocker):
         user = make_authorized_user()
         response = self.post(
@@ -192,9 +205,7 @@ class TestWalletVerifyAPIView:
         from django.utils import timezone
 
         user = make_authorized_user()
-        nonce = WalletNonce.objects.create(
-            user=user, address=TEST_ADDRESS, nonce="old"
-        )
+        nonce = WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="old")
         WalletNonce.objects.filter(pk=nonce.pk).update(
             created_at=timezone.now() - timedelta(minutes=10)
         )

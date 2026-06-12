@@ -1,8 +1,8 @@
 """Initial migration for the walletauth app."""
 
+import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
-import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -49,8 +49,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="walletnonce",
-            index=models.Index(
-                fields=["created_at"], name="walletauth_created_idx"
-            ),
+            index=models.Index(fields=["created_at"], name="walletauth_created_idx"),
         ),
     ]

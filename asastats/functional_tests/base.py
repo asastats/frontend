@@ -348,3 +348,27 @@ class FunctionalTest(Setup):
 
         # This time user should present as logged in.
         self.browser.get(self.server_url + "/profile/add-bundle")
+
+    def create_cookie_and_go_to_authorize_page(self, email, address=TESTING_ADDRESS):
+        session_cookie = self.create_session_cookie(
+            username=email, password="top_secret", permission=0
+        )
+
+        # Give the user an unauthorized address so the authorize page is reachable
+        user_model = get_user_model()
+        user = user_model.objects.get(username=email)
+        user.profile.address = address
+        user.profile.save()
+
+        # visit some url in your domain to setup Selenium.
+        # (404 pages load the quickest)
+        self.browser.get(self.server_url + "/404.html")
+
+        # add the newly created session cookie to selenium webdriver.
+        self.browser.add_cookie(session_cookie)
+
+        # refresh to exchange cookies with the server.
+        self.browser.refresh()
+
+        # This time user should present as logged in, on the authorize page.
+        self.browser.get(self.server_url + "/profile/authorize/")

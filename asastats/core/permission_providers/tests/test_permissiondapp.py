@@ -44,9 +44,7 @@ class TestCorePermissiondappFormatTierNameAsLink:
     """Testing class for :py:func:`...permissiondapp._format_tier_name_as_link`."""
 
     def test_core_permissiondapp_format_tier_name_as_link_functionality(self, mocker):
-        mocker.patch(
-            f"{MODULE}.SUBSCRIPTION_PERMISSIONS", {42: (0, 0, "Cluster")}
-        )
+        mocker.patch(f"{MODULE}.SUBSCRIPTION_PERMISSIONS", {42: (0, 0, "Cluster")})
         mocker.patch(f"{MODULE}.SUBTOPIA_URL_PREFIX", "https://x.io/")
         link = _format_tier_name_as_link("Cluster")
         assert 'href="https://x.io/42"' in link
@@ -81,9 +79,7 @@ class TestCorePermissiondappPermissionDappProvider:
 
     def test_core_permissiondapp_subscriptions_without_data(self, mocker):
         mocker.patch(f"{MODULE}._mainnet_algod_client")
-        mocker.patch(
-            f"{MODULE}.fetch_subscriptions_for_address", return_value=None
-        )
+        mocker.patch(f"{MODULE}.fetch_subscriptions_for_address", return_value=None)
         assert PermissionDappProvider().subscriptions("ADDRESS") is None
 
     def test_core_permissiondapp_refresh_updates_mainnet_boxes(self, mocker):
