@@ -21,3 +21,4 @@ asastats/widgets/inhouse/*/tests/javascript/coverage
 asastats/widgets/inhouse/*/package-lock.json
 asastats/widgets/static/*
 asastats/widgets/templates/*
+frontend/coverage

@@ -78,6 +78,7 @@ from core.views import (
     export_download,
     html_file,
 )
+from utils.constants.core import ALGORAND_WALLETS
 from utils.constants.nameservice import NAME_SERVICE_MULTIPLE
 from utils.constants.users import (
     AUTHORIZATION_TRANSACTION_CONFIRMED_MESSAGE,
@@ -1614,6 +1615,19 @@ class TestProfileAuthorizeView:
 
     def test_core_views_profileauthorizeview_sets_template_name(self):
         assert ProfileAuthorizeView.template_name == "profile_authorize.html"
+
+
+@pytest.mark.django_db
+class TestDbProfileAuthorizeView(BaseUserCreatedView):
+
+    def test_core_views_profileauthorizeview_get_context_data_swets_wallets(self):
+        # Setup view
+        view = ProfileAuthorizeView()
+        view = self.setup_view(view, self.request)
+        # Run.
+        view_object = view.get(self.request)
+        # Check.
+        assert view_object.context_data["wallets"] == ALGORAND_WALLETS
 
 
 class TestProfileAuthorizeCheckView:

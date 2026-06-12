@@ -135,6 +135,18 @@ class TestProfileModel:
         profile.check_votes_and_permission()
         save.assert_not_called()
 
+    def test_core_models_profile_check_votes_and_permission_keeps_votes_on_zero(
+        self, mocker
+    ):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (0, 7)
+        save = mocker.patch.object(Profile, "save")
+        profile = Profile(votes=5, permission=3, address="ADDRESS")
+        profile.check_votes_and_permission()
+        save.assert_not_called()
+        assert profile.votes == 5
+        assert profile.permission == 3
+
     @pytest.mark.django_db
     def test_profile_model_check_votes_and_permission_updates(self, mocker):
         provider = mocker.patch("core.models.get_permission_provider").return_value

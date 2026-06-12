@@ -13,6 +13,7 @@ from core.permission_providers.permissiondapp import (  # noqa: E402
     _deserialized_box_value,
     _format_days_diff_message,
     _format_tier_name_as_link,
+    _mainnet_algod_client,
     formatted_subscription_timestamps,
 )
 
@@ -43,7 +44,9 @@ class TestCorePermissiondappFormatTierNameAsLink:
     """Testing class for :py:func:`...permissiondapp._format_tier_name_as_link`."""
 
     def test_core_permissiondapp_format_tier_name_as_link_functionality(self, mocker):
-        mocker.patch(f"{MODULE}.SUBSCRIPTION_PERMISSIONS", {42: (0, 0, "Cluster")})
+        mocker.patch(
+            f"{MODULE}.SUBSCRIPTION_PERMISSIONS", {42: (0, 0, "Cluster")}
+        )
         mocker.patch(f"{MODULE}.SUBTOPIA_URL_PREFIX", "https://x.io/")
         link = _format_tier_name_as_link("Cluster")
         assert 'href="https://x.io/42"' in link
@@ -78,7 +81,9 @@ class TestCorePermissiondappPermissionDappProvider:
 
     def test_core_permissiondapp_subscriptions_without_data(self, mocker):
         mocker.patch(f"{MODULE}._mainnet_algod_client")
-        mocker.patch(f"{MODULE}.fetch_subscriptions_for_address", return_value=None)
+        mocker.patch(
+            f"{MODULE}.fetch_subscriptions_for_address", return_value=None
+        )
         assert PermissionDappProvider().subscriptions("ADDRESS") is None
 
     def test_core_permissiondapp_refresh_updates_mainnet_boxes(self, mocker):
@@ -128,3 +133,19 @@ class TestCorePermissiondappFormattedSubscriptionTimestamps:
         )
         result = formatted_subscription_timestamps({"Cluster": 100, "Intro": 200})
         assert result == {"L:Cluster": "D:100", "L:Intro": "D:200"}
+
+
+class TestCorePermissiondappMainnetAlgodClient:
+    """Testing class for :py:func:`...permissiondapp._mainnet_algod_client`."""
+
+    def test_core_permissiondapp_mainnet_algod_client_builds_from_env(self, mocker):
+        mocker.patch(
+            f"{MODULE}.environment_variables",
+            return_value={
+                "algod_token_mainnet": "tok",
+                "algod_address_mainnet": "addr",
+            },
+        )
+        client = mocker.patch(f"{MODULE}.AlgodClient")
+        assert _mainnet_algod_client() is client.return_value
+        client.assert_called_once_with("tok", "addr")
