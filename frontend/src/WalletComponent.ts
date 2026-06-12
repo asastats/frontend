@@ -19,9 +19,9 @@ const DEFAULT_API_BASE = "/api/v2/wallet";
  * transaction is posted to the backend for off-chain verification and is never
  * submitted to the network.
  *
- * Unlike the Rewards Suite, authorize does not log the user in: the user is
- * already authenticated, and a successful verify authorizes the address onto
- * their profile, then redirects to the profile page.
+ * Authorize does not log the user in: the user is already authenticated, and a
+ * successful verify authorizes the address onto their profile, then redirects
+ * to the profile page.
  *
  * @example
  * ```typescript

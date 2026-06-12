@@ -41,7 +41,7 @@ BANNERS = [
     #         "infrastructure-for-transparent-contributor-rewards-"
     #         "by-asa-stats/15243"
     #     ),
-    #     "alt": "Join the the Rewards Suite xGov proposal discussion on Algorand Forum",
+    #     "alt": "Join the Rewards Suite xGov proposal discussion on Algorand Forum",
     #     "weight": 1,
     # },
     # {

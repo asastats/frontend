@@ -18,9 +18,9 @@ signing a 0-ALGO self-payment whose note carries a server nonce. The signed
 transaction is posted to the backend for off-chain verification and is never
 submitted to the network.
 
-Unlike the Rewards Suite, authorize does not log the user in: the user is
-already authenticated, and a successful verify authorizes the address onto
-their profile, then redirects to the profile page.
+Authorize does not log the user in: the user is already authenticated, and a
+successful verify authorizes the address onto their profile, then redirects
+to the profile page.
 
 ## Example
 

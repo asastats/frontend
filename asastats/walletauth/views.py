@@ -1,10 +1,9 @@
 """Module containing views for wallet address authorization.
 
-Unlike the Rewards Suite, these endpoints do NOT log a user in. The user is
-already authenticated via allauth; a successful verify *authorizes* an address
-onto ``request.user.profile``. Both endpoints are therefore session
-authenticated and require an authenticated user, and they operate strictly on
-the address already stored on the user's profile.
+These endpoints do NOT log a user in. The user is already authenticated via allauth;
+a successful verify *authorizes* an address onto ``request.user.profile``.
+Both endpoints are therefore session authenticated and require an authenticated user,
+and they operate strictly on the address already stored on the user's profile.
 """
 
 import logging
