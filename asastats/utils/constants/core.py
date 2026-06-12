@@ -168,3 +168,23 @@ ELEMENTS_STYLING = {
 }
 
 DEPRECATED_LINK_PROVIDERS = ["cmc"]
+
+# --- Wallet-connect address authorization ---------------------------------
+ALGORAND_WALLETS = [
+    {"id": "pera", "name": "Pera"},
+    {"id": "defly", "name": "Defly"},
+    {"id": "lute", "name": "Lute"},
+    {"id": "kibisis", "name": "Kibisis"},
+    {"id": "exodus", "name": "Exodus"},
+]
+
+# asastats authorizes on mainnet only.
+WALLET_CONNECT_NETWORK_OPTIONS = ["mainnet"]
+
+# Domain-scoped so a signature solicited elsewhere cannot be relayed here.
+WALLET_CONNECT_NONCE_PREFIX = "asastats-auth:"
+
+# Network pinning for the off-chain signature (defense in depth).
+MAINNET_GENESIS_ID = "mainnet-v1.0"
+MAINNET_GENESIS_HASH = "wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8="
+

@@ -9,6 +9,7 @@ from django.db import models
 from django.db.models.functions import Lower
 from django.http import Http404
 from django.urls import reverse
+from django.utils import timezone
 
 from core.permission_provider import get_permission_provider
 from utils.constants.users import (
@@ -36,7 +37,17 @@ class Profile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
     address = models.CharField(max_length=ADDRESS_LEN, blank=True)
-    authorized = models.CharField(max_length=52, blank=True)
+    authorized = models.CharField(max_length=64, blank=True)
+    auth_method = models.CharField(
+        max_length=20,
+        blank=True,
+        choices=[
+            ("escrow", "Escrow note"),
+            ("algorand_wallet", "Algorand wallet"),
+            ("evm_xchain", "EVM / xChain"),
+        ],
+    )
+    authorized_at = models.DateTimeField(null=True, blank=True)
     votes = models.BigIntegerField(default=0, blank=True)
     permission = models.BigIntegerField(default=0, blank=True)
     currency = models.CharField(max_length=5, blank=True, default="ALGO")
@@ -99,6 +110,8 @@ class Profile(models.Model):
             instance = Profile.objects.get(pk=self.id)
             if instance.address and instance.address != self.address:
                 self.authorized = ""
+                self.auth_method = ""
+                self.authorized_at = None
                 self.permission = 0
 
         super().save(**kwargs)
@@ -118,17 +131,17 @@ class Profile(models.Model):
             return "Professional"
         return "Cluster"
 
-    def update_authorized(self, transaction_id):
-        """Update authorized field with provided transaction ID and update permission.
+    def update_authorized(self, proof, method="escrow"):
+        """Record an authorization proof and refresh permission.
 
-        :param transaction_id: unique Algorand transaction identifier
-        :type transaction_id: str
-        :var votes: user's governance votes count
-        :type votes: int
-        :var permission: user's website permission value
-        :type permission: int
+        :param proof: provenance string (escrow txid, or the consumed nonce)
+        :type proof: str
+        :param method: one of "escrow", "algorand_wallet", "evm_xchain"
+        :type method: str
         """
-        self.authorized = transaction_id
+        self.authorized = proof
+        self.auth_method = method
+        self.authorized_at = timezone.now()
         self.check_votes_and_permission()
         self.save()
 

@@ -59,6 +59,7 @@ from utils.charts import (
     prepare_consolidated_charts_from_serialized_data,
 )
 from utils.constants.core import (
+    ALGORAND_WALLETS,
     CACHE_TTL_ADDRESS,
     CACHE_TTL_CUSTOM_ADDRESS,
     CONTENT_TYPES_FOR_EXTENSION,
@@ -975,9 +976,24 @@ class ProfileApiView(CanAccessApiMixin, TemplateView):
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
 class ProfileAuthorizeView(CanAccessAuthorizeMixin, TemplateView):
-    """View for authorization of provided profile address."""
+    """View for authorization of provided profile address.
+
+    :var template_name: name of the template to render
+    :type template_name: str
+    """
 
     template_name = "profile_authorize.html"
+
+    def get_context_data(self, *args, **kwargs):
+        """Add the supported wallet list for the connect-a-wallet cards.
+
+        :var context: template context populated by the parent implementation
+        :type context: dict
+        :return: dict
+        """
+        context = super().get_context_data(*args, **kwargs)
+        context["wallets"] = ALGORAND_WALLETS
+        return context
 
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")

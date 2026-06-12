@@ -54,7 +54,7 @@ class TestAsastatsUrls:
         assert "core.urls" in str(url.urlconf_name)
 
     def test_asastats_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 7
+        assert len(urls.urlpatterns) == 8
 
     def test_asastats_urls_defines_custom_handler500(self):
         assert getattr(urls, "handler500") == "core.views.custom_server_error"

@@ -20,6 +20,7 @@ from django.urls import include, path, re_path
 
 from api import urls as api_urls
 from core import urls as core_urls
+from walletauth import urls as walletauth_urls
 from widgets import urls as widget_urls
 
 from .sitemaps import PrioritizedStaticViewSitemap, StaticViewSitemap
@@ -45,6 +46,8 @@ urlpatterns = [
         },
         name="sitemap",
     ),
+    # walletauth app namespace
+    re_path(r"^api/v2/wallet/", include(walletauth_urls)),
     # api app namespace
     re_path(r"^api/v2/", include(api_urls)),
     # allauth

@@ -51,6 +51,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "widgets.apps.WidgetsConfig",
+    "walletauth.apps.WalletauthConfig",
     "daphne",
     "template_partials",
     "django.contrib.auth",
