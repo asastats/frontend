@@ -7,7 +7,9 @@
     "preview": "vite preview",
     "test": "node --no-warnings node_modules/.bin/jest --config jest.config.cjs",
     "test:watch": "node --no-warnings node_modules/.bin/jest --config jest.config.cjs --watch",
-    "test:coverage": "node --no-warnings node_modules/.bin/jest --config jest.config.cjs --coverage"
+    "test:coverage": "node --no-warnings node_modules/.bin/jest --config jest.config.cjs --coverage",
+    "test:all": "node --no-warnings node_modules/.bin/jest --config jest.config.cjs --coverage --verbose",
+    "test:ci": "jest --config jest.config.cjs --coverage --coverageReporters=lcov --coverageReporters=text --coverageReporters=html"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

@@ -6,6 +6,7 @@ const jquery = require('../static/js/jquery-2.2.4.min.js');
 window.$ = jquery;
 
 $.prototype.sidenav = jest.fn();
+$.prototype.modal = jest.fn();
 
 const materialize = require('../static/js/materialize.min.js');
 const site = require('../static/js/site.js');

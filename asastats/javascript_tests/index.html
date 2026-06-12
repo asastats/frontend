@@ -2,17 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>ASA Stats</title>
-    <meta name="description" content="ASA Stats shows the current value of all assets located in any Algorand account.">
-    <meta name="keywords" content="asastats,Algorand,ASA,token,coin,evaluate,calculate,value,price,NFT,balance,account,address,amount">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald|Nunito">
-    <link href="/static/css/materialize.css" type="text/css" rel="stylesheet" media="screen">
-    <link href="/static/css/style.css" type="text/css" rel="stylesheet" media="screen">
+    <meta name="description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.">
+    <meta name="keywords" content="asastats,Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount">
+    
     <meta property="og:type" content="website" />
     <meta property="og:title" content="ASA Stats" />
     <meta property="og:url" content="https://www.asastats.com/" />
-    <meta property="og:description" content="ASA Stats shows the current value of all assets located in any Algorand account." />
+    <meta property="og:description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out." />
     <meta property="og:image" content="http://www.asastats.com/asastats-logo1200.jpg" />
     <meta property="og:image:url" content="http://www.asastats.com/asastats-logo1200.jpg" />
     <meta property="og:image:secure_url" content="https://www.asastats.com/asastats-logo1200.jpg" />
@@ -20,14 +18,19 @@
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="1200" />
     <meta property="og:image:alt" content="ASA Stats logo" />
+    <meta property="og:video" content="https://www.youtube.com/v/M8_dWMNWmCo" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:url" content="https://www.asastats.com/" />
     <meta name="twitter:title" content="ASA Stats" />
-    <meta name="twitter:description" content="ASA Stats shows the current value of all assets located in any Algorand account." />
+    <meta name="twitter:description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development." />
     <meta name="twitter:site" content="@asastatscom" />
     <meta name="twitter:creator" content="@asastatscom" />
     <meta name="twitter:image" content="https://www.asastats.com/asastats-logo1200.jpg" />
     <meta name="twitter:image:alt" content="ASA Stats logo" />
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald|Nunito">
+    <link href="/static/css/materialize.min002.css" type="text/css" rel="stylesheet" media="screen">
+    <link href="/static/css/style.min041.css" type="text/css" rel="stylesheet" media="screen">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -37,51 +40,157 @@
     <meta name="theme-color" content="#ffffff">
 </head>
 <body>
+<script>
+  var mode = '' || localStorage.getItem('mode') || 'light';
+  document.body.classList.add(mode);
+</script>
+
+
 <main>
   <div class="container">
+    
 <div class="row center-align">
   <div class="col s12 m8 push-m2">
     <a href="/"><img id="logo" class="responsive-img" src="/static/logo.png" alt="ASA Stats logo"></a>
   </div>
   <div class="row">
+    <div class="col s12">
+      <h1 class="center-align index flow-text truncate">Your entire Algorand portfolio in one place</h1>
+    </div>
     <form method="POST" action="." id="id_form">
-      <input type="hidden" name="csrfmiddlewaretoken" value="W4tGxy6syl89ddeLvCmGnfxrHKo5lQhGdnVZ1Gb8eEiYSg98PNbqq9QqN1CCErWe">
-      <div class="input-field col s12 m8 push-m2 center-align">
-        <input id="id_address" name="address" maxlength="59" autofocus="autofocus" placeholder="Enter Algorand address" type="text">
+      <input type="hidden" name="csrfmiddlewaretoken" value="9Ds9gPFJ8z9ZZjNh2dAPJDEyNXJ045kGc6ou2SOj4sYiNbwgoSgPFM7maQ313EQj">
+      <div class="input-field col s12 m8 push-m2">
+        <img class="prefix" src="/static/img/expand.png" alt="Click to expand">
+        <input id="id_address" name="address" maxlength="58" autofocus="autofocus" placeholder="Enter Algorand address" type="text">
+        
+        <input type="hidden" name="bundle" id="id_bundle">
+        
       </div>
       <div class="col s8 push-s2">
         <div class="indeterminate"></div>
       </div>
+      
       <div class="col s12 m8 push-m2 center-align">
         <button class="waves-effect waves-mydark btn whenmoon" id="whenmoon" type="submit">When Moon</button>
       </div>
+      
     </form>
+    
   </div>
 </div>
+
   </div>
 </main>
 <footer class="page-footer">
-  <div class="col s12 center-align socfooter">
+  <div class="container">
+    <div class="col s12 center-align socfooter">
+      <a class="frmbtn liqbtn" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener" title="ALGO-ASASTATS liquidity pool on Pact"></a>
+      <a class="frmbtn liq2btn" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener" title="ALGO-ASASTATS liquidity pool on Tinyman"></a>
+    </div>
+    <div class="col s12 center-align socfooter">
+      <a class="scbtn iosbtn" href="https://apps.apple.com/us/app/asa-stats-mobile/id6443547246" target="_blank" rel="noopener" title="ASA Stats Mobile on App Store"></a>
+      <a class="scbtn andrbtn" href="https://play.google.com/store/apps/details?id=com.asastats.app" target="_blank" rel="noopener" title="ASA Stats Mobile on Play Store"></a>
       <a class="scbtn dark-toggle brightbtn" href="#" title="Dark/bright side of the Moon"></a>
       <a class="scbtn twitbtn" href="https://twitter.com/asastatscom" target="_blank" rel="noopener" title="@asastatscom on X platform"></a>
       <a class="scbtn dscrbtn" href="https://discord.gg/Vjx7w7pAC7" target="_blank" rel="noopener" title="Join our Discord server"></a>
       <a class="scbtn rdtbtn" href="https://www.reddit.com/r/asastats" target="_blank" rel="noopener" title="r/asastats on Reddit"></a>
+      <a class="scbtn medbtn" href="https://medium.com/@asastats" target="_blank" rel="noopener" title="ASA Stats on Medium"></a>
       <a class="scbtn githbtn" href="https://github.com/asastats" target="_blank" rel="noopener" title="ASA Stats on GitHub"></a>
+    </div>
   </div>
-  <div class="footer-copyright">
+  <div id="footer" class="footer-copyright" data-mode="">
       <div class="container center-align">
-        <a href="/about/">About</a>
+        <a href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener" title="Buy ASA Stats Token on Pact">Buy ASASTATS</a>
+        
+        &emsp;&emsp;<a href="#modalLogin" class="modal-trigger">Log in</a>
+        
+        &emsp;&emsp;<a href="/about/">About</a>
         &emsp;&emsp;<a href="/tokenomics/">Tokenomics</a>
+        &emsp;&emsp;<a href="/subscriptions/">Subscriptions</a>
+        &emsp;&emsp;<a href="/api/v2/schema/swagger-ui/">API</a>
         &emsp;&emsp;<a href="/faq/">FAQ</a>
+        &emsp;&emsp;<a href="/features/">Features</a>
+        &emsp;&emsp;<a href="https://www.asastats.com/auth_privacy.html" target="_blank" rel="noopener">Privacy</a>
         &emsp;&emsp;<a href="/disclaimer/">Disclaimer</a>
-        &emsp;&emsp;<span class="txt mydark-text">&copy; 2023 ASA Stats</span>
+        
+        &emsp;&emsp;<span class="txt mydark-text">&copy;&nbsp;2026&nbsp;ASA&nbsp;Stats</span>
       </div>
   </div>
 </footer>
-<script src="../static/js/jquery-2.2.4.min.js"></script>
-<script src="../static/js/materialize.min.js"></script>
-<script src="../static/js/site.js"></script>
-<script type="application/ld+json">{"@context":"http://schema.org","@graph":[{"@type":"WebSite","name":"ASA Stats","url":"https://www.asastats.com","@id":"https://www.asastats.com/#site","description":"ASA Stats shows the current value of all assets located in any Algorand account","publisher":{"@type":"Organization","@id":"https://www.asastats.com/#org","name":"ASA Stats"},"hasPart":[{"@type":"WebPage","name":"About","url":"https://www.asastats.com/about/","@id":"https://www.asastats.com/#about","description":"ASA Stats concept, goals and author/team/DAO"},{"@type":"WebPage","name":"Tokenomics","url":"https://www.asastats.com/tokenomics/","@id":"https://www.asastats.com/#tokenomics","description":"ASA Stats Token (ASASTATS) metrics"},{"@type":"WebPage","name":"FAQ page","url":"https://www.asastats.com/faq/","@id":"https://www.asastats.com/#faq","description":"Frequently asked questions about ASA Stats project and token"},{"@type":"WebPage","name":"Disclaimer","url":"https://www.asastats.com/disclaimer/","@id":"https://www.asastats.com/#disclaimer","description":"Disclaimer for the www.asastats.com website"}]},{"@type":"Organization","name":"ASA Stats","description":"Responsible for development of the ASA Stats project","@id":"https://www.asastats.com/#org","image":"https://www.asastats.com/logo.png","logo":{"@type":"ImageObject","url":"https://www.asastats.com/icon.png","caption":"Asa Stats icon logo","width":512,"height":512},"url":"https://www.asastats.com","sameAs":["https://twitter.com/asastatscom","https://www.reddit.com/r/asastats"]}]}</script>
-<script src="../static/js/index.js"></script>
+<div id="modalLogin" class="modal">
+    <form class="login" id="modal_login_form" method="POST" action="/accounts/login/">
+    <div class="modal-content">
+        <div class="row">
+          <div class="col s12 m6 push-m6">
+                <h3 class="center-align">Log in</h3>
+                <div class="center-align">
+                    <div class="divider col s12 m10 offset-m1"></div>
+                    <input type="hidden" name="csrfmiddlewaretoken" value="9Ds9gPFJ8z9ZZjNh2dAPJDEyNXJ045kGc6ou2SOj4sYiNbwgoSgPFM7maQ313EQj">
+                    <div class="row center-align">
+                        <div class="input-field col s12 m10 offset-m1">
+                            <i class="material-icons prefix" aria-hidden="true">account_circle</i>
+                            <input autofocus="autofocus" id="id_login_modal" name="login" placeholder="Username or email" type="text" required />
+                            <label for="id_login_modal">Login:</label>
+                        </div>
+                        <div class="input-field col s12 m10 offset-m1">
+                            <i class="material-icons prefix" aria-hidden="true">lock</i>
+                            <input id="id_password_modal" name="password" autocomplete="off" placeholder="Password" type="password" required />
+                            <label for="id_password_modal">Password:</label>
+                        </div>
+                        <div class="input-field col s12 m10 offset-m1">
+                          <div>
+                          <label title="Remember me on this computer">
+                            <input name="remember" type="checkbox">
+                            <span>Remember me</span>
+                          </label>
+                          </div>
+                        </div>
+                        <div class="center-align col s12">
+                            <button class="waves-effect btn-flat auth modal-action modal-close" id="id_cta_modal" type="submit">Log in <i class="material-icons right" aria-hidden="true">verified_user</i></button>
+                        </div>
+                    </div>
+            </div>
+          </div>
+          <div class="col s12 m6 pull-m6 center-align">
+              <h3>By social media</h3>
+              <div class="row">
+                  <div class="divider col s12"></div><br>
+                  <div class="valign-wrapper col s12 socialsmall">
+                    <img src="/static/img/social/discord.png" alt="Discord logo" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/discord/login/">Sign in with Discord</a>
+                  </div>
+                  <div class="valign-wrapper col s12 socialsmall">
+                    <img src="/static/img/social/twitter.png" alt="X logo" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/twitter_oauth2/login/">Sign in with X</a>
+                  </div>
+                  <div class="valign-wrapper col s12 socialsmall">
+                    <img src="/static/img/social/reddit.png" alt="Reddit logo" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/reddit/login/">Sign in with Reddit</a>
+                  </div>
+                  <div class="valign-wrapper col s12 socialsmall">
+                    <img src="/static/img/social/github.png" alt="GitHub logo" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/github/login/">Sign in with GitHub</a>
+                  </div>
+                  <div class="valign-wrapper col s12 socialsmall">
+                    <img src="/static/img/social/google.png" alt="Google logo" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/google/login/">Sign in with Google</a>
+                  </div>
+              </div>
+          </div>
+        </div>
+        <div class="divider col s12 m10 offset-m1"></div>
+        <div class="row center-align col s12">
+            <a class="secondaryAction waves-effect waves-light btn-flat" href="/accounts/password/reset/">Forgot password?</a>
+            <a class="secondaryAction waves-effect waves-light btn-flat" href="/accounts/signup/">Don't have an account?</a>
+        </div>
+        <div class="right-align col s12">
+            <a href="#" class="waves-effect btn-flat modal-close" id="id_cancel">Cancel<i class="material-icons right" aria-hidden="true">highlight_off</i></a>&nbsp;
+        </div>
+    </div>
+    </form>
+</div>
+
+<script src="/static/js/jquery-2.2.4.min.js"></script>
+<script src="/static/js/materialize.min.js"></script>
+<script src="/static/js/site.js"></script>
+
+<script type="application/ld+json">{"@context":"http://schema.org","@graph":[{"@type":"WebSite","name":"ASA Stats","url":"https://www.asastats.com","@id":"https://www.asastats.com/#site","description":"ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development.","publisher":{"@type":"Organization","@id":"https://www.asastats.com/#org","name":"ASA Stats"},"hasPart":[{"@type":"WebPage","name":"About","url":"https://www.asastats.com/about/","@id":"https://www.asastats.com/#about","description":"ASA Stats concept, goals and author/team/DAO"},{"@type":"WebPage","name":"Tokenomics","url":"https://www.asastats.com/tokenomics/","@id":"https://www.asastats.com/#tokenomics","description":"ASA Stats Token (ASASTATS) metrics"},{"@type":"WebPage","name":"Subscriptions","url":"https://www.asastats.com/subscriptions/","@id":"https://www.asastats.com/#subscriptions","description":"ASA Stats subscription model"},{"@type":"WebPage","name":"FAQ page","url":"https://www.asastats.com/faq/","@id":"https://www.asastats.com/#faq","description":"Frequently asked questions about ASA Stats project and token"},{"@type":"WebPage","name":"Features","url":"https://www.asastats.com/features/","@id":"https://www.asastats.com/#features","description":"ASA Stats features"},{"@type":"WebPage","name":"Disclaimer","url":"https://www.asastats.com/disclaimer/","@id":"https://www.asastats.com/#disclaimer","description":"Disclaimer for the www.asastats.com website"},{"@type":"WebPage","name":"ASA Stats Mobile Privacy Policy","url":"https://www.asastats.com/asm-privacy/","@id":"https://www.asastats.com/#asm-privacy","description":"Privacy Policy for the ASA Stats Mobile application"}]},{"@type":"Organization","name":"ASA Stats","description":"Responsible for development of the ASA Stats project","@id":"https://www.asastats.com/#org","image":"https://www.asastats.com/logo.png","logo":{"@type":"ImageObject","url":"https://www.asastats.com/icon.png","caption":"Asa Stats icon logo","width":512,"height":512},"url":"https://www.asastats.com","sameAs":["https://twitter.com/asastatscom","https://www.reddit.com/r/asastats"]}]}</script>
+<script src="/static/js/index.js"></script>
+
 </body>
 </html>
