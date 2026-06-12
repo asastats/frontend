@@ -97,10 +97,59 @@ jobs:
           pytest asastats/widgets -c asastats/widgets/pytest.ini --cov=widgets --cov-report=xml:coverage-widgets.xml --cov-report=term-missing
 
       - name: Upload merged coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           # Pass both files as a comma-separated list
           files: ./coverage-main.xml,./coverage-widgets.xml
           flags: main-project
-          name: main-coverage          
+          name: main-coverage
+
+  frontend:
+    runs-on: ubuntu-latest
+    needs: main
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: "frontend/package-lock.json"
+
+      - name: Install canvas build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+
+      - name: Install dependencies (frontend)
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Run frontend tests with coverage
+        run: |
+          cd frontend
+          npm run test:coverage
+
+      - name: Install dependencies (website)
+        run: |
+          cd asastats
+          npm install
+
+      - name: Run website's tests with coverage
+        run: |
+          cd asastats
+          npm run test:coverage
+
+      - name: Upload merged frontend coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # Pass both files as a comma-separated list
+          files: frontend/coverage,asastats/javascript_tests/coverage
+          flags: frontend-project
+          name: frontend-coverage
