@@ -52,6 +52,54 @@ Initial packages installation:
   (frontend) debian:~/dev/frontend/asastats$ pip install -r requirements/development.txt
 
 
+Linting
+^^^^^^^
+
+To maintain code quality and consistent formatting, use `isort` and `black`. 
+First, navigate to the `asastats` directory:
+
+.. code-block:: bash
+
+  cd asastats/
+
+Sort the Python imports alphabetically:
+
+.. code-block:: bash
+
+  isort .
+
+Run `black` for code formatting, making sure to explicitly exclude the submodules:
+
+.. code-block:: bash
+
+  black . --extend-exclude="widgets/" --extend-exclude="permissiondapp/"
+
+
+Submodules
+^^^^^^^^^^
+
+This project utilizes submodules for isolated feature sets. The `widgets` submodule is an obligatory requirement, while the `permissiondapp` submodule is an optional addition used by the ASA Stats website.
+
+To fetch the absolute latest version of the obligatory `widgets` submodule:
+
+.. code-block:: bash
+
+  git submodule update --remote asastats/widgets
+
+To fetch the absolute latest version of the optional `permissiondapp` submodule:
+
+.. code-block:: bash
+
+  git submodule update --remote asastats/permissiondapp
+
+In case of changed code, or if you need to throw away local changes, you can revert the submodules to the exact versions the frontend repository expects:
+
+.. code-block:: bash
+
+  # reset to the version frontend has
+  git submodule update --init --recursive --force
+
+
 Run development server
 ----------------------
 
@@ -130,6 +178,35 @@ Run project's functional tests:
 .. code-block:: bash
 
   python -m pytest asastats/functional_tests/ -v
+
+
+Run widgets submodule unit tests:
+
+The `widgets` submodule is an integral part of the project and depends heavily on the frontend repository. Therefore, testing widgets directly from within the frontend is an expected behavior for developers.
+
+.. code-block:: bash
+
+  PYTHONPATH=asastats pytest -v asastats/widgets -c asastats/widgets/pytest.ini
+
+
+Typescript
+^^^^^^^^^^
+
+Install dependencies:
+
+.. code-block:: bash
+
+  cd /home/username/dev/frontend/frontend
+  npm install
+  npm run build
+
+
+Run tests:
+
+.. code-block:: bash
+
+  cd /home/username/dev/frontend/asastats
+  npm run test  #  npm run test:coverage
 
 
 Javascript
