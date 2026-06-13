@@ -166,7 +166,7 @@ describe("App failure handling", () => {
  * * * * * * * * * * * * * * * * * * * * * * * * * * *
  */
 describe("App test harness gate", () => {
-  it("loads the mock wallet harness when the flag is set", async () => {
+  it("installs the mock wallet harness when the flag is set", () => {
     const install = jest.fn();
     jest.doMock("./walletTestHarness", () => ({ install }));
     (window as any).__WALLET_TEST__ = true;
@@ -174,7 +174,6 @@ describe("App test harness gate", () => {
     jest.isolateModules(() => {
       require("./main");
     });
-    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(install).toHaveBeenCalled();
     delete (window as any).__WALLET_TEST__;

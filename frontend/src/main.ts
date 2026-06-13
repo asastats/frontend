@@ -1,5 +1,6 @@
 import { WalletManager, WalletId } from "@txnlab/use-wallet";
 import { WalletComponent } from "./WalletComponent";
+import { install as installTestHarness } from "./walletTestHarness";
 
 /** Default mount point of the walletauth API (overridable via data attribute). */
 const DEFAULT_API_BASE = "/api/v2/wallet";
@@ -13,7 +14,7 @@ const DEFAULT_API_BASE = "/api/v2/wallet";
  * network selector: ASA Stats authorizes on mainnet only.
  */
 export class App {
-  /** The wallet manager, or null until `App.init()` runs. */
+  /** The wallet manager, or null until {@link App.init} runs. */
   walletManager: WalletManager | null = null;
   /** Bound wallet components, retained for cleanup. */
   private walletComponents: WalletComponent[] = [];
@@ -95,8 +96,10 @@ export class App {
 new App();
 
 // Test-only: when the page sets `window.__WALLET_TEST__` (emitted solely under
-// settings.WALLET_TEST_MODE), lazy-load the mock wallet harness. The dynamic
-// import is code-split into its own chunk, so production never fetches it.
+// settings.WALLET_TEST_MODE), install the mock wallet harness synchronously so
+// `window.__installMockWallet` is defined by the time bundle.js finishes
+// executing -- before Selenium regains control. The harness is inert (never
+// installed) when the flag is absent, so production is unaffected.
 if ((window as any).__WALLET_TEST__) {
-  import("./walletTestHarness").then((m) => m.install());
+  installTestHarness();
 }

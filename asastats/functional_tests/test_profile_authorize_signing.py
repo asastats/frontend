@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By  # noqa: F401 (kept for parity/extension)
 
 from .base import FunctionalTest
@@ -33,7 +34,13 @@ class ProfileAuthorizeWalletSigningTest(FunctionalTest):
         self.accept_cookie()
 
         # A mock wallet (controlling Mona's address) is installed in place of a
-        # real browser extension
+        # real browser extension. Wait until the test harness has attached its
+        # global before calling it (guards against any load-order timing).
+        WebDriverWait(self.browser, 10).until(
+            lambda d: d.execute_script(
+                "return typeof window.__installMockWallet === 'function'"
+            )
+        )
         installed_address = self.browser.execute_script(
             "return window.__installMockWallet(arguments[0]);", TEST_WALLET_MNEMONIC
         )

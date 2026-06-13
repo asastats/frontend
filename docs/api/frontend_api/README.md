@@ -8,3 +8,4 @@
 
 - [main](main/README.md)
 - [WalletComponent](WalletComponent/README.md)
+- [walletTestHarness](walletTestHarness/README.md)
