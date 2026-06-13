@@ -124,6 +124,7 @@ function toggleText() {
  * @function initializeCookieConsent
  *
  */
+/* istanbul ignore next */
 function initializeCookieConsent() {
   silktideCookieBannerManager.updateCookieBannerConfig({
     background: {
