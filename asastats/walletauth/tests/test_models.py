@@ -113,6 +113,29 @@ class TestWalletNonceModel:
         nonce.refresh_from_db()
         assert nonce.used is True
 
+    # # claim
+    @pytest.mark.django_db
+    def test_walletnonce_model_claim_consumes_once(self):
+        nonce = make_nonce()
+        assert nonce.claim() is True
+        nonce.refresh_from_db()
+        assert nonce.used is True
+
+    @pytest.mark.django_db
+    def test_walletnonce_model_claim_is_single_use(self):
+        nonce = make_nonce()
+        first = nonce.claim()
+        # a second instance pointing at the same row must lose the race
+        other = WalletNonce.objects.get(pk=nonce.pk)
+        second = other.claim()
+        assert first is True
+        assert second is False
+
+    @pytest.mark.django_db
+    def test_walletnonce_model_claim_false_when_already_used(self):
+        nonce = make_nonce(used=True)
+        assert nonce.claim() is False
+
     @pytest.mark.django_db
     def test_walletnonce_model_mark_used_saves_only_used_field(self, mocker):
         nonce = make_nonce()

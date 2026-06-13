@@ -20,6 +20,12 @@ from walletauth.crypto import verify_signed_transaction
 
 logger = logging.getLogger(__name__)
 
+#: Upper bound on the base64 signed-transaction payload. A signed 0-ALGO
+#: self-payment carrying the nonce is a few hundred bytes; this generous cap
+#: rejects oversized payloads before base64/msgpack decoding (defense in depth;
+#: Django's DATA_UPLOAD_MAX_MEMORY_SIZE already bounds the request body).
+MAX_SIGNED_TXN_B64_LENGTH = 2048
+
 
 class NotSupported(Exception):
     """Raised when a verifier for a recognized chain is not yet enabled."""
@@ -102,6 +108,9 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
         signed_b64 = payload.get("signedTransaction")
         if not signed_b64:
             logger.warning("walletauth: missing signedTransaction in payload")
+            return None
+        if len(signed_b64) > MAX_SIGNED_TXN_B64_LENGTH:
+            logger.warning("walletauth: oversized signedTransaction payload rejected")
             return None
 
         try:

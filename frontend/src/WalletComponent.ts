@@ -9,6 +9,27 @@ import {
 const DEFAULT_API_BASE = "/api/v2/wallet";
 
 /**
+ * Escape HTML special characters so untrusted text can be placed into an HTML
+ * sink (e.g. Materialize's toast `html` option) without injecting markup.
+ *
+ * @param value - Untrusted text.
+ * @returns The text with `& < > " '` replaced by entities.
+ */
+function escapeHtml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[c] as string)
+  );
+}
+
+/**
  * Manages a single Algorand wallet's connection and the address-authorization
  * flow for the ASA Stats authorize page.
  *
@@ -198,13 +219,18 @@ export class WalletComponent {
    * Surfaces an error to the user via a Materialize toast when available,
    * otherwise appends a transient message node to the card.
    *
-   * @param message - Human-readable error text.
+   * The message can contain wallet-derived text (e.g. an active account
+   * address), so it is HTML-escaped before being handed to the toast, whose
+   * `html` option is inserted as markup. The DOM fallback uses `textContent`
+   * and is already safe.
+   *
+   * @param message - Human-readable error text (treated as untrusted).
    */
   private showError(message: string) {
     /** Optional Materialize global; absent under jsdom/tests. */
     const M = (window as any).M;
     if (M?.toast) {
-      M.toast({ html: message, classes: "red darken-1" });
+      M.toast({ html: escapeHtml(message), classes: "red darken-1" });
       return;
     }
     /* istanbul ignore next */

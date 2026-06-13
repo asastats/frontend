@@ -54,6 +54,23 @@ class WalletNonce(models.Model):
         self.used = True
         self.save(update_fields=["used"])
 
+    def claim(self):
+        """Atomically transition this nonce from unused to used.
+
+        Race-safe single-use: only the caller that performs the unused->used
+        transition gets ``True``; a concurrent request that already consumed the
+        nonce gets ``False``.
+
+        :var claimed: number of rows the conditional update changed (0 or 1)
+        :type claimed: int
+        :return: True if this call consumed the nonce, else False
+        :rtype: bool
+        """
+        claimed = type(self).objects.filter(pk=self.pk, used=False).update(used=True)
+        if claimed:
+            self.used = True
+        return bool(claimed)
+
     @classmethod
     def purge_stale(cls):
         """Delete used or expired nonces. Intended for a periodic job.

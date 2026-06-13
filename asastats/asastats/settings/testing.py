@@ -45,4 +45,4 @@ EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = "ASA Stats Support <support@asastats.com>"
 
-WALLET_TEST_MODE=True
+WALLET_TEST_MODE = True

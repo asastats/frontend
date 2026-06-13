@@ -12,6 +12,7 @@ from utils.constants.core import (
     WALLET_CONNECT_NONCE_PREFIX,
 )
 from walletauth.verifiers import (
+    MAX_SIGNED_TXN_B64_LENGTH,
     AlgorandSignedTxnVerifier,
     EvmXChainVerifier,
     NotSupported,
@@ -94,6 +95,18 @@ class TestAlgorandSignedTxnVerifier:
                 nonce=NONCE,
                 prefix=WALLET_CONNECT_NONCE_PREFIX,
                 payload={"signedTransaction": "not-base64-msgpack"},
+            )
+            is None
+        )
+
+    def test_algorand_verifier_oversized_payload_returns_none(self):
+        verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
+        assert (
+            verifier.verify(
+                address="A" * 58,
+                nonce=NONCE,
+                prefix=WALLET_CONNECT_NONCE_PREFIX,
+                payload={"signedTransaction": "A" * (MAX_SIGNED_TXN_B64_LENGTH + 1)},
             )
             is None
         )

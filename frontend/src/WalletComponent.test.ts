@@ -271,6 +271,21 @@ describe("WalletComponent auth", () => {
     delete (window as any).M;
   });
 
+  it("escapes wallet-derived text before showing a toast", async () => {
+    const toast = jest.fn();
+    (window as any).M = { toast };
+    const algosdk = require("algosdk");
+    (algosdk.isValidAddress as jest.Mock).mockReturnValueOnce(false);
+    mockWallet.activeAccount = { address: "<img src=x onerror=alert(1)>" };
+    await component.auth();
+    expect(toast).toHaveBeenCalledTimes(1);
+    const html = (toast.mock.calls[0][0] as { html: string }).html;
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;img");
+    expect(global.fetch).not.toHaveBeenCalled();
+    delete (window as any).M;
+  });
+
   it("errors when the wallet returns no signed transaction", async () => {
     mockWallet.activeAccount = { address: "ACTIVEADDR" };
     mockWallet.signTransactions.mockResolvedValueOnce([undefined]);

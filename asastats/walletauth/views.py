@@ -1,9 +1,10 @@
 """Module containing views for wallet address authorization.
 
-These endpoints do NOT log a user in. The user is already authenticated via allauth;
-a successful verify *authorizes* an address onto ``request.user.profile``.
-Both endpoints are therefore session authenticated and require an authenticated user,
-and they operate strictly on the address already stored on the user's profile.
+Unlike the Rewards Suite, these endpoints do NOT log a user in. The user is
+already authenticated via allauth; a successful verify *authorizes* an address
+onto ``request.user.profile``. Both endpoints are therefore session
+authenticated and require an authenticated user, and they operate strictly on
+the address already stored on the user's profile.
 """
 
 import logging
@@ -18,6 +19,7 @@ from rest_framework.views import APIView
 
 from utils.constants.core import ALGORAND_WALLETS, WALLET_CONNECT_NONCE_PREFIX
 from walletauth.models import WalletNonce
+from walletauth.throttling import WalletAuthRateThrottle
 from walletauth.verifiers import AUTH_METHOD_BY_CHAIN, VERIFIERS, NotSupported
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,7 @@ class WalletNonceAPIView(APIView):
 
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
+    throttle_classes = [WalletAuthRateThrottle]
 
     def post(self, request, *args, **kwargs):
         """Create a nonce for the profile's own address.
@@ -89,6 +92,7 @@ class WalletVerifyAPIView(APIView):
 
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
+    throttle_classes = [WalletAuthRateThrottle]
 
     def post(self, request, *args, **kwargs):
         """Verify the proof and stamp ``profile`` on success.
@@ -169,7 +173,11 @@ class WalletVerifyAPIView(APIView):
                 status=400,
             )
 
-        nonce_obj.mark_used()
+        if not nonce_obj.claim():
+            # A concurrent request already consumed this nonce.
+            return Response(
+                {"success": False, "error": "Nonce already used"}, status=400
+            )
         refreshed = profile.update_authorized(
             nonce_obj.nonce, method=AUTH_METHOD_BY_CHAIN.get(chain, "algorand_wallet")
         )

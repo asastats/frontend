@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
 from walletauth.models import WalletNonce
+from walletauth.throttling import WalletAuthRateThrottle
 from walletauth.verifiers import NotSupported
 from walletauth.views import (
     WalletNonceAPIView,
@@ -56,6 +57,10 @@ class TestWalletsAPIView:
 
 class TestWalletNonceAPIView:
     """Testing class for :class:`WalletNonceAPIView` view."""
+
+    # # configuration
+    def test_walletauth_nonceview_uses_walletauth_throttle(self):
+        assert WalletAuthRateThrottle in WalletNonceAPIView.throttle_classes
 
     # # post
     @pytest.mark.django_db
@@ -115,6 +120,10 @@ class TestWalletNonceAPIView:
 
 class TestWalletVerifyAPIView:
     """Testing class for :class:`WalletVerifyAPIView` view."""
+
+    # # configuration
+    def test_walletauth_verifyview_uses_walletauth_throttle(self):
+        assert WalletAuthRateThrottle in WalletVerifyAPIView.throttle_classes
 
     # # HELPERS
     @staticmethod
@@ -185,6 +194,29 @@ class TestWalletVerifyAPIView:
         response = WalletVerifyAPIView.as_view()(request)
         assert response.status_code == 400
         assert response.data["error"] == "Missing nonce"
+
+    @pytest.mark.django_db
+    def test_walletauth_verifyview_rejects_lost_nonce_race(self, mocker):
+        user = make_authorized_user()
+        WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="good")
+        mocker.patch.dict(
+            "walletauth.views.VERIFIERS",
+            {"algorand": _FakeVerifier(result=TEST_ADDRESS)},
+        )
+        mocker.patch("core.models.Profile.check_votes_and_permission")
+        # Simulate a concurrent request having already consumed the nonce: the
+        # atomic claim loses the race and returns False.
+        mocker.patch("walletauth.models.WalletNonce.claim", return_value=False)
+        update = mocker.patch("core.models.Profile.update_authorized")
+        request = APIRequestFactory().post(
+            "/verify/", {"nonce": "good", "chain": "algorand"}, format="json"
+        )
+        force_authenticate(request, user=user)
+        response = WalletVerifyAPIView.as_view()(request)
+
+        assert response.status_code == 400
+        assert response.data["error"] == "Nonce already used"
+        update.assert_not_called()
 
     @pytest.mark.django_db
     def test_walletauth_verifyview_rejects_unknown_nonce(self, mocker):
