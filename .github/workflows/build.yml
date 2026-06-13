@@ -120,20 +120,28 @@ jobs:
           cache: "npm"
           cache-dependency-path: "frontend/package-lock.json"
 
-      - name: Install canvas build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+      # - name: Install canvas build dependencies
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
 
       - name: Install dependencies (frontend)
         run: |
           cd frontend
           npm ci
 
-      - name: Run frontend tests with coverage
+      - name: Run frontend Typescript tests with coverage
         run: |
           cd frontend
           npm run test:coverage
+
+      - name: Upload frontend Typescript coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: frontend/coverage
+          flags: frontend-typescript
+          name: frontend-coverage
 
       - name: Install dependencies (website)
         run: |
@@ -145,11 +153,10 @@ jobs:
           cd asastats
           npm run test:coverage
 
-      - name: Upload merged frontend coverage to Codecov
+      - name: Upload website's Javascript coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          # Pass both files as a comma-separated list
-          files: frontend/coverage,asastats/javascript_tests/coverage
-          flags: frontend-project
-          name: frontend-coverage
+          directory: asastats/javascript_tests/coverage
+          flags: website-javascript
+          name: website-coverage
