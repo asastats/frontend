@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a bug
+    url: https://github.com/asastats/channel/issues/new?template=bug_report.md
+    about: Please report bugs in our central issue tracker.
+  - name: Request a feature
+    url: https://github.com/asastats/channel/issues/new?template=feature_request.md
+    about: Please suggest new features in our central issue tracker.
+  - name: Custom issue
+    url: https://github.com/asastats/channel/issues/new?template=custom-issue.md
+    about: Create a custom issue in our central issue tracker.
