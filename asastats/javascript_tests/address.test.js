@@ -349,7 +349,7 @@ describe("chart tooltip / hover / legend callbacks", function () {
 });
 
 
-describe("chart onclick", function () {
+describe("chart onclick wrappers", function () {
   function withPoints() {
     window.Chart.mockImplementation(function (ctx, config) {
       lastConfig = config;
@@ -359,14 +359,7 @@ describe("chart onclick", function () {
       }));
     });
   }
-  it('dist onclick with no points', function () {
-    jest.useFakeTimers();
-    window.Chart.getChart.mockReturnValue(chartInstance());
-    address.mainAddress();
-    document.getElementById('id-distchart').onclick({});
-    jest.advanceTimersByTime(400);
-  });
-  it('dist onclick with points scrolls into view', function () {
+  it('dist canvas onclick delegates to chartClick', function () {
     jest.useFakeTimers();
     withPoints();
     window.Chart.getChart.mockReturnValue(chartInstance());
@@ -374,55 +367,77 @@ describe("chart onclick", function () {
     document.getElementById('id-distchart').onclick({});
     jest.advanceTimersByTime(400);
   });
-  it('dist onclick off-screen unit', function () {
+  it('pie canvas onclick delegates to chartClick', function () {
     jest.useFakeTimers();
     withPoints();
-    window.Chart.getChart.mockReturnValue(chartInstance());
-    address.mainAddress();
+    address.populatePieCharts();
+    document.getElementById('id-asachart').onclick({});
+    jest.advanceTimersByTime(400);
+  });
+});
+
+
+describe("chartClick (direct)", function () {
+  function chart(points, label) {
+    return {
+      getElementsAtEventForMode: jest.fn(function () { return points; }),
+      data: { labels: [label] },
+    };
+  }
+  it('does nothing when there are no points', function () {
+    jest.useFakeTimers();
+    address.chartClick(chart([], "a"), {});
+    jest.advanceTimersByTime(300);
+  });
+  it('toggles the header for a visible unit', function () {
+    jest.useFakeTimers();
+    address.chartClick(chart([{ index: 0 }], "a"), {});
+    jest.advanceTimersByTime(300);
+  });
+  it('scrolls to an off-screen unit before toggling', function () {
+    jest.useFakeTimers();
     Object.defineProperty($(".unit")[0], "offsetTop", { value: -100000 });
-    document.getElementById('id-distchart').onclick({});
-    jest.advanceTimersByTime(400);
+    address.chartClick(chart([{ index: 0 }], "a"), {});
+    jest.advanceTimersByTime(300);
   });
-  it('dist onclick with already-active header', function () {
+  it('does not toggle a header that is already active', function () {
     jest.useFakeTimers();
     $(".unit").wrap('<div><div></div></div>').parent().parent()
       .wrap('<div class="active"></div>');
-    withPoints();
-    window.Chart.getChart.mockReturnValue(chartInstance());
-    address.mainAddress();
-    document.getElementById('id-distchart').onclick({});
-    jest.advanceTimersByTime(400);
+    address.chartClick(chart([{ index: 0 }], "a"), {});
+    jest.advanceTimersByTime(300);
   });
-  it('pie onclick with no points', function () {
-    jest.useFakeTimers();
-    window.Chart.getChart.mockReturnValue(chartInstance());
-    address.populatePieCharts();
-    document.getElementById('id-asachart').onclick({});
-    jest.advanceTimersByTime(400);
+});
+
+
+describe("showMatchedNodes (direct)", function () {
+  it('returns false when there are no matches', function () {
+    expect(address.showMatchedNodes([])).toBe(false);
   });
-  it('pie onclick scrolls into view and toggles header', function () {
-    jest.useFakeTimers();
-    withPoints();
-    address.populatePieCharts();
-    document.getElementById('id-asachart').onclick({});
-    jest.runAllTimers();
+  it('shows the matched item and its matching icon', function () {
+    address.showMatchedNodes([["if1"]]);
+    expect($("#if1").css("display")).not.toBe("none");
   });
-  it('pie onclick off-screen unit', function () {
-    jest.useFakeTimers();
-    withPoints();
-    address.populatePieCharts();
-    Object.defineProperty($(".unit")[0], "offsetTop", { value: -100000 });
-    document.getElementById('id-asachart').onclick({});
-    jest.runAllTimers();
+});
+
+
+describe("totalChart (direct)", function () {
+  ["ratiochart", "ratiochartfloor", "asachart", "nftchart", "nftfloorchart"]
+    .forEach(function (name) {
+      it('computes a total for ' + name, function () {
+        expect(address.totalChart(name)).not.toBeUndefined();
+      });
+    });
+  it('returns zero for an unknown chart name', function () {
+    expect(address.totalChart("nope")).toBe(0);
   });
-  it('pie onclick with already-active header', function () {
-    jest.useFakeTimers();
-    $(".unit").wrap('<div><div></div></div>').parent().parent()
-      .wrap('<div class="active"></div>');
-    withPoints();
-    address.populatePieCharts();
-    document.getElementById('id-asachart').onclick({});
-    jest.runAllTimers();
+  it('converts the total to USD when selected', function () {
+    localStorage.setItem("cur", "USD");
+    expect(typeof address.totalChart("asachart")).toBe("number");
+  });
+  it('converts an nft total to USD', function () {
+    localStorage.setItem("cur", "USD");
+    expect(typeof address.totalChart("nftchart")).toBe("number");
   });
 });
 
@@ -583,6 +598,13 @@ describe("consolidated section", function () {
     document.getElementById('id-cons-body').style.display = "block";
     $(".collapsible-header.consolidated").trigger("click");
     expect(localStorage.setItem).toHaveBeenCalledWith("cons", "h");
+  });
+  it('onConsolidatedClick stores empty when the body is hidden', function () {
+    jest.useFakeTimers();
+    address.mainAddress();
+    document.getElementById('id-cons-body').style.display = "none";
+    $(".collapsible-header.consolidated").trigger("click");
+    expect(localStorage.setItem).toHaveBeenCalledWith("cons", "");
   });
   it('checkConsolidated closes the section when stored hidden', function () {
     jest.useFakeTimers();

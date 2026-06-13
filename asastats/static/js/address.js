@@ -588,6 +588,33 @@ function valueSection(name, index) {
 
 
 /**
+ * Handle a chart click by scrolling to the matching unit and toggling
+ * its accordion header.
+ * @function chartClick
+ *
+ * @param {Object} chart
+ * @param {Object} evt
+ *
+ */
+function chartClick(chart, evt) {
+  var points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+  if (points.length) {
+    var duration = 250;
+    var firstPoint = points[0];
+    var label = chart.data.labels[firstPoint.index];
+    var unit = $(".unit").filter(function () { return ($(this).text() === label) });
+    var unmoved = scrollToView(unit.get(0), duration);
+    var header = unit.parent().parent();
+    if (!header.parent().hasClass("active"))
+      setTimeout(
+        function () { header.trigger("click"); },
+        unmoved ? 0 : duration
+      );
+  }
+}
+
+
+/**
  * Retrieve distribution chart data and assign them to chart.
  * @function populateDistChart
  *
@@ -644,20 +671,7 @@ function populateDistChart() {
   });
 
   canvas.onclick = function (evt) {
-    var points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
-    if (points.length) {
-      var duration = 250;
-      var firstPoint = points[0];
-      var label = chart.data.labels[firstPoint.index];
-      var unit = $(".unit").filter(function () { return ($(this).text() === label) });
-      var unmoved = scrollToView(unit.get(0), duration);
-      var header = unit.parent().parent();
-      if (!header.parent().hasClass("active"))
-        setTimeout(
-          function () { header.trigger("click"); },
-          unmoved ? 0 : duration
-        );
-    }
+    chartClick(chart, evt);
   };
 }
 
@@ -708,20 +722,7 @@ function populatePieCharts() {
     });
 
     canvas.onclick = function (evt) {
-      var points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
-      if (points.length) {
-        var duration = 250;
-        var firstPoint = points[0];
-        var label = chart.data.labels[firstPoint.index];
-        var unit = $(".unit").filter(function () { return ($(this).text() === label) });
-        var unmoved = scrollToView(unit.get(0), duration);
-        var header = unit.parent().parent();
-        if (!header.parent().hasClass("active"))
-          setTimeout(
-            function () { header.trigger("click"); },
-            unmoved ? 0 : duration
-          );
-      }
+      chartClick(chart, evt);
     };
   });
 }
@@ -1231,5 +1232,8 @@ if (typeof exports !== 'undefined') {
     toggleDist,
     togglePrice,
     toggleUnitPrice,
+    chartClick,
+    showMatchedNodes,
+    totalChart,
   };
 }
