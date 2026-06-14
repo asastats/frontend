@@ -1,12 +1,7 @@
-import pytest
-
 from .base import TESTING_ADDRESS, FunctionalTest
 
 
 class IndexPageTest(FunctionalTest):
-    """"""
-
-    @pytest.mark.skip()
     def test_index_page_has_whenmoon_button_that_leads_to_address_page(self):
         self.browser.get(self.server_url)
 

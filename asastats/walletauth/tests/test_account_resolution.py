@@ -3,7 +3,10 @@
 import pytest
 from django.contrib.auth import get_user_model
 
-from walletauth.account_resolution import resolve_account
+from walletauth.account_resolution import (
+    AmbiguousWalletAddress,
+    resolve_account,
+)
 
 user_model = get_user_model()
 
@@ -37,10 +40,11 @@ class TestResolveAccount:
         assert resolve_account("algorand", LINKED_ADDRESS) is None
 
     @pytest.mark.django_db
-    def test_resolve_account_none_when_ambiguous(self):
+    def test_resolve_account_raises_when_ambiguous(self):
         make_user("a", address=LINKED_ADDRESS, authorized="proof")
         make_user("b", address=LINKED_ADDRESS, authorized="proof")
-        assert resolve_account("algorand", LINKED_ADDRESS) is None
+        with pytest.raises(AmbiguousWalletAddress):
+            resolve_account("algorand", LINKED_ADDRESS)
 
     # # chain routing
     def test_resolve_account_none_for_unsupported_chain(self):

@@ -16,8 +16,9 @@ import re
 from secrets import token_hex
 
 from algosdk.encoding import is_valid_address as is_valid_algorand_address
+from django.conf import settings
 from django.contrib.auth import authenticate
-from django.urls import reverse
+from django.shortcuts import resolve_url
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -26,6 +27,7 @@ from utils.constants.core import (
     WALLET_CONNECT_NETWORK_OPTIONS,
     WALLET_CONNECT_NONCE_PREFIX,
 )
+from walletauth.account_resolution import AmbiguousWalletAddress
 from walletauth.models import WalletLoginNonce
 from walletauth.throttling import WalletLoginRateThrottle
 from walletauth.verifiers import VERIFIERS, NotSupported
@@ -58,7 +60,10 @@ def _perform_login(request, user):
 
     Imported lazily and wrapped so the login policy (e.g. mandatory email
     verification) stays allauth's concern and the module imports without
-    side effects.
+    side effects. The redirect is allauth's normal post-login destination --
+    the configured ``LOGIN_REDIRECT_URL`` (``/home/``), honoring ``next`` --
+    exactly as for email/password and social sign-in. (This differs from the
+    authorize flow, which deliberately returns the user to their profile.)
 
     :param request: the current request
     :type request: django.http.HttpRequest
@@ -74,9 +79,8 @@ def _perform_login(request, user):
         request,
         user,
         email_verification=account_settings.EMAIL_VERIFICATION,
-        redirect_url=reverse("profile"),
     )
-    return getattr(response, "url", None) or reverse("profile")
+    return getattr(response, "url", None) or resolve_url(settings.LOGIN_REDIRECT_URL)
 
 
 class WalletLoginNonceAPIView(APIView):
@@ -194,10 +198,29 @@ class WalletLoginVerifyAPIView(APIView):
             )
 
         # Resolve the account from the PROVEN address only.
-        user = authenticate(request, verified_wallet_address=proven, chain=chain)
+        try:
+            user = authenticate(request, verified_wallet_address=proven, chain=chain)
+        except AmbiguousWalletAddress:
+            return Response(
+                {
+                    "success": False,
+                    "error": (
+                        "This wallet is linked to more than one account, so it "
+                        "can't be used to sign in. Please log in with your email "
+                        "and password or a social account."
+                    ),
+                },
+                status=409,
+            )
         if user is None:
             return Response(
-                {"success": False, "error": "No account is linked to this wallet"},
+                {
+                    "success": False,
+                    "error": (
+                        "No account is linked to this wallet. Sign in another way "
+                        "first, then link this wallet from your profile."
+                    ),
+                },
                 status=401,
             )
 

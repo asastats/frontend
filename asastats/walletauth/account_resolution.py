@@ -18,6 +18,15 @@ from core.models import Profile
 logger = logging.getLogger(__name__)
 
 
+class AmbiguousWalletAddress(Exception):
+    """Raised when more than one account has the same address verified.
+
+    This is a data-integrity condition the unique constraint in the docs is
+    meant to prevent. Surfacing it (rather than collapsing to "not linked")
+    lets the sign-in view tell the user precisely why their wallet was refused.
+    """
+
+
 def _resolve_algorand(address):
     """Return the user whose profile has verified ``address``, or ``None``.
 
@@ -25,7 +34,8 @@ def _resolve_algorand(address):
     :type address: str
     :var profile: the single profile linked to ``address``, if unambiguous
     :type profile: core.models.Profile
-    :return: the owning user, or None when unlinked/ambiguous/unverified
+    :raises AmbiguousWalletAddress: when more than one profile claims ``address``
+    :return: the owning user, or None when unlinked/unverified
     :rtype: django.contrib.auth.models.User | None
     """
     try:
@@ -33,10 +43,11 @@ def _resolve_algorand(address):
     except Profile.DoesNotExist:
         return None
     except Profile.MultipleObjectsReturned:
-        # Ambiguous: more than one account claims this address. Deny rather than
-        # guess. A unique constraint on the verified address prevents this.
+        # More than one account claims this address. Refuse and say so, rather
+        # than guessing. A unique constraint on the verified address prevents
+        # ever reaching here.
         logger.warning("walletauth: multiple profiles for a wallet address")
-        return None
+        raise AmbiguousWalletAddress
     if not profile.authorized:
         # Address is set on the profile but was never proven/linked.
         return None

@@ -69,6 +69,7 @@
       <button class="primaryAction waves-effect btn-flat auth" type="submit">{% block submit_text %}{% endblock %} <i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></button>
   </div>
   <div class="row center-align col s12 m8 offset-m2">
+      {% block login_modal %}{% endblock %}
       {% block wallet_login %}{% endblock %}
   </div>
 </form>

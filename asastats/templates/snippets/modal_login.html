@@ -1,67 +1,129 @@
 {% load static %}{% load i18n %}{% load core_extras %}<div id="modalLogin" class="modal">
-    <form class="login" id="modal_login_form" method="POST" action="{% url 'account_login' %}">
-    <div class="modal-content">
-        <div class="row">
-          <div class="col s12 m6 push-m6">
-                <h3 class="center-align">Log in</h3>
-                <div class="center-align">
-                    <div class="divider col s12 m10 offset-m1"></div>
-                    {% csrf_token %}
-                    <div class="row center-align">
-                        <div class="input-field col s12 m10 offset-m1">
-                            <i class="material-icons prefix" aria-hidden="true">{{ 'login'|get_styling:"icon" }}</i>
-                            <input autofocus="autofocus" id="id_login_modal" name="login" placeholder="Username or email" type="text" required />
-                            <label for="id_login_modal">Login:</label>
-                        </div>
-                        <div class="input-field col s12 m10 offset-m1">
-                            <i class="material-icons prefix" aria-hidden="true">{{ 'password'|get_styling:"icon" }}</i>
-                            <input id="id_password_modal" name="password" autocomplete="off" placeholder="Password" type="password" required />
-                            <label for="id_password_modal">Password:</label>
-                        </div>
-                        <div class="input-field col s12 m10 offset-m1">
-                          <div>
-                          <label title="Remember me on this computer">
-                            <input name="remember" type="checkbox">
-                            <span>Remember me</span>
-                          </label>
-                          </div>
-                        </div>
-                        <div class="center-align col s12">
-                            <button class="waves-effect btn-flat auth modal-action modal-close" id="id_cta_modal" type="submit">Log in <i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></button>
-                        </div>
-                    </div>
+  <div class="modal-content">
+    <h3 class="center-align">Log in to ASA Stats</h3>
+
+    <div class="row">
+      {% comment %} Three tabs; regular login is the default active panel. {% endcomment %}
+      <div class="col s12">
+        <ul class="tabs tabs-fixed-width">
+          <li class="tab col s4"><a class="active" href="#modal-tab-login">Log in</a></li>
+          <li class="tab col s4"><a href="#modal-tab-social">Social</a></li>
+          <li class="tab col s4"><a href="#modal-tab-wallet">Wallet</a></li>
+        </ul>
+      </div>
+
+      {% comment %} ---- TAB 1: email / password (default) ---- {% endcomment %}
+      <div id="modal-tab-login" class="col s12">
+        <form class="login" id="modal_login_form" method="POST" action="{% url 'account_login' %}">
+          {% csrf_token %}
+          <div class="row center-align" style="margin-top:1.25rem">
+            <div class="input-field col s12 m10 offset-m1">
+              <i class="material-icons prefix" aria-hidden="true">{{ 'login'|get_styling:"icon" }}</i>
+              <input autofocus="autofocus" id="id_login_modal" name="login"
+                     placeholder="Username or email" type="text" required />
+              <label for="id_login_modal">Login:</label>
+            </div>
+            <div class="input-field col s12 m10 offset-m1">
+              <i class="material-icons prefix" aria-hidden="true">{{ 'password'|get_styling:"icon" }}</i>
+              <input id="id_password_modal" name="password" autocomplete="off"
+                     placeholder="Password" type="password" required />
+              <label for="id_password_modal">Password:</label>
+            </div>
+            <div class="col s12 m10 offset-m1 left-align">
+              <label title="Remember me on this computer">
+                <input name="remember" type="checkbox">
+                <span>Remember me</span>
+              </label>
+            </div>
+            <div class="center-align col s12">
+              <button class="waves-effect btn-flat auth" id="id_cta_modal" type="submit">
+                Log in <i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i>
+              </button>
             </div>
           </div>
-          <div class="col s12 m6 pull-m6 center-align">
-              <h3>By social media</h3>
-              <div class="row">
-                  <div class="divider col s12"></div><br>
-                  <div class="valign-wrapper col s12 socialsmall">
-                    <img src="{% static 'img/social/discord.png' %}" alt="{% trans 'Discord logo' %}" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/discord/login/">Sign in with Discord</a>
-                  </div>
-                  <div class="valign-wrapper col s12 socialsmall">
-                    <img src="{% static 'img/social/twitter.png' %}" alt="{% trans 'X logo' %}" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/twitter_oauth2/login/">Sign in with X</a>
-                  </div>
-                  <div class="valign-wrapper col s12 socialsmall">
-                    <img src="{% static 'img/social/reddit.png' %}" alt="{% trans 'Reddit logo' %}" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/reddit/login/">Sign in with Reddit</a>
-                  </div>
-                  <div class="valign-wrapper col s12 socialsmall">
-                    <img src="{% static 'img/social/github.png' %}" alt="{% trans 'GitHub logo' %}" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/github/login/">Sign in with GitHub</a>
-                  </div>
-                  <div class="valign-wrapper col s12 socialsmall">
-                    <img src="{% static 'img/social/google.png' %}" alt="{% trans 'Google logo' %}" /><a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/google/login/">Sign in with Google</a>
-                  </div>
-              </div>
+        </form>
+      </div>
+
+      {% comment %} ---- TAB 2: social providers ---- {% endcomment %}
+      <div id="modal-tab-social" class="col s12">
+        <div class="row" style="margin-top:1.25rem">
+          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
+            <img src="{% static 'img/social/discord.png' %}" alt="{% trans 'Discord logo' %}" />
+            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/discord/login/">Sign in with Discord</a>
+          </div>
+          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
+            <img src="{% static 'img/social/twitter.png' %}" alt="{% trans 'X logo' %}" />
+            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/twitter_oauth2/login/">Sign in with X</a>
+          </div>
+          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
+            <img src="{% static 'img/social/reddit.png' %}" alt="{% trans 'Reddit logo' %}" />
+            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/reddit/login/">Sign in with Reddit</a>
+          </div>
+          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
+            <img src="{% static 'img/social/github.png' %}" alt="{% trans 'GitHub logo' %}" />
+            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/github/login/">Sign in with GitHub</a>
+          </div>
+          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
+            <img src="{% static 'img/social/google.png' %}" alt="{% trans 'Google logo' %}" />
+            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/google/login/">Sign in with Google</a>
           </div>
         </div>
-        <div class="divider col s12 m10 offset-m1"></div>
-        <div class="row center-align col s12">
-            <a class="secondaryAction waves-effect waves-light btn-flat" href="{% url 'account_reset_password' %}">Forgot password?</a>
-            <a class="secondaryAction waves-effect waves-light btn-flat" href="{% url 'account_signup' %}">Don't have an account?</a>
-        </div>
-        <div class="right-align col s12">
-            <a href="#" class="waves-effect btn-flat modal-close" id="id_cancel">Cancel<i class="material-icons right" aria-hidden="true">{{ 'cancel'|get_styling:"icon" }}</i></a>&nbsp;
-        </div>
+      </div>
+
+      {% comment %} ---- TAB 3: wallet sign-in (reuses the shared snippet) ---- {% endcomment %}
+      <div id="modal-tab-wallet" class="col s12">
+        {% include "snippets/wallet_signing.html" %}
+      </div>
     </div>
-    </form>
+
+    <div class="divider col s12 m10 offset-m1"></div>
+    <div class="row center-align col s12">
+      <a class="secondaryAction waves-effect waves-light btn-flat" href="{% url 'account_reset_password' %}">Forgot password?</a>
+      <a class="secondaryAction waves-effect waves-light btn-flat" href="{% url 'account_signup' %}">Don't have an account?</a>
+    </div>
+    <div class="right-align col s12">
+      <a href="#" class="waves-effect btn-flat modal-close" id="id_cancel">Cancel<i class="material-icons right" aria-hidden="true">{{ 'cancel'|get_styling:"icon" }}</i></a>&nbsp;
+    </div>
+  </div>
 </div>
+
+<script>
+  // Initialize the modal's content tabs and keep the active indicator correct.
+  // Tabs initialized inside a hidden modal can't measure widths, so the default
+  // (Log in) underline is missing until interaction. Refresh it once the modal
+  // is actually visible. Guarded against double-init in case the site already
+  // runs M.AutoInit().
+  document.addEventListener('DOMContentLoaded', function () {
+    var modalEl = document.getElementById('modalLogin');
+    var tabsEl = modalEl && modalEl.querySelector('.tabs');
+    if (!tabsEl || !window.M || !window.M.Tabs) {
+      return;
+    }
+    var tabs = window.M.Tabs.getInstance(tabsEl) || window.M.Tabs.init(tabsEl);
+    var refresh = function () {
+      if (tabs && tabs.updateTabIndicator) {
+        tabs.updateTabIndicator();
+      }
+    };
+    // Preferred: hook the modal's open-end callback when the instance exists.
+    var modal = window.M.Modal && window.M.Modal.getInstance
+      ? window.M.Modal.getInstance(modalEl)
+      : null;
+    if (modal) {
+      var prev = modal.options.onOpenEnd;
+      modal.options.onOpenEnd = function (el, trigger) {
+        if (typeof prev === 'function') { prev(el, trigger); }
+        refresh();
+      };
+    }
+    // Fallback: refresh shortly after any trigger opens this modal, regardless
+    // of when/where the modal instance was initialized.
+    document
+      .querySelectorAll('a[href="#modalLogin"], [data-target="modalLogin"]')
+      .forEach(function (trigger) {
+        trigger.addEventListener('click', function () {
+          window.setTimeout(refresh, 350);
+        });
+      });
+  });
+</script>

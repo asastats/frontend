@@ -3,6 +3,7 @@
 import pytest
 from django.contrib.auth import authenticate, get_user_model
 
+from walletauth.account_resolution import AmbiguousWalletAddress
 from walletauth.backends import WalletAddressBackend
 
 user_model = get_user_model()
@@ -47,6 +48,14 @@ class TestWalletAddressBackend:
         resolved = authenticate(None, verified_wallet_address=LINKED_ADDRESS)
         assert resolved == user
         assert resolved.backend.endswith("WalletAddressBackend")
+
+    @pytest.mark.django_db
+    def test_backend_authenticate_propagates_ambiguity(self):
+        make_linked_user("dup_a")
+        make_linked_user("dup_b")  # same address, second account
+        backend = WalletAddressBackend()
+        with pytest.raises(AmbiguousWalletAddress):
+            backend.authenticate(None, verified_wallet_address=LINKED_ADDRESS)
 
     # # get_user
     @pytest.mark.django_db

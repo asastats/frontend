@@ -21,8 +21,11 @@ def deployment_capabilities(request):
     if caps is None:
         try:
             caps = fetch_capabilities()
+
         except (BackendError, Exception):  # noqa: BLE001 - never break rendering
             logger.warning("Could not fetch deployment capabilities", exc_info=True)
             caps = {"permission": 0}
+
         cache.set(_CACHE_KEY, caps, _CACHE_TTL)
+
     return {"deployment_capabilities": caps}

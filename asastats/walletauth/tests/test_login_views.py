@@ -193,10 +193,26 @@ class TestWalletLoginVerifyAPIView:
         )
         response = WalletLoginVerifyAPIView.as_view()(request)
         assert response.status_code == 401
-        assert response.data["error"] == "No account is linked to this wallet"
+        assert "No account is linked" in response.data["error"]
         perform.assert_not_called()
         # the proof is consumed even though no account was linked
         assert WalletLoginNonce.objects.get(nonce="n4").used is True
+
+    @pytest.mark.django_db
+    def test_login_verify_reports_ambiguous_wallet(self, mocker):
+        # Two accounts share the same verified address -> precise 409, not 401.
+        for name in ("dup1", "dup2"):
+            link_user(username=name)
+        WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="n6")
+        _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        perform = mocker.patch("walletauth.login_views._perform_login")
+        request = APIRequestFactory().post(
+            "/login/verify/", {"nonce": "n6", "chain": "algorand"}, format="json"
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+        assert response.status_code == 409
+        assert "more than one account" in response.data["error"]
+        perform.assert_not_called()
 
     @pytest.mark.django_db
     def test_login_verify_logs_in_linked_account(self, mocker):
@@ -204,14 +220,14 @@ class TestWalletLoginVerifyAPIView:
         WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="n5")
         _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
         perform = mocker.patch(
-            "walletauth.login_views._perform_login", return_value="/profile/"
+            "walletauth.login_views._perform_login", return_value="/home/"
         )
         request = APIRequestFactory().post(
             "/login/verify/", {"nonce": "n5", "chain": "algorand"}, format="json"
         )
         response = WalletLoginVerifyAPIView.as_view()(request)
         assert response.status_code == 200
-        assert response.data == {"success": True, "redirect_url": "/profile/"}
+        assert response.data == {"success": True, "redirect_url": "/home/"}
         assert perform.call_args.args[1] == user
         assert WalletLoginNonce.objects.get(nonce="n5").used is True
 
@@ -266,7 +282,7 @@ class TestPerformLogin:
         assert url == "/dash/"
         assert fake_utils.perform_login.called
 
-    def test_perform_login_falls_back_to_profile_url(self, mocker):
+    def test_perform_login_falls_back_to_login_redirect_url(self, mocker):
         import sys
         import types
 
@@ -274,7 +290,7 @@ class TestPerformLogin:
         fake_settings = types.ModuleType("allauth.account.app_settings")
         fake_settings.EMAIL_VERIFICATION = "optional"
         fake_utils = types.ModuleType("allauth.account.utils")
-        # response without a usable .url -> view falls back to reverse("profile")
+        # response without a usable .url -> view falls back to LOGIN_REDIRECT_URL
         fake_utils.perform_login = mocker.Mock(return_value=mocker.Mock(url=None))
         fake_account.app_settings = fake_settings
         fake_account.utils = fake_utils
@@ -292,4 +308,4 @@ class TestPerformLogin:
         request = APIRequestFactory().post("/login/verify/")
         url = _perform_login(request, object())
 
-        assert url == "/profile/"
+        assert url == "/home/"
