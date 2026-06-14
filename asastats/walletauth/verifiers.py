@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 #: Django's DATA_UPLOAD_MAX_MEMORY_SIZE already bounds the request body).
 MAX_SIGNED_TXN_B64_LENGTH = 2048
 
+#: An EIP-191 personal_sign signature is 65 bytes (0x + 130 hex = 132 chars).
+#: Cap with slack to bound work and reject junk before recovery.
+MAX_EVM_SIGNATURE_LENGTH = 256
+
 
 class NotSupported(Exception):
     """Raised when a verifier for a recognized chain is not yet enabled."""
@@ -260,15 +264,60 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
 
 
 class EvmXChainVerifier(WalletProofVerifier):
-    """DEFERRED. Recover an EVM signer from an EIP-712/EIP-4361 signature over
-    the nonce, derive the xChain Algorand counterpart server-side, and return
-    it. Implementing :meth:`recover` is all that is needed: the shared
-    :meth:`verify` (authorize) and the login flow both build on it. Disabled
-    until xChain Accounts ships a non-React/vanilla integration path.
+    """Recover an EVM signer from an EIP-191 ``personal_sign`` signature.
+
+    The signature proves control of the EVM private key over the challenge
+    ``prefix+nonce``. :meth:`recover` returns the signer's EVM address
+    (lowercased so it matches the address the nonce was issued for); the
+    EVM -> Algorand mapping (the xChain logicsig account from
+    :func:`nameservice.xchain.check_evm_address`) is the resolver's concern,
+    not the verifier's. The shared :meth:`verify` (authorize) builds on this.
+
+    The logicsig's own on-chain scheme is EIP-712; that is only relevant when
+    spending from the xChain account. Proving control of the EVM key is what
+    proves control of the derived Algorand account, so a plain message
+    signature over our challenge is sufficient here.
     """
 
     def recover(self, *, nonce, prefix, payload):
-        raise NotSupported("EVM/xChain sign-in is not yet enabled")
+        """Recover and return the lowercased EVM signer address, or ``None``.
+
+        :param nonce: server-issued single-use challenge
+        :type nonce: str
+        :param prefix: domain-scoped nonce prefix
+        :type prefix: str
+        :param payload: raw request data; must carry ``signature`` (0x hex)
+        :type payload: dict
+        :var signature: the EIP-191 signature over ``prefix+nonce``
+        :type signature: str
+        :var message: the exact text the wallet signed
+        :type message: str
+        :var recovered: the EIP-55 address eth-account recovers
+        :type recovered: str
+        :return: lowercased ``0x`` address, or None on any failure
+        :rtype: str | None
+        """
+        signature = payload.get("signature")
+        if not signature:
+            logger.warning("walletauth: missing signature in EVM payload")
+            return None
+        if not isinstance(signature, str) or len(signature) > MAX_EVM_SIGNATURE_LENGTH:
+            logger.warning("walletauth: oversized or non-string EVM signature")
+            return None
+
+        message = f"{prefix}{nonce}"
+        try:
+            from eth_account import Account
+            from eth_account.messages import encode_defunct
+
+            recovered = Account.recover_message(
+                encode_defunct(text=message), signature=signature
+            )
+        except Exception:  # noqa: BLE001 - any recovery failure is a rejected proof
+            logger.warning("walletauth: EVM signature recovery failed")
+            return None
+
+        return recovered.lower()
 
 
 VERIFIERS = {

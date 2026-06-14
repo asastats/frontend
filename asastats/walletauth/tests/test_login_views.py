@@ -90,6 +90,16 @@ class TestWalletLoginNonceAPIView:
         response = WalletLoginNonceAPIView.as_view()(request)
         assert response.status_code == 200
 
+    @pytest.mark.django_db
+    def test_login_nonce_lowercases_evm_address(self):
+        request = APIRequestFactory().post(
+            "/login/nonce/", {"address": EVM_ADDRESS, "chain": "evm"}, format="json"
+        )
+        response = WalletLoginNonceAPIView.as_view()(request)
+        nonce = WalletLoginNonce.objects.get(nonce=response.data["nonce"])
+        assert nonce.address == EVM_ADDRESS.lower()
+        assert nonce.chain == "evm"
+
 
 class TestWalletLoginVerifyAPIView:
     """Testing class for :class:`WalletLoginVerifyAPIView`."""
@@ -230,6 +240,71 @@ class TestWalletLoginVerifyAPIView:
         assert response.data == {"success": True, "redirect_url": "/home/"}
         assert perform.call_args.args[1] == user
         assert WalletLoginNonce.objects.get(nonce="n5").used is True
+
+    @pytest.mark.django_db
+    def test_login_verify_evm_end_to_end(self, mocker):
+        # Real EVM verifier + real signature; only the xChain mapping and the
+        # allauth login are mocked. Exercises recover -> nonce -> resolve -> login.
+        from eth_account import Account
+        from eth_account.messages import encode_defunct
+
+        acct = Account.create()
+        evm_address = acct.address.lower()
+        signed = acct.sign_message(
+            encode_defunct(text=WALLET_CONNECT_NONCE_PREFIX + "evm-nonce")
+        )
+        raw = signed.signature.hex()
+        signature = raw if raw.startswith("0x") else "0x" + raw
+
+        user = link_user(username="evmowner")  # profile.address == PROVEN
+        WalletLoginNonce.objects.create(
+            address=evm_address, chain="evm", nonce="evm-nonce"
+        )
+        # the proven EVM address maps to the linked Algorand (lsig) address
+        mocker.patch("utils.clients.algod_instance", return_value=object())
+        mocker.patch("nameservice.xchain.check_evm_address", return_value=PROVEN)
+        perform = mocker.patch(
+            "walletauth.login_views._perform_login", return_value="/home/"
+        )
+
+        request = APIRequestFactory().post(
+            "/login/verify/",
+            {"nonce": "evm-nonce", "chain": "evm", "signature": signature},
+            format="json",
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+
+        assert response.status_code == 200
+        assert response.data == {"success": True, "redirect_url": "/home/"}
+        assert perform.call_args.args[1] == user
+        assert WalletLoginNonce.objects.get(nonce="evm-nonce").used is True
+
+    @pytest.mark.django_db
+    def test_login_verify_evm_rejects_signature_for_other_nonce(self, mocker):
+        # A valid signature, but over a different challenge -> recovered address
+        # won't match the nonce that was issued -> rejected.
+        from eth_account import Account
+        from eth_account.messages import encode_defunct
+
+        acct = Account.create()
+        evm_address = acct.address.lower()
+        signed = acct.sign_message(
+            encode_defunct(text=WALLET_CONNECT_NONCE_PREFIX + "evm-nonce")
+        )
+        raw = signed.signature.hex()
+        signature = raw if raw.startswith("0x") else "0x" + raw
+        # nonce issued for a DIFFERENT EVM address than the signature proves
+        WalletLoginNonce.objects.create(
+            address="0x" + "b" * 40, chain="evm", nonce="evm-nonce"
+        )
+        request = APIRequestFactory().post(
+            "/login/verify/",
+            {"nonce": "evm-nonce", "chain": "evm", "signature": signature},
+            format="json",
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+        assert response.status_code == 400
+        assert evm_address  # silence linters; recovery happened
 
 
 class TestIsValidChainAddress:

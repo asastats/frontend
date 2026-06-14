@@ -54,9 +54,36 @@ def _resolve_algorand(address):
     return profile.user
 
 
-#: Account resolvers keyed by request chain. Add ``"evm"`` with xChain Accounts.
+def _resolve_evm(address):
+    """Return the user linked to the xChain Algorand counterpart of ``address``.
+
+    The proven EVM address is mapped to its deterministic Algorand logicsig
+    account by :func:`nameservice.xchain.check_evm_address`; the account is then
+    resolved from that Algorand address exactly like a native Algorand wallet,
+    so the verified/unique/ambiguous handling is shared. ``check_evm_address``
+    returns the EVM address unchanged when TEAL compilation fails, which we
+    treat as "no mapping".
+
+    :param address: proven (lowercased) EVM address
+    :type address: str
+    :var algorand_address: the xChain logicsig account for ``address``
+    :type algorand_address: str
+    :return: the owning user, or None when unmapped/unlinked
+    :rtype: django.contrib.auth.models.User | None
+    """
+    from nameservice.xchain import check_evm_address
+    from utils.clients import algod_instance
+
+    algorand_address = check_evm_address(address, algod_instance())
+    if not algorand_address or algorand_address == address:
+        return None
+    return _resolve_algorand(algorand_address)
+
+
+#: Account resolvers keyed by request chain.
 ACCOUNT_RESOLVERS = {
     "algorand": _resolve_algorand,
+    "evm": _resolve_evm,
 }
 
 

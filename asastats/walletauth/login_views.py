@@ -111,6 +111,10 @@ class WalletLoginNonceAPIView(APIView):
             return Response(
                 {"success": False, "error": "Invalid or missing address"}, status=400
             )
+        # EVM addresses are case-insensitive; store lowercase so the nonce binds
+        # to the same form the verifier recovers. Algorand base32 is left as-is.
+        if chain == "evm":
+            address = address.lower()
 
         WalletLoginNonce.purge_stale()
         nonce = token_hex(16)

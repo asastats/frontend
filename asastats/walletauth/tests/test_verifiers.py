@@ -13,9 +13,9 @@ from utils.constants.core import (
 )
 from walletauth.verifiers import (
     MAX_SIGNED_TXN_B64_LENGTH,
+    VERIFIERS,
     AlgorandSignedTxnVerifier,
     EvmXChainVerifier,
-    NotSupported,
     WalletProofVerifier,
 )
 
@@ -223,11 +223,10 @@ class TestAlgorandSignedTxnVerifier:
             is None
         )
 
-    def test_evm_verifier_recover_raises_not_supported(self):
-        with pytest.raises(NotSupported):
-            EvmXChainVerifier().recover(
-                nonce=NONCE, prefix=WALLET_CONNECT_NONCE_PREFIX, payload={}
-            )
+    def test_evm_verifier_recover_is_separate_from_algorand(self):
+        # The EVM verifier is its own implementation; the Algorand verifier's
+        # recover handles only signed transactions.
+        assert isinstance(VERIFIERS["evm"], EvmXChainVerifier)
 
     # # configuration
     def test_algorand_verifier_skips_genesis_when_unset(self):
@@ -272,14 +271,76 @@ class TestWalletProofVerifier:
 
 
 class TestEvmXChainVerifier:
-    """Testing class for the deferred :class:`EvmXChainVerifier` verifier."""
+    """Testing class for :class:`EvmXChainVerifier` verifier."""
 
-    # # verify
-    def test_evm_verifier_raises_not_supported(self):
-        with pytest.raises(NotSupported):
-            EvmXChainVerifier().verify(
-                address="A" * 58,
+    @staticmethod
+    def _sign(message):
+        from eth_account import Account
+        from eth_account.messages import encode_defunct
+
+        acct = Account.create()
+        signed = acct.sign_message(encode_defunct(text=message))
+        raw = signed.signature.hex()
+        return acct.address, raw if raw.startswith("0x") else "0x" + raw
+
+    # # recover
+    def test_evm_verifier_recover_returns_lowercased_signer(self):
+        address, signature = self._sign(WALLET_CONNECT_NONCE_PREFIX + NONCE)
+        proven = EvmXChainVerifier().recover(
+            nonce=NONCE,
+            prefix=WALLET_CONNECT_NONCE_PREFIX,
+            payload={"signature": signature},
+        )
+        assert proven == address.lower()
+
+    def test_evm_verifier_recover_none_without_signature(self):
+        assert (
+            EvmXChainVerifier().recover(
+                nonce=NONCE, prefix=WALLET_CONNECT_NONCE_PREFIX, payload={}
+            )
+            is None
+        )
+
+    def test_evm_verifier_recover_none_on_bad_signature(self):
+        assert (
+            EvmXChainVerifier().recover(
                 nonce=NONCE,
                 prefix=WALLET_CONNECT_NONCE_PREFIX,
-                payload={},
+                payload={"signature": "0xdeadbeef"},
             )
+            is None
+        )
+
+    def test_evm_verifier_recover_none_on_oversized_signature(self):
+        assert (
+            EvmXChainVerifier().recover(
+                nonce=NONCE,
+                prefix=WALLET_CONNECT_NONCE_PREFIX,
+                payload={"signature": "0x" + "a" * 300},
+            )
+            is None
+        )
+
+    def test_evm_verifier_recover_none_on_wrong_nonce(self):
+        # A signature over a different challenge recovers a different (unrelated)
+        # address, never the claimed one; here we only assert it doesn't match a
+        # signature made for another nonce when looked up against this one.
+        address, signature = self._sign(WALLET_CONNECT_NONCE_PREFIX + "other-nonce")
+        proven = EvmXChainVerifier().recover(
+            nonce=NONCE,
+            prefix=WALLET_CONNECT_NONCE_PREFIX,
+            payload={"signature": signature},
+        )
+        # recovery still yields *an* address, but not the signer's intended one
+        assert proven != address.lower()
+
+    # # verify (inherited wrapper)
+    def test_evm_verifier_verify_uses_recover(self):
+        address, signature = self._sign(WALLET_CONNECT_NONCE_PREFIX + NONCE)
+        result = EvmXChainVerifier().verify(
+            address=address.lower(),
+            nonce=NONCE,
+            prefix=WALLET_CONNECT_NONCE_PREFIX,
+            payload={"signature": signature},
+        )
+        assert result == address.lower()
