@@ -23,6 +23,7 @@ $(mainSite);
 function mainSite() {
   $('.sidenav').sidenav();
   $('.modal').modal();
+  initLoginModalTabs();
   checkMode();
   if (isDark())
     toggleText();
@@ -119,6 +120,32 @@ function toggleText() {
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  */
 
+/**
+ * Initialize the login modal's content tabs and keep the active indicator
+ * correct. Materialize tabs initialized inside a hidden modal cannot measure
+ * their width, so the default ("Log in") underline is missing until the user
+ * interacts; refreshing it on modal open fixes that. Safely does nothing on
+ * pages where the modal is not rendered (e.g. for authenticated users).
+ * @function initLoginModalTabs
+ *
+ */
+function initLoginModalTabs() {
+  var modalEl = document.getElementById('modalLogin');
+  if (!modalEl) {
+    return;
+  }
+  var tabsEl = modalEl.querySelector('.tabs');
+  if (!tabsEl || typeof M === 'undefined' || !M.Tabs) {
+    return;
+  }
+  var tabs = M.Tabs.getInstance(tabsEl) || M.Tabs.init(tabsEl);
+  var modal = M.Modal && M.Modal.getInstance(modalEl);
+  if (modal) {
+    modal.options.onOpenEnd = function () {
+      tabs.updateTabIndicator();
+    };
+  }
+}
 /**
  * Initialize cookie consent widget
  * @function initializeCookieConsent
@@ -218,6 +245,7 @@ if (typeof exports !== 'undefined') {
     mainSite,
     checkMode,
     toggleMode,
-    toggleText
+    toggleText,
+    initLoginModalTabs
   };
 }
