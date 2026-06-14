@@ -1,10 +1,11 @@
 """Resolve a Django account from a *proven* wallet address.
 
-The resolver maps a verified on-chain address to the local account that has
-linked it. It is intentionally chain-keyed so EVM/xChain sign-in slots in by
-adding a resolver, without touching the login views or backend: the EVM proof
-recovers an address, that address is mapped to its Algorand counterpart by the
-verifier, and the same Algorand resolver applies.
+A verified on-chain address is matched verbatim against the address stored on a
+profile, so resolution is chain-agnostic: an Algorand wallet stores its base32
+address, an EVM/xChain wallet stores its ``0x`` address. The Algorand
+counterpart of an EVM address is derived lazily by ``Profile.algorand_address``
+when actually needed (display, on-chain use); it is **not** required to
+authenticate, which keeps login off the algod ``/compile`` path.
 
 Only addresses that were *linked while authenticated* (the authorize flow, which
 sets ``Profile.authorized``) resolve to an account. Sign-in therefore never
@@ -27,10 +28,13 @@ class AmbiguousWalletAddress(Exception):
     """
 
 
-def _resolve_algorand(address):
-    """Return the user whose profile has verified ``address``, or ``None``.
+def _resolve_by_address(address):
+    """Return the user whose profile has ``address`` verified, or ``None``.
 
-    :param address: proven Algorand address
+    The stored address is matched exactly, so the same lookup serves every
+    chain. For EVM the proven address is the ``0x`` address, stored as-is.
+
+    :param address: proven address, in the chain's own namespace
     :type address: str
     :var profile: the single profile linked to ``address``, if unambiguous
     :type profile: core.models.Profile
@@ -54,36 +58,11 @@ def _resolve_algorand(address):
     return profile.user
 
 
-def _resolve_evm(address):
-    """Return the user linked to the xChain Algorand counterpart of ``address``.
-
-    The proven EVM address is mapped to its deterministic Algorand logicsig
-    account by :func:`nameservice.xchain.check_evm_address`; the account is then
-    resolved from that Algorand address exactly like a native Algorand wallet,
-    so the verified/unique/ambiguous handling is shared. ``check_evm_address``
-    returns the EVM address unchanged when TEAL compilation fails, which we
-    treat as "no mapping".
-
-    :param address: proven (lowercased) EVM address
-    :type address: str
-    :var algorand_address: the xChain logicsig account for ``address``
-    :type algorand_address: str
-    :return: the owning user, or None when unmapped/unlinked
-    :rtype: django.contrib.auth.models.User | None
-    """
-    from nameservice.xchain import check_evm_address
-    from utils.clients import algod_instance
-
-    algorand_address = check_evm_address(address, algod_instance())
-    if not algorand_address or algorand_address == address:
-        return None
-    return _resolve_algorand(algorand_address)
-
-
-#: Account resolvers keyed by request chain.
+#: Account resolvers keyed by request chain. Both chains resolve by the stored
+#: address; EVM does not need its Algorand counterpart to authenticate.
 ACCOUNT_RESOLVERS = {
-    "algorand": _resolve_algorand,
-    "evm": _resolve_evm,
+    "algorand": _resolve_by_address,
+    "evm": _resolve_by_address,
 }
 
 

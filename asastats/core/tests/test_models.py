@@ -1981,7 +1981,53 @@ class TestProfileModel:
         user = user_model.objects.create()
         assert user.profile.profile() == user.profile
 
-    # # PROPERTIES
+    @pytest.mark.django_db
+    def test_profile_model_name_is_user_email_without_domain(self):
+        user = user_model.objects.create(email="abs@abc.com")
+        assert user.profile.name == "abs"
+
+
+class TestProfileProperties:
+    """Testing class for :class:`Profile` properties."""
+
+    ALGORAND = "TIIHS4257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7PR34"
+    EVM = "0x52908400098527886e0f7030069857d2e4169ee7"
+
+    # # algorand_address
+    @pytest.mark.django_db
+    def test_profile_model_algorand_address_returns_stored_algorand_address(
+        self, mocker
+    ):
+        check = mocker.patch("nameservice.xchain.check_evm_address")
+        user1 = user_model.objects.create(email="abs@abc1.com")
+        user1.profile.address = self.ALGORAND
+        assert user1.profile.algorand_address == self.ALGORAND
+        check.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_profile_model_algorand_address_derives_counterpart_for_evm(self, mocker):
+        check = mocker.patch(
+            "nameservice.xchain.check_evm_address", return_value="DERIVED"
+        )
+        algod = mocker.patch("utils.clients.algod_instance", return_value="CLIENT")
+        user2 = user_model.objects.create(email="abs@abc2.com")
+        user2.profile.address = self.EVM
+        assert user2.profile.algorand_address == "DERIVED"
+        check.assert_called_once_with(self.EVM, "CLIENT")
+        algod.assert_called_once_with()
+
+    @pytest.mark.django_db
+    def test_profile_model_algorand_address_empty_when_unset(self):
+        user3 = user_model.objects.create(email="abs@abc3.com")
+        assert user3.profile.algorand_address == ""
+        assert Profile(None).algorand_address == ""
+
+    @pytest.mark.django_db
+    def test_profile_model_algorand_address_empty_when_none(self):
+        user4 = user_model.objects.create(email="abs@abc4.com")
+        user4.profile.address = None
+        assert user4.profile.algorand_address == ""
+
     # # name
     @pytest.mark.django_db
     def test_profile_model_name_is_user_first_name_and_last_name(self):
@@ -2009,13 +2055,10 @@ class TestProfileModel:
         user = user_model.objects.create(username="username", email="abs@abc.com")
         assert user.profile.name == user.username
 
-    @pytest.mark.django_db
-    def test_profile_model_name_is_user_email_without_domain(self):
-        user = user_model.objects.create(email="abs@abc.com")
-        assert user.profile.name == "abs"
 
-    # # WIDGETS
-    # @pytest.mark.django_db
+class TestProfileWidgets:
+    """Testing class for :class:`Profile` widgets related methods."""
+
     def test_profile_model_can_access_historic_widget(self, mocker):
         gate = mocker.patch("core.models.can_access_widget", return_value=True)
         profile = Profile()

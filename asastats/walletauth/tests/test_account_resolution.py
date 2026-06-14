@@ -50,33 +50,26 @@ class TestResolveAccount:
     def test_resolve_account_none_for_unsupported_chain(self):
         assert resolve_account("solana", LINKED_ADDRESS) is None
 
-    # # evm (xChain)
+    # # evm (xChain) - resolved by the stored EVM address, no mapping needed
     EVM_ADDRESS = "0x52908400098527886e0f7030069857d2e4169ee7"
 
     @pytest.mark.django_db
-    def test_resolve_account_evm_maps_via_check_evm_address(self, mocker):
-        user = make_user("evmlinked", address=LINKED_ADDRESS, authorized="proof")
-        mocker.patch("utils.clients.algod_instance", return_value=object())
-        mocker.patch(
-            "nameservice.xchain.check_evm_address", return_value=LINKED_ADDRESS
-        )
+    def test_resolve_account_evm_resolves_by_stored_address(self):
+        user = make_user("evmlinked", address=self.EVM_ADDRESS, authorized="proof")
         assert resolve_account("evm", self.EVM_ADDRESS) == user
 
-    def test_resolve_account_evm_none_when_mapping_fails(self, mocker):
-        mocker.patch("utils.clients.algod_instance", return_value=object())
-        # check_evm_address echoes the input back on TEAL compile failure
-        mocker.patch(
-            "nameservice.xchain.check_evm_address", return_value=self.EVM_ADDRESS
-        )
+    @pytest.mark.django_db
+    def test_resolve_account_evm_none_when_unlinked(self):
         assert resolve_account("evm", self.EVM_ADDRESS) is None
 
     @pytest.mark.django_db
-    def test_resolve_account_evm_raises_when_ambiguous(self, mocker):
-        make_user("d1", address=LINKED_ADDRESS, authorized="proof")
-        make_user("d2", address=LINKED_ADDRESS, authorized="proof")
-        mocker.patch("utils.clients.algod_instance", return_value=object())
-        mocker.patch(
-            "nameservice.xchain.check_evm_address", return_value=LINKED_ADDRESS
-        )
+    def test_resolve_account_evm_none_when_unverified(self):
+        make_user("evmunverified", address=self.EVM_ADDRESS, authorized="")
+        assert resolve_account("evm", self.EVM_ADDRESS) is None
+
+    @pytest.mark.django_db
+    def test_resolve_account_evm_raises_when_ambiguous(self):
+        make_user("d1", address=self.EVM_ADDRESS, authorized="proof")
+        make_user("d2", address=self.EVM_ADDRESS, authorized="proof")
         with pytest.raises(AmbiguousWalletAddress):
             resolve_account("evm", self.EVM_ADDRESS)

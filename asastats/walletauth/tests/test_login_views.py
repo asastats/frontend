@@ -256,13 +256,10 @@ class TestWalletLoginVerifyAPIView:
         raw = signed.signature.hex()
         signature = raw if raw.startswith("0x") else "0x" + raw
 
-        user = link_user(username="evmowner")  # profile.address == PROVEN
+        user = link_user(address=evm_address, username="evmowner")
         WalletLoginNonce.objects.create(
             address=evm_address, chain="evm", nonce="evm-nonce"
         )
-        # the proven EVM address maps to the linked Algorand (lsig) address
-        mocker.patch("utils.clients.algod_instance", return_value=object())
-        mocker.patch("nameservice.xchain.check_evm_address", return_value=PROVEN)
         perform = mocker.patch(
             "walletauth.login_views._perform_login", return_value="/home/"
         )

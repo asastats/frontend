@@ -94,7 +94,7 @@ class Profile(models.Model):
         :var permission: user's permission on website
         :type permission: int
         """
-        result = get_permission_provider().votes_and_permission(self.address)
+        result = get_permission_provider().votes_and_permission(self.algorand_address)
         if result is None:
             return
 
@@ -468,6 +468,28 @@ class Profile(models.Model):
         :return: :class:`Profile`
         """
         return self
+
+    @property
+    def algorand_address(self):
+        """Return this profile's Algorand address.
+
+        Native Algorand wallets store their base32 address directly and it is
+        returned unchanged. EVM/xChain wallets store the ``0x`` EVM address; its
+        deterministic Algorand logicsig counterpart is derived on demand via the
+        xChain helper. Returns an empty string when no address is set.
+
+        :var address: the raw stored address
+        :type address: str
+        :return: an Algorand address (or empty string)
+        :rtype: str
+        """
+        address = self.address or ""
+        if address.startswith("0x"):
+            from nameservice.xchain import check_evm_address
+            from utils.clients import algod_instance
+
+            return check_evm_address(address, algod_instance())
+        return address
 
     @property
     def name(self):

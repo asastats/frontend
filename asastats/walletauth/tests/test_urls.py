@@ -48,3 +48,15 @@ class TestWalletauthUrls:
         assert isinstance(url, URLPattern)
         assert url.lookup_str == "walletauth.login_views.WalletLoginVerifyAPIView"
         assert url.name == "wallet_login_verify"
+
+    def test_walletauth_urls_link_nonce(self):
+        url = self._url_from_pattern("link/nonce/")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "walletauth.link_views.WalletLinkNonceAPIView"
+        assert url.name == "wallet_link_nonce"
+
+    def test_walletauth_urls_link_verify(self):
+        url = self._url_from_pattern("link/verify/")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "walletauth.link_views.WalletLinkVerifyAPIView"
+        assert url.name == "wallet_link_verify"

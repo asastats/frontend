@@ -7,6 +7,10 @@ account-pattern catch-alls in ``api/urls.py``.
 
 from django.urls import path
 
+from walletauth.link_views import (
+    WalletLinkNonceAPIView,
+    WalletLinkVerifyAPIView,
+)
 from walletauth.login_views import (
     WalletLoginNonceAPIView,
     WalletLoginVerifyAPIView,
@@ -39,5 +43,16 @@ urlpatterns = [
         "login/verify/",
         WalletLoginVerifyAPIView.as_view(),
         name="wallet_login_verify",
+    ),
+    # Linking (authenticated, connect-and-store) for EVM/xChain wallets.
+    path(
+        "link/nonce/",
+        WalletLinkNonceAPIView.as_view(),
+        name="wallet_link_nonce",
+    ),
+    path(
+        "link/verify/",
+        WalletLinkVerifyAPIView.as_view(),
+        name="wallet_link_verify",
     ),
 ]

@@ -108,6 +108,20 @@ Run development server
   python manage.py runserver
 
 
+WalletConnect & xChain Requirements
+-----------------------------------
+
+To support mobile EVM wallets, set your public Reown project ID in your ``.env``.
+If left empty, only browser extensions will work.
+
+.. code-block:: bash
+
+    # Create at https://dashboard.reown.com
+    WALLETCONNECT_PROJECT_ID=your_project_id_here
+
+**xChain Note:** Account logins require the Algod ``/v2/teal/compile`` endpoint enabled on ``algod_instance()``.
+
+
 PostgreSQL
 ----------
 
