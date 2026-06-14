@@ -93,6 +93,7 @@ MIDDLEWARE = [
 
 AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
+    "walletauth.backends.WalletAddressBackend",
 ]
 
 ROOT_URLCONF = "asastats.urls"
@@ -277,6 +278,10 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_RATES": {
+        "walletauth": "10/min",  # authorize (per user)
+        "walletauth-login": "5/min",  # sign-in (per IP)
+    },
 }
 
 

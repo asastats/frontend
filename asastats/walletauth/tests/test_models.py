@@ -8,7 +8,7 @@ from django.db import models
 from django.db.utils import IntegrityError
 from django.utils import timezone
 
-from walletauth.models import WalletNonce
+from walletauth.models import WalletLoginNonce, WalletNonce
 
 user_model = get_user_model()
 
@@ -158,3 +158,49 @@ class TestWalletNonceModel:
 
         assert deleted == 2
         assert list(WalletNonce.objects.values_list("nonce", flat=True)) == ["fresh"]
+
+
+class TestWalletLoginNonce:
+    """Testing class for :class:`WalletLoginNonce` model."""
+
+    # # claim
+    @pytest.mark.django_db
+    def test_walletloginnonce_claim_is_single_use(self):
+        nonce = WalletLoginNonce.objects.create(address="A" * 58, nonce="ln1")
+        first = nonce.claim()
+        second = WalletLoginNonce.objects.get(pk=nonce.pk).claim()
+        assert first is True
+        assert second is False
+
+    # # is_expired
+    @pytest.mark.django_db
+    def test_walletloginnonce_is_expired(self):
+        nonce = WalletLoginNonce.objects.create(address="A" * 58, nonce="ln2")
+        assert nonce.is_expired() is False
+        WalletLoginNonce.objects.filter(pk=nonce.pk).update(
+            created_at=timezone.now() - timedelta(minutes=10)
+        )
+        assert WalletLoginNonce.objects.get(pk=nonce.pk).is_expired() is True
+
+    # # purge_stale
+    @pytest.mark.django_db
+    def test_walletloginnonce_purge_stale_removes_used_and_expired(self):
+        WalletLoginNonce.objects.create(address="A" * 58, nonce="fresh")
+        WalletLoginNonce.objects.create(address="A" * 58, nonce="used", used=True)
+        expired = WalletLoginNonce.objects.create(address="A" * 58, nonce="exp")
+        WalletLoginNonce.objects.filter(pk=expired.pk).update(
+            created_at=timezone.now() - timedelta(minutes=10)
+        )
+
+        deleted = WalletLoginNonce.purge_stale()
+
+        assert deleted == 2
+        assert list(WalletLoginNonce.objects.values_list("nonce", flat=True)) == [
+            "fresh"
+        ]
+
+    # # __str__
+    @pytest.mark.django_db
+    def test_walletloginnonce_str(self):
+        nonce = WalletLoginNonce.objects.create(address="A" * 58, nonce="lnstr")
+        assert "login" in str(nonce)

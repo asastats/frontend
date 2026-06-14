@@ -16,7 +16,12 @@
 <p class="col s12 m8 offset-m2 center-align">Login to your ASA Stats account in order to reach your home page and browse your other private pages on this website.</p>
 {% endblock %}
 
+{% block wallet_login %}
+{% include "snippets/wallet_signing.html" %}
+{% endblock %}
+
 {% block submit_text %}Log in{% endblock %}
 {% block otherfooter %}
 <script type="application/ld+json">{% include "jsonld/account/login.jsonld" %}</script>
+<script type="module" src="{% static 'js/bundle.js' %}"></script>
 {% endblock %}

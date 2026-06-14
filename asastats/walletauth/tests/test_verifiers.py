@@ -195,6 +195,40 @@ class TestAlgorandSignedTxnVerifier:
         verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
         assert verifier._network_ok(txn) is False
 
+    # # recover (login entry point)
+    def test_algorand_verifier_recover_returns_sender(self):
+        secret, address = account.generate_account()
+        stxn = make_self_payment(address, make_note()).sign(secret)
+        verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
+        proven = verifier.recover(
+            nonce=NONCE,
+            prefix=WALLET_CONNECT_NONCE_PREFIX,
+            payload=make_payload(stxn),
+        )
+        assert proven == address
+
+    def test_algorand_verifier_recover_rejects_non_self_payment(self):
+        secret, address = account.generate_account()
+        _, receiver = account.generate_account()
+        txn = PaymentTxn(
+            sender=address, sp=make_params(), receiver=receiver, amt=0, note=make_note()
+        )
+        verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
+        assert (
+            verifier.recover(
+                nonce=NONCE,
+                prefix=WALLET_CONNECT_NONCE_PREFIX,
+                payload=make_payload(txn.sign(secret)),
+            )
+            is None
+        )
+
+    def test_evm_verifier_recover_raises_not_supported(self):
+        with pytest.raises(NotSupported):
+            EvmXChainVerifier().recover(
+                nonce=NONCE, prefix=WALLET_CONNECT_NONCE_PREFIX, payload={}
+            )
+
     # # configuration
     def test_algorand_verifier_skips_genesis_when_unset(self):
         secret, address = account.generate_account()

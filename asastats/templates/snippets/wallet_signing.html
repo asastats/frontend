@@ -1,0 +1,51 @@
+{% load static %}
+{% load walletauth_extras %}
+{% supported_wallets as wallets %}
+
+<div id="wallet-connect" data-api-base="/api/v2/wallet/login" class="row col s12">
+  {% csrf_token %}
+
+  <h5>Sign in with your wallet</h5>
+  <p>Connect a wallet you have already linked to your account and prove control
+    by signing a 0&nbsp;ALGO message. Nothing is sent to the blockchain and there
+    is no fee.</p>
+
+  <div id="app-error" class="card-panel red lighten-2 white-text" style="display:none">
+    Wallet connector failed to load. Please reload the page and try again.
+  </div>
+
+  {% for wallet in wallets %}
+  <div id="wallet-{{ wallet.id }}" class="card mydark z-depth-1">
+    <div class="card-content">
+      <h4 class="card-title">{{ wallet.name }}</h4>
+
+      <button id="connect-button-{{ wallet.id }}" type="button"
+              class="btn whenmoon waves-effect waves-mydark">
+        Connect
+      </button>
+      <button id="set-active-button-{{ wallet.id }}" type="button"
+              class="btn-flat waves-effect" style="display:none">
+        Set active
+      </button>
+      <button id="disconnect-button-{{ wallet.id }}" type="button"
+              class="btn-flat waves-effect" style="display:none">
+        Disconnect
+      </button>
+
+      <div class="input-field">
+        <select id="account-select-{{ wallet.id }}" class="browser-default">
+          <option disabled selected>No accounts</option>
+        </select>
+        <span class="helper-text">Select the account to sign in with</span>
+      </div>
+
+      <button id="auth-button-{{ wallet.id }}" type="button"
+              class="btn whenmoon waves-effect waves-mydark" style="display:none">
+        Sign in
+      </button>
+    </div>
+  </div>
+  {% empty %}
+  <p class="myred-text">No wallet providers are configured.</p>
+  {% endfor %}
+</div>

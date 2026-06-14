@@ -90,3 +90,73 @@ class WalletNonce(models.Model):
         )
         deleted, _ = stale.delete()
         return deleted
+
+
+class WalletLoginNonce(models.Model):
+    """Single-use, address-bound challenge for wallet *sign-in* (no user yet).
+
+    Unlike :class:`WalletNonce` (authorize), there is no authenticated user when
+    a login challenge is issued, so the nonce is bound to the claimed address and
+    chain. Security does not rely on that binding: the verify step resolves the
+    account from the address the signature actually proves, never from the
+    request body, so a nonce issued for one address cannot be redeemed by a
+    signature proving a different one.
+    """
+
+    #: Time a nonce remains valid after creation.
+    NONCE_TTL = timedelta(minutes=5)
+
+    address = models.CharField(max_length=58, db_index=True)
+    nonce = models.CharField(max_length=64, unique=True)
+    chain = models.CharField(max_length=16, default="algorand")
+    created_at = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["address", "used"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self):
+        """Return instance's string representation.
+
+        :return: str
+        """
+        return f"login {self.address[:5]}..{self.address[-5:]} - {self.nonce}"
+
+    def is_expired(self):
+        """Return True once the nonce is older than :attr:`NONCE_TTL`.
+
+        :return: Boolean
+        """
+        return self.created_at < timezone.now() - self.NONCE_TTL
+
+    def claim(self):
+        """Atomically transition this nonce from unused to used.
+
+        :var claimed: number of rows the conditional update changed (0 or 1)
+        :type claimed: int
+        :return: True if this call consumed the nonce, else False
+        :rtype: bool
+        """
+        claimed = type(self).objects.filter(pk=self.pk, used=False).update(used=True)
+        if claimed:
+            self.used = True
+        return bool(claimed)
+
+    @classmethod
+    def purge_stale(cls):
+        """Delete used or expired login nonces. Intended for a periodic job.
+
+        :var cutoff: timestamp before which unused nonces are considered expired
+        :type cutoff: :class:`datetime.datetime`
+        :return: number of rows deleted
+        :rtype: int
+        """
+        cutoff = timezone.now() - cls.NONCE_TTL
+        stale = cls.objects.filter(
+            models.Q(used=True) | models.Q(created_at__lt=cutoff)
+        )
+        deleted, _ = stale.delete()
+        return deleted

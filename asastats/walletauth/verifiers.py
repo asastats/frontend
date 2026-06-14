@@ -32,13 +32,19 @@ class NotSupported(Exception):
 
 
 class WalletProofVerifier:
-    """Interface: prove that a signed challenge demonstrates control of an address."""
+    """Interface: prove that a signed challenge demonstrates control of an address.
 
-    def verify(self, *, address, nonce, prefix, payload):
-        """Return the proven Algorand address, or ``None`` on failure.
+    Subclasses implement :meth:`recover`, which validates a chain-specific proof
+    and returns the **proven Algorand address** that produced it (the signer's
+    own address for Algorand; the xChain-derived counterpart for EVM). The
+    shared :meth:`verify` wraps :meth:`recover` for the authorize flow, where the
+    expected address is already known; the login flow calls :meth:`recover`
+    directly and resolves the account from whatever address signed.
+    """
 
-        :param address: address the user is trying to authorize
-        :type address: str
+    def recover(self, *, nonce, prefix, payload):
+        """Validate the proof and return the proven address, or ``None``.
+
         :param nonce: server-issued single-use challenge
         :type nonce: str
         :param prefix: domain-scoped nonce prefix
@@ -49,6 +55,25 @@ class WalletProofVerifier:
         :rtype: str | None
         """
         raise NotImplementedError
+
+    def verify(self, *, address, nonce, prefix, payload):
+        """Return ``address`` when the proof proves control of it, else ``None``.
+
+        :param address: address the user is trying to authorize
+        :type address: str
+        :param nonce: server-issued single-use challenge
+        :type nonce: str
+        :param prefix: domain-scoped nonce prefix
+        :type prefix: str
+        :param payload: raw request data (chain-specific proof fields)
+        :type payload: dict
+        :var proven: address recovered from the proof, if any
+        :type proven: str | None
+        :return: ``address`` when ``recover`` returns it, else None
+        :rtype: str | None
+        """
+        proven = self.recover(nonce=nonce, prefix=prefix, payload=payload)
+        return proven if proven == address else None
 
 
 class AlgorandSignedTxnVerifier(WalletProofVerifier):
@@ -83,11 +108,9 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
         self.expected_genesis_hash = expected_genesis_hash
         self.algod_factory = algod_factory
 
-    def verify(self, *, address, nonce, prefix, payload):
-        """Verify the Algorand proof and return ``address`` on success.
+    def recover(self, *, nonce, prefix, payload):
+        """Validate the Algorand proof and return the signer's address.
 
-        :param address: address the user is trying to authorize
-        :type address: str
         :param nonce: server-issued single-use challenge
         :type nonce: str
         :param prefix: domain-scoped nonce prefix
@@ -102,7 +125,9 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
         :type stxn: :class:`algosdk.transaction.SignedTransaction`
         :var txn: the inner (unsigned) transaction being inspected
         :type txn: :class:`algosdk.transaction.Transaction`
-        :return: ``address`` when the proof is valid, else None
+        :var sender: the self-payment sender, returned as the proven address
+        :type sender: str
+        :return: the proven (sender) address when valid, else None
         :rtype: str | None
         """
         signed_b64 = payload.get("signedTransaction")
@@ -122,37 +147,41 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
 
         txn = stxn.transaction
 
-        if not self._shape_ok(txn, address):
+        if not self._shape_ok(txn):
             return None
+        sender = txn.sender
         if not self._note_ok(txn, prefix, nonce):
-            logger.warning("walletauth: note mismatch for %s", _short(address))
+            logger.warning("walletauth: note mismatch for %s", _short(sender))
             return None
         if not self._network_ok(txn):
-            logger.warning("walletauth: genesis mismatch for %s", _short(address))
+            logger.warning("walletauth: genesis mismatch for %s", _short(sender))
             return None
         if not self._signature_ok(stxn):
-            logger.warning("walletauth: signature rejected for %s", _short(address))
+            logger.warning("walletauth: signature rejected for %s", _short(sender))
             return None
 
-        return address
+        return sender
 
     # -- individual checks -------------------------------------------------
 
     @staticmethod
-    def _shape_ok(txn, address):
-        """Require a 0-amount self-payment whose sender is ``address``.
+    def _shape_ok(txn):
+        """Require a 0-amount self-payment (sender == receiver).
+
+        The sender is the proven identity, so binding sender to a specific
+        address is the caller's concern (``verify`` for authorize); here we only
+        require that the proof is a zero-value self-payment.
 
         :param txn: transaction to inspect
         :type txn: :class:`algosdk.transaction.Transaction`
-        :param address: address that must be both sender and receiver
-        :type address: str
         :return: Boolean
         """
+        sender = getattr(txn, "sender", None)
         return (
             getattr(txn, "type", None) == "pay"
             and getattr(txn, "amt", 0) == 0
-            and txn.sender == address
-            and getattr(txn, "receiver", None) == address
+            and bool(sender)
+            and getattr(txn, "receiver", None) == sender
         )
 
     @staticmethod
@@ -231,13 +260,15 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
 
 
 class EvmXChainVerifier(WalletProofVerifier):
-    """DEFERRED. Recover an EVM signer from an EIP-712 signature over the nonce,
-    derive the xChain Algorand counterpart server-side, and return it. Disabled
+    """DEFERRED. Recover an EVM signer from an EIP-712/EIP-4361 signature over
+    the nonce, derive the xChain Algorand counterpart server-side, and return
+    it. Implementing :meth:`recover` is all that is needed: the shared
+    :meth:`verify` (authorize) and the login flow both build on it. Disabled
     until xChain Accounts ships a non-React/vanilla integration path.
     """
 
-    def verify(self, *, address, nonce, prefix, payload):
-        raise NotSupported("EVM/xChain authorization is not yet enabled")
+    def recover(self, *, nonce, prefix, payload):
+        raise NotSupported("EVM/xChain sign-in is not yet enabled")
 
 
 VERIFIERS = {
