@@ -197,12 +197,10 @@ class TestWalletLinkVerifyAPIView:
 
     # # success
     @pytest.mark.django_db
-    def test_link_verify_stores_address_and_authorizes(self, mocker):
+    def test_link_verify_stores_address_and_authorizes(self):
         user = make_user("newlink")
         evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "ok")
         WalletNonce.objects.create(user=user, address=evm_addr, nonce="ok", chain="evm")
-        provider = mocker.patch("core.models.get_permission_provider").return_value
-        provider.votes_and_permission.return_value = (0, 0)
         response = post(
             WalletLinkVerifyAPIView,
             {"nonce": "ok", "chain": "evm", "signature": sig},
