@@ -372,6 +372,12 @@ span.sort {
   display: none;
 }
 
+#evm-wallet-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 div.socfooter {
   line-height: 0;
 }
