@@ -7,69 +7,89 @@ from walletauth.account_resolution import (
     AmbiguousWalletAddress,
     resolve_account,
 )
+from walletauth.models import LinkedAddress
 
 user_model = get_user_model()
 
-LINKED_ADDRESS = "TIIHS4257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7PR34"
+ALGO = "TIIHS4257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7PR34"
+EVM = "0x52908400098527886e0f7030069857d2e4169ee7"
 
 
-def make_user(username, address="", authorized=""):
+def link(username, address, *, login_enabled=True, is_primary=True):
     user = user_model.objects.create(username=username)
-    user.profile.address = address
-    user.profile.authorized = authorized
-    user.profile.save()
+    LinkedAddress.objects.create(
+        profile=user.profile,
+        address=address,
+        canonical_address=address,
+        chain="evm" if address.startswith("0x") else "algorand",
+        auth_method="evm_xchain" if address.startswith("0x") else "algorand_wallet",
+        is_primary=is_primary,
+        login_enabled=login_enabled,
+    )
     return user
 
 
 class TestResolveAccount:
     """Testing class for :func:`resolve_account`."""
 
-    # # algorand
+    # # primary / login-enabled
     @pytest.mark.django_db
-    def test_resolve_account_returns_linked_user(self):
-        user = make_user("linked", address=LINKED_ADDRESS, authorized="proof")
-        assert resolve_account("algorand", LINKED_ADDRESS) == user
+    def test_resolve_account_returns_user_for_login_enabled_primary(self):
+        user = link("primary", ALGO, is_primary=True, login_enabled=True)
+        assert resolve_account("algorand", ALGO) == user
 
     @pytest.mark.django_db
-    def test_resolve_account_none_when_address_unverified(self):
-        make_user("unverified", address=LINKED_ADDRESS, authorized="")
-        assert resolve_account("algorand", LINKED_ADDRESS) is None
+    def test_resolve_account_returns_user_for_opted_in_secondary(self):
+        user = link("sec", ALGO, is_primary=False, login_enabled=True)
+        assert resolve_account("algorand", ALGO) == user
+
+    # # the opt-in gate
+    @pytest.mark.django_db
+    def test_resolve_account_none_for_secondary_without_login_enabled(self):
+        link("optout", ALGO, is_primary=False, login_enabled=False)
+        assert resolve_account("algorand", ALGO) is None
 
     @pytest.mark.django_db
-    def test_resolve_account_none_when_no_profile(self):
-        assert resolve_account("algorand", LINKED_ADDRESS) is None
-
-    @pytest.mark.django_db
-    def test_resolve_account_raises_when_ambiguous(self):
-        make_user("a", address=LINKED_ADDRESS, authorized="proof")
-        make_user("b", address=LINKED_ADDRESS, authorized="proof")
-        with pytest.raises(AmbiguousWalletAddress):
-            resolve_account("algorand", LINKED_ADDRESS)
+    def test_resolve_account_none_when_unlinked(self):
+        assert resolve_account("algorand", ALGO) is None
 
     # # chain routing
     def test_resolve_account_none_for_unsupported_chain(self):
-        assert resolve_account("solana", LINKED_ADDRESS) is None
+        assert resolve_account("solana", ALGO) is None
 
-    # # evm (xChain) - resolved by the stored EVM address, no mapping needed
-    EVM_ADDRESS = "0x52908400098527886e0f7030069857d2e4169ee7"
+    # # ambiguity (defensive: the canonical unique constraint prevents it)
+    @pytest.mark.django_db
+    def test_resolve_account_raises_when_ambiguous(self, mocker):
+        queryset = mocker.MagicMock()
+        queryset.get.side_effect = LinkedAddress.MultipleObjectsReturned
+        mocker.patch.object(
+            LinkedAddress.objects, "select_related", return_value=queryset
+        )
+        with pytest.raises(AmbiguousWalletAddress):
+            resolve_account("algorand", ALGO)
 
+    # # evm (xChain): resolved by the stored 0x address, no algod mapping
     @pytest.mark.django_db
     def test_resolve_account_evm_resolves_by_stored_address(self):
-        user = make_user("evmlinked", address=self.EVM_ADDRESS, authorized="proof")
-        assert resolve_account("evm", self.EVM_ADDRESS) == user
+        user = link("evm", EVM, is_primary=False, login_enabled=True)
+        assert resolve_account("evm", EVM) == user
 
     @pytest.mark.django_db
-    def test_resolve_account_evm_none_when_unlinked(self):
-        assert resolve_account("evm", self.EVM_ADDRESS) is None
+    def test_resolve_account_evm_none_when_not_login_enabled(self):
+        link("evmoptout", EVM, is_primary=False, login_enabled=False)
+        assert resolve_account("evm", EVM) is None
 
     @pytest.mark.django_db
-    def test_resolve_account_evm_none_when_unverified(self):
-        make_user("evmunverified", address=self.EVM_ADDRESS, authorized="")
-        assert resolve_account("evm", self.EVM_ADDRESS) is None
-
-    @pytest.mark.django_db
-    def test_resolve_account_evm_raises_when_ambiguous(self):
-        make_user("d1", address=self.EVM_ADDRESS, authorized="proof")
-        make_user("d2", address=self.EVM_ADDRESS, authorized="proof")
-        with pytest.raises(AmbiguousWalletAddress):
-            resolve_account("evm", self.EVM_ADDRESS)
+    def test_resolve_account_logs_into_the_owning_account(self):
+        # Logging in with a secondary signs into the account that owns it.
+        owner = link("owner", ALGO, is_primary=True, login_enabled=True)
+        LinkedAddress.objects.create(
+            profile=owner.profile,
+            address=EVM,
+            canonical_address=EVM,
+            chain="evm",
+            auth_method="evm_xchain",
+            is_primary=False,
+            login_enabled=True,
+        )
+        assert resolve_account("evm", EVM) == owner

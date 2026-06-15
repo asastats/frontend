@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, get_user_model
 
 from walletauth.account_resolution import AmbiguousWalletAddress
 from walletauth.backends import WalletAddressBackend
+from walletauth.models import LinkedAddress
 
 user_model = get_user_model()
 
@@ -13,9 +14,15 @@ LINKED_ADDRESS = "TIIHS4257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7PR34"
 
 def make_linked_user(username="backenduser", address=LINKED_ADDRESS):
     user = user_model.objects.create(username=username)
-    user.profile.address = address
-    user.profile.authorized = "proof"
-    user.profile.save()
+    LinkedAddress.objects.create(
+        profile=user.profile,
+        address=address,
+        canonical_address=address,
+        chain="algorand",
+        auth_method="algorand_wallet",
+        is_primary=True,
+        login_enabled=True,
+    )
     return user
 
 
@@ -50,9 +57,14 @@ class TestWalletAddressBackend:
         assert resolved.backend.endswith("WalletAddressBackend")
 
     @pytest.mark.django_db
-    def test_backend_authenticate_propagates_ambiguity(self):
-        make_linked_user("dup_a")
-        make_linked_user("dup_b")  # same address, second account
+    def test_backend_authenticate_propagates_ambiguity(self, mocker):
+        # The canonical unique constraint prevents two rows sharing an address,
+        # so force the defensive branch to confirm the backend propagates it.
+        queryset = mocker.MagicMock()
+        queryset.get.side_effect = LinkedAddress.MultipleObjectsReturned
+        mocker.patch.object(
+            LinkedAddress.objects, "select_related", return_value=queryset
+        )
         backend = WalletAddressBackend()
         with pytest.raises(AmbiguousWalletAddress):
             backend.authenticate(None, verified_wallet_address=LINKED_ADDRESS)

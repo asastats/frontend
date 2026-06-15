@@ -9,7 +9,7 @@ from walletauth.login_views import (
     WalletLoginNonceAPIView,
     WalletLoginVerifyAPIView,
 )
-from walletauth.models import WalletLoginNonce
+from walletauth.models import LinkedAddress, WalletLoginNonce
 from walletauth.throttling import WalletLoginRateThrottle
 from walletauth.verifiers import NotSupported
 
@@ -20,11 +20,17 @@ OTHER = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 EVM_ADDRESS = "0x52908400098527886E0F7030069857D2E4169EE7"
 
 
-def link_user(address=PROVEN, username="loginuser"):
+def link_user(address=PROVEN, username="loginuser", login_enabled=True):
     user = user_model.objects.create(username=username)
-    user.profile.address = address
-    user.profile.authorized = "proof"
-    user.profile.save()
+    LinkedAddress.objects.create(
+        profile=user.profile,
+        address=address,
+        canonical_address=address,
+        chain="evm" if address.startswith("0x") else "algorand",
+        auth_method="evm_xchain" if address.startswith("0x") else "algorand_wallet",
+        is_primary=True,
+        login_enabled=login_enabled,
+    )
     return user
 
 
@@ -210,11 +216,15 @@ class TestWalletLoginVerifyAPIView:
 
     @pytest.mark.django_db
     def test_login_verify_reports_ambiguous_wallet(self, mocker):
-        # Two accounts share the same verified address -> precise 409, not 401.
-        for name in ("dup1", "dup2"):
-            link_user(username=name)
+        # Ambiguity is a data-integrity condition the unique constraint prevents;
+        # force the resolver's defensive branch to confirm the view returns 409.
         WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="n6")
         _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        queryset = mocker.MagicMock()
+        queryset.get.side_effect = LinkedAddress.MultipleObjectsReturned
+        mocker.patch.object(
+            LinkedAddress.objects, "select_related", return_value=queryset
+        )
         perform = mocker.patch("walletauth.login_views._perform_login")
         request = APIRequestFactory().post(
             "/login/verify/", {"nonce": "n6", "chain": "algorand"}, format="json"
@@ -222,6 +232,72 @@ class TestWalletLoginVerifyAPIView:
         response = WalletLoginVerifyAPIView.as_view()(request)
         assert response.status_code == 409
         assert "more than one account" in response.data["error"]
+        perform.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_login_verify_signs_in_via_opted_in_secondary(self, mocker):
+        # Account's primary is OTHER; PROVEN is a login-enabled secondary.
+        user = user_model.objects.create(username="multi")
+        LinkedAddress.objects.create(
+            profile=user.profile,
+            address=OTHER,
+            canonical_address=OTHER,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=True,
+            login_enabled=True,
+        )
+        LinkedAddress.objects.create(
+            profile=user.profile,
+            address=PROVEN,
+            canonical_address=PROVEN,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=False,
+            login_enabled=True,
+        )
+        WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="sec1")
+        _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        perform = mocker.patch(
+            "walletauth.login_views._perform_login", return_value="/home/"
+        )
+        request = APIRequestFactory().post(
+            "/login/verify/", {"nonce": "sec1", "chain": "algorand"}, format="json"
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+        assert response.status_code == 200
+        assert perform.call_args.args[1] == user
+
+    @pytest.mark.django_db
+    def test_login_verify_rejects_opted_out_secondary(self, mocker):
+        # A linked-but-not-login-enabled secondary cannot sign in.
+        user = user_model.objects.create(username="optout")
+        LinkedAddress.objects.create(
+            profile=user.profile,
+            address=OTHER,
+            canonical_address=OTHER,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=True,
+            login_enabled=True,
+        )
+        LinkedAddress.objects.create(
+            profile=user.profile,
+            address=PROVEN,
+            canonical_address=PROVEN,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=False,
+            login_enabled=False,
+        )
+        WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="sec2")
+        _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        perform = mocker.patch("walletauth.login_views._perform_login")
+        request = APIRequestFactory().post(
+            "/login/verify/", {"nonce": "sec2", "chain": "algorand"}, format="json"
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+        assert response.status_code == 401
         perform.assert_not_called()
 
     @pytest.mark.django_db

@@ -60,3 +60,21 @@ class TestWalletauthUrls:
         assert isinstance(url, URLPattern)
         assert url.lookup_str == "walletauth.link_views.WalletLinkVerifyAPIView"
         assert url.name == "wallet_link_verify"
+
+    def test_walletauth_urls_manage_nonce(self):
+        url = self._url_from_pattern("manage/nonce/")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "walletauth.management_views.ManageNonceAPIView"
+        assert url.name == "wallet_manage_nonce"
+
+    def test_walletauth_urls_manage(self):
+        url = self._url_from_pattern("manage/")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "walletauth.management_views.ManageAddressAPIView"
+        assert url.name == "wallet_manage"
+
+    def test_walletauth_urls_swap_gate(self):
+        url = self._url_from_pattern("gate/")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "walletauth.gating_views.SwapGateAPIView"
+        assert url.name == "wallet_swap_gate"

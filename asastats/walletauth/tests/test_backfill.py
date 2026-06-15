@@ -55,6 +55,15 @@ class TestBackfillPrimaryLinkedAddresses:
         assert row.auth_method == "evm_xchain"
 
     @pytest.mark.django_db
+    def test_forwards_raises_when_evm_primary_uncanonicalizable(self, mocker):
+        # algod unreachable: check_evm_address returns its input unchanged.
+        mocker.patch("utils.clients.algod_instance", return_value=object())
+        mocker.patch("nameservice.xchain.check_evm_address", side_effect=lambda a, c: a)
+        make_profile("evmbad", "0xabc", authorized="tx")
+        with pytest.raises(RuntimeError):
+            backfill.forwards(django_apps, None)
+
+    @pytest.mark.django_db
     def test_forwards_skips_profiles_without_address(self):
         profile = make_profile("empty", "")
         backfill.forwards(django_apps, None)

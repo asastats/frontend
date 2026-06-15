@@ -1,61 +1,62 @@
 """Resolve a Django account from a *proven* wallet address.
 
-A verified on-chain address is matched verbatim against the address stored on a
-profile, so resolution is chain-agnostic: an Algorand wallet stores its base32
-address, an EVM/xChain wallet stores its ``0x`` address. The Algorand
-counterpart of an EVM address is derived lazily by ``Profile.algorand_address``
-when actually needed (display, on-chain use); it is **not** required to
-authenticate, which keeps login off the algod ``/compile`` path.
+A verified on-chain address is matched verbatim against the :class:`LinkedAddress`
+registry, so resolution is chain-agnostic: an Algorand wallet stores its base32
+address, an EVM/xChain wallet stores its ``0x`` address. The Algorand counterpart
+of an EVM address is **not** computed here -- matching is on the stored address,
+which keeps login off the algod ``/compile`` path. (Canonical uniqueness makes
+the stored address effectively unique, so this is unambiguous.)
 
-Only addresses that were *linked while authenticated* (the authorize flow, which
-sets ``Profile.authorized``) resolve to an account. Sign-in therefore never
+Only addresses a user opted in for sign-in resolve to an account: the primary is
+always login-capable, while secondaries must have ``login_enabled`` set. Every
+registry row was proven by a signature when it was created, so sign-in never
 creates accounts and never trusts an address the client merely names.
 """
 
 import logging
 
-from core.models import Profile
+from walletauth.models import LinkedAddress
 
 logger = logging.getLogger(__name__)
 
 
 class AmbiguousWalletAddress(Exception):
-    """Raised when more than one account has the same address verified.
+    """Raised when more than one account has the same address login-enabled.
 
-    This is a data-integrity condition the unique constraint in the docs is
-    meant to prevent. Surfacing it (rather than collapsing to "not linked")
-    lets the sign-in view tell the user precisely why their wallet was refused.
+    This is a data-integrity condition the canonical unique constraint is meant
+    to prevent. Surfacing it (rather than collapsing to "not linked") lets the
+    sign-in view tell the user precisely why their wallet was refused.
     """
 
 
 def _resolve_by_address(address):
-    """Return the user whose profile has ``address`` verified, or ``None``.
+    """Return the user who may sign in with ``address``, or ``None``.
 
-    The stored address is matched exactly, so the same lookup serves every
-    chain. For EVM the proven address is the ``0x`` address, stored as-is.
+    The stored address is matched exactly against a login-enabled registry row,
+    so the same lookup serves every chain. For EVM the proven address is the
+    ``0x`` address, stored as-is.
 
     :param address: proven address, in the chain's own namespace
     :type address: str
-    :var profile: the single profile linked to ``address``, if unambiguous
-    :type profile: core.models.Profile
-    :raises AmbiguousWalletAddress: when more than one profile claims ``address``
-    :return: the owning user, or None when unlinked/unverified
+    :var linked: the single login-enabled row holding ``address``, if any
+    :type linked: walletauth.models.LinkedAddress
+    :raises AmbiguousWalletAddress: when more than one row login-enables ``address``
+    :return: the owning user, or None when unlinked/not login-enabled
     :rtype: django.contrib.auth.models.User | None
     """
     try:
-        profile = Profile.objects.select_related("user").get(address=address)
-    except Profile.DoesNotExist:
+        linked = LinkedAddress.objects.select_related("profile__user").get(
+            address=address, login_enabled=True
+        )
+    except LinkedAddress.DoesNotExist:
         return None
-    except Profile.MultipleObjectsReturned:
-        # More than one account claims this address. Refuse and say so, rather
-        # than guessing. A unique constraint on the verified address prevents
-        # ever reaching here.
-        logger.warning("walletauth: multiple profiles for a wallet address")
+    except LinkedAddress.MultipleObjectsReturned:
+        # More than one account login-enables this address. Refuse and say so,
+        # rather than guessing. The canonical unique constraint prevents ever
+        # reaching here.
+        logger.warning("walletauth: multiple login-enabled rows for a wallet address")
         raise AmbiguousWalletAddress
-    if not profile.authorized:
-        # Address is set on the profile but was never proven/linked.
-        return None
-    return profile.user
+    return linked.profile.user
 
 
 #: Account resolvers keyed by request chain. Both chains resolve by the stored
@@ -67,7 +68,7 @@ ACCOUNT_RESOLVERS = {
 
 
 def resolve_account(chain, address):
-    """Resolve the account linked to ``address`` on ``chain``.
+    """Resolve the account that may sign in with ``address`` on ``chain``.
 
     :param chain: request chain identifier (e.g. ``"algorand"``)
     :type chain: str

@@ -7,6 +7,7 @@ account-pattern catch-alls in ``api/urls.py``.
 
 from django.urls import path
 
+from walletauth.gating_views import SwapGateAPIView
 from walletauth.link_views import (
     WalletLinkNonceAPIView,
     WalletLinkVerifyAPIView,
@@ -14,6 +15,10 @@ from walletauth.link_views import (
 from walletauth.login_views import (
     WalletLoginNonceAPIView,
     WalletLoginVerifyAPIView,
+)
+from walletauth.management_views import (
+    ManageAddressAPIView,
+    ManageNonceAPIView,
 )
 from walletauth.views import (
     WalletNonceAPIView,
@@ -54,5 +59,22 @@ urlpatterns = [
         "link/verify/",
         WalletLinkVerifyAPIView.as_view(),
         name="wallet_link_verify",
+    ),
+    # Address management (authenticated; step-up for set-primary / enable-login).
+    path(
+        "manage/nonce/",
+        ManageNonceAPIView.as_view(),
+        name="wallet_manage_nonce",
+    ),
+    path(
+        "manage/",
+        ManageAddressAPIView.as_view(),
+        name="wallet_manage",
+    ),
+    # Swap gate: which browsed addresses are connected to the caller.
+    path(
+        "gate/",
+        SwapGateAPIView.as_view(),
+        name="wallet_swap_gate",
     ),
 ]
