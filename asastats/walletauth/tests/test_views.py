@@ -6,7 +6,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from rest_framework.views import APIView
 
 from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
-from walletauth.models import WalletNonce
+from walletauth.models import LinkedAddress, WalletNonce
 from walletauth.throttling import WalletAuthRateThrottle
 from walletauth.verifiers import NotSupported
 from walletauth.views import (
@@ -154,6 +154,51 @@ class TestWalletVerifyAPIView:
         assert user.profile.authorized == "good"
         assert user.profile.auth_method == "algorand_wallet"
         assert WalletNonce.objects.get(nonce="good").used is True
+
+    @pytest.mark.django_db
+    def test_walletauth_verifyview_mirrors_primary_into_registry(self, mocker):
+        user = make_authorized_user()
+        WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="good")
+        self.post(
+            user,
+            {"nonce": "good", "chain": "algorand"},
+            mocker,
+            verifier=_FakeVerifier(result=TEST_ADDRESS),
+        )
+        row = LinkedAddress.objects.get(profile=user.profile, is_primary=True)
+        assert row.canonical_address == TEST_ADDRESS
+        assert row.login_enabled is True
+        assert row.authorized == "good"
+
+    @pytest.mark.django_db
+    def test_walletauth_verifyview_rejects_address_held_by_another_account(
+        self, mocker
+    ):
+        # Another account already owns this canonical address in the registry.
+        other = user_model.objects.create(username="holder")
+        LinkedAddress.objects.create(
+            profile=other.profile,
+            address=TEST_ADDRESS,
+            canonical_address=TEST_ADDRESS,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=True,
+            login_enabled=True,
+        )
+        user = user_model.objects.create(username="claimer")
+        user.profile.address = TEST_ADDRESS
+        user.profile.save()
+        WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="good")
+        response = self.post(
+            user,
+            {"nonce": "good", "chain": "algorand"},
+            mocker,
+            verifier=_FakeVerifier(result=TEST_ADDRESS),
+        )
+        assert response.status_code == 409
+        # The authorization was rolled back, not half-applied.
+        user.profile.refresh_from_db()
+        assert user.profile.authorized != "good"
 
     @pytest.mark.django_db
     def test_walletauth_verifyview_authorizes_when_permission_refresh_fails(

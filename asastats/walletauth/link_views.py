@@ -20,6 +20,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
+from walletauth.linking import (
+    AddressAlreadyLinked,
+    SecondaryLimitReached,
+    link_address,
+)
 from walletauth.login_views import is_valid_chain_address
 from walletauth.models import WalletNonce
 from walletauth.throttling import WalletAuthRateThrottle
@@ -27,9 +32,9 @@ from walletauth.verifiers import AUTH_METHOD_BY_CHAIN, VERIFIERS, NotSupported
 
 logger = logging.getLogger(__name__)
 
-#: Chains that link by recover-and-store. Algorand uses the prove-existing
-#: authorize flow in :mod:`walletauth.views`; EVM connects and stores.
-LINKABLE_CHAINS = {"evm"}
+#: Chains that link by recover-and-store into the address registry. Secondary
+#: addresses may be on any supported chain, independent of the primary.
+LINKABLE_CHAINS = {"algorand", "evm"}
 
 
 def _normalized(chain, address):
@@ -163,24 +168,42 @@ class WalletLinkVerifyAPIView(APIView):
             )
 
         profile = request.user.profile
-        # Persist the new address first: Profile.save() clears ``authorized`` when
-        # the address changes, so update_authorized must run afterwards with the
-        # address already in place, or the fresh authorization would be wiped.
-        profile.address = proven
-        profile.save()
-        refreshed = profile.update_authorized(
-            nonce_obj.nonce, method=AUTH_METHOD_BY_CHAIN.get(chain, "evm_xchain")
-        )
-        logger.info(
-            "walletauth: %s wallet linked (permission_pending=%s)",
-            chain,
-            not refreshed,
-        )
+        try:
+            result = link_address(
+                profile,
+                chain=chain,
+                address=proven,
+                auth_method=AUTH_METHOD_BY_CHAIN.get(chain, "evm_xchain"),
+                authorized=nonce_obj.nonce,
+            )
+        except AddressAlreadyLinked:
+            return Response(
+                {
+                    "success": False,
+                    "error": "This address is already linked to another account.",
+                },
+                status=409,
+            )
+        except SecondaryLimitReached:
+            return Response(
+                {
+                    "success": False,
+                    "error": "You have reached the maximum number of connected addresses.",
+                },
+                status=400,
+            )
 
+        logger.info(
+            "walletauth: %s address linked (primary=%s, permission_pending=%s)",
+            chain,
+            result.is_primary,
+            result.permission_pending,
+        )
         return Response(
             {
                 "success": True,
+                "is_primary": result.is_primary,
                 "redirect_url": reverse("profile"),
-                "permission_pending": not refreshed,
+                "permission_pending": result.permission_pending,
             }
         )

@@ -2,6 +2,7 @@
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
@@ -9,7 +10,7 @@ from walletauth.link_views import (
     WalletLinkNonceAPIView,
     WalletLinkVerifyAPIView,
 )
-from walletauth.models import WalletNonce
+from walletauth.models import LinkedAddress, WalletNonce
 
 user_model = get_user_model()
 
@@ -65,10 +66,9 @@ class TestWalletLinkNonceAPIView:
 
     @pytest.mark.django_db
     def test_link_nonce_rejects_unsupported_chain(self):
-        # Algorand uses the prove-existing authorize flow, not link.
         user = make_user()
         response = post(
-            WalletLinkNonceAPIView, {"address": EVM_ADDRESS, "chain": "algorand"}, user
+            WalletLinkNonceAPIView, {"address": EVM_ADDRESS, "chain": "solana"}, user
         )
         assert response.status_code == 400
 
@@ -93,7 +93,7 @@ class TestWalletLinkVerifyAPIView:
     @pytest.mark.django_db
     def test_link_verify_unsupported_chain(self):
         response = post(
-            WalletLinkVerifyAPIView, {"nonce": "n", "chain": "algorand"}, make_user()
+            WalletLinkVerifyAPIView, {"nonce": "n", "chain": "solana"}, make_user()
         )
         assert response.status_code == 400
 
@@ -197,10 +197,17 @@ class TestWalletLinkVerifyAPIView:
 
     # # success
     @pytest.mark.django_db
-    def test_link_verify_stores_address_and_authorizes(self):
+    def test_link_verify_stores_address_and_authorizes(self, mocker):
+        mocker.patch("walletauth.addresses.algod_instance", return_value=object())
+        mocker.patch(
+            "walletauth.addresses.check_evm_address",
+            side_effect=lambda a, c: "LSIG" + a[2:].upper(),
+        )
         user = make_user("newlink")
         evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "ok")
         WalletNonce.objects.create(user=user, address=evm_addr, nonce="ok", chain="evm")
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (0, 0)
         response = post(
             WalletLinkVerifyAPIView,
             {"nonce": "ok", "chain": "evm", "signature": sig},
@@ -208,6 +215,7 @@ class TestWalletLinkVerifyAPIView:
         )
         assert response.status_code == 200
         assert response.data["success"] is True
+        assert response.data["is_primary"] is True
         assert response.data["permission_pending"] is False
         user.profile.refresh_from_db()
         assert user.profile.address == evm_addr
@@ -216,24 +224,115 @@ class TestWalletLinkVerifyAPIView:
         assert WalletNonce.objects.get(nonce="ok").used is True
 
     @pytest.mark.django_db
-    def test_link_verify_reauthorizes_when_address_changes(self):
-        # A profile that already had a different authorized address: linking EVM
-        # must replace it and end up authorized, not wiped by the save() reset.
+    def test_link_verify_adds_secondary_when_primary_exists(self, mocker):
+        # A profile that already has an authorized primary: linking another
+        # address now adds a non-privileged secondary and leaves the primary
+        # (and therefore permission) untouched -- it no longer overwrites it.
+        mocker.patch("walletauth.addresses.algod_instance", return_value=object())
+        mocker.patch(
+            "walletauth.addresses.check_evm_address",
+            side_effect=lambda a, c: "LSIG" + a[2:].upper(),
+        )
         user = make_user("switcher")
         user.profile.address = OLD_ALGORAND
         user.profile.authorized = "old-proof"
         user.profile.save()
 
-        evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "switch")
+        evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "second")
         WalletNonce.objects.create(
-            user=user, address=evm_addr, nonce="switch", chain="evm"
+            user=user, address=evm_addr, nonce="second", chain="evm"
         )
         response = post(
             WalletLinkVerifyAPIView,
-            {"nonce": "switch", "chain": "evm", "signature": sig},
+            {"nonce": "second", "chain": "evm", "signature": sig},
             user,
         )
         assert response.status_code == 200
+        assert response.data["is_primary"] is False
         user.profile.refresh_from_db()
-        assert user.profile.address == evm_addr
-        assert user.profile.authorized == "switch"
+        # Primary identity and authorization are preserved.
+        assert user.profile.address == OLD_ALGORAND
+        assert user.profile.authorized == "old-proof"
+        secondary = LinkedAddress.objects.get(address=evm_addr)
+        assert secondary.is_primary is False
+        assert secondary.login_enabled is False
+
+    @pytest.mark.django_db
+    def test_link_verify_rejects_when_secondary_limit_reached(self, mocker):
+        mocker.patch("walletauth.addresses.algod_instance", return_value=object())
+        mocker.patch(
+            "walletauth.addresses.check_evm_address",
+            side_effect=lambda a, c: "LSIG" + a[2:].upper(),
+        )
+        user = make_user("capped")
+        user.profile.address = OLD_ALGORAND  # has a primary
+        user.profile.save()
+        evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "cap")
+        WalletNonce.objects.create(
+            user=user, address=evm_addr, nonce="cap", chain="evm"
+        )
+        with override_settings(MAX_SECONDARY_ADDRESSES=0):
+            response = post(
+                WalletLinkVerifyAPIView,
+                {"nonce": "cap", "chain": "evm", "signature": sig},
+                user,
+            )
+        assert response.status_code == 400
+        assert "maximum" in response.data["error"].lower()
+
+    @pytest.mark.django_db
+    def test_link_verify_supports_algorand_secondary(self, mocker):
+        # Algorand secondaries link through the same flow; recover is mocked
+        # (the verifier itself is covered in test_verifiers).
+        user = make_user("algolink")
+        user.profile.address = OLD_ALGORAND  # already has a primary
+        user.profile.save()
+        proven = "ZZZZ4257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7PR34"
+        WalletNonce.objects.create(
+            user=user, address=proven, nonce="algo2", chain="algorand"
+        )
+
+        class _Verifier:
+            def recover(self, **kwargs):
+                return proven
+
+        mocker.patch.dict("walletauth.link_views.VERIFIERS", {"algorand": _Verifier()})
+        response = post(
+            WalletLinkVerifyAPIView,
+            {"nonce": "algo2", "chain": "algorand", "signature": "x"},
+            user,
+        )
+        assert response.status_code == 200
+        assert response.data["is_primary"] is False
+        row = LinkedAddress.objects.get(address=proven)
+        assert row.chain == "algorand"
+        assert row.canonical_address == proven  # native: canonical is itself
+        mocker.patch("walletauth.addresses.algod_instance", return_value=object())
+        mocker.patch(
+            "walletauth.addresses.check_evm_address",
+            side_effect=lambda a, c: "LSIG" + a[2:].upper(),
+        )
+        # Another account already holds the canonical of this EVM address.
+        evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "dup")
+        other = make_user("holder")
+        LinkedAddress.objects.create(
+            profile=other.profile,
+            address=evm_addr,
+            canonical_address="LSIG" + evm_addr[2:].upper(),
+            chain="evm",
+            auth_method="evm_xchain",
+            is_primary=True,
+            login_enabled=True,
+        )
+        user = make_user("claimer")
+        user.profile.address = OLD_ALGORAND  # already has a primary
+        user.profile.save()
+        WalletNonce.objects.create(
+            user=user, address=evm_addr, nonce="dup", chain="evm"
+        )
+        response = post(
+            WalletLinkVerifyAPIView,
+            {"nonce": "dup", "chain": "evm", "signature": sig},
+            user,
+        )
+        assert response.status_code == 409

@@ -11,6 +11,7 @@ import logging
 from secrets import token_hex
 
 from algosdk.encoding import is_valid_address
+from django.db import transaction
 from django.urls import reverse
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -18,6 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.constants.core import ALGORAND_WALLETS, WALLET_CONNECT_NONCE_PREFIX
+from walletauth.linking import AddressAlreadyLinked, sync_primary_linked
 from walletauth.models import WalletNonce
 from walletauth.throttling import WalletAuthRateThrottle
 from walletauth.verifiers import AUTH_METHOD_BY_CHAIN, VERIFIERS, NotSupported
@@ -178,9 +180,24 @@ class WalletVerifyAPIView(APIView):
             return Response(
                 {"success": False, "error": "Nonce already used"}, status=400
             )
-        refreshed = profile.update_authorized(
-            nonce_obj.nonce, method=AUTH_METHOD_BY_CHAIN.get(chain, "algorand_wallet")
-        )
+        try:
+            with transaction.atomic():
+                refreshed = profile.update_authorized(
+                    nonce_obj.nonce,
+                    method=AUTH_METHOD_BY_CHAIN.get(chain, "algorand_wallet"),
+                )
+                # Mirror the authorized primary into the address registry so it
+                # is uniqueness-protected and resolvable for login. A conflict
+                # rolls back the authorization rather than half-applying it.
+                sync_primary_linked(profile)
+        except AddressAlreadyLinked:
+            return Response(
+                {
+                    "success": False,
+                    "error": "This address is already linked to another account.",
+                },
+                status=409,
+            )
         logger.info(
             "walletauth: address authorized via %s wallet (permission_pending=%s)",
             chain,
