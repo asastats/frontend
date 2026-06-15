@@ -49,3 +49,5 @@
   <p class="myred-text">No wallet providers are configured.</p>
   {% endfor %}
 </div>
+
+{% include "snippets/evm_signing.html" with evm_api_base="/api/v2/wallet/login" %}

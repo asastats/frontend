@@ -89,6 +89,8 @@ from utils.constants.users import (
 from utils.tests.fixtures import (
     TEST_ADDRESS,
     TEST_ADDRESS2,
+    TEST_ADDRESS_EVM,
+    TEST_ADDRESS_XCHAIN,
     TEST_BUNDLE,
     TEST_NEW_BUNDLE,
 )
@@ -1773,6 +1775,28 @@ class TestDbProfileDisplayView(BaseUserCreatedView):
             TEST_ADDRESS2
         )
 
+    def test_core_views_profiledisplay_get_context_data_checks_subscriptions_evm_auth(
+        self, mocker
+    ):
+        # Setup view
+        view = ProfileDisplay()
+        view = self.setup_view(view, self.request)
+
+        self.request.user.profile.authorized = "authorized"
+        self.request.user.profile.address = TEST_ADDRESS_EVM
+        mocked_provider = mocker.patch("core.views.get_permission_provider")
+        subscriptions = mocker.MagicMock()
+        mocked_provider.return_value.subscriptions.return_value = subscriptions
+
+        # Run.
+        view_object = view.get(self.request)
+
+        # Check.
+        assert view_object.context_data["subscriptions"] == subscriptions
+        mocked_provider.return_value.subscriptions.assert_called_once_with(
+            TEST_ADDRESS_XCHAIN
+        )
+
     def test_core_views_profiledisplay_get_context_data_for_no_subscriptions(
         self, mocker
     ):
@@ -1795,7 +1819,7 @@ class TestDbProfileDisplayView(BaseUserCreatedView):
             TEST_ADDRESS2
         )
 
-    def test_core_views_profiledisplay_get_context_data_checks_subscriptions_non_auth(
+    def test_core_views_profiledisplay_get_context_data_checks_subscriptions_no_auth(
         self, mocker
     ):
         # Setup view

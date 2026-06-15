@@ -1070,7 +1070,7 @@ class ProfileDisplay(DetailView):
         context = super().get_context_data(*args, **kwargs)
         if self.request.user.profile.authorized:
             subscriptions = get_permission_provider().subscriptions(
-                self.request.user.profile.address
+                self.request.user.profile.algorand_address
             )
             if subscriptions:
                 context["subscriptions"] = subscriptions

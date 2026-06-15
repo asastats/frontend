@@ -2,6 +2,7 @@
 
 import logging
 
+from django.conf import settings
 from django.core.cache import cache
 
 from api.client import BackendError, fetch_capabilities
@@ -29,3 +30,16 @@ def deployment_capabilities(request):
         cache.set(_CACHE_KEY, caps, _CACHE_TTL)
 
     return {"deployment_capabilities": caps}
+
+
+def walletconnect(request):
+    """Expose the WalletConnect project id to template context.
+
+    :param request: current request (unused; signature required by Django)
+    :type request: django.http.HttpRequest
+    :return: mapping with the WalletConnect project id
+    :rtype: dict
+    """
+    return {
+        "WALLETCONNECT_PROJECT_ID": getattr(settings, "WALLETCONNECT_PROJECT_ID", "")
+    }

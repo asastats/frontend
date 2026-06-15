@@ -1,6 +1,7 @@
 import { WalletManager, WalletId } from "@txnlab/use-wallet";
 import { WalletComponent } from "./WalletComponent";
 import { install as installTestHarness } from "./walletTestHarness";
+import { initEvm } from "./evmBootstrap";
 
 /** Default mount point of the walletauth API (overridable via data attribute). */
 const DEFAULT_API_BASE = "/api/v2/wallet";
@@ -94,6 +95,20 @@ export class App {
 
 // Initialize the application.
 new App();
+
+/* istanbul ignore next -- bootstrap glue; orchestration is tested in evmBootstrap.test */
+{
+  // Mount the EVM/xChain wallet UI when present. No-ops on pages without the
+  // `#evm-wallet-connect` container, so it is safe to run everywhere.
+  const bootstrapEvm = () => {
+    void initEvm();
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrapEvm);
+  } else {
+    bootstrapEvm();
+  }
+}
 
 // Test-only: when the page sets `window.__WALLET_TEST__` (emitted solely under
 // settings.WALLET_TEST_MODE), install the mock wallet harness synchronously so

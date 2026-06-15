@@ -1,0 +1,32 @@
+{% comment %}
+EVM / xChain wallet section.
+
+Include it inside the wallet UI on BOTH the login modal and the authorize page,
+passing the matching API base so the same bundle drives login and linking:
+
+  {% include "snippets/evm_signing.html" with evm_api_base="/api/v2/wallet/login" %}
+  {% include "snippets/evm_signing.html" with evm_api_base="/api/v2/wallet/link" %}
+
+`WALLETCONNECT_PROJECT_ID` must be exposed to the template context (e.g. via a
+context processor). Leave it empty to offer injected browser wallets only; the
+WalletConnect option is added when a project id is present.
+{% endcomment %}
+
+<div id="evm-wallet-connect"
+     data-api-base="{{ evm_api_base|default:'/api/v2/wallet/login' }}"
+     data-wc-project-id="{{ WALLETCONNECT_PROJECT_ID|default:'' }}"
+     class="row col s12">
+  {% csrf_token %}
+
+  <h5>Other chains (EVM)</h5>
+  <p>Connect an Ethereum-compatible wallet and prove control by signing a
+    message. Nothing is sent on-chain and there is no fee.</p>
+
+  <div id="evm-app-error" class="card-panel red lighten-2 white-text" style="display:none">
+    No EVM wallet found. Install a browser wallet, or configure WalletConnect.
+  </div>
+
+  <div id="evm-wallet-list" class="evm-wallet-list">
+    <!-- Connector buttons are injected here by the frontend bundle. -->
+  </div>
+</div>

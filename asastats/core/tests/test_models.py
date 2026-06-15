@@ -22,7 +22,12 @@ from utils.constants.users import (
     SUBSCRIPTION_TIER_PUBLIC_BUNDLE_NAMES_COUNT,
     SYSTEM_RESERVED_URL_PATH_ERROR,
 )
-from utils.tests.fixtures import TEST_ADDRESS, TEST_ADDRESS2, TEST_ADDRESS3
+from utils.tests.fixtures import (
+    TEST_ADDRESS,
+    TEST_ADDRESS2,
+    TEST_ADDRESS3,
+    TEST_ADDRESS_EVM,
+)
 from utils.userhelpers import slugified_bundle_name
 
 user_model = get_user_model()
@@ -1990,9 +1995,6 @@ class TestProfileModel:
 class TestProfileProperties:
     """Testing class for :class:`Profile` properties."""
 
-    ALGORAND = "TIIHS4257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7PR34"
-    EVM = "0x52908400098527886e0f7030069857d2e4169ee7"
-
     # # algorand_address
     @pytest.mark.django_db
     def test_profile_model_algorand_address_returns_stored_algorand_address(
@@ -2000,8 +2002,8 @@ class TestProfileProperties:
     ):
         check = mocker.patch("nameservice.xchain.check_evm_address")
         user1 = user_model.objects.create(email="abs@abc1.com")
-        user1.profile.address = self.ALGORAND
-        assert user1.profile.algorand_address == self.ALGORAND
+        user1.profile.address = TEST_ADDRESS
+        assert user1.profile.algorand_address == TEST_ADDRESS
         check.assert_not_called()
 
     @pytest.mark.django_db
@@ -2011,9 +2013,9 @@ class TestProfileProperties:
         )
         algod = mocker.patch("utils.clients.algod_instance", return_value="CLIENT")
         user2 = user_model.objects.create(email="abs@abc2.com")
-        user2.profile.address = self.EVM
+        user2.profile.address = TEST_ADDRESS_EVM
         assert user2.profile.algorand_address == "DERIVED"
-        check.assert_called_once_with(self.EVM, "CLIENT")
+        check.assert_called_once_with(TEST_ADDRESS_EVM, "CLIENT")
         algod.assert_called_once_with()
 
     @pytest.mark.django_db
