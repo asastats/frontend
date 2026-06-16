@@ -2,6 +2,7 @@ import { WalletManager, WalletId } from "@txnlab/use-wallet";
 import { WalletComponent } from "./WalletComponent";
 import { install as installTestHarness } from "./walletTestHarness";
 import { initEvm } from "./evmBootstrap";
+import { initManageAddresses } from "./manageBootstrap";
 
 /** Default mount point of the walletauth API (overridable via data attribute). */
 const DEFAULT_API_BASE = "/api/v2/wallet";
@@ -107,6 +108,20 @@ new App();
     document.addEventListener("DOMContentLoaded", bootstrapEvm);
   } else {
     bootstrapEvm();
+  }
+}
+
+/* istanbul ignore next -- bootstrap glue; orchestration is tested in manageBootstrap.test */
+{
+  // Mount the connected-addresses manager when present. No-ops on pages without
+  // the `#connected-addresses` container, so it is safe to run everywhere.
+  const bootstrapManage = () => {
+    void initManageAddresses();
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrapManage);
+  } else {
+    bootstrapManage();
   }
 }
 

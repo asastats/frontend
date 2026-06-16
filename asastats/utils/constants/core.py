@@ -165,6 +165,7 @@ ELEMENTS_STYLING = {
     "refresh": {"icon": "refresh"},
     "fingerprint": {"icon": "fingerprint"},
     "public": {"icon": "public"},
+    "wallet": {"icon": "account_balance_wallet"},
 }
 
 DEPRECATED_LINK_PROVIDERS = ["cmc"]

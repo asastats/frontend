@@ -1,0 +1,39 @@
+{% extends "base_home.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+  <h4>Connected addresses</h4>
+  <p class="grey-text text-darken-1">
+    Your primary address carries your subscription, governance and permissions.
+    Additional addresses can sign in and reveal the Swap button, without granting
+    any of those privileges. Making an address primary, or enabling sign-in for
+    one, asks you to sign with your current primary wallet.
+  </p>
+
+  {% csrf_token %}
+
+  <div
+    id="connected-addresses"
+    data-api-base="{{ wallet_api_base|default:'/api/v2/wallet' }}"
+    data-wc-project-id="{{ walletconnect_project_id|default:'' }}"
+  >
+    <div id="connected-addresses-list" class="collection">
+      {# Rows are rendered client-side by ManageAddressesComponent. #}
+    </div>
+
+    <div class="section">
+      <button
+        type="button"
+        class="btn whenmoon waves-effect manage-action manage-add"
+        data-action="add"
+      >
+        Add an address
+      </button>
+    </div>
+
+    {# Hidden panel the add-address flow mounts its wallet connectors into. #}
+    <div id="connected-addresses-add" class="section" hidden></div>
+  </div>
+</div>
+{% endblock %}

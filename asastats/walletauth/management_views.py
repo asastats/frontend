@@ -40,6 +40,38 @@ def _current_primary(profile):
     return profile.linked_addresses.filter(is_primary=True).first()
 
 
+class WalletAddressesAPIView(APIView):
+    """List the caller's connected addresses (primary first)."""
+
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WalletAuthRateThrottle]
+
+    def get(self, request, *args, **kwargs):
+        """Return the caller's linked addresses, primary first.
+
+        :param request: the authenticated request
+        :type request: rest_framework.request.Request
+        :return: JSON ``{"addresses": [...]}`` scoped to the caller
+        :rtype: rest_framework.response.Response
+        """
+        rows = request.user.profile.linked_addresses.order_by(
+            "-is_primary", "verified_at"
+        )
+        addresses = [
+            {
+                "id": row.id,
+                "address": row.address,
+                "chain": row.chain,
+                "is_primary": row.is_primary,
+                "login_enabled": row.login_enabled,
+                "label": row.label,
+            }
+            for row in rows
+        ]
+        return Response({"addresses": addresses})
+
+
 class ManageNonceAPIView(APIView):
     """Issue a step-up challenge to be signed by the current primary wallet."""
 

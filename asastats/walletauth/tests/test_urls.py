@@ -78,3 +78,9 @@ class TestWalletauthUrls:
         assert isinstance(url, URLPattern)
         assert url.lookup_str == "walletauth.gating_views.SwapGateAPIView"
         assert url.name == "wallet_swap_gate"
+
+    def test_walletauth_urls_manage_addresses(self):
+        url = self._url_from_pattern("manage/addresses/")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "walletauth.management_views.WalletAddressesAPIView"
+        assert url.name == "wallet_manage_addresses"

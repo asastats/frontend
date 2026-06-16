@@ -6,7 +6,7 @@
 
 # Class: App
 
-Defined in: [main.ts:16](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L16)
+Defined in: [main.ts:18](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L18)
 
 Bootstraps the wallet-connect experience on the ASA Stats authorize page.
 
@@ -21,7 +21,7 @@ network selector: ASA Stats authorizes on mainnet only.
 
 > **new App**(): `App`
 
-Defined in: [main.ts:25](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L25)
+Defined in: [main.ts:27](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L27)
 
 Registers initialization on `DOMContentLoaded`.
 
@@ -35,7 +35,7 @@ Registers initialization on `DOMContentLoaded`.
 
 > `private` **apiBase**: `string` = `DEFAULT_API_BASE`
 
-Defined in: [main.ts:22](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L22)
+Defined in: [main.ts:24](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L24)
 
 Resolved walletauth API base path.
 
@@ -45,7 +45,7 @@ Resolved walletauth API base path.
 
 > `private` **walletComponents**: [`WalletComponent`](../../WalletComponent/classes/WalletComponent.md)[] = `[]`
 
-Defined in: [main.ts:20](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L20)
+Defined in: [main.ts:22](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L22)
 
 Bound wallet components, retained for cleanup.
 
@@ -55,7 +55,7 @@ Bound wallet components, retained for cleanup.
 
 > **walletManager**: `WalletManager` \| `null` = `null`
 
-Defined in: [main.ts:18](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L18)
+Defined in: [main.ts:20](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L20)
 
 The wallet manager, or null until [App.init](#init) runs.
 
@@ -65,7 +65,7 @@ The wallet manager, or null until [App.init](#init) runs.
 
 > **init**(): `Promise`\<`void`\>
 
-Defined in: [main.ts:35](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L35)
+Defined in: [main.ts:37](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L37)
 
 Initializes wallets and binds components.
 

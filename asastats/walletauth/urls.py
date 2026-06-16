@@ -19,6 +19,7 @@ from walletauth.login_views import (
 from walletauth.management_views import (
     ManageAddressAPIView,
     ManageNonceAPIView,
+    WalletAddressesAPIView,
 )
 from walletauth.views import (
     WalletNonceAPIView,
@@ -61,6 +62,11 @@ urlpatterns = [
         name="wallet_link_verify",
     ),
     # Address management (authenticated; step-up for set-primary / enable-login).
+    path(
+        "manage/addresses/",
+        WalletAddressesAPIView.as_view(),
+        name="wallet_manage_addresses",
+    ),
     path(
         "manage/nonce/",
         ManageNonceAPIView.as_view(),

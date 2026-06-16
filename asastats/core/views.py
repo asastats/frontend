@@ -951,6 +951,31 @@ class BundleNameView(CanUseBundleNamesMixin, RedirectView):
 
 # # PROFILE
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
+class ProfileAddressesView(TemplateView):
+    """Render the connected-addresses manager for the signed-in user.
+
+    The page itself holds no address data: ``ManageAddressesComponent`` fetches
+    it from ``manage/addresses/`` (self-scoped) once the page loads. This view
+    only supplies configuration (API base, WalletConnect project id).
+    """
+
+    template_name = "profile_addresses.html"
+
+    def get_context_data(self, **kwargs):
+        """Provide the frontend configuration the template needs.
+
+        :return: context with the walletauth API base and WalletConnect id
+        :rtype: dict
+        """
+        context = super().get_context_data(**kwargs)
+        context["wallet_api_base"] = "/api/v2/wallet"
+        context["walletconnect_project_id"] = getattr(
+            settings, "WALLETCONNECT_PROJECT_ID", ""
+        )
+        return context
+
+
+@method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
 class ProfileApiView(CanAccessApiMixin, TemplateView):
     """View user's API access related data."""
 

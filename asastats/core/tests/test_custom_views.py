@@ -4,6 +4,7 @@ import time
 from unittest import mock
 
 import pytest
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
@@ -65,6 +66,7 @@ from core.views import (
     NameServiceView,
     NfdView,
     ProfileAccountView,
+    ProfileAddressesView,
     ProfileApiView,
     ProfileAuthorizeCheckView,
     ProfileAuthorizeView,
@@ -1567,6 +1569,35 @@ class TestDbBundleNameView(BaseView):
         assert response == mocked_super.return_value
 
 
+class TestProfileAddressesView:
+    """Testing class for :class:`core.views.ProfileAddressesView`."""
+
+    def test_core_views_profileaddressesview_is_subclass_of_templateview(self):
+        assert issubclass(ProfileAddressesView, TemplateView)
+
+    def test_core_views_profileaddressesview_sets_template_name(self):
+        assert ProfileAddressesView.template_name == "profile_addresses.html"
+
+
+@pytest.mark.django_db
+class TestDbProfileAddressesView(BaseUserCreatedView):
+
+    def test_core_views_profileaddressesview_get_context_data_sets_context_variables(
+        self,
+    ):
+        # Setup view
+        view = ProfileAddressesView()
+        view = self.setup_view(view, self.request)
+        # Run.
+        view_object = view.get(self.request)
+        # Check.
+        assert view_object.context_data["wallet_api_base"] == "/api/v2/wallet"
+        assert (
+            view_object.context_data["walletconnect_project_id"]
+            == settings.WALLETCONNECT_PROJECT_ID
+        )
+
+
 class TestProfileApiView:
     """Testing class for :class:`core.views.ProfileApiView`."""
 
@@ -1622,7 +1653,7 @@ class TestProfileAuthorizeView:
 @pytest.mark.django_db
 class TestDbProfileAuthorizeView(BaseUserCreatedView):
 
-    def test_core_views_profileauthorizeview_get_context_data_swets_wallets(self):
+    def test_core_views_profileauthorizeview_get_context_data_sets_wallets(self):
         # Setup view
         view = ProfileAuthorizeView()
         view = self.setup_view(view, self.request)

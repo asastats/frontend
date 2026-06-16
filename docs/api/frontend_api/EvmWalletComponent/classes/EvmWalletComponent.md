@@ -1,0 +1,219 @@
+[**asastats-wallet-frontend**](../../README.md)
+
+***
+
+[asastats-wallet-frontend](../../README.md) / [EvmWalletComponent](../README.md) / EvmWalletComponent
+
+# Class: EvmWalletComponent
+
+Defined in: [EvmWalletComponent.ts:86](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L86)
+
+Drives the EVM / xChain wallet flow for both authentication (login) and
+authorization (linking). The two modes differ only by `apiBase`
+(`/api/v2/wallet/login` vs `/api/v2/wallet/link`); the request shape is
+identical, mirroring the Algorand component.
+
+Flow on selecting a connector: open the wallet, fetch a nonce for the
+address, sign `prefix + nonce` (EIP-191 `personal_sign`), post
+`{ nonce, chain: "evm", signature }` to `<apiBase>/verify/`, then navigate to
+the URL the server returns. The wallet libraries are injected, so the
+orchestration is exercised without a browser or a real wallet.
+
+## Example
+
+```typescript
+const c = new EvmWalletComponent(el, "/api/v2/wallet/link", deps);
+await c.bind();
+```
+
+## Constructors
+
+### Constructor
+
+> **new EvmWalletComponent**(`element`, `apiBase?`, `deps`): `EvmWalletComponent`
+
+Defined in: [EvmWalletComponent.ts:101](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L101)
+
+#### Parameters
+
+##### element
+
+`HTMLElement`
+
+Container element (`#evm-wallet-connect`).
+
+##### apiBase?
+
+`string` = `DEFAULT_EVM_API_BASE`
+
+EVM API base; `/api/v2/wallet/login` or `.../link`.
+
+##### deps
+
+[`EvmDeps`](../interfaces/EvmDeps.md)
+
+Injected wallet/network collaborators.
+
+#### Returns
+
+`EvmWalletComponent`
+
+## Properties
+
+### apiBase
+
+> `private` **apiBase**: `string`
+
+Defined in: [EvmWalletComponent.ts:90](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L90)
+
+Base path of the EVM walletauth endpoints.
+
+***
+
+### connectors
+
+> `private` **connectors**: [`EvmConnector`](../interfaces/EvmConnector.md)[] = `[]`
+
+Defined in: [EvmWalletComponent.ts:94](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L94)
+
+Connectors rendered on the last `render`, for click lookup.
+
+***
+
+### deps
+
+> `private` **deps**: [`EvmDeps`](../interfaces/EvmDeps.md)
+
+Defined in: [EvmWalletComponent.ts:92](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L92)
+
+Injected collaborators.
+
+***
+
+### element
+
+> `private` **element**: `HTMLElement`
+
+Defined in: [EvmWalletComponent.ts:88](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L88)
+
+The bound container (carries `#evm-wallet-list` and error slot).
+
+## Methods
+
+### addEventListeners()
+
+> `private` **addEventListeners**(): `void`
+
+Defined in: [EvmWalletComponent.ts:209](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L209)
+
+Wires click delegation; routes connector-button clicks to the flow.
+
+#### Returns
+
+`void`
+
+***
+
+### authorizeWith()
+
+> **authorizeWith**(`connector`): `Promise`\<`void`\>
+
+Defined in: [EvmWalletComponent.ts:231](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L231)
+
+Connects the chosen wallet and runs the nonce → sign → verify exchange.
+
+#### Parameters
+
+##### connector
+
+[`EvmConnector`](../interfaces/EvmConnector.md)
+
+The wallet the user selected.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### bind()
+
+> **bind**(): `Promise`\<`void`\>
+
+Defined in: [EvmWalletComponent.ts:112](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L112)
+
+Discovers connectors, renders buttons, and wires click delegation.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### getCsrfToken()
+
+> `private` **getCsrfToken**(): `string`
+
+Defined in: [EvmWalletComponent.ts:172](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L172)
+
+Reads the CSRF token from the cookie, falling back to a hidden input.
+
+#### Returns
+
+`string`
+
+The CSRF token, or an empty string when none is present.
+
+***
+
+### render()
+
+> `private` **render**(): `Promise`\<`void`\>
+
+Defined in: [EvmWalletComponent.ts:122](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L122)
+
+Renders one button per discovered connector into `#evm-wallet-list`
+(falling back to the container itself). With no connectors, reveals the
+`#evm-app-error` slot instead.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### showError()
+
+> `private` **showError**(`message`): `void`
+
+Defined in: [EvmWalletComponent.ts:194](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L194)
+
+Surfaces an error via a Materialize toast when available, otherwise a
+transient card panel. The message may carry wallet-derived text, so it is
+HTML-escaped before being handed to the toast `html` sink.
+
+#### Parameters
+
+##### message
+
+`string`
+
+Human-readable error text (treated as untrusted).
+
+#### Returns
+
+`void`
+
+***
+
+### showNoWallets()
+
+> `private` **showNoWallets**(): `void`
+
+Defined in: [EvmWalletComponent.ts:158](https://github.com/asastats/frontend/blob/main/frontend/src/EvmWalletComponent.ts#L158)
+
+Reveals the no-wallet error banner when present.
+
+#### Returns
+
+`void`

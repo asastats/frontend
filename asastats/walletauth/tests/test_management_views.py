@@ -8,6 +8,7 @@ from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
 from walletauth.management_views import (
     ManageAddressAPIView,
     ManageNonceAPIView,
+    WalletAddressesAPIView,
 )
 from walletauth.models import LinkedAddress, WalletNonce
 
@@ -59,6 +60,41 @@ def post(view, data, user):
     request = APIRequestFactory().post("/manage/", data, format="json")
     force_authenticate(request, user=user)
     return view.as_view()(request)
+
+
+class TestWalletAddressesAPIView:
+    """Testing class for :class:`WalletAddressesAPIView`."""
+
+    @pytest.mark.django_db
+    def test_lists_caller_addresses_primary_first(self):
+        user = make_user()
+        evm_primary(user.profile)
+        secondary(user.profile, login=True)
+        request = APIRequestFactory().get("/manage/addresses/")
+        force_authenticate(request, user=user)
+        response = WalletAddressesAPIView.as_view()(request)
+        assert response.status_code == 200
+        rows = response.data["addresses"]
+        assert len(rows) == 2
+        assert rows[0]["is_primary"] is True
+        assert rows[0]["address"] == EVM_PRIMARY
+        assert rows[1]["is_primary"] is False
+
+    @pytest.mark.django_db
+    def test_scoped_to_caller(self):
+        owner = make_user("owner")
+        evm_primary(owner.profile)
+        other = make_user("other")
+        evm_primary(other.profile, address="0x" + "a" * 40)
+        request = APIRequestFactory().get("/manage/addresses/")
+        force_authenticate(request, user=other)
+        response = WalletAddressesAPIView.as_view()(request)
+        addresses = {row["address"] for row in response.data["addresses"]}
+        assert addresses == {"0x" + "a" * 40}
+
+    def test_requires_authentication(self):
+        request = APIRequestFactory().get("/manage/addresses/")
+        assert WalletAddressesAPIView.as_view()(request).status_code in (401, 403)
 
 
 def evm_step_up(user, nonce):
