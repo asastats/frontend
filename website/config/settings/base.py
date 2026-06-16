@@ -113,6 +113,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.deployment_capabilities",
+                "core.context_processors.global_constants",
                 "core.context_processors.walletconnect",
             ],
         },
@@ -312,6 +313,8 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_FAVICON_HREF": STATIC_URL + "favicon-32x32.png",
     "REDOC_DIST": "SIDECAR",
 }
+
+WEBSITE_URL = get_env_variable("WEBSITE_URL", "https://www.asastats.com")
 
 # --- ASA Stats backend ---
 ASASTATS_API_URL = get_env_variable("ASASTATS_API_URL", "https://api.asastats.com")

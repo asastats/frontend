@@ -1,7 +1,5 @@
 """Django settings module used in production."""
 
-from redis import ConnectionPool
-
 from .base import *
 
 DEBUG = False

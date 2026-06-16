@@ -32,6 +32,23 @@ def deployment_capabilities(request):
     return {"deployment_capabilities": caps}
 
 
+def global_constants(request):
+    """Return collection of project's constants.
+
+    :param request: HTTP request object
+    :type request: :class:`django.http.HttpRequest`
+    :return: dict
+    """
+    return {
+        # "PROJECT_OWNER": settings.PROJECT_OWNER,
+        # "PROJECT_NAME": f"{settings.PROJECT_OWNER} Rewards",
+        # "PROJECT_WEBSITE_NAME": f"{settings.PROJECT_OWNER} Rewards website",
+        "WEBSITE_URL": settings.WEBSITE_URL,
+        # "ISSUE_TRACKER": settings.ISSUE_TRACKER_PROVIDER,
+        # "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
+    }
+
+
 def walletconnect(request):
     """Expose the WalletConnect project id to template context.
 

@@ -2,9 +2,11 @@
 
 from unittest import mock
 
+from django.conf import settings
+
 import core.context_processors
 from api.client import BackendError
-from core.context_processors import deployment_capabilities, walletconnect
+from core.context_processors import deployment_capabilities, global_constants, walletconnect
 
 
 class TestCoreContextProcessors:
@@ -75,6 +77,18 @@ class TestCoreContextProcessors:
         warning.assert_called_once_with(
             "Could not fetch deployment capabilities", exc_info=True
         )
+
+    # # global_constants
+    def test_core_context_processors_global_constants_functionality(self, mocker):
+        returned = global_constants(mocker.MagicMock())
+        assert returned == {
+            # "PROJECT_OWNER": settings.PROJECT_OWNER,
+            # "PROJECT_NAME": f"{settings.PROJECT_OWNER} Rewards",
+            # "PROJECT_WEBSITE_NAME": f"{settings.PROJECT_OWNER} Rewards website",
+            "WEBSITE_URL": settings.WEBSITE_URL,
+            # "ISSUE_TRACKER": settings.ISSUE_TRACKER_PROVIDER,
+            # "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
+        }
 
     # # walletconnect
     def test_core_context_processors_walletconnect_functionality(self, mocker):
