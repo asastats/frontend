@@ -17,7 +17,7 @@ ExecStart={{ site_path }}/venv/bin/gunicorn \
         --log-level={{ log_level }} \
         --capture-output \
         --log-file=- \
-        {{ app_name }}.wsgi:application
+        config.wsgi:application
 ExecReload=/bin/kill -s HUP $MAINPID
 
 [Install]
