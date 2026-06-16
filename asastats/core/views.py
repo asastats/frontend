@@ -969,8 +969,8 @@ class ProfileAddressesView(TemplateView):
         """
         context = super().get_context_data(**kwargs)
         context["wallet_api_base"] = "/api/v2/wallet"
-        context["walletconnect_project_id"] = getattr(
-            settings, "WALLETCONNECT_PROJECT_ID", ""
+        context["wallet_connect_project_id"] = getattr(
+            settings, "WALLET_CONNECT_PROJECT_ID", ""
         )
         context["link_address_url"] = reverse_lazy("profile_link_address")
         return context
@@ -994,8 +994,8 @@ class ProfileLinkAddressView(TemplateView):
         :rtype: dict
         """
         context = super().get_context_data(**kwargs)
-        context["walletconnect_project_id"] = getattr(
-            settings, "WALLETCONNECT_PROJECT_ID", ""
+        context["wallet_connect_project_id"] = getattr(
+            settings, "WALLET_CONNECT_PROJECT_ID", ""
         )
         context["wallets"] = ALGORAND_WALLETS
         return context

@@ -6,7 +6,7 @@
 
 # Class: ManageAddressesComponent
 
-Defined in: manageAddressesComponent.ts:61
+Defined in: [manageAddressesComponent.ts:61](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L61)
 
 Drives the connected-addresses management page: lists the caller's addresses
 and performs set-primary / remove / login-toggle / add-address against the
@@ -20,7 +20,7 @@ wallet interactions are injected, so the orchestration is fully testable.
 
 > **new ManageAddressesComponent**(`element`, `apiBase?`, `deps`): `ManageAddressesComponent`
 
-Defined in: manageAddressesComponent.ts:72
+Defined in: [manageAddressesComponent.ts:72](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L72)
 
 #### Parameters
 
@@ -52,7 +52,7 @@ Injected fetch / signer / add-address collaborators.
 
 > `private` **apiBase**: `string`
 
-Defined in: manageAddressesComponent.ts:63
+Defined in: [manageAddressesComponent.ts:63](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L63)
 
 ***
 
@@ -60,7 +60,7 @@ Defined in: manageAddressesComponent.ts:63
 
 > `private` **deps**: [`ManageDeps`](../interfaces/ManageDeps.md)
 
-Defined in: manageAddressesComponent.ts:64
+Defined in: [manageAddressesComponent.ts:64](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L64)
 
 ***
 
@@ -68,7 +68,7 @@ Defined in: manageAddressesComponent.ts:64
 
 > `private` **element**: `HTMLElement`
 
-Defined in: manageAddressesComponent.ts:62
+Defined in: [manageAddressesComponent.ts:62](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L62)
 
 ***
 
@@ -76,7 +76,7 @@ Defined in: manageAddressesComponent.ts:62
 
 > `private` **rows**: [`AddressRow`](../interfaces/AddressRow.md)[] = `[]`
 
-Defined in: manageAddressesComponent.ts:65
+Defined in: [manageAddressesComponent.ts:65](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L65)
 
 ## Accessors
 
@@ -86,7 +86,7 @@ Defined in: manageAddressesComponent.ts:65
 
 > **get** `private` **fetchFn**(): \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \}
 
-Defined in: manageAddressesComponent.ts:88
+Defined in: [manageAddressesComponent.ts:88](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L88)
 
 ##### Returns
 
@@ -132,7 +132,7 @@ Defined in: manageAddressesComponent.ts:88
 
 > `private` **actionButton**(`label`, `action`, `id`): `HTMLButtonElement`
 
-Defined in: manageAddressesComponent.ts:173
+Defined in: [manageAddressesComponent.ts:173](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L173)
 
 #### Parameters
 
@@ -158,7 +158,7 @@ Defined in: manageAddressesComponent.ts:173
 
 > `private` **addEventListeners**(): `void`
 
-Defined in: manageAddressesComponent.ts:184
+Defined in: [manageAddressesComponent.ts:184](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L184)
 
 Delegate clicks on action buttons (including the static "add" button).
 
@@ -172,7 +172,7 @@ Delegate clicks on action buttons (including the static "add" button).
 
 > **bind**(): `Promise`\<`void`\>
 
-Defined in: manageAddressesComponent.ts:83
+Defined in: [manageAddressesComponent.ts:83](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L83)
 
 Wire click delegation and load the current address list.
 
@@ -186,7 +186,7 @@ Wire click delegation and load the current address list.
 
 > `private` **getCsrfToken**(): `string`
 
-Defined in: manageAddressesComponent.ts:94
+Defined in: [manageAddressesComponent.ts:94](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L94)
 
 CSRF token from cookie, falling back to a hidden input.
 
@@ -200,7 +200,7 @@ CSRF token from cookie, falling back to a hidden input.
 
 > `private` **handle**(`action`, `id`): `Promise`\<`void`\>
 
-Defined in: manageAddressesComponent.ts:202
+Defined in: [manageAddressesComponent.ts:202](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L202)
 
 Route an action to its handler with shared error reporting and reload.
 
@@ -228,7 +228,7 @@ The target address id (NaN for "add").
 
 > `private` **headers**(): `Record`\<`string`, `string`\>
 
-Defined in: manageAddressesComponent.ts:108
+Defined in: [manageAddressesComponent.ts:108](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L108)
 
 #### Returns
 
@@ -240,7 +240,7 @@ Defined in: manageAddressesComponent.ts:108
 
 > **load**(): `Promise`\<`void`\>
 
-Defined in: manageAddressesComponent.ts:130
+Defined in: [manageAddressesComponent.ts:130](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L130)
 
 Fetch the caller's addresses and render them.
 
@@ -254,7 +254,7 @@ Fetch the caller's addresses and render them.
 
 > `private` **messageOf**(`error`): `string`
 
-Defined in: manageAddressesComponent.ts:265
+Defined in: [manageAddressesComponent.ts:265](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L265)
 
 #### Parameters
 
@@ -272,7 +272,7 @@ Defined in: manageAddressesComponent.ts:265
 
 > `private` **post**(`body`): `Promise`\<`void`\>
 
-Defined in: manageAddressesComponent.ts:224
+Defined in: [manageAddressesComponent.ts:224](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L224)
 
 POST a non-step-up management operation; throws on a failed result.
 
@@ -292,7 +292,7 @@ POST a non-step-up management operation; throws on a failed result.
 
 > `private` **render**(): `void`
 
-Defined in: manageAddressesComponent.ts:144
+Defined in: [manageAddressesComponent.ts:144](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L144)
 
 Render one row per address with the actions allowed for it.
 
@@ -306,7 +306,7 @@ Render one row per address with the actions allowed for it.
 
 > `private` **showError**(`message`): `void`
 
-Defined in: manageAddressesComponent.ts:116
+Defined in: [manageAddressesComponent.ts:116](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L116)
 
 Surface an error via a Materialize toast, or a card panel fallback.
 
@@ -326,7 +326,7 @@ Surface an error via a Materialize toast, or a card panel fallback.
 
 > `private` **stepUp**(`body`): `Promise`\<`void`\>
 
-Defined in: manageAddressesComponent.ts:242
+Defined in: [manageAddressesComponent.ts:242](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L242)
 
 Perform a step-up operation: fetch a challenge bound to the current
 primary, sign it with that wallet, then POST the operation with the proof.

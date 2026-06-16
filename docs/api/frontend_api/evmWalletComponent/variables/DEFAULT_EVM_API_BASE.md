@@ -8,6 +8,6 @@
 
 > `const` **DEFAULT\_EVM\_API\_BASE**: `"/api/v2/wallet/login"` = `"/api/v2/wallet/login"`
 
-Defined in: evmWalletComponent.ts:2
+Defined in: [evmWalletComponent.ts:2](https://github.com/asastats/frontend/blob/main/frontend/src/evmWalletComponent.ts#L2)
 
 Default mount point of the EVM walletauth API (overridable per instance).

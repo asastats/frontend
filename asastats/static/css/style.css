@@ -372,7 +372,7 @@ span.sort {
   display: none;
 }
 
-#evm-wallet-list {
+#evm-wallet-list, .connected-address-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;

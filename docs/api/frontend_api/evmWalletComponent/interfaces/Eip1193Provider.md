@@ -6,7 +6,7 @@
 
 # Interface: Eip1193Provider
 
-Defined in: evmWalletComponent.ts:29
+Defined in: [evmWalletComponent.ts:29](https://github.com/asastats/frontend/blob/main/frontend/src/evmWalletComponent.ts#L29)
 
 Minimal EIP-1193 provider surface used by the EVM flow.
 
@@ -16,7 +16,7 @@ Minimal EIP-1193 provider surface used by the EVM flow.
 
 > **request**(`args`): `Promise`\<`unknown`\>
 
-Defined in: evmWalletComponent.ts:30
+Defined in: [evmWalletComponent.ts:30](https://github.com/asastats/frontend/blob/main/frontend/src/evmWalletComponent.ts#L30)
 
 #### Parameters
 

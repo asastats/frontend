@@ -6,7 +6,7 @@
 
 # Interface: ManageDeps
 
-Defined in: manageAddressesComponent.ts:36
+Defined in: [manageAddressesComponent.ts:36](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L36)
 
 Injected collaborators; the wallet-touching ones are browser-only adapters.
 
@@ -16,9 +16,9 @@ Injected collaborators; the wallet-touching ones are browser-only adapters.
 
 > **addAddress**: (`apiBase`) => `Promise`\<`void`\>
 
-Defined in: manageAddressesComponent.ts:51
+Defined in: [manageAddressesComponent.ts:51](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L51)
 
-Run the full "add an address" link flow against `apiBase`.
+Run the full "add address" link flow against `apiBase`.
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Run the full "add an address" link flow against `apiBase`.
 
 > `optional` **fetchFn?**: \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \}
 
-Defined in: manageAddressesComponent.ts:38
+Defined in: [manageAddressesComponent.ts:38](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L38)
 
 `fetch` implementation (defaults to the global).
 
@@ -86,7 +86,7 @@ Defined in: manageAddressesComponent.ts:38
 
 > **stepUpSign**: (`address`, `chain`, `message`) => `Promise`\<`Record`\<`string`, `unknown`\>\>
 
-Defined in: manageAddressesComponent.ts:45
+Defined in: [manageAddressesComponent.ts:45](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L45)
 
 Sign `message` with the wallet holding `address` on `chain` (step-up).
 Resolves to the payload fragment to merge into the verify POST (e.g.

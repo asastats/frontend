@@ -41,5 +41,5 @@ def walletconnect(request):
     :rtype: dict
     """
     return {
-        "WALLETCONNECT_PROJECT_ID": getattr(settings, "WALLETCONNECT_PROJECT_ID", "")
+        "WALLET_CONNECT_PROJECT_ID": getattr(settings, "WALLET_CONNECT_PROJECT_ID", "")
     }

@@ -8,6 +8,6 @@
 
 > `const` **DEFAULT\_MANAGE\_API\_BASE**: `"/api/v2/wallet"` = `"/api/v2/wallet"`
 
-Defined in: manageAddressesComponent.ts:2
+Defined in: [manageAddressesComponent.ts:2](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L2)
 
 Default mount point of the walletauth API.

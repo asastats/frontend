@@ -7,8 +7,7 @@
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
 {% block page_header %}Manage linked addresses{% endblock %}
 {% block middle_section %}
-<div class="row col s12 m7 midrow">
-  <h4>Connected addresses</h4>
+<div class="row col s12">
   <p class="grey-text text-darken-1">
     Your primary address carries your subscription, governance and permissions.
     Additional addresses can sign in and reveal the Swap button, without granting
@@ -21,7 +20,7 @@
   <div
     id="connected-addresses"
     data-api-base="{{ wallet_api_base|default:'/api/v2/wallet' }}"
-    data-wc-project-id="{{ walletconnect_project_id|default:'' }}"
+    data-wc-project-id="{{ wallet_connect_project_id|default:'' }}"
     data-add-url="{{ link_address_url }}"
   >
     <div id="connected-addresses-list" class="collection">
@@ -34,10 +33,23 @@
         class="btn whenmoon waves-effect manage-action manage-add"
         data-action="add"
       >
-        Add an address
+        Add address
       </button>
     </div>
   </div>
 </div>
+<div class="row col s12">
+  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'account'|get_styling:"icon" }}</i>Back</a>&nbsp;
+</div>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Linked&nbsp;addresses{% endblock %}
+{% block otherfooter %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var collapsibles = document.querySelectorAll('.collapsible');
+      if (window.M && window.M.Collapsible) {
+        window.M.Collapsible.init(collapsibles);
+      }
+    });
+  </script>
+{% endblock %}

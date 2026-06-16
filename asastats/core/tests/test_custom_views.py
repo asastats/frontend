@@ -1594,8 +1594,8 @@ class TestDbProfileAddressesView(BaseUserCreatedView):
         # Check.
         assert view_object.context_data["wallet_api_base"] == "/api/v2/wallet"
         assert (
-            view_object.context_data["walletconnect_project_id"]
-            == settings.WALLETCONNECT_PROJECT_ID
+            view_object.context_data["wallet_connect_project_id"]
+            == settings.WALLET_CONNECT_PROJECT_ID
         )
         assert view_object.context_data["link_address_url"] == reverse_lazy(
             "profile_link_address"
@@ -1625,8 +1625,8 @@ class TestDbProfileLinkAddressView(BaseUserCreatedView):
         view_object = view.get(self.request)
         # Check.
         assert (
-            view_object.context_data["walletconnect_project_id"]
-            == settings.WALLETCONNECT_PROJECT_ID
+            view_object.context_data["wallet_connect_project_id"]
+            == settings.WALLET_CONNECT_PROJECT_ID
         )
         assert view_object.context_data["wallets"] == ALGORAND_WALLETS
 

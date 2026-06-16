@@ -6,7 +6,7 @@
 
 # Interface: EvmDeps
 
-Defined in: evmWalletComponent.ts:57
+Defined in: [evmWalletComponent.ts:57](https://github.com/asastats/frontend/blob/main/frontend/src/evmWalletComponent.ts#L57)
 
 Injected collaborators; defaulted to viem/browser implementations in bootstrap.
 
@@ -16,7 +16,7 @@ Injected collaborators; defaulted to viem/browser implementations in bootstrap.
 
 > `optional` **fetchFn?**: \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \}
 
-Defined in: evmWalletComponent.ts:63
+Defined in: [evmWalletComponent.ts:63](https://github.com/asastats/frontend/blob/main/frontend/src/evmWalletComponent.ts#L63)
 
 `fetch` implementation (defaults to the global).
 
@@ -66,7 +66,7 @@ Defined in: evmWalletComponent.ts:63
 
 > **listConnectors**: () => [`EvmConnector`](EvmConnector.md)[] \| `Promise`\<[`EvmConnector`](EvmConnector.md)[]\>
 
-Defined in: evmWalletComponent.ts:59
+Defined in: [evmWalletComponent.ts:59](https://github.com/asastats/frontend/blob/main/frontend/src/evmWalletComponent.ts#L59)
 
 Returns the connectors to offer (injected discovery + WalletConnect).
 
@@ -80,7 +80,7 @@ Returns the connectors to offer (injected discovery + WalletConnect).
 
 > `optional` **navigate?**: (`url`) => `void`
 
-Defined in: evmWalletComponent.ts:65
+Defined in: [evmWalletComponent.ts:65](https://github.com/asastats/frontend/blob/main/frontend/src/evmWalletComponent.ts#L65)
 
 Navigation side effect on success (defaults to `window.location`).
 
@@ -100,6 +100,6 @@ Navigation side effect on success (defaults to `window.location`).
 
 > **sign**: [`EvmSigner`](../type-aliases/EvmSigner.md)
 
-Defined in: evmWalletComponent.ts:61
+Defined in: [evmWalletComponent.ts:61](https://github.com/asastats/frontend/blob/main/frontend/src/evmWalletComponent.ts#L61)
 
 Produces a signature for the challenge message.

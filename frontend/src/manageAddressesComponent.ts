@@ -47,7 +47,7 @@ export interface ManageDeps {
     chain: string,
     message: string
   ) => Promise<Record<string, unknown>>;
-  /** Run the full "add an address" link flow against `apiBase`. */
+  /** Run the full "add address" link flow against `apiBase`. */
   addAddress: (apiBase: string) => Promise<void>;
 }
 
@@ -173,7 +173,7 @@ export class ManageAddressesComponent {
   private actionButton(label: string, action: string, id: number): HTMLButtonElement {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `btn manage-action manage-${action}`;
+    button.className = `btn whenmoon waves-effect manage-action manage-${action}`;
     button.dataset.action = action;
     button.dataset.id = String(id);
     button.textContent = label;

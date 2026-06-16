@@ -1,20 +1,4 @@
-"""Module containing Django templates filters and tags for the website.
-
-Phase 2 changes (API 2.0 migration):
-- Dropped: ``asa_amount`` (rebound: use ``amount_repr`` with ``asset.decimals``),
-  ``dict_value`` (no positional asset lookups in new templates),
-  ``is_float_zero`` (Decimal/numeric checks work in template directly),
-  ``not_valuated`` (replaced by ``account.notevals|length``),
-  ``price`` (the API provides per-program ``value``/``amount`` directly).
-- Modified: ``asa_icon`` now takes an asaitem dict and looks at
-  ``programs[].program.provider.name`` for the Lofty/ANote override.
-- Added: ``provider_icon`` turns a provider name into the icon filename slug
-  matching the existing ``static/icons/providers/<slug>.png`` convention
-  (lowercase, spaces stripped).
-- Added: ``program_url_title`` builds the per-program anchor title text in
-  one place rather than inlining ``"Go to <provider> application"`` in
-  every template branch.
-"""
+"""Module containing Django templates filters and tags for the website."""
 
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template import Library

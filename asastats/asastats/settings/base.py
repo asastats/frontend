@@ -363,4 +363,4 @@ PERMISSION_PROVIDER = "core.permission_providers.permissiondapp.PermissionDappPr
 
 WALLET_TEST_MODE = False  # default; set True only in the functional-test settings
 
-WALLETCONNECT_PROJECT_ID = get_env_variable("WALLETCONNECT_PROJECT_ID", "")
+WALLET_CONNECT_PROJECT_ID = get_env_variable("WALLET_CONNECT_PROJECT_ID", "")

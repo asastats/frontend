@@ -117,7 +117,7 @@ If left empty, only browser extensions will work.
 .. code-block:: bash
 
     # Create at https://dashboard.reown.com
-    WALLETCONNECT_PROJECT_ID=your_project_id_here
+    WALLET_CONNECT_PROJECT_ID=your_project_id_here
 
 **xChain Note:** Account logins require the Algod ``/v2/teal/compile`` endpoint enabled on ``algod_instance()``.
 

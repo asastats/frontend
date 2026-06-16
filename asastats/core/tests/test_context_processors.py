@@ -80,7 +80,7 @@ class TestCoreContextProcessors:
     def test_core_context_processors_walletconnect_functionality(self, mocker):
         settings = mocker.MagicMock()
         project_id = "PROJECTID"
-        settings.WALLETCONNECT_PROJECT_ID = project_id
+        settings.WALLET_CONNECT_PROJECT_ID = project_id
         with mock.patch.object(core.context_processors, "settings", settings):
             result = walletconnect(mocker.Mock())
-        assert result == {"WALLETCONNECT_PROJECT_ID": project_id}
+        assert result == {"WALLET_CONNECT_PROJECT_ID": project_id}
