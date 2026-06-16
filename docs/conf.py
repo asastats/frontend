@@ -20,13 +20,13 @@ import sys
 
 import django
 
-sys.path.insert(0, os.path.abspath("../asastats"))
+sys.path.insert(0, os.path.abspath("../website"))
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
 # Set Django settings
-os.environ["DJANGO_SETTINGS_MODULE"] = "asastats.settings.development"
+os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.development"
 
 
 django.setup()
@@ -39,7 +39,7 @@ copyright = "2026, ASA Stats DAO"
 authors = "Ivica Paleka"
 
 # The full version, including alpha/beta/rc tags
-from asastats import __version__
+from config import __version__
 
 release = __version__
 

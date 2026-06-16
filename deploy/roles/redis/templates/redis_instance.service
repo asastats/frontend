@@ -1,5 +1,5 @@
 [Unit]
-Description=Advanced key-value store for the asastats web cache (port {{ redis_port }})
+Description=Advanced key-value store for the website web cache (port {{ redis_port }})
 After=network.target
 Documentation=http://redis.io/documentation, man:redis-server(1)
 

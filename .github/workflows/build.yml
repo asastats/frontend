@@ -27,7 +27,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: asastats_db
+          POSTGRES_DB: website_db
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -60,15 +60,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r asastats/requirements/development.txt
+          python -m pip install -r website/requirements/development.txt
 
       - name: Create env file
         run: |
-          touch asastats/.env
-          echo SECRET_KEY="mysecretkey" >> asastats/.env
-          echo DATABASE_NAME="asastats_db" >> asastats/.env
-          echo DATABASE_USER="postgres" >> asastats/.env
-          echo DATABASE_PASSWORD="postgres" >> asastats/.env
+          touch website/.env
+          echo SECRET_KEY="mysecretkey" >> website/.env
+          echo DATABASE_NAME="website_db" >> website/.env
+          echo DATABASE_USER="postgres" >> website/.env
+          echo DATABASE_PASSWORD="postgres" >> website/.env
 
       - name: Wait for PostgreSQL to be ready
         run: |
@@ -79,22 +79,22 @@ jobs:
 
       - name: Collect static files
         env:
-          DJANGO_SETTINGS_MODULE: asastats.settings.development
+          DJANGO_SETTINGS_MODULE: config.settings.development
         run: |
-          python asastats/manage.py collectstatic --noinput
+          python website/manage.py collectstatic --noinput
 
       - name: Run main Django project unit tests
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/asastats_db
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/website_db
         run: |
           pytest -k "not integration_tests" --cov=. --cov-report=xml:coverage-main.xml --cov-report=term-missing
 
       - name: Run widgets submodule tests
         env:
-          PYTHONPATH: asastats
-          COVERAGE_RCFILE: asastats/widgets/.coveragerc
+          PYTHONPATH: website
+          COVERAGE_RCFILE: website/widgets/.coveragerc
         run: |
-          pytest asastats/widgets -c asastats/widgets/pytest.ini --cov=widgets --cov-report=xml:coverage-widgets.xml --cov-report=term-missing
+          pytest website/widgets -c website/widgets/pytest.ini --cov=widgets --cov-report=xml:coverage-widgets.xml --cov-report=term-missing
 
       - name: Upload merged coverage to Codecov
         uses: codecov/codecov-action@v6
@@ -145,18 +145,18 @@ jobs:
 
       - name: Install dependencies (website)
         run: |
-          cd asastats
+          cd website
           npm install
 
       - name: Run website's tests with coverage
         run: |
-          cd asastats
+          cd website
           npm run test:coverage
 
       - name: Upload website's Javascript coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: asastats/javascript_tests/coverage
+          directory: website/javascript_tests/coverage
           flags: website-javascript
           name: website-coverage

@@ -1,8 +1,8 @@
-**asastats-wallet-frontend**
+**wallet-frontend**
 
 ***
 
-# asastats-wallet-frontend
+# wallet-frontend
 
 ## Modules
 

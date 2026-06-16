@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [main](../README.md) / App
+[wallet-frontend](../../README.md) / [main](../README.md) / App
 
 # Class: App
 

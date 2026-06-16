@@ -1,6 +1,6 @@
-[submodule "asastats/widgets"]
-	path = asastats/widgets
+[submodule "website/widgets"]
+	path = website/widgets
 	url = https://github.com/asastats/widgets.git
-[submodule "asastats/permissiondapp"]
-	path = asastats/permissiondapp
+[submodule "website/permissiondapp"]
+	path = website/permissiondapp
 	url = https://github.com/asastats/permission-dapp.git

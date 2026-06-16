@@ -4,4 +4,4 @@
   vars:
     env_files:
       - "{{ playbook_dir }}/../../.env-example"
-      - "{{ playbook_dir }}/../../../asastats/.env-example"
+      - "{{ playbook_dir }}/../../../website/.env-example"

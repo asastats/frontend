@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [evmConnectors](../README.md) / defaultEvmSigner
+[wallet-frontend](../../README.md) / [evmConnectors](../README.md) / defaultEvmSigner
 
 # Variable: defaultEvmSigner
 

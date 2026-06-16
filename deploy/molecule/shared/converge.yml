@@ -11,7 +11,7 @@
   vars:
     env_files:
       - "{{ playbook_dir }}/../../.env.testing"
-      - "{{ playbook_dir }}/../../../asastats/.env.testing"
+      - "{{ playbook_dir }}/../../../website/.env.testing"
 
   tasks:
     - name: Stat env files
@@ -76,7 +76,7 @@
 # ──────────────────────────────────────────────
 # PLAY 3: Provision roles
 # ──────────────────────────────────────────────
-- name: Provisioning of the asastats portfolio tracker
+- name: Provisioning of the portfolio tracker website
   hosts: all:!localhost
   gather_facts: true
   roles:

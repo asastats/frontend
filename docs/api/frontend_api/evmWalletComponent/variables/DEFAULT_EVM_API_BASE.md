@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [evmWalletComponent](../README.md) / DEFAULT\_EVM\_API\_BASE
+[wallet-frontend](../../README.md) / [evmWalletComponent](../README.md) / DEFAULT\_EVM\_API\_BASE
 
 # Variable: DEFAULT\_EVM\_API\_BASE
 

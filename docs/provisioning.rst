@@ -107,7 +107,7 @@ Project provisioning
 
 .. warning::
 
-  Before using in production, you need to update the content of the error pages in the ``asastats/templates/`` directory,
+  Before using in production, you need to update the content of the error pages in the ``website/templates/`` directory,
   as well as the ``static/auth_privacy.html`` and ``static/auth_terms.html`` HTML pages to reflect your company name.
 
 Use the following commands from the `deploy` directory to provision the website on your testing server:

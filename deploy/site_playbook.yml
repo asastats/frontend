@@ -13,7 +13,7 @@
     env_name_lookup: "{{ ansible_limit | default('testing') }}"
     env_files:
       - ".env.{{ env_name_lookup }}"
-      - "{{ playbook_dir }}/../asastats/.env.{{ env_name_lookup }}"
+      - "{{ playbook_dir }}/../website/.env.{{ env_name_lookup }}"
 
   tasks:
     - name: Verify env files exist (ignore missing optional ones)
@@ -81,7 +81,7 @@
 # ──────────────────────────────────────────────
 # PLAY 3: Provision host (roles)
 # ──────────────────────────────────────────────
-- name: Provisioning of the asastats portfolio tracker
+- name: Provisioning of the portfolio tracker website
   hosts: all
   vars:
     ansible_user: "{{ hostvars['localhost'].env_vars.ADMIN_USER }}"

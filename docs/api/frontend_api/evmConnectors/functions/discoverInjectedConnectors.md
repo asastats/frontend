@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [evmConnectors](../README.md) / discoverInjectedConnectors
+[wallet-frontend](../../README.md) / [evmConnectors](../README.md) / discoverInjectedConnectors
 
 # Function: discoverInjectedConnectors()
 

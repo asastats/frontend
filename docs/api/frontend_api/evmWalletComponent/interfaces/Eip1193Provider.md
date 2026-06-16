@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [evmWalletComponent](../README.md) / Eip1193Provider
+[wallet-frontend](../../README.md) / [evmWalletComponent](../README.md) / Eip1193Provider
 
 # Interface: Eip1193Provider
 

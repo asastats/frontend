@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [walletComponent](../README.md) / WalletComponent
+[wallet-frontend](../../README.md) / [walletComponent](../README.md) / WalletComponent
 
 # Class: WalletComponent
 

@@ -1,6 +1,6 @@
 # Deployment (Ansible)
 
-Provisions a single host for the open-source asastats portfolio tracker. The
+Provisions a single host for the open-source portfolio tracker. The
 tracker reaches the ASA Stats backend over HTTP and uses public Algorand
 services, so a fork only needs its own server plus credentials.
 
@@ -24,14 +24,14 @@ deploy/
 
 Infrastructure variables live here in `deploy/.env.<environment>` (copy
 `.env-example`). Application secrets live in the Django project's own
-`asastats/.env.<environment>` and are merged in at runtime.
+`website/.env.<environment>` and are merged in at runtime.
 
 Required application keys (see `roles/projectsetup/tasks/environment.yml`):
 `SECRET_KEY`, `ALLOWED_HOSTS`, `DATABASE_NAME`, `DATABASE_USER`,
 `DATABASE_PASSWORD`, `ASASTATS_API_URL`, `ASASTATS_API_KEY`,
 `ASASTATS_API_TIMEOUT`, `ALGOD_URL`, `ALGOD_TOKEN`, `INDEXER_URL`,
 `INDEXER_TOKEN`, `REDIS_URL`, `SIMPLE_JWT_KEY`, plus optional social-auth and
-email keys. `asastats/.env-example` should ship placeholder values for every
+email keys. `website/.env-example` should ship placeholder values for every
 required key so CI/Molecule can boot the app without a live backend.
 
 The `redis` role provisions a **second** Redis instance, leaving any existing
@@ -65,5 +65,5 @@ molecule test --scenario-name ci    # uses .env-example placeholders
 ```
 
 Requirements layering: the server installs
-`asastats/requirements/production.txt`; Molecule and local-VM deploy tests use
+`website/requirements/production.txt`; Molecule and local-VM deploy tests use
 the optional `testing.txt`; CI app tests use `development.txt`.

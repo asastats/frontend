@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [walletTestHarness](../README.md) / install
+[wallet-frontend](../../README.md) / [walletTestHarness](../README.md) / install
 
 # Function: install()
 

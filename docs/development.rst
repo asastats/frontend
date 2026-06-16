@@ -27,7 +27,7 @@ Set an environment variable upon activation:
   :caption: /home/username/dev/venvs/frontend/bin/activate
 
   # at the end of the file
-  export DJANGO_SETTINGS_MODULE=asastats.settings.development
+  export DJANGO_SETTINGS_MODULE=config.settings.development
 
 
 Activate Python environment:
@@ -42,25 +42,25 @@ Adding an alias can be useful:
 .. code-block:: bash
   :caption: ~/.bashrc
 
-  alias 'front'='cd /home/username/dev/frontend/asastats;source /home/username/dev/venvs/frontend/bin/activate'
+  alias 'front'='cd /home/username/dev/frontend/website;source /home/username/dev/venvs/frontend/bin/activate'
 
 
 Initial packages installation:
 
 .. code-block:: bash
 
-  (frontend) debian:~/dev/frontend/asastats$ pip install -r requirements/development.txt
+  (frontend) debian:~/dev/frontend/website$ pip install -r requirements/development.txt
 
 
 Linting
 ^^^^^^^
 
 To maintain code quality and consistent formatting, use `isort` and `black`. 
-First, navigate to the `asastats` directory:
+First, navigate to the `website` directory:
 
 .. code-block:: bash
 
-  cd asastats/
+  cd website/
 
 Sort the Python imports alphabetically:
 
@@ -84,13 +84,13 @@ To fetch the absolute latest version of the obligatory `widgets` submodule:
 
 .. code-block:: bash
 
-  git submodule update --remote asastats/widgets
+  git submodule update --remote website/widgets
 
 To fetch the absolute latest version of the optional `permissiondapp` submodule:
 
 .. code-block:: bash
 
-  git submodule update --remote asastats/permissiondapp
+  git submodule update --remote website/permissiondapp
 
 In case of changed code, or if you need to throw away local changes, you can revert the submodules to the exact versions the frontend repository expects:
 
@@ -191,7 +191,7 @@ Run project's functional tests:
 
 .. code-block:: bash
 
-  python -m pytest asastats/functional_tests/ -v
+  python -m pytest website/functional_tests/ -v
 
 
 Run widgets submodule unit tests:
@@ -200,7 +200,7 @@ The `widgets` submodule is an integral part of the project and depends heavily o
 
 .. code-block:: bash
 
-  PYTHONPATH=asastats pytest -v asastats/widgets -c asastats/widgets/pytest.ini
+  PYTHONPATH=website pytest -v website/widgets -c website/widgets/pytest.ini
 
 
 Typescript
@@ -219,7 +219,7 @@ Run tests:
 
 .. code-block:: bash
 
-  cd /home/username/dev/frontend/asastats
+  cd /home/username/dev/frontend/website
   npm run test  #  npm run test:coverage
 
 
@@ -237,5 +237,5 @@ Run tests:
 
 .. code-block:: bash
 
-  cd /home/username/dev/frontend/asastats
+  cd /home/username/dev/frontend/website
   npm run test  #  npm run test:coverage

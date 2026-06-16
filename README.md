@@ -1,6 +1,6 @@
 # ASA Stats website's frontend
 
-[![build](https://github.com/asastats/frontend/actions/workflows/build.yml/badge.svg)](https://github.com/asastats/frontend/actions/workflows/build.yml) [![docs](https://app.readthedocs.org/projects/asastats/badge/?version=latest)](https://asastats.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/asastats/frontend/graph/badge.svg?token=DQC4SRY8J9)](https://codecov.io/gh/asastats/frontend) ![ansible-lint](https://github.com//asastats/frontend/actions/workflows/ansible-lint.yml/badge.svg) ![molecule](https://github.com/asastats/frontend/actions/workflows/molecule.yml/badge.svg) 
+[![build](https://github.com/asastats/frontend/actions/workflows/build.yml/badge.svg)](https://github.com/asastats/frontend/actions/workflows/build.yml) [![docs](https://app.readthedocs.org/projects/asastats/badge/?version=latest)](https://asastats.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/asastats/frontend/graph/badge.svg?token=DQC4SRY8J9)](https://codecov.io/gh/asastats/frontend) ![ansible-lint](https://github.com/asastats/frontend/actions/workflows/ansible-lint.yml/badge.svg) ![molecule](https://github.com/asastats/frontend/actions/workflows/molecule.yml/badge.svg) 
 
 
 This repository contains the frontend and core web application code for ASA Stats, a platform that evaluates and presents ASA and NFT price information on the Algorand blockchain.
@@ -21,7 +21,7 @@ source venv/bin/activate
 pip install -r requirements/development.txt
 
 # Set environment variable and run
-export DJANGO_SETTINGS_MODULE=asastats.settings.development
+export DJANGO_SETTINGS_MODULE=website.settings.development
 python manage.py migrate
 python manage.py runserver
 ```
@@ -31,7 +31,7 @@ python manage.py runserver
 Manages UI state, Web3 wallet connections, and interactive charts.
 
 ```bash
-cd asastats
+cd wallet
 npm install
 npm run build
 ```
@@ -45,11 +45,11 @@ The project uses `pytest` for Python and `jest` for Typescript/Javascript.
 pytest --cov . --cov-report term-missing
 
 # Frontend Typescript tests
-cd asastats
+cd wallet
 npm run test:coverage
 
-# Frontend Javascript tests
-cd frontend
+# Website Javascript tests
+cd website
 npm run test:coverage
 ```
 
@@ -74,8 +74,8 @@ This repository relies on submodules. The `widgets` submodule is obligatory, and
 To fetch their absolute latest remote updates:
 
 ```bash
-git submodule update --remote asastats/widgets
-git submodule update --remote asastats/permissiondapp
+git submodule update --remote website/widgets
+git submodule update --remote website/permissiondapp
 ```
 
 To revert changes and reset them to the specific commits this frontend repo expects:
@@ -89,7 +89,7 @@ git submodule update --init --recursive --force
 Python code formatting is enforced using `isort` and `black`. Be sure to exclude the submodules when running the formatter:
 
 ```bash
-cd asastats/
+cd website/
 isort .
 black . --extend-exclude="widgets/" --extend-exclude="permissiondapp/"
 ```

@@ -20,10 +20,10 @@ the logs by issuing the following command:
 
 .. code-block:: bash
 
-  sudo journalctl -u gunicorn-production_asastats.service
+  sudo journalctl -u gunicorn-production_website.service
 
 If you want logging to a file, replace the following variable in the settings
-file `asastats/asastats/settings/production.py``:
+file `website/config/settings/production.py``:
 
 .. code-block:: python
 

@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [manageAddressesComponent](../README.md) / DEFAULT\_MANAGE\_API\_BASE
+[wallet-frontend](../../README.md) / [manageAddressesComponent](../README.md) / DEFAULT\_MANAGE\_API\_BASE
 
 # Variable: DEFAULT\_MANAGE\_API\_BASE
 

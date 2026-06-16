@@ -1,8 +1,8 @@
-[**asastats-wallet-frontend**](../../README.md)
+[**wallet-frontend**](../../README.md)
 
 ***
 
-[asastats-wallet-frontend](../../README.md) / [evmBootstrap](../README.md) / initEvm
+[wallet-frontend](../../README.md) / [evmBootstrap](../README.md) / initEvm
 
 # Function: initEvm()
 
