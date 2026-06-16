@@ -3,7 +3,7 @@ import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 // Builds a single wallet-connect bundle into the Django static tree as
 // js/bundle.js, loaded by the authorize page. emptyOutDir is false:
-// asastats ships hand-authored files in static/ that must not be wiped by the build.
+// website ships hand-authored files in static/ that must not be wiped by the build.
 export default defineConfig({
   base: "/static/",
   plugins: [
@@ -14,7 +14,7 @@ export default defineConfig({
     }),
   ],
   build: {
-    outDir: "../asastats/static",
+    outDir: "../website/static",
     emptyOutDir: false,
     manifest: false,
     minify: "esbuild",

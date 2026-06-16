@@ -8,7 +8,7 @@
  *
  * Why a custom mock rather than use-wallet's Mnemonic wallet: the library's
  * Mnemonic wallet calls `checkMainnet()` in `connect()` and refuses to run on
- * MainNet, and asastats pins MainNet (the backend rejects a TestNet genesis).
+ * MainNet, and website pins MainNet (the backend rejects a TestNet genesis).
  * This harness instead signs a real 0-ALGO self-payment built with MainNet
  * suggested params, so the backend's signature + genesis checks run unchanged
  * and the test is genuinely end to end (the signed txn is never broadcast).
