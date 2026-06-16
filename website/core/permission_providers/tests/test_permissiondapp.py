@@ -4,7 +4,7 @@ import base64
 
 import pytest
 
-pytest.importorskip("permissiondapp.dapp.config")
+pytest.importorskip("permissiondapp.dapp.configuration")
 
 from algosdk.error import AlgodHTTPError  # noqa: E402
 

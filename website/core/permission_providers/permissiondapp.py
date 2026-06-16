@@ -15,7 +15,7 @@ from algosdk.error import AlgodHTTPError
 from algosdk.v2client.algod import AlgodClient
 
 from core.permission_provider import PermissionProvider
-from permissiondapp.dapp.config import (
+from permissiondapp.dapp.configuration import (
     PERMISSION_APP_ID,
     SUBSCRIPTION_PERMISSIONS,
     SUBTOPIA_URL_PREFIX,
