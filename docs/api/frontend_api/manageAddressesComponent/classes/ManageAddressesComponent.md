@@ -132,7 +132,7 @@ Defined in: [manageAddressesComponent.ts:88](https://github.com/asastats/fronten
 
 > `private` **actionButton**(`label`, `action`, `id`): `HTMLButtonElement`
 
-Defined in: [manageAddressesComponent.ts:173](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L173)
+Defined in: [manageAddressesComponent.ts:247](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L247)
 
 #### Parameters
 
@@ -158,7 +158,7 @@ Defined in: [manageAddressesComponent.ts:173](https://github.com/asastats/fronte
 
 > `private` **addEventListeners**(): `void`
 
-Defined in: [manageAddressesComponent.ts:184](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L184)
+Defined in: [manageAddressesComponent.ts:258](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L258)
 
 Delegate clicks on action buttons (including the static "add" button).
 
@@ -200,7 +200,7 @@ CSRF token from cookie, falling back to a hidden input.
 
 > `private` **handle**(`action`, `id`): `Promise`\<`void`\>
 
-Defined in: [manageAddressesComponent.ts:202](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L202)
+Defined in: [manageAddressesComponent.ts:276](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L276)
 
 Route an action to its handler with shared error reporting and reload.
 
@@ -236,6 +236,24 @@ Defined in: [manageAddressesComponent.ts:108](https://github.com/asastats/fronte
 
 ***
 
+### initCollapsible()
+
+> `private` **initCollapsible**(`ul`): `void`
+
+Defined in: [manageAddressesComponent.ts:231](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L231)
+
+#### Parameters
+
+##### ul
+
+`HTMLElement`
+
+#### Returns
+
+`void`
+
+***
+
 ### load()
 
 > **load**(): `Promise`\<`void`\>
@@ -254,7 +272,7 @@ Fetch the caller's addresses and render them.
 
 > `private` **messageOf**(`error`): `string`
 
-Defined in: [manageAddressesComponent.ts:265](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L265)
+Defined in: [manageAddressesComponent.ts:339](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L339)
 
 #### Parameters
 
@@ -272,7 +290,7 @@ Defined in: [manageAddressesComponent.ts:265](https://github.com/asastats/fronte
 
 > `private` **post**(`body`): `Promise`\<`void`\>
 
-Defined in: [manageAddressesComponent.ts:224](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L224)
+Defined in: [manageAddressesComponent.ts:298](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L298)
 
 POST a non-step-up management operation; throws on a failed result.
 
@@ -292,9 +310,12 @@ POST a non-step-up management operation; throws on a failed result.
 
 > `private` **render**(): `void`
 
-Defined in: [manageAddressesComponent.ts:144](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L144)
+Defined in: [manageAddressesComponent.ts:149](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L149)
 
-Render one row per address with the actions allowed for it.
+Render the addresses as a Materialize collapsible: one `<li>` per address,
+the address in its `collapsible-header` and that address's actions tucked
+into the `collapsible-body`. The primary row's body shows a note instead of
+actions (it has none).
 
 #### Returns
 
@@ -326,7 +347,7 @@ Surface an error via a Materialize toast, or a card panel fallback.
 
 > `private` **stepUp**(`body`): `Promise`\<`void`\>
 
-Defined in: [manageAddressesComponent.ts:242](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L242)
+Defined in: [manageAddressesComponent.ts:316](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L316)
 
 Perform a step-up operation: fetch a challenge bound to the current
 primary, sign it with that wallet, then POST the operation with the proof.

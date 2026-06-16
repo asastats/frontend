@@ -34,6 +34,7 @@ export async function initManageAddresses(
   if (!stepUpSign || !addAddress) {
     const adapters = await import("./manageAdapters");
     const built = adapters.defaultManageDeps({
+      apiBase,
       wcProjectId: container.dataset.wcProjectId || "",
       addUrl: container.dataset.addUrl || "",
     });

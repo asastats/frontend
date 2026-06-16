@@ -79,6 +79,17 @@ body.dark span.bundlename {
   color: #ababab;
 }
 
+body.dark select.browser-default {
+  background-color: #2b2b2b;
+  color: #ababab;
+  border: 1px solid #575757;
+}
+
+body.dark select.browser-default option {
+  background-color: #2b2b2b;
+  color: #ababab;
+}
+
 @font-face {
   font-family: 'Material Icons';
   font-display: fallback;

@@ -16,7 +16,7 @@ class ProfileAuthorizeWalletTest(FunctionalTest):
 
         # The primary option is to connect a wallet
         wallet_connect = self.find_elem_by_id("wallet-connect")
-        self.assertIn("Connect a wallet", wallet_connect.text)
+        self.assertIn("Prove control of the address", wallet_connect.text)
 
         # Each supported wallet is offered as its own card with a Connect button
         pera_card = self.find_elem_by_id("wallet-pera")

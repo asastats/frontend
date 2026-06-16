@@ -3,12 +3,14 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
+from django.urls import NoReverseMatch
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
 from walletauth.link_views import (
     WalletLinkNonceAPIView,
     WalletLinkVerifyAPIView,
+    _link_redirect_url,
 )
 from walletauth.models import LinkedAddress, WalletNonce
 
@@ -356,3 +358,32 @@ class TestWalletLinkVerifyAPIView:
             user,
         )
         assert response.status_code == 409
+
+
+class TestLinkRedirectUrl:
+    """Testing class for :func:`walletauth.link_views._link_redirect_url`."""
+
+    def test_path_setting_used_verbatim(self):
+        with override_settings(WALLET_LINK_REDIRECT_URL="/account/addresses/"):
+            assert _link_redirect_url() == "/account/addresses/"
+
+    def test_name_setting_is_reversed(self):
+        with override_settings(WALLET_LINK_REDIRECT_URL="profile"):
+            assert _link_redirect_url() == "/profile/"
+
+    def test_unresolvable_name_setting_returned_as_is(self):
+        with override_settings(WALLET_LINK_REDIRECT_URL="no_such_url_name"):
+            assert _link_redirect_url() == "no_such_url_name"
+
+    def test_default_prefers_connected_addresses(self, mocker):
+        mocker.patch(
+            "walletauth.link_views.reverse",
+            side_effect=lambda name: (
+                "/account/addresses/" if name == "profile_addresses" else "/profile/"
+            ),
+        )
+        assert _link_redirect_url() == "/account/addresses/"
+
+    def test_default_falls_back_to_root_when_nothing_resolves(self, mocker):
+        mocker.patch("walletauth.link_views.reverse", side_effect=NoReverseMatch)
+        assert _link_redirect_url() == "/"

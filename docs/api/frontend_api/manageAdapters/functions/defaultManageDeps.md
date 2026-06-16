@@ -8,7 +8,7 @@
 
 > **defaultManageDeps**(`options`): [`ManageDeps`](../../manageAddressesComponent/interfaces/ManageDeps.md)
 
-Defined in: [manageAdapters.ts:64](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L64)
+Defined in: [manageAdapters.ts:139](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L139)
 
 Build the [ManageDeps](../../manageAddressesComponent/interfaces/ManageDeps.md) for the connected-addresses page.
 
@@ -18,7 +18,7 @@ Build the [ManageDeps](../../manageAddressesComponent/interfaces/ManageDeps.md) 
 
 [`ManageAdapterOptions`](../interfaces/ManageAdapterOptions.md)
 
-WalletConnect id, link-page URL, and Algorand hook.
+API base, WalletConnect id, link-page URL, optional hook.
 
 ## Returns
 

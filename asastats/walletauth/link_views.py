@@ -14,7 +14,7 @@ import logging
 from secrets import token_hex
 
 from django.conf import settings
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -49,6 +49,34 @@ def _normalized(chain, address):
     :rtype: str
     """
     return address.lower() if chain == "evm" else address
+
+
+def _link_redirect_url():
+    """Resolve where to send the user after a successful link.
+
+    Order of preference: an explicit ``WALLET_LINK_REDIRECT_URL`` (a path if it
+    starts with ``/``, otherwise a URL name to reverse); failing that, the
+    connected-addresses manager so a freshly linked address shows up where it is
+    managed; then the profile page; then ``/`` as a last resort. The fallbacks
+    are graceful so the app works whether or not those URL names are defined.
+
+    :return: an absolute path to redirect to
+    :rtype: str
+    """
+    configured = getattr(settings, "WALLET_LINK_REDIRECT_URL", None)
+    if configured:
+        if configured.startswith("/"):
+            return configured
+        try:
+            return reverse(configured)
+        except NoReverseMatch:
+            return configured
+    for name in ("profile_addresses", "profile"):
+        try:
+            return reverse(name)
+        except NoReverseMatch:
+            continue
+    return "/"
 
 
 class WalletLinkNonceAPIView(APIView):
@@ -204,8 +232,7 @@ class WalletLinkVerifyAPIView(APIView):
             {
                 "success": True,
                 "is_primary": result.is_primary,
-                "redirect_url": getattr(settings, "WALLET_LINK_REDIRECT_URL", None)
-                or reverse("profile"),
+                "redirect_url": _link_redirect_url(),
                 "permission_pending": result.permission_pending,
             }
         )

@@ -6,7 +6,7 @@
 
 # Interface: ManageAdapterOptions
 
-Defined in: [manageAdapters.ts:16](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L16)
+Defined in: [manageAdapters.ts:21](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L21)
 
 Options for [defaultManageDeps](../functions/defaultManageDeps.md).
 
@@ -16,7 +16,7 @@ Options for [defaultManageDeps](../functions/defaultManageDeps.md).
 
 > **addUrl**: `string`
 
-Defined in: [manageAdapters.ts:20](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L20)
+Defined in: [manageAdapters.ts:27](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L27)
 
 URL of the link page to add a new address (any chain).
 
@@ -26,12 +26,11 @@ URL of the link page to add a new address (any chain).
 
 > `optional` **algorandStepUpSign?**: (`address`, `message`) => `Promise`\<`Record`\<`string`, `unknown`\>\>
 
-Defined in: [manageAdapters.ts:27](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L27)
+Defined in: [manageAdapters.ts:33](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L33)
 
-Step-up signing for an Algorand primary: build and sign the self-payment
-challenge transaction (note = ``message``) and return the verify payload
-(e.g. ``{ address, signedTransaction }``). Wire this to the Algorand
-use-wallet stack; without it, an Algorand primary cannot complete step-up.
+Optional override for Algorand step-up signing. When omitted, the built-in
+use-wallet signer is used (resumes the session of the wallet the user signed
+in with and signs with it). Inject this only to customise the flow.
 
 #### Parameters
 
@@ -49,11 +48,21 @@ use-wallet stack; without it, an Algorand primary cannot complete step-up.
 
 ***
 
+### apiBase
+
+> **apiBase**: `string`
+
+Defined in: [manageAdapters.ts:23](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L23)
+
+Walletauth API base, e.g. "/api/v2/wallet" (used for the wallets list).
+
+***
+
 ### navigate?
 
 > `optional` **navigate?**: (`url`) => `void`
 
-Defined in: [manageAdapters.ts:32](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L32)
+Defined in: [manageAdapters.ts:38](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L38)
 
 Navigation side effect (defaults to `window.location`).
 
@@ -73,6 +82,6 @@ Navigation side effect (defaults to `window.location`).
 
 > **wcProjectId**: `string`
 
-Defined in: [manageAdapters.ts:18](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L18)
+Defined in: [manageAdapters.ts:25](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L25)
 
 WalletConnect project id; empty string means injected wallets only.
