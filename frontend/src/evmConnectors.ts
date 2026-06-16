@@ -3,7 +3,7 @@ import type {
   Eip1193Provider,
   EvmConnector,
   EvmSigner,
-} from "./EvmWalletComponent";
+} from "./evmWalletComponent";
 
 /**
  * Browser-only adapters that produce concrete {@link EvmConnector}s and an

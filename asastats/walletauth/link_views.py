@@ -13,6 +13,7 @@ merely names, so a client cannot link an address it does not control.
 import logging
 from secrets import token_hex
 
+from django.conf import settings
 from django.urls import reverse
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -203,7 +204,10 @@ class WalletLinkVerifyAPIView(APIView):
             {
                 "success": True,
                 "is_primary": result.is_primary,
-                "redirect_url": reverse("profile"),
+                "redirect_url": getattr(
+                    settings, "WALLET_LINK_REDIRECT_URL", None
+                )
+                or reverse("profile"),
                 "permission_pending": result.permission_pending,
             }
         )

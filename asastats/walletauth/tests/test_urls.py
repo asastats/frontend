@@ -10,7 +10,9 @@ class TestWalletauthUrls:
 
     # # HELPERS
     def _url_from_pattern(self, pattern):
-        return next(url for url in urls.urlpatterns if str(url.pattern) == pattern)
+        return next(
+            url for url in urls.urlpatterns if str(url.pattern) == pattern
+        )
 
     # # urlpatterns
     def test_walletauth_urls_wallets(self):
@@ -60,6 +62,12 @@ class TestWalletauthUrls:
         assert isinstance(url, URLPattern)
         assert url.lookup_str == "walletauth.link_views.WalletLinkVerifyAPIView"
         assert url.name == "wallet_link_verify"
+
+    def test_walletauth_urls_link_wallets(self):
+        url = self._url_from_pattern("link/wallets/")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "walletauth.views.WalletsAPIView"
+        assert url.name == "wallet_link_wallets"
 
     def test_walletauth_urls_manage_nonce(self):
         url = self._url_from_pattern("manage/nonce/")

@@ -63,6 +63,11 @@ urlpatterns = [
         name="profile_addresses",
     ),
     re_path(
+        r"^profile/addresses/link/$",
+        core_views.ProfileLinkAddressView.as_view(),
+        name="profile_link_address",
+    ),
+    re_path(
         r"^profile/permission/fetch/$",
         core_views.ProfilePermissionFetchView.as_view(),
         name="profile_permission_fetch",

@@ -964,7 +964,7 @@ class ProfileAddressesView(TemplateView):
     def get_context_data(self, **kwargs):
         """Provide the frontend configuration the template needs.
 
-        :return: context with the walletauth API base and WalletConnect id
+        :return: context with the API base, WalletConnect id and link-page URL
         :rtype: dict
         """
         context = super().get_context_data(**kwargs)
@@ -972,6 +972,32 @@ class ProfileAddressesView(TemplateView):
         context["walletconnect_project_id"] = getattr(
             settings, "WALLETCONNECT_PROJECT_ID", ""
         )
+        context["link_address_url"] = reverse_lazy("profile_link_address")
+        return context
+
+
+@method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
+class ProfileLinkAddressView(TemplateView):
+    """Render the link-an-address page (authorize-page wallet UI, link mode).
+
+    Reuses the same frontend that drives the authorize page; the only difference
+    is that the wallet containers point at the link endpoints. Supports every
+    supported wallet -- Algorand (Pera, Defly, ...) and EVM.
+    """
+
+    template_name = "profile_link_address.html"
+
+    def get_context_data(self, **kwargs):
+        """Provide the WalletConnect id for the EVM container.
+
+        :return: context with the WalletConnect project id
+        :rtype: dict
+        """
+        context = super().get_context_data(**kwargs)
+        context["walletconnect_project_id"] = getattr(
+            settings, "WALLETCONNECT_PROJECT_ID", ""
+        )
+        context["wallets"] = ALGORAND_WALLETS
         return context
 
 

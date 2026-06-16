@@ -72,6 +72,7 @@ from core.views import (
     ProfileAuthorizeView,
     ProfileDisplay,
     ProfileEditView,
+    ProfileLinkAddressView,
     ProfilePermissionFetchView,
     ProfileUpdate,
     SubscriptionsView,
@@ -1596,6 +1597,38 @@ class TestDbProfileAddressesView(BaseUserCreatedView):
             view_object.context_data["walletconnect_project_id"]
             == settings.WALLETCONNECT_PROJECT_ID
         )
+        assert view_object.context_data["link_address_url"] == reverse_lazy(
+            "profile_link_address"
+        )
+
+
+class TestProfileLinkAddressView:
+    """Testing class for :class:`core.views.ProfileLinkAddressView`."""
+
+    def test_core_views_profilelinkaddressview_is_subclass_of_templateview(self):
+        assert issubclass(ProfileLinkAddressView, TemplateView)
+
+    def test_core_views_profilelinkaddressview_sets_template_name(self):
+        assert ProfileLinkAddressView.template_name == "profile_link_address.html"
+
+
+@pytest.mark.django_db
+class TestDbProfileLinkAddressView(BaseUserCreatedView):
+
+    def test_core_views_profilelinkaddressview_get_context_data_sets_context_variable(
+        self,
+    ):
+        # Setup view
+        view = ProfileLinkAddressView()
+        view = self.setup_view(view, self.request)
+        # Run.
+        view_object = view.get(self.request)
+        # Check.
+        assert (
+            view_object.context_data["walletconnect_project_id"]
+            == settings.WALLETCONNECT_PROJECT_ID
+        )
+        assert view_object.context_data["wallets"] == ALGORAND_WALLETS
 
 
 class TestProfileApiView:

@@ -14,9 +14,7 @@ def make_user(username="owner"):
     return user_model.objects.create(username=username)
 
 
-def link(
-    profile, canonical, *, address="A", chain="algorand", primary=False, login=False
-):
+def link(profile, canonical, *, address="A", chain="algorand", primary=False, login=False):
     return LinkedAddress.objects.create(
         profile=profile,
         address=address,

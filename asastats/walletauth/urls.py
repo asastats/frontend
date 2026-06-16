@@ -12,14 +12,14 @@ from walletauth.link_views import (
     WalletLinkNonceAPIView,
     WalletLinkVerifyAPIView,
 )
-from walletauth.login_views import (
-    WalletLoginNonceAPIView,
-    WalletLoginVerifyAPIView,
-)
 from walletauth.management_views import (
     ManageAddressAPIView,
     ManageNonceAPIView,
     WalletAddressesAPIView,
+)
+from walletauth.login_views import (
+    WalletLoginNonceAPIView,
+    WalletLoginVerifyAPIView,
 )
 from walletauth.views import (
     WalletNonceAPIView,
@@ -50,7 +50,15 @@ urlpatterns = [
         WalletLoginVerifyAPIView.as_view(),
         name="wallet_login_verify",
     ),
-    # Linking (authenticated, connect-and-store) for EVM/xChain wallets.
+    # Linking (authenticated, connect-and-store). Mounted under .../link/ so the
+    # same frontend works by pointing data-api-base at "/api/v2/wallet/link";
+    # the bundle derives ".../wallets/", ".../nonce/" and ".../verify/" from that
+    # base, so all three are mirrored here (Algorand via use-wallet + EVM).
+    path(
+        "link/wallets/",
+        WalletsAPIView.as_view(),
+        name="wallet_link_wallets",
+    ),
     path(
         "link/nonce/",
         WalletLinkNonceAPIView.as_view(),

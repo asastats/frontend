@@ -6,7 +6,7 @@
 
 # Function: getDefaultConnectors()
 
-> **getDefaultConnectors**(`projectId`): `Promise`\<[`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)[]\>
+> **getDefaultConnectors**(`projectId`): `Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
 Defined in: [evmConnectors.ts:104](https://github.com/asastats/frontend/blob/main/frontend/src/evmConnectors.ts#L104)
 
@@ -23,6 +23,6 @@ WalletConnect project id (empty disables WalletConnect).
 
 ## Returns
 
-`Promise`\<[`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)[]\>
+`Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
 The connectors to offer the user.

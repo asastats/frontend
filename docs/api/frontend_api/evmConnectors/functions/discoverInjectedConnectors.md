@@ -6,7 +6,7 @@
 
 # Function: discoverInjectedConnectors()
 
-> **discoverInjectedConnectors**(`timeoutMs?`): `Promise`\<[`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)[]\>
+> **discoverInjectedConnectors**(`timeoutMs?`): `Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
 Defined in: [evmConnectors.ts:29](https://github.com/asastats/frontend/blob/main/frontend/src/evmConnectors.ts#L29)
 
@@ -23,6 +23,6 @@ Collection window for announcements.
 
 ## Returns
 
-`Promise`\<[`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)[]\>
+`Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
 Connectors for every announced injected wallet.

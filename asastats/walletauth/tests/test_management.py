@@ -33,27 +33,17 @@ def primary(profile, address=ALGO_A, authorized="p"):
     profile.authorized = authorized
     profile.save()
     return LinkedAddress.objects.create(
-        profile=profile,
-        address=address,
-        canonical_address=address,
-        chain="algorand",
-        auth_method="algorand_wallet",
-        authorized=authorized,
-        is_primary=True,
-        login_enabled=True,
+        profile=profile, address=address, canonical_address=address,
+        chain="algorand", auth_method="algorand_wallet",
+        authorized=authorized, is_primary=True, login_enabled=True,
     )
 
 
 def secondary(profile, address=ALGO_B, *, login=False, authorized="s"):
     return LinkedAddress.objects.create(
-        profile=profile,
-        address=address,
-        canonical_address=address,
-        chain="algorand",
-        auth_method="algorand_wallet",
-        authorized=authorized,
-        is_primary=False,
-        login_enabled=login,
+        profile=profile, address=address, canonical_address=address,
+        chain="algorand", auth_method="algorand_wallet",
+        authorized=authorized, is_primary=False, login_enabled=login,
     )
 
 
@@ -71,10 +61,9 @@ class TestSetPrimary:
         assert new.is_primary is True
         assert new.login_enabled is True
         assert old.is_primary is False
-        assert (
-            LinkedAddress.objects.filter(profile=user.profile, is_primary=True).count()
-            == 1
-        )
+        assert LinkedAddress.objects.filter(
+            profile=user.profile, is_primary=True
+        ).count() == 1
 
     @pytest.mark.django_db
     def test_set_primary_mirrors_to_profile_and_reauthorizes(self):
@@ -97,7 +86,9 @@ class TestSetPrimary:
 
     @pytest.mark.django_db
     def test_set_primary_reports_permission_pending(self, mocker):
-        mocker.patch("core.models.Profile.update_authorized", return_value=False)
+        mocker.patch(
+            "core.models.Profile.update_authorized", return_value=False
+        )
         user = make_user()
         primary(user.profile)
         new = secondary(user.profile)

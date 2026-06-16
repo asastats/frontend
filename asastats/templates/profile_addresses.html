@@ -1,8 +1,13 @@
-{% extends "base_home.html" %}
+{% extends 'base_home.html' %}
 {% load static %}
-
-{% block content %}
-<div class="container">
+{% load i18n %}
+{% load core_extras %}
+{% block title %}Manage addresses linked to profile - ASA Stats{% endblock %}
+{% block description %}Manage your public Algorand and EVM addresses linked to your profile.{% endblock %}
+{% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
+{% block page_header %}Manage linked addresses{% endblock %}
+{% block middle_section %}
+<div class="row col s12 m7 midrow">
   <h4>Connected addresses</h4>
   <p class="grey-text text-darken-1">
     Your primary address carries your subscription, governance and permissions.
@@ -17,6 +22,7 @@
     id="connected-addresses"
     data-api-base="{{ wallet_api_base|default:'/api/v2/wallet' }}"
     data-wc-project-id="{{ walletconnect_project_id|default:'' }}"
+    data-add-url="{{ link_address_url }}"
   >
     <div id="connected-addresses-list" class="collection">
       {# Rows are rendered client-side by ManageAddressesComponent. #}
@@ -31,9 +37,7 @@
         Add an address
       </button>
     </div>
-
-    {# Hidden panel the add-address flow mounts its wallet connectors into. #}
-    <div id="connected-addresses-add" class="section" hidden></div>
   </div>
 </div>
 {% endblock %}
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Linked&nbsp;addresses{% endblock %}

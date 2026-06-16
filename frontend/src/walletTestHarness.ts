@@ -19,7 +19,7 @@
  */
 import algosdk from "algosdk";
 
-import { WalletComponent } from "./WalletComponent";
+import { WalletComponent } from "./walletComponent";
 
 /** MainNet genesis id/hash, so the built txn passes the backend network pin. */
 const MAINNET_GENESIS_ID = "mainnet-v1.0";

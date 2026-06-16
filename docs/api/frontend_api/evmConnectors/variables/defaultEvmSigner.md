@@ -6,7 +6,7 @@
 
 # Variable: defaultEvmSigner
 
-> `const` **defaultEvmSigner**: [`EvmSigner`](../../EvmWalletComponent/type-aliases/EvmSigner.md)
+> `const` **defaultEvmSigner**: [`EvmSigner`](../../evmWalletComponent/type-aliases/EvmSigner.md)
 
 Defined in: [evmConnectors.ts:117](https://github.com/asastats/frontend/blob/main/frontend/src/evmConnectors.ts#L117)
 

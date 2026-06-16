@@ -61,18 +61,12 @@ class TestLinkAddress:
     def test_second_address_is_secondary_and_does_not_touch_primary(self):
         user = make_user()
         link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_A,
-            auth_method="algorand_wallet",
-            authorized="tx1",
+            user.profile, chain="algorand", address=ALGO_A,
+            auth_method="algorand_wallet", authorized="tx1",
         )
         result = link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_B,
-            auth_method="algorand_wallet",
-            authorized="tx2",
+            user.profile, chain="algorand", address=ALGO_B,
+            auth_method="algorand_wallet", authorized="tx2",
         )
         assert result.is_primary is False
         assert result.permission_pending is False
@@ -89,20 +83,13 @@ class TestLinkAddress:
         # No Profile.address, but a primary row exists -> next link is secondary.
         user = make_user()
         LinkedAddress.objects.create(
-            profile=user.profile,
-            address=ALGO_A,
-            canonical_address=ALGO_A,
-            chain="algorand",
-            auth_method="algorand_wallet",
-            is_primary=True,
-            login_enabled=True,
+            profile=user.profile, address=ALGO_A, canonical_address=ALGO_A,
+            chain="algorand", auth_method="algorand_wallet",
+            is_primary=True, login_enabled=True,
         )
         result = link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_B,
-            auth_method="algorand_wallet",
-            authorized="tx2",
+            user.profile, chain="algorand", address=ALGO_B,
+            auth_method="algorand_wallet", authorized="tx2",
         )
         assert result.is_primary is False
 
@@ -111,52 +98,34 @@ class TestLinkAddress:
     def test_relinking_own_address_is_idempotent(self):
         user = make_user()
         link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_A,
-            auth_method="algorand_wallet",
-            authorized="tx1",
+            user.profile, chain="algorand", address=ALGO_A,
+            auth_method="algorand_wallet", authorized="tx1",
         )
         result = link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_A,
-            auth_method="algorand_wallet",
-            authorized="tx1-again",
+            user.profile, chain="algorand", address=ALGO_A,
+            auth_method="algorand_wallet", authorized="tx1-again",
         )
         assert result.is_primary is True
         assert LinkedAddress.objects.filter(canonical_address=ALGO_A).count() == 1
-        assert (
-            LinkedAddress.objects.get(canonical_address=ALGO_A).authorized
-            == "tx1-again"
-        )
+        assert LinkedAddress.objects.get(canonical_address=ALGO_A).authorized == "tx1-again"
 
     # # collision
     @pytest.mark.django_db
     def test_address_linked_to_another_account_is_rejected(self):
         other = make_user("other")
         link_address(
-            other.profile,
-            chain="algorand",
-            address=ALGO_A,
-            auth_method="algorand_wallet",
-            authorized="tx1",
+            other.profile, chain="algorand", address=ALGO_A,
+            auth_method="algorand_wallet", authorized="tx1",
         )
         user = make_user("me")
         link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_B,
-            auth_method="algorand_wallet",
-            authorized="txb",
+            user.profile, chain="algorand", address=ALGO_B,
+            auth_method="algorand_wallet", authorized="txb",
         )
         with pytest.raises(AddressAlreadyLinked):
             link_address(
-                user.profile,
-                chain="algorand",
-                address=ALGO_A,
-                auth_method="algorand_wallet",
-                authorized="txx",
+                user.profile, chain="algorand", address=ALGO_A,
+                auth_method="algorand_wallet", authorized="txx",
             )
 
     # # capacity
@@ -164,27 +133,18 @@ class TestLinkAddress:
     def test_secondary_cap_is_enforced(self):
         user = make_user()
         link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_A,
-            auth_method="algorand_wallet",
-            authorized="tx1",
+            user.profile, chain="algorand", address=ALGO_A,
+            auth_method="algorand_wallet", authorized="tx1",
         )
         with override_settings(MAX_SECONDARY_ADDRESSES=1):
             link_address(
-                user.profile,
-                chain="algorand",
-                address=ALGO_B,
-                auth_method="algorand_wallet",
-                authorized="tx2",
+                user.profile, chain="algorand", address=ALGO_B,
+                auth_method="algorand_wallet", authorized="tx2",
             )
             with pytest.raises(SecondaryLimitReached):
                 link_address(
-                    user.profile,
-                    chain="algorand",
-                    address=ALGO_C,
-                    auth_method="algorand_wallet",
-                    authorized="tx3",
+                    user.profile, chain="algorand", address=ALGO_C,
+                    auth_method="algorand_wallet", authorized="tx3",
                 )
 
     # # evm canonicalization
@@ -197,19 +157,13 @@ class TestLinkAddress:
         )
         user = make_user()
         link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_A,
-            auth_method="algorand_wallet",
-            authorized="tx1",
+            user.profile, chain="algorand", address=ALGO_A,
+            auth_method="algorand_wallet", authorized="tx1",
         )
         evm = "0x52908400098527886e0f7030069857d2e4169ee7"
         result = link_address(
-            user.profile,
-            chain="evm",
-            address=evm,
-            auth_method="evm_xchain",
-            authorized="txe",
+            user.profile, chain="evm", address=evm,
+            auth_method="evm_xchain", authorized="txe",
         )
         assert result.is_primary is False
         row = LinkedAddress.objects.get(address=evm)
@@ -266,10 +220,7 @@ class TestSyncPrimaryLinked:
         row = sync_primary_linked(user.profile)
         assert row.canonical_address == ALGO_B
         assert not LinkedAddress.objects.filter(canonical_address=ALGO_A).exists()
-        assert (
-            LinkedAddress.objects.filter(profile=user.profile, is_primary=True).count()
-            == 1
-        )
+        assert LinkedAddress.objects.filter(profile=user.profile, is_primary=True).count() == 1
 
     @pytest.mark.django_db
     def test_promotes_existing_secondary_to_primary(self):
@@ -279,11 +230,8 @@ class TestSyncPrimaryLinked:
         user.profile.save()
         sync_primary_linked(user.profile)
         secondary = link_address(
-            user.profile,
-            chain="algorand",
-            address=ALGO_B,
-            auth_method="algorand_wallet",
-            authorized="tx2",
+            user.profile, chain="algorand", address=ALGO_B,
+            auth_method="algorand_wallet", authorized="tx2",
         ).linked_address
         # Now the user makes ALGO_B their primary.
         user.profile.address = ALGO_B
@@ -292,10 +240,7 @@ class TestSyncPrimaryLinked:
         row = sync_primary_linked(user.profile)
         assert row.pk == secondary.pk
         assert row.is_primary is True
-        assert (
-            LinkedAddress.objects.filter(profile=user.profile, is_primary=True).count()
-            == 1
-        )
+        assert LinkedAddress.objects.filter(profile=user.profile, is_primary=True).count() == 1
 
     @pytest.mark.django_db
     def test_address_held_by_another_account_is_rejected(self):

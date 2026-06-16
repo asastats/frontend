@@ -2,10 +2,7 @@
 
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
-from walletauth.throttling import (
-    WalletAuthRateThrottle,
-    WalletLoginRateThrottle,
-)
+from walletauth.throttling import WalletAuthRateThrottle, WalletLoginRateThrottle
 
 
 class TestWalletAuthRateThrottle:

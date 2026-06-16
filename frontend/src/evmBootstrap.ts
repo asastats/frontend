@@ -3,7 +3,7 @@ import {
   EvmWalletComponent,
   type EvmConnector,
   type EvmSigner,
-} from "./EvmWalletComponent";
+} from "./evmWalletComponent";
 
 /** Injectable factories so the bootstrap can be tested without viem/WalletConnect. */
 export interface EvmBootstrapDeps {

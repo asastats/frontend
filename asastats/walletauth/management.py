@@ -60,7 +60,9 @@ def set_primary(profile, target):
     profile.address = target.address
     profile.save()
     refreshed = profile.update_authorized(target.authorized, method=target.auth_method)
-    logger.info("walletauth: primary changed (permission_pending=%s)", not refreshed)
+    logger.info(
+        "walletauth: primary changed (permission_pending=%s)", not refreshed
+    )
     return refreshed
 
 

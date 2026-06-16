@@ -3,7 +3,7 @@
  */
 
 import { initEvm } from "./evmBootstrap";
-import type { EvmConnector } from "./EvmWalletComponent";
+import type { EvmConnector } from "./evmWalletComponent";
 
 function connector(): EvmConnector {
   return {

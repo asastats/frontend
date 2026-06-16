@@ -14,7 +14,7 @@ Injectable factories so the bootstrap can be tested without viem/WalletConnect.
 
 ### connectorFactory
 
-> **connectorFactory**: (`projectId`) => [`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)[] \| `Promise`\<[`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)[]\>
+> **connectorFactory**: (`projectId`) => [`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[] \| `Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
 Defined in: [evmBootstrap.ts:11](https://github.com/asastats/frontend/blob/main/frontend/src/evmBootstrap.ts#L11)
 
@@ -28,13 +28,13 @@ Builds the connector list for a given WalletConnect project id.
 
 #### Returns
 
-[`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)[] \| `Promise`\<[`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)[]\>
+[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[] \| `Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
 ***
 
 ### signer
 
-> **signer**: [`EvmSigner`](../../EvmWalletComponent/type-aliases/EvmSigner.md)
+> **signer**: [`EvmSigner`](../../evmWalletComponent/type-aliases/EvmSigner.md)
 
 Defined in: [evmBootstrap.ts:13](https://github.com/asastats/frontend/blob/main/frontend/src/evmBootstrap.ts#L13)
 

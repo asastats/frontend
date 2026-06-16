@@ -12,13 +12,13 @@ Options for [defaultManageDeps](../functions/defaultManageDeps.md).
 
 ## Properties
 
-### addPanel
+### addUrl
 
-> **addPanel**: `HTMLElement`
+> **addUrl**: `string`
 
-Defined in: [manageAdapters.ts:22](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L22)
+Defined in: [manageAdapters.ts:20](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L20)
 
-Panel revealed to host the add-address connector buttons.
+URL of the link page to add a new address (any chain).
 
 ***
 
@@ -26,12 +26,12 @@ Panel revealed to host the add-address connector buttons.
 
 > `optional` **algorandStepUpSign?**: (`address`, `message`) => `Promise`\<`Record`\<`string`, `unknown`\>\>
 
-Defined in: [manageAdapters.ts:29](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L29)
+Defined in: [manageAdapters.ts:27](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L27)
 
 Step-up signing for an Algorand primary: build and sign the self-payment
-challenge transaction (note = ``message``) and return the verify payload.
-Wire this to the existing Algorand `WalletComponent`; without it, an
-Algorand primary cannot complete step-up.
+challenge transaction (note = ``message``) and return the verify payload
+(e.g. ``{ address, signedTransaction }``). Wire this to the Algorand
+use-wallet stack; without it, an Algorand primary cannot complete step-up.
 
 #### Parameters
 
@@ -49,21 +49,11 @@ Algorand primary cannot complete step-up.
 
 ***
 
-### apiBase
-
-> **apiBase**: `string`
-
-Defined in: [manageAdapters.ts:18](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L18)
-
-walletauth API base (e.g. `/api/v2/wallet`).
-
-***
-
 ### navigate?
 
 > `optional` **navigate?**: (`url`) => `void`
 
-Defined in: [manageAdapters.ts:34](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L34)
+Defined in: [manageAdapters.ts:32](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L32)
 
 Navigation side effect (defaults to `window.location`).
 
@@ -83,6 +73,6 @@ Navigation side effect (defaults to `window.location`).
 
 > **wcProjectId**: `string`
 
-Defined in: [manageAdapters.ts:20](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L20)
+Defined in: [manageAdapters.ts:18](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L18)
 
 WalletConnect project id; empty string means injected wallets only.

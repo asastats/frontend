@@ -1,10 +1,8 @@
 """Testing module for :py:mod:`asastats.core.views` module."""
 
 import re
-import time
 from unittest import mock
 
-import pytest
 from allauth.account.forms import LoginForm
 from captcha.models import CaptchaStore
 from django.conf import settings

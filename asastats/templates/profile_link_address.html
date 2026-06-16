@@ -1,0 +1,38 @@
+{% extends 'base_home.html' %}
+{% load static %}
+{% load core_extras %}
+{% block title %}Link address to profile - ASA Stats{% endblock %}
+{% block description %}Link an Algorand or EVM address to the user's profile.{% endblock %}
+{% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
+{% block page_header %}Link address to profile{% endblock %}
+{% block middle_section %}
+<div class="row col s12 m7 midrow">
+  <h4>Link an address</h4>
+  <p class="grey-text text-darken-1">
+    Connect another wallet to add it to your account. Linked addresses can sign
+    in and reveal the Swap button; they do not change your primary address or its
+    permissions.
+  </p>
+
+  {% csrf_token %}
+
+  {# Algorand wallets: same markup as the authorize page, link endpoint. #}
+  <div id="wallet-connect" data-api-base="/api/v2/wallet/link">
+    {% include "snippets/wallet_cards.html" %}
+  </div>
+
+  {# EVM / xChain wallets: same container as the authorize page, link endpoint. #}
+  <div
+    id="evm-wallet-connect"
+    data-api-base="/api/v2/wallet/link"
+    data-wc-project-id="{{ walletconnect_project_id|default:'' }}"
+  >
+    <div id="evm-wallet-list"></div>
+  </div>
+
+  <div id="app-error" class="card-panel red lighten-2 white-text" style="display:none">
+    Something went wrong initializing wallets.
+  </div>
+</div>
+{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; <a href="{% url 'profile_addresses' %}">Addresses</a> &raquo; Link&nbsp;address{% endblock %}

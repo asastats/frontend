@@ -6,7 +6,7 @@
 
 # Function: walletConnectConnector()
 
-> **walletConnectConnector**(`projectId`): [`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)
+> **walletConnectConnector**(`projectId`): [`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)
 
 Defined in: [evmConnectors.ts:72](https://github.com/asastats/frontend/blob/main/frontend/src/evmConnectors.ts#L72)
 
@@ -24,6 +24,6 @@ Reown/WalletConnect Cloud project id.
 
 ## Returns
 
-[`EvmConnector`](../../EvmWalletComponent/interfaces/EvmConnector.md)
+[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)
 
 A connector that opens the WalletConnect modal.

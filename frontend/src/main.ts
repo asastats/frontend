@@ -1,5 +1,5 @@
 import { WalletManager, WalletId } from "@txnlab/use-wallet";
-import { WalletComponent } from "./WalletComponent";
+import { WalletComponent } from "./walletComponent";
 import { install as installTestHarness } from "./walletTestHarness";
 import { initEvm } from "./evmBootstrap";
 import { initManageAddresses } from "./manageBootstrap";

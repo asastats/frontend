@@ -1,1 +1,0 @@
-import{l as r}from"./dist-C9thfrVX.js";import{s as o}from"../js/bundle.js";import{t}from"./es5-BC5-ODDv.js";import{a as e}from"./index-cd5905ac-ChhVH7u_.js";o();var p=r(t(),1);export{e as DeflyWalletConnect};

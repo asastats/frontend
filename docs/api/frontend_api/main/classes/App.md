@@ -43,7 +43,7 @@ Resolved walletauth API base path.
 
 ### walletComponents
 
-> `private` **walletComponents**: [`WalletComponent`](../../WalletComponent/classes/WalletComponent.md)[] = `[]`
+> `private` **walletComponents**: [`WalletComponent`](../../walletComponent/classes/WalletComponent.md)[] = `[]`
 
 Defined in: [main.ts:22](https://github.com/asastats/frontend/blob/main/frontend/src/main.ts#L22)
 

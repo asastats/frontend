@@ -25,13 +25,17 @@ class TestCanonicalFor:
     # # evm
     def test_canonical_for_evm_returns_lsig_counterpart(self, mocker):
         mocker.patch("walletauth.addresses.algod_instance", return_value=object())
-        mocker.patch("walletauth.addresses.check_evm_address", return_value=LSIG)
+        mocker.patch(
+            "walletauth.addresses.check_evm_address", return_value=LSIG
+        )
         assert canonical_for("evm", EVM) == LSIG
 
     def test_canonical_for_evm_raises_when_unresolvable(self, mocker):
         mocker.patch("walletauth.addresses.algod_instance", return_value=object())
         # Failure path: check_evm_address returns its input unchanged.
-        mocker.patch("walletauth.addresses.check_evm_address", return_value=EVM)
+        mocker.patch(
+            "walletauth.addresses.check_evm_address", return_value=EVM
+        )
         with pytest.raises(CanonicalizationError):
             canonical_for("evm", EVM)
 

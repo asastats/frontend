@@ -20,7 +20,7 @@ jest.mock("@txnlab/use-wallet", () => ({
 
 const bindMock = jest.fn();
 const destroyMock = jest.fn();
-jest.mock("./WalletComponent", () => ({
+jest.mock("./walletComponent", () => ({
   WalletComponent: jest.fn().mockImplementation(() => ({
     bind: bindMock,
     destroy: destroyMock,
@@ -28,7 +28,7 @@ jest.mock("./WalletComponent", () => ({
 }));
 
 import { WalletManager } from "@txnlab/use-wallet";
-import { WalletComponent } from "./WalletComponent";
+import { WalletComponent } from "./walletComponent";
 
 function walletsResponse(data: any) {
   return { ok: true, json: async () => data };

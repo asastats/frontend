@@ -12,10 +12,10 @@ from utils.constants.core import (
     WALLET_CONNECT_NONCE_PREFIX,
 )
 from walletauth.verifiers import (
-    MAX_SIGNED_TXN_B64_LENGTH,
-    VERIFIERS,
     AlgorandSignedTxnVerifier,
     EvmXChainVerifier,
+    MAX_SIGNED_TXN_B64_LENGTH,
+    VERIFIERS,
     WalletProofVerifier,
 )
 
@@ -57,7 +57,9 @@ def fake_algod(auth_addr=None):
 
 
 def verify(stxn, address, nonce=NONCE, algod_factory=None):
-    verifier = AlgorandSignedTxnVerifier(algod_factory=algod_factory or fake_algod())
+    verifier = AlgorandSignedTxnVerifier(
+        algod_factory=algod_factory or fake_algod()
+    )
     return verifier.verify(
         address=address,
         nonce=nonce,
@@ -163,7 +165,8 @@ class TestAlgorandSignedTxnVerifier:
         signature = base64.b64encode(txn.raw_sign(signer_secret)).decode()
         stxn = SignedTransaction(txn, signature, authorizing_address=signer)
         assert (
-            verify(stxn, rekeyed, algod_factory=fake_algod(auth_addr=signer)) == rekeyed
+            verify(stxn, rekeyed, algod_factory=fake_algod(auth_addr=signer))
+            == rekeyed
         )
 
     def test_algorand_verifier_rekey_lookup_failure_returns_none(self):
@@ -263,9 +266,7 @@ class TestWalletProofVerifier:
     def test_walletauth_walletproofverifier_verify_raises_not_implemented(self):
         with pytest.raises(NotImplementedError):
             WalletProofVerifier().verify(
-                address="A" * 58,
-                nonce=NONCE,
-                prefix=WALLET_CONNECT_NONCE_PREFIX,
+                address="A" * 58, nonce=NONCE, prefix=WALLET_CONNECT_NONCE_PREFIX,
                 payload={},
             )
 
@@ -344,3 +345,4 @@ class TestEvmXChainVerifier:
             payload={"signature": signature},
         )
         assert result == address.lower()
+

@@ -8,10 +8,10 @@
 
 - [evmBootstrap](evmBootstrap/README.md)
 - [evmConnectors](evmConnectors/README.md)
-- [EvmWalletComponent](EvmWalletComponent/README.md)
+- [evmWalletComponent](evmWalletComponent/README.md)
 - [main](main/README.md)
 - [manageAdapters](manageAdapters/README.md)
-- [ManageAddressesComponent](ManageAddressesComponent/README.md)
+- [manageAddressesComponent](manageAddressesComponent/README.md)
 - [manageBootstrap](manageBootstrap/README.md)
-- [WalletComponent](WalletComponent/README.md)
+- [walletComponent](walletComponent/README.md)
 - [walletTestHarness](walletTestHarness/README.md)

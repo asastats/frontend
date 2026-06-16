@@ -207,8 +207,7 @@ class TestWalletVerifyAPIView:
         user = make_authorized_user()
         WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="good")
         mocker.patch.dict(
-            "walletauth.views.VERIFIERS",
-            {"algorand": _FakeVerifier(result=TEST_ADDRESS)},
+            "walletauth.views.VERIFIERS", {"algorand": _FakeVerifier(result=TEST_ADDRESS)}
         )
         mocker.patch(
             "core.models.Profile.check_votes_and_permission",
@@ -245,8 +244,7 @@ class TestWalletVerifyAPIView:
         user = make_authorized_user()
         WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="good")
         mocker.patch.dict(
-            "walletauth.views.VERIFIERS",
-            {"algorand": _FakeVerifier(result=TEST_ADDRESS)},
+            "walletauth.views.VERIFIERS", {"algorand": _FakeVerifier(result=TEST_ADDRESS)}
         )
         mocker.patch("core.models.Profile.check_votes_and_permission")
         # Simulate a concurrent request having already consumed the nonce: the
@@ -282,7 +280,9 @@ class TestWalletVerifyAPIView:
         from django.utils import timezone
 
         user = make_authorized_user()
-        nonce = WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="old")
+        nonce = WalletNonce.objects.create(
+            user=user, address=TEST_ADDRESS, nonce="old"
+        )
         WalletNonce.objects.filter(pk=nonce.pk).update(
             created_at=timezone.now() - timedelta(minutes=10)
         )

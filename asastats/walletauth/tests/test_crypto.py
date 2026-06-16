@@ -11,12 +11,8 @@ from walletauth.crypto import verify_signed_transaction
 # # HELPERS
 def make_signed(secret, address, authorizing_address=None, signer_secret=None):
     params = SuggestedParams(
-        fee=0,
-        first=1,
-        last=1000,
-        gh=base64.b64encode(b"x" * 32).decode(),
-        gen="mainnet-v1.0",
-        flat_fee=True,
+        fee=0, first=1, last=1000, gh=base64.b64encode(b"x" * 32).decode(),
+        gen="mainnet-v1.0", flat_fee=True,
     )
     txn = PaymentTxn(sender=address, sp=params, receiver=address, amt=0, note=b"n")
     if authorizing_address is None:

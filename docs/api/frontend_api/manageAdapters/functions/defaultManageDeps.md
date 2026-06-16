@@ -6,11 +6,11 @@
 
 # Function: defaultManageDeps()
 
-> **defaultManageDeps**(`options`): [`ManageDeps`](../../ManageAddressesComponent/interfaces/ManageDeps.md)
+> **defaultManageDeps**(`options`): [`ManageDeps`](../../manageAddressesComponent/interfaces/ManageDeps.md)
 
-Defined in: [manageAdapters.ts:71](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L71)
+Defined in: [manageAdapters.ts:64](https://github.com/asastats/frontend/blob/main/frontend/src/manageAdapters.ts#L64)
 
-Build the [ManageDeps](../../ManageAddressesComponent/interfaces/ManageDeps.md) for the connected-addresses page.
+Build the [ManageDeps](../../manageAddressesComponent/interfaces/ManageDeps.md) for the connected-addresses page.
 
 ## Parameters
 
@@ -18,10 +18,10 @@ Build the [ManageDeps](../../ManageAddressesComponent/interfaces/ManageDeps.md) 
 
 [`ManageAdapterOptions`](../interfaces/ManageAdapterOptions.md)
 
-API base, WalletConnect id, add panel, and Algorand hooks.
+WalletConnect id, link-page URL, and Algorand hook.
 
 ## Returns
 
-[`ManageDeps`](../../ManageAddressesComponent/interfaces/ManageDeps.md)
+[`ManageDeps`](../../manageAddressesComponent/interfaces/ManageDeps.md)
 
-Dependencies for [ManageAddressesComponent](../../ManageAddressesComponent/README.md).
+Dependencies for the manage component.

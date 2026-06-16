@@ -6,10 +6,7 @@ from django.test import override_settings
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
-from walletauth.link_views import (
-    WalletLinkNonceAPIView,
-    WalletLinkVerifyAPIView,
-)
+from walletauth.link_views import WalletLinkNonceAPIView, WalletLinkVerifyAPIView
 from walletauth.models import LinkedAddress, WalletNonce
 
 user_model = get_user_model()
@@ -205,7 +202,9 @@ class TestWalletLinkVerifyAPIView:
         )
         user = make_user("newlink")
         evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "ok")
-        WalletNonce.objects.create(user=user, address=evm_addr, nonce="ok", chain="evm")
+        WalletNonce.objects.create(
+            user=user, address=evm_addr, nonce="ok", chain="evm"
+        )
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 0)
         response = post(
@@ -222,6 +221,28 @@ class TestWalletLinkVerifyAPIView:
         assert user.profile.authorized == "ok"
         assert user.profile.auth_method == "evm_xchain"
         assert WalletNonce.objects.get(nonce="ok").used is True
+
+    @pytest.mark.django_db
+    def test_link_verify_redirect_url_honours_setting(self, mocker):
+        mocker.patch("walletauth.addresses.algod_instance", return_value=object())
+        mocker.patch(
+            "walletauth.addresses.check_evm_address",
+            side_effect=lambda a, c: "LSIG" + a[2:].upper(),
+        )
+        user = make_user("redir")
+        evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "rd")
+        WalletNonce.objects.create(
+            user=user, address=evm_addr, nonce="rd", chain="evm"
+        )
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (0, 0)
+        with override_settings(WALLET_LINK_REDIRECT_URL="/account/addresses/"):
+            response = post(
+                WalletLinkVerifyAPIView,
+                {"nonce": "rd", "chain": "evm", "signature": sig},
+                user,
+            )
+        assert response.data["redirect_url"] == "/account/addresses/"
 
     @pytest.mark.django_db
     def test_link_verify_adds_secondary_when_primary_exists(self, mocker):

@@ -2,7 +2,7 @@ import {
   DEFAULT_MANAGE_API_BASE,
   ManageAddressesComponent,
   type ManageDeps,
-} from "./ManageAddressesComponent";
+} from "./manageAddressesComponent";
 
 /**
  * Mount the connected-addresses manager when its container is present.
@@ -34,11 +34,8 @@ export async function initManageAddresses(
   if (!stepUpSign || !addAddress) {
     const adapters = await import("./manageAdapters");
     const built = adapters.defaultManageDeps({
-      apiBase,
       wcProjectId: container.dataset.wcProjectId || "",
-      addPanel:
-        container.querySelector<HTMLElement>("#connected-addresses-add") ||
-        container,
+      addUrl: container.dataset.addUrl || "",
     });
     stepUpSign = stepUpSign || built.stepUpSign;
     addAddress = addAddress || built.addAddress;
