@@ -372,10 +372,11 @@ span.sort {
   display: none;
 }
 
-#evm-wallet-list, .connected-address-row {
+#evm-wallet-list, .connected-address-row .address-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  justify-content: center;
 }
 
 div.socfooter {

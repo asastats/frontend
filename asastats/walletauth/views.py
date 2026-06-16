@@ -18,10 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from utils.constants.core import (
-    ALGORAND_WALLETS,
-    WALLET_CONNECT_NONCE_PREFIX,
-)
+from utils.constants.core import ALGORAND_WALLETS, WALLET_CONNECT_NONCE_PREFIX
 from walletauth.linking import AddressAlreadyLinked, sync_primary_linked
 from walletauth.models import WalletNonce
 from walletauth.throttling import WalletAuthRateThrottle
@@ -151,7 +148,9 @@ class WalletVerifyAPIView(APIView):
                 nonce=nonce_str, address=address, user=request.user, used=False
             )
         except WalletNonce.DoesNotExist:
-            logger.warning("walletauth: nonce not found or used for an authenticated user")
+            logger.warning(
+                "walletauth: nonce not found or used for an authenticated user"
+            )
             return Response(
                 {"success": False, "error": "Nonce not found or already used"},
                 status=400,

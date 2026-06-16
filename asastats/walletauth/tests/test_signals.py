@@ -22,9 +22,13 @@ def make_user(name="owner"):
 
 def primary_row(profile, address):
     return LinkedAddress.objects.create(
-        profile=profile, address=address, canonical_address=address,
-        chain="algorand", auth_method="algorand_wallet",
-        is_primary=True, login_enabled=True,
+        profile=profile,
+        address=address,
+        canonical_address=address,
+        chain="algorand",
+        auth_method="algorand_wallet",
+        is_primary=True,
+        login_enabled=True,
     )
 
 

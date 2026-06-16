@@ -75,6 +75,22 @@ describe("ManageAddressesComponent.load/render", () => {
     expect(rows[1].querySelector(".manage-remove")).not.toBeNull();
   });
 
+  it("groups each address in a Materialize collapsible item", async () => {
+    const root = setupDOM();
+    const c = new ManageAddressesComponent(root, "/api/v2/wallet", deps());
+    await c.bind();
+    const ul = root.querySelector("ul.collapsible");
+    expect(ul).not.toBeNull();
+    const items = ul!.querySelectorAll("li.connected-address-row");
+    expect(items).toHaveLength(2);
+    // header carries the address; body carries that address's actions
+    expect(items[1].querySelector(".collapsible-header .address-text")).not.toBeNull();
+    const body = items[1].querySelector(".collapsible-body");
+    expect(body!.querySelector(".manage-set_primary")).not.toBeNull();
+    // primary's body shows a note, not actions
+    expect(items[0].querySelector(".collapsible-body .address-note")).not.toBeNull();
+  });
+
   it("shows Disable for an already login-enabled secondary", async () => {
     const root = setupDOM();
     const rows = [

@@ -25,7 +25,7 @@ from walletauth.management import (
 )
 from walletauth.models import LinkedAddress, WalletNonce
 from walletauth.throttling import WalletAuthRateThrottle
-from walletauth.verifiers import NotSupported, VERIFIERS
+from walletauth.verifiers import VERIFIERS, NotSupported
 
 logger = logging.getLogger(__name__)
 
@@ -227,12 +227,18 @@ class ManageAddressAPIView(APIView):
             )
         except WalletNonce.DoesNotExist:
             return Response(
-                {"success": False, "error": "Step-up challenge not found or already used"},
+                {
+                    "success": False,
+                    "error": "Step-up challenge not found or already used",
+                },
                 status=400,
             )
         if nonce_obj.is_expired() or not nonce_obj.claim():
             return Response(
-                {"success": False, "error": "Step-up challenge expired or already used"},
+                {
+                    "success": False,
+                    "error": "Step-up challenge expired or already used",
+                },
                 status=400,
             )
         return None

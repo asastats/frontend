@@ -15,10 +15,7 @@ import msgpack
 from algosdk.transaction import SignedTransaction
 
 from utils.clients import algod_instance
-from utils.constants.core import (
-    MAINNET_GENESIS_HASH,
-    MAINNET_GENESIS_ID,
-)
+from utils.constants.core import MAINNET_GENESIS_HASH, MAINNET_GENESIS_ID
 from walletauth.crypto import verify_signed_transaction
 
 logger = logging.getLogger(__name__)
@@ -343,4 +340,6 @@ def _short(address):
     :return: truncated ``AAAAA..ZZZZZ`` form, or the input unchanged when short
     :rtype: str
     """
-    return f"{address[:5]}..{address[-5:]}" if address and len(address) > 10 else address
+    return (
+        f"{address[:5]}..{address[-5:]}" if address and len(address) > 10 else address
+    )

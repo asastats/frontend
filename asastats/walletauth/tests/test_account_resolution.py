@@ -3,7 +3,10 @@
 import pytest
 from django.contrib.auth import get_user_model
 
-from walletauth.account_resolution import AmbiguousWalletAddress, resolve_account
+from walletauth.account_resolution import (
+    AmbiguousWalletAddress,
+    resolve_account,
+)
 from walletauth.models import LinkedAddress
 
 user_model = get_user_model()

@@ -140,34 +140,108 @@ export class ManageAddressesComponent {
     }
   }
 
-  /** Render one row per address with the actions allowed for it. */
+  /**
+   * Render the addresses as a Materialize collapsible: one `<li>` per address,
+   * the address in its `collapsible-header` and that address's actions tucked
+   * into the `collapsible-body`. The primary row's body shows a note instead of
+   * actions (it has none).
+   */
   private render() {
     const list =
       this.element.querySelector<HTMLElement>("#connected-addresses-list") ||
       this.element;
     list.innerHTML = "";
+
+    const ul = document.createElement("ul");
+    ul.className = "collapsible expandable center-align";
+
     this.rows.forEach((row) => {
-      const item = document.createElement("div");
+      const item = document.createElement("li");
       item.className = "connected-address-row";
+      item.id = `address-${row.id}`;
       item.dataset.id = String(row.id);
 
+      // --- HEADER ---
+      const header = document.createElement("div");
+      header.className = "collapsible-header";
+      
       const text = document.createElement("span");
       text.className = "address-text";
-      text.textContent =
-        `${row.address} (${row.chain})` + (row.is_primary ? " — primary" : "");
-      item.appendChild(text);
+      // Apply the special class if this is the primary address
+      if (row.is_primary) {
+        text.classList.add("mylight-text");
+      }
+      
+      const truncatedAddress = `${row.address.slice(0, 5)}...${row.address.slice(-5)}`;
+      text.textContent = truncatedAddress;
+      
+      header.appendChild(text);
+      item.appendChild(header);
 
-      if (!row.is_primary) {
-        item.appendChild(this.actionButton("Make primary", "set_primary", row.id));
-        item.appendChild(
+      // --- BODY ---
+      const body = document.createElement("div");
+      body.className = "collapsible-body";
+
+      // 1. Full Address (Responsive/Wrapping)
+      const fullAddressContainer = document.createElement("div");
+      fullAddressContainer.className = "full-address-text";
+      // CSS word-break ensures long hex strings wrap across lines on narrow mobile screens
+      fullAddressContainer.style.wordBreak = "break-all"; 
+      fullAddressContainer.style.marginBottom = "4px";
+      fullAddressContainer.textContent = row.address;
+      body.appendChild(fullAddressContainer);
+
+      // 2. Chain Information
+      const chainContainer = document.createElement("div");
+      chainContainer.className = "chain-text text-muted";
+      chainContainer.style.marginBottom = "16px"; // Add space before buttons
+      chainContainer.textContent = `(${row.chain})`;
+      body.appendChild(chainContainer);
+
+      // 3. Actions or Note
+      const actionsContainer = document.createElement("div");
+      actionsContainer.className = "address-actions";
+
+      if (row.is_primary) {
+        const note = document.createElement("span");
+        note.className = "address-note";
+        note.textContent = "This is your primary address.";
+        actionsContainer.appendChild(note);
+      } else {
+        actionsContainer.appendChild(this.actionButton("Make primary", "set_primary", row.id));
+        actionsContainer.appendChild(
           row.login_enabled
             ? this.actionButton("Disable login", "disable_login", row.id)
             : this.actionButton("Enable login", "enable_login", row.id)
         );
-        item.appendChild(this.actionButton("Remove", "remove", row.id));
+        actionsContainer.appendChild(this.actionButton("Remove", "remove", row.id));
       }
-      list.appendChild(item);
+      
+      body.appendChild(actionsContainer);
+      item.appendChild(body);
+      
+      ul.appendChild(item);
     });
+
+    list.appendChild(ul);
+    this.initCollapsible(ul);
+  }
+
+  /* istanbul ignore next -- MaterializeCSS runtime init; browser only */
+  private initCollapsible(ul: HTMLElement) {
+    // 1. Update the type definition to accept the options object
+    const M = (window as unknown as { 
+      M?: { 
+        Collapsible?: { 
+          init(el: Element, options?: { accordion: boolean }): unknown 
+        } 
+      } 
+    }).M;
+
+    if (M?.Collapsible?.init) {
+      // 2. Pass the { accordion: false } config exactly as the docs specify
+      M.Collapsible.init(ul, { accordion: false });
+    }
   }
 
   private actionButton(label: string, action: string, id: number): HTMLButtonElement {

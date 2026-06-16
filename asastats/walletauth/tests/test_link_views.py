@@ -6,7 +6,10 @@ from django.test import override_settings
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
-from walletauth.link_views import WalletLinkNonceAPIView, WalletLinkVerifyAPIView
+from walletauth.link_views import (
+    WalletLinkNonceAPIView,
+    WalletLinkVerifyAPIView,
+)
 from walletauth.models import LinkedAddress, WalletNonce
 
 user_model = get_user_model()
@@ -202,9 +205,7 @@ class TestWalletLinkVerifyAPIView:
         )
         user = make_user("newlink")
         evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "ok")
-        WalletNonce.objects.create(
-            user=user, address=evm_addr, nonce="ok", chain="evm"
-        )
+        WalletNonce.objects.create(user=user, address=evm_addr, nonce="ok", chain="evm")
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 0)
         response = post(
@@ -231,9 +232,7 @@ class TestWalletLinkVerifyAPIView:
         )
         user = make_user("redir")
         evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "rd")
-        WalletNonce.objects.create(
-            user=user, address=evm_addr, nonce="rd", chain="evm"
-        )
+        WalletNonce.objects.create(user=user, address=evm_addr, nonce="rd", chain="evm")
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 0)
         with override_settings(WALLET_LINK_REDIRECT_URL="/account/addresses/"):

@@ -239,14 +239,22 @@ class TestWalletLoginVerifyAPIView:
         # Account's primary is OTHER; PROVEN is a login-enabled secondary.
         user = user_model.objects.create(username="multi")
         LinkedAddress.objects.create(
-            profile=user.profile, address=OTHER, canonical_address=OTHER,
-            chain="algorand", auth_method="algorand_wallet",
-            is_primary=True, login_enabled=True,
+            profile=user.profile,
+            address=OTHER,
+            canonical_address=OTHER,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=True,
+            login_enabled=True,
         )
         LinkedAddress.objects.create(
-            profile=user.profile, address=PROVEN, canonical_address=PROVEN,
-            chain="algorand", auth_method="algorand_wallet",
-            is_primary=False, login_enabled=True,
+            profile=user.profile,
+            address=PROVEN,
+            canonical_address=PROVEN,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=False,
+            login_enabled=True,
         )
         WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="sec1")
         _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
@@ -265,14 +273,22 @@ class TestWalletLoginVerifyAPIView:
         # A linked-but-not-login-enabled secondary cannot sign in.
         user = user_model.objects.create(username="optout")
         LinkedAddress.objects.create(
-            profile=user.profile, address=OTHER, canonical_address=OTHER,
-            chain="algorand", auth_method="algorand_wallet",
-            is_primary=True, login_enabled=True,
+            profile=user.profile,
+            address=OTHER,
+            canonical_address=OTHER,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=True,
+            login_enabled=True,
         )
         LinkedAddress.objects.create(
-            profile=user.profile, address=PROVEN, canonical_address=PROVEN,
-            chain="algorand", auth_method="algorand_wallet",
-            is_primary=False, login_enabled=False,
+            profile=user.profile,
+            address=PROVEN,
+            canonical_address=PROVEN,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=False,
+            login_enabled=False,
         )
         WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="sec2")
         _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))

@@ -10,9 +10,8 @@
 <div class="row col s12">
   <p class="grey-text text-darken-1">
     Your primary address carries your subscription, governance and permissions.
-    Additional addresses can sign in and reveal the Swap button, without granting
-    any of those privileges. Making an address primary, or enabling sign-in for
-    one, asks you to sign with your current primary wallet.
+    Making an address primary, or enabling sign-in for one, asks you to sign
+    with your current primary wallet.
   </p>
 
   {% csrf_token %}
@@ -23,7 +22,7 @@
     data-wc-project-id="{{ wallet_connect_project_id|default:'' }}"
     data-add-url="{{ link_address_url }}"
   >
-    <div id="connected-addresses-list" class="collection">
+    <div id="connected-addresses-list">
       {# Rows are rendered client-side by ManageAddressesComponent. #}
     </div>
 
@@ -43,13 +42,3 @@
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Linked&nbsp;addresses{% endblock %}
-{% block otherfooter %}
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      var collapsibles = document.querySelectorAll('.collapsible');
-      if (window.M && window.M.Collapsible) {
-        window.M.Collapsible.init(collapsibles);
-      }
-    });
-  </script>
-{% endblock %}

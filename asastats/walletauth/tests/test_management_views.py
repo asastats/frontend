@@ -32,17 +32,27 @@ def evm_primary(profile, address=EVM_PRIMARY):
     profile.authorized = "p"
     profile.save()
     return LinkedAddress.objects.create(
-        profile=profile, address=address, canonical_address="LSIG" + address[2:],
-        chain="evm", auth_method="evm_xchain",
-        authorized="p", is_primary=True, login_enabled=True,
+        profile=profile,
+        address=address,
+        canonical_address="LSIG" + address[2:],
+        chain="evm",
+        auth_method="evm_xchain",
+        authorized="p",
+        is_primary=True,
+        login_enabled=True,
     )
 
 
 def secondary(profile, address=ALGO_SECOND, *, login=False):
     return LinkedAddress.objects.create(
-        profile=profile, address=address, canonical_address=address,
-        chain="algorand", auth_method="algorand_wallet",
-        authorized="s", is_primary=False, login_enabled=login,
+        profile=profile,
+        address=address,
+        canonical_address=address,
+        chain="algorand",
+        auth_method="algorand_wallet",
+        authorized="s",
+        is_primary=False,
+        login_enabled=login,
     )
 
 
@@ -97,9 +107,7 @@ def evm_step_up(user, nonce):
     from eth_account.messages import encode_defunct
 
     acct = Account.create()
-    signed = acct.sign_message(
-        encode_defunct(text=WALLET_CONNECT_NONCE_PREFIX + nonce)
-    )
+    signed = acct.sign_message(encode_defunct(text=WALLET_CONNECT_NONCE_PREFIX + nonce))
     raw = signed.signature.hex()
     return (raw if raw.startswith("0x") else "0x" + raw), acct.address.lower()
 
@@ -325,8 +333,12 @@ class TestManageAddressAPIView:
         response = post(
             ManageAddressAPIView,
             {
-                "operation": "set_login", "target_id": sec.id, "enabled": True,
-                "nonce": "n1", "chain": "evm", "signature": signature,
+                "operation": "set_login",
+                "target_id": sec.id,
+                "enabled": True,
+                "nonce": "n1",
+                "chain": "evm",
+                "signature": signature,
             },
             user,
         )
@@ -343,8 +355,12 @@ class TestManageAddressAPIView:
         response = post(
             ManageAddressAPIView,
             {
-                "operation": "set_login", "target_id": sec.id, "enabled": True,
-                "nonce": "n2", "chain": "evm", "signature": signature,
+                "operation": "set_login",
+                "target_id": sec.id,
+                "enabled": True,
+                "nonce": "n2",
+                "chain": "evm",
+                "signature": signature,
             },
             user,
         )
@@ -355,15 +371,24 @@ class TestManageAddressAPIView:
         user = make_user()
         # A primary on a chain with no registered verifier.
         LinkedAddress.objects.create(
-            profile=user.profile, address="solana-addr", canonical_address="solana-addr",
-            chain="solana", auth_method="x", is_primary=True, login_enabled=True,
+            profile=user.profile,
+            address="solana-addr",
+            canonical_address="solana-addr",
+            chain="solana",
+            auth_method="x",
+            is_primary=True,
+            login_enabled=True,
         )
         sec = secondary(user.profile)
         response = post(
             ManageAddressAPIView,
             {
-                "operation": "set_login", "target_id": sec.id, "enabled": True,
-                "nonce": "n", "chain": "solana", "signature": "x",
+                "operation": "set_login",
+                "target_id": sec.id,
+                "enabled": True,
+                "nonce": "n",
+                "chain": "solana",
+                "signature": "x",
             },
             user,
         )
@@ -387,8 +412,12 @@ class TestManageAddressAPIView:
         response = post(
             ManageAddressAPIView,
             {
-                "operation": "set_login", "target_id": sec.id, "enabled": True,
-                "nonce": "n", "chain": "evm", "signature": "x",
+                "operation": "set_login",
+                "target_id": sec.id,
+                "enabled": True,
+                "nonce": "n",
+                "chain": "evm",
+                "signature": "x",
             },
             user,
         )
@@ -402,8 +431,11 @@ class TestManageAddressAPIView:
         response = post(
             ManageAddressAPIView,
             {
-                "operation": "set_primary", "target_id": sec.id,
-                "nonce": "n", "chain": "evm", "signature": "x",
+                "operation": "set_primary",
+                "target_id": sec.id,
+                "nonce": "n",
+                "chain": "evm",
+                "signature": "x",
             },
             user,
         )

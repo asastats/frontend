@@ -12,14 +12,14 @@ from walletauth.link_views import (
     WalletLinkNonceAPIView,
     WalletLinkVerifyAPIView,
 )
+from walletauth.login_views import (
+    WalletLoginNonceAPIView,
+    WalletLoginVerifyAPIView,
+)
 from walletauth.management_views import (
     ManageAddressAPIView,
     ManageNonceAPIView,
     WalletAddressesAPIView,
-)
-from walletauth.login_views import (
-    WalletLoginNonceAPIView,
-    WalletLoginVerifyAPIView,
 )
 from walletauth.views import (
     WalletNonceAPIView,

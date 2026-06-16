@@ -10,9 +10,7 @@ class TestWalletauthUrls:
 
     # # HELPERS
     def _url_from_pattern(self, pattern):
-        return next(
-            url for url in urls.urlpatterns if str(url.pattern) == pattern
-        )
+        return next(url for url in urls.urlpatterns if str(url.pattern) == pattern)
 
     # # urlpatterns
     def test_walletauth_urls_wallets(self):

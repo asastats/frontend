@@ -204,9 +204,7 @@ class WalletLinkVerifyAPIView(APIView):
             {
                 "success": True,
                 "is_primary": result.is_primary,
-                "redirect_url": getattr(
-                    settings, "WALLET_LINK_REDIRECT_URL", None
-                )
+                "redirect_url": getattr(settings, "WALLET_LINK_REDIRECT_URL", None)
                 or reverse("profile"),
                 "permission_pending": result.permission_pending,
             }

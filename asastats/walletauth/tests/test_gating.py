@@ -20,10 +20,13 @@ def make_user(username="owner"):
 
 def link(profile, address, canonical, *, login=True, primary=True):
     return LinkedAddress.objects.create(
-        profile=profile, address=address, canonical_address=canonical,
+        profile=profile,
+        address=address,
+        canonical_address=canonical,
         chain="evm" if address.startswith("0x") else "algorand",
         auth_method="evm_xchain" if address.startswith("0x") else "algorand_wallet",
-        is_primary=primary, login_enabled=login,
+        is_primary=primary,
+        login_enabled=login,
     )
 
 
@@ -87,9 +90,7 @@ class TestLinkedAddressesForUser:
         user = make_user()
         link(user.profile, ALGO, ALGO)
         link(user.profile, EVM, LSIG, primary=False, login=False)
-        result = linked_addresses_for_user(
-            user, [ALGO, "UNCONNECTED", EVM, LSIG]
-        )
+        result = linked_addresses_for_user(user, [ALGO, "UNCONNECTED", EVM, LSIG])
         assert result == {ALGO, EVM, LSIG}
 
     @pytest.mark.django_db

@@ -172,7 +172,10 @@ class WalletLoginVerifyAPIView(APIView):
             )
         except NotSupported:
             return Response(
-                {"success": False, "error": "Sign-in for this chain is not yet enabled"},
+                {
+                    "success": False,
+                    "error": "Sign-in for this chain is not yet enabled",
+                },
                 status=400,
             )
         if not proven:

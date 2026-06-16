@@ -85,7 +85,9 @@ class WalletNonce(models.Model):
         :rtype: int
         """
         cutoff = timezone.now() - cls.NONCE_TTL
-        stale = cls.objects.filter(models.Q(used=True) | models.Q(created_at__lt=cutoff))
+        stale = cls.objects.filter(
+            models.Q(used=True) | models.Q(created_at__lt=cutoff)
+        )
         deleted, _ = stale.delete()
         return deleted
 
@@ -153,7 +155,9 @@ class WalletLoginNonce(models.Model):
         :rtype: int
         """
         cutoff = timezone.now() - cls.NONCE_TTL
-        stale = cls.objects.filter(models.Q(used=True) | models.Q(created_at__lt=cutoff))
+        stale = cls.objects.filter(
+            models.Q(used=True) | models.Q(created_at__lt=cutoff)
+        )
         deleted, _ = stale.delete()
         return deleted
 

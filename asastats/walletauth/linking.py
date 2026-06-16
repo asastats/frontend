@@ -19,7 +19,9 @@ from walletauth.models import LinkedAddress
 logger = logging.getLogger(__name__)
 
 #: Outcome of :func:`link_address`.
-LinkResult = namedtuple("LinkResult", ["linked_address", "is_primary", "permission_pending"])
+LinkResult = namedtuple(
+    "LinkResult", ["linked_address", "is_primary", "permission_pending"]
+)
 
 
 class AddressAlreadyLinked(Exception):
@@ -77,9 +79,7 @@ def link_address(profile, *, chain, address, auth_method, authorized):
     canonical = canonical_for(chain, address)
     existing = LinkedAddress.objects.filter(canonical_address=canonical).first()
     if existing and existing.profile_id != profile.id:
-        raise AddressAlreadyLinked(
-            "This address is already linked to another account"
-        )
+        raise AddressAlreadyLinked("This address is already linked to another account")
 
     # Idempotent re-link of an address this profile already holds.
     if existing is not None:
@@ -88,9 +88,10 @@ def link_address(profile, *, chain, address, auth_method, authorized):
         existing.save(update_fields=["authorized", "verified_at"])
         return LinkResult(existing, existing.is_primary, False)
 
-    has_primary = bool(profile.address) or LinkedAddress.objects.filter(
-        profile=profile, is_primary=True
-    ).exists()
+    has_primary = (
+        bool(profile.address)
+        or LinkedAddress.objects.filter(profile=profile, is_primary=True).exists()
+    )
 
     if not has_primary:
         # Bootstrap the privilege-bearing primary. Persist the address before
@@ -112,9 +113,7 @@ def link_address(profile, *, chain, address, auth_method, authorized):
         return LinkResult(row, True, not refreshed)
 
     if LinkedAddress.at_secondary_capacity(profile):
-        raise SecondaryLimitReached(
-            "Maximum number of connected addresses reached"
-        )
+        raise SecondaryLimitReached("Maximum number of connected addresses reached")
     row = LinkedAddress.objects.create(
         profile=profile,
         address=address,
@@ -157,9 +156,7 @@ def sync_primary_linked(profile):
 
     existing = LinkedAddress.objects.filter(canonical_address=canonical).first()
     if existing and existing.profile_id != profile.id:
-        raise AddressAlreadyLinked(
-            "This address is already linked to another account"
-        )
+        raise AddressAlreadyLinked("This address is already linked to another account")
 
     # Remove a primary that pointed at a now-replaced address.
     LinkedAddress.objects.filter(profile=profile, is_primary=True).exclude(
