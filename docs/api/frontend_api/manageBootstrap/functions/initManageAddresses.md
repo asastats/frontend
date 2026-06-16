@@ -8,7 +8,7 @@
 
 > **initManageAddresses**(`deps?`, `doc?`): `Promise`\<[`ManageAddressesComponent`](../../manageAddressesComponent/classes/ManageAddressesComponent.md) \| `null`\>
 
-Defined in: [manageBootstrap.ts:20](https://github.com/asastats/frontend/blob/main/frontend/src/manageBootstrap.ts#L20)
+Defined in: [manageBootstrap.ts:20](https://github.com/asastats/frontend/blob/main/wallet/src/manageBootstrap.ts#L20)
 
 Mount the connected-addresses manager when its container is present.
 

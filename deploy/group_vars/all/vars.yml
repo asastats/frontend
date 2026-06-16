@@ -1,7 +1,7 @@
 ---
 # Project constants
 app_name: website
-django_settings: "{{ app_name }}.settings.{{ host_alias }}"
+django_settings: "config.settings.{{ host_alias }}"
 
 # Project variables (SITE_NAME is forker-configurable via the deploy .env file)
 site_name: "{{ hostvars['localhost'].env_vars.SITE_NAME | default('tracker.example.com') }}"

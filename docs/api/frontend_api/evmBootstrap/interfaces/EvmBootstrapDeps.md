@@ -6,7 +6,7 @@
 
 # Interface: EvmBootstrapDeps
 
-Defined in: [evmBootstrap.ts:9](https://github.com/asastats/frontend/blob/main/frontend/src/evmBootstrap.ts#L9)
+Defined in: [evmBootstrap.ts:9](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L9)
 
 Injectable factories so the bootstrap can be tested without viem/WalletConnect.
 
@@ -16,7 +16,7 @@ Injectable factories so the bootstrap can be tested without viem/WalletConnect.
 
 > **connectorFactory**: (`projectId`) => [`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[] \| `Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
-Defined in: [evmBootstrap.ts:11](https://github.com/asastats/frontend/blob/main/frontend/src/evmBootstrap.ts#L11)
+Defined in: [evmBootstrap.ts:11](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L11)
 
 Builds the connector list for a given WalletConnect project id.
 
@@ -36,6 +36,6 @@ Builds the connector list for a given WalletConnect project id.
 
 > **signer**: [`EvmSigner`](../../evmWalletComponent/type-aliases/EvmSigner.md)
 
-Defined in: [evmBootstrap.ts:13](https://github.com/asastats/frontend/blob/main/frontend/src/evmBootstrap.ts#L13)
+Defined in: [evmBootstrap.ts:13](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L13)
 
 Signs the challenge message.

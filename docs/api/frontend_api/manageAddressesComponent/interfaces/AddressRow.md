@@ -6,7 +6,7 @@
 
 # Interface: AddressRow
 
-Defined in: [manageAddressesComponent.ts:26](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L26)
+Defined in: [manageAddressesComponent.ts:26](https://github.com/asastats/frontend/blob/main/wallet/src/manageAddressesComponent.ts#L26)
 
 A connected address as returned by `manage/addresses/`.
 
@@ -16,7 +16,7 @@ A connected address as returned by `manage/addresses/`.
 
 > **address**: `string`
 
-Defined in: [manageAddressesComponent.ts:28](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L28)
+Defined in: [manageAddressesComponent.ts:28](https://github.com/asastats/frontend/blob/main/wallet/src/manageAddressesComponent.ts#L28)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [manageAddressesComponent.ts:28](https://github.com/asastats/fronten
 
 > **chain**: `string`
 
-Defined in: [manageAddressesComponent.ts:29](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L29)
+Defined in: [manageAddressesComponent.ts:29](https://github.com/asastats/frontend/blob/main/wallet/src/manageAddressesComponent.ts#L29)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [manageAddressesComponent.ts:29](https://github.com/asastats/fronten
 
 > **id**: `number`
 
-Defined in: [manageAddressesComponent.ts:27](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L27)
+Defined in: [manageAddressesComponent.ts:27](https://github.com/asastats/frontend/blob/main/wallet/src/manageAddressesComponent.ts#L27)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [manageAddressesComponent.ts:27](https://github.com/asastats/fronten
 
 > **is\_primary**: `boolean`
 
-Defined in: [manageAddressesComponent.ts:30](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L30)
+Defined in: [manageAddressesComponent.ts:30](https://github.com/asastats/frontend/blob/main/wallet/src/manageAddressesComponent.ts#L30)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [manageAddressesComponent.ts:30](https://github.com/asastats/fronten
 
 > **label**: `string`
 
-Defined in: [manageAddressesComponent.ts:32](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L32)
+Defined in: [manageAddressesComponent.ts:32](https://github.com/asastats/frontend/blob/main/wallet/src/manageAddressesComponent.ts#L32)
 
 ***
 
@@ -56,4 +56,4 @@ Defined in: [manageAddressesComponent.ts:32](https://github.com/asastats/fronten
 
 > **login\_enabled**: `boolean`
 
-Defined in: [manageAddressesComponent.ts:31](https://github.com/asastats/frontend/blob/main/frontend/src/manageAddressesComponent.ts#L31)
+Defined in: [manageAddressesComponent.ts:31](https://github.com/asastats/frontend/blob/main/wallet/src/manageAddressesComponent.ts#L31)

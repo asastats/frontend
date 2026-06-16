@@ -41,7 +41,7 @@ provisioner:
         is_molecule_test: true
         host_alias: testing
         app_name: website
-        django_settings: website.settings.testing
+        django_settings: config.settings.testing
         site_name: testing.example.com
         project_name: testing.example.com
         env_name: testing_website

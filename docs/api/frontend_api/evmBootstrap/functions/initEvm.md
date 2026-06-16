@@ -8,7 +8,7 @@
 
 > **initEvm**(`deps?`, `doc?`): `Promise`\<[`EvmWalletComponent`](../../evmWalletComponent/classes/EvmWalletComponent.md) \| `null`\>
 
-Defined in: [evmBootstrap.ts:31](https://github.com/asastats/frontend/blob/main/frontend/src/evmBootstrap.ts#L31)
+Defined in: [evmBootstrap.ts:31](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L31)
 
 Mount the EVM wallet UI when its container is present.
 

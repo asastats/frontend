@@ -2,7 +2,7 @@
 
 from .base import *
 
-DEBUG = False
+DEBUG = True
 ADMINS = [("Ivica", "ipaleka@hopemeet.me")]
 
 ALLOWED_HOSTS = ["127.0.0.1", "192.168.1.125", "localhost", "webserver"]

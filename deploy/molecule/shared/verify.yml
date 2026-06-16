@@ -51,6 +51,25 @@
       changed_when: false
       failed_when: ext_exists.stdout.strip() != "1"
 
+    - name: DEBUG - Get systemctl status for Gunicorn
+      ansible.builtin.command: "systemctl status gunicorn-{{ env_name }}.service"
+      register: gunicorn_status
+      ignore_errors: true
+
+    - name: DEBUG - Get journalctl logs for Gunicorn
+      ansible.builtin.command: "journalctl -u gunicorn-{{ env_name }}.service --no-pager -n 50"
+      register: gunicorn_logs
+      ignore_errors: true
+
+    - name: DEBUG - Print Gunicorn status and logs
+      ansible.builtin.debug:
+        msg:
+          - "=== SYSTEMCTL STATUS ==="
+          - "{{ gunicorn_status.stdout | default('No output') }}"
+          - "{{ gunicorn_status.stderr | default('') }}"
+          - "=== JOURNALCTL LOGS ==="
+          - "{{ gunicorn_logs.stdout | default('No logs') }}"
+
     - name: Verify Gunicorn systemd unit file exists
       ansible.builtin.stat:
         path: "/etc/systemd/system/gunicorn-{{ env_name }}.service"
@@ -61,7 +80,7 @@
         that:
           - gunicorn_file.stat.exists
         fail_msg: "Gunicorn service file not found at /etc/systemd/system/gunicorn-{{ env_name }}.service"
-        success_msg: "Gunicorn service file found"
+        success_msg: "Gunicorn service file found /etc/systemd/system/gunicorn-{{ env_name }}.service"
 
     - name: Assert the Gunicorn service is running
       ansible.builtin.assert:

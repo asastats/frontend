@@ -8,7 +8,7 @@
 
 > **discoverInjectedConnectors**(`timeoutMs?`): `Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
-Defined in: [evmConnectors.ts:29](https://github.com/asastats/frontend/blob/main/frontend/src/evmConnectors.ts#L29)
+Defined in: [evmConnectors.ts:29](https://github.com/asastats/frontend/blob/main/wallet/src/evmConnectors.ts#L29)
 
 Discover injected EVM wallets via EIP-6963. Dispatches the request event and
 collects announcements for a short window, returning one connector per wallet.
