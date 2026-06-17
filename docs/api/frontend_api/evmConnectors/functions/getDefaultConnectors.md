@@ -8,7 +8,7 @@
 
 > **getDefaultConnectors**(`projectId`): `Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
-Defined in: [evmConnectors.ts:104](https://github.com/asastats/frontend/blob/main/wallet/src/evmConnectors.ts#L104)
+Defined in: [evmConnectors.ts:105](https://github.com/asastats/frontend/blob/main/wallet/src/evmConnectors.ts#L105)
 
 Default connector set: injected wallets discovered via EIP-6963, plus a
 WalletConnect option when a project id is configured.

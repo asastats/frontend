@@ -80,6 +80,7 @@ export function walletConnectConnector(projectId: string): EvmConnector {
       const provider = await EthereumProvider.init({
         projectId,
         chains: [1],
+        optionalChains: [1],
         showQrModal: true,
       });
       await provider.connect();
