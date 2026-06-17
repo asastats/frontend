@@ -6,7 +6,7 @@
 
 # Interface: StepUpRequest
 
-Defined in: manageBridge.ts:4
+Defined in: [manageBridge.ts:4](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L4)
 
 A privilege-expanding action requested from the manage page.
 
@@ -16,7 +16,7 @@ A privilege-expanding action requested from the manage page.
 
 > `optional` **enabled?**: `boolean`
 
-Defined in: manageBridge.ts:10
+Defined in: [manageBridge.ts:10](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L10)
 
 For "set_login": the desired state (only `true` reaches step-up).
 
@@ -26,7 +26,7 @@ For "set_login": the desired state (only `true` reaches step-up).
 
 > **operation**: `string`
 
-Defined in: manageBridge.ts:6
+Defined in: [manageBridge.ts:6](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L6)
 
 "set_primary" or "set_login".
 
@@ -36,6 +36,6 @@ Defined in: manageBridge.ts:6
 
 > **targetId**: `number`
 
-Defined in: manageBridge.ts:8
+Defined in: [manageBridge.ts:8](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L8)
 
 The caller's own row the action targets.

@@ -6,7 +6,7 @@
 
 # Interface: RunStepUpDeps
 
-Defined in: manageBridge.ts:14
+Defined in: [manageBridge.ts:14](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L14)
 
 Injected collaborators for [runStepUp](../functions/runStepUp.md) (all browser concerns isolated).
 
@@ -16,7 +16,7 @@ Injected collaborators for [runStepUp](../functions/runStepUp.md) (all browser c
 
 > **ajax**: (`url`, `values`) => `Promise`\<`void`\>
 
-Defined in: manageBridge.ts:26
+Defined in: [manageBridge.ts:26](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L26)
 
 Hands the proof to htmx to POST and swap the list partial.
 
@@ -40,7 +40,7 @@ Hands the proof to htmx to POST and swap the list partial.
 
 > **apiBase**: `string`
 
-Defined in: manageBridge.ts:20
+Defined in: [manageBridge.ts:20](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L20)
 
 Walletauth API base (for `manage/nonce/`).
 
@@ -50,7 +50,7 @@ Walletauth API base (for `manage/nonce/`).
 
 > **csrf**: `string`
 
-Defined in: manageBridge.ts:18
+Defined in: [manageBridge.ts:18](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L18)
 
 CSRF token for the nonce POST.
 
@@ -60,7 +60,7 @@ CSRF token for the nonce POST.
 
 > **fetchFn**: \{(`input`, `init?`): `Promise`\<`Response`\>; (`input`, `init?`): `Promise`\<`Response`\>; \}
 
-Defined in: manageBridge.ts:16
+Defined in: [manageBridge.ts:16](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L16)
 
 `fetch` implementation.
 
@@ -110,7 +110,7 @@ Defined in: manageBridge.ts:16
 
 > **opsUrl**: `string`
 
-Defined in: manageBridge.ts:22
+Defined in: [manageBridge.ts:22](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L22)
 
 Site URL that performs the operation and returns the refreshed list.
 
@@ -120,6 +120,6 @@ Site URL that performs the operation and returns the refreshed list.
 
 > **stepUpSign**: [`StepUpSigner`](../../manageAdapters/type-aliases/StepUpSigner.md)
 
-Defined in: manageBridge.ts:24
+Defined in: [manageBridge.ts:24](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L24)
 
 Wallet step-up signer.

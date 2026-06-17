@@ -8,7 +8,7 @@
 
 > **runStepUp**(`req`, `deps`): `Promise`\<`void`\>
 
-Defined in: manageBridge.ts:42
+Defined in: [manageBridge.ts:42](https://github.com/asastats/frontend/blob/main/wallet/src/manageBridge.ts#L42)
 
 Obtain a step-up challenge, sign the *operation-bound* message with the
 current primary, then hand the proof to htmx to POST and swap in the refreshed

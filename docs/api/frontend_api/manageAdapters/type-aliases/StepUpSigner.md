@@ -8,7 +8,7 @@
 
 > **StepUpSigner** = (`address`, `chain`, `message`) => `Promise`\<`Record`\<`string`, `unknown`\>\>
 
-Defined in: [manageAdapters.ts:15](https://github.com/asastats/frontend/blob/main/wallet/src/manageAdapters.ts#L15)
+Defined in: [manageAdapters.ts:14](https://github.com/asastats/frontend/blob/main/wallet/src/manageAdapters.ts#L14)
 
 Signs `message` with the wallet holding `address` on `chain`; resolves to the
 proof fragment merged into the step-up POST (`{ signature }` for EVM,

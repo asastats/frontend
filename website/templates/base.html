@@ -28,7 +28,9 @@
   <nav class="z-depth-0">
       <div class="nav-wrapper container">
           {% block navigation %}
-          <a href="/" class="brand-logo"><img id="brand" src="{% static '{{ WEBSITE_SHORT_NAME }}.png' %}" alt="{{ WEBSITE_NAME }} logo"></a>
+          <a href="/" class="brand-logo">
+            <img id="brand" src="{% get_static_prefix %}{{ WEBSITE_SHORT_NAME }}.png" alt="{{ WEBSITE_NAME }} logo">
+          </a>
           <a href="#" data-target="slide-out" class="sidenav-trigger button-collapse"><img src="{% static 'img/menu.png' %}" alt="Menu"></a>
           <ul class="right hide-on-med-and-down" id="nav-mobile">
             {% if user.is_authenticated %}

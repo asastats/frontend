@@ -31,9 +31,9 @@ afterEach(() => {
  */
 describe("in rendered index html", function () {
   describe("share button exist", function () {
-    it('for Twitter', function () {
+    it('for X/Twitter', function () {
       const href = $(".scbtn.twitbtn").attr('href');
-      expect(href).toEqual(expect.stringContaining("twitter.com"));
+      expect(href).toEqual(expect.stringContaining("x.com"));
     });
     it('for LinkedIn', function () {
       const href = $(".scbtn.dscrbtn").attr('href');

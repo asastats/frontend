@@ -8,13 +8,13 @@ There are three views:
   operation and returns the refreshed ``#address_list`` partial.
 * :func:`profile_link_address` -- the "link another wallet" page (GET).
 
-The security model is unchanged and lives entirely server-side: privilege-
-expanding operations (``set_primary``, enabling login) require a fresh,
-operation-bound signature from the *current primary*, verified by
-:func:`walletauth.management.verify_step_up`; reducing operations (disable login,
-remove) need only the authenticated session. The view -- never the client --
-decides whether step-up is required, from the operation semantics. Targets are
-resolved strictly within the caller's own rows, so there is no ownership oracle.
+The security model entirely server-side: privilege-expanding operations
+(``set_primary``, enabling login) require a fresh, operation-bound signature from
+the *current primary*, verified by :func:`walletauth.management.verify_step_up`;
+reducing operations (disable login, remove) need only the authenticated session.
+The view -- never the client -- decides whether step-up is required, from the
+operation semantics. Targets are resolved strictly within the caller's own rows,
+so there is no ownership oracle.
 """
 
 import json
@@ -25,6 +25,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from utils.constants.core import ALGORAND_WALLETS
 from walletauth.management import (
     CannotDisablePrimaryLogin,
     CannotRemovePrimary,
@@ -164,8 +165,9 @@ def profile_link_address(request):
         request,
         "profile_link_address.html",
         {
+            "wallets": ALGORAND_WALLETS,
             "wallet_connect_project_id": getattr(
                 settings, "WALLET_CONNECT_PROJECT_ID", ""
-            )
+            ),
         },
     )

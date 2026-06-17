@@ -4,7 +4,6 @@ import {
   makePaymentTxnWithSuggestedParamsFromObject,
   encodeUnsignedTransaction,
 } from "algosdk";
-import { getDefaultConnectors, defaultEvmSigner } from "./evmConnectors";
 
 /**
  * Signs `message` with the wallet holding `address` on `chain`; resolves to the
@@ -36,6 +35,11 @@ async function evmStepUp(
   message: string,
   wcProjectId: string
 ): Promise<Record<string, unknown>> {
+  // Loaded on demand so viem/WalletConnect stay in a lazy chunk (matching
+  // evmBootstrap); a static import here would pull them into the main bundle.
+  const { getDefaultConnectors, defaultEvmSigner } = await import(
+    "./evmConnectors"
+  );
   const [connector] = await getDefaultConnectors(wcProjectId);
   if (!connector) {
     throw new Error("No EVM wallet available");

@@ -8,7 +8,7 @@
 
 > **buildStepUpSign**(`options`): [`StepUpSigner`](../type-aliases/StepUpSigner.md)
 
-Defined in: [manageAdapters.ts:109](https://github.com/asastats/frontend/blob/main/wallet/src/manageAdapters.ts#L109)
+Defined in: [manageAdapters.ts:113](https://github.com/asastats/frontend/blob/main/wallet/src/manageAdapters.ts#L113)
 
 Build the [StepUpSigner](../type-aliases/StepUpSigner.md) for the manage page (EVM + Algorand).
 
