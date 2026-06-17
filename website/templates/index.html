@@ -1,31 +1,31 @@
 {% extends 'base.html' %}{% load static %}{% load core_extras %}
 {% block otherheader %}
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="ASA Stats" />
+    <meta property="og:title" content="{{ WEBSITE_NAME }}" />
     <meta property="og:url" content="{{ WEBSITE_URL }}/" />
-    <meta property="og:description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out." />
+    <meta property="og:description" content="{{ WEBSITE_NAME }} evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out." />
     <meta property="og:image" content="{{ WEBSITE_URL }}/{{ WEBSITE_SHORT_NAME }}-logo1200.jpg" />
     <meta property="og:image:url" content="{{ WEBSITE_URL }}/{{ WEBSITE_SHORT_NAME }}-logo1200.jpg" />
     <meta property="og:image:secure_url" content="{{ WEBSITE_URL }}/{{ WEBSITE_SHORT_NAME }}-logo1200.jpg" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="1200" />
-    <meta property="og:image:alt" content="ASA Stats logo" />
+    <meta property="og:image:alt" content="{{ WEBSITE_NAME }} logo" />
     <meta property="og:video" content="https://www.youtube.com/v/M8_dWMNWmCo" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:url" content="{{ WEBSITE_URL }}/" />
-    <meta name="twitter:title" content="ASA Stats" />
-    <meta name="twitter:description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development." />
+    <meta name="twitter:title" content="{{ WEBSITE_NAME }}" />
+    <meta name="twitter:description" content="{{ WEBSITE_NAME }} evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development." />
     <meta name="twitter:site" content="{{ TWITTER_HANDLE }}" />
     <meta name="twitter:creator" content="{{ TWITTER_HANDLE }}" />
     <meta name="twitter:image" content="{{ WEBSITE_URL }}/{{ WEBSITE_SHORT_NAME }}-logo1200.jpg" />
-    <meta name="twitter:image:alt" content="ASA Stats logo" />
+    <meta name="twitter:image:alt" content="{{ WEBSITE_NAME }} logo" />
 {% endblock %}
 {% block header %}{% endblock %}
 {% block content %}
 <div class="row center-align">
   <div class="col s12 m8 push-m2">
-    <a href="/"><img id="logo" class="responsive-img" src="{% static 'logo.png' %}" alt="ASA Stats logo"></a>
+    <a href="/"><img id="logo" class="responsive-img" src="{% static 'logo.png' %}" alt="{{ WEBSITE_NAME }} logo"></a>
   </div>
   <div class="row">
     <div class="col s12">

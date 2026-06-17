@@ -3,7 +3,7 @@
 {% load core_extras %}
 
 {% block title %}
-ASA Stats - {% if process == "connect" %}{{ provider.name }} connect{% else %}{{ provider.name }} sign in{% endif %}
+{{ WEBSITE_NAME }} - {% if process == "connect" %}{{ provider.name }} connect{% else %}{{ provider.name }} sign in{% endif %}
 {% endblock %}
 {% block page_header %}
 {% if process == "connect" %}Connect {{ provider.name }}{% else %}Sign in via {{ provider.name }}{% endif %}

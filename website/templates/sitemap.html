@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}ASA Stats sitemap{% endblock %}
-{% block description %}Lists available pages on the ASA Stats website.{% endblock %}
+{% block title %}{{ WEBSITE_NAME }} sitemap{% endblock %}
+{% block description %}Lists available pages on the {{ WEBSITE_NAME }} website.{% endblock %}
 {% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,about,tokenomuics,faq,features,subscriptions,disclaimer{% endblock %}
 
 {% block content %}
@@ -32,7 +32,7 @@
         {% elif url.item.0 == "disclaimer" %}
             <li><a href="{{ url.location }}">Disclaimer</a></li>
         {% elif url.item.0 == "asm_privacy" %}
-            <li><a href="{{ url.location }}">ASA Stats Mobile Policy Privacy</a></li>
+            <li><a href="{{ url.location }}">{{ WEBSITE_NAME }} Mobile Policy Privacy</a></li>
         {% elif url.item.0 == "index" %}
             <li><a href="{{ url.location }}">Index page</a></li>
         {% endif %}

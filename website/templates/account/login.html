@@ -1,9 +1,9 @@
 {% extends 'account/base_auth.html' %}
 {% load i18n %}{% load static %}
-{% block title %}Login page - ASA Stats{% endblock %}
-{% block description %}Here you can log in to your ASA Stats account either with your email and password or by a connected social media provider.{% endblock %}
+{% block title %}Login page - {{ WEBSITE_NAME }}{% endblock %}
+{% block description %}Here you can log in to your {{ WEBSITE_NAME }} account either with your email and password or by a connected social media provider.{% endblock %}
 {% block keywords %}authentication,user,login,log in,email,password,social media{% endblock %}
-{% block main_header_text %}Login to your ASA Stats account{% endblock %}
+{% block main_header_text %}Login to your {{ WEBSITE_NAME }} account{% endblock %}
 {% block login_tab %}href="#" class="active"{% endblock %}
 
 {% block header_text %}Login{% endblock %}
@@ -13,7 +13,7 @@
 {% block secondary_action %}
 <a class="secondaryAction waves-effect waves-light btn-flat col s10 offset-s1 m6" href="{% url 'account_signup' %}">Don't have an account?</a>
 <a class="secondaryAction waves-effect waves-light btn-flat col s10 offset-s1 m6" href="{% url 'account_reset_password' %}">Forgot password?</a>
-<p class="col s12 m8 offset-m2 center-align">Login to your ASA Stats account in order to reach your home page and browse your other private pages on this website.</p>
+<p class="col s12 m8 offset-m2 center-align">Login to your {{ WEBSITE_NAME }} account in order to reach your home page and browse your other private pages on this website.</p>
 {% endblock %}
 
 {% block wallet_login %}

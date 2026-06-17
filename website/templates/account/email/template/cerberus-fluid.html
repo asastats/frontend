@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width"> <!-- Forcing initial-scale shouldn't be necessary -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Use the latest (edge) version of IE rendering engine -->
     <meta name="x-apple-disable-message-reformatting">  <!-- Disable auto-scale in iOS 10 Mail entirely -->
-    <title>Welcome to ASA Stats!</title> <!-- The title tag shows in email notifications, like Android 4.4. -->
+    <title>Welcome to {{ WEBSITE_NAME }}!</title> <!-- The title tag shows in email notifications, like Android 4.4. -->
 
     <!-- Web Font / @font-face : BEGIN -->
     <!-- NOTE: If web fonts are not required, lines 10 - 27 can be safely removed. -->
@@ -226,7 +226,7 @@
                 <!-- Hero Image, Flush : BEGIN -->
                 <tr>
                     <td style="background-color: #FFFFFF;">
-                        <img src="{{ WEBSITE_URL }}/logo.png" width="600" height="" alt="ASA Stats logo" border="0" style="width: 100%; max-width: 400px; height: auto; background: #FFFFFF; font-family: sans-serif; font-size: 15px; line-height: 15px; color: #005a34; margin: auto;" class="g-img">
+                        <img src="{{ WEBSITE_URL }}/logo.png" width="600" height="" alt="{{ WEBSITE_NAME }} logo" border="0" style="width: 100%; max-width: 400px; height: auto; background: #FFFFFF; font-family: sans-serif; font-size: 15px; line-height: 15px; color: #005a34; margin: auto;" class="g-img">
                     </td>
                 </tr>
                 <!-- Hero Image, Flush : END -->
@@ -237,7 +237,7 @@
                         <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                             <tr>
                                 <td style="padding: 20px; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #005a34;">
-                                    <h1 style="margin: 0 0 10px 0; font-family: sans-serif; font-size: 25px; line-height: 30px; color: #005a34; font-weight: normal;">Welcome to ASA Stats!</h1>
+                                    <h1 style="margin: 0 0 10px 0; font-family: sans-serif; font-size: 25px; line-height: 30px; color: #005a34; font-weight: normal;">Welcome to {{ WEBSITE_NAME }}!</h1>
                                     <p style="margin: 0;">We're glad to have you here. After clicking on the Start button, you'll be on the blank homepage on our website.</p>
                                 </td>
                             </tr>
@@ -256,7 +256,7 @@
                             </tr>
                             <tr>
                                 <td style="padding: 20px; font-family: sans-serif; font-size: 15px; line-height: 20px; color: #005a34;">
-                                    <p style="margin: 0;">Find us on social media and let your friends, family and colleagues know about ASA Stats.</p>
+                                    <p style="margin: 0;">Find us on social media and let your friends, family and colleagues know about {{ WEBSITE_NAME }}.</p>
                                     <br>
                                 </td>
                             </tr>
@@ -265,16 +265,16 @@
                                     <table align="center" role="presentation" cellspacing="" cellpadding="0" border="0" style="margin: auto;" >
                                         <tr>
                                             <td style="padding: 0 8px;">
-                                                <a href="https://discord.gg/Vjx7w7pAC7" target="_blank" style="margin: 0;"><img src="{{ WEBSITE_URL }}/instagram24.png" alt="ASA Stats Discord channel" style="margin: 0;"></a>
+                                                <a href="https://discord.gg/Vjx7w7pAC7" target="_blank" style="margin: 0;"><img src="{{ WEBSITE_URL }}/instagram24.png" alt="{{ WEBSITE_NAME }} Discord channel" style="margin: 0;"></a>
                                             </td>
                                             <td style="padding: 0 8px;">
-                                                <a href="https://twitter.com/{{ X_HANDLE }}" target="_blank" style="margin: 0;"><img src="{{ WEBSITE_URL }}/twitter24.png" alt="ASA Stats on X" style="margin: 0;"></a>
+                                                <a href="https://twitter.com/{{ X_HANDLE }}" target="_blank" style="margin: 0;"><img src="{{ WEBSITE_URL }}/twitter24.png" alt="{{ WEBSITE_NAME }} on X" style="margin: 0;"></a>
                                             </td>
                                             <td style="padding: 0 8px;">
                                                 <a href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" style="margin: 0;"><img src="{{ WEBSITE_URL }}/reddit24.png" alt="r/asastats on Reddit" style="margin: 0;"></a>
                                             </td>
                                             <td style="padding: 0 8px;">
-                                                <a href="https://github.com/asastats/channel" target="_blank" style="margin: 0;"><img src="{{ WEBSITE_URL }}/github24.png" alt="ASA Stats on GitHub" style="margin: 0;"></a>
+                                                <a href="https://github.com/asastats/channel" target="_blank" style="margin: 0;"><img src="{{ WEBSITE_URL }}/github24.png" alt="{{ WEBSITE_NAME }} on GitHub" style="margin: 0;"></a>
                                             </td>
                                         </tr>
                                     </table>

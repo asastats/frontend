@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>{% block title %}ASA Stats{% endblock %}</title>
-    <meta name="description" content="{% block description %}ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.{% endblock %}">
+    <title>{% block title %}{{ WEBSITE_NAME }}{% endblock %}</title>
+    <meta name="description" content="{% block description %}{{ WEBSITE_NAME }} evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.{% endblock %}">
     <meta name="keywords" content="{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount{% endblock %}">
     {% block otherheader %}{% endblock %}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald|Nunito">
@@ -76,8 +76,8 @@
       <a class="frmbtn liq2btn" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener" title="ALGO-ASASTATS liquidity pool on Tinyman"></a>
     </div>
     <div class="col s12 center-align socfooter">
-      <a class="scbtn iosbtn" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener" title="ASA Stats Mobile on App Store"></a>
-      <a class="scbtn andrbtn" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener" title="ASA Stats Mobile on Play Store"></a>
+      <a class="scbtn iosbtn" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Mobile on App Store"></a>
+      <a class="scbtn andrbtn" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Mobile on Play Store"></a>
       <a class="scbtn dark-toggle brightbtn" href="#" title="Dark/bright side of the Moon"></a>
       <a class="scbtn twitbtn" href="https://twitter.com/{{ TWITTER_HANDLE }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on X platform"></a>
       <a class="scbtn dscrbtn" href="https://discord.gg/{{ DISCORD_INVITE }}" target="_blank" rel="noopener" title="Join our Discord server"></a>
