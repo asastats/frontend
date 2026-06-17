@@ -1,4 +1,4 @@
-"""Module containing fixture data for ASA Stats functional tests."""
+"""Module containing fixture data for the website functional tests."""
 
 INDEXER_FETCH_LIMIT = 1000
 INDEXER_PAGE_DELAY = 0.01

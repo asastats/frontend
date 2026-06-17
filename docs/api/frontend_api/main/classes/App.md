@@ -8,12 +8,12 @@
 
 Defined in: [main.ts:18](https://github.com/asastats/frontend/blob/main/wallet/src/main.ts#L18)
 
-Bootstraps the wallet-connect experience on the ASA Stats authorize page.
+Bootstraps the wallet-connect experience on the website authorize page.
 
 Initializes only when wallet card elements are present, fetches the list of
 supported wallets from the backend, builds a mainnet `WalletManager`, binds a
 `WalletComponent` per wallet, and resumes any prior sessions. There is no
-network selector: ASA Stats authorizes on mainnet only.
+network selector: website authorizes on mainnet only.
 
 ## Constructors
 

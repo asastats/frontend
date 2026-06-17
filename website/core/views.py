@@ -90,7 +90,11 @@ CACHE_TTL = getattr(settings, "CACHE_TTL", 60 * 90)
 @cache_page(CACHE_TTL)
 def assets_file(request, suffix):
     """Helper view to retrieve zip, pdf, jpg, eps, svg and png assets files."""
-    path = os.path.join(settings.STATIC_ROOT, "assets/", "asastats-{}".format(suffix))
+    path = os.path.join(
+        settings.STATIC_ROOT,
+        "assets/",
+        "{}-{}".format(settings.WEBSITE_SHORT_NAME, suffix),
+    )
     try:
         response = HttpResponse(
             open(path, "rb"),

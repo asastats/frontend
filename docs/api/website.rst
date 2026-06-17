@@ -1,5 +1,5 @@
-:mod:`api` -- ASA Stats frontend API package
-********************************************
+:mod:`api` -- Frontend API package
+**********************************
 
 .. automodule:: api
   :members:

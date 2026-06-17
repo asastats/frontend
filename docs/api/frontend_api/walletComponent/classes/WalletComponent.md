@@ -9,7 +9,7 @@
 Defined in: [walletComponent.ts:32](https://github.com/asastats/frontend/blob/main/wallet/src/walletComponent.ts#L32)
 
 Manages a single Algorand wallet's connection and the address-authorization
-flow for the ASA Stats authorize page.
+flow for the website's authorize page.
 
 Each supported wallet is rendered as its own card and driven by one
 `WalletComponent`. The component reflects connection/active state into the

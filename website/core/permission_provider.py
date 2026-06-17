@@ -1,9 +1,9 @@
 """Pluggable permission backend for the open frontend.
 
-The frontend depends only on this abstraction. The ASA Stats on-chain
-implementation (or any deployer's alternative) is named by the
-``PERMISSION_PROVIDER`` setting and resolved lazily, so the open repo imports no
-deployment-specific code and boots even when that backend is not installed.
+The frontend depends only on this abstraction. The ASA Stats on-chain implementation
+(or any deployer's alternative) is named by the ``PERMISSION_PROVIDER`` setting
+and resolved lazily, so the open repo imports no deployment-specific code and
+boots even when that backend is not installed.
 """
 
 from functools import lru_cache

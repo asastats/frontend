@@ -43,6 +43,6 @@ EMAIL_HOST_USER = get_env_variable("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = get_env_variable("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-DEFAULT_FROM_EMAIL = "ASA Stats Support <support@asastats.com>"
+DEFAULT_FROM_EMAIL = f"{WEBSITE_NAME} Support <support@{WEBSITE_BASE_DOMAIN}>"
 
 WALLET_TEST_MODE = True

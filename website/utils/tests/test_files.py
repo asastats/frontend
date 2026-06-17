@@ -17,7 +17,13 @@ class TestFiles:
         path = os.path.abspath(os.path.join(settings.STATIC_ROOT, "img/logo.png"))
         assert os.path.exists(path)
 
-    @pytest.mark.parametrize("version", ["asastats.png", "asastats-dark.png"])
+    @pytest.mark.parametrize(
+        "version",
+        [
+            f"{settings.WEBSITE_SHORT_NAME}.png",
+            f"{settings.WEBSITE_SHORT_NAME}-dark.png",
+        ],
+    )
     def test_files_brand_images_exist(self, version):
         path = os.path.abspath(
             os.path.join(settings.STATIC_ROOT, "img/{}".format(version))
@@ -29,13 +35,18 @@ class TestFiles:
     )
     def test_files_assets_png_images_exist(self, asset):
         path = os.path.abspath(
-            os.path.join(settings.STATIC_ROOT, "assets/asastats-{}.png".format(asset))
+            os.path.join(
+                settings.STATIC_ROOT,
+                "assets/{}-{}.png".format(settings.WEBSITE_SHORT_NAME, asset),
+            )
         )
         assert os.path.exists(path)
 
     def test_files_assets_svg_image_exist(self):
         path = os.path.abspath(
-            os.path.join(settings.STATIC_ROOT, "assets/asastats-logo.svg")
+            os.path.join(
+                settings.STATIC_ROOT, f"assets/{settings.WEBSITE_SHORT_NAME}-logo.svg"
+            )
         )
         assert os.path.exists(path)
 

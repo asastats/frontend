@@ -179,7 +179,7 @@ ALGORAND_WALLETS = [
     {"id": "exodus", "name": "Exodus"},
 ]
 
-# asastats authorizes on mainnet only.
+# asastats engine authorizes on mainnet only.
 WALLET_CONNECT_NETWORK_OPTIONS = ["mainnet"]
 
 # Domain-scoped so a signature solicited elsewhere cannot be relayed here.

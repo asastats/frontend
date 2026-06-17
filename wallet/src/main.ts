@@ -8,12 +8,12 @@ import { initManageAddresses } from "./manageBootstrap";
 const DEFAULT_API_BASE = "/api/v2/wallet";
 
 /**
- * Bootstraps the wallet-connect experience on the ASA Stats authorize page.
+ * Bootstraps the wallet-connect experience on the website authorize page.
  *
  * Initializes only when wallet card elements are present, fetches the list of
  * supported wallets from the backend, builds a mainnet `WalletManager`, binds a
  * `WalletComponent` per wallet, and resumes any prior sessions. There is no
- * network selector: ASA Stats authorizes on mainnet only.
+ * network selector: website authorizes on mainnet only.
  */
 export class App {
   /** The wallet manager, or null until {@link App.init} runs. */

@@ -1,1 +1,1 @@
-"""Initialization module for ASA Stats functional tests."""
+"""Initialization module for frontend functional tests."""

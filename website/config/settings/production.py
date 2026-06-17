@@ -4,7 +4,7 @@ from .base import *
 
 DEBUG = False
 ADMINS = [("Ivica", "ipaleka@hopemeet.me")]
-SERVER_EMAIL = "admin@asastats.com"
+SERVER_EMAIL = f"admin@{WEBSITE_BASE_DOMAIN}"
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -13,11 +13,11 @@ ALLOWED_HOSTS = [
     "192.99.167.63",
     "46.4.59.234",
     "localhost",
-    ".asastats.com",
+    f".{WEBSITE_BASE_DOMAIN}",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://*.asastats.com",
+    f"https://*.{WEBSITE_BASE_DOMAIN}",
 ]
 
 DATABASES = {
@@ -61,9 +61,7 @@ EMAIL_HOST_USER = get_env_variable("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = get_env_variable("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-DEFAULT_FROM_EMAIL = "ASA Stats Support <support@asastats.com>"
-
-# ALGORAND_NODE_PATH_LIQUIDITY = "/home/asastats/node/"
+DEFAULT_FROM_EMAIL = f"{WEBSITE_NAME} Support <support@{WEBSITE_BASE_DOMAIN}>"
 
 LOGGING = {
     "version": 1,

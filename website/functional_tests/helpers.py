@@ -1,4 +1,4 @@
-"""Module containing helper functions for ASA Stats functional tests."""
+"""Module containing helper functions for the website functional tests."""
 
 import logging
 import sys

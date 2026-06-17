@@ -69,7 +69,7 @@ DATABASES = {
 # # django_cprofile_middleware
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "ASA Stats Support <support@asastats.com>"
+DEFAULT_FROM_EMAIL = f"{WEBSITE_NAME} Support <support@{WEBSITE_BASE_DOMAIN}>"
 
 STATICFILES_DIRS = [
     BASE_DIR.parent / "static",
@@ -81,7 +81,6 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.dummy.DummyCache",
     }
 }
-
 
 # CACHES = {
 #     "default": {
