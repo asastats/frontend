@@ -1,9 +1,14 @@
 """Module containing core app's URL configurations."""
 
 from django.conf import settings
-from django.urls import re_path
+from django.urls import path, re_path
 
 from core import views as core_views
+from core.views_connected_addresses import (
+    profile_addresses,
+    profile_addresses_action,
+    profile_link_address,
+)
 from utils.constants.users import BUNDLENAME_REGEX
 
 urlpatterns = [
@@ -58,16 +63,13 @@ urlpatterns = [
         core_views.ProfileAuthorizeCheckView.as_view(),
         name="profile_authorize_check",
     ),
-    re_path(
-        r"^profile/addresses/$",
-        core_views.ProfileAddressesView.as_view(),
-        name="profile_addresses",
+    path("profile/addresses/", profile_addresses, name="profile_addresses"),
+    path(
+        "profile/addresses/action/",
+        profile_addresses_action,
+        name="profile_addresses_action",
     ),
-    re_path(
-        r"^profile/addresses/link/$",
-        core_views.ProfileLinkAddressView.as_view(),
-        name="profile_link_address",
-    ),
+    path("profile/addresses/link/", profile_link_address, name="profile_link_address"),
     re_path(
         r"^profile/permission/fetch/$",
         core_views.ProfilePermissionFetchView.as_view(),

@@ -16,11 +16,7 @@ from walletauth.login_views import (
     WalletLoginNonceAPIView,
     WalletLoginVerifyAPIView,
 )
-from walletauth.management_views import (
-    ManageAddressAPIView,
-    ManageNonceAPIView,
-    WalletAddressesAPIView,
-)
+from walletauth.management_views import ManageNonceAPIView
 from walletauth.views import (
     WalletNonceAPIView,
     WalletsAPIView,
@@ -69,21 +65,12 @@ urlpatterns = [
         WalletLinkVerifyAPIView.as_view(),
         name="wallet_link_verify",
     ),
-    # Address management (authenticated; step-up for set-primary / enable-login).
-    path(
-        "manage/addresses/",
-        WalletAddressesAPIView.as_view(),
-        name="wallet_manage_addresses",
-    ),
+    # Step-up challenge for the htmx management page (list + operations are
+    # server-rendered HTML in the site, not a JSON API).
     path(
         "manage/nonce/",
         ManageNonceAPIView.as_view(),
         name="wallet_manage_nonce",
-    ),
-    path(
-        "manage/",
-        ManageAddressAPIView.as_view(),
-        name="wallet_manage",
     ),
     # Swap gate: which browsed addresses are connected to the caller.
     path(

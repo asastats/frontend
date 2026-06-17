@@ -66,13 +66,11 @@ from core.views import (
     NameServiceView,
     NfdView,
     ProfileAccountView,
-    ProfileAddressesView,
     ProfileApiView,
     ProfileAuthorizeCheckView,
     ProfileAuthorizeView,
     ProfileDisplay,
     ProfileEditView,
-    ProfileLinkAddressView,
     ProfilePermissionFetchView,
     ProfileUpdate,
     SubscriptionsView,
@@ -1568,67 +1566,6 @@ class TestDbBundleNameView(BaseView):
         mocked_super.assert_called_once_with(bundle)
         # Check.
         assert response == mocked_super.return_value
-
-
-class TestProfileAddressesView:
-    """Testing class for :class:`core.views.ProfileAddressesView`."""
-
-    def test_core_views_profileaddressesview_is_subclass_of_templateview(self):
-        assert issubclass(ProfileAddressesView, TemplateView)
-
-    def test_core_views_profileaddressesview_sets_template_name(self):
-        assert ProfileAddressesView.template_name == "profile_addresses.html"
-
-
-@pytest.mark.django_db
-class TestDbProfileAddressesView(BaseUserCreatedView):
-
-    def test_core_views_profileaddressesview_get_context_data_sets_context_variables(
-        self,
-    ):
-        # Setup view
-        view = ProfileAddressesView()
-        view = self.setup_view(view, self.request)
-        # Run.
-        view_object = view.get(self.request)
-        # Check.
-        assert view_object.context_data["wallet_api_base"] == "/api/v2/wallet"
-        assert (
-            view_object.context_data["wallet_connect_project_id"]
-            == settings.WALLET_CONNECT_PROJECT_ID
-        )
-        assert view_object.context_data["link_address_url"] == reverse_lazy(
-            "profile_link_address"
-        )
-
-
-class TestProfileLinkAddressView:
-    """Testing class for :class:`core.views.ProfileLinkAddressView`."""
-
-    def test_core_views_profilelinkaddressview_is_subclass_of_templateview(self):
-        assert issubclass(ProfileLinkAddressView, TemplateView)
-
-    def test_core_views_profilelinkaddressview_sets_template_name(self):
-        assert ProfileLinkAddressView.template_name == "profile_link_address.html"
-
-
-@pytest.mark.django_db
-class TestDbProfileLinkAddressView(BaseUserCreatedView):
-
-    def test_core_views_profilelinkaddressview_get_context_data_sets_context_variable(
-        self,
-    ):
-        # Setup view
-        view = ProfileLinkAddressView()
-        view = self.setup_view(view, self.request)
-        # Run.
-        view_object = view.get(self.request)
-        # Check.
-        assert (
-            view_object.context_data["wallet_connect_project_id"]
-            == settings.WALLET_CONNECT_PROJECT_ID
-        )
-        assert view_object.context_data["wallets"] == ALGORAND_WALLETS
 
 
 class TestProfileApiView:

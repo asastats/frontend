@@ -1,16 +1,15 @@
-"""Testing module for :py:mod:`walletauth.management_views` module."""
+"""Testing module for :py:mod:`walletauth.management_views` and step-up."""
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
-from walletauth.management_views import (
-    ManageAddressAPIView,
-    ManageNonceAPIView,
-    WalletAddressesAPIView,
-)
+from walletauth.management import verify_step_up
+from walletauth.management_views import ManageNonceAPIView
 from walletauth.models import LinkedAddress, WalletNonce
+from walletauth.verifiers import VERIFIERS, NotSupported
 
 user_model = get_user_model()
 
@@ -57,59 +56,26 @@ def secondary(profile, address=ALGO_SECOND, *, login=False):
 
 
 def post(view, data, user):
-    request = APIRequestFactory().post("/manage/", data, format="json")
+    request = APIRequestFactory().post("/manage/nonce/", data, format="json")
     force_authenticate(request, user=user)
     return view.as_view()(request)
 
 
-class TestWalletAddressesAPIView:
-    """Testing class for :class:`WalletAddressesAPIView`."""
-
-    @pytest.mark.django_db
-    def test_lists_caller_addresses_primary_first(self):
-        user = make_user()
-        evm_primary(user.profile)
-        secondary(user.profile, login=True)
-        request = APIRequestFactory().get("/manage/addresses/")
-        force_authenticate(request, user=user)
-        response = WalletAddressesAPIView.as_view()(request)
-        assert response.status_code == 200
-        rows = response.data["addresses"]
-        assert len(rows) == 2
-        assert rows[0]["is_primary"] is True
-        assert rows[0]["address"] == EVM_PRIMARY
-        assert rows[1]["is_primary"] is False
-
-    @pytest.mark.django_db
-    def test_scoped_to_caller(self):
-        owner = make_user("owner")
-        evm_primary(owner.profile)
-        other = make_user("other")
-        evm_primary(other.profile, address="0x" + "a" * 40)
-        request = APIRequestFactory().get("/manage/addresses/")
-        force_authenticate(request, user=other)
-        response = WalletAddressesAPIView.as_view()(request)
-        addresses = {row["address"] for row in response.data["addresses"]}
-        assert addresses == {"0x" + "a" * 40}
-
-    def test_requires_authentication(self):
-        request = APIRequestFactory().get("/manage/addresses/")
-        assert WalletAddressesAPIView.as_view()(request).status_code in (401, 403)
-
-
-def evm_step_up(user, nonce):
-    """Create a step-up nonce and a valid signature from a fresh EVM key.
-
-    Returns (signature, primary_address) so a primary can be created at that
-    address (the recovered signer must equal the current primary).
-    """
+def new_evm_key():
     from eth_account import Account
+
+    return Account.create()
+
+
+def sign_bound(acct, nonce, operation, target_id):
+    """Sign the operation-bound challenge with an EVM key; return the 0x sig."""
     from eth_account.messages import encode_defunct
 
-    acct = Account.create()
-    signed = acct.sign_message(encode_defunct(text=WALLET_CONNECT_NONCE_PREFIX + nonce))
-    raw = signed.signature.hex()
-    return (raw if raw.startswith("0x") else "0x" + raw), acct.address.lower()
+    bound = f"{nonce}:{operation}:{target_id}"
+    raw = acct.sign_message(
+        encode_defunct(text=WALLET_CONNECT_NONCE_PREFIX + bound)
+    ).signature.hex()
+    return raw if raw.startswith("0x") else "0x" + raw
 
 
 class TestManageNonceAPIView:
@@ -136,307 +102,199 @@ class TestManageNonceAPIView:
         assert ManageNonceAPIView.as_view()(request).status_code in (401, 403)
 
 
-class TestManageAddressAPIView:
-    """Testing class for :class:`ManageAddressAPIView`."""
+class TestVerifyStepUp:
+    """Testing class for :func:`walletauth.management.verify_step_up`."""
 
-    # # validation / scoping
-    @pytest.mark.django_db
-    def test_unknown_operation_rejected(self):
-        user = make_user()
-        evm_primary(user.profile)
-        response = post(ManageAddressAPIView, {"operation": "nuke"}, user)
-        assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_cannot_target_another_users_address(self):
-        owner = make_user("owner")
-        evm_primary(owner.profile)
-        victim = make_user("victim")
-        victim_secondary = secondary(victim.profile)
-        attacker = make_user("attacker")
-        evm_primary(attacker.profile, address="0x" + "a" * 40)
-        # Attacker tries to remove the victim's address by id.
-        response = post(
-            ManageAddressAPIView,
-            {"operation": "remove", "target_id": victim_secondary.id},
-            attacker,
-        )
-        assert response.status_code == 404
-        assert LinkedAddress.objects.filter(pk=victim_secondary.pk).exists()
-
-    # # no step-up: remove / disable
-    @pytest.mark.django_db
-    def test_remove_secondary_without_step_up(self):
-        user = make_user()
-        evm_primary(user.profile)
-        sec = secondary(user.profile)
-        response = post(
-            ManageAddressAPIView,
-            {"operation": "remove", "target_id": sec.id},
-            user,
-        )
-        assert response.status_code == 200
-        assert not LinkedAddress.objects.filter(pk=sec.pk).exists()
-
-    @pytest.mark.django_db
-    def test_remove_primary_rejected(self):
-        user = make_user()
-        prim = evm_primary(user.profile)
-        response = post(
-            ManageAddressAPIView,
-            {"operation": "remove", "target_id": prim.id},
-            user,
-        )
-        assert response.status_code == 400
-        assert LinkedAddress.objects.filter(pk=prim.pk).exists()
-
-    @pytest.mark.django_db
-    def test_disable_login_without_step_up(self):
-        user = make_user()
-        evm_primary(user.profile)
-        sec = secondary(user.profile, login=True)
-        response = post(
-            ManageAddressAPIView,
-            {"operation": "set_login", "target_id": sec.id, "enabled": False},
-            user,
-        )
-        assert response.status_code == 200
-        sec.refresh_from_db()
-        assert sec.login_enabled is False
-
-    @pytest.mark.django_db
-    def test_cannot_disable_primary_login(self):
-        user = make_user()
-        prim = evm_primary(user.profile)
-        response = post(
-            ManageAddressAPIView,
-            {"operation": "set_login", "target_id": prim.id, "enabled": False},
-            user,
-        )
-        assert response.status_code == 400
-
-    # # step-up: enable login
-    @pytest.mark.django_db
-    def test_enable_login_requires_step_up_and_succeeds(self):
-        user = make_user()
-        signature, addr = evm_step_up(user, "stepup1")
-        evm_primary(user.profile, address=addr)
+    def _primary_with_nonce(self, user, nonce="n1"):
+        acct = new_evm_key()
+        evm_primary(user.profile, address=acct.address.lower())
         sec = secondary(user.profile, login=False)
         WalletNonce.objects.create(
-            user=user, address=addr, nonce="stepup1", chain="evm"
+            user=user, address=acct.address.lower(), nonce=nonce, chain="evm"
         )
-        response = post(
-            ManageAddressAPIView,
-            {
-                "operation": "set_login",
-                "target_id": sec.id,
-                "enabled": True,
-                "nonce": "stepup1",
-                "chain": "evm",
-                "signature": signature,
-            },
-            user,
-        )
-        assert response.status_code == 200
-        sec.refresh_from_db()
-        assert sec.login_enabled is True
+        return acct, sec
 
     @pytest.mark.django_db
-    def test_enable_login_rejected_without_signature(self):
+    def test_success_claims_nonce(self):
+        user = make_user()
+        acct, sec = self._primary_with_nonce(user)
+        sig = sign_bound(acct, "n1", "set_login", sec.id)
+        err = verify_step_up(
+            user=user,
+            operation="set_login",
+            target_id=sec.id,
+            nonce="n1",
+            payload={"signature": sig},
+        )
+        assert err is None
+        assert WalletNonce.objects.get(nonce="n1").used is True
+
+    @pytest.mark.django_db
+    def test_signature_bound_to_operation(self):
+        # Signed to enable login; cannot be replayed to set primary.
+        user = make_user()
+        acct, sec = self._primary_with_nonce(user)
+        sig = sign_bound(acct, "n1", "set_login", sec.id)
+        err = verify_step_up(
+            user=user,
+            operation="set_primary",
+            target_id=sec.id,
+            nonce="n1",
+            payload={"signature": sig},
+        )
+        assert err == "Step-up signature did not match your primary address"
+        assert WalletNonce.objects.get(nonce="n1").used is False
+
+    @pytest.mark.django_db
+    def test_signature_bound_to_target(self):
+        user = make_user()
+        acct, sec = self._primary_with_nonce(user)
+        sig = sign_bound(acct, "n1", "set_login", sec.id + 999)
+        err = verify_step_up(
+            user=user,
+            operation="set_login",
+            target_id=sec.id,
+            nonce="n1",
+            payload={"signature": sig},
+        )
+        assert err == "Step-up signature did not match your primary address"
+
+    @pytest.mark.django_db
+    def test_wrong_signer_rejected(self):
+        user = make_user()
+        acct, sec = self._primary_with_nonce(user)
+        other = new_evm_key()
+        sig = sign_bound(other, "n1", "set_login", sec.id)
+        err = verify_step_up(
+            user=user,
+            operation="set_login",
+            target_id=sec.id,
+            nonce="n1",
+            payload={"signature": sig},
+        )
+        assert err == "Step-up signature did not match your primary address"
+
+    @pytest.mark.django_db
+    def test_garbage_signature_rejected(self):
+        user = make_user()
+        acct, sec = self._primary_with_nonce(user)
+        err = verify_step_up(
+            user=user,
+            operation="set_login",
+            target_id=sec.id,
+            nonce="n1",
+            payload={"signature": "0x00"},
+        )
+        assert err == "Step-up signature did not match your primary address"
+
+    @pytest.mark.django_db
+    def test_no_primary(self):
+        user = make_user()
+        err = verify_step_up(
+            user=user,
+            operation="set_primary",
+            target_id=1,
+            nonce="n1",
+            payload={},
+        )
+        assert err == "No primary address"
+
+    @pytest.mark.django_db
+    def test_missing_nonce(self):
         user = make_user()
         evm_primary(user.profile)
-        sec = secondary(user.profile, login=False)
-        response = post(
-            ManageAddressAPIView,
-            {"operation": "set_login", "target_id": sec.id, "enabled": True},
-            user,
+        err = verify_step_up(
+            user=user,
+            operation="set_primary",
+            target_id=1,
+            nonce="",
+            payload={},
         )
-        assert response.status_code == 400
-        sec.refresh_from_db()
-        assert sec.login_enabled is False
+        assert err == "Missing step-up signature"
 
     @pytest.mark.django_db
-    def test_step_up_rejected_for_wrong_signer(self):
-        # A valid signature, but from a key that is not the current primary.
+    def test_unsupported_chain(self):
         user = make_user()
-        signature, other_addr = evm_step_up(user, "stepup2")
-        evm_primary(user.profile, address="0x" + "c" * 40)  # different primary
-        sec = secondary(user.profile, login=False)
-        WalletNonce.objects.create(
-            user=user, address="0x" + "c" * 40, nonce="stepup2", chain="evm"
-        )
-        response = post(
-            ManageAddressAPIView,
-            {
-                "operation": "set_login",
-                "target_id": sec.id,
-                "enabled": True,
-                "nonce": "stepup2",
-                "chain": "evm",
-                "signature": signature,
-            },
-            user,
-        )
-        assert response.status_code == 401
-        sec.refresh_from_db()
-        assert sec.login_enabled is False
-
-    # # step-up: set primary
-    @pytest.mark.django_db
-    def test_set_primary_with_step_up(self):
-        user = make_user()
-        signature, addr = evm_step_up(user, "stepup3")
-        evm_primary(user.profile, address=addr)
-        sec = secondary(user.profile)
-        WalletNonce.objects.create(
-            user=user, address=addr, nonce="stepup3", chain="evm"
-        )
-        response = post(
-            ManageAddressAPIView,
-            {
-                "operation": "set_primary",
-                "target_id": sec.id,
-                "nonce": "stepup3",
-                "chain": "evm",
-                "signature": signature,
-            },
-            user,
-        )
-        assert response.status_code == 200
-        sec.refresh_from_db()
-        assert sec.is_primary is True
-        user.profile.refresh_from_db()
-        assert user.profile.address == ALGO_SECOND
-
-    @pytest.mark.django_db
-    def test_set_primary_rejected_without_step_up(self):
-        user = make_user()
-        evm_primary(user.profile)
-        sec = secondary(user.profile)
-        response = post(
-            ManageAddressAPIView,
-            {"operation": "set_primary", "target_id": sec.id},
-            user,
-        )
-        assert response.status_code == 400
-        sec.refresh_from_db()
-        assert sec.is_primary is False
-
-    # # step-up defensive branches
-    @pytest.mark.django_db
-    def test_step_up_nonce_not_found(self):
-        user = make_user()
-        signature, addr = evm_step_up(user, "n1")
-        evm_primary(user.profile, address=addr)
-        sec = secondary(user.profile)
-        # Valid signature matching the primary, but no challenge was issued.
-        response = post(
-            ManageAddressAPIView,
-            {
-                "operation": "set_login",
-                "target_id": sec.id,
-                "enabled": True,
-                "nonce": "n1",
-                "chain": "evm",
-                "signature": signature,
-            },
-            user,
-        )
-        assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_step_up_nonce_expired(self, mocker):
-        user = make_user()
-        signature, addr = evm_step_up(user, "n2")
-        evm_primary(user.profile, address=addr)
-        sec = secondary(user.profile)
-        WalletNonce.objects.create(user=user, address=addr, nonce="n2", chain="evm")
-        mocker.patch("walletauth.models.WalletNonce.is_expired", return_value=True)
-        response = post(
-            ManageAddressAPIView,
-            {
-                "operation": "set_login",
-                "target_id": sec.id,
-                "enabled": True,
-                "nonce": "n2",
-                "chain": "evm",
-                "signature": signature,
-            },
-            user,
-        )
-        assert response.status_code == 400
-
-    @pytest.mark.django_db
-    def test_step_up_unsupported_primary_chain(self):
-        user = make_user()
-        # A primary on a chain with no registered verifier.
+        user.profile.address = "x"
+        user.profile.save()
         LinkedAddress.objects.create(
             profile=user.profile,
-            address="solana-addr",
-            canonical_address="solana-addr",
+            address="x",
+            canonical_address="x",
             chain="solana",
-            auth_method="x",
+            auth_method="other",
             is_primary=True,
             login_enabled=True,
         )
-        sec = secondary(user.profile)
-        response = post(
-            ManageAddressAPIView,
-            {
-                "operation": "set_login",
-                "target_id": sec.id,
-                "enabled": True,
-                "nonce": "n",
-                "chain": "solana",
-                "signature": "x",
-            },
-            user,
+        err = verify_step_up(
+            user=user,
+            operation="set_primary",
+            target_id=1,
+            nonce="n1",
+            payload={},
         )
-        assert response.status_code == 400
+        assert err == "Unsupported chain"
 
     @pytest.mark.django_db
-    def test_step_up_verifier_reports_not_supported(self, mocker):
-        from walletauth.verifiers import NotSupported
-
-        class _Raises:
-            def recover(self, **kwargs):
-                raise NotSupported("nope")
-
+    def test_not_supported_bubbles_message(self, mocker):
         user = make_user()
-        evm_primary(user.profile)
-        sec = secondary(user.profile)
-        WalletNonce.objects.create(
-            user=user, address=EVM_PRIMARY, nonce="n", chain="evm"
+        acct, sec = self._primary_with_nonce(user)
+        mocker.patch.object(
+            VERIFIERS["evm"], "recover", side_effect=NotSupported("nope")
         )
-        mocker.patch.dict("walletauth.management_views.VERIFIERS", {"evm": _Raises()})
-        response = post(
-            ManageAddressAPIView,
-            {
-                "operation": "set_login",
-                "target_id": sec.id,
-                "enabled": True,
-                "nonce": "n",
-                "chain": "evm",
-                "signature": "x",
-            },
-            user,
+        err = verify_step_up(
+            user=user,
+            operation="set_login",
+            target_id=sec.id,
+            nonce="n1",
+            payload={"signature": "0x00"},
         )
-        assert response.status_code == 400
+        assert err == "nope"
 
     @pytest.mark.django_db
-    def test_step_up_no_primary(self):
-        # A secondary with no primary on the account: step-up can't proceed.
+    def test_nonce_not_in_db(self):
         user = make_user()
-        sec = secondary(user.profile)
-        response = post(
-            ManageAddressAPIView,
-            {
-                "operation": "set_primary",
-                "target_id": sec.id,
-                "nonce": "n",
-                "chain": "evm",
-                "signature": "x",
-            },
-            user,
+        acct = new_evm_key()
+        evm_primary(user.profile, address=acct.address.lower())
+        sec = secondary(user.profile, login=False)
+        sig = sign_bound(acct, "ghost", "set_login", sec.id)
+        err = verify_step_up(
+            user=user,
+            operation="set_login",
+            target_id=sec.id,
+            nonce="ghost",
+            payload={"signature": sig},
         )
-        assert response.status_code == 400
+        assert err == "Step-up challenge not found or already used"
+
+    @pytest.mark.django_db
+    def test_expired_nonce(self):
+        user = make_user()
+        acct, sec = self._primary_with_nonce(user, nonce="old")
+        WalletNonce.objects.filter(nonce="old").update(
+            created_at=timezone.now() - WalletNonce.NONCE_TTL * 2
+        )
+        sig = sign_bound(acct, "old", "set_login", sec.id)
+        err = verify_step_up(
+            user=user,
+            operation="set_login",
+            target_id=sec.id,
+            nonce="old",
+            payload={"signature": sig},
+        )
+        assert err == "Step-up challenge expired or already used"
+
+    @pytest.mark.django_db
+    def test_claim_race_lost(self, mocker):
+        user = make_user()
+        acct, sec = self._primary_with_nonce(user)
+        sig = sign_bound(acct, "n1", "set_login", sec.id)
+        mocker.patch.object(WalletNonce, "claim", return_value=False)
+        err = verify_step_up(
+            user=user,
+            operation="set_login",
+            target_id=sec.id,
+            nonce="n1",
+            payload={"signature": sig},
+        )
+        assert err == "Step-up challenge expired or already used"

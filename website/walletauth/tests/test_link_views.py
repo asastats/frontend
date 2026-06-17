@@ -375,7 +375,7 @@ class TestLinkRedirectUrl:
         with override_settings(WALLET_LINK_REDIRECT_URL="no_such_url_name"):
             assert _link_redirect_url() == "no_such_url_name"
 
-    def test_default_prefers_connected_addresses(self, mocker):
+    def test_default_prefers_profile_addresses(self, mocker):
         mocker.patch(
             "walletauth.link_views.reverse",
             side_effect=lambda name: (

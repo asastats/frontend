@@ -1,10 +1,11 @@
 #git+https://github.com/algorand/py-algorand-sdk.git
 py-algorand-sdk>=2.11.1
 Django>=5.2.15,<6
+django-htmx>=1.27.0
+django-template-partials>=25.3
 django-cors-headers>=4.9.0
 channels[daphne]>=4.3.2
 channels-redis>=4.3.0
-selenium>=4.44.0
 requests>=2.34.2
 python-dateutil>=2.9
 #### database
@@ -26,6 +27,3 @@ drf-spectacular>=0.29.0  # TODO: pin an exact/latest version in production
 drf-spectacular-sidecar>=2026.6.1
 djangorestframework-xml>=2.0.0
 djangorestframework-yaml>=2.0.0
-## widgets
-django-htmx>=1.27.0
-django-template-partials>=25.3

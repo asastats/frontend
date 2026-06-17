@@ -2,6 +2,7 @@
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
+{% load partials %}
 {% block title %}Manage addresses linked to profile - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Manage your public Algorand and EVM addresses linked to your profile.{% endblock %}
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
@@ -20,20 +21,67 @@
     id="connected-addresses"
     data-api-base="{{ wallet_api_base|default:'/api/v2/wallet' }}"
     data-wc-project-id="{{ wallet_connect_project_id|default:'' }}"
-    data-add-url="{{ link_address_url }}"
+    data-ops-url="{% url 'profile_addresses_action' %}"
+    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
   >
     <div id="connected-addresses-list">
-      {# Rows are rendered client-side by ManageAddressesComponent. #}
+      {% comment %}
+        Rendered server-side. `inline` renders here on first paint AND makes the
+        fragment addressable as "<this template>#address_list" for htmx swaps.
+      {% endcomment %}
+      {% partialdef address_list inline %}
+      <ul class="collapsible expandable center-align">
+        {% for row in addresses %}
+        <li class="connected-address-row" id="address-{{ row.id }}">
+          <div class="collapsible-header">
+            <span class="address-text {% if row.is_primary %}mylight-text{% endif %}">
+              {{ row.address|slice:":5" }}...{{ row.address|slice:"-5:" }}
+            </span>
+          </div>
+          <div class="collapsible-body">
+            <div class="full-address-text" style="word-break:break-all;margin-bottom:4px">{{ row.address }}</div>
+            <div class="chain-text text-muted" style="margin-bottom:16px">({{ row.chain }})</div>
+            <div class="address-actions">
+              {% if row.is_primary %}
+                <span class="address-note">This is your primary address.</span>
+              {% else %}
+                <button type="button" class="btn whenmoon waves-effect"
+                        data-stepup data-operation="set_primary" data-target-id="{{ row.id }}">
+                  Make primary
+                </button>
+                {% if row.login_enabled %}
+                  <button type="button" class="btn whenmoon waves-effect"
+                          hx-post="{% url 'profile_addresses_action' %}"
+                          hx-vals='{"operation": "set_login", "target_id": {{ row.id }}, "enabled": false}'
+                          hx-target="#connected-addresses-list" hx-swap="innerHTML">
+                    Disable login
+                  </button>
+                {% else %}
+                  <button type="button" class="btn whenmoon waves-effect"
+                          data-stepup data-operation="set_login" data-target-id="{{ row.id }}" data-enabled="true">
+                    Enable login
+                  </button>
+                {% endif %}
+                <button type="button" class="btn whenmoon waves-effect"
+                        hx-post="{% url 'profile_addresses_action' %}"
+                        hx-vals='{"operation": "remove", "target_id": {{ row.id }}}'
+                        hx-target="#connected-addresses-list" hx-swap="innerHTML"
+                        hx-confirm="Remove this address from your profile?">
+                  Remove
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        </li>
+        {% empty %}
+        <li class="connected-address-row"><div class="collapsible-header">No addresses yet.</div></li>
+        {% endfor %}
+      </ul>
+      {% endpartialdef %}
     </div>
 
     <div class="section">
-      <button
-        type="button"
-        class="btn whenmoon waves-effect manage-action manage-add"
-        data-action="add"
-      >
-        Add address
-      </button>
+      <a class="btn whenmoon waves-effect" href="{{ link_address_url }}">Add address</a>
     </div>
   </div>
 </div>

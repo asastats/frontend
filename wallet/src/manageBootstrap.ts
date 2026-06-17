@@ -1,52 +1,104 @@
-import {
-  DEFAULT_MANAGE_API_BASE,
-  ManageAddressesComponent,
-  type ManageDeps,
-} from "./manageAddressesComponent";
+/* istanbul ignore file -- browser/htmx glue; runStepUp is tested in manageBridge.test */
+import { buildStepUpSign } from "./manageAdapters";
+import { runStepUp } from "./manageBridge";
+
+const DEFAULT_MANAGE_API_BASE = "/api/v2/wallet";
+
+function getCsrf(doc: Document): string {
+  const cookie =
+    doc.cookie.match("(^|;)\\s*csrftoken\\s*=\\s*([^;]+)")?.pop() || "";
+  return (
+    cookie ||
+    (doc.querySelector('input[name="csrfmiddlewaretoken"]') as
+      | HTMLInputElement
+      | null)?.value ||
+    ""
+  );
+}
+
+function toast(message: string): void {
+  const M = (window as any).M;
+  if (M?.toast) {
+    M.toast({ html: message, classes: "red darken-1" });
+  }
+}
+
+function initCollapsible(doc: Document): void {
+  const M = (window as any).M;
+  const ul = doc.querySelector(".collapsible");
+  if (M?.Collapsible?.init && ul) {
+    M.Collapsible.init(ul, { accordion: false });
+  }
+}
 
 /**
- * Mount the connected-addresses manager when its container is present.
+ * Wire the connected-addresses manager when its container is present.
  *
- * Reads `data-api-base` and `data-wc-project-id` from `#connected-addresses`,
- * then renders and binds a {@link ManageAddressesComponent}. No-ops when the
- * container is absent, so it is safe to call on every page. The browser/wallet
- * adapters are imported lazily and only when no deps are injected, keeping
- * viem/WalletConnect out of the test path.
+ * Plain reducing actions (remove, disable-login) are declarative `hx-post`
+ * buttons handled by htmx directly. Privilege-expanding actions carry
+ * `data-stepup`; those are intercepted here to obtain a wallet signature before
+ * htmx posts the proof. No-ops when the container is absent.
  *
- * @param deps - Optional injected dependencies (used by tests).
  * @param doc - Document to query (defaults to the global document).
- * @returns The mounted component, or null when no container is present.
  */
-export async function initManageAddresses(
-  deps: Partial<ManageDeps> = {},
-  doc: Document = document
-): Promise<ManageAddressesComponent | null> {
+export function initManageAddresses(doc: Document = document): void {
   const container = doc.querySelector<HTMLElement>("#connected-addresses");
   if (!container) {
-    return null;
+    return;
   }
-
   const apiBase = container.dataset.apiBase || DEFAULT_MANAGE_API_BASE;
-
-  let stepUpSign = deps.stepUpSign;
-  let addAddress = deps.addAddress;
-  /* istanbul ignore next -- loads browser/viem adapters on real pages only */
-  if (!stepUpSign || !addAddress) {
-    const adapters = await import("./manageAdapters");
-    const built = adapters.defaultManageDeps({
-      apiBase,
-      wcProjectId: container.dataset.wcProjectId || "",
-      addUrl: container.dataset.addUrl || "",
-    });
-    stepUpSign = stepUpSign || built.stepUpSign;
-    addAddress = addAddress || built.addAddress;
-  }
-
-  const component = new ManageAddressesComponent(container, apiBase, {
-    stepUpSign,
-    addAddress,
-    fetchFn: deps.fetchFn,
+  const opsUrl = container.dataset.opsUrl || "";
+  const stepUpSign = buildStepUpSign({
+    apiBase,
+    wcProjectId: container.dataset.wcProjectId || "",
   });
-  await component.bind();
-  return component;
+  const htmx = (window as any).htmx;
+
+  container.addEventListener("click", (event: Event) => {
+    const button = (event.target as HTMLElement).closest<HTMLElement>(
+      "[data-stepup]"
+    );
+    if (!button) {
+      return; // plain hx-post buttons are handled natively by htmx
+    }
+    event.preventDefault();
+    runStepUp(
+      {
+        operation: button.dataset.operation || "",
+        targetId: Number(button.dataset.targetId),
+        enabled: button.dataset.enabled === "true",
+      },
+      {
+        fetchFn: fetch.bind(window),
+        csrf: getCsrf(doc),
+        apiBase,
+        opsUrl,
+        stepUpSign,
+        ajax: (url, values) =>
+          htmx.ajax("POST", url, {
+            target: "#connected-addresses-list",
+            swap: "innerHTML",
+            source: container,
+            values,
+          }),
+      }
+    ).catch((error: unknown) =>
+      toast(error instanceof Error ? error.message : String(error))
+    );
+  });
+
+  // Re-init the Materialize collapsible after htmx swaps the list back in.
+  doc.body.addEventListener("htmx:afterSwap", (event: Event) => {
+    const detail = (event as CustomEvent).detail;
+    if (detail?.target?.id === "connected-addresses-list") {
+      initCollapsible(doc);
+    }
+  });
+  // Server-signalled failures arrive as an HX-Trigger "wallet-error" event.
+  doc.body.addEventListener("wallet-error", (event: Event) => {
+    const detail = (event as CustomEvent).detail;
+    toast(detail?.value || (typeof detail === "string" ? detail : "Operation failed"));
+  });
+
+  initCollapsible(doc);
 }

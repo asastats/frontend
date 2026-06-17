@@ -8,7 +8,7 @@ module.exports = {
     "node_modules/(?!(@txnlab/use-wallet|@perawallet/connect|@blockshake/defly-connect|lute-connect|viem|@walletconnect)/)",
   ],
   testMatch: ["**/?(*.)+(spec|test).ts"],
-  collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts", "!src/walletTestHarness.ts", "!src/evmConnectors.ts", "!src/manageAdapters.ts"],
+  collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts", "!src/walletTestHarness.ts", "!src/evmConnectors.ts", "!src/manageAdapters.ts", "!src/manageBootstrap.ts"],
   setupFilesAfterEnv: ["<rootDir>/src/setupTests.ts"],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],

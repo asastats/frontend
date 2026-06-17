@@ -71,7 +71,7 @@ def _link_redirect_url():
             return reverse(configured)
         except NoReverseMatch:
             return configured
-    for name in ("profile_addresses", "profile"):
+    for name in ("profile_addresses", "connected_addresses", "profile"):
         try:
             return reverse(name)
         except NoReverseMatch:

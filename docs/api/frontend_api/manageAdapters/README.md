@@ -8,8 +8,12 @@
 
 ## Interfaces
 
-- [ManageAdapterOptions](interfaces/ManageAdapterOptions.md)
+- [StepUpOptions](interfaces/StepUpOptions.md)
+
+## Type Aliases
+
+- [StepUpSigner](type-aliases/StepUpSigner.md)
 
 ## Functions
 
-- [defaultManageDeps](functions/defaultManageDeps.md)
+- [buildStepUpSign](functions/buildStepUpSign.md)

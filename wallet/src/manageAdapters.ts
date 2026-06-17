@@ -5,46 +5,32 @@ import {
   encodeUnsignedTransaction,
 } from "algosdk";
 import { getDefaultConnectors, defaultEvmSigner } from "./evmConnectors";
-import type { ManageDeps } from "./manageAddressesComponent";
 
 /**
- * Browser-only wiring for the connected-addresses page. Produces the
- * {@link ManageDeps} the manage component depends on: a step-up signer that
- * proves control of the *current primary* (EVM via viem, Algorand via
- * use-wallet), and an add-address action that sends the user to the link page
- * (which reuses the authorize-page wallet UI for every chain). None of this runs
- * under jsdom, so the file is excluded from coverage; the testable orchestration
- * lives in `manageAddressesComponent.ts`.
+ * Signs `message` with the wallet holding `address` on `chain`; resolves to the
+ * proof fragment merged into the step-up POST (`{ signature }` for EVM,
+ * `{ signedTransaction }` for Algorand). Rejects if the connected account is not
+ * the primary, so step-up can only be met by the real primary key.
  */
+export type StepUpSigner = (
+  address: string,
+  chain: string,
+  message: string
+) => Promise<Record<string, unknown>>;
 
-/** Options for {@link defaultManageDeps}. */
-export interface ManageAdapterOptions {
+/** Options for {@link buildStepUpSign}. */
+export interface StepUpOptions {
   /** Walletauth API base, e.g. "/api/v2/wallet" (used for the wallets list). */
   apiBase: string;
   /** WalletConnect project id; empty string means injected wallets only. */
   wcProjectId: string;
-  /** URL of the link page to add a new address (any chain). */
-  addUrl: string;
-  /**
-   * Optional override for Algorand step-up signing. When omitted, the built-in
-   * use-wallet signer is used (resumes the session of the wallet the user signed
-   * in with and signs with it). Inject this only to customise the flow.
-   */
+  /** Optional override for Algorand step-up signing (built-in is used otherwise). */
   algorandStepUpSign?: (
     address: string,
     message: string
   ) => Promise<Record<string, unknown>>;
-  /** Navigation side effect (defaults to `window.location`). */
-  navigate?: (url: string) => void;
 }
 
-/**
- * Connect an EVM wallet and require it to be the current primary, then sign.
- *
- * The recovered account must equal `primary` (case-folded); otherwise the
- * signer rejects, so step-up cannot be satisfied by any wallet other than the
- * one holding the primary key.
- */
 async function evmStepUp(
   primary: string,
   message: string,
@@ -61,14 +47,8 @@ async function evmStepUp(
   return { signature: await defaultEvmSigner(provider, address, message) };
 }
 
-/** Cached use-wallet manager so repeated step-ups reuse the live session. */
 let cachedManager: WalletManager | null = null;
 
-/**
- * Build (once) a mainnet WalletManager from the backend's supported-wallet list
- * and resume any persisted session -- mirrors `main.ts` so the wallet the user
- * signed in with is restored without rendering any cards.
- */
 async function algorandManager(apiBase: string): Promise<WalletManager> {
   if (cachedManager) {
     await cachedManager.resumeSessions();
@@ -88,16 +68,6 @@ async function algorandManager(apiBase: string): Promise<WalletManager> {
   return manager;
 }
 
-/**
- * Step-up signing for an Algorand primary: sign a 0-ALGO self-payment whose note
- * is the challenge, with the connected wallet whose active account *is* the
- * primary. Returns `{ signedTransaction }` for the manage POST; the backend
- * recovers the sender from the signed transaction and checks it == primary.
- *
- * Requires the primary wallet to be connected (the session the user signed in
- * with is resumed automatically). If it is not the active account, the caller
- * sees an actionable error rather than a silent failure.
- */
 async function algorandStepUp(
   primary: string,
   message: string,
@@ -131,32 +101,22 @@ async function algorandStepUp(
 }
 
 /**
- * Build the {@link ManageDeps} for the connected-addresses page.
+ * Build the {@link StepUpSigner} for the manage page (EVM + Algorand).
  *
- * @param options - API base, WalletConnect id, link-page URL, optional hook.
- * @returns Dependencies for the manage component.
+ * @param options - API base, WalletConnect id, optional Algorand override.
+ * @returns A signer the htmx bridge calls to obtain step-up proof.
  */
-export function defaultManageDeps(options: ManageAdapterOptions): ManageDeps {
-  const navigate =
-    options.navigate ||
-    ((url: string) => {
-      window.location.href = url;
-    });
-  return {
-    stepUpSign: async (address, chain, message) => {
-      if (chain === "evm") {
-        return evmStepUp(address, message, options.wcProjectId);
-      }
-      if (chain === "algorand") {
-        const signer =
-          options.algorandStepUpSign ||
-          ((a: string, m: string) => algorandStepUp(a, m, options.apiBase));
-        return signer(address, message);
-      }
-      throw new Error(`Unsupported chain: ${chain}`);
-    },
-    addAddress: async () => {
-      navigate(options.addUrl);
-    },
+export function buildStepUpSign(options: StepUpOptions): StepUpSigner {
+  return async (address, chain, message) => {
+    if (chain === "evm") {
+      return evmStepUp(address, message, options.wcProjectId);
+    }
+    if (chain === "algorand") {
+      const signer =
+        options.algorandStepUpSign ||
+        ((a: string, m: string) => algorandStepUp(a, m, options.apiBase));
+      return signer(address, message);
+    }
+    throw new Error(`Unsupported chain: ${chain}`);
   };
 }

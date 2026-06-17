@@ -14,7 +14,9 @@ Invariants preserved here:
 
 import logging
 
-from walletauth.models import LinkedAddress
+from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
+from walletauth.models import LinkedAddress, WalletNonce
+from walletauth.verifiers import VERIFIERS, NotSupported
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +27,86 @@ class CannotRemovePrimary(Exception):
 
 class CannotDisablePrimaryLogin(Exception):
     """Raised when login is disabled on the primary address."""
+
+
+def _current_primary(profile):
+    """Return the profile's primary :class:`LinkedAddress`, or ``None``.
+
+    :param profile: the account profile
+    :return: the primary row or ``None``
+    :rtype: walletauth.models.LinkedAddress | None
+    """
+    return profile.linked_addresses.filter(is_primary=True).first()
+
+
+def _normalized(chain, address):
+    """Return ``address`` in comparison form (EVM is case-folded).
+
+    :param chain: chain identifier
+    :type chain: str
+    :param address: address to normalize
+    :type address: str
+    :rtype: str
+    """
+    return address.lower() if chain == "evm" else address
+
+
+def verify_step_up(*, user, operation, target_id, nonce, payload):
+    """Verify a fresh, operation-bound signature from ``user``'s current primary.
+
+    The signed challenge is ``prefix + "{nonce}:{operation}:{target_id}"``, so a
+    signature minted to approve one change cannot be replayed to authorize a
+    different one: altering the operation or the target alters the message the
+    signature must cover, and recovery fails. The nonce is additionally bound to
+    the primary address and single-use (claimed atomically here).
+
+    Framework-agnostic so both the htmx view and any other caller can use it.
+
+    :param user: the authenticated user
+    :param operation: the step-up operation ("set_primary" or "set_login")
+    :type operation: str
+    :param target_id: id of the caller's own row the operation acts on
+    :type target_id: int
+    :param nonce: the raw server-issued nonce token (not the bound form)
+    :type nonce: str
+    :param payload: proof fields -- ``signature`` (EVM) or ``signedTransaction``
+        (Algorand)
+    :type payload: collections.abc.Mapping
+    :return: ``None`` on success, else a human-readable error message
+    :rtype: str | None
+    """
+    primary = _current_primary(user.profile)
+    if primary is None:
+        return "No primary address"
+    if not nonce:
+        return "Missing step-up signature"
+    verifier = VERIFIERS.get(primary.chain)
+    if verifier is None:
+        return "Unsupported chain"
+    bound = f"{nonce}:{operation}:{int(target_id)}"
+    try:
+        proven = verifier.recover(
+            nonce=bound, prefix=WALLET_CONNECT_NONCE_PREFIX, payload=payload
+        )
+    except NotSupported as exc:
+        return str(exc)
+    if not proven or _normalized(primary.chain, proven) != _normalized(
+        primary.chain, primary.address
+    ):
+        return "Step-up signature did not match your primary address"
+    try:
+        nonce_obj = WalletNonce.objects.get(
+            nonce=nonce,
+            address=primary.address,
+            user=user,
+            chain=primary.chain,
+            used=False,
+        )
+    except WalletNonce.DoesNotExist:
+        return "Step-up challenge not found or already used"
+    if nonce_obj.is_expired() or not nonce_obj.claim():
+        return "Step-up challenge expired or already used"
+    return None
 
 
 def set_primary(profile, target):

@@ -96,15 +96,23 @@ class TestCoreUrls:
         assert url.name == "profile_authorize_check"
 
     def test_core_urls_profile_connected_addresses(self):
-        url = self._url_from_pattern(r"^profile/addresses/$")
+        url = self._url_from_pattern("profile/addresses/")
         assert isinstance(url, URLPattern)
-        assert url.lookup_str == "core.views.ProfileAddressesView"
+        assert url.lookup_str == "core.views_connected_addresses.profile_addresses"
         assert url.name == "profile_addresses"
 
-    def test_core_urls_profile_link_address(self):
-        url = self._url_from_pattern(r"^profile/addresses/link/$")
+    def test_core_urls_profile_action_address(self):
+        url = self._url_from_pattern("profile/addresses/action/")
         assert isinstance(url, URLPattern)
-        assert url.lookup_str == "core.views.ProfileLinkAddressView"
+        assert (
+            url.lookup_str == "core.views_connected_addresses.profile_addresses_action"
+        )
+        assert url.name == "profile_addresses_action"
+
+    def test_core_urls_profile_link_address(self):
+        url = self._url_from_pattern("profile/addresses/link/")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "core.views_connected_addresses.profile_link_address"
         assert url.name == "profile_link_address"
 
     def test_core_urls_profile_permission_fetch(self):
@@ -238,4 +246,4 @@ class TestCoreUrls:
         assert url.name == "bundle_name"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 35
+        assert len(urls.urlpatterns) == 36

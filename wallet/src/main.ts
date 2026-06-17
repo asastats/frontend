@@ -111,7 +111,7 @@ new App();
   }
 }
 
-/* istanbul ignore next -- bootstrap glue; orchestration is tested in manageBootstrap.test */
+/* istanbul ignore next -- bootstrap glue; orchestration is tested in manageBridge.test */
 {
   // Mount the connected-addresses manager when present. No-ops on pages without
   // the `#connected-addresses` container, so it is safe to run everywhere.
