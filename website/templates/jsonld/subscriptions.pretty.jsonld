@@ -2,17 +2,17 @@
   "@context": "http://schema.org",
   "@type": "WebPage",
   "name": "Subscriptions",
-  "url": "https://www.asastats.com/subscriptions/",
-  "@id": "https://www.asastats.com/#subscriptions",
+  "url": "{{ WEBSITE_URL }}/subscriptions/",
+  "@id": "{{ WEBSITE_URL }}/#subscriptions",
   "description": "ASA Stats Subscription plans - subscribe to one of our tiers to use the ASA Stats advanced features.",
   "isPartOf":{
       "@type": "WebSite",
-      "@id":"https://www.asastats.com/#site",
+      "@id":"{{ WEBSITE_URL }}/#site",
       "name": "ASA Stats"
   },
   "publisher": {
       "@type": "Organization",
-      "@id": "https://www.asastats.com/#org",
+      "@id": "{{ WEBSITE_URL }}/#org",
       "name": "ASA Stats"
   }
 }

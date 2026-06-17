@@ -12,4 +12,4 @@ Allow: /*.jpeg$
 Allow: /*.png$
 Allow: /*.pdf$
 Disallow: /
-Sitemap: https://www.asastats.com/sitemap.xml
+Sitemap: {{ WEBSITE_URL }}/sitemap.xml

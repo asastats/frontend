@@ -1,7 +1,7 @@
 {% extends 'base.html' %}{% load static %}
 {% block title %}ASA Stats - Subscription Plans{% endblock %}
 {% block description %}ASA Stats Subscription Plans - subscribe to one of our tiers to use the ASA Stats advanced features.{% endblock %}
-{% block keywords %}asastats,Algorand,subscription plans,subscription tiers,subscribe{% endblock %}
+{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,subscription plans,subscription tiers,subscribe{% endblock %}
 {% block content %}
 <h1 class="center-align">Subscription Plans</h1>
 <h5 class="center-align">Unlock More Power with ASASTATS</h5>
@@ -20,7 +20,7 @@
     ✅ NFT collection summaries<br>
     ❌ No API access, no advanced user widgets<br>
     <br>
-    Try it now → <a href="https://www.asastats.com" target="_blank" rel="noopener" title="Go to the ASA Stats index page">Launch Dashboard</a>
+    Try it now → <a href="{{ WEBSITE_URL }}" target="_blank" rel="noopener" title="Go to the ASA Stats index page">Launch Dashboard</a>
     <br>
     </p>
   </div>

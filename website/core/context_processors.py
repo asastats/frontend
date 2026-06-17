@@ -40,12 +40,16 @@ def global_constants(request):
     :return: dict
     """
     return {
-        # "PROJECT_OWNER": settings.PROJECT_OWNER,
-        # "PROJECT_NAME": f"{settings.PROJECT_OWNER} Rewards",
-        # "PROJECT_WEBSITE_NAME": f"{settings.PROJECT_OWNER} Rewards website",
+        "WEBSITE_NAME": settings.WEBSITE_NAME,
+        "WEBSITE_SHORT_NAME": settings.WEBSITE_SHORT_NAME,
         "WEBSITE_URL": settings.WEBSITE_URL,
-        # "ISSUE_TRACKER": settings.ISSUE_TRACKER_PROVIDER,
-        # "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
+        "X_HANDLE": settings.X_HANDLE,
+        "SUBREDDIT_NAME": settings.SUBREDDIT_NAME,
+        "ANDROID_APP": settings.ANDROID_APP,
+        "IOS_APP": settings.IOS_APP,
+        "MEDIUM_NAME": settings.MEDIUM_NAME,
+        "DISCORD_INVITE": settings.DISCORD_INVITE,
+        "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
     }
 
 

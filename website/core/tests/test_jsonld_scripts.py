@@ -48,7 +48,7 @@ def test_pages_jsonld_content_id(item):
     path = snippet_for_item("", item)
     with open(path, "r") as f:
         fileread = f.read()
-        page_id = '"@id":"https://www.asastats.com/#{}"'.format(item)
+        page_id = '"@id":"{}/#{}"'.format(settings.WEBSITE_URL, item)
         assert page_id in fileread
 
 

@@ -2,17 +2,17 @@
   "@context": "http://schema.org",
   "@type": "WebPage",
   "name": "FAQ page",
-  "url": "https://www.asastats.com/faq/",
-  "@id": "https://www.asastats.com/#faq",
+  "url": "{{ WEBSITE_URL }}/faq/",
+  "@id": "{{ WEBSITE_URL }}/#faq",
   "description": "Frequently asked questions about ASA Stats project and token",
   "isPartOf":{
       "@type": "WebSite",
-      "@id":"https://www.asastats.com/#site",
+      "@id":"{{ WEBSITE_URL }}/#site",
       "name": "ASA Stats"
   },
   "publisher": {
       "@type": "Organization",
-      "@id": "https://www.asastats.com/#org",
+      "@id": "{{ WEBSITE_URL }}/#org",
       "name": "ASA Stats"
   }
 }

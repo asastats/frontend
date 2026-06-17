@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}ASA Stats - FAQ page{% endblock %}
 {% block description %}Frequently asked questions about ASA Stats project and ASASTATS token.{% endblock %}
-{% block keywords %}asastats,Algorand,ASA,project,token,questions,answers,features,inquiries,requests{% endblock %}
+{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,ASA,project,token,questions,answers,features,inquiries,requests{% endblock %}
 {% block content %}
 <div class="row left-align">
 <h1 class="center-align">Frequently Asked Questions</h1>
@@ -67,7 +67,7 @@
         <p><strong>Is there an API?</strong>
         <br><br>Yes. ASA Stats provides a robust v2 <strong>API</strong> for querying ASA/NFT valuations, wallet holdings, and bundle data.
         <br><br>
-        📘 Explore → <a href="https://www.asastats.com/api/v2/schema/swagger-ui/" target="_blank" rel="noopener" title="Visit Swagger UI index page of the ASA Stats API">Swagger UI</a> → <a href="https://www.asastats.com/api/v2/schema/redoc/" target="_blank" rel="noopener" title="Visit Redoc index page of the ASA Stats API">Redoc</a>
+        📘 Explore → <a href="{{ WEBSITE_URL }}/api/v2/schema/swagger-ui/" target="_blank" rel="noopener" title="Visit Swagger UI index page of the ASA Stats API">Swagger UI</a> → <a href="{{ WEBSITE_URL }}/api/v2/schema/redoc/" target="_blank" rel="noopener" title="Visit Redoc index page of the ASA Stats API">Redoc</a>
         </p>
       </li>
       <li class="collection-item">
@@ -90,7 +90,7 @@
       <p><strong>How are subscriptions handled?</strong>
       <br><br>Subscriptions are powered by <strong>ASASTATS tokens</strong> and managed through <strong>Subtopia smart contracts</strong> on-chain.
       <br><br>Once you pay for a tier, your wallet’s permission level is automatically updated.
-      <br><br>📘 View <a href="https://www.asastats.com/subscriptions/" target="_blank" rel="noopener" title="Visit ASA Stats subscriptions page">Subscription Plans</a>
+      <br><br>📘 View <a href="{{ WEBSITE_URL }}/subscriptions/" target="_blank" rel="noopener" title="Visit ASA Stats subscriptions page">Subscription Plans</a>
       </p>      
       </li>
       <li class="collection-item">
@@ -101,7 +101,7 @@
       <li class="collection-item">
       <p><strong>I’m stuck or found a bug. What should I do?</strong>
       <br><br>&#8226; First, check <a href="https://github.com/asastats/channel/issues" target="_blank" rel="noopener" title="Visit issues section in our GitHub">GitHub Issues</a> to see if it’s known<br>
-      &#8226; If not, create a new issue or ask in our <a href="https://discord.gg/Vjx7w7pAC7" target="_blank" rel="noopener" title="Open ASA Stats Discord channel">Discord</a>, <a href="https://www.reddit.com/r/asastats" target="_blank" rel="noopener" title="Visit r/asastats subreddit">Reddit</a>, or <a href="https://twitter.com/asastatscom" target="_blank" rel="noopener" title="Go to the ASA Stats X profile page">ping us on X</a>.<br>
+      &#8226; If not, create a new issue or ask in our <a href="https://discord.gg/Vjx7w7pAC7" target="_blank" rel="noopener" title="Open ASA Stats Discord channel">Discord</a>, <a href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener" title="Visit {{ WEBSITE_NAME }} subreddit">Reddit</a>, or <a href="https://twitter.com/{{ X_HANDLE }}" target="_blank" rel="noopener" title="Go to the {{ WEBSITE_NAME }} X profile page">ping us on X</a>.<br>
       &#8226; Verified bugs and helpful contributions may earn <strong>token rewards</strong> from the community pool<br>
       </p>      
       </li>

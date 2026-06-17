@@ -135,7 +135,7 @@ class IndexPageTest(TestCase):
             "subscriptions",
         ):
             self.assertContains(
-                response, '"url":"https://www.asastats.com/{}/"'.format(part)
+                response, '"url":"{}/{}/"'.format(settings.WEBSITE_URL, part)
             )
 
     def test_index_page_jsonld_script_type_organization_element(self):
@@ -189,19 +189,19 @@ class IndexPageTest(TestCase):
     def test_index_page_links_to_twitter_page(self):
         response = self.client.get(reverse("index"))
         self.assertContains(
-            response, 'href="{}"'.format("https://twitter.com/asastatscom")
+            response, 'href="https://twitter.com/{}"'.format(settings.X_HANDLE)
         )
 
     def test_index_page_links_to_reddit_page(self):
         response = self.client.get(reverse("index"))
         self.assertContains(
-            response, 'href="{}"'.format("https://www.reddit.com/r/asastats")
+            response, 'href="https://www.reddit.com/r/{}"'.format(settings.SUBREDDIT_NAME)
         )
 
     def test_index_page_links_to_discord_invite(self):
         response = self.client.get(reverse("index"))
         self.assertContains(
-            response, 'href="{}"'.format("https://discord.gg/Vjx7w7pAC7")
+            response, 'href="https://discord.gg/{}"'.format(settings.SUBREDDIT_NAME)
         )
 
 
@@ -899,5 +899,5 @@ class SignupPageTest(TestCase):
         response = self.client.get(reverse("account_signup"))
         for part in ("login", "password/reset"):
             self.assertContains(
-                response, '"url":"https://www.asastats.com/accounts/{}/"'.format(part)
+                response, '"url":"{}/accounts/{}/"'.format(settings.WEBSITE_URL, part)
             )

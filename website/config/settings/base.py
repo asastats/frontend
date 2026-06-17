@@ -286,6 +286,18 @@ REST_FRAMEWORK = {
     },
 }
 
+# Website information
+WEBSITE_NAME = get_env_variable("WEBSITE_NAME", "ASA Stats")
+WEBSITE_SHORT_NAME = get_env_variable("WEBSITE_SLUG_NAME", "asastats")
+WEBSITE_URL = get_env_variable("WEBSITE_URL", "https://www.asastats.com")
+WEBSITE_DOMAIN = get_env_variable("WEBSITE_URL", "https://www.asastats.com")
+X_HANDLE = get_env_variable("X_HANDLE", "@asastatscom")
+SUBREDDIT_NAME = get_env_variable("SUBREDDIT_NAME", "asastats")
+ANDROID_APP = get_env_variable("ANDROID_APP", "com.asastats.app")
+IOS_APP = get_env_variable("ANDROID_APP", "asa-stats-mobile/id6443547246")
+MEDIUM_NAME = get_env_variable("MEDIUM_NAME", "@asastats")
+DISCORD_INVITE = get_env_variable("DISCORD_INVITE", "Vjx7w7pAC7")
+GITHUB_ORGANIZATION = get_env_variable("GITHUB_ORGANIZATION", "asastats")
 
 # --- Rotated secrets ---
 SIMPLE_JWT_KEY = get_env_variable("SIMPLE_JWT_KEY", "")
@@ -304,7 +316,7 @@ SPECTACULAR_SETTINGS = {
     "OAS_VERSION": "3.1.0",
     "SWAGGER_UI_SETTINGS": {"persistAuthorization": True},
     # "SERVERS": [
-    #     {"url": "https://www.asastats.com/api/v2", "description": "Main server"},
+    #     {"url": f"{WEBSITE_URL}/api/v2", "description": "Main server"},
     #     {"url": "http://127.0.0.1:8000/api/v2", "description": "Development server"},
     # ],
     "PREPROCESSING_HOOKS": ["api.helpers.preprocessing_filter_spec"],
@@ -313,8 +325,6 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_FAVICON_HREF": STATIC_URL + "favicon-32x32.png",
     "REDOC_DIST": "SIDECAR",
 }
-
-WEBSITE_URL = get_env_variable("WEBSITE_URL", "https://www.asastats.com")
 
 # --- ASA Stats backend ---
 ASASTATS_API_URL = get_env_variable("ASASTATS_API_URL", "https://api.asastats.com")

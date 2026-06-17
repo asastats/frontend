@@ -2,17 +2,17 @@
   "@context": "http://schema.org",
   "@type": "WebPage",
   "name": "About",
-  "url": "https://www.asastats.com/about/",
-  "@id": "https://www.asastats.com/#about",
+  "url": "{{ WEBSITE_URL }}/about/",
+  "@id": "{{ WEBSITE_URL }}/#about",
   "description": "Real-Time Asset Tracking. Community-Governed. Built for the Algorand Ecosystem.",
   "isPartOf":{
       "@type": "WebSite",
-      "@id":"https://www.asastats.com/#site",
+      "@id":"{{ WEBSITE_URL }}/#site",
       "name": "ASA Stats"
   },
   "publisher": {
       "@type": "Organization",
-      "@id": "https://www.asastats.com/#org",
+      "@id": "{{ WEBSITE_URL }}/#org",
       "name": "ASA Stats"
   }
 }

@@ -50,7 +50,7 @@ SITEMAP_PROTOCOL = "https"
 
 CACHE_TTL = 59 * 90  # Cache time to live is 90 minutes.
 
-COOKIE_ARGUMENTS = {"domain": "www.asastats.com"}
+COOKIE_ARGUMENTS = {"domain": f"{WEBSITE_DOMAIN}"}
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 

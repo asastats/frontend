@@ -15,8 +15,8 @@
     <a class="secondaryAction waves-effect waves-light btn-flat col s12 m8 offset-m2"
         href="{% url 'account_login' %}">Already have an account?</a>
     <p class="col s12 m8 offset-m2 center-align">
-        By clicking Sign up button on this page, you agree to the <a href="https://www.asastats.com/auth_terms.html" target="_blank" rel="noopener" title="ASA Stats Terms of Use">Terms of use</a> and that you have read the ASA Stats 
-        <a href="https://www.asastats.com/auth_terms.html" target="_blank" rel="noopener" title="ASA Stats Privacy Policy">Privacy Policy</a>, including use of cookies.</p>
+        By clicking Sign up button on this page, you agree to the <a href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="ASA Stats Terms of Use">Terms of use</a> and that you have read the ASA Stats 
+        <a href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="ASA Stats Privacy Policy">Privacy Policy</a>, including use of cookies.</p>
     {% endblock %}
 
     {% block submit_text %}Sign up{% endblock %}

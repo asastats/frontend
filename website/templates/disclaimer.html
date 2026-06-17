@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 {% block title %}ASA Stats - Disclaimer{% endblock %}
-{% block description %}Disclaimer for the www.asastats.com website. ASA Stats is not liable for any loss of use, loss of profits, or in any way connected with the use of the website.{% endblock %}
-{% block keywords %}asastats,Algorand,ASA,disclaimer,fair use,investment,warranty,responsibility,legal,conditions,responsibility,account,software{% endblock %}
+{% block description %}Disclaimer for the {{ WEBSITE_URL }} website. ASA Stats is not liable for any loss of use, loss of profits, or in any way connected with the use of the website.{% endblock %}
+{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,ASA,disclaimer,fair use,investment,warranty,responsibility,legal,conditions,responsibility,account,software{% endblock %}
 {% block content %}
 <h1 class="center-align">Disclaimer</h1>
 <div class="row left-align">
   <h3 id="warranty">Warranty Disclaimer</h3>
   <div class="col s12">
-    <p>The information provided by ASA Stats on <a href="https://www.asastats.com" target="_blank" rel="noopener" title="ASA Stats website">https://www.asastats.com</a> (the "Site"') is for general informational purposes only. All information on the Site is provided in good faith, however ASA Stats makes no representation or warranty of any kind, express or implied regarding the accuracy, adequacy, validity, reliability, availability or completeness of any information on the Site.<br>
+    <p>The information provided by ASA Stats on <a href="{{ WEBSITE_URL }}" target="_blank" rel="noopener" title="ASA Stats website">{{ WEBSITE_URL }}</a> (the "Site"') is for general informational purposes only. All information on the Site is provided in good faith, however ASA Stats makes no representation or warranty of any kind, express or implied regarding the accuracy, adequacy, validity, reliability, availability or completeness of any information on the Site.<br>
     </p><br>
   </div>
 
@@ -45,7 +45,7 @@
 
   <h3 id="policy">Privacy Policy and Terms of Use</h3>
   <div class="col s12">
-    <p>Please read and confirm that our <a href="https://www.asastats.com/auth_privacy.html" target="_blank" rel="noopener" title="ASA Stats Privacy Policy">Privacy Policy</a> and <a href="https://www.asastats.com/auth_terms.html" target="_blank" rel="noopener" title="ASA Stats Terms of User">Terms of Use</a> are in accordance with your usage of our site.<br>
+    <p>Please read and confirm that our <a href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener" title="ASA Stats Privacy Policy">Privacy Policy</a> and <a href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="ASA Stats Terms of User">Terms of Use</a> are in accordance with your usage of our site.<br>
     </p><br>
   </div>
 
