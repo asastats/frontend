@@ -266,12 +266,12 @@ describe("WalletComponent auth", () => {
     });
     await component.auth();
     expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "boom" })
+      expect.objectContaining({ text: "boom" })
     );
     delete (window as any).M;
   });
 
-  it("escapes wallet-derived text before showing a toast", async () => {
+  it("passes wallet-derived text to the toast as plain text", async () => {
     const toast = jest.fn();
     (window as any).M = { toast };
     const algosdk = require("algosdk");
@@ -279,9 +279,11 @@ describe("WalletComponent auth", () => {
     mockWallet.activeAccount = { address: "<img src=x onerror=alert(1)>" };
     await component.auth();
     expect(toast).toHaveBeenCalledTimes(1);
-    const html = (toast.mock.calls[0][0] as { html: string }).html;
-    expect(html).not.toContain("<img");
-    expect(html).toContain("&lt;img");
+    const arg = toast.mock.calls[0][0] as { text?: string; html?: string };
+    // `text` (not `html`) is used, so Materialize renders it as textContent;
+    // the raw string is passed through and no `html` key is set.
+    expect(arg.html).toBeUndefined();
+    expect(arg.text).toContain("<img");
     expect(global.fetch).not.toHaveBeenCalled();
     delete (window as any).M;
   });
@@ -310,7 +312,7 @@ describe("WalletComponent auth", () => {
     );
     await component.auth();
     expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "Verification failed" })
+      expect.objectContaining({ text: "Verification failed" })
     );
     delete (window as any).M;
   });

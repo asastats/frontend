@@ -4,27 +4,6 @@ export const DEFAULT_EVM_API_BASE = "/api/v2/wallet/login";
 /** Matches a 0x-prefixed 20-byte hex EVM address. */
 const EVM_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 
-/**
- * Escape HTML special characters so untrusted text can be placed into an HTML
- * sink (e.g. Materialize's toast `html` option) without injecting markup.
- *
- * @param value - Untrusted text.
- * @returns The text with `& < > " '` replaced by entities.
- */
-function escapeHtml(value: string): string {
-  return value.replace(
-    /[&<>"']/g,
-    (c) =>
-      ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      }[c] as string)
-  );
-}
-
 /** Minimal EIP-1193 provider surface used by the EVM flow. */
 export interface Eip1193Provider {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -186,8 +165,8 @@ export class EvmWalletComponent {
 
   /**
    * Surfaces an error via a Materialize toast when available, otherwise a
-   * transient card panel. The message may carry wallet-derived text, so it is
-   * HTML-escaped before being handed to the toast `html` sink.
+   * transient card panel. The message may carry wallet-derived text;
+   * Materialize's `text` option renders it as textContent, so it is safe.
    *
    * @param message - Human-readable error text (treated as untrusted).
    */
@@ -195,7 +174,7 @@ export class EvmWalletComponent {
     /** Optional Materialize global; absent under jsdom/tests. */
     const M = (window as any).M;
     if (M?.toast) {
-      M.toast({ html: escapeHtml(message), classes: "red darken-1" });
+      M.toast({ text: message, classes: "red darken-1" });
       return;
     }
     const errorDiv = document.createElement("div");

@@ -247,7 +247,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     });
     await c.authorizeWith(connector);
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "user rejected" })
+      expect.objectContaining({ text: "user rejected" })
     );
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -263,7 +263,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     });
     await c.authorizeWith(connector);
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: expect.stringContaining("Invalid EVM address") })
+      expect.objectContaining({ text: expect.stringContaining("Invalid EVM address") })
     );
     expect(global.fetch).not.toHaveBeenCalled();
   });
@@ -274,7 +274,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     mockFetchSequence({ error: "Invalid or missing address" });
     await c.authorizeWith(makeConnector());
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "Invalid or missing address" })
+      expect.objectContaining({ text: "Invalid or missing address" })
     );
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
@@ -288,7 +288,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     mockFetchSequence({ nonce: "N", prefix: "p:" });
     await c.authorizeWith(makeConnector());
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "signature declined" })
+      expect.objectContaining({ text: "signature declined" })
     );
   });
 
@@ -301,7 +301,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     );
     await c.authorizeWith(makeConnector());
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "No account is linked to this wallet" })
+      expect.objectContaining({ text: "No account is linked to this wallet" })
     );
   });
 
@@ -311,11 +311,11 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     mockFetchSequence({ nonce: "N", prefix: "p:" }, { success: false });
     await c.authorizeWith(makeConnector());
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "Verification failed" })
+      expect.objectContaining({ text: "Verification failed" })
     );
   });
 
-  it("escapes wallet-derived text before toasting", async () => {
+  it("passes wallet-derived text to the toast as plain text", async () => {
     const root = setupDOM();
     const c = new EvmWalletComponent(root, undefined, deps());
     const connector = makeConnector({
@@ -325,7 +325,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     });
     await c.authorizeWith(connector);
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "&lt;img src=x&gt;" })
+      expect.objectContaining({ text: "<img src=x>" })
     );
   });
 
@@ -359,7 +359,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     });
     await c.authorizeWith(connector);
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "plain string failure" })
+      expect.objectContaining({ text: "plain string failure" })
     );
   });
 
@@ -374,7 +374,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     });
     await c.authorizeWith(connector);
     expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ html: "Invalid EVM address: undefined" })
+      expect.objectContaining({ text: "Invalid EVM address: undefined" })
     );
   });
 

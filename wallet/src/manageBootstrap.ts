@@ -19,7 +19,9 @@ function getCsrf(doc: Document): string {
 function toast(message: string): void {
   const M = (window as any).M;
   if (M?.toast) {
-    M.toast({ html: message, classes: "red darken-1" });
+    // `text` (not the deprecated `html`) renders as textContent: no markup
+    // parsing, so wallet/server-derived strings are surfaced safely.
+    M.toast({ text: message, classes: "red darken-1" });
   }
 }
 
@@ -52,7 +54,6 @@ export function initManageAddresses(doc: Document = document): void {
     apiBase,
     wcProjectId: container.dataset.wcProjectId || "",
   });
-  const htmx = (window as any).htmx;
 
   container.addEventListener("click", (event: Event) => {
     const button = (event.target as HTMLElement).closest<HTMLElement>(
@@ -74,13 +75,21 @@ export function initManageAddresses(doc: Document = document): void {
         apiBase,
         opsUrl,
         stepUpSign,
-        ajax: (url, values) =>
-          htmx.ajax("POST", url, {
+        ajax: (url, values) => {
+          // Resolved per click, not at init: htmx may load after this bundle.
+          const htmx = (window as any).htmx;
+          if (!htmx?.ajax) {
+            return Promise.reject(
+              new Error("htmx is not loaded on this page")
+            );
+          }
+          return htmx.ajax("POST", url, {
             target: "#connected-addresses-list",
             swap: "innerHTML",
             source: container,
             values,
-          }),
+          });
+        },
       }
     ).catch((error: unknown) =>
       toast(error instanceof Error ? error.message : String(error))
