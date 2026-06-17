@@ -8,11 +8,11 @@
   "isPartOf":{
       "@type": "WebSite",
       "@id":"{{ WEBSITE_URL }}/#site",
-      "name": "ASA Stats"
+      "name": "{{ WEBSITE_NAME }}"
   },
   "publisher": {
       "@type": "Organization",
       "@id": "{{ WEBSITE_URL }}/#org",
-      "name": "ASA Stats"
+      "name": "{{ WEBSITE_NAME }}"
   }
 }

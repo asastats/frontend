@@ -6,7 +6,11 @@ from django.conf import settings
 
 import core.context_processors
 from api.client import BackendError
-from core.context_processors import deployment_capabilities, global_constants, walletconnect
+from core.context_processors import (
+    deployment_capabilities,
+    global_constants,
+    walletconnect,
+)
 
 
 class TestCoreContextProcessors:

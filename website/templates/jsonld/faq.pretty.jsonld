@@ -4,15 +4,15 @@
   "name": "FAQ page",
   "url": "{{ WEBSITE_URL }}/faq/",
   "@id": "{{ WEBSITE_URL }}/#faq",
-  "description": "Frequently asked questions about ASA Stats project and token",
+  "description": "Frequently asked questions about {{ WEBSITE_NAME }} project and token",
   "isPartOf":{
       "@type": "WebSite",
       "@id":"{{ WEBSITE_URL }}/#site",
-      "name": "ASA Stats"
+      "name": "{{ WEBSITE_NAME }}"
   },
   "publisher": {
       "@type": "Organization",
       "@id": "{{ WEBSITE_URL }}/#org",
-      "name": "ASA Stats"
+      "name": "{{ WEBSITE_NAME }}"
   }
 }

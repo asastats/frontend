@@ -19,7 +19,7 @@ def snippet_for_item(folder, item):
         ("tokenomics", "Tokenomics"),
         ("faq", "FAQ page"),
         ("disclaimer", "Disclaimer"),
-        ("asm-privacy", "ASA Stats Mobile"),
+        ("asm-privacy", "{{ WEBSITE_NAME }} Mobile"),
         ("features", "features"),
         ("subscriptions", "Subscription plans"),
     ],
@@ -48,7 +48,7 @@ def test_pages_jsonld_content_id(item):
     path = snippet_for_item("", item)
     with open(path, "r") as f:
         fileread = f.read()
-        page_id = '"@id":"{}/#{}"'.format(settings.WEBSITE_URL, item)
+        page_id = '"@id":"{}/#{}"'.format("{{ WEBSITE_URL }}", item)
         assert page_id in fileread
 
 

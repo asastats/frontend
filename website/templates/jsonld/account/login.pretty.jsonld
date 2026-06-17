@@ -4,7 +4,7 @@
     "name": "Log in page",
     "url": "{{ WEBSITE_URL }}/accounts/login/",
     "@id": "{{ WEBSITE_URL }}/#login",
-    "description": "You can log in to your ASA Stats account either with your email and password or by a connected social media provider.",
+    "description": "You can log in to your {{ WEBSITE_NAME }} account either with your email and password or by a connected social media provider.",
     "isPartOf":{
         "@type": "WebPage",
         "@id": "{{ WEBSITE_URL }}/#signup",

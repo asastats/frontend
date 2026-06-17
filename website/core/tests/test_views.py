@@ -189,19 +189,20 @@ class IndexPageTest(TestCase):
     def test_index_page_links_to_twitter_page(self):
         response = self.client.get(reverse("index"))
         self.assertContains(
-            response, 'href="https://twitter.com/{}"'.format(settings.X_HANDLE)
+            response, 'href="https://x.com/{}"'.format(settings.X_HANDLE)
         )
 
     def test_index_page_links_to_reddit_page(self):
         response = self.client.get(reverse("index"))
         self.assertContains(
-            response, 'href="https://www.reddit.com/r/{}"'.format(settings.SUBREDDIT_NAME)
+            response,
+            'href="https://www.reddit.com/r/{}"'.format(settings.SUBREDDIT_NAME),
         )
 
     def test_index_page_links_to_discord_invite(self):
         response = self.client.get(reverse("index"))
         self.assertContains(
-            response, 'href="https://discord.gg/{}"'.format(settings.SUBREDDIT_NAME)
+            response, 'href="https://discord.gg/{}"'.format(settings.DISCORD_INVITE)
         )
 
 

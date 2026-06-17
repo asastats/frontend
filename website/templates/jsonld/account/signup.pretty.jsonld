@@ -4,16 +4,16 @@
     "name": "Sign up",
     "url": "{{ WEBSITE_URL }}/accounts/signup/",
     "@id": "{{ WEBSITE_URL }}/#signup",
-    "description": "Sign up for a ASA Stats account by an email and password or by connecting a social media provider",
+    "description": "Sign up for a {{ WEBSITE_NAME }} account by an email and password or by connecting a social media provider",
     "isPartOf":{
         "@type": "WebSite",
         "@id":"{{ WEBSITE_URL }}/#site",
-        "name": "ASA Stats"
+        "name": "{{ WEBSITE_NAME }}"
     },
     "publisher": {
         "@type": "Organization",
         "@id": "{{ WEBSITE_URL }}/#org",
-        "name": "www.ASA Stats.com"
+        "name": "www.{{ WEBSITE_NAME }}.com"
     },
     "hasPart": [
         {
@@ -21,7 +21,7 @@
             "name": "Log in page",
             "url": "{{ WEBSITE_URL }}/accounts/login/",
             "@id": "{{ WEBSITE_URL }}/#login",
-            "description": "You can log in to your ASA Stats account either with your email and password or by a connected social media provider."
+            "description": "You can log in to your {{ WEBSITE_NAME }} account either with your email and password or by a connected social media provider."
         },
         {
             "@type": "WebPage",

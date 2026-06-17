@@ -1,18 +1,18 @@
 {
   "@context": "http://schema.org",
   "@type": "WebPage",
-  "name": "ASA Stats Mobile Privacy Policy",
+  "name": "{{ WEBSITE_NAME }} Mobile Privacy Policy",
   "url": "{{ WEBSITE_URL }}/asm-privacy/",
   "@id": "{{ WEBSITE_URL }}/#asm-privacy",
-  "description": "Privacy Policy for the ASA Stats Mobile application",
+  "description": "Privacy Policy for the {{ WEBSITE_NAME }} Mobile application",
   "isPartOf":{
       "@type": "WebSite",
       "@id":"{{ WEBSITE_URL }}/#site",
-      "name": "ASA Stats"
+      "name": "{{ WEBSITE_NAME }}"
   },
   "publisher": {
       "@type": "Organization",
       "@id": "{{ WEBSITE_URL }}/#org",
-      "name": "ASA Stats"
+      "name": "{{ WEBSITE_NAME }}"
   }
 }
