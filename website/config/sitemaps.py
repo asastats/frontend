@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib import sitemaps
 from django.urls import reverse
+
+from utils.helpers import load_transparency_reports
 
 PUBLISHING_DATE = datetime(2022, 2, 5)
 
@@ -45,22 +46,15 @@ class StaticViewSitemap(sitemaps.Sitemap):
             ("account_reset_password", ()),
             ("assets_file", ["whitepaper.pdf"]),
         ]
-        start = datetime(2021, 11, 1, 0, 0, 0)
-        current = start + relativedelta(months=0)
-        months = 0
-        while True:
-            year = current.year
-            month = current.month
-            items.append(
-                (
-                    "assets_file",
-                    [f"transparency-report-{year}-{str(month).zfill(2)}.pdf"],
+
+        for year_group in load_transparency_reports():
+            for report in year_group["months"]:
+                items.append(
+                    (
+                        "assets_file",
+                        [f"transparency-report-{report['year']}-{report['month']}.pdf"],
+                    )
                 )
-            )
-            months += 1
-            current = start + relativedelta(months=months)
-            if current > datetime.today() + relativedelta(months=-1):
-                break
 
         return items
 

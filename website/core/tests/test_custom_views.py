@@ -609,15 +609,22 @@ class TestTokenomicsView(BaseView):
     # # get_context_data
     def test_core_views_tokenomicsview_get_context_data(self, mocker):
         # Setup view
-
         view = TokenomicsView()
         view = self.setup_view(view, self.request)
         price = 500.0
+
         mocked_price = mocker.patch("core.views.fetch_price", return_value=price)
+        mocked_reports = mocker.patch(
+            "core.views.load_transparency_reports", return_value=["mocked_report"]
+        )
+
         context = view.get_context_data()
+
         mocked_price.assert_called_once_with()
+        mocked_reports.assert_called_once_with()
         # Check.
         assert context["price"] == price
+        assert context["transparency_reports"] == ["mocked_report"]
 
     def test_core_views_tokenomicsview_get_context_data_for_dark_mode(self, mocker):
         # Setup view
@@ -626,7 +633,10 @@ class TestTokenomicsView(BaseView):
         tempdict["dark"] = "dark"
         self.request.GET = tempdict
         view = self.setup_view(view, self.request)
+
         mocker.patch("core.views.fetch_price")
+        mocker.patch("core.views.load_transparency_reports")
+
         context = view.get_context_data()
         # Check.
         assert context["mode"] == "dark"
@@ -635,7 +645,10 @@ class TestTokenomicsView(BaseView):
         # Setup view
         view = TokenomicsView()
         view = self.setup_view(view, self.request)
+
         mocker.patch("core.views.fetch_price")
+        mocker.patch("core.views.load_transparency_reports")
+
         context = view.get_context_data()
         # Check.
         assert context.get("mode") is None

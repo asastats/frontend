@@ -84,9 +84,7 @@ class FilesViewTest(TestCase):
         self.assertIn("image/png", response._content_type_for_repr)
 
     def test_assets_file_returns_pdf_content_type_for_pdf(self):
-        response = self.client.get(
-            reverse("assets_file", args=["transparency-report-2025-01.pdf"])
-        )
+        response = self.client.get(reverse("assets_file", args=["whitepaper.pdf"]))
         self.assertIn("application/pdf", response._content_type_for_repr)
 
     def test_assets_file_raises_404_for_no_file_found(self):

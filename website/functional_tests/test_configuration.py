@@ -1,6 +1,5 @@
-from datetime import datetime
 
-from dateutil.relativedelta import relativedelta
+from utils.helpers import load_transparency_reports
 
 from .base import FunctionalTest
 
@@ -39,21 +38,15 @@ class ConfigurationTest(FunctionalTest):
 
     def test_transparency_report_files(self):
         self.browser.get(self.server_url + "/sitemap.xml")
-        start = datetime(2021, 11, 1, 0, 0, 0)
-        current = start + relativedelta(months=0)
-        months = 0
-        while True:
-            year = current.year
-            month = current.month
-            self.assertIn(
-                f"/transparency-report-{year}-{str(month).zfill(2)}.pdf",
-                self.browser.page_source,
-            )
-            print(f"/transparency-report-{year}-{str(month).zfill(2)}.pdf")
-            months += 1
-            current = start + relativedelta(months=months)
-            if current > datetime.today() + relativedelta(months=-1):
-                break
+        
+        for year_group in load_transparency_reports():
+            for report in year_group["months"]:
+                expected_url = f"/transparency-report-{report['year']}-{report['month']}.pdf"
+                self.assertIn(
+                    expected_url,
+                    self.browser.page_source,
+                )
+                print(expected_url)
 
     def test_sitemap_files(self):
         self.browser.get(self.server_url + "/sitemap.xml")

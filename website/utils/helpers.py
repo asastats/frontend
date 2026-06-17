@@ -7,12 +7,14 @@
 """
 
 import base64
+import calendar
 import hashlib
 import json
 import logging
 import multiprocessing
 import os
 import random
+import re
 import time
 
 from algosdk.encoding import is_valid_address
@@ -225,6 +227,51 @@ def create_bundle(addresses, cache_client=False):
         cache_client = redis_instance(replica=False)
         cupdate_bundle(bundle, addresses, cache_client)
     return bundle
+
+
+def load_transparency_reports():
+    """Scan the static assets directory for ASA Stats transparency reports.
+
+    :var reports_dir: absolute path to the static assets directory
+    :type reports_dir: str
+    :var pattern: compiled regex pattern to match transparency report filenames
+    :type pattern: re.Pattern
+    :return: list
+    """
+    reports_dir = os.path.join(settings.STATIC_ROOT, "assets")
+    pattern = re.compile(r"^asastats-transparency-report-(\d{4})-(\d{2})\.pdf$")
+
+    reports_by_year = {}
+
+    # Safely scan the directory
+    if os.path.exists(reports_dir):
+        for filename in os.listdir(reports_dir):
+            match = pattern.match(filename)
+            if match:
+                year_int = int(match.group(1))
+                month_int = int(match.group(2))
+
+                if year_int not in reports_by_year:
+                    reports_by_year[year_int] = []
+
+                reports_by_year[year_int].append(
+                    {
+                        "year": match.group(1),
+                        "month": match.group(2),
+                        "short_year": match.group(1)[-2:],
+                        "month_name": calendar.month_name[month_int],
+                    }
+                )
+
+    # Sort years descending, and months descending within each year
+    sorted_reports = []
+    for year in sorted(reports_by_year.keys(), reverse=True):
+        sorted_months = sorted(
+            reports_by_year[year], key=lambda x: x["month"], reverse=True
+        )
+        sorted_reports.append({"year": year, "months": sorted_months})
+
+    return sorted_reports
 
 
 def random_slogan():

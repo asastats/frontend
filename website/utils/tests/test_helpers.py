@@ -25,6 +25,7 @@ from utils.helpers import (
     create_bundle,
     create_multiprocess_logger,
     get_env_variable,
+    load_transparency_reports,
     message_for_app_code_in_values,
     pause,
     random_slogan,
@@ -510,6 +511,44 @@ class TestUtilsHelpersGeneralPublicFunctions:
             mocked_redis.return_value,
         )
         mocked_redis.assert_called_once_with(replica=False)
+
+    # # load_transparency_reports
+    def test_utils_helpers_load_transparency_reports_parsing_and_sorting(self, mocker):
+        mocker.patch("os.path.exists", return_value=True)
+
+        # Mocking directory contents: mixing valid PDFs, invalid files, and out of order dates
+        mock_files = [
+            "asastats-logo.png",
+            "asastats-transparency-report-2024-05.pdf",
+            "asastats-transparency-report-2026-01.pdf",
+            "asastats-transparency-report-2024-12.pdf",
+            "asastats-whitepaper.pdf",
+        ]
+        mocker.patch("os.listdir", return_value=mock_files)
+
+        reports = load_transparency_reports()
+
+        # Check grouping and sorting (2026 should be first, then 2024. 2025 doesn't exist)
+        assert len(reports) == 2
+        assert reports[0]["year"] == 2026
+        assert reports[1]["year"] == 2024
+
+        # Check 2026 contents
+        assert len(reports[0]["months"]) == 1
+        assert reports[0]["months"][0]["month"] == "01"
+        assert reports[0]["months"][0]["month_name"] == "January"
+
+        # Check 2024 contents and sorting (12 should be before 05)
+        assert len(reports[1]["months"]) == 2
+        assert reports[1]["months"][0]["month"] == "12"
+        assert reports[1]["months"][0]["month_name"] == "December"
+        assert reports[1]["months"][1]["month"] == "05"
+        assert reports[1]["months"][1]["short_year"] == "24"
+
+    def test_utils_helpers_load_transparency_reports_directory_missing(self, mocker):
+        mocker.patch("os.path.exists", return_value=False)
+        reports = load_transparency_reports()
+        assert reports == []
 
     # # random_slogan
     def test_utils_helpers_random_slogan_calls_random_choice(self):

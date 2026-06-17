@@ -75,6 +75,7 @@ from utils.helpers import (
     check_algorand_address,
     check_bundle_addresses,
     create_bundle,
+    load_transparency_reports,
     random_slogan,
     weighted_randomized_banner,
 )
@@ -446,10 +447,9 @@ class SubscriptionsView(BaseStaticPageView):
     template_name = "subscriptions.html"
 
 
-# @method_decorator(cache_page(CACHE_TTL), name="dispatch")
 @method_decorator(csrf_protect, name="dispatch")
 class TokenomicsView(TemplateView):
-    """View for presenting Tokenomics page."""
+    """View for presenting tokenomics page."""
 
     template_name = "tokenomics.html"
 
@@ -464,6 +464,8 @@ class TokenomicsView(TemplateView):
         context["price"] = fetch_price()
         if bool(self.request.GET.get("dark")):
             context["mode"] = "dark"
+            
+        context["transparency_reports"] = load_transparency_reports()
         return context
 
 

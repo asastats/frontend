@@ -2,7 +2,6 @@
 
 from datetime import datetime
 
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
@@ -12,6 +11,7 @@ from config.sitemaps import (
     PrioritizedStaticViewSitemap,
     StaticViewSitemap,
 )
+from utils.helpers import load_transparency_reports
 
 
 class SitemapTest(TestCase):
@@ -79,22 +79,14 @@ class SitemapTest(TestCase):
         self.check_for_item_with_args(("assets_file", ["whitepaper.pdf"]))
 
     def test_sitemap_covers_transparecy_report_pdfs(self):
-        start = datetime(2021, 11, 1, 0, 0, 0)
-        current = start + relativedelta(months=0)
-        months = 0
-        while True:
-            year = current.year
-            month = current.month
-            self.check_for_item_with_args(
-                (
-                    "assets_file",
-                    [f"transparency-report-{year}-{str(month).zfill(2)}.pdf"],
+        for year_group in load_transparency_reports():
+            for report in year_group["months"]:
+                self.check_for_item_with_args(
+                    (
+                        "assets_file",
+                        [f"transparency-report-{report['year']}-{report['month']}.pdf"],
+                    )
                 )
-            )
-            months += 1
-            current = start + relativedelta(months=months)
-            if current > datetime.today() + relativedelta(months=-1):
-                break
 
     def test_location_returns_url_for_supplied_sole_item(self):
         location = self.sitemap.location(("about", ()))
