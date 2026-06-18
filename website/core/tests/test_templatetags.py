@@ -1,6 +1,7 @@
 """Testing module for core app's template tags and filters."""
 
 import pytest
+from django.conf import settings
 
 from core.templatetags.core_extras import (
     abs_value,
@@ -36,12 +37,6 @@ from utils.tests.fixtures import (
 
 class TestFilters:
     # # asa_icon
-    # The asa_icon signature changed in Phase 2: it now takes a single
-    # serialized asaitem dict (with .asset and .programs) rather than the
-    # legacy (asset_id, apps) positional pair. The Lofty/ANote override is
-    # determined by scanning three independent signals (provider name on
-    # any program, asset.name, and linked URLs) so the filter works whether
-    # or not the serialized payload exposes a provider on the program.
     def _asaitem(self, asset_id=505, name="", unit="", programs=None):
         return {
             "asset": {"id": asset_id, "name": name, "unit": unit},
@@ -54,14 +49,11 @@ class TestFilters:
             asset_id=505,
             programs=[{"program": {"provider": {"name": "Lofty"}}}],
         )
-        assert asa_icon(item) == "icons/providers/lofty.png"
+        assert asa_icon(item) == settings.BASE_CDN_URL + "/icons/providers/lofty.png"
 
     def test_filters_asa_icon_returns_lofty_icon_for_lofty_asset_name(self):
-        # Real Lofty assets in production carry the prefix on asset.name
-        # and have no provider on their Balance program; the filter must
-        # still recognise them.
         item = self._asaitem(asset_id=505, name="Lofty 3878 Windermere Rd")
-        assert asa_icon(item) == "icons/providers/lofty.png"
+        assert asa_icon(item) == settings.BASE_CDN_URL + "/icons/providers/lofty.png"
 
     def test_filters_asa_icon_returns_lofty_icon_for_lofty_linked_url(self):
         # Third signal: any program's linked URL contains "lofty".
@@ -74,7 +66,7 @@ class TestFilters:
                 }
             ],
         )
-        assert asa_icon(item) == "icons/providers/lofty.png"
+        assert asa_icon(item) == settings.BASE_CDN_URL + "/icons/providers/lofty.png"
 
     def test_filters_asa_icon_returns_usdc_icon_for_lofty_signals_and_usdc(self):
         # USDC is hard-excluded from the override; it's the quote currency
@@ -84,25 +76,25 @@ class TestFilters:
             unit="USDC",
             programs=[{"program": {"provider": {"name": "Lofty"}}}],
         )
-        assert asa_icon(item) == "icons/31566704t.png"
+        assert asa_icon(item) == settings.BASE_CDN_URL + "/icons/31566704t.png"
 
     def test_filters_asa_icon_returns_anote_icon_for_anote_provider(self):
         item = self._asaitem(
             asset_id=505,
             programs=[{"program": {"provider": {"name": "ANote"}}}],
         )
-        assert asa_icon(item) == "icons/providers/anote.png"
+        assert asa_icon(item) == settings.BASE_CDN_URL + "/icons/providers/anote.png"
 
     def test_filters_asa_icon_returns_anote_icon_for_anmc_unit_prefix(self):
         # ANote music tokens use the anmc unit prefix; their asset names
         # vary per release so the unit prefix is the reliable signal.
         item = self._asaitem(asset_id=505, unit="anmc1")
-        assert asa_icon(item) == "icons/providers/anote.png"
+        assert asa_icon(item) == settings.BASE_CDN_URL + "/icons/providers/anote.png"
 
     def test_filters_asa_icon_returns_image_path(self):
         # No override signals — fall back to the standard thumbnail path.
         item = self._asaitem(asset_id=226701642, name="Yieldly", unit="YLDY")
-        assert asa_icon(item) == "icons/226701642t.png"
+        assert asa_icon(item) == settings.BASE_CDN_URL + "/icons/226701642t.png"
 
     # # bundle_hash
     @pytest.mark.parametrize(
@@ -319,7 +311,7 @@ class TestFilters:
         ],
     )
     def test_filters_provider_icon_returns_slugified_path(self, name, result):
-        assert provider_icon(name) == result
+        assert provider_icon(name) == settings.BASE_CDN_URL + "/" + result
 
     def test_filters_provider_icon_returns_empty_string_for_empty_input(self):
         # Defensive: passing the result into {% static %} would crash on an

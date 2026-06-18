@@ -1,5 +1,6 @@
 """Module containing Django templates filters and tags for the website."""
 
+from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template import Library
 from django.template.defaultfilters import floatformat
@@ -32,7 +33,7 @@ def dict_get(mapping, key):
 
 @register.filter
 def asa_icon(asaitem):
-    """Return path (relative to ``static/``) to the icon for an asaitem.
+    """Return the absolute CDN path to the icon for an asaitem.
 
     For non-USDC assets, look for a provider override match in three places
     (in order): explicit provider name on any program, the asset's display
@@ -47,9 +48,9 @@ def asa_icon(asaitem):
     """
     asset = asaitem.get("asset") or {}
     asset_id = asset.get("id")
+    base_url = settings.BASE_CDN_URL.rstrip("/")
 
     if asset_id != USDC_ID:
-        # Aggregate every signal that could indicate a special provider.
         signals = []
         asset_name = asset.get("name") or ""
         signals.append(asset_name)
@@ -62,18 +63,18 @@ def asa_icon(asaitem):
 
         blob = " ".join(signals).lower()
         if "lofty" in blob:
-            return "icons/providers/lofty.png"
+            return f"{base_url}/icons/providers/lofty.png"
         if "anote" in blob or "anmc" in (asset.get("unit") or "").lower():
-            return "icons/providers/anote.png"
+            return f"{base_url}/icons/providers/anote.png"
 
-    return f"icons/{asset_id}t.png"
+    return f"{base_url}/icons/{asset_id}t.png"
 
 
 @register.filter
 def provider_icon(name):
-    """Return path (relative to ``static/``) to a provider's small icon.
+    """Return the absolute CDN path to a provider's small icon.
 
-    The existing convention is ``static/icons/providers/<name>.png`` where
+    The existing convention is ``/icons/providers/<name>.png`` where
     ``<name>`` is the lowercased provider name with whitespace stripped.
     This matches the legacy ``coinmarketcap.png`` / ``livecoinwatch.png``
     naming derived by hand in the old templates.
@@ -82,9 +83,11 @@ def provider_icon(name):
     :type name: str
     :return: str
     """
+    base_url = settings.BASE_CDN_URL.rstrip("/")
     if not name:
         return ""
-    return f"icons/providers/{''.join(name.lower().split())}.png"
+
+    return f"{base_url}/icons/providers/{''.join(name.lower().split())}.png"
 
 
 @register.filter

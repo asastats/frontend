@@ -1,4 +1,3 @@
-
 from utils.helpers import load_transparency_reports
 
 from .base import FunctionalTest
@@ -38,10 +37,12 @@ class ConfigurationTest(FunctionalTest):
 
     def test_transparency_report_files(self):
         self.browser.get(self.server_url + "/sitemap.xml")
-        
+
         for year_group in load_transparency_reports():
             for report in year_group["months"]:
-                expected_url = f"/transparency-report-{report['year']}-{report['month']}.pdf"
+                expected_url = (
+                    f"/transparency-report-{report['year']}-{report['month']}.pdf"
+                )
                 self.assertIn(
                     expected_url,
                     self.browser.page_source,

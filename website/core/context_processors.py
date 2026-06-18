@@ -44,6 +44,7 @@ def global_constants(request):
         "WEBSITE_SHORT_NAME": settings.WEBSITE_SHORT_NAME,
         "WEBSITE_URL": settings.WEBSITE_URL,
         "WEBSITE_DOMAIN": settings.WEBSITE_DOMAIN,
+        "BASE_CDN_URL": settings.BASE_CDN_URL,
         "X_HANDLE": settings.X_HANDLE,
         "SUBREDDIT_NAME": settings.SUBREDDIT_NAME,
         "ANDROID_APP": settings.ANDROID_APP,

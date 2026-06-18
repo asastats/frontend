@@ -5,11 +5,11 @@
 
 This repository contains the frontend and core web application code for ASA Stats, a platform that evaluates and presents ASA and NFT price information on the Algorand blockchain.
 
-## Quick Start
+## Quick start
 
 For full installation, deployment, and troubleshooting instructions, please refer to the [Official Documentation](https://asastats.readthedocs.io/en/latest/).
 
-### 1. Backend Setup (Django)
+### 1. Website setup (Django)
 Requires Python 3 and PostgreSQL.
 
 ```bash
@@ -26,7 +26,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-### 2. Frontend Setup (Vite / TypeScript)
+### 2. Frontend setup (Vite / TypeScript)
 
 Manages UI state, Web3 wallet connections, and interactive charts.
 
@@ -53,7 +53,7 @@ cd website
 npm run test:coverage
 ```
 
-## Project Architecture
+## Project architecture
 
 The repository uses a component-based architecture split into modular Django apps and a Vite frontend:
 
@@ -65,7 +65,7 @@ The repository uses a component-based architecture split into modular Django app
 * **`utils`**: Application-wide constants, charts, and caching utilities.
 * **`frontend`**: Vite/TypeScript application utilizing `@txnlab/use-wallet` for transaction signing.
 
-## Development Workflow
+## Development workflow
 
 ### Submodules
 

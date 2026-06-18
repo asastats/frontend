@@ -464,7 +464,7 @@ class TokenomicsView(TemplateView):
         context["price"] = fetch_price()
         if bool(self.request.GET.get("dark")):
             context["mode"] = "dark"
-            
+
         context["transparency_reports"] = load_transparency_reports()
         return context
 

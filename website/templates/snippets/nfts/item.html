@@ -1,10 +1,5 @@
 {% load static %}
 {% load core_extras %}
-{% comment %} One NFT row inside an open collection accordion.
-
-   Required context:
-     row   one item from collection.nfts (value, nft, amount, price)
-{% endcomment %}
 {% with nft=row.nft amount=row.amount price=row.price %}
 <li id="{{ nft.id }}" class="collection-item fitem">
   <div class="col s12">
@@ -39,7 +34,7 @@
     </div>
     <div class="col s8 offset-s2 l5 pull-l7 center-align">
       {% with primary_url=nft.urls.0 secondary_url=nft.urls.1 %}
-      <a href="{% if primary_url.typ == 'Vault' or primary_url.typ == 'Locked' %}{{ secondary_url.url }}{% else %}{{ primary_url.url }}{% endif %}" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="{% static 'nft.png' %}" data-src="{% static nft.image %}" alt="{{ nft.name }} link" class="responsive-img hoverable nft" /></a>
+      <a href="{% if primary_url.typ == 'Vault' or primary_url.typ == 'Locked' %}{{ secondary_url.url }}{% else %}{{ primary_url.url }}{% endif %}" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="{% static 'nft.png' %}" data-src="{{ BASE_CDN_URL }}{{ nft.image }}" alt="{{ nft.name }} link" class="responsive-img hoverable nft" /></a>
       {% endwith %}
     </div>
     {% if nft.traits %}
