@@ -91,3 +91,22 @@ def manifest_for(widget_id):
     :return: :class:`widgethost.manifest.Manifest`
     """
     return manifests_by_id().get(widget_id)
+
+
+def swap_routers():
+    """Return discovered swap-router widgets as (id, name) pairs for selection.
+
+    A widget opts in by declaring ``category = "swap"`` in its manifest. The user
+    settings page uses this to offer a preferred router; adding a router widget
+    therefore makes it selectable with no settings-page change.
+
+    :var routers: collection of (id, name) pairs for swap-category widgets
+    :type routers: list
+    :return: list
+    """
+    routers = [
+        (manifest.id, manifest.name)
+        for manifest in manifests_by_id().values()
+        if getattr(manifest, "category", None) == "swap"
+    ]
+    return sorted(routers)

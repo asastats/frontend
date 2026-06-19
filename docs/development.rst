@@ -196,11 +196,21 @@ Run project's functional tests:
 
 Run widgets submodule unit tests:
 
-The `widgets` submodule is an integral part of the project and depends heavily on the frontend repository. Therefore, testing widgets directly from within the frontend is an expected behavior for developers.
+The `widgets` submodule is an integral part of the project and depends heavily on
+the frontend repository. Therefore, testing widgets directly from within the frontend
+is an expected behavior for developers.
 
 .. code-block:: bash
 
   PYTHONPATH=website pytest -v website/widgets -c website/widgets/pytest.ini
+
+
+Invoke the following to show the related coverage report in terminal:
+
+.. code-block:: bash
+
+  cd website
+  pytest -v widgets -c widgets/pytest.ini --cov=widgets --cov-report=term-missing --cov-config=widgets/.coveragerc
 
 
 Typescript

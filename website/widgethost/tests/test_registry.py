@@ -5,6 +5,7 @@ from widgethost.registry import (
     discover_manifests,
     discover_widgets,
     manifest_for,
+    swap_routers,
 )
 
 
@@ -55,3 +56,27 @@ class TestWidgethostRegistryManifestFor:
         mocker.patch("widgethost.registry.discover_manifests", return_value=[])
         assert manifest_for("absent") is None
         registry._manifests_by_id = None
+
+
+class TestWidgethostRegistrySwapRouters:
+    """Testing class for :py:func:`widgethost.registry.swap_routers`."""
+
+    def test_widgethost_registry_swap_routers_filters_and_sorts(self, mocker):
+        swap_b = mocker.MagicMock(id="b", category="swap")
+        swap_b.name = "B Router"
+        swap_a = mocker.MagicMock(id="a", category="swap")
+        swap_a.name = "A Router"
+        other = mocker.MagicMock(id="historic", category=None)
+        mocker.patch(
+            "widgethost.registry.manifests_by_id",
+            return_value={"b": swap_b, "a": swap_a, "historic": other},
+        )
+        assert swap_routers() == [("a", "A Router"), ("b", "B Router")]
+
+    def test_widgethost_registry_swap_routers_empty_when_none(self, mocker):
+        other = mocker.MagicMock(id="historic", category=None)
+        mocker.patch(
+            "widgethost.registry.manifests_by_id",
+            return_value={"historic": other},
+        )
+        assert swap_routers() == []

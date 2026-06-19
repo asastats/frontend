@@ -2462,3 +2462,33 @@ class TestBundleNameModel:
         )
         assert bundlename.can_access_historic_widget() is False
         gate.assert_called_once_with("historic", user.profile, 3)
+
+
+class TestCoreModelsProfilePreferredRouter:
+    """Testing class for the :class:`Profile` preferred_router preference."""
+
+    def test_core_models_profile_preferred_router_defaults_blank(self):
+        assert Profile().preferred_router == ""
+
+    def test_core_models_profile_preferred_router_or_default_returns_choice(
+        self, mocker
+    ):
+        mocker.patch(
+            "widgethost.registry.swap_routers",
+            return_value=[("folks", "Folks"), ("pact", "Pact")],
+        )
+        assert Profile(preferred_router="pact").preferred_router_or_default() == "pact"
+
+    def test_core_models_profile_preferred_router_or_default_first_when_unset(
+        self, mocker
+    ):
+        mocker.patch(
+            "widgethost.registry.swap_routers", return_value=[("folks", "Folks")]
+        )
+        assert Profile(preferred_router="").preferred_router_or_default() == "folks"
+
+    def test_core_models_profile_preferred_router_or_default_empty_when_none(
+        self, mocker
+    ):
+        mocker.patch("widgethost.registry.swap_routers", return_value=[])
+        assert Profile().preferred_router_or_default() == ""

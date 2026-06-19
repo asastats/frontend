@@ -31,6 +31,7 @@ from core.forms import (
     ProfileBundleNameForm,
     ProfileFormSet,
     ProfileInlineForm,
+    ProfileRouterForm,
     UpdateUserForm,
 )
 from core.models import BundleName, Profile
@@ -715,3 +716,20 @@ class TestProfileFormSet:
         assert isinstance(formset.address, CharField)
         assert formset.address.widget.attrs == {"maxlength": "58"}
         assert formset.address.error_messages.get("required")
+
+
+class TestProfileRouterForm:
+    """Testing class for :class:`ProfileRouterForm`."""
+
+    def test_profilerouterform_issubclass_of_modelform(self):
+        assert issubclass(ProfileRouterForm, ModelForm)
+
+    def test_profilerouterform_meta_model_and_fields(self):
+        assert ProfileRouterForm.Meta.model is Profile
+        assert ProfileRouterForm.Meta.fields == ("preferred_router",)
+
+    def test_profilerouterform_choices_come_from_swap_routers(self, mocker):
+        mocker.patch("core.forms.swap_routers", return_value=[("folks", "Folks")])
+        form = ProfileRouterForm()
+        assert isinstance(form.fields["preferred_router"], ChoiceField)
+        assert form.fields["preferred_router"].choices == [("folks", "Folks")]

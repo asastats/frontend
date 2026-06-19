@@ -37,6 +37,7 @@ from core.forms import (
     DeactivateProfileForm,
     ProfileBundleNameForm,
     ProfileFormSet,
+    ProfileRouterForm,
     UpdateUserForm,
 )
 from core.helpers import (
@@ -978,6 +979,41 @@ class ProfileApiView(CanAccessApiMixin, TemplateView):
             context["refresh"] = str(refresh_token)
             context["access"] = str(refresh_token.access_token)
         return context
+
+
+@method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
+class ProfileRouterView(View):
+    """User settings: choose the preferred smart router (single section).
+
+    Router options are discovered (manifests with ``category = "swap"``), so new
+    router widgets appear automatically. Ownership/permission gates live on the
+    swap widget itself; this view only records a preference.
+
+    :var template_name: name of the template to render
+    :type template_name: str
+    """
+
+    template_name = "profile_router.html"
+
+    def get(self, request, *args, **kwargs):
+        """Render the router-preference form bound to the current profile.
+
+        :return: :class:`HttpResponse`
+        """
+        form = ProfileRouterForm(instance=request.user.profile)
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request, *args, **kwargs):
+        """Persist the chosen router and redirect back (post/redirect/get).
+
+        :return: :class:`HttpResponse`
+        """
+        form = ProfileRouterForm(data=request.POST, instance=request.user.profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Smart router preference saved.")
+            return redirect("profile_router")
+        return render(request, self.template_name, {"form": form})
 
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")

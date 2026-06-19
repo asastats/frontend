@@ -37,6 +37,7 @@ from utils.constants.users import (
 )
 from utils.helpers import check_algorand_address
 from utils.userhelpers import validate_address_or_algo_name_url_path
+from widgethost.registry import swap_routers
 
 
 # # CORE
@@ -299,3 +300,24 @@ ProfileFormSet = inlineformset_factory(
 It is instantiated together with :class:`UpdateUserForm` form instance
 in the common user/profile editing process.
 """
+
+
+class ProfileRouterForm(ModelForm):
+    """Form for choosing the profile's preferred smart router.
+
+    Router choices are discovered (manifests with ``category = "swap"``), so a
+    newly added router widget appears here with no change to this form.
+    """
+
+    class Meta:
+        model = Profile
+        fields = ("preferred_router",)
+
+    def __init__(self, *args, **kwargs):
+        """Populate the router select from discovered swap-category widgets."""
+        super().__init__(*args, **kwargs)
+        self.fields["preferred_router"] = ChoiceField(
+            choices=swap_routers(),
+            required=True,
+            label="Smart router",
+        )

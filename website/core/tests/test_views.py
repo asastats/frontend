@@ -900,3 +900,39 @@ class SignupPageTest(TestCase):
             self.assertContains(
                 response, '"url":"{}/accounts/{}/"'.format(settings.WEBSITE_URL, part)
             )
+
+
+class ProfileRouterPageTest(TestCase):
+    """Testing class for :class:`core.views.ProfileRouterView`."""
+
+    def setUp(self):
+        self.user = user_model.objects.create(
+            email="routerpage@testuser.com",
+            username="routerpage",
+        )
+        self.user.set_password("12345o")
+        self.user.save()
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            self.client.login(username="routerpage", password="12345o")
+
+    def test_router_page_uses_router_template(self):
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_router"))
+        self.assertTemplateUsed(response, "profile_router.html")
+
+    def test_router_page_post_valid_saves_preference(self):
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_router"), data={"preferred_router": "folks"}
+            )
+        self.assertRedirects(response, reverse("profile_router"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.preferred_router == "folks"
+
+    def test_router_page_post_invalid_rerenders_template(self):
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_router"), data={"preferred_router": "absent"}
+            )
+        self.assertTemplateUsed(response, "profile_router.html")

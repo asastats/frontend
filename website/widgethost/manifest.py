@@ -54,6 +54,8 @@ class Manifest:
     :type Manifest.hosts: list
     :var Manifest.assets: static and template directory declarations
     :type Manifest.assets: dict
+    :var Manifest.category: optional UI grouping, e.g. 'swap' (metadata only)
+    :type Manifest.category: str or None
     """
 
     def __init__(self, data):
@@ -76,6 +78,7 @@ class Manifest:
         self.data = data.get("data", [])
         self.hosts = data.get("hosts", [])
         self.assets = data.get("assets", {})
+        self.category = data.get("category")
 
 
 def load_manifest(path):

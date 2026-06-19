@@ -84,6 +84,12 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.ProfileApiView"
         assert url.name == "profile_api"
 
+    def test_core_urls_profile_router(self):
+        url = self._url_from_pattern(r"^profile/router/$")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "core.views.ProfileRouterView"
+        assert url.name == "profile_router"
+
     def test_core_urls_profile_authorize(self):
         url = self._url_from_pattern(r"^profile/authorize/$")
         assert isinstance(url, URLPattern)
@@ -247,4 +253,4 @@ class TestCoreUrls:
         assert url.name == "bundle_name"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 36
+        assert len(urls.urlpatterns) == 37

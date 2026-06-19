@@ -48,6 +48,14 @@ class TestWidgethostManifestManifest:
         assert manifest.menu is None
         assert manifest.assets == {}
 
+    def test_widgethost_manifest_manifest_category_defaults_to_none(self):
+        assert Manifest(valid_manifest_data()).category is None
+
+    def test_widgethost_manifest_manifest_sets_category(self):
+        data = valid_manifest_data()
+        data["category"] = "swap"
+        assert Manifest(data).category == "swap"
+
 
 class TestWidgethostManifestLoadManifest:
     """Testing class for :py:func:`widgethost.manifest.load_manifest`."""

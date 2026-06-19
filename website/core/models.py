@@ -54,6 +54,7 @@ class Profile(models.Model):
     votes = models.BigIntegerField(default=0, blank=True)
     permission = models.BigIntegerField(default=0, blank=True)
     currency = models.CharField(max_length=5, blank=True, default="ALGO")
+    preferred_router = models.CharField(max_length=32, blank=True, default="")
 
     def __str__(self):
         """Return string representation of the profile instance
@@ -83,6 +84,20 @@ class Profile(models.Model):
                 self.user.date_joined.timestamp(), self.address
             )
         )
+
+    def preferred_router_or_default(self):
+        """Return the chosen swap router id, or the first available default.
+
+        Imported lazily to avoid a models <-> widget-registry import cycle.
+
+        :return: str
+        """
+        from widgethost.registry import swap_routers
+
+        available = [router_id for router_id, _ in swap_routers()]
+        if self.preferred_router in available:
+            return self.preferred_router
+        return available[0] if available else ""
 
     def check_votes_and_permission(self):
         """Check and possibly update profile with new votes and permission values.
