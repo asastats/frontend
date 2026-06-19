@@ -902,37 +902,37 @@ class SignupPageTest(TestCase):
             )
 
 
-class ProfileRouterPageTest(TestCase):
-    """Testing class for :class:`core.views.ProfileRouterView`."""
+class ProfileSettingsPageTest(TestCase):
+    """Testing class for :class:`core.views.ProfileSettingsView`."""
 
     def setUp(self):
         self.user = user_model.objects.create(
-            email="routerpage@testuser.com",
-            username="routerpage",
+            email="settingspage@testuser.com",
+            username="settingspage",
         )
         self.user.set_password("12345o")
         self.user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
-            self.client.login(username="routerpage", password="12345o")
+            self.client.login(username="settingspage", password="12345o")
 
-    def test_router_page_uses_router_template(self):
+    def test_settings_page_uses_settings_template(self):
         with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
-            response = self.client.get(reverse("profile_router"))
-        self.assertTemplateUsed(response, "profile_router.html")
+            response = self.client.get(reverse("profile_settings"))
+        self.assertTemplateUsed(response, "profile_settings.html")
 
-    def test_router_page_post_valid_saves_preference(self):
+    def test_settings_page_post_valid_saves_preference(self):
         with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
             response = self.client.post(
-                reverse("profile_router"), data={"preferred_router": "folks"}
+                reverse("profile_settings"), data={"preferred_router": "folks"}
             )
-        self.assertRedirects(response, reverse("profile_router"))
+        self.assertRedirects(response, reverse("profile_settings"))
         self.user.profile.refresh_from_db()
         assert self.user.profile.preferred_router == "folks"
 
-    def test_router_page_post_invalid_rerenders_template(self):
+    def test_settings_page_post_invalid_rerenders_template(self):
         with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
             response = self.client.post(
-                reverse("profile_router"), data={"preferred_router": "absent"}
+                reverse("profile_settings"), data={"preferred_router": "absent"}
             )
-        self.assertTemplateUsed(response, "profile_router.html")
+        self.assertTemplateUsed(response, "profile_settings.html")

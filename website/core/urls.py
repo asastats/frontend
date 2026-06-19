@@ -54,9 +54,9 @@ urlpatterns = [
     ),
     re_path(r"^profile/api/$", core_views.ProfileApiView.as_view(), name="profile_api"),
     re_path(
-        r"^profile/router/$",
-        core_views.ProfileRouterView.as_view(),
-        name="profile_router",
+        r"^profile/settings/$",
+        core_views.ProfileSettingsView.as_view(),
+        name="profile_settings",
     ),
     re_path(
         r"^profile/authorize/$",

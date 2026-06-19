@@ -13,6 +13,7 @@ from django.forms import (
     ChoiceField,
     Form,
     RadioSelect,
+    Select,
     Textarea,
 )
 from django.forms.models import ModelForm, inlineformset_factory
@@ -320,4 +321,5 @@ class ProfileRouterForm(ModelForm):
             choices=swap_routers(),
             required=True,
             label="Smart router",
+            widget=Select(attrs={"class": "browser-default"}),
         )

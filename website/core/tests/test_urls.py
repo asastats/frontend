@@ -84,11 +84,11 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.ProfileApiView"
         assert url.name == "profile_api"
 
-    def test_core_urls_profile_router(self):
-        url = self._url_from_pattern(r"^profile/router/$")
+    def test_core_urls_profile_settings(self):
+        url = self._url_from_pattern(r"^profile/settings/$")
         assert isinstance(url, URLPattern)
-        assert url.lookup_str == "core.views.ProfileRouterView"
-        assert url.name == "profile_router"
+        assert url.lookup_str == "core.views.ProfileSettingsView"
+        assert url.name == "profile_settings"
 
     def test_core_urls_profile_authorize(self):
         url = self._url_from_pattern(r"^profile/authorize/$")

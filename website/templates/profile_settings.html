@@ -1,0 +1,36 @@
+{% extends 'base_home.html' %}
+{% load static %}
+{% load i18n %}
+{% load core_extras %}
+{% block title %}Settings - ASA Stats{% endblock %}
+{% block description %}Manage your ASA Stats settings.{% endblock %}
+{% block keywords %}settings,preferences,smart router,swap,router preference{% endblock %}
+{% block page_header %}ASA Stats settings{% endblock %}
+{% block middle_section %}
+<div class="row col s12 m7 midrow">
+  <section class="row col s12 left-align" id="id-section-smart-router">
+    <h5 class="mylight-text">Smart router</h5>
+    <p>The smart router used when you swap tokens from an address you own.</p>
+    <form method="post" action="{% url 'profile_settings' %}"
+          hx-post="{% url 'profile_settings' %}" hx-target="#id-section-smart-router" hx-swap="outerHTML">
+      {% csrf_token %}
+      <div class="input-field col s12">
+        {{ form.preferred_router }}
+        <label class="active" for="{{ form.preferred_router.id_for_label }}">Smart router</label>
+        {% if form.preferred_router.errors %}
+        <span class="helper-text red-text">{{ form.preferred_router.errors|join:", " }}</span>
+        {% endif %}
+      </div>
+      <div class="col s12">
+        <button type="submit" class="waves-effect waves-mydark btn whenmoon" id="id_save_router">Save</button>
+      </div>
+    </form>
+  </section>
+</div>
+<div class="row col s12 m5">
+  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>
+  <br><br>
+  <span>Active tier: </span><span class="mylight-text">{{ user.profile.tier_name|upper }}</span>
+</div>
+{% endblock %}
+{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Settings{% endblock %}

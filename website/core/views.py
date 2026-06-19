@@ -982,8 +982,8 @@ class ProfileApiView(CanAccessApiMixin, TemplateView):
 
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
-class ProfileRouterView(View):
-    """User settings: choose the preferred smart router (single section).
+class ProfileSettingsView(View):
+    """User settings page; currently a single smart-router preference section.
 
     Router options are discovered (manifests with ``category = "swap"``), so new
     router widgets appear automatically. Ownership/permission gates live on the
@@ -993,7 +993,7 @@ class ProfileRouterView(View):
     :type template_name: str
     """
 
-    template_name = "profile_router.html"
+    template_name = "profile_settings.html"
 
     def get(self, request, *args, **kwargs):
         """Render the router-preference form bound to the current profile.
@@ -1012,7 +1012,7 @@ class ProfileRouterView(View):
         if form.is_valid():
             form.save()
             messages.success(request, "Smart router preference saved.")
-            return redirect("profile_router")
+            return redirect("profile_settings")
         return render(request, self.template_name, {"form": form})
 
 
