@@ -253,4 +253,4 @@ class TestCoreUrls:
         assert url.name == "bundle_name"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 37
+        assert len(urls.urlpatterns) == 38

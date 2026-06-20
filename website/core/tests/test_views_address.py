@@ -410,6 +410,7 @@ class TestBaseAddressViewGetContextData:
             "ratiochart",
             "nftfloorchart",
             "consolidated",
+            "url_value",
         }
         assert set(context.keys()) == expected
 

@@ -936,3 +936,59 @@ class ProfileSettingsPageTest(TestCase):
                 reverse("profile_settings"), data={"preferred_router": "absent"}
             )
         self.assertTemplateUsed(response, "profile_settings.html")
+
+
+class SwapEntryViewTest(TestCase):
+    """Testing class for :class:`core.views.SwapEntryView`."""
+
+    def setUp(self):
+        self.address = "A" * 58
+        self.url = reverse("swap_entry", args=[self.address])
+        self.user = user_model.objects.create(
+            email="swapentry@testuser.com", username="swapentry"
+        )
+        self.user.set_password("12345o")
+        self.user.save()
+
+    def _login(self):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            self.client.login(username="swapentry", password="12345o")
+
+    def test_swap_entry_anonymous_renders_nothing(self):
+        response = self.client.get(self.url)
+        self.assertNotContains(response, "id-swap-entry")
+
+    def test_swap_entry_linked_address_renders_swap_link(self):
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value="/widgets/folks/AAA"
+        ) as mocked_url:
+            response = self.client.get(self.url)
+        self.assertContains(response, "/widgets/folks/AAA")
+        mocked_url.assert_called_once()
+
+    def test_swap_entry_unlinked_renders_nothing(self):
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value=set()
+        ), mock.patch("core.views.swap_entry_url") as mocked_url:
+            response = self.client.get(self.url)
+        self.assertNotContains(response, "id-swap-entry")
+        mocked_url.assert_not_called()
+
+    def test_swap_entry_bundle_resolves_addresses(self):
+        self._login()
+        bundle = "B" * 40
+        with mock.patch(
+            "core.views.check_bundle_addresses", return_value="ADDR1 ADDR2"
+        ) as mocked_cba, mock.patch(
+            "core.views.linked_addresses_for_user", return_value={"ADDR1"}
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value="/widgets/folks/BBB"
+        ):
+            response = self.client.get(reverse("swap_entry", args=[bundle]))
+        mocked_cba.assert_called_once_with(bundle)
+        self.assertContains(response, "/widgets/folks/BBB")

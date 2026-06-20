@@ -30,6 +30,44 @@ def _request(method, path, **kwargs):
     return resp
 
 
+def fetch_account_holdings(address, allowed_scopes):
+    """Return a single address' opted-in holdings via the account:holdings scope.
+
+    The backend returns a mapping of asset id to ``{name, unit, decimals, amount}``
+    (ALGO is id 0); every key present is, by definition, opted in.
+
+    :param address: single Algorand address
+    :type address: str
+    :param allowed_scopes: the widget manifest's declared engine endpoints
+    :type allowed_scopes: list
+    :return: dict
+    """
+    return engine_request(
+        "account:holdings",
+        "GET",
+        f"/api/v2/internal/accounts/{address}/holdings",
+        allowed_scopes,
+    ).json()
+
+
+def fetch_asset_matches(query, allowed_scopes):
+    """Return ranked asset metadata matches via the assets:lookup scope.
+
+    :param query: asset id, unit, or name/unit prefix
+    :type query: str
+    :param allowed_scopes: the widget manifest's declared engine endpoints
+    :type allowed_scopes: list
+    :return: list
+    """
+    return engine_request(
+        "assets:lookup",
+        "GET",
+        "/api/v2/internal/assets",
+        allowed_scopes,
+        params={"q": query},
+    ).json()
+
+
 def fetch_price():
     """Return {"price": <ALGO price in USDC>}."""
     return _request("GET", "/api/v2/price/").json().get("price")

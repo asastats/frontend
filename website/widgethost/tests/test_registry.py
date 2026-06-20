@@ -5,6 +5,7 @@ from widgethost.registry import (
     discover_manifests,
     discover_widgets,
     manifest_for,
+    swap_entry_url,
     swap_routers,
 )
 
@@ -80,3 +81,25 @@ class TestWidgethostRegistrySwapRouters:
             return_value={"historic": other},
         )
         assert swap_routers() == []
+
+
+class TestWidgethostRegistrySwapEntryUrl:
+    """Testing class for :py:func:`widgethost.registry.swap_entry_url`."""
+
+    def test_widgethost_registry_swap_entry_url_reverses(self, mocker):
+        reverse = mocker.patch(
+            "widgethost.registry.reverse", return_value="/widgets/folks/X"
+        )
+        assert swap_entry_url("folks", "X") == "/widgets/folks/X"
+        reverse.assert_called_once_with("folks", args=["X"])
+
+    def test_widgethost_registry_swap_entry_url_empty_router(self, mocker):
+        reverse = mocker.patch("widgethost.registry.reverse")
+        assert swap_entry_url("", "X") == ""
+        reverse.assert_not_called()
+
+    def test_widgethost_registry_swap_entry_url_no_reverse_match(self, mocker):
+        from django.urls import NoReverseMatch
+
+        mocker.patch("widgethost.registry.reverse", side_effect=NoReverseMatch)
+        assert swap_entry_url("folks", "X") == ""

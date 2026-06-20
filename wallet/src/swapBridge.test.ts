@@ -1,4 +1,9 @@
-import { signAndSend, type SignAndSendDeps } from "./swapBridge";
+import {
+  optIn,
+  signAndSend,
+  type OptInDeps,
+  type SignAndSendDeps,
+} from "./swapBridge";
 
 const TXN_A = new Uint8Array([1, 2, 3]);
 const TXN_B = new Uint8Array([4, 5, 6]);
@@ -85,5 +90,58 @@ describe("signAndSend", () => {
       waitForConfirmation: jest.fn().mockRejectedValue(new Error("rejected in block")),
     });
     await expect(signAndSend([TXN_A], d)).rejects.toThrow("rejected in block");
+  });
+});
+
+
+const OPTIN_TXN = new Uint8Array([7, 7, 7]);
+
+function optInDeps(
+  overrides: Partial<OptInDeps> = {}
+): { d: OptInDeps; calls: { built?: number; signed?: Uint8Array[] } } {
+  const calls: any = {};
+  const d: OptInDeps = {
+    activeAddress: jest.fn(() => "AAAA"),
+    buildOptIn: jest.fn(async (assetId: number) => {
+      calls.built = assetId;
+      return [OPTIN_TXN];
+    }),
+    signTransactions: jest.fn(async (txns: Uint8Array[]) => {
+      calls.signed = txns;
+      return [SIG_A];
+    }),
+    submit: jest.fn(async () => "OPTINTXID"),
+    waitForConfirmation: jest.fn(async () => {}),
+    ...overrides,
+  };
+  return { d, calls };
+}
+
+describe("optIn", () => {
+  it("builds the opt-in txn then signs, submits and confirms it", async () => {
+    const { d, calls } = optInDeps();
+    const txid = await optIn(31566704, d);
+
+    expect(calls.built).toBe(31566704);
+    expect(calls.signed).toEqual([OPTIN_TXN]);
+    expect(d.submit).toHaveBeenCalledTimes(1);
+    expect(d.waitForConfirmation).toHaveBeenCalledWith("OPTINTXID");
+    expect(txid).toBe("OPTINTXID");
+  });
+
+  it("propagates a build failure and signs nothing", async () => {
+    const { d } = optInDeps({
+      buildOptIn: jest.fn().mockRejectedValue(new Error("no params")),
+    });
+    await expect(optIn(1, d)).rejects.toThrow("no params");
+    expect(d.signTransactions).not.toHaveBeenCalled();
+  });
+
+  it("propagates a user-cancelled signature and submits nothing", async () => {
+    const { d } = optInDeps({
+      signTransactions: jest.fn().mockRejectedValue(new Error("user rejected")),
+    });
+    await expect(optIn(1, d)).rejects.toThrow("user rejected");
+    expect(d.submit).not.toHaveBeenCalled();
   });
 });

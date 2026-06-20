@@ -9,6 +9,8 @@ from api.client import (
     download_export,
     engine_request,
     export_status,
+    fetch_account_holdings,
+    fetch_asset_matches,
     fetch_capabilities,
     fetch_price,
     fetch_serialized_account,
@@ -94,6 +96,33 @@ class TestApiClientFunctions:
             "GET",
             f"/api/v2/internal/accounts/{value}/",
             params={"addresses": addresses},
+        )
+
+    # # fetch_account_holdings
+    def test_api_client_fetch_account_holdings_functionality(self, mocker):
+        mocked_engine = mocker.patch("api.client.engine_request")
+        scopes = ["account:holdings", "assets:lookup"]
+        returned = fetch_account_holdings("ADDRESS", scopes)
+        assert returned == mocked_engine.return_value.json.return_value
+        mocked_engine.assert_called_once_with(
+            "account:holdings",
+            "GET",
+            "/api/v2/internal/accounts/ADDRESS/holdings",
+            scopes,
+        )
+
+    # # fetch_asset_matches
+    def test_api_client_fetch_asset_matches_functionality(self, mocker):
+        mocked_engine = mocker.patch("api.client.engine_request")
+        scopes = ["account:holdings", "assets:lookup"]
+        returned = fetch_asset_matches("usdc", scopes)
+        assert returned == mocked_engine.return_value.json.return_value
+        mocked_engine.assert_called_once_with(
+            "assets:lookup",
+            "GET",
+            "/api/v2/internal/assets",
+            scopes,
+            params={"q": "usdc"},
         )
 
     # # fetch_capabilities

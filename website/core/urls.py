@@ -101,6 +101,11 @@ urlpatterns = [
         core_views.AddressViewCustom.as_view(),
         name="custom_address1",
     ),
+    re_path(
+        r"^swap-entry/(\w{40}|\w{58})/$",
+        core_views.SwapEntryView.as_view(),
+        name="swap_entry",
+    ),
     re_path(r"^([0-9A-Za-z]{58})$", core_views.AddressView.as_view(), name="address"),
     re_path(r"^([0-9A-Za-z]{40})$", core_views.AddressView.as_view(), name="bundle"),
     re_path(

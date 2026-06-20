@@ -81,6 +81,8 @@ from utils.helpers import (
     weighted_randomized_banner,
 )
 from utils.userhelpers import check_authorization_transaction
+from walletauth.gating import linked_addresses_for_user
+from widgethost.registry import swap_entry_url
 
 from .forms import AddressForm, ExportDownloadForm, ExportForm
 
@@ -360,6 +362,7 @@ class BaseAddressView(TemplateView):
         if check_export_status(url_value).get("finished_tax") is False:
             context["finished_tax"] = True
         context["banner"] = weighted_randomized_banner()
+        context["url_value"] = url_value
 
         # Heavy lifting: pull the serialized payload through the API cache.
         # On miss this still runs the full prepare_context/fetch_account
@@ -1250,3 +1253,41 @@ class DeactivateProfileView(FormView):
         """
         form.deactivate_profile(self.request)
         return super().form_valid(form)
+
+
+class SwapEntryView(TemplateView):
+    """Non-cached htmx partial rendering the swap entry for the user's router.
+
+    The address page is ``cache_page``'d across users, so this per-user entry is
+    loaded separately. It links to the user's preferred router's swap page when
+    the user has linked at least one address on the page; otherwise nothing.
+
+    :var template_name: relative path to the partial template
+    :type template_name: str
+    """
+
+    template_name = "_swap_entry.html"
+
+    def get_context_data(self, *args, **kwargs):
+        """Resolve the preferred-router swap URL for a linked viewer.
+
+        :var value: address or bundle hash from the URL
+        :type value: str
+        :var addresses: the page's address list
+        :type addresses: list
+        :return: dict
+        """
+        context = super().get_context_data(*args, **kwargs)
+        context["swap_url"] = ""
+        user = self.request.user
+        if not user.is_authenticated:
+            return context
+        value = self.args[0].upper()
+        addresses = (
+            [value] if len(value) > 50 else check_bundle_addresses(value).split()
+        )
+        if linked_addresses_for_user(user, addresses):
+            context["swap_url"] = swap_entry_url(
+                user.profile.preferred_router_or_default(), value
+            )
+        return context

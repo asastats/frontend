@@ -8,6 +8,8 @@ lists with manifest discovery: the presence of a ``widget.toml`` registers a wid
 
 from pathlib import Path
 
+from django.urls import NoReverseMatch, reverse
+
 import widgets
 from widgethost.manifest import load_manifest
 
@@ -110,3 +112,24 @@ def swap_routers():
         if getattr(manifest, "category", None) == "swap"
     ]
     return sorted(routers)
+
+
+def swap_entry_url(router_id, value):
+    """Return the swap widget shell URL for ``router_id`` and ``value``, or "".
+
+    Single seam for how router widgets are mounted: each swap widget's shell URL
+    is named after its widget id (e.g. "folks"). Returns "" when there is no
+    router or the name can't be reversed, so callers degrade gracefully.
+
+    :param router_id: chosen swap-router widget id
+    :type router_id: str
+    :param value: address or bundle hash to swap from
+    :type value: str
+    :return: str
+    """
+    if not router_id:
+        return ""
+    try:
+        return reverse(router_id, args=[value])
+    except NoReverseMatch:
+        return ""

@@ -1,7 +1,10 @@
 /* istanbul ignore file -- browser/wallet/algod glue; orchestration is tested in swapBridge.test */
 import { WalletManager, type WalletId } from "@txnlab/use-wallet";
-import { waitForConfirmation as algoWaitForConfirmation } from "algosdk";
-import { signAndSend, type SignAndSendDeps } from "./swapBridge";
+import {
+  makeAssetTransferTxnWithSuggestedParamsFromObject,
+  waitForConfirmation as algoWaitForConfirmation,
+} from "algosdk";
+import { optIn, signAndSend, type OptInDeps } from "./swapBridge";
 
 const DEFAULT_API_BASE = "/api/v2/wallet";
 /** Rounds to wait for a swap group to confirm before timing out. */
@@ -13,6 +16,8 @@ export interface SwapBridgeApi {
   activeAddress: () => string | null;
   /** Sign + submit + confirm a prepared, grouped, unsigned txn group. */
   signAndSend: (group: Uint8Array[]) => Promise<string>;
+  /** Opt the active account into `assetId` (pre-flight 0-amount self-transfer). */
+  optIn: (assetId: number) => Promise<string>;
 }
 
 declare global {
@@ -63,7 +68,7 @@ function connectedWallet(manager: WalletManager) {
  *
  * @param manager - A resumed mainnet WalletManager.
  */
-function buildDeps(manager: WalletManager): SignAndSendDeps {
+function buildDeps(manager: WalletManager): OptInDeps {
   return {
     activeAddress: () => connectedWallet(manager)?.activeAccount?.address ?? null,
     signTransactions: (txns) => {
@@ -82,6 +87,24 @@ function buildDeps(manager: WalletManager): SignAndSendDeps {
     },
     waitForConfirmation: async (txid) => {
       await algoWaitForConfirmation(manager.algodClient, txid, CONFIRM_ROUNDS);
+    },
+    buildOptIn: async (assetId) => {
+      const sender = connectedWallet(manager)?.activeAccount?.address;
+      if (!sender) {
+        throw new Error("Connect your Algorand wallet and select an account");
+      }
+      const suggestedParams = await manager.algodClient
+        .getTransactionParams()
+        .do();
+      // 0-amount self transfer of the target asset = opt-in (0.1 ALGO MBR).
+      const txn = makeAssetTransferTxnWithSuggestedParamsFromObject({
+        sender,
+        receiver: sender,
+        amount: 0,
+        assetIndex: assetId,
+        suggestedParams,
+      });
+      return [txn.toByte()];
     },
   };
 }
@@ -109,6 +132,7 @@ export async function initSwapBridge(doc: Document = document): Promise<void> {
     window.asastatsSwap = {
       activeAddress: deps.activeAddress,
       signAndSend: (group: Uint8Array[]) => signAndSend(group, deps),
+      optIn: (assetId: number) => optIn(assetId, deps),
     };
     window.dispatchEvent(new CustomEvent("asastats:swap-ready"));
   } catch (error) {
