@@ -3,6 +3,7 @@ import { WalletComponent } from "./walletComponent";
 import { install as installTestHarness } from "./walletTestHarness";
 import { initEvm } from "./evmBootstrap";
 import { initManageAddresses } from "./manageBootstrap";
+import { initSwapBridge } from "./swapBootstrap";
 
 /** Default mount point of the walletauth API (overridable via data attribute). */
 const DEFAULT_API_BASE = "/api/v2/wallet";
@@ -122,6 +123,20 @@ new App();
     document.addEventListener("DOMContentLoaded", bootstrapManage);
   } else {
     bootstrapManage();
+  }
+}
+
+/* istanbul ignore next -- bootstrap glue; orchestration is tested in swapBridge.test */
+{
+  // Mount the swap bridge when a swap widget is present. No-ops on pages without
+  // the `#id-folks-swap` container, so it is safe to run everywhere.
+  const bootstrapSwap = () => {
+    void initSwapBridge();
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrapSwap);
+  } else {
+    bootstrapSwap();
   }
 }
 

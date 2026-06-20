@@ -1,6 +1,7 @@
 """Testing module for website's sitemap pages."""
 
 from datetime import datetime
+from unittest import mock
 
 from django.conf import settings
 from django.test import TestCase
@@ -79,6 +80,67 @@ class SitemapTest(TestCase):
         self.check_for_item_with_args(("assets_file", ["whitepaper.pdf"]))
 
     def test_sitemap_covers_transparecy_report_pdfs(self):
+        reports = [
+            {
+                "year": 2026,
+                "months": [
+                    {
+                        "year": "2026",
+                        "month": "05",
+                        "short_year": "26",
+                        "month_name": "May",
+                    },
+                    {
+                        "year": "2026",
+                        "month": "04",
+                        "short_year": "26",
+                        "month_name": "April",
+                    },
+                    {
+                        "year": "2026",
+                        "month": "03",
+                        "short_year": "26",
+                        "month_name": "March",
+                    },
+                    {
+                        "year": "2026",
+                        "month": "02",
+                        "short_year": "26",
+                        "month_name": "February",
+                    },
+                    {
+                        "year": "2026",
+                        "month": "01",
+                        "short_year": "26",
+                        "month_name": "January",
+                    },
+                ],
+            },
+            {
+                "year": 2025,
+                "months": [
+                    {
+                        "year": "2025",
+                        "month": "12",
+                        "short_year": "25",
+                        "month_name": "December",
+                    },
+                    {
+                        "year": "2025",
+                        "month": "11",
+                        "short_year": "25",
+                        "month_name": "November",
+                    },
+                    {
+                        "year": "2025",
+                        "month": "10",
+                        "short_year": "25",
+                        "month_name": "October",
+                    },
+                ],
+            },
+        ]
+        mock.patch("config.sitemaps.load_transparency_reports", return_value=reports)
         for year_group in load_transparency_reports():
             for report in year_group["months"]:
                 self.check_for_item_with_args(

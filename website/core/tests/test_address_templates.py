@@ -88,6 +88,7 @@ def _build_context(sample_payload, is_bundle=True):
             nftfloor=Decimal("3544"),
         ),
         "user": _StubUser(),
+        "url_value": sample_payload["account_info"]["bundle"],
     }
 
 

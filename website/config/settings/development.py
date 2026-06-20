@@ -71,10 +71,9 @@ DATABASES = {
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = f"{WEBSITE_NAME} Support <support@{WEBSITE_BASE_DOMAIN}>"
 
-STATICFILES_DIRS = [
-    BASE_DIR.parent / "static",
-    "/mnt/data/backup/work/asastats/backup/static/",
-]
+# STATICFILES_DIRS += [
+#     "/mnt/data/backup/work/asastats/backup/static/",
+# ]
 
 CACHES = {
     "default": {

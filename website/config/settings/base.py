@@ -379,8 +379,14 @@ CHANNEL_LAYERS = {
 # # WIDGETS
 WIDGETS_API_TOKEN = get_env_variable("WIDGETS_API_TOKEN", "")
 
-INHOUSE_WIDGETS = ["historic"]
+INHOUSE_WIDGETS = ["historic", "folks"]
 THIRDPARTY_WIDGETS = []
+
+STATICFILES_DIRS += [
+    BASE_DIR.parent / "widgets" / "inhouse" / w / "static"
+    for w in INHOUSE_WIDGETS
+    if (BASE_DIR.parent / "widgets" / "inhouse" / w / "static").is_dir()
+]
 
 PERMISSION_PROVIDER = "core.permission_providers.permissiondapp.PermissionDappProvider"
 
