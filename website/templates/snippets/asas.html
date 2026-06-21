@@ -19,10 +19,18 @@
               <li id="{{ asset.id }}" class="collection-item fitem">
                 <div class="col s12 m9 push-m3 right-align asar">
                   {% if url_value %}
-                  <div class="swap-asa-entry right-align">
-                    <a class="btn waves-effect whenmoon swap-asa" href="{% url 'swap_source' url_value asset.id %}">
-                      <i class="material-icons right" aria-hidden="true">{{ 'swap'|get_styling:"icon" }}</i>Swap
-                    </a>
+                  <div class="swap-asa-entry">
+                    <div id="folks-panel-{{ asset.id }}" class="col s12 m8 right-align hidden">
+                      <div class="id-folks-panel" data-from="{{ asset.id }}"></div>
+                    </div>
+                    <div class="col s12 m4 right-align">
+                      <a class="btn waves-effect whenmoon swap-asa id-folks-swap-toggle"
+                        data-folks-target="folks-panel-{{ asset.id }}"
+                        data-from="{{ asset.id }}"
+                        data-label-show="Swap" data-label-hide="Hide">
+                        <i class="material-icons right" aria-hidden="true">{{ 'swap'|get_styling:"icon" }}</i><span class="swap-label">Swap</span>
+                      </a>
+                    </div>
                   </div>
                   {% endif %}
                   {% for prog in asaitem.programs %}

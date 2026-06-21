@@ -82,7 +82,7 @@ from utils.helpers import (
 )
 from utils.userhelpers import check_authorization_transaction
 from walletauth.gating import linked_addresses_for_user
-from widgethost.registry import swap_entry_url
+from widgethost.registry import swap_entry_url, swap_holdings_tmpl
 
 from .forms import AddressForm, ExportDownloadForm, ExportForm
 
@@ -1269,16 +1269,20 @@ class SwapEntryView(TemplateView):
     template_name = "_swap_entry.html"
 
     def get_context_data(self, *args, **kwargs):
-        """Resolve the preferred-router swap URL for a linked viewer.
+        """Resolve the preferred-router swap URL + inline-swap config.
 
         :var value: address or bundle hash from the URL
         :type value: str
         :var addresses: the page's address list
         :type addresses: list
+        :var router: the viewer's preferred (or default) swap-router id
+        :type router: str
         :return: dict
         """
         context = super().get_context_data(*args, **kwargs)
         context["swap_url"] = ""
+        context["swap_router"] = ""
+        context["swap_holdings_tmpl"] = ""
         user = self.request.user
         if not user.is_authenticated:
             return context
@@ -1287,9 +1291,10 @@ class SwapEntryView(TemplateView):
             [value] if len(value) > 50 else check_bundle_addresses(value).split()
         )
         if linked_addresses_for_user(user, addresses):
-            context["swap_url"] = swap_entry_url(
-                user.profile.preferred_router_or_default(), value
-            )
+            router = user.profile.preferred_router_or_default()
+            context["swap_url"] = swap_entry_url(router, value)
+            context["swap_router"] = router
+            context["swap_holdings_tmpl"] = swap_holdings_tmpl(router)
         return context
 
 

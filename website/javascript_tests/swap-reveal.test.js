@@ -26,3 +26,10 @@ describe('swap-reveal: applySwapReveal', () => {
     expect(document.body.classList.contains('swap-enabled')).toBe(false);
   });
 });
+
+describe('swap-reveal: no body', () => {
+  it('returns false and skips toggling when the doc has no body', () => {
+    var fakeDoc = { querySelector: function () { return null; } };
+    expect(reveal.applySwapReveal(fakeDoc)).toBe(false);
+  });
+});
