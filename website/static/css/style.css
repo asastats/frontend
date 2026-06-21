@@ -390,6 +390,15 @@ span.sort {
   justify-content: center;
 }
 
+.swap-asa-entry {
+  display: none;
+  margin-bottom: 0.75rem;
+}
+
+body.swap-enabled .swap-asa-entry {
+  display: block;
+}
+
 div.socfooter {
   line-height: 0;
 }

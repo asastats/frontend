@@ -166,6 +166,7 @@ ELEMENTS_STYLING = {
     "fingerprint": {"icon": "fingerprint"},
     "public": {"icon": "public"},
     "wallet": {"icon": "account_balance_wallet"},
+    "swap": {"icon": "swap_vertical_circle"},
 }
 
 DEPRECATED_LINK_PROVIDERS = ["cmc"]

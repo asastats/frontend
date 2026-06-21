@@ -18,6 +18,13 @@
             <ul class="collection">
               <li id="{{ asset.id }}" class="collection-item fitem">
                 <div class="col s12 m9 push-m3 right-align asar">
+                  {% if url_value %}
+                  <div class="swap-asa-entry right-align">
+                    <a class="btn waves-effect whenmoon swap-asa" href="{% url 'swap_source' url_value asset.id %}">
+                      <i class="material-icons right" aria-hidden="true">{{ 'swap'|get_styling:"icon" }}</i>Swap
+                    </a>
+                  </div>
+                  {% endif %}
                   {% for prog in asaitem.programs %}
                     {% include "snippets/asas/program.html" with prog=prog asset=asset price=asaitem.price pricealgo=pricealgo forloop_counter=forloop.counter %}
                   {% endfor %}
@@ -26,13 +33,6 @@
                 {% include "snippets/asas/meta.html" with asaitem=asaitem asset=asset %}
               </li>
             </ul>
-            {% if url_value %}
-            <div class="swap-asa-entry center-align">
-              <a class="btn waves-effect whenmoon swap-asa" href="{% url 'swap_source' url_value asset.id %}">
-                <i class="material-icons left" aria-hidden="true">swap_horiz</i>Swap {{ asset.unit|default:asset.id }}
-              </a>
-            </div>
-            {% endif %}
           </div>
         </li>
       {% endwith %}
