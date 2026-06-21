@@ -1275,6 +1275,8 @@ class SwapEntryView(TemplateView):
         :type value: str
         :var addresses: the page's address list
         :type addresses: list
+        :var linked: the viewer's linked subset of those addresses
+        :type linked: list
         :var router: the viewer's preferred (or default) swap-router id
         :type router: str
         :return: dict
@@ -1283,6 +1285,7 @@ class SwapEntryView(TemplateView):
         context["swap_url"] = ""
         context["swap_router"] = ""
         context["swap_holdings_tmpl"] = ""
+        context["swap_address"] = ""
         user = self.request.user
         if not user.is_authenticated:
             return context
@@ -1290,11 +1293,15 @@ class SwapEntryView(TemplateView):
         addresses = (
             [value] if len(value) > 50 else check_bundle_addresses(value).split()
         )
-        if linked_addresses_for_user(user, addresses):
+        linked = linked_addresses_for_user(user, addresses)
+        if linked:
             router = user.profile.preferred_router_or_default()
             context["swap_url"] = swap_entry_url(router, value)
             context["swap_router"] = router
             context["swap_holdings_tmpl"] = swap_holdings_tmpl(router)
+            # The wallet-authenticated address holdings load from. No second
+            # wallet connection is needed to view/quote -- only to sign.
+            context["swap_address"] = sorted(linked)[0]
         return context
 
 

@@ -1,5 +1,7 @@
 {# Non-cached, per-user gate + inline-swap config. Presence of #id-swap-enabled #}
 {# reveals the per-ASA Swap toggles (swap-reveal.js -> body.swap-enabled) and  #}
-{# carries the user's chosen router + a holdings-URL template (ADDRESS literal #}
-{# substituted client-side with the connected wallet address by folks.js).     #}
-{% if swap_url %}<span id="id-swap-enabled" data-swap-base="{{ swap_url }}" data-router="{{ swap_router }}" data-holdings-tmpl="{{ swap_holdings_tmpl }}"></span>{% endif %}
+{# carries: the user's chosen router, a holdings-URL template (ADDRESS literal #}
+{# substituted with data-address by folks.js), and the linked swap-from address #}
+{# the viewer already authenticated with -- so loading holdings needs no second #}
+{# wallet connection (only the final signature does).                          #}
+{% if swap_url %}<span id="id-swap-enabled" data-swap-base="{{ swap_url }}" data-router="{{ swap_router }}" data-holdings-tmpl="{{ swap_holdings_tmpl }}" data-address="{{ swap_address }}"></span>{% endif %}
