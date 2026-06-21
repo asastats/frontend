@@ -1,7 +1,3 @@
-{% if swap_url %}
-<div class="row center-align" id="id-swap-entry">
-  <a class="btn waves-effect whenmoon" href="{{ swap_url }}">
-    <i class="material-icons left" aria-hidden="true">swap_horiz</i>Swap
-  </a>
-</div>
-{% endif %}
+{# Non-cached gate signal: presence of #id-swap-enabled reveals the per-ASA #}
+{# Swap buttons in the (cached) accordion via CSS :has(). #}
+{% if swap_url %}<span id="id-swap-enabled" data-swap-base="{{ swap_url }}"></span>{% endif %}

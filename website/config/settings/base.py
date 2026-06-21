@@ -387,6 +387,11 @@ STATICFILES_DIRS += [
     for w in INHOUSE_WIDGETS
     if (BASE_DIR.parent / "widgets" / "inhouse" / w / "static").is_dir()
 ]
+TEMPLATES[0]["DIRS"] += [
+    BASE_DIR.parent / "widgets" / "inhouse" / w / "templates"
+    for w in INHOUSE_WIDGETS
+    if (BASE_DIR.parent / "widgets" / "inhouse" / w / "templates").is_dir()
+]
 
 PERMISSION_PROVIDER = "core.permission_providers.permissiondapp.PermissionDappProvider"
 

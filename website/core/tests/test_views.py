@@ -957,7 +957,7 @@ class SwapEntryViewTest(TestCase):
 
     def test_swap_entry_anonymous_renders_nothing(self):
         response = self.client.get(self.url)
-        self.assertNotContains(response, "id-swap-entry")
+        self.assertNotContains(response, "id-swap-enabled")
 
     def test_swap_entry_linked_address_renders_swap_link(self):
         self._login()
@@ -976,7 +976,7 @@ class SwapEntryViewTest(TestCase):
             "core.views.linked_addresses_for_user", return_value=set()
         ), mock.patch("core.views.swap_entry_url") as mocked_url:
             response = self.client.get(self.url)
-        self.assertNotContains(response, "id-swap-entry")
+        self.assertNotContains(response, "id-swap-enabled")
         mocked_url.assert_not_called()
 
     def test_swap_entry_bundle_resolves_addresses(self):
@@ -992,3 +992,45 @@ class SwapEntryViewTest(TestCase):
             response = self.client.get(reverse("swap_entry", args=[bundle]))
         mocked_cba.assert_called_once_with(bundle)
         self.assertContains(response, "/widgets/folks/BBB")
+
+
+class SwapSourceRedirectViewTest(TestCase):
+    """Testing class for :class:`core.views.SwapSourceRedirectView`."""
+
+    def setUp(self):
+        self.address = "A" * 58
+        self.url = reverse("swap_source", args=[self.address, 31566704])
+        self.user = user_model.objects.create(
+            email="swapsrc@testuser.com", username="swapsrc"
+        )
+        self.user.set_password("12345o")
+        self.user.save()
+
+    def _login(self):
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            self.client.login(username="swapsrc", password="12345o")
+
+    def test_swap_source_anonymous_404(self):
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+
+    def test_swap_source_linked_redirects_with_from(self):
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/AAA"):
+            response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/widgets/folks/AAA?from=31566704")
+
+    def test_swap_source_unlinked_404(self):
+        self._login()
+        with mock.patch("core.views.linked_addresses_for_user", return_value=set()):
+            self.assertEqual(self.client.get(self.url).status_code, 404)
+
+    def test_swap_source_no_router_404(self):
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value=""):
+            self.assertEqual(self.client.get(self.url).status_code, 404)

@@ -157,6 +157,14 @@ Finally, under frontend web Python environemnt:
   python manage.py migrate
 
 
+Use Django management commands to indirectly access PostgreSQL. For example,
+Django ships with a command for changing a user password:
+
+.. code-block:: bash
+
+  python manage.py changepassword username
+
+
 Tests
 -----
 

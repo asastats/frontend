@@ -1291,3 +1291,33 @@ class SwapEntryView(TemplateView):
                 user.profile.preferred_router_or_default(), value
             )
         return context
+
+
+class SwapSourceRedirectView(View):
+    """Non-cached: send a linked user to their router's swap page for one asset.
+
+    The address-page accordion is ``cache_page``'d, so its per-asset Swap links
+    point here (user-agnostic), and this resolves the per-user router choice and
+    the linkage gate off the cache, then redirects with the asset pre-selected as
+    the swap source (``?from=<asset_id>``).
+    """
+
+    def get(self, request, value, asset_id):
+        """Redirect a linked viewer to ``<router>/<value>?from=<asset_id>``.
+
+        :return: HttpResponseRedirect
+        """
+        if not request.user.is_authenticated:
+            raise Http404
+        address = value.upper()
+        addresses = (
+            [address] if len(address) > 50 else check_bundle_addresses(address).split()
+        )
+        if not linked_addresses_for_user(request.user, addresses):
+            raise Http404
+        base = swap_entry_url(
+            request.user.profile.preferred_router_or_default(), address
+        )
+        if not base:
+            raise Http404
+        return redirect(f"{base}?from={asset_id}")

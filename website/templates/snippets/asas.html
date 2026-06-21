@@ -26,6 +26,13 @@
                 {% include "snippets/asas/meta.html" with asaitem=asaitem asset=asset %}
               </li>
             </ul>
+            {% if url_value %}
+            <div class="swap-asa-entry center-align">
+              <a class="btn waves-effect whenmoon swap-asa" href="{% url 'swap_source' url_value asset.id %}">
+                <i class="material-icons left" aria-hidden="true">swap_horiz</i>Swap {{ asset.unit|default:asset.id }}
+              </a>
+            </div>
+            {% endif %}
           </div>
         </li>
       {% endwith %}

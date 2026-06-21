@@ -84,6 +84,18 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.ProfileApiView"
         assert url.name == "profile_api"
 
+    def test_core_urls_swap_entry(self):
+        url = self._url_from_pattern(r"^swap-entry/(\w{40}|\w{58})/$")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "core.views.SwapEntryView"
+        assert url.name == "swap_entry"
+
+    def test_core_urls_swap_source(self):
+        url = self._url_from_pattern(r"^swap/(\w{40}|\w{58})/(\d+)/$")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "core.views.SwapSourceRedirectView"
+        assert url.name == "swap_source"
+
     def test_core_urls_profile_settings(self):
         url = self._url_from_pattern(r"^profile/settings/$")
         assert isinstance(url, URLPattern)
@@ -153,12 +165,6 @@ class TestCoreUrls:
         assert isinstance(url, URLPattern)
         assert url.lookup_str == "core.views.AddressViewCustom"
         assert url.name == "custom_address1"
-
-    def test_core_urls_swap_entry(self):
-        url = self._url_from_pattern(r"^swap-entry/(\w{40}|\w{58})/$")
-        assert isinstance(url, URLPattern)
-        assert url.lookup_str == "core.views.SwapEntryView"
-        assert url.name == "swap_entry"
 
     def test_core_urls_address(self):
         url = self._url_from_pattern(r"^([0-9A-Za-z]{58})$")
@@ -259,4 +265,4 @@ class TestCoreUrls:
         assert url.name == "bundle_name"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 38
+        assert len(urls.urlpatterns) == 39

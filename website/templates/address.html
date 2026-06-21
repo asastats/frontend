@@ -15,6 +15,10 @@
 {% endblock %}
 {% block content %}
 <div id="id-swap-entry-container" hx-get="{% url 'swap_entry' url_value %}" hx-trigger="load" hx-swap="innerHTML"></div>
+<style>
+  .swap-asa-entry { display: none; margin-top: 0.75rem; }
+  body.swap-enabled .swap-asa-entry { display: block; }
+</style>
 {{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
 {% with total=account.total system=account.system_info account_info=account.account_info %}
 <h1 class="center-align tooltipped pricetip" data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }} data-total={{ total.totalusdc }} data-totalwnft={{ total.total }} data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }} data-tooltip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</h1>
@@ -169,4 +173,5 @@
 {% block otherfooter %}
 <script src="{% static 'js/chart.min002.js' %}"></script>
 <script src="{% static 'js/address.min031.js' %}"></script>
+<script src="{% static 'js/swap-reveal.js' %}"></script>
 {% endblock %}
