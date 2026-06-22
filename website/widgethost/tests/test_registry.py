@@ -128,3 +128,28 @@ class TestWidgethostRegistrySwapHoldingsTmpl:
 
         mocker.patch("widgethost.registry.reverse", side_effect=NoReverseMatch)
         assert swap_holdings_tmpl("folks") == ""
+
+
+class TestWidgethostRegistrySwapClientCfg:
+    # # swap_client_cfg
+    def test_swap_client_cfg_reads_router_prefixed_settings(self, mocker):
+        from widgethost.registry import swap_client_cfg
+
+        mocker.patch.multiple(
+            "widgethost.registry.settings",
+            FOLKS_NETWORK="testnet",
+            FOLKS_REFERRER_ADDRESS="REFADDR",
+            FOLKS_FEE_BPS=30,
+            create=True,
+        )
+        assert swap_client_cfg("folks") == {
+            "network": "testnet",
+            "referrer": "REFADDR",
+            "fee_bps": 30,
+        }
+
+    def test_swap_client_cfg_defaults_when_settings_absent(self, mocker):
+        from widgethost.registry import swap_client_cfg
+
+        cfg = swap_client_cfg("unknownrouter")
+        assert cfg == {"network": "mainnet", "referrer": "", "fee_bps": 0}

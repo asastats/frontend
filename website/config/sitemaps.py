@@ -46,7 +46,6 @@ class StaticViewSitemap(sitemaps.Sitemap):
             ("account_reset_password", ()),
             ("assets_file", ["whitepaper.pdf"]),
         ]
-
         for year_group in load_transparency_reports():
             for report in year_group["months"]:
                 items.append(

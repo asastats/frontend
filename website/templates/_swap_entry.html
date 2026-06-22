@@ -1,7 +1,14 @@
-{# Non-cached, per-user gate + inline-swap config. Presence of #id-swap-enabled #}
-{# reveals the per-ASA Swap toggles (swap-reveal.js -> body.swap-enabled) and  #}
-{# carries: the user's chosen router, a holdings-URL template (ADDRESS literal #}
-{# substituted with data-address by folks.js), and the linked swap-from address #}
-{# the viewer already authenticated with -- so loading holdings needs no second #}
-{# wallet connection (only the final signature does).                          #}
-{% if swap_url %}<span id="id-swap-enabled" data-swap-base="{{ swap_url }}" data-router="{{ swap_router }}" data-holdings-tmpl="{{ swap_holdings_tmpl }}" data-address="{{ swap_address }}"></span>{% endif %}
+{# Non-cached, per-user gate + swap config. Presence of #id-swap-enabled enables  #}
+{# the per-ASA Swap buttons. It carries: the chosen router, that router's public  #}
+{# client cfg (network / referrer / fee), a holdings-URL template (ADDRESS literal #}
+{# substituted by folks.js), and the linked from-address the viewer authenticated #}
+{# with. folks.js reads router+cfg from HERE (not the loaded partial), so a quote  #}
+{# can't fail with "adapter is undefined".                                         #}
+{% if swap_url %}<span id="id-swap-enabled"
+      data-swap-base="{{ swap_url }}"
+      data-router="{{ swap_router }}"
+      data-network="{{ swap_network }}"
+      data-referrer="{{ swap_referrer }}"
+      data-fee-bps="{{ swap_fee_bps }}"
+      data-holdings-tmpl="{{ swap_holdings_tmpl }}"
+      data-address="{{ swap_address }}"></span>{% endif %}

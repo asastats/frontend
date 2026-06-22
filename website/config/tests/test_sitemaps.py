@@ -12,7 +12,6 @@ from config.sitemaps import (
     PrioritizedStaticViewSitemap,
     StaticViewSitemap,
 )
-from utils.helpers import load_transparency_reports
 
 
 class SitemapTest(TestCase):
@@ -140,15 +139,23 @@ class SitemapTest(TestCase):
                 ],
             },
         ]
-        mock.patch("config.sitemaps.load_transparency_reports", return_value=reports)
-        for year_group in load_transparency_reports():
-            for report in year_group["months"]:
-                self.check_for_item_with_args(
-                    (
-                        "assets_file",
-                        [f"transparency-report-{report['year']}-{report['month']}.pdf"],
-                    )
-                )
+        with mock.patch(
+            "config.sitemaps.load_transparency_reports", return_value=reports
+        ):
+            self.sitemap = StaticViewSitemap()
+            self.items = self.sitemap.items()
+            self.check_for_item_with_args(
+                ("assets_file", ["transparency-report-2025-10.pdf"])
+            )
+            self.check_for_item_with_args(
+                ("assets_file", ["transparency-report-2025-12.pdf"])
+            )
+            self.check_for_item_with_args(
+                ("assets_file", ["transparency-report-2026-01.pdf"])
+            )
+            self.check_for_item_with_args(
+                ("assets_file", ["transparency-report-2026-05.pdf"])
+            )
 
     def test_location_returns_url_for_supplied_sole_item(self):
         location = self.sitemap.location(("about", ()))

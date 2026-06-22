@@ -8,6 +8,7 @@ lists with manifest discovery: the presence of a ``widget.toml`` registers a wid
 
 from pathlib import Path
 
+from django.conf import settings
 from django.urls import NoReverseMatch, reverse
 
 import widgets
@@ -156,3 +157,19 @@ def swap_holdings_tmpl(router_id):
     except NoReverseMatch:
         return ""
     return url.replace(placeholder, "ADDRESS")
+
+
+def swap_client_cfg(router_id):
+    """Return a router's public swap-client config for the browser.
+
+    :param router_id: the router key, e.g. ``"folks"``
+    :type router_id: str
+    :return: ``{"network": str, "referrer": str, "fee_bps": int}``
+    :rtype: dict
+    """
+    prefix = router_id.upper()
+    return {
+        "network": getattr(settings, f"{prefix}_NETWORK", "mainnet"),
+        "referrer": getattr(settings, f"{prefix}_REFERRER_ADDRESS", ""),
+        "fee_bps": getattr(settings, f"{prefix}_FEE_BPS", 0),
+    }

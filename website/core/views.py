@@ -82,7 +82,11 @@ from utils.helpers import (
 )
 from utils.userhelpers import check_authorization_transaction
 from walletauth.gating import linked_addresses_for_user
-from widgethost.registry import swap_entry_url, swap_holdings_tmpl
+from widgethost.registry import (
+    swap_client_cfg,
+    swap_entry_url,
+    swap_holdings_tmpl,
+)
 
 from .forms import AddressForm, ExportDownloadForm, ExportForm
 
@@ -1269,23 +1273,14 @@ class SwapEntryView(TemplateView):
     template_name = "_swap_entry.html"
 
     def get_context_data(self, *args, **kwargs):
-        """Resolve the preferred-router swap URL + inline-swap config.
+        """Resolve the preferred-router swap URL + client cfg for a linked viewer.
 
         :var value: address or bundle hash from the URL
         :type value: str
-        :var addresses: the page's address list
-        :type addresses: list
-        :var linked: the viewer's linked subset of those addresses
-        :type linked: list
-        :var router: the viewer's preferred (or default) swap-router id
-        :type router: str
         :return: dict
         """
         context = super().get_context_data(*args, **kwargs)
         context["swap_url"] = ""
-        context["swap_router"] = ""
-        context["swap_holdings_tmpl"] = ""
-        context["swap_address"] = ""
         user = self.request.user
         if not user.is_authenticated:
             return context
@@ -1296,11 +1291,15 @@ class SwapEntryView(TemplateView):
         linked = linked_addresses_for_user(user, addresses)
         if linked:
             router = user.profile.preferred_router_or_default()
+            cfg = swap_client_cfg(router)
             context["swap_url"] = swap_entry_url(router, value)
             context["swap_router"] = router
+            context["swap_network"] = cfg["network"]
+            context["swap_referrer"] = cfg["referrer"]
+            context["swap_fee_bps"] = cfg["fee_bps"]
             context["swap_holdings_tmpl"] = swap_holdings_tmpl(router)
-            # The wallet-authenticated address holdings load from. No second
-            # wallet connection is needed to view/quote -- only to sign.
+            # First-alpha linked address: holdings + quote load from here; the live
+            # wallet is only needed at signing time (the real safety net).
             context["swap_address"] = sorted(linked)[0]
         return context
 

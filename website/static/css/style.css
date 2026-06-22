@@ -390,14 +390,11 @@ span.sort {
   justify-content: center;
 }
 
-.swap-asa-entry {
-  display: none;
-  margin-bottom: 0.75rem;
-}
-
-body.swap-enabled .swap-asa-entry {
-  display: block;
-}
+.id-folks-cols { display: flex; flex-wrap: wrap; }
+.id-folks-form.folks-mode-buy .id-folks-source-col { order: 2; }
+.id-folks-form.folks-mode-buy .id-folks-target-col { order: 1; }
+.id-folks-pct-row { display: flex; gap: .25rem; align-items: center; margin-top: .5rem; }
+.id-folks-pct-row .id-folks-pct { max-width: 5rem; }
 
 .swap-action-column {
   padding-right: 0 !important;

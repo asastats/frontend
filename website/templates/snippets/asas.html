@@ -24,7 +24,6 @@
                       <div class="col s6 push-s6 m5 push-m7 right-align swap-action-column">
                         <a class="btn waves-effect whenmoon swap-asa id-folks-swap-toggle"
                           href="{% url 'swap_source' url_value asset.id %}"
-                          data-folks-target="folks-panel-{{ asset.id }}"
                           data-from="{{ asset.id }}"
                           data-label-show="Swap" data-label-hide="Hide">
                           <i class="material-icons right" aria-hidden="true">{{ 'swap'|get_styling:"icon" }}</i><span class="swap-label">Swap</span>

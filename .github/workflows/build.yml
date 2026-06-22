@@ -92,6 +92,8 @@ jobs:
       - name: Run widgets submodule tests
         env:
           PYTHONPATH: website
+          DJANGO_SETTINGS_MODULE: config.settings.development
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/website_db
           COVERAGE_RCFILE: website/widgets/.coveragerc
         run: |
           pytest website/widgets -c website/widgets/pytest.ini --cov=widgets --cov-report=xml:coverage-widgets.xml --cov-report=term-missing
