@@ -1,4 +1,3 @@
-import pytest
 from django.core import mail
 from selenium.webdriver.common.by import By
 
@@ -90,7 +89,7 @@ class EmailConfirmationTest(FunctionalTest):
         link = self.browser.find_element(By.LINK_TEXT, email)
         self.assertEqual(link.get_attribute("href"), "mailto:{}".format(email))
 
-    @pytest.mark.skip(reason="This test fails occasionaly without a proepr reason.")
+    # @pytest.mark.skip(reason="This test fails occasionaly without a proper reason.")
     def test_email_removing(self):
         # Sergei signs up
         email = "sergei@wayne.com"

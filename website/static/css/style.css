@@ -395,6 +395,7 @@ span.sort {
 .id-folks-form.folks-mode-buy .id-folks-target-col { order: 1; }
 .id-folks-pct-row { display: flex; gap: .25rem; align-items: center; margin-top: .5rem; }
 .id-folks-pct-row .id-folks-pct { max-width: 5rem; }
+.id-folks-tx-link { text-decoration: underline; word-break: break-all; }
 
 .swap-action-column {
   padding-right: 0 !important;
