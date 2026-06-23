@@ -128,8 +128,8 @@ new App();
 
 /* istanbul ignore next -- bootstrap glue; orchestration is tested in swapBridge.test */
 {
-  // Mount the swap bridge when a swap widget is present. No-ops on pages without
-  // the `#id-folks-swap` container, so it is safe to run everywhere.
+  // Mount the swap bridge when a swap entry point is present. No-ops on pages
+  // without `#id-folks-swap` (shell) or `#id-swap-enabled` (modal marker).
   const bootstrapSwap = () => {
     void initSwapBridge();
   };
@@ -138,6 +138,15 @@ new App();
   } else {
     bootstrapSwap();
   }
+  // The #id-swap-enabled marker is a non-cached htmx partial (hx-trigger="load"
+  // in address.html), so it arrives after DOMContentLoaded. Re-attempt whenever
+  // htmx settles new content, until the bridge is up. initSwapBridge no-ops if
+  // the marker still isn't present, and the guard below stops work once it is.
+  document.body.addEventListener("htmx:afterSettle", () => {
+    if (!window.asastatsSwap) {
+      void initSwapBridge();
+    }
+  });
 }
 
 // Test-only: when the page sets `window.__WALLET_TEST__` (emitted solely under

@@ -112,8 +112,9 @@ function buildDeps(manager: WalletManager): OptInDeps {
 /**
  * Wire the swap bridge when a swap widget is present on the page.
  *
- * No-ops unless the swap container (`#id-folks-swap`, shared by all router
- * widgets) exists, so it is safe to run everywhere — matching initManageAddresses
+ * No-ops unless a swap entry point is present: the shell accordion container
+ * (`#id-folks-swap`) OR the per-ASA modal marker (`#id-swap-enabled`),
+ * so it is safe to run everywhere — matching initManageAddresses
  * / initEvm. On a swap page it resumes the wallet manager, publishes
  * `window.asastatsSwap`, then dispatches `asastats:swap-ready` so a widget
  * controller that ran before the wallet bundle can re-run its render gate.
@@ -121,7 +122,9 @@ function buildDeps(manager: WalletManager): OptInDeps {
  * @param doc - Document to query (defaults to the global document).
  */
 export async function initSwapBridge(doc: Document = document): Promise<void> {
-  const container = doc.querySelector<HTMLElement>("#id-folks-swap");
+ const container =
+   doc.querySelector<HTMLElement>("#id-folks-swap") ||
+   doc.querySelector<HTMLElement>("#id-swap-enabled");
   if (!container) {
     return;
   }
