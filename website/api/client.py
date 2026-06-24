@@ -5,6 +5,8 @@ deployment's credential (``ASASTATS_API_KEY``). This is the only seam between th
 open app and the proprietary engine.
 """
 
+from urllib.parse import quote
+
 import requests
 from django.conf import settings
 
@@ -36,17 +38,19 @@ def fetch_account_holdings(address, allowed_scopes):
     The backend returns a mapping of asset id to ``{name, unit, decimals, amount}``
     (ALGO is id 0); every key present is, by definition, opted in.
 
+    Defense-in-depth: the only caller already constrains address to \w{58},
+    but encode the path segment so this helper can't be misused to traverse.
+
     :param address: single Algorand address
     :type address: str
     :param allowed_scopes: the widget manifest's declared engine endpoints
     :type allowed_scopes: list
     :return: dict
     """
+    safe = quote(str(address), safe="")
     return engine_request(
-        "account:holdings",
-        "GET",
-        f"/api/v2/internal/accounts/{address}/holdings",
-        allowed_scopes,
+        "account:holdings", "GET",
+        f"/api/v2/internal/accounts/{safe}/holdings", allowed_scopes,
     ).json()
 
 
