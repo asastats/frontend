@@ -11,8 +11,10 @@ let lastConfig;
 function chartInstance(overrides) {
   return Object.assign({
     canvas: { id: 'id-asachart' },
-    data: { datasets: [{ data: ['10', '20'] }, { data: ['5', '15'] }],
-      labels: ['a', 'b'] },
+    data: {
+      datasets: [{ data: ['10', '20'] }, { data: ['5', '15'] }],
+      labels: ['a', 'b']
+    },
     config: { type: 'pie' },
     legend: { legendItems: Array.from({ length: 12 }, () => ({ hidden: false })) },
     options: { plugins: { legend: { labels: { generateLabels: () => [] } } } },
@@ -325,10 +327,14 @@ describe("chart tooltip / hover / legend callbacks", function () {
     var c = configs();
     var plugin = c.dist.plugins[0];
     var items = [
-      { fillStyle: "#fff", strokeStyle: "#000", lineWidth: 1, hidden: true,
-        text: "H", index: 0, datasetIndex: 0 },
-      { fillStyle: "#000", strokeStyle: "#fff", lineWidth: 2, hidden: false,
-        text: "S", index: 1, datasetIndex: 0 },
+      {
+        fillStyle: "#fff", strokeStyle: "#000", lineWidth: 1, hidden: true,
+        text: "H", index: 0, datasetIndex: 0
+      },
+      {
+        fillStyle: "#000", strokeStyle: "#fff", lineWidth: 2, hidden: false,
+        text: "S", index: 1, datasetIndex: 0
+      },
     ];
     var pieChart = chartInstance({
       config: { type: 'pie' }, canvas: { id: 'id-asachart' },
@@ -472,13 +478,33 @@ describe("filterChange", function () {
 
 describe("initAddress (window.onload)", function () {
   it('defers images and opens stored sections', function () {
+
     localStorage.setItem("openasa", "fa1");
     window.onload();
     expect($("img.nft[data-src]").attr("src")).toBe("/real.png");
   });
+
   it('does nothing extra when no section stored', function () {
     window.onload();
     expect(window.onload).toBeDefined();
+  });
+
+  it('falls back to default nft.png when deferred image fails to load', function () {
+    // 1. Setup the DOM with an image that has a data-src
+    document.body.innerHTML = '<img class="nft" data-src="/broken.png" src="" />';
+    // 2. Trigger onload, which calls deferImages() and attaches the onerror handler
+    window.onload();
+    // 3. Grab the image element
+    const imgElement = document.querySelector("img.nft");
+    // Verify deferImages properly set the initial src
+    expect(imgElement.src).toContain("/broken.png");
+    // 4. Manually trigger the 'error' event to simulate a 404 from the CDN
+    const errorEvent = new Event('error');
+    imgElement.dispatchEvent(errorEvent);
+    // 5. Assert that the onerror handler updated the src to the fallback
+    expect(imgElement.src).toBe('https://cdn.asastats.com/thumbnails/nft.png');
+    // 6. Assert that the onerror handler removed itself (prevents infinite loops)
+    expect(imgElement.onerror).toBeNull();
   });
 });
 

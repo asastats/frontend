@@ -92,6 +92,7 @@ function mainAddress() {
 /**
  * Assign src attribute from element's dataset src attribute.
  * This is done after all the page content has been already loaded.
+ * Automatically handles 404 fallbacks for missing CDN images.
  * @function deferImages
  *
  * @param {Array.<object>} images Array of image elements
@@ -99,8 +100,18 @@ function mainAddress() {
  */
 function deferImages(images) {
   for (var i = 0; i < images.length; i++) {
-    if (images[i].getAttribute('data-src')) {
-      images[i].setAttribute('src', images[i].getAttribute('data-src'));
+    var img = images[i];
+    var dataSrc = img.getAttribute("data-src");
+
+    if (dataSrc) {
+      // Attach the error handler for large NFTs BEFORE setting the new source
+      img.onerror = function() {
+        this.onerror = null; // Prevent infinite loop if the fallback is missing
+        this.src = 'https://cdn.asastats.com/thumbnails/nft.png';
+      };
+
+      // Trigger the actual image load
+      img.setAttribute("src", dataSrc);
     }
   }
 }
