@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@blockshake/defly-connect": "^1.2.1",
+    "@folks-router/js-sdk": "^0.5.1",
     "@perawallet/connect": "^1.5.2",
     "@txnlab/use-wallet": "^4.6.0",
     "@walletconnect/ethereum-provider": "^2.23.9",
@@ -36,6 +37,7 @@
   "overrides": {
     "js-yaml": "^4.2.0",
     "@tootallnate/once": ">=3.0.1",
-    "bn.js": ">=4.12.3"
+    "bn.js": ">=4.12.3",
+    "algosdk": "^3.6.0"
   }
 }

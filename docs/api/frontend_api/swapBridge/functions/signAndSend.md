@@ -6,19 +6,22 @@
 
 # Function: signAndSend()
 
-> **signAndSend**(`group`, `deps`): `Promise`\<`string`\>
+> **signAndSend**(`group`, `deps`, `opts`): `Promise`\<`string`\>
 
-Defined in: [swapBridge.ts:49](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L49)
+Defined in: [swapBridge.ts:86](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L86)
 
-Sign, submit and confirm a prepared swap transaction group.
+Sign, submit and confirm a prepared swap transaction group, prepending any
+required opt-in legs (user and/or referrer escrow) as shape B.
 
-Pure orchestration: guards the preconditions, then drives
-sign → submit → confirm through the injected collaborators in order. Throws
-(and submits nothing) when the group is empty, no wallet account is active, or
-the wallet does not return a signature for every transaction in the group. The
-"every transaction signed" check assumes a single-signer group (the user's
-account signs the input transfer, the router app call(s) and the fee txn); if
-a future router needs a foreign- or logicsig-signed leg, relax this here.
+Build order:
+ 1. [optional] user opt-in into the output asset (wallet-signed).
+ 2. [optional] referrer-escrow opt-in — lsig-signed self-transfer when the
+    escrow can self-fund its MBR, or the SDK's two-txn pair (user funds the
+    MBR, then the lsig opt-in) when it cannot.
+ 3. The swap txns forwarded from the caller (all wallet-signed).
+
+All entries are cleared of prior group ids and re-assigned a single atomic
+group id before signing.
 
 ## Parameters
 
@@ -26,7 +29,7 @@ a future router needs a foreign- or logicsig-signed leg, relax this here.
 
 `Uint8Array`\<`ArrayBufferLike`\>[]
 
-Encoded, grouped, unsigned transactions ready to sign.
+Encoded, grouped, unsigned swap transactions from the adapter.
 
 ### deps
 
@@ -34,8 +37,14 @@ Encoded, grouped, unsigned transactions ready to sign.
 
 Injected wallet/algod collaborators.
 
+### opts
+
+[`SwapOpts`](../interfaces/SwapOpts.md)
+
+Per-call options: output asset, user opt-in flag, referrer.
+
 ## Returns
 
 `Promise`\<`string`\>
 
-The confirmed transaction id.
+The confirmed transaction id (first leg of the submitted group).

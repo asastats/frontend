@@ -8,24 +8,21 @@
 
 > **initSwapBridge**(`doc?`): `Promise`\<`void`\>
 
-Defined in: [swapBootstrap.ts:127](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L127)
+Defined in: [swapBootstrap.ts:136](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L136)
 
 Wire the swap bridge when a swap widget is present on the page.
 
 No-ops unless a swap entry point is present: the shell accordion container
-(`#id-folks-swap`) OR the per-ASA modal marker (`#id-swap-enabled`),
-so it is safe to run everywhere — matching initManageAddresses
-/ initEvm. On a swap page it resumes the wallet manager, publishes
-`window.asastatsSwap`, then dispatches `asastats:swap-ready` so a widget
-controller that ran before the wallet bundle can re-run its render gate.
+(`#id-folks-swap`) OR the per-ASA modal marker (`#id-swap-enabled`).
+On a swap page it resumes the wallet manager, publishes `window.asastatsSwap`,
+then dispatches `asastats:swap-ready` so a widget controller that ran before
+the wallet bundle can re-run its render gate.
 
 ## Parameters
 
 ### doc?
 
 `Document` = `document`
-
-Document to query (defaults to the global document).
 
 ## Returns
 

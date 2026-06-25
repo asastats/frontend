@@ -48,7 +48,7 @@ Opt the active account into `assetId` (pre-flight 0-amount self-transfer).
 
 ### signAndSend
 
-> **signAndSend**: (`group`) => `Promise`\<`string`\>
+> **signAndSend**: (`group`, `opts`) => `Promise`\<`string`\>
 
 Defined in: [swapBootstrap.ts:19](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L19)
 
@@ -59,6 +59,10 @@ Sign + submit + confirm a prepared, grouped, unsigned txn group.
 ##### group
 
 `Uint8Array`\<`ArrayBufferLike`\>[]
+
+##### opts
+
+[`SwapOpts`](../../swapBridge/interfaces/SwapOpts.md)
 
 #### Returns
 

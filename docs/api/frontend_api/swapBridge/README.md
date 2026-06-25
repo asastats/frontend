@@ -10,6 +10,7 @@
 
 - [OptInDeps](interfaces/OptInDeps.md)
 - [SignAndSendDeps](interfaces/SignAndSendDeps.md)
+- [SwapOpts](interfaces/SwapOpts.md)
 
 ## Functions
 

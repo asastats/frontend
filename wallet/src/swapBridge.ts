@@ -9,11 +9,32 @@
  *
  * Trust model: the group is built upstream by the widget's router adapter
  * (Folks SDK), already grouped and with the ASA Stats fee txn appended. This
- * orchestrator never inspects or mutates the group — it only signs, submits and
- * confirms. The live signature over the atomic group is the non-custodial
- * guarantee: nothing here can move funds the user did not sign for, and a failed
- * signature or submission simply aborts with no effect.
+ * orchestrator handles optional user opt-in and referrer-escrow opt-in legs
+ * (shape B prepend), then signs the mix (wallet for user legs, logic-sig for
+ * escrow legs), submits and confirms.
  */
+
+import {
+  assignGroupID,
+  decodeUnsignedTransaction,
+  encodeUnsignedTransaction,
+  signLogicSigTransactionObject,
+  makeAssetTransferTxnWithSuggestedParamsFromObject,
+} from "algosdk";
+import { getReferrerLogicSig, prepareReferrerOptIntoAsset } from "@folks-router/js-sdk";
+
+/** 0.1 ALGO per-asset min-balance bump (in microAlgos). */
+const ASSET_MBR = 100_000n;
+
+/** Options passed from the controller with each swap call. */
+export interface SwapOpts {
+  /** The output asset id for this swap. */
+  outputAssetId: number;
+  /** Whether the user still needs to opt into the output asset. */
+  userNeedsOptIn: boolean;
+  /** Referrer address; omit or pass "" for no referrer leg. */
+  referrer?: string;
+}
 
 /** Injected collaborators for {@link signAndSend} (all wallet/algod concerns isolated). */
 export interface SignAndSendDeps {
@@ -21,10 +42,22 @@ export interface SignAndSendDeps {
   activeAddress: () => string | null;
   /**
    * Sign the encoded, grouped, unsigned transactions with the active wallet.
-   * Returns one entry per input position; a null entry marks a transaction the
-   * wallet did not sign (use-wallet's contract).
+   * Accepts only the indexes the wallet should sign; returns one blob per
+   * input position. A null entry marks a transaction the wallet did not sign.
    */
   signTransactions: (txns: Uint8Array[]) => Promise<(Uint8Array | null)[]>;
+  /** Fetch current suggested transaction params from algod. */
+  suggestedParams: () => Promise<any>;
+  /**
+   * Return whether `addr` is already opted into `assetId`.
+   * (algod accountAssetInformation — 404 means not opted in.)
+   */
+  isOptedIn: (addr: string, assetId: number) => Promise<boolean>;
+  /**
+   * Return the number of microAlgos the `addr` can spend without dipping
+   * below its min-balance (amount − min-balance).
+   */
+  availableMicroAlgos: (addr: string) => Promise<bigint>;
   /** Submit the signed transaction blobs; resolves with the submitted txid. */
   submit: (signed: Uint8Array[]) => Promise<string>;
   /** Resolve once `txid` is confirmed on-chain (or reject on failure/timeout). */
@@ -32,38 +65,120 @@ export interface SignAndSendDeps {
 }
 
 /**
- * Sign, submit and confirm a prepared swap transaction group.
+ * Sign, submit and confirm a prepared swap transaction group, prepending any
+ * required opt-in legs (user and/or referrer escrow) as shape B.
  *
- * Pure orchestration: guards the preconditions, then drives
- * sign → submit → confirm through the injected collaborators in order. Throws
- * (and submits nothing) when the group is empty, no wallet account is active, or
- * the wallet does not return a signature for every transaction in the group. The
- * "every transaction signed" check assumes a single-signer group (the user's
- * account signs the input transfer, the router app call(s) and the fee txn); if
- * a future router needs a foreign- or logicsig-signed leg, relax this here.
+ * Build order:
+ *  1. [optional] user opt-in into the output asset (wallet-signed).
+ *  2. [optional] referrer-escrow opt-in — lsig-signed self-transfer when the
+ *     escrow can self-fund its MBR, or the SDK's two-txn pair (user funds the
+ *     MBR, then the lsig opt-in) when it cannot.
+ *  3. The swap txns forwarded from the caller (all wallet-signed).
  *
- * @param group - Encoded, grouped, unsigned transactions ready to sign.
- * @param deps - Injected wallet/algod collaborators.
- * @returns The confirmed transaction id.
+ * All entries are cleared of prior group ids and re-assigned a single atomic
+ * group id before signing.
+ *
+ * @param group  - Encoded, grouped, unsigned swap transactions from the adapter.
+ * @param deps   - Injected wallet/algod collaborators.
+ * @param opts   - Per-call options: output asset, user opt-in flag, referrer.
+ * @returns The confirmed transaction id (first leg of the submitted group).
  */
 export async function signAndSend(
   group: Uint8Array[],
-  deps: SignAndSendDeps
+  deps: SignAndSendDeps,
+  opts: SwapOpts,
 ): Promise<string> {
   if (!group || group.length === 0) {
     throw new Error("Empty transaction group");
   }
-  if (!deps.activeAddress()) {
+  const sender = deps.activeAddress();
+  if (!sender) {
     throw new Error("No active wallet account");
   }
+  const sp = await deps.suggestedParams();
 
-  const signed = await deps.signTransactions(group);
-  const present = signed.filter((s): s is Uint8Array => s != null);
-  if (present.length !== group.length) {
-    throw new Error("Wallet did not return a signature for every transaction");
+  // entries: { txn, lsig? } — lsig legs are escrow-signed, the rest wallet-signed.
+  const entries: { txn: any; lsig?: any }[] = [];
+
+  // 1) user opt-in into the output asset (their own account), if needed
+  if (opts.userNeedsOptIn) {
+    entries.push({
+      txn: makeAssetTransferTxnWithSuggestedParamsFromObject({
+        sender,
+        receiver: sender,
+        amount: 0,
+        assetIndex: opts.outputAssetId,
+        suggestedParams: { ...sp, flatFee: true, fee: 1000 },
+      }),
+    });
   }
 
-  const txid = await deps.submit(present);
+  // 2) referrer escrow opt-in (lazy, one-time per (escrow, asset))
+  if (opts.referrer) {
+    const lsig = getReferrerLogicSig(opts.referrer);
+    const escrow = lsig.address().toString();
+    if (!(await deps.isOptedIn(escrow, opts.outputAssetId))) {
+      const available = await deps.availableMicroAlgos(escrow);
+      if (available >= ASSET_MBR + 1_000n) {
+        // Escrow self-funds the MBR bump: prepend ONLY the lsig opt-in.
+        // No ALGO taken from the user.
+        entries.push({
+          txn: makeAssetTransferTxnWithSuggestedParamsFromObject({
+            sender: escrow,
+            receiver: escrow,
+            amount: 0,
+            assetIndex: opts.outputAssetId,
+            suggestedParams: { ...sp, flatFee: true, fee: 1000 },
+          }),
+          lsig,
+        });
+      } else {
+        // Escrow can't cover it: use the SDK's pair (user funds 0.1 ALGO MBR,
+        // then the lsig opt-in).
+        const ref = prepareReferrerOptIntoAsset(
+          sender,
+          opts.referrer,
+          opts.outputAssetId,
+          sp,
+        );
+        for (const r of ref) {
+          entries.push({
+            txn: decodeUnsignedTransaction(r.unsignedTxn),
+            lsig: r.lsig ? lsig : undefined,
+          });
+        }
+      }
+    }
+  }
+
+  // 3) the swap txns (all user-signed)
+  for (const b of group) {
+    entries.push({ txn: decodeUnsignedTransaction(b) });
+  }
+
+  // Regroup everything (clear prior group ids, then one assignGroupID).
+  entries.forEach((e) => {
+    e.txn.group = undefined;
+  });
+  assignGroupID(entries.map((e) => e.txn));
+
+  // Sign: wallet for non-lsig legs (by index), logic-sig for escrow legs.
+  const walletIdx: number[] = [];
+  entries.forEach((e, i) => {
+    if (!e.lsig) walletIdx.push(i);
+  });
+  const encoded = entries.map((e) => encodeUnsignedTransaction(e.txn));
+  const walletSigned = await deps.signTransactions(walletIdx.map((i) => encoded[i]));
+
+  const signedBlobs: Uint8Array[] = entries.map((e, i) => {
+    if (e.lsig) return signLogicSigTransactionObject(e.txn, e.lsig).blob;
+    const pos = walletIdx.indexOf(i);
+    const s = walletSigned[pos];
+    if (!s) throw new Error("Wallet did not sign a required transaction");
+    return s;
+  });
+
+  const txid = await deps.submit(signedBlobs);
   await deps.waitForConfirmation(txid);
   return txid;
 }
@@ -78,20 +193,15 @@ export interface OptInDeps extends SignAndSendDeps {
 /**
  * Opt the active account into `assetId` as a standalone pre-flight transaction.
  *
- * The Folks swap group does not opt the user into the output asset (the SDK's
- * only opt-in helper opts the *router app* in, not the user), and receiving an
- * ASA you are not opted into fails the whole atomic group. So when holdings show
- * the target is not yet opted in, the controller calls this first: build a
- * 0-amount self asset-transfer (locking 0.1 ALGO of MBR) and sign + submit +
- * confirm it through the very same orchestration as a swap. Keeping it a separate
- * group means Folks' pre-grouped, self-validated transactions are never mutated;
- * the cost is one extra approval the first time into a new asset, none after.
- *
  * @param assetId - The output asset to opt into.
- * @param deps - Injected collaborators, incl. the impure {@link OptInDeps.buildOptIn}.
+ * @param deps    - Injected collaborators, incl. the impure {@link OptInDeps.buildOptIn}.
  * @returns The confirmed opt-in transaction id.
  */
 export async function optIn(assetId: number, deps: OptInDeps): Promise<string> {
   const group = await deps.buildOptIn(assetId);
-  return signAndSend(group, deps);
+  // optIn is a plain single-signer group; no referrer or output-asset opt-in needed.
+  return signAndSend(group, deps, {
+    outputAssetId: assetId,
+    userNeedsOptIn: false,
+  });
 }
