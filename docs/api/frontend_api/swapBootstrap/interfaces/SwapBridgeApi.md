@@ -6,7 +6,7 @@
 
 # Interface: SwapBridgeApi
 
-Defined in: [swapBootstrap.ts:14](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L14)
+Defined in: [swapBootstrap.ts:15](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L15)
 
 The narrow surface the swap widget (widgets repo) calls via the global.
 
@@ -16,7 +16,7 @@ The narrow surface the swap widget (widgets repo) calls via the global.
 
 > **activeAddress**: () => `string` \| `null`
 
-Defined in: [swapBootstrap.ts:16](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L16)
+Defined in: [swapBootstrap.ts:17](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L17)
 
 Currently active/connected Algorand address, or null.
 
@@ -30,7 +30,7 @@ Currently active/connected Algorand address, or null.
 
 > **optIn**: (`assetId`) => `Promise`\<`string`\>
 
-Defined in: [swapBootstrap.ts:20](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L20)
+Defined in: [swapBootstrap.ts:21](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L21)
 
 Opt the active account into `assetId` (pre-flight 0-amount self-transfer).
 
@@ -50,7 +50,7 @@ Opt the active account into `assetId` (pre-flight 0-amount self-transfer).
 
 > **signAndSend**: (`group`) => `Promise`\<`string`\>
 
-Defined in: [swapBootstrap.ts:18](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L18)
+Defined in: [swapBootstrap.ts:19](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L19)
 
 Sign + submit + confirm a prepared, grouped, unsigned txn group.
 
@@ -63,3 +63,13 @@ Sign + submit + confirm a prepared, grouped, unsigned txn group.
 #### Returns
 
 `Promise`\<`string`\>
+
+***
+
+### signer
+
+> **signer**: `TransactionSigner`
+
+Defined in: [swapBootstrap.ts:23](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L23)
+
+use-wallet signer; used by composer-based routers (Haystack).

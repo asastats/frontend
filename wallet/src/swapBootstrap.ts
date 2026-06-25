@@ -3,6 +3,7 @@ import { WalletManager, type WalletId } from "@txnlab/use-wallet";
 import {
   makeAssetTransferTxnWithSuggestedParamsFromObject,
   waitForConfirmation as algoWaitForConfirmation,
+  type TransactionSigner,
 } from "algosdk";
 import { optIn, signAndSend, type OptInDeps } from "./swapBridge";
 
@@ -18,6 +19,8 @@ export interface SwapBridgeApi {
   signAndSend: (group: Uint8Array[]) => Promise<string>;
   /** Opt the active account into `assetId` (pre-flight 0-amount self-transfer). */
   optIn: (assetId: number) => Promise<string>;
+  /** use-wallet signer; used by composer-based routers (Haystack). */
+  signer: TransactionSigner;
 }
 
 declare global {
@@ -136,6 +139,8 @@ export async function initSwapBridge(doc: Document = document): Promise<void> {
       activeAddress: deps.activeAddress,
       signAndSend: (group: Uint8Array[]) => signAndSend(group, deps),
       optIn: (assetId: number) => optIn(assetId, deps),
+      // use-wallet's signer; used by composer-based routers (Haystack).
+      signer: manager.transactionSigner,      
     };
     window.dispatchEvent(new CustomEvent("asastats:swap-ready"));
   } catch (error) {

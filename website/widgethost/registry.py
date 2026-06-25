@@ -162,9 +162,9 @@ def swap_holdings_tmpl(router_id):
 def swap_client_cfg(router_id):
     """Return a router's public swap-client config for the browser.
 
-    :param router_id: the router key, e.g. ``"folks"``
+    :param router_id: the router key, e.g. ``"folks"`` or ``"haystack"``
     :type router_id: str
-    :return: ``{"network": str, "referrer": str, "fee_bps": int}``
+    :return: ``{"network", "referrer", "fee_bps", "api_key"}``
     :rtype: dict
     """
     prefix = router_id.upper()
@@ -172,4 +172,5 @@ def swap_client_cfg(router_id):
         "network": getattr(settings, f"{prefix}_NETWORK", "mainnet"),
         "referrer": getattr(settings, f"{prefix}_REFERRER_ADDRESS", ""),
         "fee_bps": getattr(settings, f"{prefix}_FEE_BPS", 0),
+        "api_key": getattr(settings, f"{prefix}_API_KEY", ""),
     }

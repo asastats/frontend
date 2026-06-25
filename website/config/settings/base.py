@@ -379,7 +379,7 @@ CHANNEL_LAYERS = {
 # # WIDGETS
 WIDGETS_API_TOKEN = get_env_variable("WIDGETS_API_TOKEN", "")
 
-INHOUSE_WIDGETS = ["historic", "folks"]
+INHOUSE_WIDGETS = ["historic", "folks", "haystack"]
 THIRDPARTY_WIDGETS = []
 
 STATICFILES_DIRS += [
@@ -398,3 +398,8 @@ PERMISSION_PROVIDER = "core.permission_providers.permissiondapp.PermissionDappPr
 WALLET_TEST_MODE = False  # default; set True only in the functional-test settings
 
 WALLET_CONNECT_PROJECT_ID = get_env_variable("WALLET_CONNECT_PROJECT_ID", "")
+
+FOLKS_REFERRER_ADDRESS = get_env_variable("FOLKS_REFERRER_ADDRESS", "")
+
+HAYSTACK_API_KEY = get_env_variable("HAYSTACK_API_KEY", "")
+HAYSTACK_REFERRER_ADDRESS = get_env_variable("HAYSTACK_REFERRER_ADDRESS", "")

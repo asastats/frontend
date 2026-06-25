@@ -1275,8 +1275,6 @@ class SwapEntryView(TemplateView):
     def get_context_data(self, *args, **kwargs):
         """Resolve the preferred-router swap URL + client cfg for a linked viewer.
 
-        :var value: address or bundle hash from the URL
-        :type value: str
         :return: dict
         """
         context = super().get_context_data(*args, **kwargs)
@@ -1297,10 +1295,12 @@ class SwapEntryView(TemplateView):
             context["swap_network"] = cfg["network"]
             context["swap_referrer"] = cfg["referrer"]
             context["swap_fee_bps"] = cfg["fee_bps"]
+            context["swap_api_key"] = cfg["api_key"]
             context["swap_holdings_tmpl"] = swap_holdings_tmpl(router)
-            # First-alpha linked address: holdings + quote load from here; the live
-            # wallet is only needed at signing time (the real safety net).
             context["swap_address"] = sorted(linked)[0]
+            # The shared controller is loaded once; the chosen router's SDK bundle
+            # is loaded by id, e.g. "haystack/haystack-sdk.bundle.js".
+            context["swap_sdk_static"] = f"{router}/{router}-sdk.bundle.js"
         return context
 
 
