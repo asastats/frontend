@@ -49,8 +49,10 @@ def fetch_account_holdings(address, allowed_scopes):
     """
     safe = quote(str(address), safe="")
     return engine_request(
-        "account:holdings", "GET",
-        f"/api/v2/internal/accounts/{safe}/holdings", allowed_scopes,
+        "account:holdings",
+        "GET",
+        f"/api/v2/internal/accounts/{safe}/holdings",
+        allowed_scopes,
     ).json()
 
 

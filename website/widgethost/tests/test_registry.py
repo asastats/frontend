@@ -140,16 +140,23 @@ class TestWidgethostRegistrySwapClientCfg:
             FOLKS_NETWORK="testnet",
             FOLKS_REFERRER_ADDRESS="REFADDR",
             FOLKS_FEE_BPS=30,
+            FOLKS_API_KEY="myapikey",
             create=True,
         )
         assert swap_client_cfg("folks") == {
             "network": "testnet",
             "referrer": "REFADDR",
             "fee_bps": 30,
+            "api_key": "myapikey",
         }
 
     def test_swap_client_cfg_defaults_when_settings_absent(self, mocker):
         from widgethost.registry import swap_client_cfg
 
         cfg = swap_client_cfg("unknownrouter")
-        assert cfg == {"network": "mainnet", "referrer": "", "fee_bps": 0}
+        assert cfg == {
+            "network": "mainnet",
+            "referrer": "",
+            "fee_bps": 0,
+            "api_key": "",
+        }

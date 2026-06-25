@@ -6,7 +6,7 @@
 
 # Interface: SwapBridgeApi
 
-Defined in: [swapBootstrap.ts:15](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L15)
+Defined in: [swapBootstrap.ts:26](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L26)
 
 The narrow surface the swap widget (widgets repo) calls via the global.
 
@@ -16,7 +16,7 @@ The narrow surface the swap widget (widgets repo) calls via the global.
 
 > **activeAddress**: () => `string` \| `null`
 
-Defined in: [swapBootstrap.ts:17](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L17)
+Defined in: [swapBootstrap.ts:28](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L28)
 
 Currently active/connected Algorand address, or null.
 
@@ -26,11 +26,23 @@ Currently active/connected Algorand address, or null.
 
 ***
 
+### haystackSigner
+
+> **haystackSigner**: [`HaystackSignerFn`](../type-aliases/HaystackSignerFn.md)
+
+Defined in: [swapBootstrap.ts:38](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L38)
+
+Signer for composer-based routers (Haystack) that pass live Transaction
+objects. Pre-encodes each Transaction to bytes before forwarding to
+use-wallet's signer, bridging the cross-bundle object/bytes boundary.
+
+***
+
 ### optIn
 
 > **optIn**: (`assetId`) => `Promise`\<`string`\>
 
-Defined in: [swapBootstrap.ts:21](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L21)
+Defined in: [swapBootstrap.ts:32](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L32)
 
 Opt the active account into `assetId` (pre-flight 0-amount self-transfer).
 
@@ -50,7 +62,7 @@ Opt the active account into `assetId` (pre-flight 0-amount self-transfer).
 
 > **signAndSend**: (`group`, `opts`) => `Promise`\<`string`\>
 
-Defined in: [swapBootstrap.ts:19](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L19)
+Defined in: [swapBootstrap.ts:30](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L30)
 
 Sign + submit + confirm a prepared, grouped, unsigned txn group.
 
@@ -70,10 +82,15 @@ Sign + submit + confirm a prepared, grouped, unsigned txn group.
 
 ***
 
-### signer
+### ~~signer~~
 
 > **signer**: `TransactionSigner`
 
-Defined in: [swapBootstrap.ts:23](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L23)
+Defined in: [swapBootstrap.ts:45](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L45)
 
-use-wallet signer; used by composer-based routers (Haystack).
+#### Deprecated
+
+Use haystackSigner for Haystack. Kept for back-compat.
+use-wallet's raw TransactionSigner (expects encoded Uint8Array[], not
+Transaction objects — will DataView-fail if called with live Transactions
+from a foreign bundle).

@@ -1,8 +1,10 @@
 /* istanbul ignore file -- browser/wallet/algod glue; orchestration is tested in swapBridge.test */
 import { WalletManager, type WalletId } from "@txnlab/use-wallet";
 import {
+  encodeUnsignedTransaction,
   makeAssetTransferTxnWithSuggestedParamsFromObject,
   waitForConfirmation as algoWaitForConfirmation,
+  type Transaction,
   type TransactionSigner,
 } from "algosdk";
 import { optIn, signAndSend, type OptInDeps, type SwapOpts } from "./swapBridge";
@@ -10,6 +12,15 @@ import { optIn, signAndSend, type OptInDeps, type SwapOpts } from "./swapBridge"
 const DEFAULT_API_BASE = "/api/v2/wallet";
 /** Rounds to wait for a swap group to confirm before timing out. */
 const CONFIRM_ROUNDS = 6;
+
+/**
+ * Signer type Haystack's composer calls: Transaction objects + indexes to sign.
+ * Distinct from use-wallet's TransactionSigner which takes encoded Uint8Array[].
+ */
+export type HaystackSignerFn = (
+  txnGroup: Transaction[],
+  indexesToSign: number[],
+) => Promise<(Uint8Array | null)[]>;
 
 /** The narrow surface the swap widget (widgets repo) calls via the global. */
 export interface SwapBridgeApi {
@@ -19,7 +30,18 @@ export interface SwapBridgeApi {
   signAndSend: (group: Uint8Array[], opts: SwapOpts) => Promise<string>;
   /** Opt the active account into `assetId` (pre-flight 0-amount self-transfer). */
   optIn: (assetId: number) => Promise<string>;
-  /** use-wallet signer; used by composer-based routers (Haystack). */
+  /**
+   * Signer for composer-based routers (Haystack) that pass live Transaction
+   * objects. Pre-encodes each Transaction to bytes before forwarding to
+   * use-wallet's signer, bridging the cross-bundle object/bytes boundary.
+   */
+  haystackSigner: HaystackSignerFn;
+  /**
+   * @deprecated Use haystackSigner for Haystack. Kept for back-compat.
+   * use-wallet's raw TransactionSigner (expects encoded Uint8Array[], not
+   * Transaction objects — will DataView-fail if called with live Transactions
+   * from a foreign bundle).
+   */
   signer: TransactionSigner;
 }
 
@@ -144,12 +166,33 @@ export async function initSwapBridge(doc: Document = document): Promise<void> {
   try {
     const manager = await swapManager(apiBase);
     const deps = buildDeps(manager);
+    /**
+     * Adapter for Haystack's composer: it calls signer(Transaction[], indexes)
+     * with live Transaction objects from its own bundle. use-wallet's
+     * transactionSigner expects encoded Uint8Array[], so we encode each txn with
+     * our algosdk first, then forward to the wallet for signing.
+     *
+     * Both bundles use algosdk v3, but Transaction objects can't cross the bundle
+     * boundary safely via use-wallet's signer (which re-encodes them internally
+     * using its own class instance, causing the DataView overread). Encoding to
+     * bytes here is the safe handoff point: bytes are just bytes.
+     */
+    const haystackSigner: HaystackSignerFn = (txnGroup, indexesToSign) => {
+      const wallet = connectedWallet(manager);
+      if (!wallet) {
+        throw new Error("Connect your Algorand wallet and select an account");
+      }
+      const encoded = txnGroup.map((txn) => encodeUnsignedTransaction(txn));
+      return wallet.signTransactions(encoded, indexesToSign);
+    };
+
     window.asastatsSwap = {
       activeAddress: deps.activeAddress,
       signAndSend: (group: Uint8Array[], opts: SwapOpts) =>
         signAndSend(group, deps, opts),
       optIn: (assetId: number) => optIn(assetId, deps),
-      // use-wallet's signer; used by composer-based routers (Haystack).
+      haystackSigner,
+      // kept for back-compat; Haystack must use haystackSigner instead.
       signer: manager.transactionSigner,
     };
     window.dispatchEvent(new CustomEvent("asastats:swap-ready"));

@@ -9,9 +9,10 @@ config.
 
 import json
 
+from django.views.generic.base import TemplateView
+
 from api.client import fetch_account_holdings, fetch_asset_matches
 from api.widgets import bundle_and_addresses_from_path
-from django.views.generic.base import TemplateView
 from walletauth.gating import is_linked_to_user, linked_addresses_for_user
 from widgethost.enforcement import WidgetAccessMixin
 
