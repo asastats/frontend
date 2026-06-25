@@ -86,6 +86,7 @@ from widgethost.registry import (
     swap_client_cfg,
     swap_entry_url,
     swap_holdings_tmpl,
+    swap_routers,
 )
 
 from .forms import AddressForm, ExportDownloadForm, ExportForm
@@ -1293,6 +1294,7 @@ class SwapEntryView(TemplateView):
             context["swap_url"] = swap_entry_url(router, value)
             context["swap_router"] = router
             context["swap_network"] = cfg["network"]
+            context["swap_router_name"] = dict(swap_routers()).get(router, router)
             context["swap_referrer"] = cfg["referrer"]
             context["swap_fee_bps"] = cfg["fee_bps"]
             context["swap_api_key"] = cfg["api_key"]

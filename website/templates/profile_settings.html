@@ -2,17 +2,20 @@
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
-{% block title %}Settings - ASA Stats{% endblock %}
-{% block description %}Manage your ASA Stats settings.{% endblock %}
+{% block title %}Settings - {{ WEBSITE_NAME }}{% endblock %}
+{% block description %}Manage your {{ WEBSITE_NAME }} settings.{% endblock %}
 {% block keywords %}settings,preferences,smart router,swap,router preference{% endblock %}
-{% block page_header %}ASA Stats settings{% endblock %}
+{% block page_header %}{{ WEBSITE_NAME }} settings{% endblock %}
 {% block middle_section %}
 <div class="row col s12 m7 midrow">
   <section class="row col s12 left-align" id="id-section-smart-router">
     <h5 class="mylight-text">Smart router</h5>
     <p>The smart router used when you swap tokens from an address you own.</p>
     <form method="post" action="{% url 'profile_settings' %}"
-          hx-post="{% url 'profile_settings' %}" hx-target="#id-section-smart-router" hx-swap="outerHTML">
+      hx-post="{% url 'profile_settings' %}"
+      hx-target="#id-section-smart-router"
+      hx-select="#id-section-smart-router"
+      hx-swap="outerHTML">
       {% csrf_token %}
       <div class="input-field col s12">
         {{ form.preferred_router }}
@@ -25,6 +28,17 @@
         <button type="submit" class="waves-effect waves-mydark btn whenmoon" id="id_save_router">Save</button>
       </div>
     </form>
+    {% if messages %}
+    <br>
+    <div class="row col s12 m8 offset-m2">
+        {% for message in messages %}
+        <div class="chip mydark myredlight-text z-depth-1">
+            {{ message }}
+            <i class="material-icons close" aria-hidden="true">close</i>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}  
   </section>
 </div>
 <div class="row col s12 m5">
