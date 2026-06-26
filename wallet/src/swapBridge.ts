@@ -20,6 +20,7 @@ import {
   encodeUnsignedTransaction,
   signLogicSigTransactionObject,
   makeAssetTransferTxnWithSuggestedParamsFromObject,
+  makePaymentTxnWithSuggestedParamsFromObject,
 } from "algosdk";
 import { getReferrerLogicSig, prepareReferrerOptIntoAsset } from "@folks-router/js-sdk";
 
@@ -125,16 +126,25 @@ export async function signAndSend(
     const escrow = lsig.address().toString();
     if (!(await deps.isOptedIn(escrow, opts.outputAssetId))) {
       const available = await deps.availableMicroAlgos(escrow);
-      if (available >= ASSET_MBR + 1_000n) {
-        // Escrow self-funds the MBR bump: prepend ONLY the lsig opt-in.
-        // No ALGO taken from the user.
+      if (available >= ASSET_MBR) {
+        // Escrow self-funds the 0.1 ALGO MBR from its own balance. The user adds only
+        // a 0-ALGO fee-payer (fee 2000) to pool-cover the fee-0 escrow opt-in, because
+        // the escrow's logic-sig forbids it from paying any fee (assert Fee==0).
+        entries.push({
+          txn: makePaymentTxnWithSuggestedParamsFromObject({
+            sender,
+            receiver: sender,
+            amount: 0,
+            suggestedParams: { ...sp, flatFee: true, fee: 2000 },
+          }),
+        });
         entries.push({
           txn: makeAssetTransferTxnWithSuggestedParamsFromObject({
             sender: escrow,
             receiver: escrow,
             amount: 0,
             assetIndex: opts.outputAssetId,
-            suggestedParams: { ...sp, flatFee: true, fee: 1000 },
+            suggestedParams: { ...sp, flatFee: true, fee: 0 }, // MUST be 0 (logic-sig assert)
           }),
           lsig,
         });
@@ -145,7 +155,7 @@ export async function signAndSend(
           sender,
           opts.referrer,
           opts.outputAssetId,
-          sp,
+          { ...sp, flatFee: true },
         );
         for (const r of ref) {
           entries.push({

@@ -19,6 +19,14 @@ jest.mock("algosdk", () => {
       group: undefined as any,
     }),
   );
+  const makePaymentTxnWithSuggestedParamsFromObject = jest.fn(
+    ({ sender, receiver, amount }: any) => ({
+      sender,
+      receiver,
+      amount,
+      group: undefined as any,
+    }),
+  );
   const decodeUnsignedTransaction = jest.fn((b: Uint8Array) => ({
     _raw: b,
     group: undefined as any,
@@ -34,6 +42,7 @@ jest.mock("algosdk", () => {
   }));
   return {
     makeAssetTransferTxnWithSuggestedParamsFromObject,
+    makePaymentTxnWithSuggestedParamsFromObject,
     decodeUnsignedTransaction,
     encodeUnsignedTransaction,
     assignGroupID,
@@ -156,7 +165,7 @@ describe("signAndSend", () => {
     expect(d.submit).not.toHaveBeenCalled();
   });
 
-    it("propagates a signer rejection (user cancel) and does not submit", async () => {
+  it("propagates a signer rejection (user cancel) and does not submit", async () => {
     const { d } = deps({
       signTransactions: jest.fn().mockRejectedValue(new Error("user rejected")),
     });
@@ -260,11 +269,13 @@ describe("signAndSend — opt-in / referrer legs", () => {
       expect.anything(),
       mockLsig,
     );
-    // Wallet receives the full 2-txn group (lsig + swap) but only signs index [1].
+    // Wallet receives the full 3-txn group (fee-payer + lsig + swap)
     const allTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock.calls[0][0];
     const indexesToSign: number[] = (d.signTransactions as jest.Mock).mock.calls[0][1];
-    expect(allTxns).toHaveLength(2);      // full group: lsig leg + swap leg
-    expect(indexesToSign).toEqual([1]);   // wallet signs only the swap leg
+    
+    // Change these two lines:
+    expect(allTxns).toHaveLength(3);        // fee-payer + lsig leg + swap leg
+    expect(indexesToSign).toEqual([0, 2]);  // wallet signs the fee-payer and the swap leg
   });
 
   it("(c) SDK pair when escrow is unfunded (available < MBR + 1000)", async () => {
@@ -272,16 +283,18 @@ describe("signAndSend — opt-in / referrer legs", () => {
       isOptedIn: jest.fn(async () => false),
       availableMicroAlgos: jest.fn(async () => 50_000n), // below 101_000n
     });
+
     await signAndSend([TXN_A], d, {
       outputAssetId: 31566704,
       userNeedsOptIn: false,
       referrer: "REFERRER_ADDR",
     });
+
     expect(prepareReferrerOptIntoAsset).toHaveBeenCalledWith(
       "AAAA",
       "REFERRER_ADDR",
       31566704,
-      DEFAULT_SP,
+      { ...DEFAULT_SP, flatFee: true }
     );
     // Wallet receives full 3-txn group: [user-fund(0), lsig-optin(1), swap(2)].
     // It signs only indexes [0, 2]; index 1 is the lsig leg (escrow-signed).
@@ -338,7 +351,7 @@ function optInDeps(overrides: Partial<OptInDeps> = {}): {
     isOptedIn: jest.fn(async () => true),
     availableMicroAlgos: jest.fn(async () => 0n),
     submit: jest.fn(async () => "OPTINTXID"),
-    waitForConfirmation: jest.fn(async () => {}),
+    waitForConfirmation: jest.fn(async () => { }),
     ...overrides,
   };
   return { d, calls };
