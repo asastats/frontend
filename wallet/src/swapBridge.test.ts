@@ -82,9 +82,16 @@ function deps(overrides: Partial<SignAndSendDeps> = {}): {
   const calls: any = {};
   const d: SignAndSendDeps = {
     activeAddress: jest.fn(() => "AAAA"),
-    signTransactions: jest.fn(async (txns: Uint8Array[]) => {
+    signTransactions: jest.fn(async (txns: Uint8Array[], indexesToSign: number[]) => {
       calls.signed = txns;
-      return [SIG_A, SIG_B, new Uint8Array([30])].slice(0, txns.length);
+      // Return a full-group-length array (parallel to txns) with a blob at each
+      // wallet-signed index and null everywhere else — matching use-wallet v4's
+      // actual return shape.
+      const blobs = [SIG_A, SIG_B, new Uint8Array([30])];
+      return txns.map((_: unknown, i: number) => {
+        const pos = indexesToSign.indexOf(i);
+        return pos >= 0 ? blobs[pos] : null;
+      });
     }),
     suggestedParams: jest.fn(async () => DEFAULT_SP),
     isOptedIn: jest.fn(async () => true),
@@ -136,9 +143,12 @@ describe("signAndSend", () => {
 
   it("throws and does not submit when the wallet omits a required signature", async () => {
     const { d } = deps({
-      // Return null for the first (and only) wallet leg — simulates a wallet
-      // that silently drops a signature rather than rejecting outright.
-      signTransactions: jest.fn(async () => [null]),
+      // Return a full-group-length array with null at the wallet leg's position —
+      // simulates a wallet that silently drops a signature rather than rejecting.
+      // (use-wallet v4 returns null-padded full-group arrays, not compact arrays.)
+      signTransactions: jest.fn(async (txns: Uint8Array[]) =>
+        txns.map(() => null),
+      ),
     });
     await expect(signAndSend([TXN_A], d, BASE_OPTS)).rejects.toThrow(
       "Wallet did not sign a required transaction",
@@ -206,10 +216,11 @@ describe("signAndSend — opt-in / referrer legs", () => {
         assetIndex: 31566704,
       }),
     );
-    // Both the opt-in leg and the swap leg go to the wallet for signing.
-    const walletTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock
-      .calls[0][0];
-    expect(walletTxns).toHaveLength(2);
+    // Wallet receives the full 2-txn group and signs both (no lsig legs).
+    const allTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock.calls[0][0];
+    const indexesToSign: number[] = (d.signTransactions as jest.Mock).mock.calls[0][1];
+    expect(allTxns).toHaveLength(2);
+    expect(indexesToSign).toEqual([0, 1]);
   });
 
   it("(a) no opt-in legs when userNeedsOptIn=false and no referrer", async () => {
@@ -218,13 +229,15 @@ describe("signAndSend — opt-in / referrer legs", () => {
       outputAssetId: 31566704,
       userNeedsOptIn: false,
     });
-    // Only the one swap txn goes through — wallet signs exactly 1 txn
+    // Full group (1 txn) is sent to the wallet; wallet signs index [0].
     expect(d.signTransactions).toHaveBeenCalledWith(
       expect.arrayContaining([expect.any(Uint8Array)]),
+      [0], // indexesToSign: only the swap txn, at position 0
     );
-    const walletTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock
-      .calls[0][0];
-    expect(walletTxns).toHaveLength(1);
+    const allTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock.calls[0][0];
+    const indexesToSign: number[] = (d.signTransactions as jest.Mock).mock.calls[0][1];
+    expect(allTxns).toHaveLength(1);   // full group size
+    expect(indexesToSign).toHaveLength(1); // wallet signs 1 of 1
     expect(getReferrerLogicSig).not.toHaveBeenCalled();
   });
 
@@ -247,10 +260,11 @@ describe("signAndSend — opt-in / referrer legs", () => {
       expect.anything(),
       mockLsig,
     );
-    // Wallet should only sign the one swap txn (not the lsig leg)
-    const walletTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock
-      .calls[0][0];
-    expect(walletTxns).toHaveLength(1);
+    // Wallet receives the full 2-txn group (lsig + swap) but only signs index [1].
+    const allTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock.calls[0][0];
+    const indexesToSign: number[] = (d.signTransactions as jest.Mock).mock.calls[0][1];
+    expect(allTxns).toHaveLength(2);      // full group: lsig leg + swap leg
+    expect(indexesToSign).toEqual([1]);   // wallet signs only the swap leg
   });
 
   it("(c) SDK pair when escrow is unfunded (available < MBR + 1000)", async () => {
@@ -269,12 +283,12 @@ describe("signAndSend — opt-in / referrer legs", () => {
       31566704,
       DEFAULT_SP,
     );
-    // Wallet must sign the user-fund leg + swap leg (not the lsig leg)
-    const walletTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock
-      .calls[0][0];
-    // prepareReferrerOptIntoAsset mock returns 2 entries: lsig=null (wallet) + lsig (escrow)
-    // plus the one swap txn = 2 wallet-signed entries
-    expect(walletTxns).toHaveLength(2);
+    // Wallet receives full 3-txn group: [user-fund(0), lsig-optin(1), swap(2)].
+    // It signs only indexes [0, 2]; index 1 is the lsig leg (escrow-signed).
+    const allTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock.calls[0][0];
+    const indexesToSign: number[] = (d.signTransactions as jest.Mock).mock.calls[0][1];
+    expect(allTxns).toHaveLength(3);        // full group size
+    expect(indexesToSign).toEqual([0, 2]);  // user-fund + swap; skip lsig leg
   });
 
   it("(d) lsig legs signed via signLogicSigTransactionObject, wallet legs via signTransactions", async () => {
@@ -316,9 +330,9 @@ function optInDeps(overrides: Partial<OptInDeps> = {}): {
       calls.built = assetId;
       return [OPTIN_TXN];
     }),
-    signTransactions: jest.fn(async (txns: Uint8Array[]) => {
+    signTransactions: jest.fn(async (txns: Uint8Array[], indexesToSign: number[]) => {
       calls.signed = txns;
-      return [SIG_A];
+      return txns.map((_: unknown, i: number) => indexesToSign.includes(i) ? SIG_A : null);
     }),
     suggestedParams: jest.fn(async () => DEFAULT_SP),
     isOptedIn: jest.fn(async () => true),

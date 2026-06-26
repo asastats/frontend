@@ -8,7 +8,7 @@
 
 > **initSwapBridge**(`doc?`): `Promise`\<`void`\>
 
-Defined in: [swapBootstrap.ts:158](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L158)
+Defined in: [swapBootstrap.ts:162](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L162)
 
 Wire the swap bridge when a swap widget is present on the page.
 

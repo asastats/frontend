@@ -8,7 +8,7 @@
 
 > **signAndSend**(`group`, `deps`, `opts`): `Promise`\<`string`\>
 
-Defined in: [swapBridge.ts:86](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L86)
+Defined in: [swapBridge.ts:92](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L92)
 
 Sign, submit and confirm a prepared swap transaction group, prepending any
 required opt-in legs (user and/or referrer escrow) as shape B.

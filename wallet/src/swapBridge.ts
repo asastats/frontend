@@ -42,10 +42,16 @@ export interface SignAndSendDeps {
   activeAddress: () => string | null;
   /**
    * Sign the encoded, grouped, unsigned transactions with the active wallet.
-   * Accepts only the indexes the wallet should sign; returns one blob per
-   * input position. A null entry marks a transaction the wallet did not sign.
+   *
+   * Must receive ALL transactions in the group (so Pera/wallets can verify
+   * group integrity), with `indexesToSign` indicating which positions the
+   * wallet should actually sign. Returns one blob per entry in `indexesToSign`;
+   * a null entry marks a transaction the wallet declined to sign.
    */
-  signTransactions: (txns: Uint8Array[]) => Promise<(Uint8Array | null)[]>;
+  signTransactions: (
+    txns: Uint8Array[],
+    indexesToSign: number[],
+  ) => Promise<(Uint8Array | null)[]>;
   /** Fetch current suggested transaction params from algod. */
   suggestedParams: () => Promise<any>;
   /**
@@ -168,12 +174,19 @@ export async function signAndSend(
     if (!e.lsig) walletIdx.push(i);
   });
   const encoded = entries.map((e) => encodeUnsignedTransaction(e.txn));
-  const walletSigned = await deps.signTransactions(walletIdx.map((i) => encoded[i]));
+  // Pass ALL encoded transactions so the wallet (e.g. Pera) can verify group
+  // integrity from the group-id field in each txn header, plus the explicit
+  // indexes it should sign. Sending only the wallet-signed subset causes Pera
+  // to reject with "Missing transaction(s)" / DataView errors.
+  const walletSigned = await deps.signTransactions(encoded, walletIdx);
 
+  // walletSigned is parallel to encoded (length = full group): use-wallet
+  // returns null at positions it didn't sign and a blob at positions it did.
+  // Index directly by i, not via walletIdx.indexOf(i) — that was correct only
+  // when we passed a compact subset; now we pass the full group.
   const signedBlobs: Uint8Array[] = entries.map((e, i) => {
     if (e.lsig) return signLogicSigTransactionObject(e.txn, e.lsig).blob;
-    const pos = walletIdx.indexOf(i);
-    const s = walletSigned[pos];
+    const s = walletSigned[i];
     if (!s) throw new Error("Wallet did not sign a required transaction");
     return s;
   });

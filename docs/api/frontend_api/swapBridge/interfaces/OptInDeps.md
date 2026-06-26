@@ -6,7 +6,7 @@
 
 # Interface: OptInDeps
 
-Defined in: [swapBridge.ts:188](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L188)
+Defined in: [swapBridge.ts:201](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L201)
 
 Extra collaborator for [optIn](../functions/optIn.md): build the (impure) opt-in transaction.
 
@@ -38,7 +38,7 @@ Currently active/connected Algorand address, or null when none.
 
 > **availableMicroAlgos**: (`addr`) => `Promise`\<`bigint`\>
 
-Defined in: [swapBridge.ts:60](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L60)
+Defined in: [swapBridge.ts:66](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L66)
 
 Return the number of microAlgos the `addr` can spend without dipping
 below its min-balance (amount − min-balance).
@@ -63,7 +63,7 @@ below its min-balance (amount − min-balance).
 
 > **buildOptIn**: (`assetId`) => `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>[]\>
 
-Defined in: [swapBridge.ts:190](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L190)
+Defined in: [swapBridge.ts:203](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L203)
 
 Build the encoded, unsigned 0-amount self asset-transfer that opts in.
 
@@ -83,7 +83,7 @@ Build the encoded, unsigned 0-amount self asset-transfer that opts in.
 
 > **isOptedIn**: (`addr`, `assetId`) => `Promise`\<`boolean`\>
 
-Defined in: [swapBridge.ts:55](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L55)
+Defined in: [swapBridge.ts:61](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L61)
 
 Return whether `addr` is already opted into `assetId`.
 (algod accountAssetInformation — 404 means not opted in.)
@@ -110,19 +110,26 @@ Return whether `addr` is already opted into `assetId`.
 
 ### signTransactions
 
-> **signTransactions**: (`txns`) => `Promise`\<(`Uint8Array`\<`ArrayBufferLike`\> \| `null`)[]\>
+> **signTransactions**: (`txns`, `indexesToSign`) => `Promise`\<(`Uint8Array`\<`ArrayBufferLike`\> \| `null`)[]\>
 
-Defined in: [swapBridge.ts:48](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L48)
+Defined in: [swapBridge.ts:51](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L51)
 
 Sign the encoded, grouped, unsigned transactions with the active wallet.
-Accepts only the indexes the wallet should sign; returns one blob per
-input position. A null entry marks a transaction the wallet did not sign.
+
+Must receive ALL transactions in the group (so Pera/wallets can verify
+group integrity), with `indexesToSign` indicating which positions the
+wallet should actually sign. Returns one blob per entry in `indexesToSign`;
+a null entry marks a transaction the wallet declined to sign.
 
 #### Parameters
 
 ##### txns
 
 `Uint8Array`\<`ArrayBufferLike`\>[]
+
+##### indexesToSign
+
+`number`[]
 
 #### Returns
 
@@ -138,7 +145,7 @@ input position. A null entry marks a transaction the wallet did not sign.
 
 > **submit**: (`signed`) => `Promise`\<`string`\>
 
-Defined in: [swapBridge.ts:62](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L62)
+Defined in: [swapBridge.ts:68](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L68)
 
 Submit the signed transaction blobs; resolves with the submitted txid.
 
@@ -162,7 +169,7 @@ Submit the signed transaction blobs; resolves with the submitted txid.
 
 > **suggestedParams**: () => `Promise`\<`any`\>
 
-Defined in: [swapBridge.ts:50](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L50)
+Defined in: [swapBridge.ts:56](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L56)
 
 Fetch current suggested transaction params from algod.
 
@@ -180,7 +187,7 @@ Fetch current suggested transaction params from algod.
 
 > **waitForConfirmation**: (`txid`) => `Promise`\<`void`\>
 
-Defined in: [swapBridge.ts:64](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L64)
+Defined in: [swapBridge.ts:70](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L70)
 
 Resolve once `txid` is confirmed on-chain (or reject on failure/timeout).
 

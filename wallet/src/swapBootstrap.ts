@@ -92,12 +92,16 @@ function buildDeps(manager: WalletManager): OptInDeps {
   const algod = manager.algodClient;
   return {
     activeAddress: () => connectedWallet(manager)?.activeAccount?.address ?? null,
-    signTransactions: (txns) => {
+    signTransactions: (txns, indexesToSign) => {
       const wallet = connectedWallet(manager);
       if (!wallet) {
         throw new Error("Connect your Algorand wallet and select an account");
       }
-      return wallet.signTransactions(txns);
+      // Forward all txns + explicit indexes: wallets like Pera verify group
+      // integrity by checking the group-id field on every transaction in the
+      // group. If we sent only the wallet-signed subset, Pera would see a
+      // partial group and reject with "Missing transaction(s)".
+      return wallet.signTransactions(txns, indexesToSign);
     },
     suggestedParams: () => algod.getTransactionParams().do(),
     isOptedIn: async (addr: string, assetId: number) => {
