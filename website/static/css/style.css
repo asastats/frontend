@@ -557,7 +557,6 @@ div.socfooter {
   background: url(../img/xgov.png) 0 -32px;
 }
 
-
 .frmbtn:hover, .liqbtn:hover, .liq2btn:hover, .xgovbtn:hover {
   background-position: 0 0;
 }
@@ -565,6 +564,27 @@ div.socfooter {
 .input-field.filter {
   margin-top: 0;
   margin-bottom: 0;
+}
+
+.input-field .helper-text {
+  color: #ababab;
+}
+
+.input-field input.invalid ~ .helper-text[data-error],
+.input-field input.invalid:focus ~ .helper-text[data-error] {
+  color: #ff3769; /* Replace with your custom error color */
+}
+
+/* Reduce width footprint of percentage buttons */
+.id-folks-pct-row .id-folks-pct-btn {
+  padding: 0 4px;
+  margin: 0 2px;
+  min-width: unset;
+}
+
+.modal-footer .helper-text.left {
+  margin: 6px 0 6px 30px;
+  line-height: 36px;
 }
 
 .collapsible-header.token {
