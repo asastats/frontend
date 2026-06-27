@@ -20,12 +20,8 @@ import {
   encodeUnsignedTransaction,
   signLogicSigTransactionObject,
   makeAssetTransferTxnWithSuggestedParamsFromObject,
-  makePaymentTxnWithSuggestedParamsFromObject,
 } from "algosdk";
 import { getReferrerLogicSig, prepareReferrerOptIntoAsset } from "@folks-router/js-sdk";
-
-/** 0.1 ALGO per-asset min-balance bump (in microAlgos). */
-const ASSET_MBR = 100_000n;
 
 /** Options passed from the controller with each swap call. */
 export interface SwapOpts {
@@ -125,44 +121,27 @@ export async function signAndSend(
     const lsig = getReferrerLogicSig(opts.referrer);
     const escrow = lsig.address().toString();
     if (!(await deps.isOptedIn(escrow, opts.outputAssetId))) {
-      const available = await deps.availableMicroAlgos(escrow);
-      if (available >= ASSET_MBR) {
-        // Escrow self-funds the 0.1 ALGO MBR from its own balance. The user adds only
-        // a 0-ALGO fee-payer (fee 2000) to pool-cover the fee-0 escrow opt-in, because
-        // the escrow's logic-sig forbids it from paying any fee (assert Fee==0).
+      // The escrow's logic-sig REQUIRES the opt-in to be immediately preceded by
+      // a payment of exactly MinBalance (0.1 ALGO) to the escrow — it asserts
+      // prev.Receiver == escrow (pc=148) and prev.Amount == global MinBalance
+      // (pc=158). So there is no "self-fund" shortcut even when the escrow holds
+      // ALGO: we always use the SDK pair [0.1-ALGO payment, lsig opt-in]. Pass
+      // flatFee so the SDK's fee-0 opt-in stays a literal 0 (logic asserts
+      // Fee == 0 at pc=25; without flatFee algosdk recomputes it to 1000).
+      // The escrow still needs its base 0.1 ALGO funded once (so balance reaches
+      // the 0.2 MBR for its first asset); each opt-in's required 0.1 payment then
+      // supplies that asset's own MBR.
+      const ref = prepareReferrerOptIntoAsset(
+        sender,
+        opts.referrer,
+        opts.outputAssetId,
+        { ...sp, flatFee: true },
+      );
+      for (const r of ref) {
         entries.push({
-          txn: makePaymentTxnWithSuggestedParamsFromObject({
-            sender,
-            receiver: sender,
-            amount: 0,
-            suggestedParams: { ...sp, flatFee: true, fee: 2000 },
-          }),
+          txn: decodeUnsignedTransaction(r.unsignedTxn),
+          lsig: r.lsig ? lsig : undefined,
         });
-        entries.push({
-          txn: makeAssetTransferTxnWithSuggestedParamsFromObject({
-            sender: escrow,
-            receiver: escrow,
-            amount: 0,
-            assetIndex: opts.outputAssetId,
-            suggestedParams: { ...sp, flatFee: true, fee: 0 }, // MUST be 0 (logic-sig assert)
-          }),
-          lsig,
-        });
-      } else {
-        // Escrow can't cover it: use the SDK's pair (user funds 0.1 ALGO MBR,
-        // then the lsig opt-in).
-        const ref = prepareReferrerOptIntoAsset(
-          sender,
-          opts.referrer,
-          opts.outputAssetId,
-          { ...sp, flatFee: true },
-        );
-        for (const r of ref) {
-          entries.push({
-            txn: decodeUnsignedTransaction(r.unsignedTxn),
-            lsig: r.lsig ? lsig : undefined,
-          });
-        }
       }
     }
   }

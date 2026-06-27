@@ -6,7 +6,7 @@
 
 # Interface: SwapOpts
 
-Defined in: [swapBridge.ts:31](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L31)
+Defined in: [swapBridge.ts:27](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L27)
 
 Options passed from the controller with each swap call.
 
@@ -16,7 +16,7 @@ Options passed from the controller with each swap call.
 
 > **outputAssetId**: `number`
 
-Defined in: [swapBridge.ts:33](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L33)
+Defined in: [swapBridge.ts:29](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L29)
 
 The output asset id for this swap.
 
@@ -26,7 +26,7 @@ The output asset id for this swap.
 
 > `optional` **referrer?**: `string`
 
-Defined in: [swapBridge.ts:37](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L37)
+Defined in: [swapBridge.ts:33](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L33)
 
 Referrer address; omit or pass "" for no referrer leg.
 
@@ -36,6 +36,6 @@ Referrer address; omit or pass "" for no referrer leg.
 
 > **userNeedsOptIn**: `boolean`
 
-Defined in: [swapBridge.ts:35](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L35)
+Defined in: [swapBridge.ts:31](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L31)
 
 Whether the user still needs to opt into the output asset.

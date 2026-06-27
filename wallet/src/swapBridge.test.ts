@@ -104,7 +104,6 @@ function deps(overrides: Partial<SignAndSendDeps> = {}): {
     }),
     suggestedParams: jest.fn(async () => DEFAULT_SP),
     isOptedIn: jest.fn(async () => true),
-    availableMicroAlgos: jest.fn(async () => 0n),
     submit: jest.fn(async (signed: Uint8Array[]) => {
       calls.submitted = signed;
       return "TXID123";
@@ -250,38 +249,9 @@ describe("signAndSend — opt-in / referrer legs", () => {
     expect(getReferrerLogicSig).not.toHaveBeenCalled();
   });
 
-  it("(b) lsig-only leg when escrow is funded (available >= MBR + 1000)", async () => {
-    const { d } = deps({
-      isOptedIn: jest.fn(async () => false),
-      availableMicroAlgos: jest.fn(async () => 200_000n), // well above 101_000n
-    });
-    await signAndSend([TXN_A], d, {
-      outputAssetId: 31566704,
-      userNeedsOptIn: false,
-      referrer: "REFERRER_ADDR",
-    });
-    expect(getReferrerLogicSig).toHaveBeenCalledWith("REFERRER_ADDR");
-    expect(prepareReferrerOptIntoAsset).not.toHaveBeenCalled();
-
-    // The lsig leg should be signed via signLogicSigTransactionObject, not wallet
-    const { signLogicSigTransactionObject } = jest.requireMock("algosdk");
-    expect(signLogicSigTransactionObject).toHaveBeenCalledWith(
-      expect.anything(),
-      mockLsig,
-    );
-    // Wallet receives the full 3-txn group (fee-payer + lsig + swap)
-    const allTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock.calls[0][0];
-    const indexesToSign: number[] = (d.signTransactions as jest.Mock).mock.calls[0][1];
-    
-    // Change these two lines:
-    expect(allTxns).toHaveLength(3);        // fee-payer + lsig leg + swap leg
-    expect(indexesToSign).toEqual([0, 2]);  // wallet signs the fee-payer and the swap leg
-  });
-
   it("(c) SDK pair when escrow is unfunded (available < MBR + 1000)", async () => {
     const { d } = deps({
       isOptedIn: jest.fn(async () => false),
-      availableMicroAlgos: jest.fn(async () => 50_000n), // below 101_000n
     });
 
     await signAndSend([TXN_A], d, {
@@ -307,7 +277,6 @@ describe("signAndSend — opt-in / referrer legs", () => {
   it("(d) lsig legs signed via signLogicSigTransactionObject, wallet legs via signTransactions", async () => {
     const { d } = deps({
       isOptedIn: jest.fn(async () => false),
-      availableMicroAlgos: jest.fn(async () => 200_000n),
     });
     await signAndSend([TXN_A], d, {
       outputAssetId: 31566704,
@@ -349,7 +318,6 @@ function optInDeps(overrides: Partial<OptInDeps> = {}): {
     }),
     suggestedParams: jest.fn(async () => DEFAULT_SP),
     isOptedIn: jest.fn(async () => true),
-    availableMicroAlgos: jest.fn(async () => 0n),
     submit: jest.fn(async () => "OPTINTXID"),
     waitForConfirmation: jest.fn(async () => { }),
     ...overrides,
