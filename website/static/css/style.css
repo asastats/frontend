@@ -397,6 +397,39 @@ span.sort {
 .id-folks-pct-row .id-folks-pct { max-width: 5rem; }
 .id-folks-tx-link { text-decoration: underline; word-break: break-all; }
 
+/* Amount label: show the Sell wording by default, the Buy wording on Buy. */
+.id-folks-amount-label-buy { display: none; }
+.folks-mode-buy .id-folks-amount-label-sell { display: none; }
+.folks-mode-buy .id-folks-amount-label-buy { display: inline; }
+
+/* The percentage row is "% of what you own" — meaningless when you are naming a
+   target amount to buy, so hide it on the Buy tab. */
+.folks-mode-buy .id-folks-pct-row { display: none; }
+
+.swapicon {
+  width: 24px;
+  height: 24px;
+  margin-right: 16px;
+}
+
+.swap-text {
+/* Keeps the unit and name grouped together on the left */
+  display: inline-block;
+}
+
+.swap-asset-id {
+  margin-left: auto;
+  font-weight: 500;
+}
+
+.swap-asset-id.verified {
+ color: #00c896;
+}
+
+.swap-asset-id.unverified {
+  color: #ababab;
+}
+
 .swap-action-column {
   padding-right: 0 !important;
 }
