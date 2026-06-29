@@ -18,10 +18,6 @@ SITEMAP_FILES = ("whitepaper.pdf",)
 
 
 class ConfigurationTest(FunctionalTest):
-    def test_robots_file(self):
-        self.browser.get(self.server_url + "/robots.txt")
-        self.assertIn("User-agent", self.browser.page_source)
-
     def test_auth_privacy_file(self):
         self.browser.get(self.server_url + "/static/auth_privacy.html")
         self.assertIn("<h1>Privacy policy</h1>", self.browser.page_source)

@@ -357,7 +357,6 @@ REDIS_PRIMARY_HOST = get_env_variable("REDIS_PRIMARY_HOST", "localhost")
 REDIS_PORT_LOCAL = int(get_env_variable("REDIS_PORT_LOCAL", "6380"))
 REDIS_AUTH = get_env_variable("REDIS_AUTH", "")
 
-
 CSRF_TRUSTED_ORIGINS = [f"https://*.{WEBSITE_BASE_DOMAIN}"]
 
 # Channels
