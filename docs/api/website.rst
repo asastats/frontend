@@ -286,6 +286,15 @@
   :show-inheritance:
 
 
+:mod:`core.migrations` -- Core application database migrations package
+----------------------------------------------------------------------
+
+.. automodule:: core.migrations
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`core.models` -- Main application ORM module
 -------------------------------------------------
 
@@ -380,6 +389,15 @@
 --------------------------------------------------
 
 .. automodule:: core.views
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.views_connected_addresses` -- Module for server-rendered (htmx) connected-addresses management
+---------------------------------------------------------------------------------------------------------
+
+.. automodule:: core.views_connected_addresses
   :members:
   :undoc-members:
   :show-inheritance:
@@ -619,10 +637,37 @@
   :show-inheritance:
 
 
+:mod:`walletauth.account_resolution` -- Module for resolve a Django account from a wallet address
+-------------------------------------------------------------------------------------------------
+
+.. automodule:: walletauth.account_resolution
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.addresses` -- Multi-address accounts module
+------------------------------------------------------------
+
+.. automodule:: walletauth.addresses
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`walletauth.apps` -- Wallet authentication configuration module
 --------------------------------------------------------------------
 
 .. automodule:: walletauth.apps
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.backends` -- Authentication backend for wallet sign-in
+-----------------------------------------------------------------------
+
+.. automodule:: walletauth.backends
   :members:
   :undoc-members:
   :show-inheritance:
@@ -637,10 +682,100 @@
   :show-inheritance:
 
 
+:mod:`walletauth.gating` -- Self-scoped checks for the swap gate
+----------------------------------------------------------------
+
+.. automodule:: walletauth.gating
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.gating_views` -- Swap-gate endpoint API views
+--------------------------------------------------------------
+
+.. automodule:: walletauth.gating_views
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.link_views` -- EVM/xChain wallet authorize views
+-----------------------------------------------------------------
+
+.. automodule:: walletauth.link_views
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.management` -- Account address-management operations
+---------------------------------------------------------------------
+
+.. automodule:: walletauth.management
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.management_views` -- Authenticated step-up challenge API views
+-------------------------------------------------------------------------------
+
+.. automodule:: walletauth.management_views
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.migrations` -- Wallet auth application database migrations package
+-----------------------------------------------------------------------------------
+
+.. automodule:: walletauth.migrations
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`walletauth.models` -- Wallet authentication ORM module
 ------------------------------------------------------------
 
 .. automodule:: walletauth.models
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.signals` -- Walate auth database signals and triggers module
+-----------------------------------------------------------------------------
+
+.. automodule:: walletauth.signals
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.templatetags` -- Wallet auth template tags package
+-------------------------------------------------------------------
+
+.. automodule:: walletauth.templatetags
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.templatetags.walletauth_extras` -- Wallet auth extra template tags
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: walletauth.templatetags.walletauth_extras
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.throttling` -- Module containing throttling for walletauth app's views
+---------------------------------------------------------------------------------------
+
+.. automodule:: walletauth.throttling
   :members:
   :undoc-members:
   :show-inheritance:
@@ -734,3 +869,13 @@
   :members:
   :undoc-members:
   :show-inheritance:
+
+
+:mod:`widgethost.swap_views` -- Widget swap-related views
+---------------------------------------------------------
+
+.. automodule:: widgethost.swap_views
+  :members:
+  :undoc-members:
+  :show-inheritance:
+

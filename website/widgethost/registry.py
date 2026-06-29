@@ -139,13 +139,7 @@ def swap_entry_url(router_id, value):
 def swap_holdings_tmpl(router_id):
     """Return a holdings-URL template (literal ``ADDRESS`` placeholder) or "".
 
-    Sibling of :func:`swap_entry_url`. Each swap widget names its htmx holdings
-    partial ``"<router_id>_holdings"`` and accepts a 58-char address. We reverse
-    it with a placeholder address and hand the browser a fill-in-the-address
-    template, so the cached, user-agnostic accordion never embeds a per-user
-    address -- the connected wallet's address is substituted client-side.
-
-    :param router_id: chosen swap-router widget id
+    :param router_id: chosen swap-router widget id (presence gate only)
     :type router_id: str
     :return: str
     """
@@ -153,9 +147,11 @@ def swap_holdings_tmpl(router_id):
         return ""
     placeholder = "A" * 58
     try:
-        url = reverse(f"{router_id}_holdings", args=[placeholder])
+        url = reverse("swap_holdings", args=[placeholder])
+
     except NoReverseMatch:
         return ""
+
     return url.replace(placeholder, "ADDRESS")
 
 

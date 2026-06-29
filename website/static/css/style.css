@@ -391,55 +391,55 @@ span.sort {
 }
 
 /* ---- Mode-aware helper labels ------------------------------------------- */
-.id-folks-from-label-buy,
-.id-folks-to-label-buy,
-.id-folks-amount-label-buy { display: none; }
-.folks-mode-buy .id-folks-from-label-sell,
-.folks-mode-buy .id-folks-to-label-sell,
-.folks-mode-buy .id-folks-amount-label-sell { display: none; }
-.folks-mode-buy .id-folks-from-label-buy,
-.folks-mode-buy .id-folks-to-label-buy,
-.folks-mode-buy .id-folks-amount-label-buy { display: inline; }
+.id-swap-from-label-buy,
+.id-swap-to-label-buy,
+.id-swap-amount-label-buy { display: none; }
+.swap-mode-buy .id-swap-from-label-sell,
+.swap-mode-buy .id-swap-to-label-sell,
+.swap-mode-buy .id-swap-amount-label-sell { display: none; }
+.swap-mode-buy .id-swap-from-label-buy,
+.swap-mode-buy .id-swap-to-label-buy,
+.swap-mode-buy .id-swap-amount-label-buy { display: inline; }
 
 /* ---- Field placement (single flex grid, ordered per breakpoint + mode) --- */
 /* The four cells share one flex container so their sequence is fully
    controllable. At >= medium each cell is 50% wide and they wrap 2x2; on small
    screens each is full width and they stack, so `order` controls the stack
    sequence and the amount stays next to its asset. */
-.id-folks-grid { display: flex; flex-wrap: wrap; align-items: flex-start; }
+.id-swap-grid { display: flex; flex-wrap: wrap; align-items: flex-start; }
 
 /* Default = Sell, wide: [From | To] then [Amount | Slippage]. */
-.id-folks-source-col   { order: 1; }
-.id-folks-target-col   { order: 2; }
-.id-folks-amount-col   { order: 3; }
-.id-folks-slippage-col { order: 4; }
+.id-swap-source-col   { order: 1; }
+.id-swap-target-col   { order: 2; }
+.id-swap-amount-col   { order: 3; }
+.id-swap-slippage-col { order: 4; }
 
 /* Buy, wide: amount under "Buy (you receive)" (right), slippage under "Pay with". */
-.folks-mode-buy .id-folks-amount-col   { order: 4; }
-.folks-mode-buy .id-folks-slippage-col { order: 3; }
+.swap-mode-buy .id-swap-amount-col   { order: 4; }
+.swap-mode-buy .id-swap-slippage-col { order: 3; }
 
 /* Small screens (each field on its own row): keep the amount beside its asset. */
 @media (max-width: 600px) {
   /* Sell: From, Amount, To, Slippage. */
-  .id-folks-amount-col   { order: 2; }
-  .id-folks-target-col   { order: 3; }
-  .id-folks-slippage-col { order: 4; }
+  .id-swap-amount-col   { order: 2; }
+  .id-swap-target-col   { order: 3; }
+  .id-swap-slippage-col { order: 4; }
   /* Buy: From, To, Amount, Slippage (amount under "Buy (you receive)"). */
-  .folks-mode-buy .id-folks-target-col   { order: 2; }
-  .folks-mode-buy .id-folks-amount-col   { order: 3; }
-  .folks-mode-buy .id-folks-slippage-col { order: 4; }
+  .swap-mode-buy .id-swap-target-col   { order: 2; }
+  .swap-mode-buy .id-swap-amount-col   { order: 3; }
+  .swap-mode-buy .id-swap-slippage-col { order: 4; }
 }
 
 /* ---- Percentage row ----------------------------------------------------- */
 /* Buttons keep their size; the "%" input takes only the leftover space (capped)
    and shrinks instead of overflowing into the next column. */
-.id-folks-pct-row {
+.id-swap-pct-row {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
-.id-folks-pct-row .id-folks-pct-btn { flex: 0 0 auto; }
-.id-folks-pct-row .id-folks-pct {
+.id-swap-pct-row .id-swap-pct-btn { flex: 0 0 auto; }
+.id-swap-pct-row .id-swap-pct {
   flex: 1 1 2.5rem;
   min-width: 0;
   max-width: 4rem;
@@ -447,13 +447,13 @@ span.sort {
 }
 
 /* The percentage row is "% of what you own" -- only meaningful when selling. */
-.folks-mode-buy .id-folks-pct-row { display: none; }
+.swap-mode-buy .id-swap-pct-row { display: none; }
 
 /* ---- Status messages ---------------------------------------------------- */
-/* folks.js adds .id-folks-status-error to the status line for messages that
+/* swap.js adds .id-swap-status-error to the status line for messages that
    indicate a problem (no route, can't afford, insufficient balance, fetch/
    swap failure); it is removed for progress/success messages. */
-.id-folks-status-error { color: #ff3769; }
+.id-swap-status-error { color: #ff3769; }
 
 .swapicon {
   width: 24px;

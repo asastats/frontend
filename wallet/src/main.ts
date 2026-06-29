@@ -129,7 +129,7 @@ new App();
 /* istanbul ignore next -- bootstrap glue; orchestration is tested in swapBridge.test */
 {
   // Mount the swap bridge when a swap entry point is present. No-ops on pages
-  // without `#id-folks-swap` (shell) or `#id-swap-enabled` (modal marker).
+  // without `#id-swap-swap` (shell) or `#id-swap-enabled` (modal marker).
   const bootstrapSwap = () => {
     void initSwapBridge();
   };

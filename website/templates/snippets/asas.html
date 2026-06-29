@@ -22,15 +22,15 @@
                   <div class="swap-asa-entry">
                     <div class="col s12 asa">
                       <div class="col s6 push-s6 m5 push-m7 right-align swap-action-column">
-                        <a class="btn waves-effect whenmoon swap-asa id-folks-swap-toggle"
+                        <a class="btn waves-effect whenmoon swap-asa id-swap-swap-toggle"
                           href="{% url 'swap_source' url_value asset.id %}"
                           data-from="{{ asset.id }}"
                           data-label-show="Swap" data-label-hide="Hide">
                           <i class="material-icons right" aria-hidden="true">{{ 'swap'|get_styling:"icon" }}</i><span class="swap-label">Swap</span>
                         </a>
                       </div>
-                      <div id="folks-panel-{{ asset.id }}" class="col s6 pull-s6 m7 pull-m5 right-align hidden">
-                        <div class="id-folks-panel" data-from="{{ asset.id }}"></div>
+                      <div id="swap-panel-{{ asset.id }}" class="col s6 pull-s6 m7 pull-m5 right-align hidden">
+                        <div class="id-swap-panel" data-from="{{ asset.id }}"></div>
                       </div>
                     </div>
                   </div>

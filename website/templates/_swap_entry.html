@@ -12,7 +12,7 @@
       data-api-key="{{ swap_api_key }}"
       data-holdings-tmpl="{{ swap_holdings_tmpl }}"
       data-address="{{ swap_address }}"></span>
-{% include "folks/_swap_modal.html" %}
+{% include "swap/_swap_modal.html" %}
 <script src="{% static swap_sdk_static %}"></script>
-<script src="{% static 'folks/folks.js' %}"></script>
+<script src="{% static 'swap/swap.js' %}"></script>
 {% endif %}

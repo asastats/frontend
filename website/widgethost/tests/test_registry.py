@@ -113,10 +113,10 @@ class TestWidgethostRegistrySwapHoldingsTmpl:
         placeholder = "A" * 58
         reverse = mocker.patch(
             "widgethost.registry.reverse",
-            return_value=f"/widgets/folks/{placeholder}/holdings",
+            return_value=f"/widgets/swap/{placeholder}/holdings",
         )
-        assert swap_holdings_tmpl("folks") == "/widgets/folks/ADDRESS/holdings"
-        reverse.assert_called_once_with("folks_holdings", args=[placeholder])
+        assert swap_holdings_tmpl("folks") == "/widgets/swap/ADDRESS/holdings"
+        reverse.assert_called_once_with("swap_holdings", args=[placeholder])
 
     def test_widgethost_registry_swap_holdings_tmpl_empty_router(self, mocker):
         reverse = mocker.patch("widgethost.registry.reverse")
