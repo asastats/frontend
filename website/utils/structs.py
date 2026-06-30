@@ -78,3 +78,8 @@ Consolidated = namedtuple(
     "Consolidated", ["balance", "staked", "liquidity", "defi", "nftfloor"]
 )
 LedgerProgram = namedtuple("LedgerProgram", ["asset", "code", "dapp"])
+
+HeaderElement = namedtuple("HeaderElement", ["icon", "label", "amount", "total"])
+BodyElement = namedtuple(
+    "BodyElement", ["asset", "name", "type", "url", "source", "amount", "value"]
+)

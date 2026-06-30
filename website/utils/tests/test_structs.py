@@ -159,3 +159,32 @@ class TestUtilsStructsNamedTuples:
 
     def test_utils_structs_ledgerapp_fields(self):
         assert utils.structs.LedgerProgram._fields == ("asset", "code", "dapp")
+
+    # # HeaderElement
+    def test_utils_structs_defines_headerelement_tuple(self):
+        assert inspect.isclass(utils.structs.HeaderElement)
+        assert utils.structs.HeaderElement.__name__ == "HeaderElement"
+
+    def test_utils_structs_headerelement_tuple_fields(self):
+        assert utils.structs.HeaderElement._fields == (
+            "icon",
+            "label",
+            "amount",
+            "total",
+        )
+
+    # # BodyElement
+    def test_utils_structs_defines_bodyelement_tuple(self):
+        assert inspect.isclass(utils.structs.BodyElement)
+        assert utils.structs.BodyElement.__name__ == "BodyElement"
+
+    def test_utils_structs_bodyelement_tuple_fields(self):
+        assert utils.structs.BodyElement._fields == (
+            "asset",
+            "name",
+            "type",
+            "url",
+            "source",
+            "amount",
+            "value",
+        )
