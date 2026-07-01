@@ -6,9 +6,9 @@ from django.template import Library
 from django.template.defaultfilters import floatformat
 
 from core.exportpermissions import tier_allows
-from utils.constants import explorers as explorer_constants
+from utils import explorers as explorer_constants
 from utils.constants.charts import PIE_CHART_MAXIMUM_ITEMS
-from utils.constants.core import ELEMENTS_STYLING, USDC_ID
+from utils.constants.core import DEFAULT_EXPLORER, ELEMENTS_STYLING, USDC_ID
 from utils.helpers import bundle_from_addresses
 
 register = Library()
@@ -372,6 +372,7 @@ def export_capability(deployment_permission, size):
     return tier_allows(deployment_permission, size)
 
 
+# # EXPLORERS
 def _viewer_explorer(context, override=""):
     """Resolve the explorer key to use for the current render.
 
@@ -403,7 +404,7 @@ def _viewer_explorer(context, override=""):
         if profile is not None:
             return profile.preferred_explorer_or_default()
 
-    return explorer_constants.DEFAULT_EXPLORER
+    return DEFAULT_EXPLORER
 
 
 @register.simple_tag(takes_context=True)

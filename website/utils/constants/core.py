@@ -189,3 +189,35 @@ WALLET_CONNECT_NONCE_PREFIX = "asastats-auth:"
 # Network pinning for the off-chain signature (defense in depth).
 MAINNET_GENESIS_ID = "mainnet-v1.0"
 MAINNET_GENESIS_HASH = "wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8="
+
+DEFAULT_EXPLORER = "allo"
+EXPLORERS = {
+    "allo": {
+        "name": "Allo",
+        "base": "https://allo.info/",
+        "address": "account/{value}",
+        "asset": "asset/{value}",
+        "transaction": "tx/{value}",
+    },
+    "lora": {
+        "name": "Lora",
+        "base": "https://lora.algokit.io/mainnet/",
+        "address": "account/{value}",
+        "asset": "asset/{value}",
+        "transaction": "transaction/{value}",
+    },
+    "pera": {
+        "name": "Pera Explorer",
+        "base": "https://explorer.perawallet.app/",
+        "address": "address/{value}",
+        "asset": "asset/{value}",
+        "transaction": "tx/{value}",
+    },
+    "algosurf": {
+        "name": "Algo Surf",
+        "base": "https://algo.surf/",
+        "address": "account/{value}",
+        "asset": "asset/{value}",
+        "transaction": "transaction/{value}",
+    },
+}

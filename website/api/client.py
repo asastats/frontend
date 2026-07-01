@@ -38,7 +38,7 @@ def fetch_account_holdings(address, allowed_scopes):
     The backend returns a mapping of asset id to ``{name, unit, decimals, amount}``
     (ALGO is id 0); every key present is, by definition, opted in.
 
-    Defense-in-depth: the only caller already constrains address to \w{58},
+    Defense-in-depth: the only caller already constrains address to \\w{58},
     but encode the path segment so this helper can't be misused to traverse.
 
     :param address: single Algorand address

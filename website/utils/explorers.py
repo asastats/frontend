@@ -12,43 +12,7 @@ frontend code -- the same one-way, no-shared-import arrangement already used for
 ``SUBSCRIPTION_TIER_PERMISSIONS``.
 """
 
-DEFAULT_EXPLORER = "allo"
-
-# Per explorer: ``name`` (rendered label), ``base`` (trailing-slash URL), and
-# ``address`` / ``asset`` / ``transaction`` path templates with a ``{value}``
-# placeholder. All four current providers happen to share the ``account/`` and
-# ``asset/`` address/asset paths and differ only on the transaction path, but the
-# templates are kept per-entity so a future provider can diverge freely.
-EXPLORERS = {
-    "allo": {
-        "name": "Allo",
-        "base": "https://allo.info/",
-        "address": "account/{value}",
-        "asset": "asset/{value}",
-        "transaction": "tx/{value}",
-    },
-    "lora": {
-        "name": "Lora",
-        "base": "https://lora.algokit.io/mainnet/",
-        "address": "account/{value}",
-        "asset": "asset/{value}",
-        "transaction": "transaction/{value}",
-    },
-    "pera": {
-        "name": "Pera Explorer",
-        "base": "https://explorer.perawallet.app/",
-        "address": "account/{value}",
-        "asset": "asset/{value}",
-        "transaction": "tx/{value}",
-    },
-    "algosurf": {
-        "name": "Algo Surf",
-        "base": "https://algo.surf/",
-        "address": "account/{value}",
-        "asset": "asset/{value}",
-        "transaction": "transaction/{value}",
-    },
-}
+from utils.constants.core import DEFAULT_EXPLORER, EXPLORERS
 
 
 def normalized_explorer(explorer):

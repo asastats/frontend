@@ -22,7 +22,7 @@ from django.forms.widgets import TextInput
 from core.helpers import addresses_from_raw, format_addresses_limit_help_text
 from core.models import BundleName, Profile
 from utils.constants.core import INVALID_ADDRESS_TEXT, MAX_BUNDLE_SIZE
-from utils.constants.explorers import explorer_choices
+from utils.explorers import explorer_choices
 from utils.constants.tax import (
     TAX_FORM_NON_ZERO_HELP_TEXT,
     TAX_FORM_PROVIDERS,

@@ -13,7 +13,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.permission_provider import get_permission_provider
-from utils.constants.explorers import normalized_explorer
 from utils.constants.users import (
     DUPLICATE_BUNDLE_ERROR,
     DUPLICATE_BUNDLE_NAME_ERROR,
@@ -24,6 +23,7 @@ from utils.constants.users import (
     SUBSCRIPTION_TIER_PUBLIC_BUNDLE_NAMES_COUNT,
     SYSTEM_RESERVED_URL_PATH_ERROR,
 )
+from utils.explorers import normalized_explorer
 from utils.helpers import bundle_from_addresses, create_bundle
 from utils.userhelpers import (
     is_system_reserved_url_path,

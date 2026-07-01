@@ -1,8 +1,7 @@
-"""Tests for :mod:`utils.constants.explorers`."""
+"""Tests for :mod:`utils.explorers`."""
 
-from utils.constants.explorers import (
-    DEFAULT_EXPLORER,
-    EXPLORERS,
+from utils.constants.core import DEFAULT_EXPLORER, EXPLORERS
+from utils.explorers import (
     explorer_base,
     explorer_choices,
     explorer_link,
