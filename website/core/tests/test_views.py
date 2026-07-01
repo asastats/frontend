@@ -937,6 +937,40 @@ class ProfileSettingsPageTest(TestCase):
             )
         self.assertTemplateUsed(response, "profile_settings.html")
 
+    def test_settings_page_explorer_post_saves_for_entitled_user(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.user.profile.save()
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_settings"),
+                data={"section": "explorer", "preferred_explorer": "lora"},
+            )
+        self.assertRedirects(response, reverse("profile_settings"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.preferred_explorer == "lora"
+
+    def test_settings_page_explorer_post_redirects_unentitled_to_subscriptions(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
+        self.user.profile.save()
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_settings"),
+                data={"section": "explorer", "preferred_explorer": "lora"},
+            )
+        self.assertRedirects(response, reverse("subscriptions"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.preferred_explorer == ""
+
+    def test_settings_page_explorer_post_invalid_rerenders_template(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.user.profile.save()
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_settings"),
+                data={"section": "explorer", "preferred_explorer": "bogus"},
+            )
+        self.assertTemplateUsed(response, "profile_settings.html")
+
 
 class SwapEntryViewTest(TestCase):
     """Testing class for :class:`core.views.SwapEntryView`."""

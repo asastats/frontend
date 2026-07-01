@@ -10,6 +10,10 @@ from core.templatetags.core_extras import (
     bundle_hash,
     dict_get,
     dist_height,
+    explorer_base,
+    explorer_name,
+    explorer_tx_path,
+    explorer_url,
     get_styling,
     has_styling,
     historic_access,
@@ -466,3 +470,57 @@ class TestCoreExtrasHistoricAccess:
 
     def test_core_extras_historic_access_for_none(self):
         assert historic_access(None, 3) is False
+
+
+class TestCoreExtrasExplorerTags:
+    """Testing class for the explorer template tags."""
+
+    def _request(self, mocker, *, authenticated, explorer="lora"):
+        """Return a fake request whose viewer resolves to `explorer`."""
+        profile = mocker.Mock()
+        profile.preferred_explorer_or_default.return_value = explorer
+        user = mocker.Mock(is_authenticated=authenticated, profile=profile)
+        return mocker.Mock(user=user)
+
+    def test_core_extras_explorer_url_defaults_to_allo_for_anonymous(self, mocker):
+        context = {"request": self._request(mocker, authenticated=False)}
+        assert explorer_url(context, "address", "ADDR") == (
+            "https://allo.info/account/ADDR"
+        )
+
+    def test_core_extras_explorer_url_uses_viewer_preference(self, mocker):
+        context = {"request": self._request(mocker, authenticated=True)}
+        assert explorer_url(context, "asset", 7) == (
+            "https://lora.algokit.io/mainnet/asset/7"
+        )
+
+    def test_core_extras_explorer_url_context_var_overrides(self, mocker):
+        context = {"preferred_explorer": "pera"}
+        assert explorer_url(context, "asset", 7) == (
+            "https://explorer.perawallet.app/asset/7"
+        )
+
+    def test_core_extras_explorer_url_explicit_argument_wins(self, mocker):
+        context = {"request": self._request(mocker, authenticated=True)}
+        assert explorer_url(context, "asset", 7, "algosurf") == (
+            "https://algo.surf/asset/7"
+        )
+
+    def test_core_extras_explorer_url_no_request_defaults_to_allo(self):
+        assert explorer_url({}, "transaction", "TX") == "https://allo.info/tx/TX"
+
+    def test_core_extras_explorer_base_uses_viewer_preference(self, mocker):
+        context = {"request": self._request(mocker, authenticated=True)}
+        assert explorer_base(context) == "https://lora.algokit.io/mainnet/"
+
+    def test_core_extras_explorer_name_uses_viewer_preference(self, mocker):
+        context = {
+            "request": self._request(mocker, authenticated=True, explorer="pera")
+        }
+        assert explorer_name(context) == "Pera Explorer"
+
+    def test_core_extras_explorer_tx_path_uses_viewer_preference(self, mocker):
+        context = {
+            "request": self._request(mocker, authenticated=True, explorer="pera")
+        }
+        assert explorer_tx_path(context) == "tx/"

@@ -2492,3 +2492,40 @@ class TestCoreModelsProfilePreferredRouter:
     ):
         mocker.patch("widgethost.registry.swap_routers", return_value=[])
         assert Profile().preferred_router_or_default() == ""
+
+
+class TestCoreModelsProfilePreferredExplorer:
+    """Testing class for the :class:`Profile` preferred_explorer preference."""
+
+    def test_core_models_profile_preferred_explorer_defaults_blank(self):
+        assert Profile().preferred_explorer == ""
+
+    def test_core_models_profile_preferred_explorer_or_default_returns_choice(self):
+        assert (
+            Profile(preferred_explorer="lora").preferred_explorer_or_default() == "lora"
+        )
+
+    def test_core_models_profile_preferred_explorer_or_default_when_unset(self):
+        assert Profile(preferred_explorer="").preferred_explorer_or_default() == "allo"
+
+    def test_core_models_profile_preferred_explorer_or_default_when_unknown(self):
+        assert (
+            Profile(preferred_explorer="bogus").preferred_explorer_or_default()
+            == "allo"
+        )
+
+    def test_core_models_profile_can_access_explorer_setting_for_true(self):
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+            ).can_access_explorer_setting()
+            is True
+        )
+
+    def test_core_models_profile_can_access_explorer_setting_for_false(self):
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
+            ).can_access_explorer_setting()
+            is False
+        )

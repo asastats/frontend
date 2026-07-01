@@ -8,7 +8,7 @@
 {% endcomment %}
 <div class="col s12 m3 pull-m9 left-align asal">
   <span class="title">{{ asset.name }}</span><br />
-  <a href="https://allo.info/{% if asset.id != 0 %}asset/{{ asset.id }}{% endif %}" target="_blank" title="Show in Allo">{% if asset.id != 0 %}{{ asset.id }}{% else %}Allo{% endif %}</a>{% if asset.id != 0 %}&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span>{% endif %} <br />
+  <a href="{% if asset.id != 0 %}{% explorer_url 'asset' asset.id %}{% else %}{% explorer_base %}{% endif %}" target="_blank" title="Show in {% explorer_name %}">{% if asset.id != 0 %}{{ asset.id }}{% else %}{% explorer_name %}{% endif %}</a>{% if asset.id != 0 %}&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span>{% endif %} <br />
   <span>Unit name: {{ asset.unit }}</span> <br />
   <span>Total supply: {{ asset.total|floatformat:'g' }}</span> <br />
   <span>Decimals: {{ asset.decimals }}</span> <br />

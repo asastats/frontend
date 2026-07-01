@@ -29,6 +29,7 @@ from core.forms import (
     ExportDownloadForm,
     ExportForm,
     ProfileBundleNameForm,
+    ProfileExplorerForm,
     ProfileFormSet,
     ProfileInlineForm,
     ProfileRouterForm,
@@ -733,3 +734,27 @@ class TestProfileRouterForm:
         form = ProfileRouterForm()
         assert isinstance(form.fields["preferred_router"], ChoiceField)
         assert form.fields["preferred_router"].choices == [("folks", "Folks")]
+
+
+class TestProfileExplorerForm:
+    """Testing class for :class:`ProfileExplorerForm`."""
+
+    def test_profileexplorerform_issubclass_of_modelform(self):
+        assert issubclass(ProfileExplorerForm, ModelForm)
+
+    def test_profileexplorerform_meta_model_and_fields(self):
+        assert ProfileExplorerForm.Meta.model is Profile
+        assert ProfileExplorerForm.Meta.fields == ("preferred_explorer",)
+
+    def test_profileexplorerform_choices_come_from_registry(self):
+        form = ProfileExplorerForm()
+        assert isinstance(form.fields["preferred_explorer"], ChoiceField)
+        assert form.fields["preferred_explorer"].choices[0] == ("allo", "Allo")
+
+    def test_profileexplorerform_accepts_known_explorer(self):
+        form = ProfileExplorerForm(data={"preferred_explorer": "lora"})
+        assert form.is_valid() is True
+
+    def test_profileexplorerform_rejects_unknown_explorer(self):
+        form = ProfileExplorerForm(data={"preferred_explorer": "bogus"})
+        assert form.is_valid() is False

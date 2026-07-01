@@ -39,7 +39,7 @@
             <div class="input-field col s12 left-align">
               {% if form.initial.address %}
                 {% if form.instance.profile.authorized %}
-                <span><a href="https://allo.info/account/{{ form.instance.profile.address }}" target="_blank" rel="noopener" title="Address authorization transaction in allo.info">Address is authorized</a></span>
+                                {% explorer_url 'address' form.instance.profile.address as profile_address_url %}<span><a href="{{ profile_address_url }}" target="_blank" rel="noopener" title="Address authorization transaction in {% explorer_name %}">Address is authorized</a></span>
                 {% else %}
                   <div class="input-field col s12 m6 center-align">
                     <span class="myred-text">Address is not authorized</span>

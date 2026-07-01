@@ -22,6 +22,7 @@ from django.forms.widgets import TextInput
 from core.helpers import addresses_from_raw, format_addresses_limit_help_text
 from core.models import BundleName, Profile
 from utils.constants.core import INVALID_ADDRESS_TEXT, MAX_BUNDLE_SIZE
+from utils.constants.explorers import explorer_choices
 from utils.constants.tax import (
     TAX_FORM_NON_ZERO_HELP_TEXT,
     TAX_FORM_PROVIDERS,
@@ -321,5 +322,30 @@ class ProfileRouterForm(ModelForm):
             choices=swap_routers(),
             required=True,
             label="Smart router",
+            widget=Select(attrs={"class": "browser-default"}),
+        )
+
+
+class ProfileExplorerForm(ModelForm):
+    """Form for choosing the profile's preferred blockchain explorer.
+
+    Explorer choices come from the explorer registry (Allo first), so adding a
+    provider there surfaces it here with no change to this form. The right to
+    submit this form is gated on the Intro tier; the view enforces that and the
+    template renders the control disabled (routing a click to subscriptions) for
+    users below it.
+    """
+
+    class Meta:
+        model = Profile
+        fields = ("preferred_explorer",)
+
+    def __init__(self, *args, **kwargs):
+        """Populate the explorer select from the explorer registry."""
+        super().__init__(*args, **kwargs)
+        self.fields["preferred_explorer"] = ChoiceField(
+            choices=explorer_choices(),
+            required=True,
+            label="Explorer",
             widget=Select(attrs={"class": "browser-default"}),
         )

@@ -36,6 +36,7 @@ from api.main import fetch_and_serialize_account
 from core.forms import (
     DeactivateProfileForm,
     ProfileBundleNameForm,
+    ProfileExplorerForm,
     ProfileFormSet,
     ProfileRouterForm,
     UpdateUserForm,
@@ -991,11 +992,14 @@ class ProfileApiView(CanAccessApiMixin, TemplateView):
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
 class ProfileSettingsView(View):
-    """User settings page; currently a single smart-router preference section.
+    """User settings page: smart-router and preferred-explorer preferences.
 
-    Router options are discovered (manifests with ``category = "swap"``), so new
-    router widgets appear automatically. Ownership/permission gates live on the
-    swap widget itself; this view only records a preference.
+    Router options are discovered (manifests with ``category = "swap"``) and
+    explorer options come from the explorer registry, so new entries appear
+    automatically. The router section records a preference only; the explorer
+    section is additionally gated on the Intro subscription tier -- below it the
+    template renders the control disabled and a click routes to subscriptions,
+    and a forged POST is redirected there too.
 
     :var template_name: name of the template to render
     :type template_name: str
@@ -1003,25 +1007,59 @@ class ProfileSettingsView(View):
 
     template_name = "profile_settings.html"
 
+    def _context(self, request):
+        """Return the base context with both preference forms bound to profile.
+
+        :param request: current request
+        :type request: :class:`HttpRequest`
+        :return: dict
+        """
+        profile = request.user.profile
+        return {
+            "form": ProfileRouterForm(instance=profile),
+            "explorer_form": ProfileExplorerForm(instance=profile),
+            "can_access_explorer": profile.can_access_explorer_setting(),
+        }
+
     def get(self, request, *args, **kwargs):
-        """Render the router-preference form bound to the current profile.
+        """Render the preference forms bound to the current profile.
 
         :return: :class:`HttpResponse`
         """
-        form = ProfileRouterForm(instance=request.user.profile)
-        return render(request, self.template_name, {"form": form})
+        return render(request, self.template_name, self._context(request))
 
     def post(self, request, *args, **kwargs):
-        """Persist the chosen router and redirect back (post/redirect/get).
+        """Persist the submitted section and redirect back (post/redirect/get).
+
+        The ``section`` field selects which form is processed. The explorer
+        section requires Intro permission; an unentitled submission is sent to
+        the subscriptions page rather than saved.
 
         :return: :class:`HttpResponse`
         """
-        form = ProfileRouterForm(data=request.POST, instance=request.user.profile)
+        profile = request.user.profile
+        section = request.POST.get("section", "router")
+
+        if section == "explorer":
+            if not profile.can_access_explorer_setting():
+                return redirect("subscriptions")
+            form = ProfileExplorerForm(data=request.POST, instance=profile)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Explorer preference saved.")
+                return redirect("profile_settings")
+            context = self._context(request)
+            context["explorer_form"] = form
+            return render(request, self.template_name, context)
+
+        form = ProfileRouterForm(data=request.POST, instance=profile)
         if form.is_valid():
             form.save()
             messages.success(request, "Smart router preference saved.")
             return redirect("profile_settings")
-        return render(request, self.template_name, {"form": form})
+        context = self._context(request)
+        context["form"] = form
+        return render(request, self.template_name, context)
 
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")

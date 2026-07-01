@@ -17,6 +17,7 @@
       hx-select="#id-section-smart-router"
       hx-swap="outerHTML">
       {% csrf_token %}
+      <input type="hidden" name="section" value="router">
       <div class="input-field col s12">
         {{ form.preferred_router }}
         <label class="active" for="{{ form.preferred_router.id_for_label }}">Smart router</label>
@@ -28,18 +29,51 @@
         <button type="submit" class="waves-effect waves-mydark btn whenmoon" id="id_save_router">Save</button>
       </div>
     </form>
-    {% if messages %}
-    <br>
-    <div class="row col s12 m8 offset-m2">
-        {% for message in messages %}
-        <div class="chip mydark myredlight-text z-depth-1">
-            {{ message }}
-            <i class="material-icons close" aria-hidden="true">close</i>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}  
   </section>
+  <section class="row col s12 left-align" id="id-section-explorer">
+    <h5 class="mylight-text">Explorer</h5>
+    <p>The blockchain explorer used for address, asset, and transaction links.</p>
+    {% if can_access_explorer %}
+    <form method="post" action="{% url 'profile_settings' %}"
+      hx-post="{% url 'profile_settings' %}"
+      hx-target="#id-section-explorer"
+      hx-select="#id-section-explorer"
+      hx-swap="outerHTML">
+      {% csrf_token %}
+      <input type="hidden" name="section" value="explorer">
+      <div class="input-field col s12">
+        {{ explorer_form.preferred_explorer }}
+        <label class="active" for="{{ explorer_form.preferred_explorer.id_for_label }}">Explorer</label>
+        {% if explorer_form.preferred_explorer.errors %}
+        <span class="helper-text red-text">{{ explorer_form.preferred_explorer.errors|join:", " }}</span>
+        {% endif %}
+      </div>
+      <div class="col s12">
+        <button type="submit" class="waves-effect waves-mydark btn whenmoon" id="id_save_explorer">Save</button>
+      </div>
+    </form>
+    {% else %}
+    <a href="{% url 'subscriptions' %}" class="explorer-upgrade" title="Available from the Intro tier — open subscriptions">
+      <div class="input-field col s12">
+        <select class="browser-default" disabled aria-disabled="true">
+          <option>Allo</option>
+        </select>
+        <span class="helper-text">Choosing an explorer is available from the <span class="mylight-text">Intro</span> tier. Tap to upgrade.</span>
+      </div>
+    </a>
+    {% endif %}
+  </section>
+  {% if messages %}
+  <br>
+  <div class="row col s12 m8 offset-m2">
+      {% for message in messages %}
+      <div class="chip mydark myredlight-text z-depth-1">
+          {{ message }}
+          <i class="material-icons close" aria-hidden="true">close</i>
+      </div>
+      {% endfor %}
+  </div>
+  {% endif %}    
 </div>
 <div class="row col s12 m5">
   <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>

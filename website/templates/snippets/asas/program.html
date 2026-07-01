@@ -30,7 +30,7 @@
      an ``[Available: X ALGO]`` sub-row from prog.linked, and a per-ALGO USD
      price line from the account-level pricealgo. No distribution panel.
      {% endcomment %}
-  <a href="https://allo.info/{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to Allo"><span class="balance">&nbsp;Balance:&nbsp;</span></a>
+  <a href="{% explorer_base %}{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to {% explorer_name %}"><span class="balance">&nbsp;Balance:&nbsp;</span></a>
   <span class="val" data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span> <br />
   {% for ld in prog.linked %}
     {% if ld.text == "Available" %}

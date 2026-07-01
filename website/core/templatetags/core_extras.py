@@ -6,6 +6,7 @@ from django.template import Library
 from django.template.defaultfilters import floatformat
 
 from core.exportpermissions import tier_allows
+from utils.constants import explorers as explorer_constants
 from utils.constants.charts import PIE_CHART_MAXIMUM_ITEMS
 from utils.constants.core import ELEMENTS_STYLING, USDC_ID
 from utils.helpers import bundle_from_addresses
@@ -369,3 +370,105 @@ def export_access(profile, size):
 def export_capability(deployment_permission, size):
     """Gate A: is this deployment entitled to export a bundle of ``size``?"""
     return tier_allows(deployment_permission, size)
+
+
+def _viewer_explorer(context, override=""):
+    """Resolve the explorer key to use for the current render.
+
+    Resolution order, first hit wins: an explicit ``override`` argument; a
+    ``preferred_explorer`` value placed directly in the template context (used
+    by the historic widget, which renders over a WebSocket with no ``request``);
+    the authenticated viewer's saved preference; otherwise the default. Anonymous
+    or unauthenticated viewers always get the default, so public pages keep
+    showing Allo.
+
+    :param context: the template context
+    :type context: dict
+    :param override: explicit explorer key, if a caller wants to force one
+    :type override: str
+    :return: a key guaranteed to exist in the explorer registry
+    :rtype: str
+    """
+    if override:
+        return explorer_constants.normalized_explorer(override)
+
+    explicit = context.get("preferred_explorer")
+    if explicit:
+        return explorer_constants.normalized_explorer(explicit)
+
+    request = context.get("request")
+    user = getattr(request, "user", None)
+    if user is not None and user.is_authenticated:
+        profile = getattr(user, "profile", None)
+        if profile is not None:
+            return profile.preferred_explorer_or_default()
+
+    return explorer_constants.DEFAULT_EXPLORER
+
+
+@register.simple_tag(takes_context=True)
+def explorer_url(context, entity, value, explorer=""):
+    """Return the viewer's explorer URL for ``entity`` and ``value``.
+
+    Replaces the hard-coded ``https://allo.info/...`` anchors. ``entity`` is one
+    of ``"address"``, ``"asset"``, ``"transaction"``.
+
+    :param context: the template context (carries the viewer)
+    :type context: dict
+    :param entity: blockchain entity kind
+    :type entity: str
+    :param value: address, asset id, or transaction id
+    :param explorer: optional explicit explorer key override
+    :type explorer: str
+    :return: str
+    """
+    return explorer_constants.explorer_link(
+        _viewer_explorer(context, explorer), entity, value
+    )
+
+
+@register.simple_tag(takes_context=True)
+def explorer_base(context, explorer=""):
+    """Return the viewer's explorer base URL (provider home).
+
+    Used for the native-ALGO / bundle cases that link to the explorer root
+    instead of a specific entity.
+
+    :param context: the template context
+    :type context: dict
+    :param explorer: optional explicit explorer key override
+    :type explorer: str
+    :return: str
+    """
+    return explorer_constants.explorer_base(_viewer_explorer(context, explorer))
+
+
+@register.simple_tag(takes_context=True)
+def explorer_name(context, explorer=""):
+    """Return the viewer's explorer display name (e.g. ``"Allo"``).
+
+    :param context: the template context
+    :type context: dict
+    :param explorer: optional explicit explorer key override
+    :type explorer: str
+    :return: str
+    """
+    return explorer_constants.explorer_name(_viewer_explorer(context, explorer))
+
+
+@register.simple_tag(takes_context=True)
+def explorer_tx_path(context, explorer=""):
+    """Return the viewer's explorer transaction path segment (e.g. ``"tx/"``).
+
+    Handed to the swap controller via a data attribute so the success link
+    follows the viewer's chosen explorer.
+
+    :param context: the template context
+    :type context: dict
+    :param explorer: optional explicit explorer key override
+    :type explorer: str
+    :return: str
+    """
+    return explorer_constants.explorer_path(
+        _viewer_explorer(context, explorer), "transaction"
+    )

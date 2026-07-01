@@ -26,7 +26,7 @@
   {% for addr in bundle %} <a href="{% url 'address' addr %}" target="_blank" title="Open address {{ addr }}">{{ addr|short_address }}</a> {% endfor %}
   </h{% if bundle|length > 5 %}5{% else %}4{% endif %}>
 {% else %}
-  <h4 class="center-align flow-text truncate"><a href="https://allo.info/account/{{ address.0 }}" target="_blank" title="Open address in Allo">{{ address.0 }}</a></h4>
+  <h4 class="center-align flow-text truncate"><a href="{% explorer_url 'address' address.0 %}" target="_blank" title="Open address in {% explorer_name %}">{{ address.0 }}</a></h4>
 {% endif %}
 
 <div class="col s12 center-align">

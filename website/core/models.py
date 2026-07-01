@@ -13,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.permission_provider import get_permission_provider
+from utils.constants.explorers import normalized_explorer
 from utils.constants.users import (
     DUPLICATE_BUNDLE_ERROR,
     DUPLICATE_BUNDLE_NAME_ERROR,
@@ -55,6 +56,7 @@ class Profile(models.Model):
     permission = models.BigIntegerField(default=0, blank=True)
     currency = models.CharField(max_length=5, blank=True, default="ALGO")
     preferred_router = models.CharField(max_length=32, blank=True, default="")
+    preferred_explorer = models.CharField(max_length=32, blank=True, default="")
 
     def __str__(self):
         """Return string representation of the profile instance
@@ -98,6 +100,29 @@ class Profile(models.Model):
         if self.preferred_router in available:
             return self.preferred_router
         return available[0] if available else ""
+
+    def preferred_explorer_or_default(self):
+        """Return the chosen explorer key, or the default when unset/unknown.
+
+        Permission is intentionally *not* re-checked here: the right to *change*
+        this setting is gated on the settings page (Intro tier), but a value
+        already saved keeps applying. Mirrors
+        :meth:`preferred_router_or_default`.
+
+        :return: str
+        """
+        return normalized_explorer(self.preferred_explorer)
+
+    def can_access_explorer_setting(self):
+        """Return True if the user may choose a preferred explorer.
+
+        Available from the Intro subscription tier upward; below that the
+        settings page shows the option disabled and routes a click to the
+        subscriptions page.
+
+        :return: Boolean
+        """
+        return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
 
     def check_votes_and_permission(self):
         """Check and possibly update profile with new votes and permission values.
