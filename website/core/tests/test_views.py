@@ -7,6 +7,7 @@ from allauth.account.forms import LoginForm
 from captcha.models import CaptchaStore
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.html import escape
@@ -929,6 +930,8 @@ class ProfileSettingsPageTest(TestCase):
         self.assertRedirects(response, reverse("profile_settings"))
         self.user.profile.refresh_from_db()
         assert self.user.profile.preferred_router == "folks"
+        tags = [m.extra_tags for m in get_messages(response.wsgi_request)]
+        assert tags == ["router"]
 
     def test_settings_page_post_invalid_rerenders_template(self):
         with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
@@ -948,6 +951,8 @@ class ProfileSettingsPageTest(TestCase):
         self.assertRedirects(response, reverse("profile_settings"))
         self.user.profile.refresh_from_db()
         assert self.user.profile.preferred_explorer == "lora"
+        tags = [m.extra_tags for m in get_messages(response.wsgi_request)]
+        assert tags == ["explorer"]
 
     def test_settings_page_explorer_post_redirects_unentitled_to_subscriptions(self):
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1

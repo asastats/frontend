@@ -1046,7 +1046,9 @@ class ProfileSettingsView(View):
             form = ProfileExplorerForm(data=request.POST, instance=profile)
             if form.is_valid():
                 form.save()
-                messages.success(request, "Explorer preference saved.")
+                messages.success(
+                    request, "Explorer preference saved.", extra_tags="explorer"
+                )
                 return redirect("profile_settings")
             context = self._context(request)
             context["explorer_form"] = form
@@ -1055,7 +1057,9 @@ class ProfileSettingsView(View):
         form = ProfileRouterForm(data=request.POST, instance=profile)
         if form.is_valid():
             form.save()
-            messages.success(request, "Smart router preference saved.")
+            messages.success(
+                request, "Smart router preference saved.", extra_tags="router"
+            )
             return redirect("profile_settings")
         context = self._context(request)
         context["form"] = form

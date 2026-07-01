@@ -9,7 +9,7 @@
 {% block middle_section %}
 <div class="row col s12 m7 midrow">
   <section class="row col s12 left-align" id="id-section-smart-router">
-    <h5 class="mylight-text">Smart router</h5>
+    <h5>Smart router</h5>
     <p>The smart router used when you swap tokens from an address you own.</p>
     <form method="post" action="{% url 'profile_settings' %}"
       hx-post="{% url 'profile_settings' %}"
@@ -18,20 +18,33 @@
       hx-swap="outerHTML">
       {% csrf_token %}
       <input type="hidden" name="section" value="router">
-      <div class="input-field col s12">
+      <div class="input-field col s8">
         {{ form.preferred_router }}
         <label class="active" for="{{ form.preferred_router.id_for_label }}">Smart router</label>
         {% if form.preferred_router.errors %}
         <span class="helper-text red-text">{{ form.preferred_router.errors|join:", " }}</span>
         {% endif %}
       </div>
-      <div class="col s12">
+      <div class="col s4" style="margin-top: 1.5rem;">
         <button type="submit" class="waves-effect waves-mydark btn whenmoon" id="id_save_router">Save</button>
       </div>
     </form>
+    {% if messages %}
+    <br>
+    <div class="row col s12 m8 offset-m2">
+        {% for message in messages %}
+        {% if message.extra_tags == 'router' %}
+        <div class="chip mydark myredlight-text z-depth-1">
+            {{ message }}
+            <i class="material-icons close" aria-hidden="true">close</i>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}  
   </section>
   <section class="row col s12 left-align" id="id-section-explorer">
-    <h5 class="mylight-text">Explorer</h5>
+    <h5>Explorer</h5>
     <p>The blockchain explorer used for address, asset, and transaction links.</p>
     {% if can_access_explorer %}
     <form method="post" action="{% url 'profile_settings' %}"
@@ -41,17 +54,30 @@
       hx-swap="outerHTML">
       {% csrf_token %}
       <input type="hidden" name="section" value="explorer">
-      <div class="input-field col s12">
+      <div class="input-field col s8">
         {{ explorer_form.preferred_explorer }}
         <label class="active" for="{{ explorer_form.preferred_explorer.id_for_label }}">Explorer</label>
         {% if explorer_form.preferred_explorer.errors %}
         <span class="helper-text red-text">{{ explorer_form.preferred_explorer.errors|join:", " }}</span>
         {% endif %}
       </div>
-      <div class="col s12">
+      <div class="col s4" style="margin-top: 1.5rem;">
         <button type="submit" class="waves-effect waves-mydark btn whenmoon" id="id_save_explorer">Save</button>
       </div>
     </form>
+    {% if messages %}
+    <br>
+    <div class="row col s12 m8 offset-m2">
+        {% for message in messages %}
+        {% if message.extra_tags == 'explorer' %}
+        <div class="chip mydark myredlight-text z-depth-1">
+            {{ message }}
+            <i class="material-icons close" aria-hidden="true">close</i>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
     {% else %}
     <a href="{% url 'subscriptions' %}" class="explorer-upgrade" title="Available from the Intro tier — open subscriptions">
       <div class="input-field col s12">
@@ -63,17 +89,6 @@
     </a>
     {% endif %}
   </section>
-  {% if messages %}
-  <br>
-  <div class="row col s12 m8 offset-m2">
-      {% for message in messages %}
-      <div class="chip mydark myredlight-text z-depth-1">
-          {{ message }}
-          <i class="material-icons close" aria-hidden="true">close</i>
-      </div>
-      {% endfor %}
-  </div>
-  {% endif %}    
 </div>
 <div class="row col s12 m5">
   <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>
