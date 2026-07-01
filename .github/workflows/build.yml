@@ -195,10 +195,11 @@ jobs:
           npm run test
 
       - name: Upload historic widget Javascript coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: website/widgets/inhouse/historic/tests/javascript/coverage
+          token: ${{ secrets.WIDGETS_CODECOV_TOKEN }}
+          working-directory: website/widgets
+          directory: inhouse/historic/tests/javascript/coverage
           flags: widgets-historic-javascript
           name: widgets-historic-coverage
 
@@ -213,9 +214,10 @@ jobs:
           npm run test
 
       - name: Upload swapcore widget Javascript coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          directory: website/widgets/inhouse/swapcore/tests/javascript/coverage
+          token: ${{ secrets.WIDGETS_CODECOV_TOKEN }}
+          working-directory: website/widgets
+          directory: inhouse/swapcore/tests/javascript/coverage
           flags: widgets-swapcore-javascript
           name: widgets-swapcore-coverage
