@@ -1,0 +1,9 @@
+fixes:
+  # Javascript historic widget path fix
+  - "static/historic/::website/widgets/inhouse/historic/static/historic/"
+  
+  # Javascript swapcore widget path fix
+  - "static/swap/::website/widgets/inhouse/swapcore/static/swap/"
+
+  # Python widgets path fix (maps paths in coverage-widgets.xml to root)
+  - "widgets/::website/widgets/"
