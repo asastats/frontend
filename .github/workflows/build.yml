@@ -96,7 +96,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/website_db
           COVERAGE_RCFILE: website/widgets/.coveragerc
         run: |
-          pytest website/widgets -c website/widgets/pytest.ini --cov=widgets --cov-report=xml:coverage-widgets.xml --cov-report=term-missing
+          pytest website/widgets -c website/widgets/pytest.ini --cov=widgets --cov-report=xml:website/widgets/coverage-widgets.xml --cov-report=term-missing
 
       - name: Upload main project coverage to Codecov
         uses: codecov/codecov-action@v7
@@ -106,21 +106,20 @@ jobs:
           flags: main-project
           name: main-coverage
 
-      - name: Get Submodule Git SHA
-        id: submodule_git
-        run: |
-          cd website/widgets
-          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+      - name: Get widgets submodule commit
+        id: widgets_git
+        run: echo "sha=$(git -C website/widgets rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Upload Python widgets coverage to Codecov
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.WIDGETS_CODECOV_TOKEN }}
-          files: ./coverage-widgets.xml
-          slug: asastats/widgets
-          override_commit: ${{ steps.submodule_git.outputs.sha }}
+          files: ./website/widgets/coverage-widgets.xml
           flags: widgets-python
-          name: widgets-python-coverage
+          slug: asastats/widgets
+          override_commit: ${{ steps.widgets_git.outputs.sha }}
+          override_branch: main
+          verbose: true
 
   frontend:
     runs-on: ubuntu-latest
