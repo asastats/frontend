@@ -73,6 +73,20 @@
   become: true
   tags: [nginx-conf]
 
+- name: Ensure the http block includes the sites-enabled drop-in directory
+  # Stock nginx already includes sites-enabled; OpenResty does not. Making it
+  # explicit lets other repos (e.g. the backend's api.asastats.com server
+  # block) drop a site into sites-available/enabled and be picked up.
+  ansible.builtin.lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: '^\s*include\s+/etc/nginx/sites-enabled/\*;'
+    line: "        include /etc/nginx/sites-enabled/*;"
+    insertafter: '^http \{'
+    state: present
+  become: true
+  notify: Restart nginx
+  tags: [nginx-conf]
+
 - name: Enable nginx
   ansible.builtin.systemd:
     name: nginx
