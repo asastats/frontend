@@ -279,7 +279,7 @@ def check_name(name, algod_client):
     :var v2_app_id: NFC v2 smart contract application ID
     :type v2_app_id: int
     :var app_state: related NFD application global state
-    :type app_state int
+    :type app_state: int
     :var box_addresses: Algorand address(es) connected with NFD v2
     :type box_addresses: str
     :var addresses: Algorand address(es) connected with provided .algo name

@@ -16,7 +16,7 @@ def create_user_profile(sender, instance, created, **kwargs):
     after sender instance is saved.
 
     :param sender: class responsible for signal sending
-    :type sender: type
+    :type sender: :class:`User`
     :param instance: instance of the sender class
     :type instance: :class:`User`
     :param created: value that determines is sender is created or not

@@ -25,7 +25,7 @@ Main components
    :maxdepth: 2
 
    api/frontend_api/main/classes/App.md
-   api/frontend_api/WalletComponent/classes/WalletComponent.md
+   api/frontend_api/walletComponent/classes/WalletComponent.md
 
 App (main.ts)
 ~~~~~~~~~~~~~

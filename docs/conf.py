@@ -15,6 +15,7 @@
 # sys.path.insert(0, os.path.abspath('.'))
 
 import os
+import re
 import subprocess
 import sys
 
@@ -94,22 +95,22 @@ if not os.environ.get("READTHEDOCS"):
             for root, dirs, files in os.walk(
                 os.path.join(project_root, "docs", "api", "frontend_api")
             ):
+
                 for file in files:
-                    if (
-                        file.endswith(".md")
-                        and file != "README.md"
-                        and file != "modules.md"
-                    ):
+                    if file.endswith(".md") and file not in ("README.md", "modules.md"):
                         filepath = os.path.join(root, file)
                         with open(filepath, "r") as f:
                             lines = f.readlines()
+
                         with open(filepath, "w") as f:
                             for line in lines:
-                                if (
-                                    "../../README.md" not in line
-                                    and "../README.md" not in line
-                                ):
-                                    f.write(line)
+                                # Safely convert [Link Text](../../README.md)->Link Text
+                                # without deleting the entire surrounding line.
+                                safe_line = re.sub(
+                                    r"\[([^\]]+)\]\((?:\.\./)+README\.md\)", r"\1", line
+                                )
+                                f.write(safe_line)
+
                         # Remove leading horizontal rules or other transitions
                         with open(filepath, "r") as f:
                             lines = f.readlines()
@@ -150,11 +151,17 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    "_build", 
-    "Thumbs.db", 
-    ".DS_Store", 
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
     "api/frontend_api/**/README.md",
-    "api/frontend_api/**/modules.md"
+    "api/frontend_api/**/modules.md",
+]
+
+# Suppress strict validation warnings caused by auto-generated Typedoc Markdown
+suppress_warnings = [
+    "myst.xref_missing",
+    "toc.not_included",
 ]
 
 # -- Options for HTML output -------------------------------------------------

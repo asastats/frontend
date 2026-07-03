@@ -625,8 +625,8 @@ class BundleName(models.Model):
         """Return whether this bundle name may be made public.
 
         TODO: implement and test
-        TODO: check if user subscription expired as that's the only way
-              how user can be ineligible.
+        TODO: check if user subscription expired as that's the only way how user
+        can be ineligible.
 
         :return: bool
         """

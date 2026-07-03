@@ -122,7 +122,7 @@ def set_primary(profile, target):
     :type target: walletauth.models.LinkedAddress
     :var refreshed: whether permission re-derived in-band
     :type refreshed: bool
-    :return: whether the permission refresh succeeded (False ⇒ pending)
+    :return: whether the permission refresh succeeded (False -> pending)
     :rtype: bool
     """
     if target.is_primary:

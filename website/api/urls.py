@@ -16,7 +16,7 @@ from api import views as api_views
 
 
 def _nested_account_patterns(type):
-    """Return collection of URL resolvers for provided account `type`.
+    """Return collection of URL resolvers for provided account type.
 
     :param type: account type (address, bundle, or NFD name)
     :type type: str

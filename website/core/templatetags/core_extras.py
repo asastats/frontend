@@ -348,14 +348,17 @@ def abs_value(value):
     for non-int input returns a float.
 
     :param value: numeric value as int, float, Decimal, or string
-    :return: |value|, type matching the input where possible
+    :return: type matching the input where possible
     """
     if value is None:
         return 0
+
     try:
         if isinstance(value, int):
             return abs(value)
+
         return abs(float(value))
+
     except (TypeError, ValueError):
         return 0
 
