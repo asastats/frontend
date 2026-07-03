@@ -1,4 +1,15 @@
 ---
+- name: Guard the web-cache port against the backend's 6379 replica
+  ansible.builtin.assert:
+    that:
+      - not (backend_colocated | default(false) | bool) or (redis_port | int) != 6379
+    fail_msg: >-
+      redis_port is 6379 but backend_colocated is true. On a host shared with the
+      closed backend, 6379 is the backend's replica of the engine master; set the
+      web-cache port to 6380 (REDIS_PORT_LOCAL).
+    success_msg: "Web-cache port does not collide with the backend replica."
+    quiet: true
+
 - name: Import Redis installing tasks
   ansible.builtin.import_tasks: install.yml
 

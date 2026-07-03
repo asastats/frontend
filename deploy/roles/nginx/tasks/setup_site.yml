@@ -13,6 +13,9 @@
   become: true
   tags: [nginx]
 
+# NOTE: the ACME webroot and the /etc/nginx/snippets (esp. ssl.conf) written
+# below are shared: the backend's api.asastats.com site reuses them. Do not
+# remove them even if www stops needing them.
 - name: Ensure Let's Encrypt challenge folders exist
   ansible.builtin.file:
     path: "{{ item }}"
