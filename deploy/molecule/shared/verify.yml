@@ -98,3 +98,30 @@
           - verify_static_asset.status == 200
         fail_msg: "Collected static asset was not served by nginx."
         success_msg: "Static assets are served by nginx."
+
+    # ── Cross-repo coupling: the api.asastats.com drop-in must be includable ──
+    - name: Read the nginx main configuration
+      ansible.builtin.slurp:
+        path: /etc/nginx/nginx.conf
+      register: verify_nginx_conf
+
+    - name: Assert the sites-enabled drop-in include is present
+      ansible.builtin.assert:
+        that:
+          - "'include /etc/nginx/sites-enabled/*;' in (verify_nginx_conf.content | b64decode)"
+        fail_msg: >-
+          nginx.conf is missing 'include /etc/nginx/sites-enabled/*;' — the backend's
+          api.asastats.com server block would not be picked up. See CONTRIBUTING.
+        success_msg: "nginx.conf includes the sites-enabled drop-in directory."
+
+    - name: Dump the effective nginx configuration
+      ansible.builtin.command: nginx -T
+      register: verify_nginx_dump
+      changed_when: false
+
+    - name: Assert nginx actually loads sites-enabled drop-ins
+      ansible.builtin.assert:
+        that:
+          - "'/etc/nginx/sites-enabled/' in verify_nginx_dump.stdout"
+        fail_msg: "nginx is not loading any sites-enabled drop-in; the api site would be ignored."
+        success_msg: "nginx loads sites-enabled drop-ins (api site will be honored)."
