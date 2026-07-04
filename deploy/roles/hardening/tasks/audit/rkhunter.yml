@@ -16,9 +16,10 @@
   tags: [audit, rkhunter]
 
 - name: Set RKHunter report email destination
-  ansible.builtin.replace:
+  ansible.builtin.lineinfile:
     path: /etc/default/rkhunter
-    regexp: '^REPORT_EMAIL="root"'
-    replace: 'REPORT_EMAIL="{{ admin_email }}"'
+    regexp: '^REPORT_EMAIL='
+    line: 'REPORT_EMAIL="{{ admin_email }}"'
+    state: present
   become: true
   tags: [audit, rkhunter]

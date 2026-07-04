@@ -3,7 +3,7 @@ Provisioning
 
 ``Ansible`` is Python package used to deploy frontend infrastructure.
 
-This guide is made for ``Ubuntu Server 24.04.03 LTS`` hosts, but it's applicable for many other Debian based Linux/GNU distros.
+This guide is made for ``Ubuntu Server 24.04.04 LTS`` hosts, but it's applicable for many other Debian based Linux/GNU distros.
 
 
 Local machine requirements
@@ -12,7 +12,8 @@ Local machine requirements
 Ansible installation
 ^^^^^^^^^^^^^^^^^^^^
 
-The most recent stable Ansible version is available through ``pip`` and its Python 3 version for Debian systems is called python3-pip.
+If you don't use the project's Python environment, the most recent stable Ansible version is available through ``pip``
+and its Python 3 version for Debian-based systems is called python3-pip.
 
 .. code-block:: bash
 
@@ -41,7 +42,7 @@ Virtual machine
 Local network setup
 """""""""""""""""""
 
-Configuration for Ubuntu 24.04.3 server:
+Configuration for Ubuntu 24.04.4 server:
 
 .. code-block:: bash
   :caption: /etc/netplan/50-cloud-init.yaml
