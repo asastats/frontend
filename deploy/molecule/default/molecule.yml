@@ -62,7 +62,7 @@ provisioner:
         postgresql_version: 16
         database_backup_folder: /home/admin_user/backups/
         requirements_filename: testing.txt
-        lynis_version: 3.1.6
+        lynis_version: 3.1.7
         redis_port: 6380
         redis_data_dir: /var/lib/redis6380
         # Must match REDIS_PASSWORD in the .env the converge loads

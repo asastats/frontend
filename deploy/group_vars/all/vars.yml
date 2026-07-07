@@ -40,7 +40,7 @@ opt_folder: "/home/{{ admin_user }}/opt/"
 postgresql_version: 16
 database_backup_folder: "/home/{{ admin_user }}/backups/"
 
-lynis_version: 3.1.6
+lynis_version: 3.1.7
 
 # Which requirements layer to install on the server
 requirements_filename: production.txt
