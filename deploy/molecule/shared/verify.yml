@@ -111,11 +111,11 @@
           - "'include /etc/nginx/sites-enabled/*;' in (verify_nginx_conf.content | b64decode)"
         fail_msg: >-
           nginx.conf is missing 'include /etc/nginx/sites-enabled/*;' — the backend's
-          api.asastats.com server block would not be picked up. See CONTRIBUTING.
+          api.asastats.com server block would not be picked up.
         success_msg: "nginx.conf includes the sites-enabled drop-in directory."
 
     - name: Dump the effective nginx configuration
-      ansible.builtin.command: nginx -T
+      ansible.builtin.command: /usr/local/openresty/nginx/sbin/nginx -T -c /etc/nginx/nginx.conf
       register: verify_nginx_dump
       changed_when: false
 

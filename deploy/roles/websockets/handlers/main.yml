@@ -1,0 +1,10 @@
+---
+# Restarting the supervisor service rereads conf.d and (re)starts Daphne — covers
+# both first-time adds and config changes. Supervisor manages only Daphne here.
+- name: Reload daphne
+  ansible.builtin.systemd:
+    name: supervisor
+    state: restarted
+  become: true
+  when: manage_services | default(true) | bool
+  listen: "Reload daphne"

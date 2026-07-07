@@ -8,6 +8,9 @@
 - name: Import Nginx configuration tasks
   ansible.builtin.import_tasks: setup_nginx.yml
 
+- name: Install and configure OpenResty (Lua)
+  ansible.builtin.import_tasks: setup_openresty.yml
+
 - name: Import site setup tasks
   ansible.builtin.import_tasks: setup_site.yml
 

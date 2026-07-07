@@ -59,3 +59,55 @@
     job: ": Clear sessions weekly ; /usr/bin/nice -n 10 {{ site_path }}/scripts/clearsessions.sh"
   become: true
   tags: [project-setup, cronjobs]
+
+- name: Create output-checked management command cron scripts
+  ansible.builtin.template:
+    src: managementcommandoutputcron.sh
+    dest: "{{ site_path }}/scripts/{{ item.name }}cron.sh"
+    owner: "{{ webapp_user }}"
+    group: "{{ webapp_group }}"
+    mode: "0700"
+  become: true
+  become_user: "{{ webapp_user }}"
+  loop:
+    - { name: deletedeactivated, output: '$output == "0 deactivated accounts deleted!"' }
+    - { name: checkpublicbundles, output: '$output == "No changes"' }
+  tags: [project-setup, cronjobs]
+
+- name: Create weekly delete-deactivated-accounts cron job
+  ansible.builtin.cron:
+    weekday: "3"
+    hour: "23"
+    minute: "20"
+    name: "{{ project_name }} delete deactivated accounts (weekly)"
+    user: "{{ webapp_user }}"
+    job: ": Delete deactivated accounts weekly ; {{ site_path }}/scripts/deletedeactivatedcron.sh"
+  become: true
+  tags: [project-setup, cronjobs]
+
+- name: Create check-public-bundles cron job (every 5 minutes)
+  ansible.builtin.cron:
+    weekday: "*"
+    hour: "*"
+    minute: "*/5"
+    name: "{{ project_name }} check public bundles"
+    user: "{{ webapp_user }}"
+    job: ": Check public bundles ; {{ site_path }}/scripts/checkpublicbundlescron.sh"
+  become: true
+  tags: [project-setup, cronjobs, public-bundles]
+
+- name: Set the django_site record to "{{ site_name }}"
+  community.postgresql.postgresql_query:
+    login_db: "{{ hostvars['localhost'].env_vars.DATABASE_NAME }}"
+    login_user: postgres
+    query: "UPDATE django_site SET domain = %s, name = %s WHERE id = 1"
+    positional_args:
+      - "www.{{ site_name }}"
+      - "ASA Stats"
+  become: true
+  become_user: postgres
+  when:
+    - postgresql_database_created is defined
+    - postgresql_database_created is changed
+    - "'No migrations to apply' not in projectsetup_migrate_command.stdout"
+  tags: [project-setup, postgresql-create]

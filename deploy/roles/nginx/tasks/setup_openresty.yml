@@ -1,0 +1,118 @@
+---
+# OpenResty on top of nginx: provides the Lua runtime for the global-bundle
+# feature. The nginx systemd service is overridden to run the OpenResty binary,
+# so the rest of the role (and other repos) keep using the `nginx` service.
+- name: Ensure OpenResty dependency packages are installed
+  ansible.builtin.apt:
+    name:
+      - lua5.4
+      - lua-filesystem
+      - gnupg2
+      - ca-certificates
+      - lsb-release
+      - luarocks
+      - python3-debian
+    state: present
+  become: true
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Ensure apt keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  become: true
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Download the OpenResty apt signing key
+  ansible.builtin.get_url:
+    url: https://openresty.org/package/pubkey.gpg
+    dest: /etc/apt/keyrings/openresty.asc
+    mode: "0644"
+  become: true
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Add the OpenResty apt repository
+  ansible.builtin.deb822_repository:
+    name: openresty
+    types: [deb]
+    uris: http://openresty.org/package/ubuntu
+    suites: ["{{ ansible_distribution_release }}"]
+    components: [main]
+    architectures: [amd64]
+    signed_by: /etc/apt/keyrings/openresty.asc
+    enabled: true
+    state: present
+  become: true
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Install OpenResty
+  ansible.builtin.apt:
+    name: openresty
+    state: present
+    update_cache: true
+  become: true
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Disable the standalone openresty service (the nginx service runs it)
+  ansible.builtin.systemd:
+    name: openresty
+    state: stopped
+    enabled: false
+  become: true
+  failed_when: false
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Comment out the pid line in nginx.conf
+  ansible.builtin.replace:
+    path: /etc/nginx/nginx.conf
+    regexp: '^pid /run/nginx.pid;'
+    replace: '# pid /run/nginx.pid;'
+  become: true
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Ensure the nginx service override directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/nginx.service.d
+    state: directory
+    mode: "0755"
+  become: true
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Override the nginx service to run the OpenResty binary
+  ansible.builtin.template:
+    src: nginx_service_override.conf
+    dest: /etc/systemd/system/nginx.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: "Restart nginx"
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Install the Lua worker init config (global-bundle hash map)
+  ansible.builtin.template:
+    src: init_worker.conf
+    dest: /etc/nginx/conf.d/init_worker.conf
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: "Restart nginx"
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Check if luafilesystem (lfs.so) is already compiled
+  ansible.builtin.find:
+    paths: /usr/local/lib/lua
+    patterns: lfs.so
+    recurse: true
+  register: nginx_lfs_file
+  tags: [nginx, openresty, nginx-configuration]
+
+- name: Install luafilesystem via luarocks
+  ansible.builtin.command:
+    cmd: luarocks install luafilesystem
+  become: true
+  when: nginx_lfs_file.matched == 0
+  changed_when: true
+  tags: [nginx, openresty, nginx-configuration]

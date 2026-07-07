@@ -1,0 +1,18 @@
+[Unit]
+Description=Permission dApp updater service for {{ site_name }}
+Wants=network-online.target
+After=network.target network-online.target
+
+[Service]
+User={{ webapp_user }}
+Group={{ webapp_group }}
+Restart=always
+RestartSec=30
+RuntimeMaxSec=20h
+WorkingDirectory={{ site_path }}/source/{{ app_name }}
+Environment="SECRET_KEY={{ hostvars['localhost'].env_vars.SECRET_KEY }}"
+ExecStart={{ site_path }}/venv/bin/python manage.py permissiondappupdater \
+        --settings={{ django_settings }}
+
+[Install]
+WantedBy=multi-user.target

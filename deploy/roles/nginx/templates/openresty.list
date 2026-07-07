@@ -1,0 +1,1 @@
+deb [arch=amd64 signed-by=/etc/apt/keyrings/openresty.asc] http://openresty.org/package/ubuntu {{ ansible_distribution_release }} main

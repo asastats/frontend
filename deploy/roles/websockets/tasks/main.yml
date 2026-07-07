@@ -1,0 +1,29 @@
+---
+# Django Channels via Daphne under Supervisor (the monorepo's approach,
+# modernized for contemporary Ansible + ansible-lint). Daphne serves ASGI on
+# tcp://127.0.0.1:8001; the nginx www block proxies websocket traffic to it.
+- name: Ensure supervisor is installed
+  ansible.builtin.apt:
+    name: supervisor
+    state: present
+  become: true
+  tags: [channels, supervisor]
+
+- name: Ensure supervisor is started and enabled
+  ansible.builtin.systemd:
+    name: supervisor
+    state: started
+    enabled: true
+  become: true
+  tags: [channels, supervisor]
+
+- name: Write the Daphne supervisor configuration
+  ansible.builtin.template:
+    src: daphne-supervisor.conf
+    dest: "/etc/supervisor/conf.d/daphne-{{ env_name }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: "Reload daphne"
+  tags: [channels, daphne]

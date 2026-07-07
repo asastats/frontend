@@ -51,6 +51,7 @@ jobs:
       - name: Run Molecule tests
         env:
           ANSIBLE_DEPRECATION_WARNINGS: "False"
+          ANSIBLE_FORCE_COLOR: "1"
         run: |
           PATH="$HOME/.local/bin:/snap/bin:$PATH"
           molecule test --scenario-name ci

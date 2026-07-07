@@ -9,3 +9,14 @@
   become: true
   notify: "Enable and restart permissionsupdater"
   tags: [permissionsupdater, project-services]
+
+- name: Write systemd Permission dApp updater service script
+  ansible.builtin.template:
+    src: permissiondappupdater-systemd.service
+    dest: "/etc/systemd/system/permissiondappupdater-{{ env_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: "Enable and restart permissiondappupdater"
+  tags: [permissiondappupdater, project-services]
