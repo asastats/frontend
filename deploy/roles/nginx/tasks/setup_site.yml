@@ -54,7 +54,7 @@
     - letsencrypt.conf
     - ssl.conf
     - favicon.conf
-  notify: Restart nginx
+  notify: Restart openresty
   tags: [nginx, nginx-snippets, letsencrypt]
 
 - name: Generate strong DHE parameter (https://weakdh.org/)

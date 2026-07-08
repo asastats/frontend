@@ -54,15 +54,6 @@
   become: true
   tags: [nginx, openresty, nginx-configuration]
 
-- name: Disable the standalone openresty service (the nginx service runs it)
-  ansible.builtin.systemd:
-    name: openresty
-    state: stopped
-    enabled: false
-  become: true
-  failed_when: false
-  tags: [nginx, openresty, nginx-configuration]
-
 - name: Comment out the pid line in nginx.conf
   ansible.builtin.replace:
     path: /etc/nginx/nginx.conf
@@ -71,23 +62,23 @@
   become: true
   tags: [nginx, openresty, nginx-configuration]
 
-- name: Ensure the nginx service override directory exists
+- name: Ensure openresty systemd override directory exists
   ansible.builtin.file:
-    path: /etc/systemd/system/nginx.service.d
+    path: /etc/systemd/system/openresty.service.d
     state: directory
     mode: "0755"
   become: true
   tags: [nginx, openresty, nginx-configuration]
 
-- name: Override the nginx service to run the OpenResty binary
+- name: Copy nginx_service_override configuration to openresty service override directory
   ansible.builtin.template:
     src: nginx_service_override.conf
-    dest: /etc/systemd/system/nginx.service.d/override.conf
+    dest: /etc/systemd/system/openresty.service.d/override.conf
     owner: root
     group: root
     mode: "0644"
   become: true
-  notify: "Restart nginx"
+  notify: "Restart openresty"
   tags: [nginx, openresty, nginx-configuration]
 
 - name: Install the Lua worker init config (global-bundle hash map)
@@ -98,7 +89,7 @@
     group: root
     mode: "0644"
   become: true
-  notify: "Restart nginx"
+  notify: "Restart openresty"
   tags: [nginx, openresty, nginx-configuration]
 
 - name: Check if luafilesystem (lfs.so) is already compiled

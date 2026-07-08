@@ -1,2 +1,2 @@
 #!/bin/bash
-systemctl reload nginx
+systemctl reload openresty

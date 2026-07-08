@@ -1,7 +1,7 @@
 ---
-- name: Restart nginx
+- name: Restart openresty
   ansible.builtin.systemd:
-    name: nginx
+    name: openresty
     state: restarted
   become: true
-  listen: "Restart nginx"
+  listen: "Restart openresty"

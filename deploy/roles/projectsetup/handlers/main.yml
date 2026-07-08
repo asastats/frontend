@@ -6,9 +6,9 @@
   become: true
   listen: "Reload web server"
 
-- name: Reload nginx
+- name: Reload openresty
   ansible.builtin.systemd:
-    name: nginx
+    name: openresty
     state: reloaded
   become: true
   listen: "Reload web server"

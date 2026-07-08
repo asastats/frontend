@@ -84,7 +84,7 @@
     insertafter: '^http \{'
     state: present
   become: true
-  notify: Restart nginx
+  notify: Restart openresty
   tags: [nginx-conf]
 
 - name: Enable nginx
