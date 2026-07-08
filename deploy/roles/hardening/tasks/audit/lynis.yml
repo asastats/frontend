@@ -10,20 +10,9 @@
   become_user: "{{ admin_user }}"
   tags: [audit, lynis]
 
-- name: Get username running the playbook
-  ansible.builtin.command: whoami
-  delegate_to: localhost
-  delegate_facts: false
-  run_once: true
-  register: hardening_host_username_lynis
-  changed_when: false
-  vars:
-    ansible_connection: local
-  tags: [audit, lynis]
-
 - name: Copy Lynis archive from local host
   ansible.builtin.copy:
-    src: "/home/{{ hardening_host_username_lynis.stdout_lines[0] }}/opt/archives/lynis-{{ lynis_version }}.tar.gz"
+    src: "~/opt/archives/lynis-{{ lynis_version }}.tar.gz"
     dest: "{{ opt_folder }}archives/lynis-{{ lynis_version }}.tar.gz"
     owner: "{{ admin_user }}"
     group: "{{ admin_user_group }}"
