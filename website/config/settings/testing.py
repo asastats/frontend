@@ -5,7 +5,13 @@ from .base import *
 DEBUG = True
 ADMINS = [("Ivica", "ipaleka@hopemeet.me")]
 
-ALLOWED_HOSTS = ["127.0.0.1", "192.168.1.125", "localhost", "webserver"]
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "192.168.1.102",
+    "localhost",
+    "webserver",
+    f".{WEBSITE_BASE_DOMAIN}",
+]
 INTERNAL_IPS = ("127.0.0.1",)
 
 CACHES = {

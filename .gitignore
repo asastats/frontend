@@ -16,6 +16,8 @@ node_modules
 .npmrc
 scripts/logs
 website/.env
+website/.env.testing
+website/.env.production
 .ruff_cache
 website/widgets/inhouse/*/tests/javascript/coverage
 website/widgets/inhouse/*/package-lock.json
@@ -23,3 +25,5 @@ website/widgets/static/*
 website/widgets/templates/*
 wallet/coverage
 website/static/assets/*transparency-report*.pdf
+deploy/.env.production
+deploy/.env.testing
