@@ -13,6 +13,27 @@
       data-holdings-tmpl="{{ swap_holdings_tmpl }}"
       data-address="{{ swap_address }}"></span>
 {% include "swap/_swap_modal.html" %}
+{% if not user.is_authenticated %}
+<script>
+  (function () {
+    // Delegated so it also catches the Swap links inside the cached accordion.
+    document.addEventListener("click", function (e) {
+      var toggle = e.target.closest(".id-swap-swap-toggle");
+      if (!toggle) return;
+      e.preventDefault();
+      var modal = document.getElementById("modalLogin");
+      if (modal && window.M) {
+        (M.Modal.getInstance(modal) || M.Modal.init(modal)).open();
+      } else {
+        // Modal not on this (cache-shared) page — fall back to the login page.
+        // The href points at swap_source, which redirects to /login/?next=…,
+        // so the user still lands back on the swap after authenticating.
+        window.location.assign(toggle.getAttribute("href"));
+      }
+    });
+  })();
+</script>
+{% endif %}
 <script src="{% static swap_sdk_static %}"></script>
 <script src="{% static 'swap/swap.js' %}"></script>
 {% endif %}

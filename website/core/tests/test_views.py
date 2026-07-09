@@ -1050,8 +1050,16 @@ class SwapSourceRedirectViewTest(TestCase):
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
             self.client.login(username="swapsrc", password="12345o")
 
-    def test_swap_source_anonymous_404(self):
-        self.assertEqual(self.client.get(self.url).status_code, 404)
+    def test_swap_source_anonymous_redirects(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            (
+                "/accounts/login/?next=/swap/"
+                "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/31566704/"
+            ),
+        )
 
     def test_swap_source_linked_redirects_with_from(self):
         self._login()

@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.views import redirect_to_login
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ValidationError
 from django.http import (
@@ -1363,12 +1364,20 @@ class SwapSourceRedirectView(View):
         :return: HttpResponseRedirect
         """
         if not request.user.is_authenticated:
-            raise Http404
+            # The Swap link lives in the cross-user cached accordion, so it is
+            # shown to anonymous visitors too. Instead of a dead 404, send them
+            # to log in and bounce back here (``?next=``); after auth this view
+            # re-runs and performs the real swap redirect.
+            return redirect_to_login(request.get_full_path())
+
         address = value.upper()
         addresses = (
             [address] if len(address) > 50 else check_bundle_addresses(address).split()
         )
         if not linked_addresses_for_user(request.user, addresses):
+            # Authenticated but this address is not theirs: still not swappable.
+            # (Kept as 404 — they can't swap an address they don't own. Swap to a
+            # friendly "link your wallet" response here if you prefer.)
             raise Http404
         base = swap_entry_url(
             request.user.profile.preferred_router_or_default(), address
