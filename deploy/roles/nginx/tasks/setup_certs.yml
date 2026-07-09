@@ -59,7 +59,7 @@
     certbot certonly --non-interactive --agree-tos --no-eff-email
     --email {{ admin_email }}
     -a webroot --webroot-path /var/www/letsencrypt
-    -d {{ site_name }}
+    -d {{ site_name }} -d www.{{ site_name }}
   become: true
   when:
     - nginx_need_certs
