@@ -121,12 +121,11 @@ describe("in SECTION: Proprietary widgets", function () {
       expect(openSpy).toHaveBeenCalled();
       expect(event.isDefaultPrevented()).toBe(true);
     });
-    it("carries the swap URL into the email field and wallet data-next", function () {
+    it("records the swap URL on the hidden modal login field", function () {
       ensureModal();
       document.body.insertAdjacentHTML(
         "beforeend",
-        '<input id="id_modal_login_next" name="next" value="" />' +
-          '<div id="wallet-connect"></div>'
+        '<input id="id_modal_login_next" name="next" value="" />'
       );
       jest.spyOn(M.Modal, "getInstance").mockReturnValue({ open: jest.fn() });
       addToggle();
@@ -134,16 +133,12 @@ describe("in SECTION: Proprietary widgets", function () {
       expect(document.getElementById("id_modal_login_next").value).toBe(
         "/swap/ADDR/123/"
       );
-      expect(document.getElementById("wallet-connect").dataset.next).toBe(
-        "/swap/ADDR/123/"
-      );
     });
     it("stages an empty next when the Swap link has no href", function () {
       ensureModal();
       document.body.insertAdjacentHTML(
         "beforeend",
-        '<input id="id_modal_login_next" name="next" value="stale" />' +
-          '<div id="wallet-connect" data-next="stale"></div>'
+        '<input id="id_modal_login_next" name="next" value="stale" />'
       );
       jest.spyOn(M.Modal, "getInstance").mockReturnValue({ open: jest.fn() });
       document.body.insertAdjacentHTML(
@@ -152,7 +147,6 @@ describe("in SECTION: Proprietary widgets", function () {
       );
       $(".id-swap-swap-toggle").trigger($.Event("click"));
       expect(document.getElementById("id_modal_login_next").value).toBe("");
-      expect(document.getElementById("wallet-connect").dataset.next).toBe("");
     });
     it("ignores a Swap click for an authenticated visitor (no modal)", function () {
       var modalEl = document.getElementById("modalLogin");

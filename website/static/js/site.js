@@ -149,6 +149,7 @@ function initLoginModalTabs() {
     };
   }
 }
+
 /**
  * Open the login modal when an anonymous visitor clicks a Swap button.
  *
@@ -176,20 +177,18 @@ function swapLoginGate(event) {
     return;
   }
   event.preventDefault();
-  // Carry the intended swap URL through login (both modal tabs) so the user
-  // lands back on it: the email/password form submits the hidden field, and the
-  // wallet flow reads data-next from #wallet-connect.
-  var href = event.currentTarget.getAttribute('href') || '';
+  // Record the intended swap URL on the modal's hidden login field. Both login
+  // paths read it from there: the email/password form submits it, and the wallet
+  // flow reads its value at verify time. This field is static markup in
+  // modal_login.html (always present, never re-rendered by the wallet bundle),
+  // so it avoids the race of stamping the wallet tab's own markup at click time.
   var nextInput = document.getElementById('id_modal_login_next');
   if (nextInput) {
-    nextInput.value = href;
-  }
-  var walletConnect = document.getElementById('wallet-connect');
-  if (walletConnect) {
-    walletConnect.dataset.next = href;
+    nextInput.value = event.currentTarget.getAttribute('href') || '';
   }
   modal.open();
 }
+
 /**
  * Turn a ``?swap_error=<code>`` query param (set by a server-side swap redirect)
  * into a Materialize toast, then strip the param so a refresh doesn't repeat it.

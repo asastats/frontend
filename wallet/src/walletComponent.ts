@@ -280,9 +280,11 @@ export class WalletComponent {
       const signedTxBase64 = btoa(String.fromCharCode(...signedTxs[0]));
 
       /** Post-login destination for a wallet sign-in started from a Swap click
-       *  (data-next), or the login page's ?next. Validated server-side. */
+       *  (the modal's hidden login field), or the login page's ?next. Validated
+       *  server-side by WalletLoginVerifyAPIView. */
       const next =
-        document.getElementById("wallet-connect")?.dataset.next ||
+        (document.getElementById("id_modal_login_next") as HTMLInputElement | null)
+          ?.value ||
         new URLSearchParams(window.location.search).get("next") ||
         "";
       const verifyResponse = await fetch(`${this.apiBase}/verify/`, {

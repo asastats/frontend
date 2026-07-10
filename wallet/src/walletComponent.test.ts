@@ -200,6 +200,36 @@ describe("WalletComponent auth", () => {
     expect(window.location.href).toBe("/profile/");
   });
 
+  it("includes next in the verify body from the hidden login field", async () => {
+    mockWallet.activeAccount = { address: "ACTIVEADDR" };
+    document.body.innerHTML +=
+      '<input id="id_modal_login_next" value="/swap/ADDR/123/" />';
+    mockFetchSequence(
+      { nonce: "n1", prefix: "asastats-auth:" },
+      { success: true, redirect_url: "/swap/ADDR/123/" }
+    );
+    await component.auth();
+    const verifyBody = JSON.parse(
+      (global.fetch as jest.Mock).mock.calls[1][1].body
+    );
+    expect(verifyBody.next).toBe("/swap/ADDR/123/");
+  });
+
+  it("omits next from the verify body when no next is present", async () => {
+    mockWallet.activeAccount = { address: "ACTIVEADDR" };
+    // No #id_modal_login_next and no ?next in the URL.
+    window.history.replaceState({}, "", "/");
+    mockFetchSequence(
+      { nonce: "n1", prefix: "asastats-auth:" },
+      { success: true, redirect_url: "/profile/" }
+    );
+    await component.auth();
+    const verifyBody = JSON.parse(
+      (global.fetch as jest.Mock).mock.calls[1][1].body
+    );
+    expect("next" in verifyBody).toBe(false);
+  });
+
   it("sends the chain field and CSRF header on the nonce request", async () => {
     mockWallet.activeAccount = { address: "ACTIVEADDR" };
     mockFetchSequence(
@@ -341,36 +371,6 @@ describe("WalletComponent auth", () => {
     await component.auth();
     const nonceCall = (global.fetch as jest.Mock).mock.calls[0];
     expect(nonceCall[1].headers["X-CSRFToken"]).toBe("");
-  });
-
-  it("includes next in the verify body from #wallet-connect data-next", async () => {
-    mockWallet.activeAccount = { address: "ACTIVEADDR" };
-    document.body.innerHTML +=
-      '<div id="wallet-connect" data-next="/swap/ADDR/123/"></div>';
-    mockFetchSequence(
-      { nonce: "n1", prefix: "asastats-auth:" },
-      { success: true, redirect_url: "/swap/ADDR/123/" }
-    );
-    await component.auth();
-    const verifyBody = JSON.parse(
-      (global.fetch as jest.Mock).mock.calls[1][1].body
-    );
-    expect(verifyBody.next).toBe("/swap/ADDR/123/");
-  });
-
-  it("omits next from the verify body when no next is present", async () => {
-    mockWallet.activeAccount = { address: "ACTIVEADDR" };
-    // No #wallet-connect[data-next], and no ?next in the URL.
-    window.history.replaceState({}, "", "/");
-    mockFetchSequence(
-      { nonce: "n1", prefix: "asastats-auth:" },
-      { success: true, redirect_url: "/profile/" }
-    );
-    await component.auth();
-    const verifyBody = JSON.parse(
-      (global.fetch as jest.Mock).mock.calls[1][1].body
-    );
-    expect("next" in verifyBody).toBe(false);
   });
 
 });
