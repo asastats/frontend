@@ -61,7 +61,7 @@
       </div>
   </div>
   <div class="divider col s12"></div>
-  {% if redirect_field_value %}<input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />{% endif %}
+  {% if redirect_field_value %}<input type="hidden" name="{{ redirect_field_name|default:'next' }}" value="{{ redirect_field_value }}" />{% endif %}
   <div class="row center-align col s12 m8 offset-m2">
       {% block secondary_action %}{% endblock %}
   </div>

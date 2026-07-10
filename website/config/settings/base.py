@@ -329,7 +329,10 @@ SPECTACULAR_SETTINGS = {
     #     {"url": f"{WEBSITE_URL}/api/v2", "description": "Main server"},
     #     {"url": "http://127.0.0.1:8000/api/v2", "description": "Development server"},
     # ],
-    "PREPROCESSING_HOOKS": ["api.helpers.preprocessing_filter_spec"],
+    "PREPROCESSING_HOOKS": [
+        "api.helpers.preprocessing_filter_spec",
+        "walletauth.schema.exclude_wallet_endpoints",
+    ],
     "GET_LIB_DOC_EXCLUDES": "api.helpers.get_lib_doc_excludes",
     "SWAGGER_UI_DIST": "SIDECAR",  # shorthand to use the sidecar instead
     "SWAGGER_UI_FAVICON_HREF": STATIC_URL + "favicon-32x32.png",

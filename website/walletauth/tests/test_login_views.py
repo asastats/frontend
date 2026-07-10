@@ -379,6 +379,85 @@ class TestWalletLoginVerifyAPIView:
         assert response.status_code == 400
         assert evm_address  # silence linters; recovery happened
 
+    @pytest.mark.django_db
+    def test_login_verify_uses_safe_relative_next_url(self, mocker):
+        user = link_user()
+        WalletLoginNonce.objects.create(
+            address=PROVEN, chain="algorand", nonce="n_safe1"
+        )
+        _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        perform = mocker.patch(
+            "walletauth.login_views._perform_login", return_value="/default-home/"
+        )
+
+        request = APIRequestFactory().post(
+            "/login/verify/",
+            {"nonce": "n_safe1", "chain": "algorand", "next": "/custom-redirect/"},
+            format="json",
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+
+        assert response.status_code == 200
+        # The view should override the default with the safe relative path
+        assert response.data == {"success": True, "redirect_url": "/custom-redirect/"}
+        assert perform.call_args.args[1] == user
+
+    @pytest.mark.django_db
+    def test_login_verify_uses_safe_absolute_next_url_and_strips_whitespace(
+        self, mocker
+    ):
+        user = link_user()
+        WalletLoginNonce.objects.create(
+            address=PROVEN, chain="algorand", nonce="n_safe2"
+        )
+        _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        mocker.patch(
+            "walletauth.login_views._perform_login", return_value="/default-home/"
+        )
+
+        # APIRequestFactory defaults to 'testserver' for request.get_host()
+        target_url = "http://testserver/absolute-target/"
+        request = APIRequestFactory().post(
+            "/login/verify/",
+            {
+                "nonce": "n_safe2",
+                "chain": "algorand",
+                "next": f"   {target_url}   ",  # Testing the .strip() logic
+            },
+            format="json",
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+
+        assert response.status_code == 200
+        # The view should accept the absolute URL since the host matches
+        assert response.data == {"success": True, "redirect_url": target_url}
+
+    @pytest.mark.django_db
+    def test_login_verify_ignores_unsafe_external_next_url(self, mocker):
+        user = link_user()
+        WalletLoginNonce.objects.create(
+            address=PROVEN, chain="algorand", nonce="n_safe3"
+        )
+        _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        mocker.patch(
+            "walletauth.login_views._perform_login", return_value="/default-home/"
+        )
+
+        request = APIRequestFactory().post(
+            "/login/verify/",
+            {
+                "nonce": "n_safe3",
+                "chain": "algorand",
+                "next": "https://malicious.example.com/steal-token/",
+            },
+            format="json",
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+
+        assert response.status_code == 200
+        # The malicious URL should be rejected, falling back to the default URL
+        assert response.data == {"success": True, "redirect_url": "/default-home/"}
+
 
 class TestIsValidChainAddress:
     """Testing class for :func:`is_valid_chain_address`."""

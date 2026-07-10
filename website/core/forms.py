@@ -22,7 +22,6 @@ from django.forms.widgets import TextInput
 from core.helpers import addresses_from_raw, format_addresses_limit_help_text
 from core.models import BundleName, Profile
 from utils.constants.core import INVALID_ADDRESS_TEXT, MAX_BUNDLE_SIZE
-from utils.explorers import explorer_choices
 from utils.constants.tax import (
     TAX_FORM_NON_ZERO_HELP_TEXT,
     TAX_FORM_PROVIDERS,
@@ -37,6 +36,7 @@ from utils.constants.users import (
     TOO_LONG_USER_FIRST_NAME_ERROR,
     TOO_LONG_USER_LAST_NAME_ERROR,
 )
+from utils.explorers import explorer_choices
 from utils.helpers import check_algorand_address
 from utils.userhelpers import validate_address_or_algo_name_url_path
 from widgethost.registry import swap_routers

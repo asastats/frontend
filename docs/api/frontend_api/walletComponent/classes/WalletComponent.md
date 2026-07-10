@@ -123,7 +123,7 @@ The wallet instance this component manages.
 
 > **addEventListeners**(): `void`
 
-Defined in: [walletComponent.ts:323](https://github.com/asastats/frontend/blob/main/wallet/src/walletComponent.ts#L323)
+Defined in: [walletComponent.ts:331](https://github.com/asastats/frontend/blob/main/wallet/src/walletComponent.ts#L331)
 
 Wires click and change delegation on the card root.
 
@@ -196,7 +196,7 @@ Connects the wallet.
 
 > **destroy**(): `void`
 
-Defined in: [walletComponent.ts:354](https://github.com/asastats/frontend/blob/main/wallet/src/walletComponent.ts#L354)
+Defined in: [walletComponent.ts:362](https://github.com/asastats/frontend/blob/main/wallet/src/walletComponent.ts#L362)
 
 Tears down the wallet state subscription.
 
@@ -305,7 +305,7 @@ Makes this wallet the active wallet for signing.
 
 > **setActiveAccount**(`event`): `Promise`\<`void`\>
 
-Defined in: [walletComponent.ts:311](https://github.com/asastats/frontend/blob/main/wallet/src/walletComponent.ts#L311)
+Defined in: [walletComponent.ts:319](https://github.com/asastats/frontend/blob/main/wallet/src/walletComponent.ts#L319)
 
 Sets the active account from the dropdown selection.
 

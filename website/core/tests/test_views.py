@@ -1075,6 +1075,29 @@ class SwapSourceRedirectViewTest(TestCase):
         with mock.patch("core.views.linked_addresses_for_user", return_value=set()):
             self.assertEqual(self.client.get(self.url).status_code, 404)
 
+    def test_swap_source_unlinked_referer_without_query_string(self):
+        self._login()
+        referer = "http://testserver/some/address/path/"
+
+        with mock.patch("core.views.linked_addresses_for_user", return_value=set()):
+            # Pass the referer in the header
+            response = self.client.get(self.url, HTTP_REFERER=referer)
+
+        self.assertEqual(response.status_code, 302)
+        # Because there was no '?' in the referer, it should use '?'
+        self.assertEqual(response.url, f"{referer}?swap_error=unlinked")
+
+    def test_swap_source_unlinked_referer_with_existing_query_string(self):
+        self._login()
+        referer = "http://testserver/some/address/path/?filter=all"
+
+        with mock.patch("core.views.linked_addresses_for_user", return_value=set()):
+            response = self.client.get(self.url, HTTP_REFERER=referer)
+
+        self.assertEqual(response.status_code, 302)
+        # Because there was already a '?' in the referer, it should use '&'
+        self.assertEqual(response.url, f"{referer}&swap_error=unlinked")
+
     def test_swap_source_no_router_404(self):
         self._login()
         with mock.patch(

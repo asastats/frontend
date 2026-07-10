@@ -279,6 +279,12 @@ export class WalletComponent {
       /** Base64 of the signed transaction bytes, as the backend expects. */
       const signedTxBase64 = btoa(String.fromCharCode(...signedTxs[0]));
 
+      /** Post-login destination for a wallet sign-in started from a Swap click
+       *  (data-next), or the login page's ?next. Validated server-side. */
+      const next =
+        document.getElementById("wallet-connect")?.dataset.next ||
+        new URLSearchParams(window.location.search).get("next") ||
+        "";
       const verifyResponse = await fetch(`${this.apiBase}/verify/`, {
         method: "POST",
         headers,
@@ -287,8 +293,10 @@ export class WalletComponent {
           signedTransaction: signedTxBase64,
           nonce: nonceData.nonce,
           chain: "algorand",
+          ...(next ? { next } : {}),
         }),
       });
+
       /** `{ success, redirect_url }` on success, or `{ success:false, error }`. */
       const verifyData = await verifyResponse.json();
       if (!verifyData.success) {

@@ -32,6 +32,7 @@ function mainSite() {
   $(document)
     .off("click.swapgate")
     .on("click.swapgate", ".id-swap-swap-toggle", swapLoginGate);
+  showSwapErrorToast();
   // initializeCookieConsent();
 }
 
@@ -87,7 +88,6 @@ function copyToClipboard(event) {
  function isDark() {
    return (document.getElementById("footer").dataset.mode === "dark" || localStorage.getItem("mode") === "dark");
 }
-
 
 
 /**
@@ -166,14 +166,56 @@ function initLoginModalTabs() {
  */
 function swapLoginGate(event) {
   var modalEl = document.getElementById('modalLogin');
-  if (!modalEl || typeof M === 'undefined' || !M.Modal) {
+  var modal = modalEl && typeof M !== 'undefined' && M.Modal
+    ? M.Modal.getInstance(modalEl)
+    : null;
+  if (!modal) {
+    // No initialized login modal on this page (authenticated user, or the modal
+    // was cached out): let the click navigate to swap_source, which redirects to
+    // the login page.
     return;
   }
   event.preventDefault();
-  var modal = M.Modal.getInstance(modalEl) || M.Modal.init(modalEl);
+  // Carry the intended swap URL through login (both modal tabs) so the user
+  // lands back on it: the email/password form submits the hidden field, and the
+  // wallet flow reads data-next from #wallet-connect.
+  var href = event.currentTarget.getAttribute('href') || '';
+  var nextInput = document.getElementById('id_modal_login_next');
+  if (nextInput) {
+    nextInput.value = href;
+  }
+  var walletConnect = document.getElementById('wallet-connect');
+  if (walletConnect) {
+    walletConnect.dataset.next = href;
+  }
   modal.open();
 }
-
+/**
+ * Turn a ``?swap_error=<code>`` query param (set by a server-side swap redirect)
+ * into a Materialize toast, then strip the param so a refresh doesn't repeat it.
+ * @function showSwapErrorToast
+ *
+ */
+function showSwapErrorToast() {
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('swap_error');
+  if (!code) {
+    return;
+  }
+  var messages = {
+    unlinked: 'You can only swap from an address linked to your account.'
+  };
+  if (typeof M !== 'undefined' && M.toast) {
+    M.toast({ html: messages[code] || 'Swap is not available.' });
+  }
+  params.delete('swap_error');
+  var query = params.toString();
+  window.history.replaceState(
+    {},
+    document.title,
+    window.location.pathname + (query ? '?' + query : '') + window.location.hash
+  );
+}
 /**
  * Initialize cookie consent widget
  * @function initializeCookieConsent
@@ -275,6 +317,7 @@ if (typeof exports !== 'undefined') {
     toggleMode,
     toggleText,
     initLoginModalTabs,
-    swapLoginGate
+    swapLoginGate,
+    showSwapErrorToast
   };
 }

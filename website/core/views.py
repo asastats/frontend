@@ -22,6 +22,7 @@ from django.shortcuts import redirect, render
 from django.template import loader
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_protect
@@ -1364,10 +1365,8 @@ class SwapSourceRedirectView(View):
         :return: HttpResponseRedirect
         """
         if not request.user.is_authenticated:
-            # The Swap link lives in the cross-user cached accordion, so it is
-            # shown to anonymous visitors too. Instead of a dead 404, send them
-            # to log in and bounce back here (``?next=``); after auth this view
-            # re-runs and performs the real swap redirect.
+            # Anonymous: send them to log in and bounce back here (``?next=``);
+            # after auth this view re-runs and performs the real swap redirect.
             return redirect_to_login(request.get_full_path())
 
         address = value.upper()
@@ -1375,9 +1374,18 @@ class SwapSourceRedirectView(View):
             [address] if len(address) > 50 else check_bundle_addresses(address).split()
         )
         if not linked_addresses_for_user(request.user, addresses):
-            # Authenticated but this address is not theirs: still not swappable.
-            # (Kept as 404 — they can't swap an address they don't own. Swap to a
-            # friendly "link your wallet" response here if you prefer.)
+            # Authenticated but this address isn't linked to them: bounce back to
+            # the page they came from with a flag the client shows as a toast,
+            # instead of a dead 404. A direct hit with no (safe) referer keeps 404.
+            referer = request.META.get("HTTP_REFERER", "")
+            if referer and url_has_allowed_host_and_scheme(
+                referer,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
+                separator = "&" if "?" in referer else "?"
+                return redirect(f"{referer}{separator}swap_error=unlinked")
+
             raise Http404
 
         base = swap_entry_url(

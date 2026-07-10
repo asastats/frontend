@@ -19,6 +19,7 @@ from algosdk.encoding import is_valid_address as is_valid_algorand_address
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.shortcuts import resolve_url
+from django.utils.http import url_has_allowed_host_and_scheme
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -81,6 +82,29 @@ def _perform_login(request, user):
         email_verification=account_settings.EMAIL_VERIFICATION,
     )
     return getattr(response, "url", None) or resolve_url(settings.LOGIN_REDIRECT_URL)
+
+
+def _safe_next(request):
+    """Return a same-origin ``next`` from the request body, or ``None``.
+
+    The client may send ``next`` in the verify payload (the swap URL the user was
+    heading to). It is validated here — never trusted — so an unlinked/off-site
+    target can't turn wallet sign-in into an open redirect.
+
+    :param request: the current request
+    :type request: rest_framework.request.Request
+    :return: a safe local redirect target, or None
+    :rtype: str | None
+    """
+    target = (request.data.get("next") or "").strip()
+    if target and url_has_allowed_host_and_scheme(
+        target,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return target
+
+    return None
 
 
 class WalletLoginNonceAPIView(APIView):
@@ -228,6 +252,7 @@ class WalletLoginVerifyAPIView(APIView):
                 status=401,
             )
 
-        redirect_url = _perform_login(request, user)
+        default_url = _perform_login(request, user)
+        redirect_url = _safe_next(request) or default_url
         logger.info("walletauth: wallet sign-in via %s", chain)
         return Response({"success": True, "redirect_url": redirect_url})

@@ -16,6 +16,7 @@
       <div id="modal-tab-login" class="col s12">
         <form class="login" id="modal_login_form" method="POST" action="{% url 'account_login' %}">
           {% csrf_token %}
+          <input type="hidden" name="next" value="" id="id_modal_login_next" />
           <div class="row center-align" style="margin-top:1.25rem">
             <div class="input-field col s12 m10 offset-m1">
               <i class="material-icons prefix" aria-hidden="true">{{ 'login'|get_styling:"icon" }}</i>
