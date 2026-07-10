@@ -22,7 +22,6 @@ from django.shortcuts import redirect, render
 from django.template import loader
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_protect
@@ -81,6 +80,7 @@ from utils.helpers import (
     create_bundle,
     load_transparency_reports,
     random_slogan,
+    safe_referer,
     weighted_randomized_banner,
 )
 from utils.userhelpers import check_authorization_transaction
@@ -1351,47 +1351,52 @@ class SwapEntryView(TemplateView):
 
 
 class SwapSourceRedirectView(View):
-    """Non-cached: send a linked user to their router's swap page for one asset.
+    """Non-cached: resolve a Swap click for one asset off the cached accordion.
 
     The address-page accordion is ``cache_page``'d, so its per-asset Swap links
-    point here (user-agnostic), and this resolves the per-user router choice and
-    the linkage gate off the cache, then redirects with the asset pre-selected as
-    the swap source (``?from=<asset_id>``).
+    are user-agnostic and point here. This resolves the per-user linkage gate off
+    the cache and:
+
+    * anonymous -> login (with ``next`` back here),
+    * linked    -> back to the address page with ``?swap_open=<asset_id>`` so the
+      client opens the swap modal (the marker gate then decides enabled vs the
+      "not available" state, exactly as for an authenticated inline click),
+    * unlinked  -> back to the address page with ``?swap_error=unlinked`` (toast).
     """
 
     def get(self, request, value, asset_id):
-        """Redirect a linked viewer to ``<router>/<value>?from=<asset_id>``.
+        """Route a Swap click to login, the swap modal, or the unlinked toast.
 
         :return: HttpResponseRedirect
         """
         if not request.user.is_authenticated:
-            # Anonymous: send them to log in and bounce back here (``?next=``);
-            # after auth this view re-runs and performs the real swap redirect.
             return redirect_to_login(request.get_full_path())
 
         address = value.upper()
         addresses = (
             [address] if len(address) > 50 else check_bundle_addresses(address).split()
         )
+
         if not linked_addresses_for_user(request.user, addresses):
-            # Authenticated but this address isn't linked to them: bounce back to
-            # the page they came from with a flag the client shows as a toast,
-            # instead of a dead 404. A direct hit with no (safe) referer keeps 404.
-            referer = request.META.get("HTTP_REFERER", "")
-            if referer and url_has_allowed_host_and_scheme(
-                referer,
-                allowed_hosts={request.get_host()},
-                require_https=request.is_secure(),
-            ):
+            # Not their address: bounce back with a flag the client toasts.
+            referer = safe_referer(request)
+            if referer:
                 separator = "&" if "?" in referer else "?"
                 return redirect(f"{referer}{separator}swap_error=unlinked")
-
             raise Http404
 
+        # Linked: return to the address page and let the client open the swap
+        # modal for this asset (same path as an authenticated inline Swap click).
+        referer = safe_referer(request)
+        if referer:
+            separator = "&" if "?" in referer else "?"
+            return redirect(f"{referer}{separator}swap_open={asset_id}")
+
+        # No safe referer (e.g. a direct hit on this URL): fall back to the
+        # standalone router swap page with the asset preselected.
         base = swap_entry_url(
             request.user.profile.preferred_router_or_default(), address
         )
         if not base:
             raise Http404
-
         return redirect(f"{base}?from={asset_id}")

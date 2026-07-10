@@ -20,6 +20,7 @@ import time
 from algosdk.encoding import is_valid_address
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, ValidationError
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from nameservice.main import check_name
 from utils.cache import cached_bundle, cupdate_bundle
@@ -280,6 +281,27 @@ def random_slogan():
     :return: str
     """
     return random.choice(ASASTATS_SLOGANS)
+
+
+def safe_referer(request):
+    """Return a same-origin ``Referer`` for ``request``, or ``None``.
+
+    Used to bounce the user back to the address page they clicked Swap from
+    (validated, never trusted, to avoid an open redirect).
+
+    :param request: the current request
+    :type request: rest_framework.request.Request | django.http.HttpRequest
+    :return: a safe local URL, or None
+    :rtype: str | None
+    """
+    referer = request.META.get("HTTP_REFERER", "")
+    if referer and url_has_allowed_host_and_scheme(
+        referer,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return referer
+    return None
 
 
 def weighted_randomized_banner(banners=BANNERS):
