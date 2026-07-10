@@ -29,6 +29,9 @@ function mainSite() {
     toggleText();
   $('.dark-toggle').on('click', toggleMode);
   $(".copy").on("click", copyToClipboard);
+  $(document)
+    .off("click.swapgate")
+    .on("click.swapgate", ".id-swap-swap-toggle", swapLoginGate);
   // initializeCookieConsent();
 }
 
@@ -147,6 +150,31 @@ function initLoginModalTabs() {
   }
 }
 /**
+ * Open the login modal when an anonymous visitor clicks a Swap button.
+ *
+ * The address accordion is cached across users, so its per-asset Swap links are
+ * shown to everyone and point at the "swap_source" URL (which redirects
+ * anonymous users to the login page). The login modal is rendered only for
+ * anonymous visitors, so its presence is the per-user signal: when it exists,
+ * intercept the click and open the modal; otherwise (authenticated) let the swap
+ * controller load its inline panel. If Materialize is unavailable, the click is
+ * left to navigate to "swap_source", which redirects to the login page.
+ * @function swapLoginGate
+ *
+ * @param {jQuery} event Triggered click event object
+ *
+ */
+function swapLoginGate(event) {
+  var modalEl = document.getElementById('modalLogin');
+  if (!modalEl || typeof M === 'undefined' || !M.Modal) {
+    return;
+  }
+  event.preventDefault();
+  var modal = M.Modal.getInstance(modalEl) || M.Modal.init(modalEl);
+  modal.open();
+}
+
+/**
  * Initialize cookie consent widget
  * @function initializeCookieConsent
  *
@@ -246,6 +274,7 @@ if (typeof exports !== 'undefined') {
     checkMode,
     toggleMode,
     toggleText,
-    initLoginModalTabs
+    initLoginModalTabs,
+    swapLoginGate
   };
 }

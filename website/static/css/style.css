@@ -453,7 +453,7 @@ span.sort {
 /* swap.js adds .id-swap-status-error to the status line for messages that
    indicate a problem (no route, can't afford, insufficient balance, fetch/
    swap failure); it is removed for progress/success messages. */
-.id-swap-status-error { color: #ff3769; }
+.id-swap-status-error, .id-swap-connect-notice { color: #ff3769; }
 
 .swapicon {
   width: 24px;

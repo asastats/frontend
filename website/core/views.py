@@ -1379,9 +1379,11 @@ class SwapSourceRedirectView(View):
             # (Kept as 404 — they can't swap an address they don't own. Swap to a
             # friendly "link your wallet" response here if you prefer.)
             raise Http404
+
         base = swap_entry_url(
             request.user.profile.preferred_router_or_default(), address
         )
         if not base:
             raise Http404
+
         return redirect(f"{base}?from={asset_id}")

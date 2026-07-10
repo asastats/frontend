@@ -44,6 +44,7 @@ def linked_addresses_for_user(user, addresses):
     """
     if not getattr(user, "is_authenticated", False):
         return set()
+
     by_norm = {}
     for original in addresses:
         if original:
@@ -62,6 +63,7 @@ def linked_addresses_for_user(user, addresses):
     for norm, originals in by_norm.items():
         if norm in owned:
             matched |= originals
+
     return matched
 
 

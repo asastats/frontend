@@ -88,13 +88,69 @@ describe("in SECTION: Initialization", function () {
 
 /*
  * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * SECTION: Helper functions
+ * SECTION: Proprietary widgets
  * * * * * * * * * * * * * * * * * * * * * * * * * * *
  */
-describe("in SECTION: Helper functions", function () {
-
-  // checkMode
-  // toggleMode
-  // toggleText
-
+describe("in SECTION: Proprietary widgets", function () {
+  afterEach(function () {
+    jest.restoreAllMocks();
+  });
+  // swapLoginGate
+  describe("swapLoginGate function", function () {
+    function addToggle() {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        '<a class="id-swap-swap-toggle" href="/swap/source/">Swap</a>'
+      );
+    }
+    it("opens the login modal when an anonymous visitor clicks Swap", function () {
+      // #modalLogin is rendered only for anonymous users; ensure it is present.
+      if (!document.getElementById("modalLogin")) {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          '<div id="modalLogin" class="modal"></div>'
+        );
+      }
+      var openSpy = jest.fn();
+      jest
+        .spyOn(M.Modal, "getInstance")
+        .mockReturnValue({ open: openSpy, options: {} });
+      addToggle();
+      var event = $.Event("click");
+      $(".id-swap-swap-toggle").trigger(event);
+      expect(openSpy).toHaveBeenCalled();
+      expect(event.isDefaultPrevented()).toBe(true);
+    });
+    it("ignores a Swap click for an authenticated visitor (no modal)", function () {
+      var modalEl = document.getElementById("modalLogin");
+      if (modalEl) {
+        modalEl.parentNode.removeChild(modalEl);
+      }
+      var openSpy = jest.fn();
+      jest
+        .spyOn(M.Modal, "getInstance")
+        .mockReturnValue({ open: openSpy, options: {} });
+      addToggle();
+      var event = $.Event("click");
+      $(".id-swap-swap-toggle").trigger(event);
+      expect(openSpy).not.toHaveBeenCalled();
+      expect(event.isDefaultPrevented()).toBe(false);
+    });
+    it("does not double-bind across mainSite calls", function () {
+      if (!document.getElementById("modalLogin")) {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          '<div id="modalLogin" class="modal"></div>'
+        );
+      }
+      var openSpy = jest.fn();
+      jest
+        .spyOn(M.Modal, "getInstance")
+        .mockReturnValue({ open: openSpy, options: {} });
+      site.mainSite(); // second call must not add a second delegated handler
+      addToggle();
+      $(".id-swap-swap-toggle").trigger($.Event("click"));
+      expect(openSpy).toHaveBeenCalledTimes(1);
+    });
+  });
 });
