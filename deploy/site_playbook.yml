@@ -91,6 +91,6 @@
     - role: postgresql
     - role: projectsetup
     - role: gunicorn
-    - role: websockets   # Django Channels: Daphne under Supervisor (127.0.0.1:8001)
+    - role: websockets
     - role: nginx
     - role: hardening
