@@ -48,6 +48,13 @@ def _auth_method_for(chain):
     return "evm_xchain" if chain == "evm" else "algorand_wallet"
 
 
+def _same_address(chain, a, b):
+    """Whether two addresses are the same account (EVM is case-insensitive)."""
+    if chain == "evm":
+        return a.lower() == b.lower()
+    return a == b
+
+
 def link_address(profile, *, chain, address, auth_method, authorized):
     """Attach a proven ``address`` to ``profile`` as primary or secondary.
 
@@ -81,22 +88,39 @@ def link_address(profile, *, chain, address, auth_method, authorized):
     if existing and existing.profile_id != profile.id:
         raise AddressAlreadyLinked("This address is already linked to another account")
 
-    # Idempotent re-link of an address this profile already holds.
+    # No primary row yet? The first address bootstraps the primary when the
+    # account has no address at all, OR this IS the already-authorized
+    # ``Profile.address`` (a legacy address that predates the registry, whose
+    # linked row would otherwise be stranded as a non-primary with nothing to
+    # step-up-sign with). Any other case still becomes a secondary and must be
+    # promoted via a step-up signature from the current primary.
+    primary_exists = LinkedAddress.objects.filter(
+        profile=profile, is_primary=True
+    ).exists()
+    bootstrap_primary = not primary_exists and (
+        not profile.address or _same_address(chain, address, profile.address)
+    )
+
+    # Idempotent re-link of an address this profile already holds. Heal a
+    # stranded legacy row by promoting it here when it qualifies to bootstrap.
     if existing is not None:
         existing.authorized = authorized
         existing.verified_at = timezone.now()
-        existing.save(update_fields=["authorized", "verified_at"])
+        fields = ["authorized", "verified_at"]
+        if bootstrap_primary and not existing.is_primary:
+            existing.is_primary = True
+            existing.login_enabled = True
+            fields += ["is_primary", "login_enabled"]
+            profile.address = address
+            profile.save()
+            profile.update_authorized(authorized, method=auth_method)
+        existing.save(update_fields=fields)
         return LinkResult(existing, existing.is_primary, False)
 
-    has_primary = (
-        bool(profile.address)
-        or LinkedAddress.objects.filter(profile=profile, is_primary=True).exists()
-    )
-
-    if not has_primary:
-        # Bootstrap the privilege-bearing primary. Persist the address before
-        # update_authorized: Profile.save() clears `authorized` on an address
-        # change, so authorizing afterwards keeps the stamp intact.
+    if bootstrap_primary:
+        # Persist the address before update_authorized: Profile.save() clears
+        # `authorized` on an address change, so authorizing afterwards keeps the
+        # stamp intact.
         profile.address = address
         profile.save()
         refreshed = profile.update_authorized(authorized, method=auth_method)

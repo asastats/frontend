@@ -51,6 +51,39 @@ def _normalized(chain, address):
     return address.lower() if chain == "evm" else address
 
 
+def is_bootstrap_promotion(profile, target):
+    """Whether ``target`` may become primary / login-enabled without step-up.
+
+    Step-up exists to stop a stolen session escalating against an *existing*
+    primary; it cannot be satisfied before any primary exists. That strands
+    accounts whose legacy ``Profile.address`` predates the linked-address
+    registry: linking that same address creates a non-primary row (because
+    ``Profile.address`` is already set in :func:`link_address`), yet there is no
+    primary to sign with.
+
+    Bootstrapping is allowed only when BOTH hold, so a stolen session cannot
+    promote an attacker's freshly linked wallet:
+
+    * the account has no current primary, and
+    * ``target`` is the address already authorized on the profile
+      (``Profile.address``) -- an address the account has already proven.
+
+    :param profile: the owning profile
+    :type profile: core.models.Profile
+    :param target: the row being promoted
+    :type target: walletauth.models.LinkedAddress
+    :rtype: bool
+    """
+    if _current_primary(profile) is not None:
+        return False
+    profile_address = profile.address or ""
+    if not profile_address:
+        return False
+    return _normalized(target.chain, target.address) == _normalized(
+        target.chain, profile_address
+    )
+
+
 def verify_step_up(*, user, operation, target_id, nonce, payload):
     """Verify a fresh, operation-bound signature from ``user``'s current primary.
 

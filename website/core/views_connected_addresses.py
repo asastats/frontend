@@ -29,6 +29,7 @@ from utils.constants.core import ALGORAND_WALLETS
 from walletauth.management import (
     CannotDisablePrimaryLogin,
     CannotRemovePrimary,
+    is_bootstrap_promotion,
     remove_address,
     set_login_enabled,
     set_primary,
@@ -130,7 +131,10 @@ def profile_addresses_action(request):
 
     enabled = request.POST.get("enabled") in _TRUE
     # The server decides step-up from operation semantics, never the client.
-    if operation == "set_primary" or (operation == "set_login" and enabled):
+    # The one exception is bootstrapping the very first primary onto the
+    # already-authorized profile address (see is_bootstrap_promotion).
+    expanding = operation == "set_primary" or (operation == "set_login" and enabled)
+    if expanding and not is_bootstrap_promotion(profile, target):
         error = verify_step_up(
             user=request.user,
             operation=operation,
