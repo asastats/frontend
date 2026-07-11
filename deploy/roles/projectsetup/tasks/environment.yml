@@ -8,6 +8,7 @@
       - DATABASE_NAME
       - DATABASE_USER
       - DATABASE_PASSWORD
+      - PGPASSFILE
       # ASA Stats backend boundary (closed-source server)
       - ASASTATS_API_URL
       - ASASTATS_API_KEY
@@ -19,6 +20,7 @@
       - INDEXER_TOKEN
       # Inbound API the app serves to its own frontend/widgets
       - SIMPLE_JWT_KEY
+      - WALLET_CONNECT_PROJECT_ID
       # Social / wallet authentication providers
       - GOOGLE_CLIENT_ID
       - GOOGLE_SECRET
@@ -33,6 +35,11 @@
       - EMAIL_HOST_USER
       - EMAIL_HOST_PASSWORD
       - EMAIL_DEFAULT_FROM
+      # widgets
+      - WIDGETS_API_TOKEN
+      - FOLKS_REFERRER_ADDRESS
+      - HAYSTACK_API_KEY
+      - HAYSTACK_REFERRER_ADDRESS
   ansible.builtin.template:
     src: environment_file
     dest: "{{ site_path }}/source/{{ app_name }}/.env"
