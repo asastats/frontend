@@ -8,7 +8,7 @@
           <div class="collapsible-header token{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
             <span>&nbsp;{{ asaitem.amount|amount_repr:asset.decimals }}&nbsp;&nbsp;<span class="unit">{{ asset.unit }}</span></span>
             <div class="icondiv">
-              <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="circle asaicon" onerror="this.onerror=null; this.src='{{ BASE_CDN_URL }}/icons/empty.png';" />
+              <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="circle asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
             </div>
             <div class="right">
               &nbsp;<span class="val" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }} ALGO</span>

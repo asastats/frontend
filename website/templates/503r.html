@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Too many requests</title>
-    <meta name="description" content="{{ WEBSITE_URL }} too many requests error page">
+    <meta name="description" content="Too many requests error page">
     <meta name="keywords" content="error,server error,too many requests">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
@@ -53,16 +53,12 @@
 </head>
 
 <body>
-    <a href="{{ WEBSITE_URL }}"><img src="/logo400.png" border="0" height="120" width="200" alt="Go to {{ WEBSITE_URL }} index page"></a>
+    <a href="/"><img src="/logo400.png" border="0" height="120" width="200" alt="Go to the website's index page"></a>
     <br>
     <br>
     <h1>Too many requests</h1>
     <br><p>Our free website allows only one request per minute. The requested page will refresh in a minute.</p>
-    <script>
-        setTimeout(function(){
-            window.location.reload();
-         }, 60000);
-    </script>
+    <script src="/static/js/reload-delayed.js"></script>
 </body>
 </html>
 <!-- IE needs 512+ bytes: http://blogs.msdn.com/b/ieinternals/archive/2010/08/19/http-error-pages-in-internet-explorer.aspx -->

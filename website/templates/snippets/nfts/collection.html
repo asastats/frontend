@@ -7,7 +7,7 @@
     </div>
     <div class="nftmid col s12 center-align">
       {% for row in coll.nfts %}
-        <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" onerror="this.onerror=null; this.src='{{ BASE_CDN_URL }}/thumbnails/nftt.png';" />
+        <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
       {% endfor %}
     </div>
     <div class="nftright col s6 right-align">

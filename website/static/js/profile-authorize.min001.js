@@ -1,0 +1,1 @@
+!function(){"use strict";var e=document.getElementById("id-wallet-flags");e&&"1"===e.dataset.walletTest&&(window.__WALLET_TEST__=!0),document.addEventListener("DOMContentLoaded",(function(){window.M&&window.M.Collapsible&&window.M.Collapsible.init(document.querySelectorAll(".collapsible"))}))}();

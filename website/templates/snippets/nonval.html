@@ -9,7 +9,7 @@
         {% for noteval in notevals %}
           {% with asset=noteval.asset %}
           <li id="{{ asset.id }}" class="collection-item avatar fitem">
-            <img src="{{ noteval|asa_icon }}" alt="{{ asset.name }} logo" class="circle asaicon" onerror="this.onerror=null; this.src='{{ BASE_CDN_URL }}/icons/empty.png';" />
+            <img src="{{ noteval|asa_icon }}" alt="{{ asset.name }} logo" class="circle asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
             <span class="title">{{ asset.name }}</span> <br>
             <a href="{% explorer_url 'asset' asset.id %}" target="_blank" title="Show in {% explorer_name %}">{{ asset.id }}</a>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span> <br>
             <span>Amount: {{ noteval.amount|amount_repr:asset.decimals }}</span> <br>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">{% load static %}{% load i18n %}
+<html lang="en" data-mode="{{ mode }}">{% load static %}{% load i18n %}
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -19,10 +19,7 @@
     <meta name="theme-color" content="#ffffff">
 </head>
 <body>
-<script>
-  var mode = '{{ mode }}' || localStorage.getItem('mode') || 'light';
-  document.body.classList.add(mode);
-</script>
+<script src="{% static 'js/csp-safe-handlers.min001.js' %}"></script>
 {% block header %}
 <header>
   <nav class="z-depth-0">
