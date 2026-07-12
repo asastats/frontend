@@ -64,3 +64,14 @@
   become: true
   when: not is_molecule_test | default(false) and inventory_hostname in groups['production']
   tags: [nginx, letsencrypt]
+
+- name: Ensure only WebSocket upgrades reach Daphne
+  ansible.builtin.template:
+    src: websocket_upgrade.conf
+    dest: /etc/nginx/conf.d/websocket_upgrade.conf
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  notify: Restart openresty
+  tags: [nginx, openresty, nginx-configuration]

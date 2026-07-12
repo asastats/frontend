@@ -78,7 +78,7 @@
     group: root
     mode: "0644"
   become: true
-  notify: "Restart openresty"
+  notify: Restart openresty
   tags: [nginx, openresty, nginx-configuration]
 
 - name: Install the Lua worker init config (global-bundle hash map)
@@ -89,7 +89,7 @@
     group: root
     mode: "0644"
   become: true
-  notify: "Restart openresty"
+  notify: Restart openresty
   tags: [nginx, openresty, nginx-configuration]
 
 - name: Check if luafilesystem (lfs.so) is already compiled

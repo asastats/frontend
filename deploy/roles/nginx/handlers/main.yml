@@ -4,4 +4,4 @@
     name: openresty
     state: restarted
   become: true
-  listen: "Restart openresty"
+  listen: Restart openresty
