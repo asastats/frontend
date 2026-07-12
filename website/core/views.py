@@ -641,11 +641,11 @@ def export_download(request, **kwargs):
     :type report: str
     :var splitted: report's specifications collection found in file name
     :type splitted: list
-    :var url_value: address or bundle value found in url
+    :var url_value: address or bundle value found in file name
     :type url_value: str
     :var content: compressed report's content
     :type content: bytes
-    :var response: Django response object containing the compressed report
+    :var response: Django response holding the compressed report
     :type response: :class:`django.http.HttpResponse`
     :return: :class:`django.http.HttpResponse`
     """
@@ -655,13 +655,14 @@ def export_download(request, **kwargs):
 
     splitted = report.split("_")
     if len(splitted) != 3:
-        return reverse("index")
+        return redirect("index")
 
     url_value = splitted[-1]
     try:
         content = download_export(url_value)
 
-    except BackendError:
+    except BackendError as exc:
+        logger.warning("export download failed for %s: %s", url_value, exc)
         return redirect("index")
 
     response = HttpResponse(content, content_type="application/zip")

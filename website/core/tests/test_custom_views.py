@@ -1073,7 +1073,8 @@ class TestExportDownload(BaseView):
         self.request.GET = {"report": "1_2_3_4"}
         with mock.patch("core.views.download_export") as mocked_export:
             response = export_download(self.request)
-            assert response == "/"
+            assert response.status_code == 302
+            assert response.url == "/"
         mocked_export.assert_not_called()
 
     def test_core_views_export_download_for_backend_error(self):
