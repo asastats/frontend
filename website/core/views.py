@@ -1377,19 +1377,19 @@ class SwapSourceRedirectView(View):
             [address] if len(address) > 50 else check_bundle_addresses(address).split()
         )
 
+        # Calculate referer and separator once upfront to keep it DRY
+        referer = safe_referer(request)
+        separator = "&" if referer and "?" in referer else "?"
+
         if not linked_addresses_for_user(request.user, addresses):
             # Not their address: bounce back with a flag the client toasts.
-            referer = safe_referer(request)
             if referer:
-                separator = "&" if "?" in referer else "?"
                 return redirect(f"{referer}{separator}swap_error=unlinked")
             raise Http404
 
         # Linked: return to the address page and let the client open the swap
         # modal for this asset (same path as an authenticated inline Swap click).
-        referer = safe_referer(request)
         if referer:
-            separator = "&" if "?" in referer else "?"
             return redirect(f"{referer}{separator}swap_open={asset_id}")
 
         # No safe referer (e.g. a direct hit on this URL): fall back to the
@@ -1399,4 +1399,5 @@ class SwapSourceRedirectView(View):
         )
         if not base:
             raise Http404
+
         return redirect(f"{base}?from={asset_id}")

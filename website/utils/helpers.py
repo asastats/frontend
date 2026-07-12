@@ -301,6 +301,7 @@ def safe_referer(request):
         require_https=request.is_secure(),
     ):
         return referer
+
     return None
 
 

@@ -89,6 +89,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "core.middleware.CustomUserHeaderMiddleware",
+    "core.middleware.DebugEnvMiddleware",
 ]
 
 AUTHENTICATION_BACKENDS = [
