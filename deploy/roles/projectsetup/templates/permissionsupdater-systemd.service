@@ -10,7 +10,6 @@ Restart=always
 RestartSec=30
 RuntimeMaxSec=20h
 WorkingDirectory={{ site_path }}/source/{{ app_name }}
-Environment="SECRET_KEY={{ hostvars['localhost'].env_vars.SECRET_KEY }}"
 ExecStart={{ site_path }}/venv/bin/python manage.py permissionsupdater \
         --settings={{ django_settings }}
 

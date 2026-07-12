@@ -21,13 +21,3 @@
     enabled: true
   become: true
   listen: "Enable and restart permissionsupdater"
-
-- name: Enable and restart permissiondappupdater
-  ansible.builtin.systemd:
-    name: "permissiondappupdater-{{ env_name }}"
-    state: restarted
-    daemon_reload: true
-    enabled: true
-  become: true
-  when: manage_services | default(true) | bool
-  listen: "Enable and restart permissiondappupdater"
