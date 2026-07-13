@@ -48,8 +48,10 @@
       <a class="waves-effect waves-mydark btn-flat" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>&emsp;
       {% endif %}
       {% if user.profile|export_access:1 %}
-      <a class="waves-effect waves-mydark btn-flat{% if finished_tax %} myred-text{% endif %}" href="{% url 'export_address' address.0 %}" title="{% if finished_tax %}Download CSV file {% else %}Create and download CSV file{% endif %}">
-        {% if finished_tax %}Download processed CSV file{% else %}CSV export{% endif %}</a>&emsp;
+      <a class="waves-effect waves-mydark btn-flat{% if report_available and not report_downloaded %} myred-text{% endif %}"
+        href="{% url 'export_address' address.0 %}"
+        title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
+        {% if report_available %}Download processed CSV file{% else %}CSV export{% endif %}</a>&emsp;
       {% endif %}
     {% endif %}
   {% endif %}

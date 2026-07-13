@@ -230,34 +230,43 @@ class TestBaseAddressViewGetContextData:
 
         mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS)
 
-    def test_sets_finished_tax_when_tax_pipeline_incomplete(self, mocker):
+    def test_does_not_set_report_available_when_tax_pipeline_incomplete(self, mocker):
         # check_export_status returns {"finished_tax": False} while a tax export
         # job is queued or in progress; the template uses this to colour the
         # "Download CSV" button red.
         mocks = self._patch_collaborators(mocker)
-        mocks["tax"].return_value = {"finished_tax": False}
+        mocks["tax"].return_value = {"tax_report": False}
         view = _build_view(args=(ADDRESS,))
         view.addresses = ADDRESS
 
         context = view.get_context_data()
 
-        assert context["finished_tax"] is True
+        assert "report_available" not in context
+        assert "report_downloaded" not in context
 
-    def test_does_not_set_finished_tax_when_tax_completed(self, mocker):
-        # finished_tax=True means a CSV is ready for download; the template
-        # treats absence-of-key the same way ("default state"), so we leave
-        # the key out rather than writing False.
+    def test_does_set_report_available_when_tax_completed_not_downloaded(self, mocker):
         mocks = self._patch_collaborators(mocker)
-        mocks["tax"].return_value = {"finished_tax": True}
+        mocks["tax"].return_value = {"tax_report": "tax_report", "downloaded": False}
         view = _build_view(args=(ADDRESS,))
         view.addresses = ADDRESS
 
         context = view.get_context_data()
 
-        assert "finished_tax" not in context
+        assert context["report_available"] is True
+        assert context["report_downloaded"] is False
 
-    def test_does_not_set_finished_tax_when_tax_data_missing(self, mocker):
-        # Empty dict is the default (no tax export ever attempted).
+    def test_does_not_set_report_available_when_tax_completed_downloaded(self, mocker):
+        mocks = self._patch_collaborators(mocker)
+        mocks["tax"].return_value = {"tax_report": "tax_report", "downloaded": True}
+        view = _build_view(args=(ADDRESS,))
+        view.addresses = ADDRESS
+
+        context = view.get_context_data()
+
+        assert context["report_available"] is True
+        assert context["report_downloaded"] is True
+
+    def test_does_not_set_report_available_when_tax_data_missing(self, mocker):
         mocks = self._patch_collaborators(mocker)
         mocks["tax"].return_value = {}
         view = _build_view(args=(ADDRESS,))
@@ -265,7 +274,8 @@ class TestBaseAddressViewGetContextData:
 
         context = view.get_context_data()
 
-        assert "finished_tax" not in context
+        assert "report_available" not in context
+        assert "report_downloaded" not in context
 
     def test_writes_banner(self, mocker):
         mocks = self._patch_collaborators(mocker)

@@ -366,9 +366,11 @@ class BaseAddressView(TemplateView):
         context = super().get_context_data(*args, **kwargs)
         url_value = self.args[0].upper()
 
-        # Page-level extras (unchanged from legacy view).
-        if check_export_status(url_value).get("finished_tax") is False:
-            context["finished_tax"] = True
+        tax_data = check_export_status(url_value)
+        if tax_data.get("tax_report"):
+            context["report_available"] = True  # a downloadable zip exists
+            context["report_downloaded"] = tax_data.get("downloaded", False)
+
         context["banner"] = weighted_randomized_banner()
         context["url_value"] = url_value
 
