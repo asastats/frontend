@@ -1,9 +1,8 @@
 /**
  * @file CSP-safe event delegation handlers
- * @description Replaces inline HTML attributes (onerror, onfocus) and the old
- * inline color-mode <script>, so the site complies with a strict Content
- * Security Policy that omits 'unsafe-inline'. Load this at the START of <body>
- * so the mode class is applied before first paint.
+ * @author Ivica Paleka
+ * @description Replaces inline HTML attributes (onerror, onfocus) so the site
+ * complies with a strict Content Security Policy that omits 'unsafe-inline'.
  */
 
 (function () {
@@ -67,31 +66,4 @@
       el.select();
     }
   });
-  /*
-   * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * SECTION: Color Mode (light / dark)
-   * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   */
-  /**
-   * Apply the color mode as a <body> class. Replaces the inline script:
-   *   var mode = '{{ mode }}' || localStorage.getItem('mode') || 'light';
-   *   document.body.classList.add(mode);
-   *
-   * Precedence is unchanged: the server value (rendered as <html data-mode>)
-   * wins, then the persisted localStorage choice, then "light". Applied
-   * immediately when <body> already exists (this file loads at body start, so
-   * no flash); otherwise deferred to DOMContentLoaded as a safety net.
-   */
-  (function applyColorMode() {
-    var root = document.documentElement; // <html>, always present here
-    var serverMode = (root && root.dataset && root.dataset.mode) || "";
-    var mode = serverMode || localStorage.getItem("mode") || "light";
-    if (document.body) {
-      document.body.classList.add(mode);
-    } else {
-      document.addEventListener("DOMContentLoaded", function () {
-        document.body.classList.add(mode);
-      });
-    }
-  })();
 })();

@@ -1,0 +1,1 @@
+!function(){"use strict";document.addEventListener("error",(function(t){var e=t.target;e&&"IMG"===e.tagName&&e.dataset&&e.dataset.fallback&&"1"!==e.dataset.fellBack&&(e.dataset.fellBack="1",e.src=e.dataset.fallback)}),!0),document.addEventListener("focusin",(function(t){var e=t.target;e&&e.dataset&&void 0!==e.dataset.selectOnFocus&&"function"==typeof e.select&&e.select()}))}();

@@ -50,12 +50,12 @@ function mainSite() {
  */
 function checkMode() {
   if (isDark()) {
-    document.querySelector('body').classList.add('dark');
+    document.documentElement.classList.add('dark');
     $("#logo").attr("src", "/static/logo-dark.png");
     $("#brand").attr("src", "/static/asastats-dark.png");
     $("#cpr").addClass("mydark-text");
   } else {
-    document.querySelector('body').classList.remove('dark');
+    document.documentElement.classList.remove('dark');
     $("#logo").attr("src", "/static/logo.png");
     $("#brand").attr("src", "/static/asastats.png");
   }

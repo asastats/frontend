@@ -1,15 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" data-mode="{{ mode }}">{% load static %}{% load i18n %}
+<html lang="en">{% load static %}{% load i18n %}
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script src="{% static 'js/color-mode.min.js' %}"></script>
     <title>{% block title %}{{ WEBSITE_NAME }}{% endblock %}</title>
     <meta name="description" content="{% block description %}{{ WEBSITE_NAME }} evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.{% endblock %}">
     <meta name="keywords" content="{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount{% endblock %}">
     {% block otherheader %}{% endblock %}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald|Nunito">
     <link href="{% static 'css/materialize.min002.css' %}" type="text/css" rel="stylesheet" media="screen">
-    <link href="{% static 'css/style.min074.css' %}" type="text/css" rel="stylesheet" media="screen">
+    <link href="{% static 'css/style.min075.css' %}" type="text/css" rel="stylesheet" media="screen">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -19,7 +20,7 @@
     <meta name="theme-color" content="#ffffff">
 </head>
 <body>
-<script src="{% static 'js/csp-safe-handlers.min001.js' %}"></script>
+<script src="{% static 'js/csp-safe-handlers.min002.js' %}"></script>
 {% block header %}
 <header>
   <nav class="z-depth-0">
@@ -112,7 +113,7 @@
 <script src="{% static 'js/jquery-2.2.4.min.js' %}"></script>
 <script src="{% static 'js/htmx.min.js' %}"></script>
 <script src="{% static 'js/materialize.min.js' %}"></script>
-<script src="{% static 'js/site.min020.js' %}"></script>
+<script src="{% static 'js/site.min021.js' %}"></script>
 <script type="module" src="{% static 'js/bundle.js' %}"></script>
 {% block otherfooter %}{% endblock %}
 </body>

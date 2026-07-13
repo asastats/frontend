@@ -5,87 +5,87 @@ body {
   /* background-color: #fff; */
 }
 
-body.dark {
+html.dark body {
   background-color: #2b2b2b;
   color: #fff;
 }
 
-body.dark nav {
+html.dark body nav {
   background-color: #2b2b2b !important;
 }
 
-body.dark nav ul a {
+html.dark body nav ul a {
   color: #ababab;
 }
 
-body.dark input {
+html.dark body input {
   color: #fff;
 }
 
-body.dark textarea {
+html.dark body textarea {
   color: #fff;
 }
 
-body.dark .modal .modal-content, body.dark .modal .modal-footer, body.dark .card, body.dark .card-content, body.dark .card-action {
+html.dark body .modal .modal-content, html.dark body .modal .modal-footer, html.dark body .card, html.dark body .card-content, html.dark body .card-action {
   background-color: #2b2b2b;
 }
 
-body.dark .material-tooltip {
+html.dark body .material-tooltip {
   color: #2b2b2b;
   background: #ababab;
 }
 
-body.dark .divider {
+html.dark body .divider {
   opacity: 0.2;
 }
 
-body.dark .sidenav {
+html.dark body .sidenav {
   background-color: #2b2b2b;
 }
 
-body.dark .sidenav li a:not(.subheader) {
+html.dark body .sidenav li a:not(.subheader) {
   color: #00c896;
 }
 
-body.dark .sidenav li a:not(.subheader):hover {
+html.dark body .sidenav li a:not(.subheader):hover {
   background-color: #575757;
 }
 
-body.dark .sidenav li a.subheader {
+html.dark body .sidenav li a.subheader {
   color: #575757;
 }
 
-body.dark .collapsible-header {
+html.dark body .collapsible-header {
   background-color: #2b2b2b;
 }
 
-body.dark .page-footer {
+html.dark body .page-footer {
   background-color: #2b2b2b;
 }
 
-body.dark .footer-copyright {
+html.dark body .footer-copyright {
   background-color: #2b2b2b;
 }
 
-body.dark .collection .collection-item {
+html.dark body .collection .collection-item {
   background-color: #2b2b2b;
 }
 
-body.dark .z-depth-1, body.dark .card {
+html.dark body .z-depth-1, html.dark body .card {
   box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.85);
 }
 
-body.dark span.bundlename {
+html.dark body span.bundlename {
   color: #ababab;
 }
 
-body.dark select.browser-default {
+html.dark body select.browser-default {
   background-color: #2b2b2b;
   color: #ababab;
   border: 1px solid #575757;
 }
 
-body.dark select.browser-default option {
+html.dark body select.browser-default option {
   background-color: #2b2b2b;
   color: #ababab;
 }
