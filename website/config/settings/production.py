@@ -52,7 +52,9 @@ CACHE_TTL = 59 * 90  # Cache time to live is 90 minutes.
 
 COOKIE_ARGUMENTS = {"domain": f"{WEBSITE_DOMAIN}"}
 
+# allauth
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+ALLAUTH_TRUSTED_CLIENT_IP_HEADER = "X-Real-IP"
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtppro.zoho.eu"

@@ -53,6 +53,7 @@
     - site_server_block.conf
     - letsencrypt.conf
     - ssl.conf
+    - proxy_headers.conf
     - favicon.conf
   notify: Restart openresty
   tags: [nginx, nginx-snippets, letsencrypt]
