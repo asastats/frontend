@@ -21,6 +21,7 @@
       # Inbound API the app serves to its own frontend/widgets
       - SIMPLE_JWT_KEY
       - WALLET_CONNECT_PROJECT_ID
+      - EXPORT_TIERS_ADDRESSES_LIMIT
       # Social / wallet authentication providers
       - GOOGLE_CLIENT_ID
       - GOOGLE_SECRET

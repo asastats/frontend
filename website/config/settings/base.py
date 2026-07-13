@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 from config import __version__
 from utils.constants.apiv2 import SPECTACULAR_DESCRIPTION
-from utils.helpers import get_env_variable
+from utils.helpers import get_env_variable, parse_export_limits
 
 load_dotenv()
 
@@ -338,6 +338,10 @@ SPECTACULAR_SETTINGS = {
     "SWAGGER_UI_FAVICON_HREF": STATIC_URL + "favicon-32x32.png",
     "REDOC_DIST": "SIDECAR",
 }
+
+EXPORT_TIERS_ADDRESSES_LIMIT = parse_export_limits(
+    get_env_variable("EXPORT_TIERS_ADDRESSES_LIMIT", "")
+)
 
 # --- ASA Stats backend ---
 ASASTATS_API_URL = get_env_variable("ASASTATS_API_URL", "https://api.asastats.com")

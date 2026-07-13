@@ -27,6 +27,7 @@ from utils.helpers import (
     get_env_variable,
     load_transparency_reports,
     message_for_app_code_in_values,
+    parse_export_limits,
     pause,
     random_slogan,
     read_json,
@@ -321,6 +322,24 @@ class TestUtilsHelpersFunctions:
         app_codes = ["foo", "ff", "e"]
         msg = mocker.MagicMock()
         assert message_for_app_code_in_values(values, app_codes, msg) == msg
+
+    # # parse_export_limits
+    def test_utils_helpers_parse_export_limits_returns_valid_dictionary(self):
+        raw = "free: 5, Intro:6, Asastatser : 7"
+        assert parse_export_limits(raw) == {"free": 5, "Intro": 6, "Asastatser": 7}
+
+    def test_utils_helpers_parse_export_limits_skips_missing_key_or_separator(self):
+        # ":6" has no key; "Asastatser7" has no separator
+        raw = "free:5, :6, Asastatser7"
+        assert parse_export_limits(raw) == {"free": 5}
+
+    def test_utils_helpers_parse_export_limits_skips_invalid_integers(self):
+        # "abc" cannot be cast to int
+        raw = "free:5, Intro:abc"
+        assert parse_export_limits(raw) == {"free": 5}
+
+    def test_utils_helpers_parse_export_limits_handles_empty_string(self):
+        assert parse_export_limits("") == {}
 
     # # pause
     def test_utils_helpers_pause_functionality_for_provided_argument(self):

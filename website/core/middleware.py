@@ -1,6 +1,5 @@
 """Module containing core app's custom middlewares."""
 
-from django.conf import settings
 from django_minify_html.middleware import MinifyHtmlMiddleware
 
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS

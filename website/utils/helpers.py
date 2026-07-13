@@ -80,8 +80,10 @@ def check_algorand_address(entry, raise_error=False):
         valid_address = is_valid_address(_address)
         if not valid_address and raise_error:
             raise ValidationError(INVALID_ADDRESS_TEXT)
+
         elif not valid_address:
             return ""
+
     return addresses
 
 
@@ -153,6 +155,42 @@ def message_for_app_code_in_values(values, app_codes, msg):
     ):
         return msg
     return ""
+
+
+def parse_export_limits(raw):
+    """Translate "free:5,Intro:6,Asastatser:7,..." into an int-valued dict.
+
+    Blank or malformed entries are skipped; missing tiers fall back to the
+    module defaults in exportpermissions._DEFAULT_LIMITS at read time.
+
+    :param raw: comma-separated tier configurations
+    :type raw: str
+    :var limits: evaluated collection of tier limits mapped to sizes
+    :type limits: dict
+    :var part: current segment of the raw string being parsed
+    :type part: str
+    :var key: parsed tier name
+    :type key: str
+    :var sep: parsed separator character
+    :type sep: str
+    :var value: parsed limit size for the tier
+    :type value: str
+    :return: dict
+    """
+    limits = {}
+    for part in raw.split(","):
+        key, sep, value = part.partition(":")
+        key = key.strip()
+        if not key or not sep:
+            continue
+
+        try:
+            limits[key] = int(value.strip())
+
+        except ValueError:
+            continue
+
+    return limits
 
 
 def pause(seconds=DEFAULT_SLEEP_INTERVAL):
