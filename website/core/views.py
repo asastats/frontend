@@ -367,8 +367,11 @@ class BaseAddressView(TemplateView):
         url_value = self.args[0].upper()
 
         tax_data = check_export_status(url_value)
-        if tax_data.get("tax_report"):
-            context["report_available"] = True  # a downloadable zip exists
+        if tax_data.get("processing_tax"):
+            context["processing_tax"] = True
+
+        elif tax_data.get("tax_report"):
+            context["report_available"] = True
             context["report_downloaded"] = tax_data.get("downloaded", False)
 
         context["banner"] = weighted_randomized_banner()

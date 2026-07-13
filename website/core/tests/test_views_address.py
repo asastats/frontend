@@ -230,6 +230,21 @@ class TestBaseAddressViewGetContextData:
 
         mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS)
 
+    def test_set_processing_tax_when_currently_processing(self, mocker):
+        # check_export_status returns {"finished_tax": False} while a tax export
+        # job is queued or in progress; the template uses this to colour the
+        # "Download CSV" button red.
+        mocks = self._patch_collaborators(mocker)
+        mocks["tax"].return_value = {"processing_tax": True}
+        view = _build_view(args=(ADDRESS,))
+        view.addresses = ADDRESS
+
+        context = view.get_context_data()
+
+        assert context["processing_tax"] is True
+        assert "report_available" not in context
+        assert "report_downloaded" not in context
+
     def test_does_not_set_report_available_when_tax_pipeline_incomplete(self, mocker):
         # check_export_status returns {"finished_tax": False} while a tax export
         # job is queued or in progress; the template uses this to colour the
