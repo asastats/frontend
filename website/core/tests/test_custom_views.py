@@ -878,11 +878,11 @@ class TestExportView(BaseView):
         assert mocked_prepare.call_args_list[0][0][1] == TEST_BUNDLE
 
     # # get_form
-    def test_core_views_exportview_get_form_for_finished_tax(self):
+    def test_core_views_exportview_get_form_for_tax_report(self):
         # Setup view
         view = ExportView()
         view = self.setup_view(view, self.request, TEST_BUNDLE)
-        view._tax_data = {"finished_tax": "finished_tax"}
+        view._tax_data = {"tax_report": "tax_report"}
         # Run.
         form = view.get_form()
         # Check.

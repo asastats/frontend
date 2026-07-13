@@ -566,7 +566,7 @@ class ExportView(FormView):
         context = super().get_context_data(*args, **kwargs)
         url_value = self.args[0].upper()
 
-        if "finished_tax" in self._tax_data:
+        if self._tax_data.get("tax_report"):
             context["finished_tax"] = self._tax_data.get("tax_report")
 
         if self._tax_data.get("processing_tax"):
@@ -590,7 +590,7 @@ class ExportView(FormView):
         :return: object
         """
         form_class = ExportForm
-        if "finished_tax" in self._tax_data:
+        if self._tax_data.get("tax_report"):
             form_class = ExportDownloadForm
 
         return super().get_form(*args, form_class=form_class, **kwargs)
