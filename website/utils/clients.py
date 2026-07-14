@@ -23,16 +23,14 @@ def indexer_instance():
     return indexer.IndexerClient(settings.INDEXER_TOKEN, settings.INDEXER_URL)
 
 
-def redis_instance(replica=False):
-    """Return Redis client instance.
+def redis_instance():
+    """Return the frontend's local (writable) Redis client for bundle data.
 
-    :param replica: should client instantiate replica cache or not
-    :type replica: Boolean
     :return: :class:`Redis`
     """
     return Redis(
-        host=settings.REDIS_HOST if replica else settings.REDIS_PRIMARY_HOST,
-        port=settings.REDIS_PORT,
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT_LOCAL,
         db=settings.REDIS_DB,
         password=settings.REDIS_AUTH,
     )

@@ -1,6 +1,6 @@
 """Testing module for :py:mod:`core.exportpermissions` module."""
 
-from core.exportpermissions import tier_allows, _export_limits, _DEFAULT_LIMITS
+from core.exportpermissions import _DEFAULT_LIMITS, _export_limits, tier_allows
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 

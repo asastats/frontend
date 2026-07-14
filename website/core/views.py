@@ -336,12 +336,14 @@ class BaseAddressView(TemplateView):
         if len(url_value) > 50:
             # Single 58-char address: the URL value *is* the address list.
             self.addresses = url_value
+
         else:
             # 40-char bundle hash: resolve via cache. An empty result means
             # the hash isn't known to us; bounce to index rather than 500.
             self.addresses = check_bundle_addresses(url_value)
             if self.addresses == "":
                 return redirect("index")
+
             check_forbidden_addresses(self.addresses)
 
         return super().dispatch(request, *args, **kwargs)

@@ -69,6 +69,7 @@ jobs:
           echo DATABASE_NAME="website_db" >> website/.env
           echo DATABASE_USER="postgres" >> website/.env
           echo DATABASE_PASSWORD="postgres" >> website/.env
+          echo REDIS_PORT_LOCAL="6379" >> website/.env
           echo PGPASSFILE="" >> website/.env
 
       - name: Wait for PostgreSQL to be ready

@@ -451,19 +451,6 @@ class TestUtilsHelpersGeneralPublicFunctions:
         mocked.assert_called_once_with(bundle, mocked_cache.return_value)
         mocked_cache.assert_called_once_with()
 
-    def test_utils_helpers_check_bundle_addresses_uses_provided_cache_client(
-        self, mocker
-    ):
-        bundle = "foobar"
-        addresses = "foo bar"
-        cache_client = mocker.MagicMock()
-        mocked_cache = mocker.patch("utils.helpers.redis_instance")
-        mocked = mocker.patch("utils.helpers.cached_bundle", return_value=addresses)
-        returned = check_bundle_addresses(bundle, cache_client=cache_client)
-        assert returned == addresses
-        mocked.assert_called_once_with(bundle, cache_client)
-        mocked_cache.assert_not_called()
-
     def test_utils_helpers_check_bundle_addresses_returns_empty_string_if_not_exists(
         self, mocker
     ):
@@ -502,39 +489,11 @@ class TestUtilsHelpersGeneralPublicFunctions:
             addresses,
             mocked_redis.return_value,
         )
-        calls = [
-            mocker.call(),
-            mocker.call(replica=False),
-        ]
-        mocked_redis.assert_has_calls(calls, any_order=False)
-        assert mocked_redis.call_count == 2
-
-    def test_utils_helpers_create_bundle_checks_cache_with_provided_client(
-        self, mocker
-    ):
-        addresses = "foo bar"
-        mocked_bundle = mocker.patch("utils.helpers.bundle_from_addresses")
-        cache_client = mocker.MagicMock()
-        mocked_redis = mocker.patch("utils.helpers.redis_instance")
-        mocked_cached = mocker.patch("utils.helpers.cached_bundle", return_value=False)
-        mocked_cupdate = mocker.patch("utils.helpers.cupdate_bundle")
-        create_bundle(addresses, cache_client=cache_client)
-        mocked_bundle.assert_called_once_with(addresses)
-        mocked_cached.assert_called_once_with(
-            mocked_bundle.return_value,
-            cache_client,
-        )
-        mocked_cupdate.assert_called_once_with(
-            mocked_bundle.return_value,
-            addresses,
-            mocked_redis.return_value,
-        )
-        mocked_redis.assert_called_once_with(replica=False)
+        mocked_redis.assert_called_once_with()
 
     # # load_transparency_reports
     def test_utils_helpers_load_transparency_reports_parsing_and_sorting(self, mocker):
         mocker.patch("os.path.exists", return_value=True)
-
         # Mocking directory contents: mixing valid PDFs, invalid files, and out of order dates
         mock_files = [
             "asastats-logo.png",
@@ -544,19 +503,15 @@ class TestUtilsHelpersGeneralPublicFunctions:
             "asastats-whitepaper.pdf",
         ]
         mocker.patch("os.listdir", return_value=mock_files)
-
         reports = load_transparency_reports()
-
         # Check grouping and sorting (2026 should be first, then 2024. 2025 doesn't exist)
         assert len(reports) == 2
         assert reports[0]["year"] == 2026
         assert reports[1]["year"] == 2024
-
         # Check 2026 contents
         assert len(reports[0]["months"]) == 1
         assert reports[0]["months"][0]["month"] == "01"
         assert reports[0]["months"][0]["month_name"] == "January"
-
         # Check 2024 contents and sorting (12 should be before 05)
         assert len(reports[1]["months"]) == 2
         assert reports[1]["months"][0]["month"] == "12"
@@ -595,12 +550,9 @@ class TestUtilsHelpersGeneralPublicFunctions:
         with mock.patch("random.choices") as mock_choices:
             # random.choices returns a list, so we mock it to return a list containing one banner
             mock_choices.return_value = [TEST_BANNERS[0]]
-
             result = weighted_randomized_banner(TEST_BANNERS)
-
             # Verify it was called with the exact weights we expect: [4, 2, 1]
             mock_choices.assert_called_once_with(TEST_BANNERS, weights=[4, 2, 1], k=1)
-
             # Verify the function correctly returns the unwrapped single dictionary
             assert result == TEST_BANNERS[0]
 
@@ -609,12 +561,9 @@ class TestUtilsHelpersGeneralPublicFunctions:
             {"image": "img/1.jpg", "weight": 5},
             {"image": "img/2.jpg"},  # Missing weight key
         ]
-
         with mock.patch("random.choices") as mock_choices:
             mock_choices.return_value = [banners_missing_weights[0]]
-
             weighted_randomized_banner(banners_missing_weights)
-
             # Verify the missing weight was defaulted to 1
             mock_choices.assert_called_once_with(
                 banners_missing_weights, weights=[5, 1], k=1

@@ -34,31 +34,16 @@ class TestUtilsClientsFunctions:
         )
 
     # # redis_instance
-    def test_utils_clients_redis_instance_instantiate_replica_redis_client(
-        self, mocker
-    ):
+    def test_utils_clients_redis_instance_functionality(self, mocker):
         mocked_redis = mocker.patch("utils.clients.Redis")
         returned = redis_instance()
+        assert returned == mocked_redis.return_value
         mocked_redis.assert_called_once_with(
             host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
+            port=settings.REDIS_PORT_LOCAL,
             db=settings.REDIS_DB,
             password=settings.REDIS_AUTH,
         )
-        assert mocked_redis.return_value == returned
-
-    def test_utils_clients_redis_instance_instantiate_primary_redis_client(
-        self, mocker
-    ):
-        mocked_redis = mocker.patch("utils.clients.Redis")
-        returned = redis_instance(replica=False)
-        mocked_redis.assert_called_once_with(
-            host=settings.REDIS_PRIMARY_HOST,
-            port=settings.REDIS_PORT,
-            db=settings.REDIS_DB,
-            password=settings.REDIS_AUTH,
-        )
-        assert mocked_redis.return_value == returned
 
     # # search_transactions
     def test_utils_clients_search_transactions_returns_single_page(self, mocker):

@@ -39,8 +39,7 @@ The `redis` role provisions a **second** Redis instance, leaving any existing
 `.env` (default `6380`) and is rendered into the app's `.env` as
 `REDIS_PORT_LOCAL`, so the instance and the app's cache always agree. The
 app's `REDIS_AUTH` is derived from the same `REDIS_PASSWORD` used for the
-instance's `requirepass`. Do not set `REDIS_PORT` (6379) to steer this — that
-refers to the existing server the deploy does not manage.
+instance's `requirepass`.
 
 ## Run
 

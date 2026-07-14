@@ -356,12 +356,9 @@ INDEXER_TOKEN = get_env_variable("INDEXER_TOKEN", "")
 
 ALGORAND_NODE_PATH = "/var/lib/algorand/"
 
-REDIS_HOST = "localhost"
-REDIS_PORT = 6379
-REDIS_DB = 0
-
-REDIS_PRIMARY_HOST = get_env_variable("REDIS_PRIMARY_HOST", "localhost")
+REDIS_HOST = get_env_variable("REDIS_HOST", "localhost")
 REDIS_PORT_LOCAL = int(get_env_variable("REDIS_PORT_LOCAL", "6380"))
+REDIS_DB = 0
 REDIS_AUTH = get_env_variable("REDIS_AUTH", "")
 
 CSRF_TRUSTED_ORIGINS = [f"https://*.{WEBSITE_BASE_DOMAIN}"]

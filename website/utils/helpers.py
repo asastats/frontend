@@ -236,35 +236,35 @@ def bundle_from_addresses(addresses):
     return hashlib.sha1(" ".join(tokens).encode("utf-8")).hexdigest().upper()
 
 
-def check_bundle_addresses(bundle, cache_client=False):
+def check_bundle_addresses(bundle):
     """Return addresses from cache client associated with provided bundle.
 
     :param bundle: hash value associated with target addresses
     :type bundle: str
-    :param cache_client: Redis client instance
+    :var cache_client: Redis client instance
     :type cache_client: :class:`Redis`
     :return: str
     """
-    cached = cached_bundle(bundle, cache_client or redis_instance())
+    cached = cached_bundle(bundle, redis_instance())
     return cached if cached is not False else ""
 
 
-def create_bundle(addresses, cache_client=False):
-    """Return bundle hash from `addreses` and update cache if needed.
+def create_bundle(addresses):
+    """Return bundle hash from `addresses` and update cache if needed.
 
     :param addresses: Algorand addresses separated by spaces
     :type addresses: string
-    :param cache_client: Redis client instance
-    :type cache_client: :class:`Redis`
     :var bundle: hash made from provided addresses
     :type bundle: str
+    :var cache_client: Redis client instance
+    :type cache_client: :class:`Redis`
     :return: str
     """
     bundle = bundle_from_addresses(addresses)
-    cache_client = cache_client or redis_instance()
+    cache_client = redis_instance()
     if not cached_bundle(bundle, cache_client):
-        cache_client = redis_instance(replica=False)
         cupdate_bundle(bundle, addresses, cache_client)
+
     return bundle
 
 
