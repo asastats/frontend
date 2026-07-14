@@ -24,6 +24,7 @@ from api.helpers import (
     extract_nftitems_sale_type,
     extract_top_account_items,
 )
+from utils.helpers import bundle_from_addresses
 
 
 def account_entities(serialized_data):
@@ -36,14 +37,24 @@ def account_entities(serialized_data):
     return extract_account_entities(serialized_data)
 
 
-def fetch_and_serialize_account(bundle, addresses=""):
-    """Return the public serialized account schema for ``bundle``.
+def fetch_and_serialize_account(value, addresses):
+    """Fetch and serialize an account for a single address or a bundle.
 
-    :param bundle: single address, or the bundle hash (this app's local id)
+    ``value`` is the URL path segment as the visitor supplied it — a single
+    address, or a bundle hash that may be an *ancient* (pre-sort) bookmark. For
+    bundles we recompute the canonical hash so the engine's ``bundle_from_addresses``
+    cross-check matches regardless of which historical hash they arrived with. A
+    single address is passed through unchanged.
+
+    :param value: single address, or the bundle hash
+    :type value: str
     :param addresses: space-joined addresses for a multi-address bundle
-    :return: dict
+    :type addresses: str
     """
-    return fetch_serialized_account(bundle, addresses)
+    if " " in addresses:
+        value = bundle_from_addresses(addresses)
+
+    return fetch_serialized_account(value, addresses)
 
 
 def filtered_asaitem(asset_id, serialized_data, query_params):

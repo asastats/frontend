@@ -27,18 +27,21 @@ class TestApMainFunctions:
 
     # # fetch_and_serialize_account
     def test_api_main_fetch_and_serialize_account_functionality(self, mocker):
-        bundle, addresses = API_EXAMPLE_BUNDLE1, "FOO BAR"
+        value, addresses = API_EXAMPLE_BUNDLE1, "FOO BAR"
+        mocked_bundle = mocker.patch("api.main.bundle_from_addresses")
         mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
-        returned = fetch_and_serialize_account(bundle, addresses)
+        returned = fetch_and_serialize_account(value, addresses)
         assert returned == mocked_fetch.return_value
-        mocked_fetch.assert_called_once_with(bundle, addresses)
+        mocked_fetch.assert_called_once_with(mocked_bundle.return_value, addresses)
 
     def test_api_main_fetch_and_serialize_account_for_single_address(self, mocker):
-        bundle = API_EXAMPLE_ADDRESS1
+        value = API_EXAMPLE_ADDRESS1
+        mocked_bundle = mocker.patch("api.main.bundle_from_addresses")
         mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
-        returned = fetch_and_serialize_account(bundle)
+        returned = fetch_and_serialize_account(value, value)
         assert returned == mocked_fetch.return_value
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(value, value)
+        mocked_bundle.assert_not_called()
 
     # # filtered_asaitem
     def test_api_main_filtered_asaitem_for_usd(self, mocker):
