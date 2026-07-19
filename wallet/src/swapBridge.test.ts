@@ -293,6 +293,45 @@ describe("signAndSend — opt-in / referrer legs", () => {
     const submitted: Uint8Array[] = (d.submit as jest.Mock).mock.calls[0][0];
     expect(submitted).toContainEqual(new Uint8Array([55])); // signLogicSigTransactionObject returns {blob: [55]}
   });
+
+  it("(e) no opt-in legs for an ALGO output even with a referrer", async () => {
+    const { d } = deps({
+      // Would report 'not opted in' for asset 0 (accountAssetInformation errors),
+      // which previously injected a bogus escrow self-pay. Must not be consulted.
+      isOptedIn: jest.fn(async () => false),
+    });
+    await signAndSend([TXN_A], d, {
+      outputAssetId: 0, // ALGO
+      userNeedsOptIn: false,
+      referrer: "REFERRER_ADDR",
+    });
+    expect(getReferrerLogicSig).not.toHaveBeenCalled();
+    expect(prepareReferrerOptIntoAsset).not.toHaveBeenCalled();
+    expect(d.isOptedIn).not.toHaveBeenCalled();
+
+    // The group handed to the wallet is just the swap txn (no injected legs).
+    const allTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock.calls[0][0];
+    const indexesToSign: number[] = (d.signTransactions as jest.Mock).mock.calls[0][1];
+    expect(allTxns).toHaveLength(1);
+    expect(indexesToSign).toEqual([0]);
+  });
+
+  it("(f) no user opt-in leg for an ALGO output", async () => {
+    const { d } = deps();
+    const { makeAssetTransferTxnWithSuggestedParamsFromObject } =
+      jest.requireMock("algosdk");
+    makeAssetTransferTxnWithSuggestedParamsFromObject.mockClear();
+    await signAndSend([TXN_A], d, {
+      outputAssetId: 0, // ALGO
+      userNeedsOptIn: true, // defensive: even if set, ALGO can't be opted into
+    });
+    expect(
+      makeAssetTransferTxnWithSuggestedParamsFromObject,
+    ).not.toHaveBeenCalled();
+    const allTxns: Uint8Array[] = (d.signTransactions as jest.Mock).mock.calls[0][0];
+    expect(allTxns).toHaveLength(1);
+  });
+
 });
 
 // ---------------------------------------------------------------------------

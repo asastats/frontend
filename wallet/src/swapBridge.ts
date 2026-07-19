@@ -100,11 +100,14 @@ export async function signAndSend(
   }
   const sp = await deps.suggestedParams();
 
+  // ALGO (asset id 0) is never opted into; only a real ASA output can need it.
+  const outputNeedsOptIn = opts.outputAssetId !== 0;
+
   // entries: { txn, lsig? } — lsig legs are escrow-signed, the rest wallet-signed.
   const entries: { txn: any; lsig?: any }[] = [];
 
   // 1) user opt-in into the output asset (their own account), if needed
-  if (opts.userNeedsOptIn) {
+  if (opts.userNeedsOptIn && outputNeedsOptIn) {
     entries.push({
       txn: makeAssetTransferTxnWithSuggestedParamsFromObject({
         sender,
@@ -117,7 +120,7 @@ export async function signAndSend(
   }
 
   // 2) referrer escrow opt-in (lazy, one-time per (escrow, asset))
-  if (opts.referrer) {
+  if (opts.referrer && outputNeedsOptIn) {
     const lsig = getReferrerLogicSig(opts.referrer);
     const escrow = lsig.address().toString();
     if (!(await deps.isOptedIn(escrow, opts.outputAssetId))) {

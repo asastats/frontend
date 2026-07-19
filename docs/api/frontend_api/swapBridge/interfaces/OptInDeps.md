@@ -6,7 +6,7 @@
 
 # Interface: OptInDeps
 
-Defined in: [swapBridge.ts:190](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L190)
+Defined in: [swapBridge.ts:193](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L193)
 
 Extra collaborator for [optIn](../functions/optIn.md): build the (impure) opt-in transaction.
 
@@ -63,7 +63,7 @@ below its min-balance (amount − min-balance).
 
 > **buildOptIn**: (`assetId`) => `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>[]\>
 
-Defined in: [swapBridge.ts:192](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L192)
+Defined in: [swapBridge.ts:195](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L195)
 
 Build the encoded, unsigned 0-amount self asset-transfer that opts in.
 
