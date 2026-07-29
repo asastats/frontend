@@ -363,6 +363,36 @@ def abs_value(value):
         return 0
 
 
+@register.simple_tag
+def dist_price(d, decimals):
+    """Per-distribution-entry implied ALGO price.
+
+    Used by ``snippets/asas/program.html`` to render a price line for
+    each row inside a program's distribution breakdown. Prior to this
+    fix the template reused the parent asaitem's top-level ``price``
+    for every row in the loop, so all distribution rows displayed the
+    same (wrong) price. This tag computes the price from the specific
+    distribution entry's own ``value`` (ALGO) and ``amount`` (raw
+    asset units), scoped per-iteration.
+
+    :param d: single distribution dict from ``prog.distribution``;
+        must contain ``value`` (ALGO amount, numeric or numeric
+        string) and ``amount`` (raw integer asset units, matching the
+        same encoding as ``prog.amount`` elsewhere in this template)
+    :param decimals: asset.decimals, used to convert the raw integer
+        ``amount`` into asset-unit terms
+    :return: float price (ALGO per 1 asset unit), or None if the
+        entry is missing data, malformed, or amount is zero
+    """
+    try:
+        amount_units = float(d["amount"]) / (10 ** int(decimals))
+        if not amount_units:
+            return None
+        return float(d["value"]) / amount_units
+    except (KeyError, TypeError, ValueError, ZeroDivisionError):
+        return None
+
+
 @register.filter
 def export_access(profile, size):
     """Gate B: may this browsing user export a bundle of ``size``?"""

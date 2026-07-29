@@ -120,7 +120,8 @@
                 {% comment %} W3 — per-distribution price line, e.g.
                    "0.10966392 USDC/ALGO". The value is 1/price (asset units
                    per 1 ALGO). Skipped for ALGO and when price missing. {% endcomment %}
-                {% if price and asset.id != 0 %}<span class="price" data-unit="{{ asset.unit }}" data-val="{{ price }}">{{ price|invert_price|floatformat:'-8g' }} {{ asset.unit }}/ALGO</span> <br />{% endif %}
+                {% dist_price d asset.decimals as row_price %}
+                {% if row_price and asset.id != 0 %}<span class="price" data-unit="{{ asset.unit }}" data-val="{{ row_price }}">{{ row_price|invert_price|floatformat:'-8g' }} {{ asset.unit }}/ALGO</span> <br />{% endif %}
               </div>
             {% endfor %}
           </div>

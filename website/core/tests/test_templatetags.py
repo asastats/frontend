@@ -10,6 +10,7 @@ from core.templatetags.core_extras import (
     bundle_hash,
     dict_get,
     dist_height,
+    dist_price,
     explorer_base,
     explorer_name,
     explorer_tx_path,
@@ -457,6 +458,88 @@ class TestFiltersAbsValue:
         result = amount_repr(abs_value(-10092956), 6)
         # 10092956 / 1e6 = 10.092956
         assert "10.092956" in result
+
+
+class TestFiltersDistPrice:
+    """Tests for the dist_price tag (Phase 5c-fixes / distribution
+    price bug: rows were all rendering the parent asaitem's top-level
+    `price` instead of a per-entry price)."""
+
+    # Canonical fixtures, taken verbatim from the ASASTATS address-page
+    # bug report. asset.decimals == 6 (confirmed against the page's
+    # displayed Balance: 50,685,747.637078 == 50685747637078 / 1e6).
+
+    def test_dist_price_returns_correct_value_for_pact_swap(self):
+        d = {"value": "3693.630910", "amount": 31447473319470}
+        assert dist_price(d, 6) == pytest.approx(0.00011745398024435785)
+
+    def test_dist_price_returns_correct_value_for_tinyman_swap(self):
+        d = {"value": "1779.032425", "amount": 15146055670400}
+        assert dist_price(d, 6) == pytest.approx(0.00011745846335932666)
+
+    def test_dist_price_returns_correct_value_for_pact_pow_swap(self):
+        d = {"value": "480.701171", "amount": 4092218647207}
+        assert dist_price(d, 6) == pytest.approx(0.00011746712784471712)
+
+    def test_dist_price_differs_across_distribution_entries(self):
+        # Regression test for the actual bug: three distinct entries
+        # must not collapse to the same price.
+        pact = dist_price({"value": "3693.630910", "amount": 31447473319470}, 6)
+        tinyman = dist_price({"value": "1779.032425", "amount": 15146055670400}, 6)
+        pact_pow = dist_price({"value": "480.701171", "amount": 4092218647207}, 6)
+        assert len({pact, tinyman, pact_pow}) == 3
+
+    def test_dist_price_returns_none_for_zero_amount(self):
+        d = {"value": "100.0", "amount": 0}
+        assert dist_price(d, 6) is None
+
+    def test_dist_price_returns_none_for_missing_amount_key(self):
+        d = {"value": "100.0"}
+        assert dist_price(d, 6) is None
+
+    def test_dist_price_returns_none_for_missing_value_key(self):
+        d = {"amount": 31447473319470}
+        assert dist_price(d, 6) is None
+
+    def test_dist_price_returns_none_for_none_dict(self):
+        assert dist_price(None, 6) is None
+
+    def test_dist_price_returns_none_for_garbage_value(self):
+        d = {"value": "not a number", "amount": 31447473319470}
+        assert dist_price(d, 6) is None
+
+    def test_dist_price_returns_none_for_garbage_amount(self):
+        d = {"value": "3693.630910", "amount": "not a number"}
+        assert dist_price(d, 6) is None
+
+    def test_dist_price_returns_none_for_garbage_decimals(self):
+        d = {"value": "3693.630910", "amount": 31447473319470}
+        assert dist_price(d, "not a number") is None
+
+    def test_dist_price_returns_none_for_negative_amount_that_is_zero_units(self):
+        # Extreme edge: amount so small relative to decimals it can't
+        # be zero here, but decimals=0 with amount=0 should still
+        # short-circuit to None rather than raise.
+        d = {"value": "5.0", "amount": 0}
+        assert dist_price(d, 0) is None
+
+    def test_dist_price_accepts_string_decimals(self):
+        # asset.decimals sometimes arrives as a string from template
+        # context; must not raise.
+        d = {"value": "3693.630910", "amount": 31447473319470}
+        assert dist_price(d, "6") == pytest.approx(0.00011745398024435785)
+
+    def test_dist_price_accepts_int_and_float_value_types(self):
+        d_str = {"value": "3693.630910", "amount": 31447473319470}
+        d_float = {"value": 3693.630910, "amount": 31447473319470}
+        assert dist_price(d_str, 6) == pytest.approx(dist_price(d_float, 6))
+
+    def test_dist_price_handles_zero_decimals(self):
+        d = {"value": "10.0", "amount": 5}
+        assert dist_price(d, 0) == pytest.approx(2.0)
+
+    def test_dist_price_returns_none_for_missing_amount_and_value(self):
+        assert dist_price({}, 6) is None
 
 
 class TestCoreExtrasHistoricAccess:
