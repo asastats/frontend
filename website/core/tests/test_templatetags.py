@@ -541,6 +541,41 @@ class TestFiltersDistPrice:
     def test_dist_price_returns_none_for_missing_amount_and_value(self):
         assert dist_price({}, 6) is None
 
+    # -- Balance-row regression (program.html Balance branch reused the
+    #    stale top-level oracle `price` instead of computing prog.value /
+    #    prog.amount, same as the distribution rows already fixed above.)
+
+    def test_dist_price_on_program_dict_uses_its_own_value_and_amount(self):
+        # `prog` carries the same {value, amount} shape as a distribution
+        # entry, so dist_price works on it unmodified once called with
+        # `prog` instead of `d` in the Balance branch of program.html.
+        prog = {"value": "5954.248655", "amount": 50685747637078}
+        assert dist_price(prog, 6) == pytest.approx(0.00011747382513983686)
+
+    def test_dist_price_on_program_dict_does_not_equal_stale_oracle_price(self):
+        # Regression guard: previously the template displayed the
+        # top-level asaitem price (0.000136) for this row regardless of
+        # the program's actual value/amount ratio.
+        prog = {"value": "5954.248655", "amount": 50685747637078}
+        result = dist_price(prog, 6)
+        assert result != pytest.approx(0.000136, rel=1e-3)
+
+    def test_dist_price_on_program_dict_is_consistent_with_its_distribution_rows(self):
+        # When a Balance program's full amount flows through its own
+        # distribution, the program-level implied price should land
+        # close to each distribution row's implied price now that both
+        # are computed the same way (within float/rounding tolerance,
+        # not bit-identical).
+        prog = {"value": "5954.248655", "amount": 50685747637078}
+        dist_entries = [
+            {"value": "3696.460588", "amount": 31466294379687},
+            {"value": "1777.572868", "amount": 15131686190848},
+            {"value": "480.215198", "amount": 4087767066542},
+        ]
+        prog_price = dist_price(prog, 6)
+        for d in dist_entries:
+            assert dist_price(d, 6) == pytest.approx(prog_price, rel=1e-3)
+
 
 class TestCoreExtrasHistoricAccess:
     """Testing class for :py:func:`core.templatetags.core_extras.historic_access`."""

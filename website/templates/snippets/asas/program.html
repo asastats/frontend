@@ -95,7 +95,8 @@
           {% if asset.id != 0 and prog.amount %}
             {% if program.type == "Balance" %}
               <span class="balance">&nbsp;Balance:&nbsp;</span> <span>{{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span> <br />
-              {% if price %}<span class="price" data-unit="{{ asset.unit }}" data-val="{{ price }}">{{ price|floatformat:'-8g' }} ALGO/{{ asset.unit }}</span> <br />{% endif %}
+              {% dist_price prog asset.decimals as prog_price %}
+              {% if prog_price %}<span class="price" data-unit="{{ asset.unit }}" data-val="{{ prog_price }}">{{ prog_price|floatformat:'-8g' }} ALGO/{{ asset.unit }}</span> <br />{% endif %}
             {% elif prog.amount|is_negative %}
               <span>{{ program.type }}:</span> (<span class="myred-text">{{ prog.amount|abs_value|amount_repr:asset.decimals }} {{ asset.unit }}</span><span>)</span> <br />
             {% else %}
