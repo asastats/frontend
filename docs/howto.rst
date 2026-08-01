@@ -1,6 +1,16 @@
 Howto
 =====
 
+Build Materialize CSS
+---------------------
+
+.. code-block:: bash
+
+  cd website/static/css/sass/
+  npm install -g sass
+  sass materialize.scss ../materialize.min002.css
+
+
 Build documenattion
 -------------------
 

@@ -367,15 +367,38 @@ span.sort {
   cursor: pointer;
 }
 
-.price:hover, .unitprice:hover {
+/* Visual affordance: dotted underline for items containing tooltips */
+.tdist[data-tooltip],
+.price[data-tooltip],
+.unitprice[data-tooltip] {
+  text-decoration: underline dotted;
+  text-decoration-color: rgba(128, 128, 128, 0.5); /* Subtle grey */
+  text-underline-offset: 4px;
+}
+
+/* Only apply hover effects if the device has a fine pointer (mouse/trackpad) */
+@media (hover: hover) and (pointer: fine) {
+  .price:hover, .unitprice:hover {
+    color: #00c896 !important;
+  }
+
+  .tdist:hover {
+    color: #ff3769 !important;
+  }
+
+  .myred-text.tdist:hover {
+    color: #ababab !important;
+  }
+}
+
+/* Provide touch feedback for mobile users when they actively tap */
+.price:active, .unitprice:active {
   color: #00c896 !important;
 }
-
-.tdist:hover {
+.tdist:active {
   color: #ff3769 !important;
 }
-
-.myred-text.tdist:hover {
+.myred-text.tdist:active {
   color: #ababab !important;
 }
 
