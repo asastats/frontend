@@ -96,7 +96,9 @@
         <button class="primaryAction waves-effect btn-flat submit" id="id_submit" type="submit"><i class="material-icons right" aria-hidden="true">{{ 'save'|get_styling:"icon" }}</i>Update</button>
         <br><br>
         <div class="row col s12">
-            <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'account_change_password' %}" id="id_changepassword">Password<i class="material-icons right" aria-hidden="true">{{ 'password'|get_styling:"icon" }}</i></a>
+          <a class="waves-effect waves-mydark btn whenmoon" {% if user.has_usable_password %}href="{% url 'account_change_password' %}" id="id_changepassword"{% else %}href="{% url 'account_set_password' %}" id="id_setpassword"{% endif %}>
+            Password<i class="material-icons right" aria-hidden="true">{{ 'password'|get_styling:"icon" }}</i>
+          </a>
         </div>
         <div class="row col s12">
             <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'account_email' %}" id="id_emails">Emails<i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></a>
