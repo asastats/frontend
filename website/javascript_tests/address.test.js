@@ -101,7 +101,8 @@ function fixture() {
     '<span class="nfticon" id="tif1" data-path="/x.png"></span>' +
     '<span class="nfticon" id="other"></span></ul>' +
     '<span class="unit">a</span>' +
-    '<img class="nft" data-src="/real.png"><img class="nft">'
+    '<img class="nft" data-src="/real.png"><img class="nft">' +
+    '<div class="fixed-action-btn"><a id="scroll-to-top" class="btn-floating"></a></div>'
   );
 }
 
@@ -158,6 +159,62 @@ describe("isNotVisible / scrollToView", function () {
   });
 });
 
+describe("Scroll to Top Button", function () {
+  beforeEach(() => {
+    // JSDOM doesn't implement window.scrollTo natively
+    window.scrollTo = jest.fn();
+  });
+
+  it('shows the button when scrolled down more than 300px', function () {
+    // Mock the window scroll position
+    Object.defineProperty(window, 'scrollY', { value: 350, writable: true });
+
+    address.toggleScrollToTopButton();
+
+    expect(document.getElementById('scroll-to-top').classList.contains('visible')).toBe(true);
+  });
+
+  it('hides the button when scrolled up less than 300px', function () {
+    // Add the class first to simulate being scrolled down
+    document.getElementById('scroll-to-top').classList.add('visible');
+    Object.defineProperty(window, 'scrollY', { value: 150, writable: true });
+
+    address.toggleScrollToTopButton();
+
+    expect(document.getElementById('scroll-to-top').classList.contains('visible')).toBe(false);
+  });
+
+  it('does nothing if the button is missing from the DOM', function () {
+    document.getElementById('scroll-to-top').remove();
+    Object.defineProperty(window, 'scrollY', { value: 400, writable: true });
+
+    // Should not throw an error
+    expect(() => { address.toggleScrollToTopButton(); }).not.toThrow();
+  });
+
+  it('prevents default event action and scrolls to top on click', function () {
+    var mockEvent = { preventDefault: jest.fn() };
+
+    address.scrollToTop(mockEvent);
+
+    expect(mockEvent.preventDefault).toHaveBeenCalled();
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      behavior: 'smooth'
+    });
+  });
+
+  it('scrolls to top even if no event is passed (missing event coverage)', function () {
+    // Call the function with no arguments (e is undefined)
+    address.scrollToTop();
+
+    // It should skip the preventDefault block but still scroll
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      behavior: 'smooth'
+    });
+  });
+});
 
 describe("setCurrency", function () {
   it('formats values in ALGO', function () {

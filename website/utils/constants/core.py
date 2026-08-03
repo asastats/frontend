@@ -167,6 +167,7 @@ ELEMENTS_STYLING = {
     "public": {"icon": "public"},
     "wallet": {"icon": "account_balance_wallet"},
     "swap": {"icon": "swap_vertical_circle"},
+    "scroll_up": {"icon": "keyboard_arrow_up"},
 }
 
 DEPRECATED_LINK_PROVIDERS = ["cmc"]

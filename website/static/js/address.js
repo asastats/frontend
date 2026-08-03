@@ -64,6 +64,9 @@ function mainAddress() {
   $(".price").on("click", togglePrice);
   $(".unitprice").on("click", toggleUnitPrice);
   $(".tdist").on("click", toggleDist);
+  $(window).on("scroll", toggleScrollToTopButton);
+  $("#scroll-to-top").on("click", scrollToTop);
+  toggleScrollToTopButton();
   populateDistChart();
   populatePieCharts();
   setCurrency(localStorage.getItem('cur') || 'ALGO');
@@ -79,7 +82,6 @@ function mainAddress() {
   setInterval(timerIncrement, 1000);
   $(this).mousemove(resetTimer);
   $(this).keypress(resetTimer);
-
 }
 
 
@@ -105,7 +107,7 @@ function deferImages(images) {
 
     if (dataSrc) {
       // Attach the error handler for large NFTs BEFORE setting the new source
-      img.onerror = function() {
+      img.onerror = function () {
         this.onerror = null; // Prevent infinite loop if the fallback is missing
         this.src = 'https://cdn.asastats.com/thumbnails/nft.png';
       };
@@ -236,6 +238,36 @@ function filterChange(evt) {
       showMatchedNodes(matches);
     }
   }
+}
+
+
+/**
+ * Toggles the visibility of the scroll-to-top button based on window scroll position.
+ * @function toggleScrollToTopButton
+ */
+function toggleScrollToTopButton() {
+  var scrollBtn = document.getElementById("scroll-to-top");
+  if (!scrollBtn) return;
+
+  // Check if scrolled more than 300 pixels
+  if (window.scrollY > 300) {
+    scrollBtn.classList.add("visible");
+  } else {
+    scrollBtn.classList.remove("visible");
+  }
+}
+
+
+/**
+ * Smoothly scrolls the window to the top.
+ * @function scrollToTop
+ * @param {Event} e - The triggered event object
+ */
+function scrollToTop(e) {
+  if (e && e.preventDefault) {
+    e.preventDefault();
+  }
+  window.scrollTo({top: 0, behavior: "smooth"});
 }
 
 
@@ -1246,5 +1278,7 @@ if (typeof exports !== 'undefined') {
     chartClick,
     showMatchedNodes,
     totalChart,
+    toggleScrollToTopButton,
+    scrollToTop,
   };
 }

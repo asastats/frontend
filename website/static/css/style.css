@@ -391,6 +391,19 @@ span.sort {
   }
 }
 
+/* Hide it by default */
+#scroll-to-top {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+/* Show it when JS adds the class */
+#scroll-to-top.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
 /* Provide touch feedback for mobile users when they actively tap */
 .price:active, .unitprice:active {
   color: #00c896 !important;
