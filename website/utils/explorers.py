@@ -86,7 +86,9 @@ def explorer_path(explorer, entity):
 
 
 def explorer_link(explorer, entity, value):
-    """Return the full explorer URL for ``entity`` (``address``/``asset``/``transaction``).
+    """Return the full explorer URL for ``entity``
+
+    (``address``/``asset``/``transaction``/``application``).
 
     Falls back to the default explorer for an unknown key. An unknown ``entity``
     yields the bare base URL rather than raising, so a template typo degrades to
@@ -96,7 +98,7 @@ def explorer_link(explorer, entity, value):
     :type explorer: str
     :param entity: one of ``"address"``, ``"asset"``, ``"transaction"``
     :type entity: str
-    :param value: address, asset id, or transaction id to embed
+    :param value: address, asset id, transaction id, or application id to embed
     :return: str
     """
     conf = EXPLORERS[normalized_explorer(explorer)]

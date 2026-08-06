@@ -199,6 +199,7 @@ EXPLORERS = {
         "address": "account/{value}",
         "asset": "asset/{value}",
         "transaction": "tx/{value}",
+        "application": "application/{value}",
     },
     "lora": {
         "name": "Lora",
@@ -206,6 +207,7 @@ EXPLORERS = {
         "address": "account/{value}",
         "asset": "asset/{value}",
         "transaction": "transaction/{value}",
+        "application": "application/{value}",
     },
     "pera": {
         "name": "Pera Explorer",
@@ -213,6 +215,7 @@ EXPLORERS = {
         "address": "address/{value}",
         "asset": "asset/{value}",
         "transaction": "tx/{value}",
+        "application": "application/{value}",
     },
     "algosurf": {
         "name": "Algo Surf",
@@ -220,5 +223,6 @@ EXPLORERS = {
         "address": "account/{value}",
         "asset": "asset/{value}",
         "transaction": "transaction/{value}",
+        "application": "application/{value}",
     },
 }

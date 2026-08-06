@@ -68,7 +68,7 @@
                 data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span> <br />
           {% endif %}
           {% if program.url %}
-            <a href="{{ program.url }}" target="_blank" title="{{ program|program_url_title }}">{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</a> <br />
+           <a href="{% program_url program.url %}" target="_blank" title="{{ program|program_url_title }}">{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</a> <br />
           {% elif program.name %}
             <span>{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</span> <br />
           {% endif %}

@@ -57,6 +57,11 @@ class TestUtilsConstantsExplorersLink:
             "https://explorer.perawallet.app/asset/123"
         )
 
+    def test_utils_constants_explorers_link_application_for_pera(self):
+        assert explorer_link("pera", "application", 123) == (
+            "https://explorer.perawallet.app/application/123"
+        )
+
     def test_utils_constants_explorers_link_transaction_path_differs(self):
         assert explorer_link("lora", "transaction", "TX").endswith("/transaction/TX")
         assert explorer_link("allo", "transaction", "TX").endswith("/tx/TX")
@@ -76,6 +81,7 @@ class TestUtilsConstantsExplorersLink:
         assert explorer_path("allo", "transaction") == "tx/"
         assert explorer_path("lora", "transaction") == "transaction/"
         assert explorer_path("allo", "address") == "account/"
+        assert explorer_path("allo", "application") == "application/"
 
     def test_utils_constants_explorers_name_for_pera(self):
         assert explorer_name("pera") == "Pera Explorer"

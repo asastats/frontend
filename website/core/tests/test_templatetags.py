@@ -24,6 +24,7 @@ from core.templatetags.core_extras import (
     is_distribution,
     is_negative,
     list_item,
+    program_url,
     program_url_title,
     provider_icon,
     short_address,
@@ -642,3 +643,66 @@ class TestCoreExtrasExplorerTags:
             "request": self._request(mocker, authenticated=True, explorer="pera")
         }
         assert explorer_tx_path(context) == "tx/"
+
+    def test_program_url_returns_standard_url_as_is(self):
+        context = {}
+        standard_url = "https://my-custom-app.com/about"
+        assert program_url(context, standard_url) == standard_url
+
+    def test_program_url_application_returns_explorer_link(self, mocker):
+        context = {"request": self._request(mocker, authenticated=True)}
+        # Assuming lora handles application URLs similarly to assets
+        assert program_url(context, "application=123") == (
+            "https://lora.algokit.io/mainnet/application/123"
+        )
+
+    def test_program_url_address_returns_explorer_link(self, mocker):
+        context = {"request": self._request(mocker, authenticated=False)}
+        # Unauthenticated defaults to allo.info, which maps "address" to "/account/"
+        assert program_url(context, "address=VCMJK...") == (
+            "https://allo.info/account/VCMJK..."
+        )
+
+    def test_program_url_invalid_application_id_returns_as_is(self):
+        context = {}
+        invalid_app = "application=ABC_NOT_NUMERIC"
+        assert program_url(context, invalid_app) == invalid_app
+
+    def test_program_url_handles_non_string_gracefully(self):
+        assert program_url({}, None) is None
+
+    def test_program_url_unsupported_entity_returns_as_is(self):
+        context = {}
+        # Our function only looks for 'address=' and 'application='
+        unsupported = "asset=123456"
+        assert program_url(context, unsupported) == unsupported
+
+    def test_program_url_empty_string_returns_as_is(self):
+        context = {}
+        assert program_url(context, "") == ""
+
+    def test_program_url_prefix_not_at_start_returns_as_is(self):
+        context = {}
+        # Has 'application=' inside it, but not at the start
+        url_with_query = "https://example.com/api?application=123"
+        assert program_url(context, url_with_query) == url_with_query
+
+    def test_program_url_application_empty_value_returns_as_is(self):
+        context = {}
+        empty_app = "application="
+        # "" is not numeric, so it should trigger the early return inside the loop
+        assert program_url(context, empty_app) == empty_app
+
+    def test_program_url_address_empty_value_returns_explorer_link(self, mocker):
+        context = {"request": self._request(mocker, authenticated=False)}
+        # Unauthenticated defaults to allo.info, which maps "address" to "/account/"
+        # Since it passes the `if entity == "application"` check (it's an address),
+        # it will pass an empty string to the explorer_link function.
+        assert program_url(context, "address=") == "https://allo.info/account/"
+
+    def test_program_url_address_is_numeric_returns_explorer_link(self, mocker):
+        context = {"request": self._request(mocker, authenticated=True)}
+        # An all-numeric address is technically valid string data for an address check
+        assert program_url(context, "address=123456") == (
+            "https://lora.algokit.io/mainnet/account/123456"
+        )

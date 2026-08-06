@@ -444,14 +444,14 @@ def _viewer_explorer(context, override=""):
 def explorer_url(context, entity, value, explorer=""):
     """Return the viewer's explorer URL for ``entity`` and ``value``.
 
-    Replaces the hard-coded ``https://allo.info/...`` anchors. ``entity`` is one
-    of ``"address"``, ``"asset"``, ``"transaction"``.
+    ``entity`` is one of ``"address"``, ``"asset"``, ``"transaction"``,
+    ``"application"``.
 
     :param context: the template context (carries the viewer)
     :type context: dict
     :param entity: blockchain entity kind
     :type entity: str
-    :param value: address, asset id, or transaction id
+    :param value: address, asset id, transaction id, or application id
     :param explorer: optional explicit explorer key override
     :type explorer: str
     :return: str
@@ -506,3 +506,36 @@ def explorer_tx_path(context, explorer=""):
     return explorer_constants.explorer_path(
         _viewer_explorer(context, explorer), "transaction"
     )
+
+
+@register.simple_tag(takes_context=True)
+def program_url(context, program_url):
+    """Return provided program URL or its failback link in block explorer.
+
+    :param context: the template context (carries the viewer)
+    :type context: dict
+    :param program_url: fuklly formated URL or an explorer failback
+    :type program_url: str
+    :var entity: blockchain entity kind
+    :type entity: str
+    :var prefix: currently processed entity's identifier
+    :type prefix: str
+    :var value: address or application id
+    :type value: str
+    :return: str
+    """
+    if not isinstance(program_url, str):
+        return program_url
+
+    for entity in ("address", "application"):
+        prefix = f"{entity}="
+        if program_url.startswith(prefix):
+            value = program_url[len(prefix) :]
+            if entity == "application" and not value.isnumeric():
+                return program_url
+
+            return explorer_constants.explorer_link(
+                _viewer_explorer(context, ""), entity, value
+            )
+
+    return program_url
