@@ -382,7 +382,7 @@ CHANNEL_LAYERS = {
 # # WIDGETS
 WIDGETS_API_TOKEN = get_env_variable("WIDGETS_API_TOKEN", "")
 
-INHOUSE_WIDGETS = ["historic", "folks", "haystack", "swapcore"]
+INHOUSE_WIDGETS = ["historic", "folks", "haystack", "hogswap", "swapcore"]
 THIRDPARTY_WIDGETS = []
 
 STATICFILES_DIRS += [
