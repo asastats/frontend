@@ -8,7 +8,7 @@
 
 > **optIn**(`assetId`, `deps`): `Promise`\<`string`\>
 
-Defined in: [swapBridge.ts:205](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L205)
+Defined in: [swapBridge.ts:294](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L294)
 
 Opt the active account into `assetId` as a standalone pre-flight transaction.
 

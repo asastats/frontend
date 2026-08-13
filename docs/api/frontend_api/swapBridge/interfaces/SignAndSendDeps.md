@@ -6,7 +6,7 @@
 
 # Interface: SignAndSendDeps
 
-Defined in: [swapBridge.ts:37](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L37)
+Defined in: [swapBridge.ts:38](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L38)
 
 Injected collaborators for [signAndSend](../functions/signAndSend.md) (all wallet/algod concerns isolated).
 
@@ -20,7 +20,7 @@ Injected collaborators for [signAndSend](../functions/signAndSend.md) (all walle
 
 > **activeAddress**: () => `string` \| `null`
 
-Defined in: [swapBridge.ts:39](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L39)
+Defined in: [swapBridge.ts:40](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L40)
 
 Currently active/connected Algorand address, or null when none.
 
@@ -34,7 +34,7 @@ Currently active/connected Algorand address, or null when none.
 
 > **availableMicroAlgos**: (`addr`) => `Promise`\<`bigint`\>
 
-Defined in: [swapBridge.ts:63](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L63)
+Defined in: [swapBridge.ts:64](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L64)
 
 Return the number of microAlgos the `addr` can spend without dipping
 below its min-balance (amount − min-balance).
@@ -55,7 +55,7 @@ below its min-balance (amount − min-balance).
 
 > **isOptedIn**: (`addr`, `assetId`) => `Promise`\<`boolean`\>
 
-Defined in: [swapBridge.ts:58](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L58)
+Defined in: [swapBridge.ts:59](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L59)
 
 Return whether `addr` is already opted into `assetId`.
 (algod accountAssetInformation — 404 means not opted in.)
@@ -80,7 +80,7 @@ Return whether `addr` is already opted into `assetId`.
 
 > **signTransactions**: (`txns`, `indexesToSign`) => `Promise`\<(`Uint8Array`\<`ArrayBufferLike`\> \| `null`)[]\>
 
-Defined in: [swapBridge.ts:48](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L48)
+Defined in: [swapBridge.ts:49](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L49)
 
 Sign the encoded, grouped, unsigned transactions with the active wallet.
 
@@ -109,7 +109,7 @@ a null entry marks a transaction the wallet declined to sign.
 
 > **submit**: (`signed`) => `Promise`\<`string`\>
 
-Defined in: [swapBridge.ts:65](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L65)
+Defined in: [swapBridge.ts:66](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L66)
 
 Submit the signed transaction blobs; resolves with the submitted txid.
 
@@ -129,7 +129,7 @@ Submit the signed transaction blobs; resolves with the submitted txid.
 
 > **suggestedParams**: () => `Promise`\<`any`\>
 
-Defined in: [swapBridge.ts:53](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L53)
+Defined in: [swapBridge.ts:54](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L54)
 
 Fetch current suggested transaction params from algod.
 
@@ -143,7 +143,7 @@ Fetch current suggested transaction params from algod.
 
 > **waitForConfirmation**: (`txid`) => `Promise`\<`void`\>
 
-Defined in: [swapBridge.ts:67](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L67)
+Defined in: [swapBridge.ts:68](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L68)
 
 Resolve once `txid` is confirmed on-chain (or reject on failure/timeout).
 

@@ -1,7 +1,10 @@
 import {
   optIn,
   signAndSend,
+  signAndSendPartial,
   type OptInDeps,
+  type SignAndSendDeps,
+  type PartialSignedGroup,
   type SignAndSendDeps,
   type SwapOpts,
 } from "./swapBridge";
@@ -29,7 +32,11 @@ jest.mock("algosdk", () => {
   );
   const decodeUnsignedTransaction = jest.fn((b: Uint8Array) => ({
     _raw: b,
-    group: undefined as any,
+    group: new Uint8Array([99]),
+  }));
+  const decodeSignedTransaction = jest.fn((b: Uint8Array) => ({
+    txn: { _raw: b.slice(0, 3) },
+    sig: b.slice(3),
   }));
   const encodeUnsignedTransaction = jest.fn((txn: any) =>
     txn._raw ?? new Uint8Array([0]),
@@ -44,6 +51,7 @@ jest.mock("algosdk", () => {
     makeAssetTransferTxnWithSuggestedParamsFromObject,
     makePaymentTxnWithSuggestedParamsFromObject,
     decodeUnsignedTransaction,
+    decodeSignedTransaction,
     encodeUnsignedTransaction,
     assignGroupID,
     signLogicSigTransactionObject,
@@ -191,6 +199,143 @@ describe("signAndSend", () => {
     await expect(signAndSend([TXN_A], d, BASE_OPTS)).rejects.toThrow(
       "rejected in block",
     );
+  });
+});
+
+describe("signAndSendPartial", () => {
+  function partial(): PartialSignedGroup {
+    return {
+      transactions: [TXN_A, TXN_B],
+      signedTransactions: { "1": new Uint8Array([4, 5, 6, 20]) },
+      quoteSignerIndex: 1,
+    };
+  }
+
+  it("preserves the backend signature and asks the wallet for only user legs", async () => {
+    const { d, calls } = deps();
+    const txid = await signAndSendPartial(partial(), d);
+
+    expect(d.signTransactions).toHaveBeenCalledWith([TXN_A, TXN_B], [0]);
+    expect(calls.submitted).toEqual([SIG_A, new Uint8Array([4, 5, 6, 20])]);
+    expect(txid).toBe("TXID123");
+  });
+
+  it("rejects a missing or misplaced quote authorization before signing", async () => {
+    const { d } = deps();
+    await expect(
+      signAndSendPartial(
+        { ...partial(), quoteSignerIndex: 0 },
+        d,
+      ),
+    ).rejects.toThrow("final transaction");
+    await expect(
+      signAndSendPartial(
+        { ...partial(), signedTransactions: {} },
+        d,
+      ),
+    ).rejects.toThrow("Backend quote signature is missing");
+    expect(d.signTransactions).not.toHaveBeenCalled();
+  });
+
+  it("rejects an empty group", async () => {
+    const { d } = deps();
+    await expect(
+      signAndSendPartial(
+        { transactions: [], signedTransactions: {}, quoteSignerIndex: 0 },
+        d,
+      ),
+    ).rejects.toThrow("Empty transaction group");
+  });
+
+  it("rejects an invalid backend signature index", async () => {
+    const { d } = deps();
+    await expect(
+      signAndSendPartial(
+        {
+          ...partial(),
+          signedTransactions: { "2": new Uint8Array([4, 5, 6, 20]) },
+        },
+        d,
+      ),
+    ).rejects.toThrow("invalid group index");
+  });
+
+  it("rejects an empty backend signature blob", async () => {
+    const { d } = deps();
+    await expect(
+      signAndSendPartial(
+        { ...partial(), signedTransactions: { "1": new Uint8Array() } },
+        d,
+      ),
+    ).rejects.toThrow("Backend signature is empty");
+  });
+
+  it("rejects a backend signature for different transaction bytes", async () => {
+    const { d } = deps();
+    await expect(
+      signAndSendPartial(
+        {
+          ...partial(),
+          signedTransactions: { "1": new Uint8Array([9, 9, 9, 20]) },
+        },
+        d,
+      ),
+    ).rejects.toThrow("does not match the grouped transaction");
+  });
+
+  it("rejects a backend blob that has no transaction body", async () => {
+    const decodeSignedTransaction = jest.requireMock("algosdk")
+      .decodeSignedTransaction;
+    decodeSignedTransaction.mockImplementationOnce(() => ({
+      sig: new Uint8Array([20]),
+    }));
+    const { d } = deps();
+    await expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+      "does not match the grouped transaction",
+    );
+  });
+
+  it("rejects a backend blob without a signature", async () => {
+    const { d } = deps();
+    await expect(
+      signAndSendPartial(
+        { ...partial(), signedTransactions: { "1": new Uint8Array([4, 5, 6]) } },
+        d,
+      ),
+    ).rejects.toThrow("not signed");
+  });
+
+  it("rejects an ungrouped backend group", async () => {
+    const decodeUnsignedTransaction = jest.requireMock("algosdk")
+      .decodeUnsignedTransaction;
+    decodeUnsignedTransaction.mockImplementationOnce((b: Uint8Array) => ({
+      _raw: b,
+      group: undefined,
+    }));
+    const { d } = deps();
+    await expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+      "Backend group is not grouped",
+    );
+  });
+
+  it("rejects an incomplete wallet response", async () => {
+    const { d } = deps({
+      signTransactions: jest.fn(async () => [SIG_A]),
+    });
+    await expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+      "incomplete transaction group",
+    );
+    expect(d.submit).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the wallet omits a required user signature", async () => {
+    const { d } = deps({
+      signTransactions: jest.fn(async () => [null, null]),
+    });
+    await expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+      "Wallet did not sign a required transaction",
+    );
+    expect(d.submit).not.toHaveBeenCalled();
   });
 });
 

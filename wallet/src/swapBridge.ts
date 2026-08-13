@@ -3,7 +3,7 @@
  * connected wallet, submit it, and wait for confirmation.
  *
  * Every wallet, algod and browser concern is injected via {@link SignAndSendDeps},
- * so this module imports neither use-wallet nor algosdk and is unit-tested
+ * so this module imports neither use-wallet nor algosdk-specific wallet code and is unit-tested
  * headless — mirroring `manageBridge`. The browser/wallet wiring lives in
  * `swapBootstrap` (isolated, not covered).
  *
@@ -16,6 +16,7 @@
 
 import {
   assignGroupID,
+  decodeSignedTransaction,
   decodeUnsignedTransaction,
   encodeUnsignedTransaction,
   signLogicSigTransactionObject,
@@ -65,6 +66,16 @@ export interface SignAndSendDeps {
   submit: (signed: Uint8Array[]) => Promise<string>;
   /** Resolve once `txid` is confirmed on-chain (or reject on failure/timeout). */
   waitForConfirmation: (txid: string) => Promise<void>;
+}
+
+/** A group whose quote authorization was signed by the backend. */
+export interface PartialSignedGroup {
+  /** Complete ordered group, encoded without signatures. */
+  transactions: Uint8Array[];
+  /** Signed transaction blobs keyed by their group index. */
+  signedTransactions: Record<string, Uint8Array>;
+  /** The quote-signer transaction index, required to be the final index. */
+  quoteSignerIndex: number;
 }
 
 /**
@@ -184,6 +195,84 @@ export async function signAndSend(
   });
 
   const txid = await deps.submit(signedBlobs);
+  await deps.waitForConfirmation(txid);
+  return txid;
+}
+
+/**
+ * Sign and submit a group that already contains backend signatures.
+ *
+ * The group is already assembled and grouped by the engine. Unlike
+ * `signAndSend`, this function must not prepend opt-ins, clear group IDs or
+ * reassign the group: doing any of those would invalidate the quote-signer's
+ * signature and the signed floor note.
+ */
+export async function signAndSendPartial(
+  group: PartialSignedGroup,
+  deps: SignAndSendDeps,
+): Promise<string> {
+  if (!group || group.transactions.length === 0) {
+    throw new Error("Empty transaction group");
+  }
+  if (group.quoteSignerIndex !== group.transactions.length - 1) {
+    throw new Error("Quote authorization must be the final transaction");
+  }
+
+  const preSigned = new Map<number, Uint8Array>();
+  for (const [rawIndex, blob] of Object.entries(group.signedTransactions)) {
+    const index = Number(rawIndex);
+    if (!Number.isInteger(index) || index < 0 || index >= group.transactions.length) {
+      throw new Error("Backend signature has an invalid group index");
+    }
+    if (!(blob instanceof Uint8Array) || blob.length === 0) {
+      throw new Error("Backend signature is empty");
+    }
+    const signed = decodeSignedTransaction(blob) as any;
+    const unsigned = signed?.txn
+      ? encodeUnsignedTransaction(signed.txn)
+      : undefined;
+    const expected = group.transactions[index];
+    if (
+      !unsigned ||
+      unsigned.length !== expected.length ||
+      unsigned.some((value: number, offset: number) => value !== expected[offset])
+    ) {
+      throw new Error("Backend signature does not match the grouped transaction");
+    }
+    if (!signed.sig || signed.sig.length === 0) {
+      throw new Error("Backend quote transaction is not signed");
+    }
+    preSigned.set(index, blob);
+  }
+  if (!preSigned.has(group.quoteSignerIndex)) {
+    throw new Error("Backend quote signature is missing");
+  }
+
+  const decoded = group.transactions.map((blob) => decodeUnsignedTransaction(blob));
+  if (decoded.some((txn) => !txn.group)) {
+    throw new Error("Backend group is not grouped");
+  }
+
+  const walletIndexes = decoded
+    .map((_, index) => index)
+    .filter((index) => !preSigned.has(index));
+  const walletSigned = await deps.signTransactions(
+    group.transactions,
+    walletIndexes,
+  );
+  if (walletSigned.length !== group.transactions.length) {
+    throw new Error("Wallet returned an incomplete transaction group");
+  }
+
+  const signed = group.transactions.map((_, index) => {
+    const backend = preSigned.get(index);
+    if (backend) return backend;
+    const wallet = walletSigned[index];
+    if (!wallet) throw new Error("Wallet did not sign a required transaction");
+    return wallet;
+  });
+
+  const txid = await deps.submit(signed);
   await deps.waitForConfirmation(txid);
   return txid;
 }

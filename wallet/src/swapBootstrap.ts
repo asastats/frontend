@@ -7,7 +7,14 @@ import {
   type Transaction,
   type TransactionSigner,
 } from "algosdk";
-import { optIn, signAndSend, type OptInDeps, type SwapOpts } from "./swapBridge";
+import {
+  optIn,
+  signAndSend,
+  signAndSendPartial,
+  type OptInDeps,
+  type PartialSignedGroup,
+  type SwapOpts,
+} from "./swapBridge";
 
 const DEFAULT_API_BASE = "/api/v2/wallet";
 /** Rounds to wait for a swap group to confirm before timing out. */
@@ -28,6 +35,8 @@ export interface SwapBridgeApi {
   activeAddress: () => string | null;
   /** Sign + submit + confirm a prepared, grouped, unsigned txn group. */
   signAndSend: (group: Uint8Array[], opts: SwapOpts) => Promise<string>;
+  /** Sign and submit an engine group with a backend-signed quote transaction. */
+  signAndSendPartial: (group: PartialSignedGroup) => Promise<string>;
   /** Opt the active account into `assetId` (pre-flight 0-amount self-transfer). */
   optIn: (assetId: number) => Promise<string>;
   /**
@@ -194,6 +203,8 @@ export async function initSwapBridge(doc: Document = document): Promise<void> {
       activeAddress: deps.activeAddress,
       signAndSend: (group: Uint8Array[], opts: SwapOpts) =>
         signAndSend(group, deps, opts),
+      signAndSendPartial: (group: PartialSignedGroup) =>
+        signAndSendPartial(group, deps),
       optIn: (assetId: number) => optIn(assetId, deps),
       haystackSigner,
       // kept for back-compat; Haystack must use haystackSigner instead.
