@@ -172,7 +172,11 @@
       <i class="material-icons" aria-hidden="true">{{ 'scroll_up'|get_styling:"icon" }}</i>
     </a>
   </div>
-  {% include "swap/_swap_modal.html" %}
+  {# The modal ships with the per-user #id-swap-entry-container partial above:  #}
+  {# including it here as well put two #swap-modal elements (and two sets of    #}
+  {# its controls) on the page for any linked viewer, of which swap.js only     #}
+  {# ever addressed the first. For anonymous viewers this copy was inert -- the #}
+  {# controller is loaded by that same partial and never arrived.               #}
 </div>
 {% endwith %}
 {% endblock %}

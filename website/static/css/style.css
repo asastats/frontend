@@ -426,93 +426,684 @@ span.sort {
   justify-content: center;
 }
 
-/* ---- Mode-aware helper labels ------------------------------------------- */
-.id-swap-from-label-buy,
-.id-swap-to-label-buy,
-.id-swap-amount-label-buy { display: none; }
-.swap-mode-buy .id-swap-from-label-sell,
-.swap-mode-buy .id-swap-to-label-sell,
-.swap-mode-buy .id-swap-amount-label-sell { display: none; }
-.swap-mode-buy .id-swap-from-label-buy,
-.swap-mode-buy .id-swap-to-label-buy,
-.swap-mode-buy .id-swap-amount-label-buy { display: inline; }
+/* ========================================================================= *
+ * Swap panel
+ *
+ * Two asset legs, each owning its own amount, replace the old 2x2 field grid.
+ * That is why there is no `order` juggling here any more: the amount sits in
+ * the same card as the asset it belongs to, so it cannot drift away from it at
+ * any breakpoint or in either mode.
+ *
+ * Colours come from the site palette (#00c896 mylight, #ff3769 myred, #ababab,
+ * #575757 mydark, #2b2b2b dark ground) via the two token blocks below, so the
+ * panel follows html.dark with the rest of the site.
+ * ========================================================================= */
 
-/* ---- Field placement (single flex grid, ordered per breakpoint + mode) --- */
-/* The four cells share one flex container so their sequence is fully
-   controllable. At >= medium each cell is 50% wide and they wrap 2x2; on small
-   screens each is full width and they stack, so `order` controls the stack
-   sequence and the amount stays next to its asset. */
-.id-swap-grid { display: flex; flex-wrap: wrap; align-items: flex-start; }
-
-/* Default = Sell, wide: [From | To] then [Amount | Slippage]. */
-.id-swap-source-col   { order: 1; }
-.id-swap-target-col   { order: 2; }
-.id-swap-amount-col   { order: 3; }
-.id-swap-slippage-col { order: 4; }
-
-/* Buy, wide: amount under "Buy (you receive)" (right), slippage under "Pay with". */
-.swap-mode-buy .id-swap-amount-col   { order: 4; }
-.swap-mode-buy .id-swap-slippage-col { order: 3; }
-
-/* Small screens (each field on its own row): keep the amount beside its asset. */
-@media (max-width: 600px) {
-  /* Sell: From, Amount, To, Slippage. */
-  .id-swap-amount-col   { order: 2; }
-  .id-swap-target-col   { order: 3; }
-  .id-swap-slippage-col { order: 4; }
-  /* Buy: From, To, Amount, Slippage (amount under "Buy (you receive)"). */
-  .swap-mode-buy .id-swap-target-col   { order: 2; }
-  .swap-mode-buy .id-swap-amount-col   { order: 3; }
-  .swap-mode-buy .id-swap-slippage-col { order: 4; }
+.swap-modal {
+  --swap-surface: #ffffff;
+  --swap-raised: #f4f8f6;
+  --swap-sunken: #eaf0ed;
+  --swap-line: #dbe4e0;
+  --swap-line-soft: #e7edea;
+  --swap-ink: #18211e;
+  --swap-ink-2: #56635f;
+  --swap-ink-3: #8a9793;
+  --swap-accent: #00c896;
+  --swap-accent-ink: #007a5c;
+  --swap-accent-wash: #e4f7f1;
+  --swap-accent-on: #04241c;
+  --swap-danger: #e01e4c;
+  --swap-danger-wash: #fdeaef;
+  --swap-warn: #b4700f;
+  --swap-warn-wash: #fbf1e0;
 }
 
-/* ---- Percentage row ----------------------------------------------------- */
-/* Buttons keep their size; the "%" input takes only the leftover space (capped)
-   and shrinks instead of overflowing into the next column. */
-.id-swap-pct-row {
+html.dark .swap-modal {
+  --swap-surface: #2b2b2b;
+  --swap-raised: #333736;
+  --swap-sunken: #3a3f3d;
+  --swap-line: #454b49;
+  --swap-line-soft: #3a3f3d;
+  --swap-ink: #eef2f0;
+  --swap-ink-2: #aab4b1;
+  --swap-ink-3: #808b88;
+  --swap-accent: #00c896;
+  --swap-accent-ink: #00c896;
+  --swap-accent-wash: #0d3b30;
+  --swap-accent-on: #04241c;
+  --swap-danger: #ff5b83;
+  --swap-danger-wash: #3d1b25;
+  --swap-warn: #e8a33d;
+  --swap-warn-wash: #3a2c14;
+}
+
+.swap-modal {
+  max-width: 480px;
+  border-radius: 18px;
+  background-color: var(--swap-surface);
+  color: var(--swap-ink);
+}
+
+.swap-modal .modal-content.swap-shell {
+  position: relative; /* the picker sheet overlays the whole card */
+  padding: 0;
+  background-color: var(--swap-surface);
+  border-radius: 18px;
+}
+
+.swap-modal .modal-footer { display: none; }
+
+.swap-micro {
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--swap-ink-3);
+}
+
+.swap-num { font-variant-numeric: tabular-nums; }
+
+.swap-modal :focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 200, 150, 0.35);
+}
+
+/* ---- header ------------------------------------------------------------- */
+.swap-head {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  gap: 10px;
+  padding: 16px 16px 12px;
 }
-.id-swap-pct-row .id-swap-pct-btn { flex: 0 0 auto; }
-.id-swap-pct-row .id-swap-pct {
-  flex: 1 1 2.5rem;
+
+.swap-title {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.swap-routertag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--swap-accent-wash);
+  color: var(--swap-accent-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.swap-routertag::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--swap-accent);
+}
+
+.swap-head-spacer { flex: 1; }
+
+.swap-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--swap-line);
+  border-radius: 9px;
+  background: var(--swap-surface);
+  color: var(--swap-ink-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.swap-iconbtn:hover { border-color: var(--swap-accent); color: var(--swap-ink); }
+.swap-iconbtn svg { width: 15px; height: 15px; display: block; }
+.swap-iconbtn-plain { border-color: transparent; padding: 0 8px; }
+.swap-iconbtn-plain:hover { background: var(--swap-raised); }
+
+.swap-iconbtn[aria-expanded="true"] {
+  border-color: var(--swap-accent);
+  background: var(--swap-accent-wash);
+  color: var(--swap-accent-ink);
+}
+
+/* ---- slippage ----------------------------------------------------------- */
+.swap-slip {
+  margin: 0 16px 4px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--swap-line);
+  border-radius: 12px;
+  background: var(--swap-raised);
+}
+
+.swap-slip[hidden] { display: none; }
+.swap-slip-row { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
+
+.swap-chip {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--swap-line);
+  border-radius: 999px;
+  background: var(--swap-surface);
+  color: var(--swap-ink-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.swap-chip:hover { border-color: var(--swap-accent); }
+
+.swap-chip[aria-pressed="true"] {
+  border-color: var(--swap-accent);
+  background: var(--swap-accent);
+  color: var(--swap-accent-on);
+}
+
+.swap-slip-custom {
+  width: 74px !important;
+  height: 32px !important;
+  margin: 0 0 0 auto !important;
+  padding: 0 10px !important;
+  border: 1px solid var(--swap-line) !important;
+  border-radius: 999px;
+  background: var(--swap-surface);
+  color: var(--swap-ink);
+  font-size: 0.82rem;
+  text-align: right;
+  box-sizing: border-box;
+}
+
+.swap-slip-warn { margin: 9px 0 0; font-size: 0.78rem; color: var(--swap-warn); }
+.swap-slip-warn[hidden] { display: none; }
+
+/* ---- mode ---------------------------------------------------------------- */
+.swap-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  margin: 4px 16px 12px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--swap-sunken);
+}
+
+.swap-modes button {
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--swap-ink-2);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.swap-modes button[aria-selected="true"] {
+  background: var(--swap-surface);
+  color: var(--swap-ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* ---- the two legs -------------------------------------------------------- */
+.swap-legs { position: relative; padding: 0 16px; }
+
+.swap-leg {
+  padding: 14px;
+  border: 1px solid var(--swap-line-soft);
+  border-radius: 14px;
+  background: var(--swap-raised);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.swap-leg + .swap-leg { margin-top: 6px; }
+
+/* The leg holding the editable amount is the one the user is acting on. */
+.swap-form .swap-leg-pay,
+.swap-form.swap-mode-buy .swap-leg-get {
+  border-color: var(--swap-accent);
+  background: var(--swap-surface);
+}
+
+.swap-form.swap-mode-buy .swap-leg-pay {
+  border-color: var(--swap-line-soft);
+  background: var(--swap-raised);
+}
+
+.swap-leg-top { display: flex; align-items: center; gap: 8px; min-height: 20px; }
+
+.swap-leg-bal {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--swap-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.swap-leg-bal b { color: var(--swap-ink-2); font-weight: 600; }
+
+.swap-leg-main { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.swap-amt-slot { flex: 1 1 auto; min-width: 0; }
+
+/* Materialize styles bare inputs heavily; this one is a display surface. */
+.swap-modal input.swap-amt {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--swap-ink);
+  font-size: 1.95rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.swap-modal input.swap-amt:focus { border: 0; box-shadow: none; }
+.swap-modal input.swap-amt::placeholder { color: var(--swap-ink-3); }
+.swap-modal input.swap-amt[readonly] { color: var(--swap-ink-2); cursor: default; }
+
+/* The <select> stays in the DOM as the source of truth; the pill is the UI. */
+.swap-offscreen {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.swap-assetbtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 11px 0 7px;
+  border: 1px solid var(--swap-line);
+  border-radius: 999px;
+  background: var(--swap-surface);
+  color: var(--swap-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s;
+}
+
+.swap-assetbtn:hover { border-color: var(--swap-accent); }
+.swap-assetbtn-empty { color: var(--swap-ink-2); font-weight: 600; }
+.swap-assetbtn .swap-caret { width: 13px; height: 13px; color: var(--swap-ink-3); }
+
+.swap-tok {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--swap-sunken);
+  object-fit: cover;
+}
+
+.swap-leg-foot { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.swap-pcts { margin-left: auto; display: flex; gap: 5px; }
+.swap-pcts .swap-chip { height: 26px; padding: 0 10px; font-size: 0.74rem; }
+
+/* "% of what you own" is only meaningful when selling. */
+.swap-mode-buy .swap-pcts { visibility: hidden; }
+
+/* ---- the flip control, straddling the two legs --------------------------- */
+.swap-flip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 3px solid var(--swap-surface);
+  border-radius: 11px;
+  background: var(--swap-sunken);
+  color: var(--swap-ink-2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.2s;
+}
+
+.swap-flip svg { width: 15px; height: 15px; }
+
+.swap-flip:hover:not(:disabled) {
+  background: var(--swap-accent);
+  color: var(--swap-accent-on);
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+.swap-flip:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  .swap-flip:hover:not(:disabled) { transform: translate(-50%, -50%); }
+}
+
+/* ---- quote --------------------------------------------------------------- */
+.swap-quote:empty { display: none; }
+
+.swap-quote {
+  margin: 12px 16px 0;
+  border: 1px solid var(--swap-line-soft);
+  border-radius: 12px;
+  background: var(--swap-raised);
+  overflow: hidden;
+}
+
+.swap-quote-sum {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 0;
+  background: transparent;
+  color: var(--swap-ink);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.swap-quote-rate { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.swap-chev {
+  margin-left: auto;
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--swap-ink-3);
+  transition: transform 0.18s;
+}
+
+.swap-quote[data-open="1"] .swap-chev { transform: rotate(180deg); }
+
+/* Quote freshness: one 30s drain, restarted whenever the ring is re-rendered. */
+.swap-fresh { width: 16px; height: 16px; flex: none; }
+.swap-fresh-track { stroke: var(--swap-line); stroke-width: 2.5; }
+
+.swap-fresh-head {
+  stroke: var(--swap-accent);
+  stroke-width: 2.5;
+  animation: swap-drain 30s linear forwards;
+}
+
+@keyframes swap-drain {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: 47.1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swap-fresh-head { animation: none; }
+}
+
+.swap-quote-det {
+  margin: 0;
+  padding: 11px 13px 12px;
+  border-top: 1px solid var(--swap-line-soft);
+  display: grid;
+  gap: 8px;
+}
+
+.swap-quote[data-open="0"] .swap-quote-det { display: none; }
+
+.swap-drow { display: flex; align-items: baseline; gap: 10px; font-size: 0.82rem; }
+.swap-drow dt { color: var(--swap-ink-3); margin: 0; }
+
+.swap-drow dd {
+  margin: 0 0 0 auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--swap-ink-2);
+}
+
+/* Severity is information, not decoration. */
+.swap-drow dd.good { color: var(--swap-accent-ink); }
+.swap-drow dd.warn { color: var(--swap-warn); }
+.swap-drow dd.bad { color: var(--swap-danger); }
+
+.swap-hops { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+
+.swap-hop {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--swap-sunken);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--swap-ink-2);
+}
+
+.swap-hop i { font-style: normal; color: var(--swap-ink-3); font-variant-numeric: tabular-nums; }
+
+/* ---- notices -------------------------------------------------------------- */
+/* One strip, four voices. swap.js still adds .id-swap-status-error for problems
+   (no route, can't afford, insufficient balance, fetch/swap failure) and removes
+   it for progress and success messages. */
+.swap-notice {
+  display: flex;
+  gap: 9px;
+  margin: 10px 16px 0;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--swap-sunken);
+  color: var(--swap-ink-2);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.swap-notice:empty { display: none; }
+.swap-notice svg { width: 15px; height: 15px; flex: none; margin-top: 2px; }
+.swap-notice-info { background: var(--swap-sunken); color: var(--swap-ink-2); }
+
+.id-swap-status-error {
+  background: var(--swap-danger-wash);
+  color: var(--swap-danger);
+}
+
+.id-swap-tx-link { color: var(--swap-accent-ink); font-weight: 700; }
+
+/* ---- the primary action --------------------------------------------------- */
+.swap-cta-wrap { padding: 14px 16px 6px; }
+
+.swap-modal button.swap-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--swap-accent);
+  color: var(--swap-accent-on);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.swap-modal button.swap-cta:hover:not(:disabled) { filter: brightness(1.07); }
+
+.swap-modal button.swap-cta:disabled {
+  background: var(--swap-sunken);
+  color: var(--swap-ink-3);
+  cursor: not-allowed;
+}
+
+.swap-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: swap-spin 0.7s linear infinite;
+}
+
+@keyframes swap-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .swap-spinner { animation-duration: 2.4s; }
+}
+
+.swap-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px 16px;
+  font-size: 0.75rem;
+  color: var(--swap-ink-3);
+}
+
+.swap-foot a { margin-left: auto; color: var(--swap-accent-ink); }
+
+/* ---- the picker sheet ------------------------------------------------------ */
+.swap-picker {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  background: var(--swap-surface);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.swap-picker[hidden] { display: none; }
+
+/* One sheet, two bodies: holdings for the source, the engine search for the
+   target. Which one shows is decided by the side swap.js opened it for. */
+.swap-picker .swap-picker-body { display: none; }
+.swap-picker[data-side="to"] .id-swap-picker-to { display: flex; flex-direction: column; min-height: 0; }
+.swap-picker[data-side="from"] .id-swap-picker-from { display: flex; flex-direction: column; min-height: 0; }
+
+.swap-picker-head { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
+.swap-picker-title { margin: 0; font-size: 1rem; font-weight: 700; line-height: 1.3; }
+.swap-picker-head .swap-iconbtn { margin-left: auto; }
+
+.swap-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 16px 10px;
+  padding: 0 12px;
+  height: 42px;
+  border: 1px solid var(--swap-line);
+  border-radius: 11px;
+  background: var(--swap-raised);
+}
+
+.swap-search:focus-within { border-color: var(--swap-accent); }
+.swap-search svg { width: 16px; height: 16px; flex: none; color: var(--swap-ink-3); }
+
+.swap-modal .swap-search input {
+  flex: 1;
   min-width: 0;
-  max-width: 4rem;
-  margin: 0 0 0 6px;
+  height: auto;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--swap-ink);
+  font-size: 0.92rem;
 }
 
-/* The percentage row is "% of what you own" -- only meaningful when selling. */
-.swap-mode-buy .id-swap-pct-row { display: none; }
+.swap-modal .swap-search input:focus { border: 0; box-shadow: none; }
 
-/* ---- Status messages ---------------------------------------------------- */
-/* swap.js adds .id-swap-status-error to the status line for messages that
-   indicate a problem (no route, can't afford, insufficient balance, fetch/
-   swap failure); it is removed for progress/success messages. */
-.id-swap-status-error, .id-swap-connect-notice { color: #ff3769; }
+.swap-picker-list { flex: 1; overflow-y: auto; padding: 0 8px 12px; }
+.swap-rows { margin: 0; padding: 0; list-style: none; }
 
+.swap-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.swap-row:hover { background: var(--swap-raised); }
+.swap-row.is-selected { background: var(--swap-accent-wash); }
+.swap-row .swap-tok { width: 30px; height: 30px; }
+.swap-row-text { min-width: 0; }
+
+.swap-row-unit {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 0.93rem;
+}
+
+.swap-row-name {
+  display: block;
+  font-size: 0.77rem;
+  color: var(--swap-ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swap-row-bal {
+  margin-left: auto;
+  flex: none;
+  text-align: right;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.swap-row-empty { padding: 14px 10px; color: var(--swap-ink-3); font-size: 0.85rem; cursor: default; }
+.swap-row-empty:hover { background: transparent; }
+
+.swap-idpill {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--swap-sunken);
+  color: var(--swap-ink-3);
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.swap-idpill.verified { background: var(--swap-accent-wash); color: var(--swap-accent-ink); }
+
+/* ---- narrow screens --------------------------------------------------------- */
+@media (max-width: 600px) {
+  .swap-modal { max-width: 100%; }
+  .swap-modal input.swap-amt { font-size: 1.6rem; }
+  .swap-routertag { display: none; }
+  .swap-modes button { font-size: 0.78rem; }
+}
+
+/* The accordion's own Swap column on the address page. */
 .swapicon {
   width: 24px;
   height: 24px;
   margin-right: 16px;
-}
-
-.swap-text {
-/* Keeps the unit and name grouped together on the left */
-  display: inline-block;
-}
-
-.swap-asset-id {
-  margin-left: auto;
-  font-weight: 500;
-}
-
-.swap-asset-id.verified {
- color: #00c896;
-}
-
-.swap-asset-id.unverified {
-  color: #ababab;
 }
 
 .swap-action-column {
