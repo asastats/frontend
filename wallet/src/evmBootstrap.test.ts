@@ -44,7 +44,7 @@ describe("initEvm", () => {
     expect(component).not.toBeNull();
     expect(connectorFactory).toHaveBeenCalledWith("pid-123");
     expect(
-      document.querySelectorAll("#evm-wallet-list .evm-connect-button")
+      document.querySelectorAll("#evm-wallet-list [data-wallet-connect]")
     ).toHaveLength(1);
   });
 

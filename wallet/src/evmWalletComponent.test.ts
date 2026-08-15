@@ -2,11 +2,30 @@
  * @jest-environment jsdom
  */
 
+import { NOTIFY_EVENT } from "./notify";
 import {
   EvmWalletComponent,
   type EvmConnector,
   type EvmDeps,
 } from "./evmWalletComponent";
+
+/**
+ * Capture messages the package surfaces.
+ *
+ * The package no longer calls a framework global; it dispatches a cancelable
+ * `asastats:notify` event and lets the host render it. Claiming the event here
+ * (preventDefault) is what a real host does, and it suppresses the built-in
+ * fallback notice so these assertions see one channel, not two.
+ */
+function captureNotices(): { texts: string[]; stop: () => void } {
+  const texts: string[] = [];
+  const onNotify = (event: Event) => {
+    texts.push((event as CustomEvent<{ message: string }>).detail.message);
+    event.preventDefault();
+  };
+  document.addEventListener(NOTIFY_EVENT, onNotify);
+  return { texts, stop: () => document.removeEventListener(NOTIFY_EVENT, onNotify) };
+}
 
 const VALID_ADDR = "0x52908400098527886E0F7030069857D2E4169EE7";
 
@@ -49,8 +68,14 @@ function deps(over: Partial<EvmDeps> = {}): EvmDeps {
   };
 }
 
+let notices: { texts: string[]; stop: () => void };
+
 beforeEach(() => {
-  (window as any).M = { toast: jest.fn() };
+  notices = captureNotices();
+});
+
+afterEach(() => {
+  notices.stop();
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -66,7 +91,7 @@ describe("EvmWalletComponent.render", () => {
     const c = new EvmWalletComponent(root, undefined, deps({ listConnectors: () => connectors }));
     await c.bind();
 
-    const buttons = root.querySelectorAll(".evm-connect-button");
+    const buttons = root.querySelectorAll("[data-wallet-connect]");
     expect(buttons).toHaveLength(2);
     expect(buttons[0].textContent).toContain("MetaMask");
     expect(buttons[0].querySelector("img")).not.toBeNull();
@@ -82,7 +107,7 @@ describe("EvmWalletComponent.render", () => {
       deps({ listConnectors: async () => [makeConnector()] })
     );
     await c.bind();
-    expect(root.querySelectorAll(".evm-connect-button")).toHaveLength(1);
+    expect(root.querySelectorAll("[data-wallet-connect]")).toHaveLength(1);
   });
 
   it("reveals the error banner when no connectors are found", async () => {
@@ -91,7 +116,7 @@ describe("EvmWalletComponent.render", () => {
     await c.bind();
     const banner = root.querySelector<HTMLElement>("#evm-app-error")!;
     expect(banner.style.display).toBe("block");
-    expect(root.querySelectorAll(".evm-connect-button")).toHaveLength(0);
+    expect(root.querySelectorAll("[data-wallet-connect]")).toHaveLength(0);
   });
 
   it("falls back to the container when no list element is present", async () => {
@@ -99,7 +124,7 @@ describe("EvmWalletComponent.render", () => {
     const root = document.getElementById("evm-wallet-connect")!;
     const c = new EvmWalletComponent(root, undefined, deps());
     await c.bind();
-    expect(root.querySelectorAll(".evm-connect-button")).toHaveLength(1);
+    expect(root.querySelectorAll("[data-wallet-connect]")).toHaveLength(1);
   });
 });
 
@@ -116,7 +141,7 @@ describe("EvmWalletComponent click delegation", () => {
     await c.bind();
 
     root
-      .querySelector<HTMLElement>(".evm-connect-button")!
+      .querySelector<HTMLElement>("[data-wallet-connect]")!
       .dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await Promise.resolve();
     expect(spy).toHaveBeenCalledTimes(1);
@@ -246,9 +271,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
       }),
     });
     await c.authorizeWith(connector);
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "user rejected" })
-    );
+    expect(notices.texts).toContain("user rejected");
     expect(navigate).not.toHaveBeenCalled();
   });
 
@@ -262,9 +285,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
       })),
     });
     await c.authorizeWith(connector);
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: expect.stringContaining("Invalid EVM address") })
-    );
+    expect(notices.texts).toContainEqual(expect.stringContaining("Invalid EVM address"));
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
@@ -273,9 +294,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     const c = new EvmWalletComponent(root, undefined, deps());
     mockFetchSequence({ error: "Invalid or missing address" });
     await c.authorizeWith(makeConnector());
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "Invalid or missing address" })
-    );
+    expect(notices.texts).toContain("Invalid or missing address");
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -287,9 +306,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     const c = new EvmWalletComponent(root, undefined, deps({ sign }));
     mockFetchSequence({ nonce: "N", prefix: "p:" });
     await c.authorizeWith(makeConnector());
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "signature declined" })
-    );
+    expect(notices.texts).toContain("signature declined");
   });
 
   it("surfaces a verify failure message", async () => {
@@ -300,9 +317,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
       { success: false, error: "No account is linked to this wallet" }
     );
     await c.authorizeWith(makeConnector());
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "No account is linked to this wallet" })
-    );
+    expect(notices.texts).toContain("No account is linked to this wallet");
   });
 
   it("defaults the verify failure message when none is given", async () => {
@@ -310,12 +325,10 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     const c = new EvmWalletComponent(root, undefined, deps());
     mockFetchSequence({ nonce: "N", prefix: "p:" }, { success: false });
     await c.authorizeWith(makeConnector());
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "Verification failed" })
-    );
+    expect(notices.texts).toContain("Verification failed");
   });
 
-  it("passes wallet-derived text to the toast as plain text", async () => {
+  it("passes wallet-derived text through as plain text", async () => {
     const root = setupDOM();
     const c = new EvmWalletComponent(root, undefined, deps());
     const connector = makeConnector({
@@ -324,15 +337,14 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
       }),
     });
     await c.authorizeWith(connector);
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "<img src=x>" })
-    );
+    expect(notices.texts).toContain("<img src=x>");
   });
 
-  it("falls back to a card panel when Materialize is absent", async () => {
+  it("appends a plain notice when no host claims the message", async () => {
     jest.useFakeTimers();
     const root = setupDOM();
-    delete (window as any).M;
+    // No listener: the event goes uncancelled and the built-in fallback runs.
+    notices.stop();
     const c = new EvmWalletComponent(root, undefined, deps());
     const connector = makeConnector({
       connect: jest.fn(async () => {
@@ -340,12 +352,14 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
       }),
     });
     await c.authorizeWith(connector);
-    const panel = root.querySelector(".card-panel");
-    expect(panel).not.toBeNull();
-    expect(panel!.textContent).toBe("boom");
+    const notice = root.querySelector('[data-notice="error"]');
+    expect(notice).not.toBeNull();
+    expect(notice!.textContent).toBe("boom");
+    expect(notice!.getAttribute("role")).toBe("alert");
     jest.advanceTimersByTime(5000);
-    expect(root.querySelector(".card-panel")).toBeNull();
+    expect(root.querySelector("[data-notice]")).toBeNull();
     jest.useRealTimers();
+    notices = captureNotices();
   });
 
   it("stringifies non-Error throwables", async () => {
@@ -358,9 +372,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
       }),
     });
     await c.authorizeWith(connector);
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "plain string failure" })
-    );
+    expect(notices.texts).toContain("plain string failure");
   });
 
   it("rejects a missing recovered address with an 'undefined' message", async () => {
@@ -373,9 +385,7 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
       })),
     });
     await c.authorizeWith(connector);
-    expect((window as any).M.toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "Invalid EVM address: undefined" })
-    );
+    expect(notices.texts).toContain("Invalid EVM address: undefined");
   });
 
   it("sends an empty CSRF token when neither cookie nor input is present", async () => {

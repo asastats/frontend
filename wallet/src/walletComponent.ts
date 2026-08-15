@@ -1,3 +1,4 @@
+import { notify } from "./notify";
 import { BaseWallet, WalletManager } from "@txnlab/use-wallet";
 import {
   makePaymentTxnWithSuggestedParamsFromObject,
@@ -124,11 +125,12 @@ export class WalletComponent {
 
     if (nameHeader) {
       /** Existing "Active" badge node, if currently shown. */
-      let activeBadge = nameHeader.querySelector(".badge");
+      let activeBadge = nameHeader.querySelector("[data-badge]");
       if (isActive && !activeBadge) {
         activeBadge = document.createElement("span");
-        activeBadge.className = "badge new myteal white-text";
-        activeBadge.setAttribute("data-badge-caption", "");
+        // Was "badge new myteal white-text" -- of which `myteal` was defined
+        // nowhere in the codebase and had never rendered anything.
+        activeBadge.setAttribute("data-badge", "active");
         activeBadge.textContent = "Active";
         nameHeader.appendChild(activeBadge);
       } else if (!isActive && activeBadge) {
@@ -199,26 +201,13 @@ export class WalletComponent {
    * otherwise appends a transient message node to the card.
    *
    * The message can contain wallet-derived text (e.g. an active account
-   * address); Materialize's `text` option renders it as textContent, so it
-   * is safe (as is the `textContent` DOM fallback).
+   * address); every path renders it as textContent, so it is never parsed as
+   * markup.
    *
    * @param message - Human-readable error text (treated as untrusted).
    */
   private showError(message: string) {
-    /** Optional Materialize global; absent under jsdom/tests. */
-    const M = (window as any).M;
-    if (M?.toast) {
-      M.toast({ text: message, classes: "red darken-1" });
-      return;
-    }
-    /* istanbul ignore next */
-    if (this.element) {
-      const errorDiv = document.createElement("div");
-      errorDiv.className = "card-panel red lighten-2 white-text";
-      errorDiv.textContent = message;
-      this.element.appendChild(errorDiv);
-      setTimeout(() => errorDiv.remove(), 5000);
-    }
+    notify(this.element, message);
   }
 
   /**

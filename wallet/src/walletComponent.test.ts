@@ -2,7 +2,26 @@
  * @jest-environment jsdom
  */
 
+import { NOTIFY_EVENT } from "./notify";
 import { WalletComponent } from "./walletComponent";
+
+/**
+ * Capture messages the package surfaces.
+ *
+ * The package no longer calls a framework global; it dispatches a cancelable
+ * `asastats:notify` event and lets the host render it. Claiming the event here
+ * (preventDefault) is what a real host does, and it suppresses the built-in
+ * fallback notice so these assertions see one channel, not two.
+ */
+function captureNotices(): { texts: string[]; stop: () => void } {
+  const texts: string[] = [];
+  const onNotify = (event: Event) => {
+    texts.push((event as CustomEvent<{ message: string }>).detail.message);
+    event.preventDefault();
+  };
+  document.addEventListener(NOTIFY_EVENT, onNotify);
+  return { texts, stop: () => document.removeEventListener(NOTIFY_EVENT, onNotify) };
+}
 
 // ─────────────────────────────────────────────────────────────
 // algosdk mock (only the symbols WalletComponent imports)
@@ -57,8 +76,14 @@ function setupDOM(): HTMLElement {
 
 let component: WalletComponent;
 let root: HTMLElement;
+let notices: { texts: string[]; stop: () => void };
+
+afterEach(() => {
+  notices.stop();
+});
 
 beforeEach(() => {
+  notices = captureNotices();
   jest.clearAllMocks();
   unsubscribeMock = jest.fn();
   mockWallet.isConnected = false;
@@ -96,7 +121,7 @@ describe("WalletComponent rendering", () => {
     mockWallet.accounts = [{ address: "AAAAAAAAAAAAA" }];
     mockWallet.activeAccount = mockWallet.accounts[0];
     mockWallet._cb(mockWallet);
-    const badge = root.querySelector("h4 .badge");
+    const badge = root.querySelector("h4 [data-badge]");
     expect(badge).not.toBeNull();
     expect(badge?.textContent).toBe("Active");
   });
@@ -165,10 +190,10 @@ describe("WalletComponent interaction", () => {
     mockWallet.accounts = [{ address: "AAAAAAAAAAAAA" }];
     mockWallet.activeAccount = mockWallet.accounts[0];
     mockWallet._cb(mockWallet);
-    expect(root.querySelector("h4 .badge")).not.toBeNull();
+    expect(root.querySelector("h4 [data-badge]")).not.toBeNull();
     mockWallet.isActive = false;
     mockWallet._cb(mockWallet);
-    expect(root.querySelector("h4 .badge")).toBeNull();
+    expect(root.querySelector("h4 [data-badge]")).toBeNull();
   });
 });
 
@@ -286,36 +311,27 @@ describe("WalletComponent auth", () => {
     expect(nonceCall[1].headers["X-CSRFToken"]).toBe("hiddentok");
   });
 
-  it("surfaces errors via a Materialize toast when available", async () => {
-    const toast = jest.fn();
-    (window as any).M = { toast };
+  it("surfaces errors through the host notification seam", async () => {
     mockWallet.activeAccount = { address: "ACTIVEADDR" };
     (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ error: "boom" }),
     });
     await component.auth();
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "boom" })
-    );
-    delete (window as any).M;
+    expect(notices.texts).toContain("boom");
   });
 
-  it("passes wallet-derived text to the toast as plain text", async () => {
-    const toast = jest.fn();
-    (window as any).M = { toast };
+  it("passes wallet-derived text through as plain text", async () => {
     const algosdk = require("algosdk");
     (algosdk.isValidAddress as jest.Mock).mockReturnValueOnce(false);
     mockWallet.activeAccount = { address: "<img src=x onerror=alert(1)>" };
     await component.auth();
-    expect(toast).toHaveBeenCalledTimes(1);
-    const arg = toast.mock.calls[0][0] as { text?: string; html?: string };
-    // `text` (not `html`) is used, so Materialize renders it as textContent;
-    // the raw string is passed through and no `html` key is set.
-    expect(arg.html).toBeUndefined();
-    expect(arg.text).toContain("<img");
-    expect(global.fetch).not.toHaveBeenCalled();
-    delete (window as any).M;
+    expect(notices.texts).toHaveLength(1);
+    // The wallet-derived fragment survives verbatim in the message. Every
+    // render path uses textContent, so it is never parsed as markup.
+    expect(notices.texts[0]).toBe(
+      "Invalid or missing address: <img src=x onerror=alert(1)>"
+    );
   });
 
   it("errors when the wallet returns no signed transaction", async () => {
@@ -333,18 +349,13 @@ describe("WalletComponent auth", () => {
   });
 
   it("falls back to a generic message when verify returns no error text", async () => {
-    const toast = jest.fn();
-    (window as any).M = { toast };
     mockWallet.activeAccount = { address: "ACTIVEADDR" };
     mockFetchSequence(
       { nonce: "n1", prefix: "asastats-auth:" },
       { success: false }
     );
     await component.auth();
-    expect(toast).toHaveBeenCalledWith(
-      expect.objectContaining({ text: "Verification failed" })
-    );
-    delete (window as any).M;
+    expect(notices.texts).toContain("Verification failed");
   });
 
   it("handles a non-Error rejection", async () => {

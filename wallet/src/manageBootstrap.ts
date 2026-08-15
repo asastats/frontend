@@ -1,5 +1,6 @@
 /* istanbul ignore file -- browser/htmx glue; runStepUp is tested in manageBridge.test */
 import { buildStepUpSign } from "./manageAdapters";
+import { notify } from "./notify";
 import { runStepUp } from "./manageBridge";
 
 const DEFAULT_MANAGE_API_BASE = "/api/v2/wallet";
@@ -17,20 +18,9 @@ function getCsrf(doc: Document): string {
 }
 
 function toast(message: string): void {
-  const M = (window as any).M;
-  if (M?.toast) {
-    // `text` (not the deprecated `html`) renders as textContent: no markup
-    // parsing, so wallet/server-derived strings are surfaced safely.
-    M.toast({ text: message, classes: "red darken-1" });
-  }
-}
-
-function initCollapsible(doc: Document): void {
-  const M = (window as any).M;
-  const ul = doc.querySelector(".collapsible");
-  if (M?.Collapsible?.init && ul) {
-    M.Collapsible.init(ul, { accordion: false });
-  }
+  // No container to fall back into here, so an unhandled message is dropped --
+  // which is exactly what happened before, on any page without Materialize.
+  notify(null, message);
 }
 
 /**
@@ -96,18 +86,13 @@ export function initManageAddresses(doc: Document = document): void {
     );
   });
 
-  // Re-init the Materialize collapsible after htmx swaps the list back in.
-  doc.body.addEventListener("htmx:afterSwap", (event: Event) => {
-    const detail = (event as CustomEvent).detail;
-    if (detail?.target?.id === "connected-addresses-list") {
-      initCollapsible(doc);
-    }
-  });
+  // The address list used to need re-initialising here after every htmx swap,
+  // because Materialize's collapsible was JS-driven. It is a <details> now, so
+  // a freshly swapped list works on arrival and there is nothing to re-bind.
+  //
   // Server-signalled failures arrive as an HX-Trigger "wallet-error" event.
   doc.body.addEventListener("wallet-error", (event: Event) => {
     const detail = (event as CustomEvent).detail;
     toast(detail?.value || (typeof detail === "string" ? detail : "Operation failed"));
   });
-
-  initCollapsible(doc);
 }

@@ -1,3 +1,5 @@
+import { notify } from "./notify";
+
 /** Default mount point of the EVM walletauth API (overridable per instance). */
 export const DEFAULT_EVM_API_BASE = "/api/v2/wallet/login";
 
@@ -114,8 +116,9 @@ export class EvmWalletComponent {
       /** One button per connector; name set via textContent (safe). */
       const button = document.createElement("button");
       button.type = "button";
-      button.className =
-        "btn whenmoon waves-effect waves-mydark evm-connect-button";
+      // No framework classes: the connector id is both the hook the click
+      // handler matches on and the attribute a stylesheet targets.
+      button.dataset.walletConnect = "";
       button.dataset.connectorId = connector.id;
 
       if (connector.icon) {
@@ -123,7 +126,7 @@ export class EvmWalletComponent {
         const img = document.createElement("img");
         img.src = connector.icon;
         img.alt = "";
-        img.className = "evm-wallet-icon";
+        img.dataset.walletIcon = "";
         img.width = 20;
         img.height = 20;
         button.appendChild(img);
@@ -164,24 +167,15 @@ export class EvmWalletComponent {
   }
 
   /**
-   * Surfaces an error via a Materialize toast when available, otherwise a
-   * transient card panel. The message may carry wallet-derived text;
-   * Materialize's `text` option renders it as textContent, so it is safe.
+   * Surfaces an error through the host, falling back to a transient notice.
+   *
+   * The message may carry wallet-derived text; every path renders it as
+   * textContent, so it is never parsed as markup.
    *
    * @param message - Human-readable error text (treated as untrusted).
    */
   private showError(message: string) {
-    /** Optional Materialize global; absent under jsdom/tests. */
-    const M = (window as any).M;
-    if (M?.toast) {
-      M.toast({ text: message, classes: "red darken-1" });
-      return;
-    }
-    const errorDiv = document.createElement("div");
-    errorDiv.className = "card-panel red lighten-2 white-text";
-    errorDiv.textContent = message;
-    this.element.appendChild(errorDiv);
-    setTimeout(() => errorDiv.remove(), 5000);
+    notify(this.element, message);
   }
 
   /** Wires click delegation; routes connector-button clicks to the flow. */
@@ -189,7 +183,7 @@ export class EvmWalletComponent {
     this.element.addEventListener("click", async (e: Event) => {
       /** Nearest connector button to the click target, if any. */
       const button = (e.target as HTMLElement).closest<HTMLElement>(
-        ".evm-connect-button"
+        "[data-wallet-connect]"
       );
       if (!button) return;
       /** Connector matching the clicked button's id. */

@@ -30,15 +30,19 @@
         fragment addressable as "<this template>#address_list" for htmx swaps.
       {% endcomment %}
       {% partialdef address_list inline %}
-      <ul class="collapsible expandable center-align">
+      {# Native <details>, not a JS accordion: the wallet package no longer      #}
+      {# initialises a framework component, and this list is swapped in by htmx #}
+      {# -- a freshly swapped <details> works on arrival with nothing to rebind. #}
+      <ul class="address-list">
         {% for row in addresses %}
         <li class="connected-address-row" id="address-{{ row.id }}">
-          <div class="collapsible-header">
-            <span class="address-text {% if row.is_primary %}mylight-text{% endif %}">
-              {{ row.address|slice:":5" }}...{{ row.address|slice:"-5:" }}
-            </span>
-          </div>
-          <div class="collapsible-body">
+          <details>
+            <summary>
+              <span class="address-text {% if row.is_primary %}mylight-text{% endif %}">
+                {{ row.address|slice:":5" }}...{{ row.address|slice:"-5:" }}
+              </span>
+            </summary>
+          <div class="address-detail">
             <div class="full-address-text" style="word-break:break-all;margin-bottom:4px">{{ row.address }}</div>
             <div class="chain-text text-muted" style="margin-bottom:16px">({{ row.chain }})</div>
             <div class="address-actions">
@@ -72,9 +76,10 @@
               {% endif %}
             </div>
           </div>
+          </details>
         </li>
         {% empty %}
-        <li class="connected-address-row"><div class="collapsible-header">No addresses yet.</div></li>
+        <li class="connected-address-row"><p class="address-empty">No addresses yet.</p></li>
         {% endfor %}
       </ul>
       {% endpartialdef %}

@@ -1457,3 +1457,101 @@ div.socfooter {
 .nft.c15 {
   border-left-color: #656568;
 }
+/* ========================================================================= *
+ * Wallet package hooks (Phase 0)
+ *
+ * frontend/wallet emits plain markup with data attributes and no framework
+ * classes, so the styling for what it renders lives here rather than being
+ * borrowed from Materialize. These four rules are what `.btn`, `.badge` and
+ * `.card-panel` used to supply. They are written against the same custom
+ * properties the swap modal uses, so they survive the move to DaisyUI --
+ * only the token values change.
+ * ========================================================================= */
+
+[data-wallet-connect] {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  margin: 0 6px 8px 0;
+  border: 1px solid #ababab;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+[data-wallet-connect]:hover { border-color: #00c896; }
+[data-wallet-connect]:focus-visible {
+  outline: 2px solid #00c896;
+  outline-offset: 2px;
+}
+[data-wallet-icon] { width: 20px; height: 20px; border-radius: 4px; }
+
+[data-badge="active"] {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: #00c896;
+  color: #2b2b2b;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+/* Only shown when no host claims the message -- see wallet/src/notify.ts. */
+[data-notice] {
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+}
+[data-notice="error"] {
+  border-color: #ff3769;
+  background: rgba(255, 55, 105, 0.08);
+  color: #ff3769;
+}
+[data-notice="info"] {
+  border-color: #ababab;
+  background: rgba(171, 171, 171, 0.1);
+}
+
+/* Connected addresses: native disclosure, replacing the JS collapsible. */
+.address-list { margin: 0; padding: 0; list-style: none; }
+.connected-address-row {
+  border: 1px solid #ababab;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.connected-address-row summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+.connected-address-row summary::-webkit-details-marker { display: none; }
+.connected-address-row summary::after {
+  content: "";
+  float: right;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+.connected-address-row details[open] summary::after { transform: rotate(-135deg); }
+.connected-address-row summary:focus-visible {
+  outline: 2px solid #00c896;
+  outline-offset: -2px;
+}
+.address-detail { padding: 0 18px 16px; }
+.address-empty { padding: 14px 18px; margin: 0; }
