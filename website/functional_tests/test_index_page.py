@@ -12,7 +12,9 @@ class IndexPageTest(FunctionalTest):
         address.send_keys(TESTING_ADDRESS)
 
         button = self.find_elem_by_id("whenmoon")
-        self.assertIn("WHEN MOON", button.text)
+        # Materialize upper-cased button text in CSS; DaisyUI does not, so the
+        # rendered casing is now a design choice rather than content.
+        self.assertEqual(button.text.strip().lower(), "when moon")
 
         with self.wait_for_page_load(timeout=2):
             self.find_elem_by_id("whenmoon").click()

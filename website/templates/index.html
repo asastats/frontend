@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% load static %}{% load core_extras %}
+{% extends 'base_tw.html' %}{% load static %}{% load core_extras %}
 {% block otherheader %}
     <meta property="og:type" content="website" />
     <meta property="og:title" content="{{ WEBSITE_NAME }}" />
@@ -23,75 +23,72 @@
 {% endblock %}
 {% block header %}{% endblock %}
 {% block content %}
-<div class="row center-align">
-  <div class="col s12 m8 push-m2">
-    <a href="/"><img id="logo" class="responsive-img" src="{% static 'logo.png' %}" alt="{{ WEBSITE_NAME }} logo"></a>
+<div class="mx-auto max-w-2xl text-center">
+  <div>
+    <a href="/"><img id="logo" class="max-w-full h-auto" src="{% static 'logo.png' %}" alt="{{ WEBSITE_NAME }} logo"></a>
   </div>
-  <div class="row">
-    <div class="col s12">
-      <h1 class="center-align index flow-text truncate">{{ header }}</h1>
+  <div class="mt-8">
+    <div>
+      <h1 class="truncate text-center text-lg font-medium">{{ header }}</h1>
     </div>
     <form method="POST" action="." id="id_form">
       {% csrf_token %}
-      <div class="input-field col s12 m8 push-m2">
-        <img class="prefix" src="{% static 'img/expand.png' %}" alt="Click to expand">
-        <input id="id_address"{% if form.bundle.errors %} value="{{ form.bundle.errors.0|escape }}"{% endif %} name="address" maxlength="58" autofocus="autofocus" placeholder="Enter Algorand address" type="text">
-        {% if form.address.errors %}<span class="myred-text">{{ form.address.errors|escape }}</span>{% endif %}
+      <div class="mt-6 flex items-center gap-2 rounded-field border border-base-300 bg-base-100 px-3">
+        <img class="h-5 w-5 flex-none opacity-60" src="{% static 'img/expand.png' %}" alt="Click to expand">
+        <input class="input input-ghost w-full focus:outline-none" id="id_address"{% if form.bundle.errors %} value="{{ form.bundle.errors.0|escape }}"{% endif %} name="address" maxlength="58" autofocus="autofocus" placeholder="Enter Algorand address" type="text">
+        {% if form.address.errors %}<span class="text-error">{{ form.address.errors|escape }}</span>{% endif %}
         {{ form.bundle.as_hidden }}
         {% if form.bundle.errors %}
-        <div class="col s12">
-          <div class="col s6">
+        <div class="mt-3 flex justify-center gap-6">
+          <div>
           <p>
             <label>
-              <input id="ans" class="ns with-gap" name="ns" type="radio"  />
-              <img class="nsicon" src="{% static 'icons/providers/ans.png' %}" alt="Algorand name service">
+              <input id="ans" class="radio radio-primary radio-sm" name="ns" type="radio"  />
+              <img class="h-6 w-6 cursor-pointer" src="{% static 'icons/providers/ans.png' %}" alt="Algorand name service">
             </label>
           </p>
           </div>
-          <div class="col s6">
+          <div>
           <p>
             <label>
-              <input id="nfd" class="ns with-gap" name="ns" type="radio" />
-              <img class="nsicon" src="{% static 'icons/providers/nfd.png' %}" alt="NF Domains">
+              <input id="nfd" class="radio radio-primary radio-sm" name="ns" type="radio" />
+              <img class="h-6 w-6 cursor-pointer" src="{% static 'icons/providers/nfd.png' %}" alt="NF Domains">
             </label>
           </p>
           </div>
         </div>
         {% endif %}
       </div>
-      <div class="col s8 push-s2">
-        <div class="indeterminate"></div>
-      </div>
-      {% if form.non_field_errors and "Multiple" not in form.non_field_errors.0 %}<div class="col s12"><span class="myred-text">{{form.non_field_errors}}</span></div>{% endif %}
-      <div class="col s12 m8 push-m2 center-align">
-        <button class="waves-effect waves-mydark btn whenmoon" id="whenmoon" type="submit">When Moon</button>
+      {% if form.non_field_errors and "Multiple" not in form.non_field_errors.0 %}<div><span class="text-error">{{form.non_field_errors}}</span></div>{% endif %}
+      <div class="mt-5 text-center">
+        <button class="btn btn-primary" id="whenmoon" type="submit">When Moon</button>
       </div>
       {% if banner %}
-      <div class="col s12 m8 push-m2 center-align" style="margin-top: 1.5rem;">
+      <div class="mt-6 text-center">
         <a href="{{ banner.url }}" target="_blank" rel="noopener sponsored">
-          <img src="{% static banner.image %}" alt="{{ banner.alt }}" class="responsive-img">
+          <img src="{% static banner.image %}" alt="{{ banner.alt }}" class="max-w-full h-auto">
         </a>
       </div>
       {% endif %}
     </form>
     {% if user.is_authenticated %}
-    <div class="col col s12 m8 push-m2 bundlenames">
+    <div class="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       <br>
       {% for bundlename in user.profile.bundlenames %}
-      <div class="col s6 m4 l3">
-        <div class="hoverable bundlename">
+      <div>
+        <div class="rounded-box border border-base-300 bg-base-100 p-3 transition hover:shadow-md">
           <a href="{% url 'bundle_name' bundlename.name %}" target="_blank" title="Evaluate bundle">
-            <h5 class="center-align bundlename">{{ bundlename.name }}</h5>
+            <h5 class="mt-2 text-center text-sm font-medium">{{ bundlename.name }}</h5>
           </a>
         </div>
         {% if bundlename.can_access_historic_widget %}
-        <div class="center-align">
-          {% if bundlename.public %}<i class="material-icons left" aria-hidden="true">{{ 'public'|get_styling:"icon" }}</i>{% endif %}
+        <div class="text-center">
+          {% if bundlename.public %}<svg class="inline-block h-4 w-4 align-text-bottom opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>{% endif %}
           <a href="{% url 'historic' bundlename.bundle %}" target="_blank" title="Process and show bundle's historic data">Historic data</a>
         </div>
         {% elif bundlename.public %}
-        <div class="center-align">
-          <i class="material-icons" aria-hidden="true">{{ 'public'|get_styling:"icon" }}</i>
+        <div class="text-center">
+          <svg class="inline-block h-4 w-4 align-text-bottom opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>
         </div>
         {% endif %}
       </div>

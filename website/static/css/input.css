@@ -143,6 +143,56 @@
   }
 }
 
+/* Hooks emitted by the frontend/wallet package and by the snippets shared with
+   base.html. These carry no framework classes by design (Phase 0), so both
+   stylesheets have to style them -- style.css has the same block for the
+   Materialize side. Attribute selectors, so Tailwind cannot generate them. */
+[data-wallet-connect] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  padding: 0 1rem;
+  margin: 0 0.375rem 0.5rem 0;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+[data-wallet-connect]:hover { border-color: var(--color-primary); }
+[data-wallet-icon] { width: 1.25rem; height: 1.25rem; border-radius: 0.25rem; }
+
+[data-badge="active"] {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.5625rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-size: 0.72rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+[data-notice] {
+  margin: 0.75rem 0 0;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-field);
+  font-size: 0.9rem;
+}
+[data-notice="error"] {
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+[data-notice="info"] { border-color: var(--color-base-300); }
+
+/* The wallet package injects connector buttons into this container. */
+.evm-wallet-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+
 /* htmx feedback, outside a Tailwind layer so the opacity rules are not purged
    and do not lose to utilities. Mirrors the rewards suite. */
 [hx-indicator] {

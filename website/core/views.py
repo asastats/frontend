@@ -480,7 +480,17 @@ class TokenomicsView(TemplateView):
         :return: dict
         """
         context = super().get_context_data(*args, **kwargs)
-        context["price"] = fetch_price()
+        # Degrade the way core.context_processors.deployment_capabilities does:
+        # an unreachable backend must not take a content page down. Before this
+        # guard, tokenomics was the only page on the site that returned a 500
+        # when the engine was down -- every other one renders a stub.
+        try:
+            context["price"] = fetch_price()
+
+        except (BackendError, Exception):  # noqa: BLE001 - never break rendering
+            logger.warning("Could not fetch the ASASTATS price", exc_info=True)
+            context["price"] = None
+
         if bool(self.request.GET.get("dark")):
             context["mode"] = "dark"
 

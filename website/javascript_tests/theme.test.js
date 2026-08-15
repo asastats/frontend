@@ -18,6 +18,34 @@ function mountPicker(themes) {
   return [...document.querySelectorAll("input[name='theme-dropdown']")];
 }
 
+/**
+ * Swap localStorage for one whose `method` throws; returns a restore function.
+ *
+ * Neither obvious approach works in both environments this suite runs in:
+ * spying on `Storage.prototype` misses `jest-localstorage-mock` (which the
+ * project's jest config loads, and which replaces localStorage with a plain
+ * object), while assigning `localStorage.getItem = fn` misses real jsdom --
+ * its Storage is a Proxy, so that stores a value under the key "getItem"
+ * instead of overriding the method. Redefining the property on `window` is
+ * above both mechanisms and behaves the same either way.
+ */
+function breakStorage(method, message) {
+  const real = window.localStorage;
+  const broken = {
+    getItem: (k) => real.getItem(k),
+    setItem: (k, v) => real.setItem(k, v),
+    removeItem: (k) => real.removeItem(k),
+    clear: () => real.clear(),
+  };
+  broken[method] = () => {
+    throw new Error(message);
+  };
+  const define = (value) =>
+    Object.defineProperty(window, "localStorage", { value, configurable: true });
+  define(broken);
+  return () => define(real);
+}
+
 describe("theme.js", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -41,14 +69,10 @@ describe("theme.js", () => {
     });
 
     it("still applies when storage refuses the write", () => {
-      const setItem = jest
-        .spyOn(Storage.prototype, "setItem")
-        .mockImplementation(() => {
-          throw new Error("QuotaExceededError");
-        });
+      const restore = breakStorage("setItem", "QuotaExceededError");
       expect(T.applyTheme("retro")).toBe(true);
       expect(document.documentElement.getAttribute("data-theme")).toBe("retro");
-      setItem.mockRestore();
+      restore();
     });
   });
 
@@ -127,15 +151,11 @@ describe("theme.js", () => {
     });
 
     it("survives storage being unreadable", () => {
-      const getItem = jest
-        .spyOn(Storage.prototype, "getItem")
-        .mockImplementation(() => {
-          throw new Error("SecurityError");
-        });
+      const restore = breakStorage("getItem", "SecurityError");
       const inputs = mountPicker(["asastats", "nord"]);
       expect(T.wireThemePicker(document)).toBe(2);
       expect(inputs.some((i) => i.checked)).toBe(false);
-      getItem.mockRestore();
+      restore();
     });
   });
 });

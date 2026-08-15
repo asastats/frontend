@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .base import FunctionalTest
 
 
@@ -6,10 +8,16 @@ class SitemapHtmlPageTest(FunctionalTest):
         # Urlike checks sitemap page
         self.browser.get(self.server_url + "/sitemap/")
 
-        # She notices there's Public and Private pages headers
-        headers = self.find_elems_by_tag("h3")
-        self.assertIn("Public pages", [header.text for header in headers])
-        self.assertIn("Private pages", [header.text for header in headers])
+        # She notices there's Public and Private pages headers. The level is a
+        # design decision -- they became <h2> under the page's <h1> in the
+        # redesign -- so the assertion is that the headings exist, not what
+        # they are made of.
+        headings = [
+            h.text
+            for h in self.browser.find_elements(By.CSS_SELECTOR, "h1, h2, h3, h4")
+        ]
+        self.assertIn("Public pages", headings)
+        self.assertIn("Private pages", headings)
 
         # Now she logs in
         self.create_cookie_and_go_to_bundlename_add_page("urlike@urlike.com")

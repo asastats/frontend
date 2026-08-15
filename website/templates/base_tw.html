@@ -57,7 +57,7 @@
         <a class="btn btn-ghost btn-sm" href="{% url 'swagger-ui' %}">API</a>
         <a class="btn btn-ghost btn-sm" id="logout" href="{% url 'account_logout' %}">Logout</a>
         {% else %}
-        <a class="btn btn-ghost btn-sm" href="{% url 'account_login' %}">Log in</a>
+        <a class="btn btn-ghost btn-sm" href="#modalLogin">Log in</a>
         <a class="btn btn-ghost btn-sm" href="{% url 'swagger-ui' %}">API</a>
         <a class="btn btn-ghost btn-sm" href="{% url 'subscriptions' %}">Subscriptions</a>
         {% endif %}
@@ -77,7 +77,7 @@
           {% if user.is_authenticated %}
           <li><a href="{% url 'home' %}">Home</a></li>
           {% else %}
-          <li><a href="{% url 'account_login' %}">Log in</a></li>
+          <li><a href="#modalLogin">Log in</a></li>
           {% endif %}
           <li><a href="{% url 'about' %}">About</a></li>
           <li><a href="{% url 'tokenomics' %}">Tokenomics</a></li>
@@ -114,11 +114,31 @@
       <a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a>
       <a class="link link-hover" href="{% url 'disclaimer' %}">Disclaimer</a>
     </nav>
+    {% comment %}
+      The old footer rendered these as sprite buttons (.scbtn/.frmbtn), which
+      were background images in style.css -- a stylesheet this page no longer
+      loads. They are plain named links now: no sprite sheet, no icon font, and
+      readable to a screen reader without a title attribute doing the work.
+    {% endcomment %}
+    <nav class="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 opacity-80">
+      <a class="link link-hover" href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener">Buy ASASTATS</a>
+      <a class="link link-hover" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener">Pact pool</a>
+      <a class="link link-hover" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener">Tinyman pool</a>
+      <a class="link link-hover" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener">App&nbsp;Store</a>
+      <a class="link link-hover" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener">Play&nbsp;Store</a>
+      <a class="link link-hover" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener">X</a>
+      <a class="link link-hover" href="https://discord.gg/{{ DISCORD_INVITE }}" target="_blank" rel="noopener">Discord</a>
+      <a class="link link-hover" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener">Reddit</a>
+      <a class="link link-hover" href="https://medium.com/{{ MEDIUM_NAME }}" target="_blank" rel="noopener">Medium</a>
+      <a class="link link-hover" href="https://github.com/{{ GITHUB_ORGANIZATION }}" target="_blank" rel="noopener">GitHub</a>
+    </nav>
     <p class="mt-5 text-center opacity-60">&copy;&nbsp;2026&nbsp;ASA&nbsp;Stats</p>
   </div>
 </footer>
+{% block login_modal %}{% if not user.is_authenticated %}{% include "snippets/modal_login_tw.html" %}{% endif %}{% endblock %}
 <script src="{% static 'js/htmx.min.js' %}"></script>
 <script src="{% static 'js/theme.js' %}"></script>
+<script src="{% static 'js/authmodal.js' %}"></script>
 {% block otherfooter %}{% endblock %}
 </body>
 </html>

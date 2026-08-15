@@ -1,14 +1,16 @@
 <div id="evm-wallet-connect"
      data-api-base="{{ evm_api_base|default:'/api/v2/wallet/login' }}"
      data-wc-project-id="{{ WALLET_CONNECT_PROJECT_ID|default:'' }}"
-     class="row col s12">
+     class="evm-signing">
   {% csrf_token %}
 
   <h5>Other chains (EVM)</h5>
   <p>Connect an Ethereum-compatible wallet and prove control by signing a
     message. Nothing is sent on-chain and there is no fee.</p>
 
-  <div id="evm-app-error" class="card-panel red lighten-2 white-text" style="display:none">
+  {# data-notice is styled by BOTH stylesheets, so this snippet needs no #}
+{# Materialize/DaisyUI variant and is shared by either base template.  #}
+  <div id="evm-app-error" data-notice="error" role="alert" style="display:none">
     No EVM wallet found. Install a browser wallet, or configure WalletConnect.
   </div>
 

@@ -626,6 +626,28 @@ class TestTokenomicsView(BaseView):
         assert context["price"] == price
         assert context["transparency_reports"] == ["mocked_report"]
 
+    def test_core_views_tokenomicsview_get_context_data_survives_a_dead_backend(
+        self, mocker
+    ):
+        """The page must render when the engine is unreachable.
+
+        Every other page on the site already degrades -- the
+        deployment_capabilities context processor catches and returns a stub --
+        but this view called fetch_price() unguarded, so a backend outage
+        turned tokenomics into a 500 while the rest of the site stayed up.
+        """
+        view = TokenomicsView()
+        view = self.setup_view(view, self.request)
+        mocker.patch(
+            "core.views.fetch_price", side_effect=ConnectionError("backend is down")
+        )
+        mocker.patch("core.views.load_transparency_reports", return_value=[])
+
+        context = view.get_context_data()
+
+        assert context["price"] is None
+        assert context["transparency_reports"] == []
+
     def test_core_views_tokenomicsview_get_context_data_for_dark_mode(self, mocker):
         # Setup view
         view = TokenomicsView()

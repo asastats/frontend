@@ -1,17 +1,17 @@
-{% extends 'base.html' %}{% load static %}
+{% extends 'base_tw.html' %}{% load static %}
 {% block title %}ASA Stats - Subscription Plans{% endblock %}
 {% block description %}ASA Stats Subscription Plans - subscribe to one of our tiers to use the ASA Stats advanced features.{% endblock %}
 {% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,subscription plans,subscription tiers,subscribe{% endblock %}
 {% block content %}
-<h1 class="center-align">Subscription Plans</h1>
-<h5 class="center-align">Unlock More Power with ASASTATS</h5>
-<div class="row left-align">
+<h1 class="text-center">Subscription Plans</h1>
+<h5 class="text-center">Unlock More Power with ASASTATS</h5>
+<article class="mx-auto max-w-6xl">
   <p><br>ASA Stats offers a free-tier portfolio tracker with real-time valuations — and optional paid plans for users who want more control, analytics, and integrations. Subscriptions are powered by <strong>ASASTATS tokens</strong> and managed transparently through <strong>on-chain smart contracts</strong> via Subtopia.<br>
   <br>
   Whether you’re managing a single wallet or operating a DeFi dashboard, there’s a plan that fits.
   </p>
   <h3 id="free">Always Free for Everyone</h3>
-  <div class="col s12">
+  <div class="mt-3 space-y-4 text-base-content/80">
     <p>You can use ASA Stats without logging in or paying anything.<br>
     <br>✅ Real-time valuations for any Algorand address<br>
     ✅ View up to 5 address combined<br>
@@ -25,14 +25,14 @@
     </p>
   </div>
   <h3 id="tiers">Subscription Tiers</h3>
-  <div class="col s12">
+  <div class="mt-3 space-y-4 text-base-content/80">
     <p>All subscription payments are made in ASASTATS (token ID: 393537671) and processed via <strong>Subtopia smart contracts</strong>. Subscriptions grant <strong>automated, on-chain permission access</strong> for features.<br>
     <br>
     <br>
     </p>
   </div>
   <h3 id="how-it-works">How Subscriptions Work (Under the Hood)</h3>
-  <div class="col s12">
+  <div class="mt-3 space-y-4 text-base-content/80">
     <p>ASA Stats uses:<br>
     <br>
     &#8226; <strong>Subtopia smart contracts</strong> (per tier) for subscription validation<br>
@@ -45,7 +45,7 @@
     </p>
   </div>
   <h3 id="howto">How to Subscribe</h3>
-  <div class="col s12">
+  <div class="mt-3 space-y-4 text-base-content/80">
     <p>
     1. Hold enough ASASTATS in your wallet.<br>
     2. Select your tier from the Subscription Model below and confirm payment via WalletConnect<br>
@@ -57,487 +57,167 @@
     </p>
   </div>
   <h3 id="models">Subscription Models</h3>
-  <div id="user" class="col s12">
-    <div class="col m6 l3">
+  <div id="user" class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div>
       <br>
-      <div class="card medium">
-        <div class="card-content center-align">
+      <div class="card h-full bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center">
           <h5>Intro</h5>
           <br>
           <p>Basic subscription tier that allows only a very reduced set of additional functionalities<br>
           </p>
         </div>
-        <div class="card-action center-align">
+        <div class="card-actions justify-center border-t border-base-300 p-5">
           <strong>2500 ASASTATS / Month</strong><br>
           <br>
-          <a class="waves-effect waves-mydark btn whenmoon" href="https://subtopia.io/subscription/2685642641" target="_blank" rel="noopener" title="Subscribe to Intro tier on Subtopia.io">SUBSCRIBE</a>
+          <a class="btn btn-primary" href="https://subtopia.io/subscription/2685642641" target="_blank" rel="noopener" title="Subscribe to Intro tier on Subtopia.io">SUBSCRIBE</a>
         </div>
       </div>
-      <div class="checks">
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Selling Price Optimisation</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>NFT Pricing Model</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>User Bundles: 3</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundled Addresses: up to 8</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundle Naming</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundle URL: Private</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Bundles sorting/filtering</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Website Theme</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>User Widgets</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Historic widget</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>API Access</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>API Endpoints</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Publish ASA Stats User Widgets</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Custom Domain Name</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Dedicated Kubernetes Cluster</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Order Development of a user widget</span>
-          </label>
-        </p>
-      </div>
+      <ul class="mt-4 space-y-2 text-sm">
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Selling Price Optimisation</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>NFT Pricing Model</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>User Bundles: 3</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundled Addresses: up to 8</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundle Naming</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundle URL: Private</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Bundles sorting/filtering</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Website Theme</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">User Widgets</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Historic widget</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">API Access</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">API Endpoints</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Publish ASA Stats User Widgets</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Custom Domain Name</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Dedicated Kubernetes Cluster</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Order Development of a user widget</span></li>
+      </ul>
     </div>
-    <div class="col m6 l3">
+    <div>
       <br>
-      <div class="card medium">
-        <div class="card-content center-align">
+      <div class="card h-full bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center">
           <h5>Asastatser</h5>
           <br>
           <p>Tier for early adopters and Algorand Enthusiasts<br>
           </p>
         </div>
-        <div class="card-action center-align">
+        <div class="card-actions justify-center border-t border-base-300 p-5">
           <strong>18,000 ASASTATS / Month</strong><br>
           <br>
-          <a class="waves-effect waves-mydark btn whenmoon" href="https://subtopia.io/subscription/2685654686" target="_blank" rel="noopener" title="Subscribe to Asastatser tier on Subtopia.io">SUBSCRIBE</a>
+          <a class="btn btn-primary" href="https://subtopia.io/subscription/2685654686" target="_blank" rel="noopener" title="Subscribe to Asastatser tier on Subtopia.io">SUBSCRIBE</a>
         </div>
       </div>
-      <div class="checks">
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Selling Price Optimisation</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>NFT Pricing Model</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>User Bundles: 8</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundled Addresses: up to 15</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundle Naming</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundle URL: Public</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Website Theme: Initial Set</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>User Widgets: Initial Set</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Historic widget: single address</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>API Access: Rate-Limited</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>API Endpoints: Restricted</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Bundles sorting/filtering</span>
-          </label>
-        </p>        
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Publish ASA Stats User Widgets</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Custom Domain Name</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Dedicated Kubernetes Cluster</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Order Development of a user widget</span>
-          </label>
-        </p>
-      </div>
+      <ul class="mt-4 space-y-2 text-sm">
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Selling Price Optimisation</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>NFT Pricing Model</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>User Bundles: 8</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundled Addresses: up to 15</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundle Naming</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundle URL: Public</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Website Theme: Initial Set</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>User Widgets: Initial Set</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Historic widget: single address</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>API Access: Rate-Limited</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>API Endpoints: Restricted</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Bundles sorting/filtering</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Publish ASA Stats User Widgets</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Custom Domain Name</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Dedicated Kubernetes Cluster</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Order Development of a user widget</span></li>
+      </ul>
     </div>
-    <div class="col m6 l3">
+    <div>
       <br>
-      <div class="card medium">
-        <div class="card-content center-align">
+      <div class="card h-full bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center">
           <h5>Professional</h5>
           <br>
           <p>Ideal for trading professionals, bringing advanced user widgets suitable for ASA trading in real-time<br>
           </p>
         </div>
-        <div class="card-action center-align">
+        <div class="card-actions justify-center border-t border-base-300 p-5">
           <strong>38,000 ASASTATS / Month</strong><br>
           <br>
-          <a class="waves-effect waves-mydark btn whenmoon" href="https://subtopia.io/subscription/2685656754" target="_blank" rel="noopener" title="Subscribe to Professional tier on Subtopia.io">SUBSCRIBE</a>
+          <a class="btn btn-primary" href="https://subtopia.io/subscription/2685656754" target="_blank" rel="noopener" title="Subscribe to Professional tier on Subtopia.io">SUBSCRIBE</a>
         </div>
       </div>
-      <div class="checks">
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Selling Price Optimisation</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>NFT Pricing Model</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>User Bundles: 18</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundled Addresses: up to 35</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundle Naming</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundle URL: Public</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundles sorting/filtering</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Website Theme: Distinctive</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>User Widgets: Specialized</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Historic widget: up to 5 addresses in bundle</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>API Access: Rate-Limited</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>API Endpoints: Comprehensive</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Publish ASA Stats User Widgets*</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Custom Domain Name</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Dedicated Kubernetes Cluster</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" />
-            <span>Order Development of a user widget</span>
-          </label>
-        </p>
+      <ul class="mt-4 space-y-2 text-sm">
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Selling Price Optimisation</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>NFT Pricing Model</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>User Bundles: 18</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundled Addresses: up to 35</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundle Naming</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundle URL: Public</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundles sorting/filtering</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Website Theme: Distinctive</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>User Widgets: Specialized</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Historic widget: up to 5 addresses in bundle</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>API Access: Rate-Limited</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>API Endpoints: Comprehensive</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Publish ASA Stats User Widgets*</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Custom Domain Name</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Dedicated Kubernetes Cluster</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-base-content/35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span class="text-base-content/45">Order Development of a user widget</span></li>
         * Conditional
-      </div>
+      </ul>
     </div>
-    <div class="col m6 l3">
+    <div>
       <br>
-      <div class="card medium">
-        <div class="card-content center-align">
+      <div class="card h-full bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center">
           <h5>Cluster</h5>
           <br>
           <p>Ideal for developers and IT companies. Leverage ASA Stats API & resources to build complete software solutions<br>
           </p>
         </div>
-        <div class="card-action center-align">
+        <div class="card-actions justify-center border-t border-base-300 p-5">
           <strong>500,000 ASASTATS / Month</strong><br>
           <br>
-          <a class="waves-effect waves-mydark btn whenmoon" href="https://subtopia.io/subscription/2685660411" target="_blank" rel="noopener" title="Subscribe to Cluster tier on Subtopia.io">SUBSCRIBE</a>
+          <a class="btn btn-primary" href="https://subtopia.io/subscription/2685660411" target="_blank" rel="noopener" title="Subscribe to Cluster tier on Subtopia.io">SUBSCRIBE</a>
         </div>
       </div>
-      <div class="checks">
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Selling Price Optimisation</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>NFT Pricing Model</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>User Bundles: 38</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundled Addresses: up to 100</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundle Naming</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundle URL: Public</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Bundles sorting/filtering</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked"  />
-            <span>Website Theme: Distinctive</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked"  />
-            <span>User Widgets: Specialized</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Historic widget: up to 10 addresses in bundle</span>
-          </label>
-        </p>        
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked"  />
-            <span>API Access: Unlimited</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>API Endpoints: Comprehensive</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Publish ASA Stats User Widgets*</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Custom Domain Name</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Dedicated Kubernetes Cluster</span>
-          </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" class="filled-in" checked="checked" />
-            <span>Order Development of a user widget</span>
-          </label>
-        </p>
+      <ul class="mt-4 space-y-2 text-sm">
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Selling Price Optimisation</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>NFT Pricing Model</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>User Bundles: 38</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundled Addresses: up to 100</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundle Naming</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundle URL: Public</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Bundles sorting/filtering</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Website Theme: Distinctive</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>User Widgets: Specialized</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Historic widget: up to 10 addresses in bundle</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>API Access: Unlimited</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>API Endpoints: Comprehensive</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Publish ASA Stats User Widgets*</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Custom Domain Name</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Dedicated Kubernetes Cluster</span></li>
+          <li class="flex items-start gap-2"><svg class="mt-0.5 h-4 w-4 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg><span>Order Development of a user widget</span></li>
         * Conditional
-      </div>
+      </ul>
     </div>
   </div>
 </div>
-<div class="row center-align">
-  <div id="free" class="col s12 center-align">
-    <div class="col m6 l3 push-m3 push-l4">
+<div class="mt-10 text-center">
+  <div id="free" class="mt-8 text-center">
+    <div class="mx-auto max-w-sm">
       <br>
-      <div class="card medium">
-        <div class="card-content center-align">
+      <div class="card h-full bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body items-center text-center">
           <h5>Free</h5>
           <br>
           <p>Basic ASA Stats functionalities will always be free to use for everyone.<br>
           </p>
         </div>
-        <div class="card-action center-align">
+        <div class="card-actions justify-center border-t border-base-300 p-5">
           <strong>0 ASASTATS / Month</strong><br>
           <br>          
-          <a class="waves-effect waves-mydark btn whenmoon" href="/" target="_blank" rel="noopener" title="Start using ASA Stast">START</a>
+          <a class="btn btn-primary" href="/" target="_blank" rel="noopener" title="Start using ASA Stast">START</a>
         </div>
       </div>
     </div>
   </div>
-</div>
+</article>
 
 {% endblock %}
 {% block otherfooter %}
