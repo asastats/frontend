@@ -129,6 +129,11 @@ class SwapModalTest(FunctionalTest):
             "document.querySelector"
             "('.id-swap-swap-toggle[data-from=\"%s\"]').click();" % from_asset
         )
+        # It is a native <dialog> now, opened with showModal(): the `open`
+        # attribute is the browser's own record that it is on the top layer.
+        self.wait_until(
+            lambda: self.find_elem_by_id("swap-modal").get_attribute("open") is not None
+        )
         # The panel arrives by a second htmx request, gated on the linkage.
         form = self.find_elem_by_css(".id-swap-panel .id-swap-form")
         # Presence only means the HTML landed; bindPanel runs after the swap, so

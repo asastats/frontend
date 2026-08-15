@@ -477,21 +477,45 @@ html.dark .swap-modal {
   --swap-warn-wash: #3a2c14;
 }
 
+/* A native <dialog>: the browser centres it, paints the backdrop, traps focus
+   and handles Escape. These rules replace what Materialize's .modal supplied
+   (fixed positioning, sizing, the scroll container) plus the UA's own dialog
+   defaults, which are a solid border and 1em of padding. */
 .swap-modal {
-  max-width: 480px;
+  width: min(480px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(88vh, 780px);
+  padding: 0;
+  border: 0;
   border-radius: 18px;
   background-color: var(--swap-surface);
   color: var(--swap-ink);
+  overflow: visible; /* the picker sheet is absolutely positioned inside */
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
 }
 
-.swap-modal .modal-content.swap-shell {
+.swap-modal::backdrop {
+  background: rgba(12, 18, 16, 0.55);
+}
+
+/* The card is height-capped, so this is the scroll container -- the header,
+   the mode control and the footer stay put while the form scrolls. */
+.swap-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.swap-modal .swap-shell {
   position: relative; /* the picker sheet overlays the whole card */
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
   padding: 0;
   background-color: var(--swap-surface);
   border-radius: 18px;
+  overflow: hidden; /* keep the sheet's square corners inside the rounded card */
 }
-
-.swap-modal .modal-footer { display: none; }
 
 .swap-micro {
   font-size: 0.68rem;
@@ -1093,7 +1117,7 @@ html.dark .swap-modal {
 
 /* ---- narrow screens --------------------------------------------------------- */
 @media (max-width: 600px) {
-  .swap-modal { max-width: 100%; }
+  .swap-modal { width: calc(100vw - 16px); }
   .swap-modal input.swap-amt { font-size: 1.6rem; }
   .swap-routertag { display: none; }
   .swap-modes button { font-size: 0.78rem; }
@@ -1555,3 +1579,40 @@ div.socfooter {
 }
 .address-detail { padding: 0 18px 16px; }
 .address-empty { padding: 14px 18px; margin: 0; }
+
+/* Router widget shell pages (Phase 0): one <details> per linked address,
+   replacing the framework accordion. Shares the disclosure styling above. */
+.swap-page-title { text-align: center; }
+
+.swap-addresses { margin: 0 0 24px; padding: 0; list-style: none; }
+.swap-addresses > li { margin-bottom: 10px; }
+
+.swap-address {
+  border: 1px solid #ababab;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.swap-address > summary {
+  padding: 14px 18px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+.swap-address > summary::-webkit-details-marker { display: none; }
+.swap-address > summary::after {
+  content: "";
+  float: right;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+.swap-address[open] > summary::after { transform: rotate(-135deg); }
+.swap-address > summary:focus-visible {
+  outline: 2px solid #00c896;
+  outline-offset: -2px;
+}
+.swap-address > .id-swap-panel { padding: 0 18px 18px; }
