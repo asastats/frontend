@@ -1,5 +1,7 @@
 """Testing module for :py:mod:`core.context_processors` module."""
 
+import re
+from pathlib import Path
 from unittest import mock
 
 from django.conf import settings
@@ -98,7 +100,39 @@ class TestCoreContextProcessors:
             "MEDIUM_NAME": settings.MEDIUM_NAME,
             "DISCORD_INVITE": settings.DISCORD_INVITE,
             "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
+            "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
         }
+
+    # # AVAILABLE_THEMES
+    def test_core_context_processors_every_offered_theme_is_built(self):
+        """Every theme in the picker must exist in the compiled stylesheet.
+
+        The theme list is declared twice by necessity -- Django renders the
+        picker from settings, Tailwind builds the CSS from ``input.css`` -- and
+        the two cannot import from each other. A theme offered but not built
+        renders as an unstyled page, so the drift is caught here instead.
+        """
+        source = (
+            Path(settings.STATICFILES_DIRS[0]) / "css" / "input.css"
+        ).read_text()
+        # Comments first: a `/* ... */` in the themes list fuses to the name
+        # that follows it, which silently swallowed "light" when this was
+        # written the other way round.
+        source = re.sub(r"/\*.*?\*/", "", source, flags=re.S)
+        # `themes: a, b, c;` inside the daisyui plugin block, plus each
+        # `@plugin "./daisyui-theme.mjs" { name: "x"; ... }` registration.
+        listed = re.search(r"themes:(.*?);", source, re.S)
+        built = {
+            name.strip()
+            for name in (listed.group(1) if listed else "").split(",")
+            if name.strip()
+        }
+        built |= set(re.findall(r'name:\s*"([^"]+)"', source))
+
+        assert set(settings.AVAILABLE_THEMES) <= built, (
+            "offered in settings.AVAILABLE_THEMES but not registered in "
+            f"input.css: {sorted(set(settings.AVAILABLE_THEMES) - built)}"
+        )
 
     # # walletconnect
     def test_core_context_processors_walletconnect_functionality(self, mocker):

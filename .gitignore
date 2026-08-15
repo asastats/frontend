@@ -27,3 +27,10 @@ wallet/coverage
 website/static/assets/*transparency-report*.pdf
 deploy/.env.production
 deploy/.env.testing
+
+# Tailwind/DaisyUI toolchain: fetched per machine by website/fetch-tailwind.sh,
+# never committed (the binary alone is ~110MB). The BUILT stylesheet
+# website/static/css/style.tw.css IS committed, like style.min0NN.css.
+website/static/css/tailwindcss
+website/static/css/daisyui.mjs
+website/static/css/daisyui-theme.mjs

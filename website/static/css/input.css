@@ -1,0 +1,155 @@
+/* ==========================================================================
+   Tailwind + DaisyUI source for style.tw.css
+   --------------------------------------------------------------------------
+   Built with the standalone Tailwind binary -- no node_modules. Fetch the
+   toolchain once per machine (all three are gitignored / vendored per the
+   commands in docs, and none are committed):
+
+     curl -sLo static/css/tailwindcss \
+       https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-arm64
+     chmod +x static/css/tailwindcss
+     curl -sLo static/css/daisyui.mjs \
+       https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.mjs
+     curl -sLo static/css/daisyui-theme.mjs \
+       https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.mjs
+
+   Then build:
+
+     static/css/tailwindcss -i static/css/input.css \
+       -o static/css/style.tw.css --minify
+
+   `source(none)` plus explicit `@source` rather than the docs' default
+   auto-detection: this file lives in static/css/, and letting Tailwind scan
+   from here would drag in materialize.min.js, chart.min.js and every other
+   vendored bundle looking for class names.
+
+   The `asastats` theme below is not a tweak of a stock DaisyUI theme: every
+   value is lifted from the swap modal's own token block in style.css, because
+   the swap modal is the design the rest of the site is being moved onto. Change
+   a colour here and the whole site follows -- including, eventually, the swap
+   modal itself once it stops carrying its own `--swap-*` block.
+   ========================================================================== */
+
+@import "tailwindcss" source(none);
+
+/* Scan every template that can carry a utility class. Widgets are included so a
+   converted widget template keeps its classes through the purge. */
+@source "../../templates";
+@source "../../widgets";
+
+@plugin "./daisyui.mjs" {
+  /* Stock alternates offered in the picker, alongside the two `asastats`
+     themes registered below. Stock `light` and `dark` are deliberately absent:
+     they are DaisyUI's own greys, and the brand pair already fills the default
+     and prefers-dark roles.
+
+     Keep this in step with settings.AVAILABLE_THEMES -- offering a theme that
+     is not built here renders an unstyled page. There is a test for it:
+     core.tests.test_context_processors.
+     ...every_offered_theme_is_built */
+  themes: nord, dim, abyss, corporate;
+}
+
+/* --------------------------------------------------------------- brand light
+   Straight from `.swap-modal` in style.css. */
+@plugin "./daisyui-theme.mjs" {
+  name: "asastats";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #ffffff;   /* --swap-surface */
+  --color-base-200: #f4f8f6;   /* --swap-raised  */
+  --color-base-300: #eaf0ed;   /* --swap-sunken  */
+  --color-base-content: #18211e; /* --swap-ink   */
+
+  --color-primary: #00c896;      /* mylight / --swap-accent */
+  --color-primary-content: #04241c;
+  --color-secondary: #575757;    /* mydark */
+  --color-secondary-content: #ffffff;
+  --color-accent: #007a5c;       /* --swap-accent-ink */
+  --color-accent-content: #ffffff;
+  --color-neutral: #2b2b2b;
+  --color-neutral-content: #eef2f0;
+
+  --color-info: #2f7d8f;
+  --color-info-content: #ffffff;
+  --color-success: #005a34;      /* mysuccess */
+  --color-success-content: #ffffff;
+  --color-warning: #b4700f;      /* --swap-warn */
+  --color-warning-content: #ffffff;
+  --color-error: #e01e4c;        /* --swap-danger */
+  --color-error-content: #ffffff;
+
+  /* The modal's 18px card, the pill controls, and the 12px fields. */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.125rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* ---------------------------------------------------------------- brand dark
+   Straight from `html.dark .swap-modal`. */
+@plugin "./daisyui-theme.mjs" {
+  name: "asastats-dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+
+  --color-base-100: #2b2b2b;
+  --color-base-200: #333736;
+  --color-base-300: #3a3f3d;
+  --color-base-content: #eef2f0;
+
+  --color-primary: #00c896;
+  --color-primary-content: #04241c;
+  --color-secondary: #aab4b1;
+  --color-secondary-content: #2b2b2b;
+  --color-accent: #00c896;
+  --color-accent-content: #04241c;
+  --color-neutral: #454b49;
+  --color-neutral-content: #eef2f0;
+
+  --color-info: #6fb3c4;
+  --color-info-content: #10262b;
+  --color-success: #00c896;
+  --color-success-content: #04241c;
+  --color-warning: #e8a33d;
+  --color-warning-content: #3a2c14;
+  --color-error: #ff5b83;
+  --color-error-content: #3d1b25;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.125rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@layer base {
+  /* The site's existing pairing, kept: Nunito for text, Oswald for headings. */
+  html {
+    font-family: "Nunito", sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Oswald", sans-serif;
+  }
+}
+
+/* htmx feedback, outside a Tailwind layer so the opacity rules are not purged
+   and do not lose to utilities. Mirrors the rewards suite. */
+[hx-indicator] {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.htmx-request [hx-indicator],
+[hx-indicator].htmx-request {
+  opacity: 1;
+}

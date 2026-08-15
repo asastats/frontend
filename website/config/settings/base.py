@@ -309,6 +309,27 @@ MEDIUM_NAME = get_env_variable("MEDIUM_NAME", "@asastats")
 DISCORD_INVITE = get_env_variable("DISCORD_INVITE", "Vjx7w7pAC7")
 GITHUB_ORGANIZATION = get_env_variable("GITHUB_ORGANIZATION", "asastats")
 
+# Themes offered by the appearance picker, in the order they are listed. The
+# first two are ours, built from the swap modal's tokens; the rest are stock
+# DaisyUI. This list drives the picker only -- a theme must ALSO be registered
+# in static/css/input.css or it will have no CSS to apply. Keep the two in step;
+# ``core.tests.test_context_processors`` asserts they match.
+AVAILABLE_THEMES = [
+    # Ours, built from the swap modal's tokens. The first is the default; the
+    # second is what a dark-preferring browser gets before any choice is made.
+    "asastats",
+    "asastats-dark",
+    # A short set of stock DaisyUI alternates. Each is here because it differs
+    # in character rather than merely in shade: a muted light, a soft dark, a
+    # maximum-contrast dark, and a plain high-legibility light. Stock "light"
+    # and "dark" are deliberately absent -- they are DaisyUI's own greys, and
+    # the brand pair already fills both roles.
+    "nord",
+    "dim",
+    "abyss",
+    "corporate",
+]
+
 # --- Rotated secrets ---
 SIMPLE_JWT_KEY = get_env_variable("SIMPLE_JWT_KEY", "")
 

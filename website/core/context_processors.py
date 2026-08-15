@@ -52,6 +52,7 @@ def global_constants(request):
         "MEDIUM_NAME": settings.MEDIUM_NAME,
         "DISCORD_INVITE": settings.DISCORD_INVITE,
         "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
+        "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
     }
 
 

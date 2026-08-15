@@ -1,0 +1,27 @@
+{% comment %}
+  Appearance picker, rendered from settings.AVAILABLE_THEMES so adding a theme
+  is a settings change plus an input.css registration -- and never a template
+  change. core.tests.test_context_processors asserts the two stay in step.
+
+  A <details> rather than a JS dropdown: it opens without scripting, and
+  theme.js only has to record the choice.
+{% endcomment %}
+<details class="dropdown dropdown-end flex-none">
+  <summary class="btn btn-ghost btn-sm" aria-label="Appearance">
+    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M12 3a9 9 0 0 0 0 18 4.5 4.5 0 0 0 0-9 4.5 4.5 0 0 1 0-9Z"/>
+    </svg>
+  </summary>
+  <ul class="dropdown-content z-10 mt-2 max-h-96 w-52 overflow-y-auto rounded-box bg-base-100 p-2 shadow"
+      id="id-theme-list">
+    {% for theme in AVAILABLE_THEMES %}
+    <li>
+      <input type="radio" name="theme-dropdown" value="{{ theme }}"
+             class="theme-controller btn btn-sm btn-block btn-ghost justify-start"
+             aria-label="{{ theme }}">
+    </li>
+    {% endfor %}
+  </ul>
+</details>
