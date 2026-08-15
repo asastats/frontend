@@ -1,4 +1,6 @@
 import os
+import platform
+import shutil
 import time
 from contextlib import contextmanager
 from datetime import datetime
@@ -15,9 +17,9 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test.utils import override_settings
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -161,7 +163,23 @@ class Setup(StaticLiveServerTestCase):
 
     def run_driver(self):
         if self.browser_driver == "Chrome":
-            self.browser = self.browser_class(options=self.browser_options)
+            # Detect if running on Linux ARM64 (like the Raspberry Pi 5)
+            is_arm_linux = (
+                platform.system() == "Linux"
+                and platform.machine().lower() in ("aarch64", "arm64")
+            )
+
+            if is_arm_linux:
+                # Bypass Selenium Manager and use the system-installed chromedriver
+                # shutil.which automatically finds it if it's in your system PATH
+                driver_path = shutil.which("chromedriver") or "/usr/bin/chromedriver"
+                service = ChromeService(executable_path=driver_path)
+                self.browser = self.browser_class(
+                    service=service, options=self.browser_options
+                )
+            else:
+                # Standard initialization: uses Selenium Manager on x86_64 Linux, Mac, or Windows
+                self.browser = self.browser_class(options=self.browser_options)
 
         elif self.browser_driver == "Firefox":
             self.browser = self.browser_class(firefox_profile=self.firefox_profile)
@@ -220,6 +238,26 @@ class FunctionalTest(Setup):
             EC.presence_of_element_located((By.CLASS_NAME, class_name))
         )
         return self.browser.find_elements(By.CLASS_NAME, class_name)
+
+    def find_elem_by_css(self, selector):
+        WebDriverWait(self.browser, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+        )
+        return self.browser.find_element(By.CSS_SELECTOR, selector)
+
+    def find_elems_by_css(self, selector):
+        WebDriverWait(self.browser, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+        )
+        return self.browser.find_elements(By.CSS_SELECTOR, selector)
+
+    def wait_until(self, predicate, timeout=5):
+        """Block until `predicate()` returns something truthy, and return it.
+
+        For state that no `expected_conditions` helper covers -- an attribute
+        settling, a JS-driven re-render -- where polling beats a fixed sleep.
+        """
+        return WebDriverWait(self.browser, timeout).until(lambda _: predicate())
 
     def take_screenshot(self):
         filename = self._get_filename() + ".png"
