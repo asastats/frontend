@@ -13,6 +13,9 @@
         <h4 class="text-center text-lg truncate"><a href="{% explorer_url 'address' url_value %}" target="_blank" title="Open address in {% explorer_name %}">{{ address.0 }}</a></h4>
       {% endif %}
     </div>
+    <div class="mx-auto w-3/4">
+      <div class="indeterminate"></div>
+    </div>
     {% if finished_tax %}
       {% include "snippets/taxfinished.html" with bundle=bundle url_value=url_value report=finished_tax %}
     {% elif url_value in processing_tax %}

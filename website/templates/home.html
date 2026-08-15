@@ -6,9 +6,9 @@
 {% block page_header %}{{ profile.name }}'s home page{% endblock %}
 
 {% block left_section %}
-<div class="collection home">
-    <a href="{% url 'profile' %}" class="collection-item" id="id_profile">
-        <span>{{ profile.name }}<i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i></span>
+<div class="rounded-box border border-base-300 bg-base-100 divide-y divide-base-300 home">
+    <a href="{% url 'profile' %}" class="p-4" id="id_profile">
+        <span>{{ profile.name }}</span>
         <p>{{ user.username }}<br>
             {{ user.email }}
         </p>
@@ -19,29 +19,29 @@
 
 {% block middle_section %}
 {% if user.profile.show_sort_and_filter %}
-<div class="col s12" id="id_panel">
+<div id="id_panel">
   {% include "snippets/home_sorting.html" %}
   {% include "snippets/home_filtering.html" %}
 </div>
-<div class="divider col s12"></div>
+<div class="divider"></div>
 {% endif %}
-{% if user.profile.address == "" %}<br><span class="myred-text">To begin using additional features, you must add and authorize your subscription/DAO address on the <a href="{% url 'profile' %}">profile page</a>.</span><br>{% endif %}
-<div class="col s12 bundlenames">
+{% if user.profile.address == "" %}<br><span class="text-error">To begin using additional features, you must add and authorize your subscription/DAO address on the <a href="{% url 'profile' %}">profile page</a>.</span><br>{% endif %}
+{# `bundlenames` is a JS hook: home.js sorts and filters `$(".bundlenames > div")`. #}
+<div class="bundlenames">
   {% include "snippets/home_bundlenames.html" with collection=profile.bundlenames %}
 </div>
-<div class="col s12">
-  <br><a class="waves-effect waves-mydark btn whenmoon" id="id_add" role="button" href="{% url 'bundlename_add' %}">Add bundle name<i class="material-icons right" aria-hidden="true">{{ 'bundlename'|get_styling:"icon" }}</i></a>
+<div>
+  <br><a class="btn btn-primary" id="id_add" role="button" href="{% url 'bundlename_add' %}">Add bundle name</a>
   <br>&nbsp;
 </div>
 {% if messages %}
-<div class="row col s12 m8 offset-m2">
+<div class="mx-auto max-w-3xl">
   {% for message in messages %}
     {% if "error" in message.tags %}
-    <div><span class="myred-text">{{ message }}</span></div>
+    <div><span class="text-error">{{ message }}</span></div>
     {% else %}
-    <div class="chip mydark myredlight-text z-depth-1">
+    <div class="badge badge-outline bg-neutral text-neutral-content text-base-content/60 shadow">
         {{ message }}
-        <i class="material-icons close" aria-hidden="true">close</i>
     </div>   
     {% endif %}
   {% endfor %}

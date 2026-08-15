@@ -1,26 +1,38 @@
-{% load core_extras %} {% for bundlename in collection %}
+{% load core_extras %}
+{% comment %}
+  One card per bundle name. The structure here is a contract with home.js:
+
+    * each card is a DIRECT <div> child of .bundlenames -- the sorter does
+      `$(".bundlenames").html($(this).children("div").sort(...))`;
+    * the card keeps the `cardiv` class, which the filter shows and hides;
+    * the data-name/created/modified/size attributes are the sort keys;
+    * the filter reads `$(this).children().children().attr('title')`, so the
+      <h5> wrapping the link must stay exactly one level down.
+
+  Change the nesting and sorting or filtering breaks silently.
+{% endcomment %}
+{% for bundlename in collection %}
 <div
-  class="col s6 m3 cardiv"
+  class="cardiv"
   data-name="{{ bundlename.name }}"
   data-addresses="{{ bundlename.addresses }}"
   data-created="{{ bundlename.str_created }}"
   data-modified="{{ bundlename.str_modified }}"
   data-size="{{ bundlename.size }}"
 >
-  <h5 class="center-align">
-    <a href="{% url 'bundle_name' bundlename.name %}" target="_blank" title="Evaluate bundle">{{ bundlename.name }}</a>
+  <h5 class="text-center text-base font-medium">
+    <a class="link link-hover" href="{% url 'bundle_name' bundlename.name %}" target="_blank" title="Evaluate bundle">{{ bundlename.name }}</a>
   </h5>
   {% if bundlename.can_access_historic_widget %}
-  <div class="center-align">
-    <a href="{% url 'historic' bundlename.bundle %}" target="_blank" title="Process and show bundle's historic data">Historic data</a>
+  <div class="text-center text-sm">
+    <a class="link link-hover" href="{% url 'historic' bundlename.bundle %}" target="_blank" title="Process and show bundle's historic data">Historic data</a>
   </div>
   {% endif %}
   <a href="{% url 'bundlename_edit' bundlename.name %}">
-    <div class="card hoverable small" title="{{ bundlename.description }}">
-      <div class="card-content mydark-text home">
-        {% if bundlename.public %}<i class="material-icons left" aria-hidden="true">{{ 'public'|get_styling:"icon" }}</i>{% endif %}
-        <span class="badge z-depth-1">{{ bundlename.size }}</span>
-        <p class="bundlename">
+    <div class="card mt-2 border border-base-300 bg-base-100 transition hover:shadow-md" title="{{ bundlename.description }}">
+      <div class="card-body gap-2 p-4 text-base-content/70">
+        <span class="badge badge-sm self-end">{{ bundlename.size }}</span>
+        <p class="break-words text-sm">
           {{ bundlename.addresses|short_addresses }}
         </p>
       </div>

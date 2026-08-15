@@ -8,7 +8,7 @@
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
 {% block page_header %}Manage linked addresses{% endblock %}
 {% block middle_section %}
-<div class="row col s12">
+<div>
   <p>
     Your primary address carries your subscription, governance and permissions.
     Making an address primary, or enabling sign-in for one, asks you to sign
@@ -38,35 +38,35 @@
         <li class="connected-address-row" id="address-{{ row.id }}">
           <details>
             <summary>
-              <span class="address-text {% if row.is_primary %}mylight-text{% endif %}">
+              <span class="{% if row.is_primary %}text-primary{% endif %}">
                 {{ row.address|slice:":5" }}...{{ row.address|slice:"-5:" }}
               </span>
             </summary>
           <div class="address-detail">
-            <div class="full-address-text" style="word-break:break-all;margin-bottom:4px">{{ row.address }}</div>
-            <div class="chain-text text-muted" style="margin-bottom:16px">({{ row.chain }})</div>
+            <div class="mb-1 break-all font-mono text-sm">{{ row.address }}</div>
+            <div class="mb-4 text-sm text-base-content/60">({{ row.chain }})</div>
             <div class="address-actions">
               {% if row.is_primary %}
-                <span class="address-note">This is your primary address.</span>
+                <span class="text-sm text-base-content/70">This is your primary address.</span>
               {% else %}
-                <button type="button" class="btn whenmoon waves-effect"
+                <button type="button" class="btn"
                         data-stepup data-operation="set_primary" data-target-id="{{ row.id }}">
                   Make primary
                 </button>
                 {% if row.login_enabled %}
-                  <button type="button" class="btn whenmoon waves-effect"
+                  <button type="button" class="btn"
                           hx-post="{% url 'profile_addresses_action' %}"
                           hx-vals='{"operation": "set_login", "target_id": {{ row.id }}, "enabled": false}'
                           hx-target="#connected-addresses-list" hx-swap="innerHTML">
                     Disable login
                   </button>
                 {% else %}
-                  <button type="button" class="btn whenmoon waves-effect"
+                  <button type="button" class="btn"
                           data-stepup data-operation="set_login" data-target-id="{{ row.id }}" data-enabled="true">
                     Enable login
                   </button>
                 {% endif %}
-                <button type="button" class="btn whenmoon waves-effect"
+                <button type="button" class="btn"
                         hx-post="{% url 'profile_addresses_action' %}"
                         hx-vals='{"operation": "remove", "target_id": {{ row.id }}}'
                         hx-target="#connected-addresses-list" hx-swap="innerHTML"
@@ -85,13 +85,13 @@
       {% endpartialdef %}
     </div>
 
-    <div class="section">
-      <a class="btn whenmoon waves-effect" href="{{ link_address_url }}">Add address</a>
+    <div class="mt-6">
+      <a class="btn" href="{{ link_address_url }}">Add address</a>
     </div>
   </div>
 </div>
-<div class="row col s12">
-  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'account'|get_styling:"icon" }}</i>Back</a>&nbsp;
+<div>
+  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>&nbsp;
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Linked&nbsp;addresses{% endblock %}

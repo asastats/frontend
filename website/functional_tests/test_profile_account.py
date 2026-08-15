@@ -19,7 +19,10 @@ class ProfileAccountTest(FunctionalTest):
 
         # He sees button that leads to account entitled "Account"
         link = self.browser.find_element(By.XPATH, '//a[@href="/profile/account/"]')
-        self.assertIn("ACCOUNT", link.text)
+        # Materialize upper-cased button and link text in CSS; DaisyUI does
+        # not, so the rendered casing is a design decision now rather than
+        # something the content depends on.
+        self.assertIn("account", link.text.lower())
 
         # He clicks it
         with self.wait_for_page_load(timeout=5):
@@ -31,7 +34,7 @@ class ProfileAccountTest(FunctionalTest):
 
         # He sees button that leads to profile page entitled "Back"
         links = self.browser.find_elements(By.XPATH, '//a[@href="/profile/"]')
-        self.assertIn("BACK", links[0].text)
+        self.assertIn("back", links[0].text.lower())
 
         # He sees there's deactivate account button leading to deactivate page
         deactivate = self.find_elem_by_id("id_deactivate")

@@ -7,28 +7,30 @@
 {% block keywords %}account,API,API token,API token refresh,API token access{% endblock %}
 {% block page_header %}ASA Stats API token{% endblock %}
 {% block middle_section %}
-<div class="row col s12 m7 midrow">
-  <div class="row col s12 left-align">
+<div class="grid gap-6 md:grid-cols-12 md:text-left">
+<div class="md:col-span-7">
+  <div class="text-left">
     {% if refresh %}
     <span>Refresh token:</span><br><br>
-    <span class="token">{{ refresh }}</span>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span>
+    <span class="break-words">{{ refresh }}</span>&nbsp;<span class="cursor-pointer">&nbsp;&#128203;&nbsp;</span>
     <br><br>
     {% endif %}
     {% if access %}
     <span>Access token:</span><br><br>
-    <span class="token">{{ access }}</span>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span>
+    <span class="break-words">{{ access }}</span>&nbsp;<span class="cursor-pointer">&nbsp;&#128203;&nbsp;</span>
     <br><br>
     {% endif %}
   </div>
-  <div class="row col s12">
-    <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_api' %}?refresh=yes" id="id_obtain">Obtain token pair</a>
+  <div>
+    <a class="btn btn-primary" href="{% url 'profile_api' %}?refresh=yes" id="id_obtain">Obtain token pair</a>
   </div>
 </div>
-<div class="row col s12 m5">
-  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>&nbsp;
+<div class="md:col-span-5">
+  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>&nbsp;
   <br><br>
-  <span>Active tier: </span><span class="mylight-text">{{ user.profile.tier_name|upper }}</span>
+  <span>Active tier: </span><span class="text-primary">{{ user.profile.tier_name|upper }}</span>
   <br><br>
+</div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; API&nbsp;token{% endblock %}

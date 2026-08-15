@@ -131,8 +131,13 @@ class SwapModalTest(FunctionalTest):
         )
         # It is a native <dialog> now, opened with showModal(): the `open`
         # attribute is the browser's own record that it is on the top layer.
+        # The address page is the heaviest on the site -- charts, the asset
+        # accordion, then an htmx panel load -- so this gets a longer leash
+        # than the 5s default.
         self.wait_until(
-            lambda: self.find_elem_by_id("swap-modal").get_attribute("open") is not None
+            lambda: self.find_elem_by_id("swap-modal").get_attribute("open")
+            is not None,
+            timeout=20,
         )
         # The panel arrives by a second htmx request, gated on the linkage.
         form = self.find_elem_by_css(".id-swap-panel .id-swap-form")
@@ -140,7 +145,8 @@ class SwapModalTest(FunctionalTest):
         # wait for the pill it paints before asserting on anything it touches.
         self.wait_until(
             lambda: self.find_elem_by_css(".id-swap-from-unit").text
-            not in ("", "Select")
+            not in ("", "Select"),
+            timeout=20,
         )
         return form
 

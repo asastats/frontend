@@ -48,3 +48,28 @@ class SitemapHtmlPageTest(FunctionalTest):
         # She finds herself on reset password page
         header = self.find_elem_by_tag("h2")
         self.assertIn("Forgotten your password?", header.text)
+
+
+class SitemapStructureTest(FunctionalTest):
+    """The page's two columns, and what each shows to whom."""
+
+    def test_sitemap_shows_two_columns_and_gates_the_private_one(self):
+        self.browser.get(self.server_url + "/sitemap/")
+        sections = self.browser.find_elements(By.CSS_SELECTOR, "section")
+        self.assertEqual(len(sections), 2)
+        self.assertNotIn("Change your password", self.browser.page_source)
+
+        self.create_cookie_and_go_to_index_page_tier(
+            "sitemap@example.com", permission=0
+        )
+        self.browser.get(self.server_url + "/sitemap/")
+        self.assertIn("Change your password", self.browser.page_source)
+
+    def test_sitemap_lists_contain_only_list_items(self):
+        """Regression: the markup nested a <div> directly inside a <ul>."""
+        self.browser.get(self.server_url + "/sitemap/")
+        for ul in self.browser.find_elements(By.CSS_SELECTOR, "section ul"):
+            children = self.browser.execute_script(
+                "return Array.from(arguments[0].children).map(c => c.tagName);", ul
+            )
+            self.assertEqual(set(children), {"LI"})

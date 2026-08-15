@@ -8,120 +8,119 @@
 {% block page_header %}Edit profile data{% endblock %}
 {% block middle_section %}
 <form method="POST" enctype="multipart/form-data" action="." id="id_form">
-    <div class="row col s12 m7 midrow">
+    <div class="md:col-span-7">
     {% csrf_token %}
     {% for field in form.visible_fields %}
-    <div class="input-field col s12 m6 left-align">
+    <div class="mt-4 md:w-1/2 text-left">
         {{ field }}
         {{ field.label_tag }}
-        {% if field.errors %}<span class="myred-text">{{ field.errors|escape }}</span>{% endif %}
+        {% if field.errors %}<span class="text-error">{{ field.errors|escape }}</span>{% endif %}
         {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
     </div>
     {% endfor %}
     {% for field in form.hidden_fields %}
       {{ field }}
     {% endfor %}
-    {% if form.non_field_errors %}<div class="col s12"><span class="myred-text">{{ form.non_field_errors }}</span></div>{% endif %}
+    {% if form.non_field_errors %}<div><span class="text-error">{{ form.non_field_errors }}</span></div>{% endif %}
     <fieldset class="profile">
         {{ profile_form.management_form }}
         {% for form in profile_form %}
             {% for field in form.visible_fields %}
                 {% if field.name != 'DELETE' %}
-                <div class="input-field col s12 left-align">
+                <div class="mt-4 text-left">
                   {{ field }}
                   {{ field.label_tag }}
-                  {% if field.errors %}<span class="myred-text">{{ field.errors|escape }}</span>{% endif %}
+                  {% if field.errors %}<span class="text-error">{{ field.errors|escape }}</span>{% endif %}
                   {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
                 </div>
                 {% endif %}
             {% endfor %}
 
-            <div class="input-field col s12 left-align">
+            <div class="mt-4 text-left">
               {% if form.initial.address %}
                 {% if form.instance.profile.authorized %}
                                 {% explorer_url 'address' form.instance.profile.address as profile_address_url %}<span><a href="{{ profile_address_url }}" target="_blank" rel="noopener" title="Address authorization transaction in {% explorer_name %}">Address is authorized</a></span>
                 {% else %}
-                  <div class="input-field col s12 m6 center-align">
-                    <span class="myred-text">Address is not authorized</span>
+                  <div class="mt-4 md:w-1/2 text-center">
+                    <span class="text-error">Address is not authorized</span>
                   </div>
-                  <div class="input-field col s12 m6 center-align">
-                    <a class="waves-effect btn-flat" href="{% url 'profile_authorize' %}"><i class="material-icons right" aria-hidden="true">{{ 'fingerprint'|get_styling:"icon" }}</i>Authorize</a>&nbsp;
+                  <div class="mt-4 md:w-1/2 text-center">
+                    <a class="btn btn-ghost" href="{% url 'profile_authorize' %}">Authorize</a>&nbsp;
                   </div>
                 {% endif %}
               {% endif %}
             </div>
-            <div class="input-field col s12 left-align">
+            <div class="mt-4 text-left">
               <span>Permission: {{ form.instance.profile.permission|integer_comma }}</span>
             </div>
             {% if form.instance.profile.votes %}
-            <div class="input-field col s12 left-align">
+            <div class="mt-4 text-left">
               <span>DAO votes: {{ form.instance.profile.votes|integer_comma }}</span>
             </div>
             {% endif %}
             {% if form.instance.profile.authorized %}
-            <div class="input-field col s12 left-align">
-              <a class="waves-effect btn-flat" href="{% url 'profile_permission_fetch' %}"><i class="material-icons right" aria-hidden="true">{{ 'refresh'|get_styling:"icon" }}</i>Refetch</a>&nbsp;
+            <div class="mt-4 text-left">
+              <a class="btn btn-ghost" href="{% url 'profile_permission_fetch' %}">Refetch</a>&nbsp;
             </div>
             {% endif %}
             {% for field in form.hidden_fields %}
               {{ field }}
             {% endfor %}
-            {% if form.non_field_errors %}<div class="col s12"><span class="myred-text">{{ form.non_field_errors }}</span></div>{% endif %}
+            {% if form.non_field_errors %}<div><span class="text-error">{{ form.non_field_errors }}</span></div>{% endif %}
         {% endfor %}
     </fieldset>
     {% if subscriptions %}
     <br>
     <h5>Subscription</h5>
-    <div class="row col s12 left-align">
+    <div class="text-left">
         {% for link, text in subscriptions.items %}
-        <p><span>{{ link|safe }}: </span><span{% if text == "EXPIRED" %} class="myred-text"{% endif %}>{{ text }}</span></p>
+        <p><span>{{ link|safe }}: </span><span{% if text == "EXPIRED" %} class="text-error"{% endif %}>{{ text }}</span></p>
         {% endfor %}
     </div>
-    <div class="divider col s12"></div>
+    <div class="divider"></div>
     {% endif %}
     {% if messages %}
     <br>
-    <div class="row col s12 m8 offset-m2">
+    <div class="mx-auto max-w-3xl">
         {% for message in messages %}
-        <div class="chip mydark myredlight-text z-depth-1">
+        <div class="badge badge-outline bg-neutral text-neutral-content text-base-content/60 shadow">
             {{ message }}
-            <i class="material-icons close" aria-hidden="true">close</i>
         </div>
         {% endfor %}
     </div>
     {% endif %}    
     </div>
-    <div class="row col s12 m5">
-        <a class="waves-effect btn-flat" href="{% url 'home' %}"><i class="material-icons right" aria-hidden="true">{{ 'home'|get_styling:"icon" }}</i>Back</a>&nbsp;
-        <button class="primaryAction waves-effect btn-flat submit" id="id_submit" type="submit"><i class="material-icons right" aria-hidden="true">{{ 'save'|get_styling:"icon" }}</i>Update</button>
+    <div class="md:col-span-5">
+        <a class="btn btn-ghost" href="{% url 'home' %}">Back</a>&nbsp;
+        <button class="primaryAction btn btn-ghost submit" id="id_submit" type="submit">Update</button>
         <br><br>
-        <div class="row col s12">
-          <a class="waves-effect waves-mydark btn whenmoon" {% if user.has_usable_password %}href="{% url 'account_change_password' %}" id="id_changepassword"{% else %}href="{% url 'account_set_password' %}" id="id_setpassword"{% endif %}>
-            Password<i class="material-icons right" aria-hidden="true">{{ 'password'|get_styling:"icon" }}</i>
+        <div>
+          <a class="btn btn-primary" {% if user.has_usable_password %}href="{% url 'account_change_password' %}" id="id_changepassword"{% else %}href="{% url 'account_set_password' %}" id="id_setpassword"{% endif %}>
+            Password
           </a>
         </div>
-        <div class="row col s12">
-            <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'account_email' %}" id="id_emails">Emails<i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></a>
+        <div>
+            <a class="btn btn-primary" href="{% url 'account_email' %}" id="id_emails">Emails</a>
         </div>
-        <div class="row col s12">
-            <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'socialaccount_connections' %}" id="id_connections">Social<i class="material-icons right" aria-hidden="true">{{ 'social'|get_styling:"icon" }}</i></a>
+        <div>
+            <a class="btn btn-primary" href="{% url 'socialaccount_connections' %}" id="id_connections">Social</a>
         </div>
     </div>
 </form>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; Profile{% endblock %}
 {% block left_section %}
-<div class="row col s12 right-align">
+<div class="text-right">
   <br>
-  <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_account' %}" id="id_profile_account">Account<i class="material-icons right" aria-hidden="true">{{ 'account'|get_styling:"icon" }}</i></a>
+  <a class="btn btn-primary" href="{% url 'profile_account' %}" id="id_profile_account">Account</a>
 </div>
-<div class="row col s12 right-align">
-  <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_api' %}" id="id_profile_api">API token<i class="material-icons right" aria-hidden="true">{{ 'api'|get_styling:"icon" }}</i></a>
+<div class="text-right">
+  <a class="btn btn-primary" href="{% url 'profile_api' %}" id="id_profile_api">API token</a>
 </div>
-<div class="row col s12 right-align">
-  <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_addresses' %}" id="id_profile_addresses">Addresses<i class="material-icons right" aria-hidden="true">{{ 'wallet'|get_styling:"icon" }}</i></a>
+<div class="text-right">
+  <a class="btn btn-primary" href="{% url 'profile_addresses' %}" id="id_profile_addresses">Addresses</a>
 </div>
-<div class="row col s12 right-align">
-  <a class="waves-effect waves-mydark btn whenmoon" href="{% url 'profile_settings' %}" id="id_profile_settings">Settings<i class="material-icons right" aria-hidden="true">{{ 'config'|get_styling:"icon" }}</i></a>
+<div class="text-right">
+  <a class="btn btn-primary" href="{% url 'profile_settings' %}" id="id_profile_settings">Settings</a>
 </div>
 {% endblock %}

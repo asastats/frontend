@@ -7,9 +7,10 @@
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,permission,Permission dApp{% endblock %}
 {% block page_header %}Algorand/EVM address authorization{% endblock %}
 {% block middle_section %}
-<div class="row col s12 m7 midrow">
+<div class="grid gap-6 md:grid-cols-12 md:text-left">
+<div class="md:col-span-7">
 
-  <div class="row col s12">
+  <div>
     Authorize the following address you've provided:
     <blockquote>
       {{ user.profile.address }}
@@ -17,14 +18,13 @@
   </div>
 
   {% if messages %}
-  <div class="row col s12">
+  <div>
     {% for message in messages %}
       {% if "error" in message.tags %}
-      <div><span class="myred-text">{{ message }}</span></div>
+      <div><span class="text-error">{{ message }}</span></div>
       {% else %}
-      <div class="chip mydark myredlight-text z-depth-1">
+      <div class="badge badge-outline bg-neutral text-neutral-content text-base-content/60 shadow">
         {{ message }}
-        <i class="material-icons close" aria-hidden="true">close</i>
       </div>
       {% endif %}
     {% endfor %}
@@ -36,7 +36,7 @@
   <!-- ============================================================= -->
   <!-- PRIMARY: connect a wallet                                     -->
   <!-- ============================================================= -->
-  <div id="wallet-connect" data-api-base="/api/v2/wallet" class="row col s12">
+  <div id="wallet-connect" data-api-base="/api/v2/wallet">
     {% include "snippets/wallet_cards.html" %}
   </div>
 
@@ -48,43 +48,43 @@
   <!-- ============================================================= -->
   <!-- FALLBACK: manual escrow transaction (collapsible)             -->
   <!-- ============================================================= -->
-  <div class="row col s12">
-    <ul class="collapsible">
-      <li>
-        <div class="collapsible-header">
-          <i class="material-icons" aria-hidden="true">send</i>
-          Authorize with a manual transaction instead
-        </div>
-        <div class="collapsible-body">
+  <div>
+    {# Native <details>: this was a Materialize collapsible, and nothing on   #}
+    {# this page initialises one any more.                                     #}
+    <details class="rounded-box border border-base-300 bg-base-100">
+      <summary class="cursor-pointer p-4 font-medium">
+        Authorize with a manual transaction instead
+      </summary>
+      <div class="p-4 pt-0">
           To authorize without connecting a wallet, send a 0 ALGO transaction
           from your address to our Administration pool address:
           <blockquote>
             E7TR4BUASOGSHRRE2IBUHTHSNZGKU2DQDU5UF77L7VBITNVQGW5SCMS7OI
           </blockquote>
-          <div class="row col s8 offset-s2">
-            <img class="responsive-img"
+          <div class="mx-auto w-3/4">
+            <img class="max-w-full h-auto"
                  src="{% static 'img/admpool-qrcode.png' %}"
                  alt="QR code of the ASA Stats Administration pool address">
           </div>
           For us to identify you, add the following text to the transaction
-          <span class="myred-text">NOTE</span> field:
+          <span class="text-error">NOTE</span> field:
           <blockquote>
             {{ user.profile.address_authorization_note|lower }}
           </blockquote>
           After the transaction is confirmed on the blockchain, click below.
           <br><br>
-          <a class="waves-effect waves-mydark btn whenmoon"
+          <a class="btn btn-primary"
              href="{% url 'profile_authorize_check' %}" id="id_check">Check transaction</a>
         </div>
-      </li>
-    </ul>
+    </details>
   </div>
 
 </div>
 
-<div class="row col s12 m5">
-  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>&nbsp;
+<div class="md:col-span-5">
+  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>&nbsp;
   <br>
+</div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Authorize&nbsp;address{% endblock %}

@@ -43,7 +43,7 @@
           <div>
           <p>
             <label>
-              <input id="ans" class="radio radio-primary radio-sm" name="ns" type="radio"  />
+              <input id="ans" class="ns radio radio-primary radio-sm" name="ns" type="radio"  />
               <img class="h-6 w-6 cursor-pointer" src="{% static 'icons/providers/ans.png' %}" alt="Algorand name service">
             </label>
           </p>
@@ -51,7 +51,7 @@
           <div>
           <p>
             <label>
-              <input id="nfd" class="radio radio-primary radio-sm" name="ns" type="radio" />
+              <input id="nfd" class="ns radio radio-primary radio-sm" name="ns" type="radio" />
               <img class="h-6 w-6 cursor-pointer" src="{% static 'icons/providers/nfd.png' %}" alt="NF Domains">
             </label>
           </p>
@@ -60,6 +60,9 @@
         {% endif %}
       </div>
       {% if form.non_field_errors and "Multiple" not in form.non_field_errors.0 %}<div><span class="text-error">{{form.non_field_errors}}</span></div>{% endif %}
+      <div class="mx-auto mt-4 w-3/4">
+        <div class="indeterminate"></div>
+      </div>
       <div class="mt-5 text-center">
         <button class="btn btn-primary" id="whenmoon" type="submit">When Moon</button>
       </div>
@@ -72,7 +75,7 @@
       {% endif %}
     </form>
     {% if user.is_authenticated %}
-    <div class="mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div class="bundlenames mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       <br>
       {% for bundlename in user.profile.bundlenames %}
       <div>

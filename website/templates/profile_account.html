@@ -7,17 +7,19 @@
 {% block keywords %}account,profile account,user account,user,profile{% endblock %}
 {% block page_header %}{{ user.profile.name }} profile account{% endblock %}
 {% block middle_section %}
-<div class="row col s12 m7 midrow">
-  <div class="row col s12">
-    <span>Active tier: </span><span class="mylight-text">{{ user.profile.tier_name|upper }}</span>
+<div class="grid gap-6 md:grid-cols-12 md:text-left">
+<div class="md:col-span-7">
+  <div>
+    <span>Active tier: </span><span class="text-primary">{{ user.profile.tier_name|upper }}</span>
   </div>
 </div>
-<div class="row col s12 m5">
-  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>&nbsp;
-  <div class="row col s12">
+<div class="md:col-span-5">
+  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>&nbsp;
+  <div>
     <br><br>
     If you want to deactivate your account <a href="{% url 'deactivate_profile' %}" id="id_deactivate">click here</a>
   </div>
+</div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Account{% endblock %}

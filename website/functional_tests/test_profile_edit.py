@@ -21,7 +21,10 @@ class ProfileEditTest(FunctionalTest):
 
         # He sees button that leads to home entitled "Back"
         links = self.browser.find_elements(By.XPATH, '//a[@href="/home/"]')
-        self.assertIn("BACK", links[2].text)
+        # Materialize upper-cased button and link text in CSS; DaisyUI does
+        # not, so the rendered casing is a design decision now rather than
+        # something the content depends on.
+        self.assertIn("back", links[2].text.lower())
 
         # He sees input box for editing his name
         label_for_name = self.browser.find_element(

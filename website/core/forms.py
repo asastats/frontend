@@ -322,7 +322,7 @@ class ProfileRouterForm(ModelForm):
             choices=swap_routers(),
             required=True,
             label="Smart router",
-            widget=Select(attrs={"class": "browser-default"}),
+            widget=Select(attrs={"class": "select"}),
         )
 
 
@@ -347,5 +347,5 @@ class ProfileExplorerForm(ModelForm):
             choices=explorer_choices(),
             required=True,
             label="Explorer",
-            widget=Select(attrs={"class": "browser-default"}),
+            widget=Select(attrs={"class": "select"}),
         )

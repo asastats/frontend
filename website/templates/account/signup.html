@@ -4,7 +4,7 @@
 {% block description %}Sign up for a {{ WEBSITE_NAME }} account by an email and password or by connecting a social media provider.{% endblock %}
 {% block keywords %}authentication,user,sign,signup,sign up,email,password,social media{% endblock %}
 {% block main_header_text %}Signup for {{ WEBSITE_NAME }} account{% endblock %}
-{% block signup_tab %}href="#"{% endblock %}
+{% block signup_tab %}href="#" aria-current="page"{% endblock %}
 
 {% block header_text %}Sign up{% endblock %}
 
@@ -12,9 +12,9 @@
     {% endblock %}
 
     {% block secondary_action %}
-    <a class="secondaryAction waves-effect waves-light btn-flat col s12 m8 offset-m2"
+    <a class="secondaryAction link link-hover"
         href="{% url 'account_login' %}">Already have an account?</a>
-    <p class="col s12 m8 offset-m2 center-align">
+    <p class="mt-4 text-sm text-base-content/70">
         By clicking Sign up button on this page, you agree to the <a href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Terms of Use">Terms of use</a> and that you have read the {{ WEBSITE_NAME }} 
         <a href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Privacy Policy">Privacy Policy</a>, including use of cookies.</p>
     {% endblock %}

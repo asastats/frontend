@@ -22,7 +22,10 @@ class ProfileAuthorizeWalletTest(FunctionalTest):
         pera_card = self.find_elem_by_id("wallet-pera")
         self.assertIn("Pera", pera_card.text)
         connect_button = self.find_elem_by_id("connect-button-pera")
-        self.assertEqual("CONNECT", connect_button.text)
+        # Materialize upper-cased button and link text in CSS; DaisyUI does
+        # not, so the rendered casing is a design decision now rather than
+        # something the content depends on.
+        self.assertEqual("connect", connect_button.text.strip().lower())
 
         # The set-active, disconnect and authorize controls start hidden, shown
         # by the bundle once a wallet connects

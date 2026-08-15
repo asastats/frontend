@@ -7,8 +7,9 @@
 {% block keywords %}settings,preferences,smart router,swap,router preference{% endblock %}
 {% block page_header %}User settings{% endblock %}
 {% block middle_section %}
-<div class="row col s12 m7 midrow">
-  <section class="row col s12 left-align" id="id-section-smart-router">
+<div class="grid gap-6 md:grid-cols-12 md:text-left">
+<div class="md:col-span-7">
+  <section class="text-left" id="id-section-smart-router">
     <h5>Smart router</h5>
     <p>The smart router used when you swap tokens from an address you own.</p>
     <form method="post" action="{% url 'profile_settings' %}"
@@ -18,32 +19,31 @@
       hx-swap="outerHTML">
       {% csrf_token %}
       <input type="hidden" name="section" value="router">
-      <div class="input-field col s8">
+      <div class="mt-4 w-2/3">
         {{ form.preferred_router }}
-        <label class="active" for="{{ form.preferred_router.id_for_label }}">Smart router</label>
+        <label class="mb-1 block text-sm" for="{{ form.preferred_router.id_for_label }}">Smart router</label>
         {% if form.preferred_router.errors %}
-        <span class="helper-text red-text">{{ form.preferred_router.errors|join:", " }}</span>
+        <span class="mt-1 block text-xs text-base-content/60 text-error">{{ form.preferred_router.errors|join:", " }}</span>
         {% endif %}
       </div>
-      <div class="col s4" style="margin-top: 1.5rem;">
-        <button type="submit" class="waves-effect waves-mydark btn whenmoon" id="id_save_router">Save</button>
+      <div class="w-1/3" style="margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary" id="id_save_router">Save</button>
       </div>
     </form>
     {% if messages %}
     <br>
-    <div class="row col s12 m8 offset-m2">
+    <div class="mx-auto max-w-3xl">
         {% for message in messages %}
         {% if message.extra_tags == 'router' %}
-        <div class="chip mydark myredlight-text z-depth-1">
+        <div class="badge badge-outline bg-neutral text-neutral-content text-base-content/60 shadow">
             {{ message }}
-            <i class="material-icons close" aria-hidden="true">close</i>
         </div>
         {% endif %}
         {% endfor %}
     </div>
     {% endif %}  
   </section>
-  <section class="row col s12 left-align" id="id-section-explorer">
+  <section class="text-left" id="id-section-explorer">
     <h5>Explorer</h5>
     <p>The blockchain explorer used for address, asset, and transaction links.</p>
     {% if can_access_explorer %}
@@ -54,46 +54,46 @@
       hx-swap="outerHTML">
       {% csrf_token %}
       <input type="hidden" name="section" value="explorer">
-      <div class="input-field col s8">
+      <div class="mt-4 w-2/3">
         {{ explorer_form.preferred_explorer }}
-        <label class="active" for="{{ explorer_form.preferred_explorer.id_for_label }}">Explorer</label>
+        <label class="mb-1 block text-sm" for="{{ explorer_form.preferred_explorer.id_for_label }}">Explorer</label>
         {% if explorer_form.preferred_explorer.errors %}
-        <span class="helper-text red-text">{{ explorer_form.preferred_explorer.errors|join:", " }}</span>
+        <span class="mt-1 block text-xs text-base-content/60 text-error">{{ explorer_form.preferred_explorer.errors|join:", " }}</span>
         {% endif %}
       </div>
-      <div class="col s4" style="margin-top: 1.5rem;">
-        <button type="submit" class="waves-effect waves-mydark btn whenmoon" id="id_save_explorer">Save</button>
+      <div class="w-1/3" style="margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary" id="id_save_explorer">Save</button>
       </div>
     </form>
     {% if messages %}
     <br>
-    <div class="row col s12 m8 offset-m2">
+    <div class="mx-auto max-w-3xl">
         {% for message in messages %}
         {% if message.extra_tags == 'explorer' %}
-        <div class="chip mydark myredlight-text z-depth-1">
+        <div class="badge badge-outline bg-neutral text-neutral-content text-base-content/60 shadow">
             {{ message }}
-            <i class="material-icons close" aria-hidden="true">close</i>
         </div>
         {% endif %}
         {% endfor %}
     </div>
     {% endif %}
     {% else %}
-    <a href="{% url 'subscriptions' %}" class="explorer-upgrade" title="Available from the Intro tier — open subscriptions">
-      <div class="input-field col s12">
-        <select class="browser-default" disabled aria-disabled="true">
+    <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Intro tier — open subscriptions">
+      <div class="mt-4">
+        <select class="select" disabled aria-disabled="true">
           <option>Allo</option>
         </select>
-        <span class="helper-text">Choosing an explorer is available from the <span class="mylight-text">Intro</span> tier. Tap to upgrade.</span>
+        <span class="mt-1 block text-xs text-base-content/60">Choosing an explorer is available from the <span class="text-primary">Intro</span> tier. Tap to upgrade.</span>
       </div>
     </a>
     {% endif %}
   </section>
 </div>
-<div class="row col s12 m5">
-  <a class="waves-effect btn-flat" href="{% url 'profile' %}"><i class="material-icons right" aria-hidden="true">{{ 'edit'|get_styling:"icon" }}</i>Back</a>
+<div class="md:col-span-5">
+  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>
   <br><br>
-  <span>Active tier: </span><span class="mylight-text">{{ user.profile.tier_name|upper }}</span>
+  <span>Active tier: </span><span class="text-primary">{{ user.profile.tier_name|upper }}</span>
+</div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Settings{% endblock %}

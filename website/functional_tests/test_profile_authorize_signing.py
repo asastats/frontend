@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
-from selenium.webdriver.common.by import By  # noqa: F401 (kept for parity/extension)
+from selenium.webdriver.common.by import \
+    By  # noqa: F401 (kept for parity/extension)
 from selenium.webdriver.support.ui import WebDriverWait
 
 from .base import FunctionalTest

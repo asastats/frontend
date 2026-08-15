@@ -136,9 +136,28 @@
   </div>
 </footer>
 {% block login_modal %}{% if not user.is_authenticated %}{% include "snippets/modal_login_tw.html" %}{% endif %}{% endblock %}
+{% comment %}
+  The same script set as base.html, minus materialize.min.js. Everything here
+  earns its place:
+
+  * jQuery, because every page script still uses it -- home.js, index.js,
+    tax.js, subscriptions.js and profile-authorize.js are all jQuery. Dropping
+    it made those scripts throw on load, which looked like nothing at all;
+  * site.js, for the cookie consent banner and copy-to-clipboard. Its
+    Materialize calls are all guarded (`typeof M === 'undefined'` checks), so
+    the tab/modal/toast parts simply no-op here -- theme.js and authmodal.js
+    cover those instead;
+  * bundle.js, the wallet package. Without it there is no wallet connect, no
+    EVM flow and no swap bridge on any page built on this template.
+
+  jQuery leaves when the page scripts stop needing it, not before.
+{% endcomment %}
+<script src="{% static 'js/jquery-2.2.4.min.js' %}"></script>
 <script src="{% static 'js/htmx.min.js' %}"></script>
+<script src="{% static 'js/site.min021.js' %}"></script>
 <script src="{% static 'js/theme.js' %}"></script>
 <script src="{% static 'js/authmodal.js' %}"></script>
+<script type="module" src="{% static 'js/bundle.js' %}"></script>
 {% block otherfooter %}{% endblock %}
 </body>
 </html>

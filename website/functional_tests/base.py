@@ -1,7 +1,9 @@
+import logging
 import os
 import platform
 import shutil
 import time
+import traceback
 from contextlib import contextmanager
 from datetime import datetime
 
@@ -46,6 +48,40 @@ HEADLESS_BACKEND = "xvfb"
 # HEADLESS_BACKEND = 'xephyr'
 
 TESTING_ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
+
+
+@contextmanager
+def captured_server_errors():
+    """Collect what Django logs to ``django.request`` while the block runs.
+
+    The live server runs in a thread of this process with ``DEBUG`` off, so a
+    view that raises renders templates/500.html -- inline CSS, no stylesheet
+    links, and no traceback anywhere the browser can see it. The only symptom
+    from the browser's side is a page that looks oddly bare. The exception does
+    reach this logger, so an assertion can carry it.
+    """
+    records = []
+    handler = logging.Handler()
+    handler.emit = records.append
+    logger = logging.getLogger("django.request")
+    logger.addHandler(handler)
+    try:
+        yield records
+    finally:
+        logger.removeHandler(handler)
+
+
+def describe_errors(records):
+    """Render captured log records, with tracebacks, for a failure message."""
+    if not records:
+        return ""
+    out = ["", "  the server logged:"]
+    for record in records:
+        out.append(f"    {record.getMessage()}")
+        if record.exc_info:
+            for line in traceback.format_exception(*record.exc_info):
+                out.extend("      " + part for part in line.rstrip().splitlines())
+    return "\n".join(out)
 
 
 @override_settings(
@@ -258,6 +294,42 @@ class FunctionalTest(Setup):
         settling, a JS-driven re-render -- where polling beats a fixed sleep.
         """
         return WebDriverWait(self.browser, timeout).until(lambda _: predicate())
+
+    def page_state(self):
+        """Return {ready, sheets, title, text} for the current page in one call.
+
+        One ``execute_script`` round trip rather than a Selenium query per
+        element: every ``find_elements`` pays the implicit wait, which adds up
+        across a test that walks several pages.
+        """
+        return self.browser.execute_script(
+            "return {"
+            "  ready: document.readyState,"
+            "  sheets: Array.from("
+            "    document.querySelectorAll('link[rel=\"stylesheet\"]')"
+            "  ).map(function (l) { return l.getAttribute('href'); }),"
+            "  title: document.title,"
+            "  text: (document.body ? document.body.innerText : '').slice(0, 300)"
+            "};"
+        )
+
+    def visit(self, url):
+        """Load ``url``, wait for it to settle, and describe what arrived.
+
+        The returned state carries a ``why`` string holding everything a
+        failure needs to name itself -- url, title, a body excerpt, and the
+        server-side traceback if the view raised.
+        """
+        with captured_server_errors() as errors:
+            self.browser.get(url)
+            self.wait_until(lambda: self.page_state()["ready"] == "complete")
+            state = self.page_state()
+        state["why"] = (
+            f"\n  url:   {url}"
+            f"\n  title: {state['title']!r}"
+            f"\n  body:  {state['text']!r}" + describe_errors(errors)
+        )
+        return state
 
     def take_screenshot(self):
         filename = self._get_filename() + ".png"

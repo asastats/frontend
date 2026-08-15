@@ -1,28 +1,32 @@
 {% load i18n %}
-<div class="col s6 m3 left-align push-m3">
-  <label>
-    <input class="with-gap" name="sort" type="radio" id="id_name" checked />
-    <span>Name</span>
-  </label><br>
-  <label>
-    <input class="with-gap" name="sort" type="radio" id="id_size" />
-    <span>Size</span>
-  </label>
-</div>
-<div class="col s6 m3 left-align push-m3">
-  <label>
-    <input class="with-gap" name="sort" type="radio" id="id_created"  />
-    <span>Created</span>
-  </label><br>
-  <label>
-    <input class="with-gap" name="sort" type="radio" id="id_modified" />
-    <span>Modified</span>
-  </label>
-</div>
-<div class="col s6 m3 pull-m6">
-  <span class="sort">Sort by:</span><br>
-  <label>
-    <input class="filled-in" type="checkbox" id="id_desc" />
+{% comment %}
+  home.js binds to `input[type=radio][name=sort]`, `#id_desc` and `#id_filter`,
+  so those names and ids are the contract; only the presentation changed.
+{% endcomment %}
+<div class="flex flex-wrap items-start gap-x-8 gap-y-3">
+  <fieldset>
+    <legend class="sort mb-1 text-sm font-medium">Sort by:</legend>
+    <label class="flex items-center gap-2 text-sm">
+      <input class="radio radio-sm" name="sort" type="radio" id="id_name" checked />
+      <span>Name</span>
+    </label>
+    <label class="flex items-center gap-2 text-sm">
+      <input class="radio radio-sm" name="sort" type="radio" id="id_size" />
+      <span>Size</span>
+    </label>
+  </fieldset>
+  <fieldset class="mt-5">
+    <label class="flex items-center gap-2 text-sm">
+      <input class="radio radio-sm" name="sort" type="radio" id="id_created" />
+      <span>Created</span>
+    </label>
+    <label class="flex items-center gap-2 text-sm">
+      <input class="radio radio-sm" name="sort" type="radio" id="id_modified" />
+      <span>Modified</span>
+    </label>
+  </fieldset>
+  <label class="mt-5 flex items-center gap-2 text-sm">
+    <input class="checkbox checkbox-sm" type="checkbox" id="id_desc" />
     <span>Descending</span>
   </label>
 </div>

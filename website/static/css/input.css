@@ -190,8 +190,71 @@
 }
 [data-notice="info"] { border-color: var(--color-base-300); }
 
+/* allauth renders the login/signup widgets itself, with no classes on them, so
+   the fields cannot be given `input` in the template. Scoping to .auth-form
+   styles exactly those bare widgets and nothing else. Written against the theme
+   tokens rather than @apply, so it follows a theme change like everything else. */
+.auth-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.auth-form select,
+.auth-form textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: var(--border) solid var(--color-base-300);
+  border-radius: var(--radius-field);
+  background-color: var(--color-base-100);
+  color: var(--color-base-content);
+  font: inherit;
+  line-height: 1.75rem;
+}
+.auth-form input:focus-visible,
+.auth-form select:focus-visible,
+.auth-form textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* The wallet package injects connector buttons into this container. */
 .evm-wallet-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+
+/* The connected-addresses list on profile_addresses.html. A native <details>
+   per row; style.css carries the same block for as long as any page on the old
+   base still renders this. The class names are kept because htmx targets and
+   the wallet package's step-up buttons are addressed through them. */
+.address-list { margin: 0; padding: 0; list-style: none; }
+.connected-address-row {
+  border: var(--border) solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  margin-bottom: 0.625rem;
+  overflow: hidden;
+  background: var(--color-base-100);
+}
+.connected-address-row summary {
+  padding: 0.875rem 1.125rem;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+.connected-address-row summary::-webkit-details-marker { display: none; }
+.connected-address-row summary::after {
+  content: "";
+  float: right;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.3125rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+.connected-address-row details[open] summary::after { transform: rotate(-135deg); }
+.address-detail { padding: 0 1.125rem 1rem; }
+.address-empty { padding: 0.875rem 1.125rem; margin: 0; }
+.connected-address-row .address-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
 
 /* htmx feedback, outside a Tailwind layer so the opacity rules are not purged
    and do not lose to utilities. Mirrors the rewards suite. */

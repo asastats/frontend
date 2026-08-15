@@ -1,9 +1,19 @@
 from selenium.webdriver.common.by import By
 
-from .base import BROWSER_DRIVER, FunctionalTest
+from .base import FunctionalTest
 
 
 class CustomAuthTest(FunctionalTest):
+    def assertLabel(self, element, expected):
+        """Assert an element's visible text, ignoring case.
+
+        Materialize upper-cased buttons and links in CSS, so these assertions
+        used to spell the expectation in capitals. DaisyUI does not, which
+        makes the rendered casing a design decision rather than something the
+        content depends on -- so they now compare the words.
+        """
+        self.assertIn(expected.strip().lower(), element.text.strip().lower())
+
     def test_custom_auth_page(self):
         # Don goes to signup page
         with self.wait_for_page_load(timeout=5):
@@ -40,11 +50,11 @@ class CustomAuthTest(FunctionalTest):
         self.assertIn("/accounts/google/login/", social.get_attribute("href"))
 
         buttons = self.browser.find_elements(By.CLASS_NAME, "primaryAction")
-        self.assertIn("Sign up".upper(), buttons[0].text)
+        self.assertLabel(buttons[0], "Sign up")
 
         # There's the button asking if he maybe already has an account
         links = self.browser.find_elements(By.XPATH, '//a[@href="/accounts/login/"]')
-        self.assertIn("Already have an account?".upper(), links[1].text)
+        self.assertLabel(links[1], "Already have an account?")
 
         # He clicks that button and finds himself in login page
         with self.wait_for_page_load(timeout=5):
@@ -64,34 +74,24 @@ class CustomAuthTest(FunctionalTest):
 
         # There are login by social media account buttons too
         text = "Sign in with Discord"
-        social = self.browser.find_element(
-            By.LINK_TEXT, text if BROWSER_DRIVER == "Firefox" else text.upper()
-        )
+        social = self.browser.find_element(By.LINK_TEXT, text)
         self.assertIn("/accounts/discord/login/", social.get_attribute("href"))
         text = "Sign in with X"
-        social = self.browser.find_element(
-            By.LINK_TEXT, text if BROWSER_DRIVER == "Firefox" else text.upper()
-        )
+        social = self.browser.find_element(By.LINK_TEXT, text)
         self.assertIn("/accounts/twitter_oauth2/login/", social.get_attribute("href"))
         text = "Sign in with Reddit"
-        social = self.browser.find_element(
-            By.LINK_TEXT, text if BROWSER_DRIVER == "Firefox" else text.upper()
-        )
+        social = self.browser.find_element(By.LINK_TEXT, text)
         self.assertIn("/accounts/reddit/login/", social.get_attribute("href"))
         text = "Sign in with GitHub"
-        social = self.browser.find_element(
-            By.LINK_TEXT, text if BROWSER_DRIVER == "Firefox" else text.upper()
-        )
+        social = self.browser.find_element(By.LINK_TEXT, text)
         self.assertIn("/accounts/github/login/", social.get_attribute("href"))
         text = "Sign in with Google"
-        social = self.browser.find_element(
-            By.LINK_TEXT, text if BROWSER_DRIVER == "Firefox" else text.upper()
-        )
+        social = self.browser.find_element(By.LINK_TEXT, text)
         self.assertIn("/accounts/google/login/", social.get_attribute("href"))
 
         # There's the button asking if he maybe don't have an account
         links = self.browser.find_elements(By.XPATH, '//a[@href="/accounts/signup/"]')
-        self.assertIn("Don't have an account?".upper(), links[1].text)
+        self.assertLabel(links[1], "Don't have an account?")
 
         # Also the button asking if he maybe forgot his password
         links = self.browser.find_elements(
@@ -101,11 +101,11 @@ class CustomAuthTest(FunctionalTest):
 
         # # There's help button
         # elem = self.find_elem_by_id('id_help_auth')
-        # self.assertIn("Help".upper(), elem.text)
+        # self.assertLabel(elem, "Help")
 
         # There's large call to action button
         buttons = self.browser.find_elements(By.CLASS_NAME, "primaryAction")
-        self.assertIn("Log in".upper(), buttons[0].text)
+        self.assertLabel(buttons[0], "Log in")
 
     def _click_modal_tab(self, panel_id):
         """Switch the login modal to the tab whose panel is ``panel_id``."""
@@ -121,9 +121,7 @@ class CustomAuthTest(FunctionalTest):
             ("Sign in with GitHub", "/accounts/github/login/"),
             ("Sign in with Google", "/accounts/google/login/"),
         ):
-            social = self.browser.find_element(
-                By.LINK_TEXT, text if BROWSER_DRIVER == "Firefox" else text.upper()
-            )
+            social = self.browser.find_element(By.LINK_TEXT, text)
             self.assertIn(href, social.get_attribute("href"))
 
     def test_modal_custom_auth_page(self):
@@ -158,7 +156,7 @@ class CustomAuthTest(FunctionalTest):
 
         # And the call to action button lives on this default tab
         elem = self.find_elem_by_id("id_cta_modal")
-        self.assertIn("Log in".upper(), elem.text)
+        self.assertLabel(elem, "Log in")
 
         # He switches to the Wallet tab and sees the Pera and Defly wallets
         self._click_modal_tab("modal-tab-wallet")
@@ -175,14 +173,14 @@ class CustomAuthTest(FunctionalTest):
 
         # There's the button asking if he maybe don't have an account
         links = self.browser.find_elements(By.XPATH, '//a[@href="/accounts/signup/"]')
-        self.assertIn("Don't have an account?".upper(), links[0].text)
+        self.assertLabel(links[0], "Don't have an account?")
 
         # Also the button asking if he maybe forgot his password
         links = self.browser.find_elements(
             By.XPATH, '//a[@href="/accounts/password/reset/"]'
         )
-        self.assertIn("Forgot Password?".upper(), links[0].text)
+        self.assertLabel(links[0], "Forgot Password?")
 
         # There's cancel button
         elem = self.find_elem_by_id("id_cancel")
-        self.assertIn("Cancel".upper(), elem.text)
+        self.assertLabel(elem, "Cancel")

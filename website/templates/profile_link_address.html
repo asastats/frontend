@@ -6,7 +6,7 @@
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
 {% block page_header %}Link address to profile{% endblock %}
 {% block middle_section %}
-<div class="row col s12">
+<div>
   <p>
     Connect another wallet to add it to your account. Linked addresses can sign
     in and be used in user widgets; they do not change your primary address or its
@@ -29,12 +29,12 @@
     <div id="evm-wallet-list"></div>
   </div>
 
-  <div id="app-error" class="card-panel red lighten-2 white-text" style="display:none">
+  <div id="app-error" class="rounded-box bg-base-100 p-5 shadow-sm alert alert-error" style="display:none">
     Something went wrong initializing wallets.
   </div>
 </div>
-<div class="row col s12">
-  <a class="waves-effect btn-flat" href="{% url 'profile_addresses' %}"><i class="material-icons right" aria-hidden="true">{{ 'wallet'|get_styling:"icon" }}</i>Back</a>&nbsp;
+<div>
+  <a class="btn btn-ghost" href="{% url 'profile_addresses' %}">Back</a>&nbsp;
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; <a href="{% url 'profile_addresses' %}">Addresses</a> &raquo; Link&nbsp;address{% endblock %}
