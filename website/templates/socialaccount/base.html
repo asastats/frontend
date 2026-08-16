@@ -1,8 +1,14 @@
-{% extends 'base_home_legacy.html' %}
+{% extends 'base_home.html' %}
 {% load static %}
+{% comment %}
+  Shell for the social-account pages: connections, the per-provider confirm
+  step, and the two failure notices. Same shape as account/base.html, and the
+  same `auth-form` scope, because allauth renders these form fields itself with
+  no classes on them.
+{% endcomment %}
 
 {% block middle_section %}
-<div class="row col s12 center-align">
+<div class="auth-form mx-auto max-w-2xl text-left">
     {% block socialaccount_top %}{% endblock %}
     {% block socialaccount_middle %}{% endblock %}
     {% block socialaccount_bottom %}{% endblock %}

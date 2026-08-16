@@ -7,22 +7,18 @@
 {% block page_header %}{{ bundlename.name }}{% endblock %}
 
 {% block extra_bundlename_data %}
-<div class="row col s12 center-align">
-    <br>
-    <span>Created on:</span>
-    <br>
-    <span id="id_created">{{ bundlename.short_created }}</span>
-    <br>
-    <span>Modified on:</span>
-    <br>
-    <span id="id_modified">{{ bundlename.short_modified }}</span>
-    <br>
-    <a href="{% url 'bundlename_delete' bundlename.name %}" id="id_delete">Delete bundle name</a>
-    <br><br>
+<div class="mt-8 space-y-1 text-sm text-base-content/70">
+    <div>Created on:</div>
+    <div id="id_created" class="text-base-content">{{ bundlename.short_created }}</div>
+    <div class="pt-2">Modified on:</div>
+    <div id="id_modified" class="text-base-content">{{ bundlename.short_modified }}</div>
+    <div class="pt-4">
+      <a class="link link-hover text-error" href="{% url 'bundlename_delete' bundlename.name %}" id="id_delete">Delete bundle name</a>
+    </div>
 </div>
 {% endblock %}
 {% block bundlename_submit_text %}Update{% endblock %}
 
-{% block active_link %}{% if element == bundlename %}active{% endif %}{% endblock %}
+{% block active_link %}{% if element == bundlename %}aria-current="page"{% endif %}{% endblock %}
 
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; Bundle name{% endblock %}

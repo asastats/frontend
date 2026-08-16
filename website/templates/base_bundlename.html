@@ -1,45 +1,66 @@
-{% extends 'base_home_legacy.html' %}
+{% extends 'base_home.html' %}
 {% load i18n %}
 {% load static %}
 {% load core_extras %}
+{% comment %}
+  Shell for the three bundle-name forms: add, edit and delete. The form fields
+  sit left, the actions that operate on them right, and the left rail lists the
+  other bundle names so you can move between them without going back home.
+
+  Two things changed beyond the styling:
+
+  * the `public` field's help text was a Materialize `.tooltipped` element,
+    which needed M.Tooltip to say anything at all. It is a DaisyUI `tooltip`
+    now -- CSS only, no initialisation, and nothing to break when the
+    framework goes;
+  * the icons are gone rather than translated. The buttons say what they do.
+{% endcomment %}
 {% block middle_section %}
 <form method="POST" action="" id="id_form">
-  <div class="row col s12 m9 midrow">
-    {% block bundlename_top %}{% endblock %}
-    {% csrf_token %}
-    {% for field in form %}
-      <div class="input-field col s12 wide">
-      {% if field.name == "public" %}
-        <p class="tooltipped publictip" data-position="top" data-tooltip="{{ form.public.help_text|safe }}">
-          <label>
+  <div class="grid gap-6 md:grid-cols-12 md:text-left">
+    <div class="md:col-span-9">
+      {% block bundlename_top %}{% endblock %}
+      {% csrf_token %}
+      <div class="space-y-4">
+      {% for field in form %}
+        <div class="wide">
+        {% if field.name == "public" %}
+          <label class="tooltip flex items-center gap-2 text-sm" data-tip="{{ form.public.help_text|striptags }}">
             {{ field }}
             <span>{{ field.label }}</span>
           </label>
-        </p>
-      {% else %}
-        {{ field }}
-        {{ field.label_tag }}
-        {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
-      {% endif %}
-      {% if field.errors %}<span class="myred-text">{{ field.errors }}</span>{% endif %}
+        {% else %}
+          <label class="mb-1 block text-sm" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-base-content/60">{{ field.help_text|safe }}</p>{% endif %}
+        {% endif %}
+        {% if field.errors %}<p class="mt-1 text-sm text-error">{{ field.errors }}</p>{% endif %}
+        </div>
+      {% endfor %}
       </div>
-    {% endfor %}
-    {% if form.non_field_errors %}<div class="col s12"><span class="myred-text">{{form.non_field_errors}}</span></div>{% endif %}
-  </div>
-  <div class="row col s12 m3">
-    <br>
-    {% block back_button %}<a class="waves-effect btn-flat" href="{% url 'home' %}">Back<i class="material-icons right" aria-hidden="true">{{ 'home'|get_styling:"icon" }}</i></a>{% endblock %}
-    <button class="primaryAction waves-effect btn-flat submit{% block bundlename_submit_color %}{% endblock %}" id="id_submit" type="submit">{% block bundlename_submit_text %}{% endblock %}<i class="material-icons right" aria-hidden="true">{{ 'save'|get_styling:"icon" }}</i></button>
-    {% block extra_bundlename_data %}{% endblock %}
+      {% if form.non_field_errors %}<p class="mt-3 text-sm text-error">{{form.non_field_errors}}</p>{% endif %}
+    </div>
+
+    <div class="md:col-span-3">
+      {% block back_button %}<a class="btn btn-ghost" href="{% url 'home' %}">Back</a>{% endblock %}
+      <button class="primaryAction btn submit {% block bundlename_submit_color %}btn-primary{% endblock %}" id="id_submit" type="submit">{% block bundlename_submit_text %}{% endblock %}</button>
+      {% block extra_bundlename_data %}{% endblock %}
+    </div>
   </div>
 </form>
 {% endblock %}
 
 {% block left_section %}
-{% load core_extras %}
-<div class="collection home">
+<div class="home rounded-box border border-base-300 bg-base-100 divide-y divide-base-300">
 {% for element in object.profile.bundlenames %}
-  <a href="{% url 'bundlename_edit' element.name %}" class="collection-item {% block active_link %}{% endblock %}">
+  {% comment %}
+    The current entry was marked `class="active"`, which Materialize painted.
+    It is `aria-current="page"` now, so the state is announced as well as
+    painted -- the same change the login/signup tabs got.
+  {% endcomment %}
+  <a href="{% url 'bundlename_edit' element.name %}"
+     class="block p-3 text-sm hover:bg-base-200 aria-[current=page]:bg-base-200 aria-[current=page]:font-medium"
+     {% block active_link %}{% endblock %}>
     <span class="title">{{ element.name }}</span>
   </a>
 {% endfor %}

@@ -21,6 +21,8 @@ test_index_page and test_sitemap_html_page.
 
 from django.urls import reverse
 
+from utils.tests.fixtures import TEST_ADDRESS
+
 from .base import FunctionalTest
 
 #: Pages already moved onto base_tw.html, by URL name. Add to this as each
@@ -48,12 +50,18 @@ CONVERTED = [
     "profile_settings",
     "profile_addresses",
     "deactivate_profile",
+    # The last three base_home descendants (Batches D and E). With these
+    # converted nothing extends base_home_legacy.html and the shim is gone.
+    "account_email",
+    "account_logout",
+    "socialaccount_connections",
 ]
 
-#: Pages deliberately still on Materialize, via base_home_legacy.html. Each
-#: moves up to CONVERTED as its batch lands, and the shim is deleted when this
-#: list is empty.
-STILL_LEGACY = ["account_email", "socialaccount_connections"]
+#: Pages deliberately still on Materialize, as (url name, args). Only
+#: address.html and its snippets remain -- they are Phase 3, and the only
+#: reason base.html still exists. When this list empties, so does the reason
+#: for this whole module.
+STILL_LEGACY = [("address", [TEST_ADDRESS])]
 #: bundlename_add is deliberately absent: SubscribeRedirection sends a viewer
 #: without the tier to /subscriptions/, which IS converted, so the assertion
 #: would be made against the wrong page. With the engine unreachable -- the
@@ -107,17 +115,17 @@ class StylesheetSplitTest(FunctionalTest):
     def test_pages_still_on_the_old_base_keep_materialize(self):
         """The other half of the invariant: the split is real, not accidental.
 
-        These are held on base_home_legacy.html on purpose -- converting the
-        base_home hub would otherwise have dragged them onto the DaisyUI
-        stylesheet while they still carry Materialize markup. When this list
-        empties, the migration is over: see the module docstring.
+        These are held on base.html on purpose -- they still carry Materialize
+        markup, and rendering that under the DaisyUI sheet would deform it
+        through the eleven class names the two frameworks share. When this
+        list empties, the migration is over: see the module docstring.
         """
         self.create_cookie_and_go_to_index_page_tier(
             "legacy@example.com", permission=100
         )
-        for name in STILL_LEGACY:
+        for name, args in STILL_LEGACY:
             with self.subTest(page=name):
-                state = self.visit(self.server_url + reverse(name))
+                state = self.visit(self.server_url + reverse(name, args=args))
                 sheets = " ".join(state["sheets"])
                 self.assertNotEqual(
                     state["title"],

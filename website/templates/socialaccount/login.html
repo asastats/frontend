@@ -21,8 +21,8 @@
 <br>
 <form class="connect" id="id_connect" method="POST" action="{{ attrs.action }}">
     {% csrf_token %}
-    <div class="row center-align col s12">
-        <button class="primaryAction waves-effect waves-mydark btn whenmoon" type="submit">Continue<i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></button>
+    <div class="mt-5 text-center">
+        <button class="primaryAction btn btn-primary" type="submit">Continue</button>
     </div>
 </form>
 {% endblock %}
