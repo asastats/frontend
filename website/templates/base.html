@@ -41,14 +41,21 @@
     <meta name="theme-color" content="#ffffff">
 </head>
 <body class="min-h-screen bg-base-200 text-base-content flex flex-col">
-<script src="{% static 'js/csp-safe-handlers.min002.js' %}"></script>
+<script src="{% static 'js/csp-safe-handlers.js' %}"></script>
 {% block header %}
 <header>
   <div class="navbar bg-base-100 border-b border-base-300">
     <div class="mx-auto flex w-full max-w-6xl items-center gap-2 px-4">
       {% block navigation %}
       <a href="/" class="flex-none" aria-label="{{ WEBSITE_NAME }} home">
-        <img class="h-8 w-auto" src="{% get_static_prefix %}{{ WEBSITE_SHORT_NAME }}.png" alt="{{ WEBSITE_NAME }} logo">
+        {% comment %}
+          `{% templatetag openblock %} static %}` rather than pasting the name onto
+          `{% templatetag openblock %} get_static_prefix %}`: under
+          ManifestStaticFilesStorage the served filename carries a content hash,
+          which only the `static` tag knows how to look up. A concatenated path
+          would 404 in production while working perfectly in development.
+        {% endcomment %}
+        <img class="h-8 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
       </a>
 
       <nav class="ml-auto hidden items-center gap-1 md:flex">
@@ -148,13 +155,12 @@
 </footer>
 {% block login_modal %}{% if not user.is_authenticated %}{% include "snippets/modal_login.html" %}{% endif %}{% endblock %}
 {% comment %}
-  The same script set as base.html, minus materialize.min.js. Everything here
-  earns its place:
+  Everything here earns its place:
 
   * jQuery, because every page script still uses it -- home.js, index.js,
     tax.js, subscriptions.js and profile-authorize.js are all jQuery. Dropping
     it made those scripts throw on load, which looked like nothing at all;
-  * site.js, for the cookie consent banner and copy-to-clipboard. Its
+  * site.js, for copy-to-clipboard and the swap login gate. Its
     Materialize calls are all guarded (`typeof M === 'undefined'` checks), so
     the tab/modal/toast parts simply no-op here -- theme.js and authmodal.js
     cover those instead;
@@ -165,7 +171,7 @@
 {% endcomment %}
 <script src="{% static 'js/jquery-2.2.4.min.js' %}"></script>
 <script src="{% static 'js/htmx.min.js' %}"></script>
-<script src="{% static 'js/site.min023.js' %}"></script>
+<script src="{% static 'js/site.js' %}"></script>
 <script src="{% static 'js/theme.js' %}"></script>
 <script src="{% static 'js/authmodal.js' %}"></script>
 <script type="module" src="{% static 'js/bundle.js' %}"></script>

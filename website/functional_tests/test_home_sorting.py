@@ -13,7 +13,6 @@ class HomeSortingAndFilteringTest(FunctionalTest):
         self.create_cookie_and_go_to_bundlename_add_page(
             "dieter_pro@example.com", permission=258_885_438_200
         )
-        self.accept_cookie()
 
         # He adds two bundlenames
         bundlename1 = "Bundle name 1"
@@ -53,7 +52,6 @@ class HomeSortingAndFilteringTest(FunctionalTest):
         self.create_cookie_and_go_to_bundlename_add_page(
             "mario_pro@example.com", permission=258_885_438_200
         )
-        self.accept_cookie()
 
         # He adds a bundlename
         bundlename1 = "Bundle first"
@@ -170,7 +168,6 @@ class HomePageScriptsTest(FunctionalTest):
         self.create_cookie_and_go_to_bundlename_add_page(
             "scripts@example.com", permission=258_885_438_200
         )
-        self.accept_cookie()
         self.submit_bundlename_name("Bundle one", TEST_ADDRESS)
         self.browser.get(self.server_url + "/profile/add-bundle")
         self.submit_bundlename_name("Bundle two", f"{TEST_ADDRESS} {TEST_ADDRESS2}")
@@ -179,9 +176,11 @@ class HomePageScriptsTest(FunctionalTest):
         state = self._js_state()
         why = f"\n  page state: {state}"
         self.assertTrue(state["jquery"], f"jQuery did not load{why}")
-        self.assertIn(
-            "home.min001.js",
-            state["scripts"],
+        # The template names the source (`js/home.js`); in production
+        # ManifestStaticFilesStorage serves it under a content-hashed name, so
+        # the assertion is on the stem rather than the exact filename.
+        self.assertTrue(
+            any(name.startswith("home.") for name in state["scripts"]),
             f"the page never requested its own script{why}",
         )
         self.assertTrue(state["hasPanel"], f"no sort/filter panel rendered{why}")
@@ -210,7 +209,6 @@ class HomePageScriptsTest(FunctionalTest):
         self.create_cookie_and_go_to_bundlename_add_page(
             "clicks@example.com", permission=258_885_438_200
         )
-        self.accept_cookie()
         self.submit_bundlename_name("Bundle zulu", TEST_ADDRESS)
         self.browser.get(self.server_url + "/profile/add-bundle")
         self.submit_bundlename_name("Bundle alpha", f"{TEST_ADDRESS} {TEST_ADDRESS2}")

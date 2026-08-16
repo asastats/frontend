@@ -122,7 +122,6 @@ class SwapModalTest(FunctionalTest):
         """
         self.browser.get(f"{self.server_url}/{ADDRESS}")
         self._disarm_icon_fallback()
-        self.accept_cookie()
         # htmx delivers the per-user marker, the modal and the controller.
         self.find_elem_by_id("id-swap-enabled")
         self.browser.execute_script(
@@ -507,7 +506,6 @@ class SwapModalUnlinkedTest(FunctionalTest):
             "stranger@example.com", permission=100
         )
         self.browser.get(f"{self.server_url}/{ADDRESS}")
-        self.accept_cookie()
 
         # The gate is server-side: no marker, no modal, no controller, and the
         # engine is never asked for someone else's holdings.

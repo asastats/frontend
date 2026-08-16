@@ -78,7 +78,6 @@ class JavaScriptErrorTest(FunctionalTest):
     def test_public_pages_load_without_javascript_errors(self):
         self.record_javascript_errors()
         self.browser.get(self.server_url + "/")
-        self.accept_cookie()
         self._assert_clean(PUBLIC_PATHS)
 
     def test_private_pages_load_without_javascript_errors(self):
@@ -86,6 +85,5 @@ class JavaScriptErrorTest(FunctionalTest):
         self.create_cookie_and_go_to_bundlename_add_page(
             "jserrors@example.com", permission=258_885_438_200
         )
-        self.accept_cookie()
         self.submit_bundlename_name("Bundle one", TEST_ADDRESS)
         self._assert_clean(PRIVATE_PATHS)

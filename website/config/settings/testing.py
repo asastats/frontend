@@ -52,3 +52,21 @@ EMAIL_USE_SSL = False
 DEFAULT_FROM_EMAIL = f"{WEBSITE_NAME} Support <support@{WEBSITE_BASE_DOMAIN}>"
 
 WALLET_TEST_MODE = True
+
+# Content-hashed static filenames. See the STORAGES note in base.py: this is
+# what makes `Cache-Control: immutable` correct rather than a gamble, and it is
+# why templates name sources (`js/site.js`) rather than build outputs.
+#
+# static/build comes FIRST so collectstatic prefers the minified copy produced
+# by ./build-static.sh over the readable source of the same name. When that
+# directory is absent -- a checkout that has not run the build -- the source is
+# collected instead and the site works, just larger.
+STORAGES = {
+    **STORAGES,
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+    },
+}
+
+if (BASE_DIR.parent / "static" / "build").is_dir():
+    STATICFILES_DIRS.insert(0, BASE_DIR.parent / "static" / "build")

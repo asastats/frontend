@@ -7,7 +7,6 @@ class ProfileEditTest(FunctionalTest):
     def test_edit_basic_user_data_in_profile_page(self):
         # Robert signs up
         self.create_cookie_and_go_to_bundlename_add_page("dwight@dwight.com")
-        self.accept_cookie()
 
         # On his home page he sees button that links to his profile page
         self.browser.get(self.server_url + "/home/")
@@ -62,7 +61,6 @@ class ProfileEditTest(FunctionalTest):
     def test_other_user_data_in_profile_page(self):
         # Todd signs up
         self.create_cookie_and_go_to_bundlename_add_page("todd@example.com")
-        self.accept_cookie()
 
         self.browser.get(self.server_url + "/profile/")
 
@@ -75,7 +73,6 @@ class ProfileEditTest(FunctionalTest):
     def test_profile_page_other_buttons(self):
         # Malcolm signs up
         self.create_cookie_and_go_to_bundlename_add_page("malcolm@malcolm.com")
-        self.accept_cookie()
 
         self.browser.get(self.server_url + "/profile/")
 

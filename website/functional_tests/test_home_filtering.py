@@ -16,7 +16,6 @@ class HomeFilteringTest(FunctionalTest):
         self.create_cookie_and_go_to_bundlename_add_page(
             "johnny_pro@example.com", permission=258_885_438_200
         )
-        self.accept_cookie()
 
         # He adds a bundlename
         bundlename1 = "My first"

@@ -21,7 +21,6 @@ class SitemapHtmlPageTest(FunctionalTest):
 
         # Now she logs in
         self.create_cookie_and_go_to_bundlename_add_page("urlike@urlike.com")
-        self.accept_cookie()
 
         # And visits sitemap page again
         self.browser.get(self.server_url + "/sitemap/")

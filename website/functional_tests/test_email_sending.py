@@ -20,7 +20,6 @@ class EmailConfirmationTest(FunctionalTest):
     def test_email_confirmation(self):
         # Wayne signs up
         self.create_cookie_and_go_to_bundlename_add_page("wayne@wayne.com")
-        self.accept_cookie()
 
         # He goes to his emails page
         self.browser.get(self.server_url + "/accounts/email/")
@@ -57,7 +56,6 @@ class EmailConfirmationTest(FunctionalTest):
         # Dominic signs up
         email = "dominic@wayne.com"
         self.create_cookie_and_go_to_bundlename_add_page(email)
-        self.accept_cookie()
 
         # He goes to his emails page
         self.browser.get(self.server_url + "/accounts/email/")
@@ -114,7 +112,6 @@ class EmailConfirmationTest(FunctionalTest):
         # Sergei signs up
         email = "sergei@wayne.com"
         self.create_cookie_and_go_to_bundlename_add_page(email)
-        self.accept_cookie()
 
         # He goes to his emails page
         self.browser.get(self.server_url + "/accounts/email/")
@@ -167,7 +164,6 @@ class EmailResetPasswordTest(FunctionalTest):
     def test_email_reset_password(self):
         # Bruce signs up
         self.create_cookie_and_go_to_bundlename_add_page("bruce@bruce.com")
-        self.accept_cookie()
 
         # He adds an email
         self.browser.get(self.server_url + "/accounts/email/")

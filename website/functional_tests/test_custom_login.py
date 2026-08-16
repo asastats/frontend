@@ -19,7 +19,6 @@ class CustomAuthTest(FunctionalTest):
         with self.wait_for_page_load(timeout=5):
             self.browser.get(self.server_url + "/accounts/signup/")
 
-        self.accept_cookie()
 
         # He sees sign up header
         header = self.find_elem_by_tag("h3")
@@ -129,7 +128,6 @@ class CustomAuthTest(FunctionalTest):
         with self.wait_for_page_load(timeout=5):
             self.browser.get(self.server_url)
 
-        self.accept_cookie()
 
         # He sees login link and clicks it
         login = self.browser.find_element(By.XPATH, '//a[@href="#modalLogin"]')

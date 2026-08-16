@@ -32,7 +32,6 @@ class ProfileAuthorizeWalletSigningTest(FunctionalTest):
         self.create_cookie_and_go_to_authorize_page(
             "mona22@dwight.com", address=TEST_WALLET_ADDRESS
         )
-        self.accept_cookie()
 
         # A mock wallet (controlling Mona's address) is installed in place of a
         # real browser extension. Wait until the test harness has attached its

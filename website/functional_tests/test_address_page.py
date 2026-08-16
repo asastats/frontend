@@ -37,7 +37,6 @@ class AddressPageTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": 0}
 
         self.browser.get(f"{self.server_url}/{ADDRESS}")
-        self.accept_cookie()
 
         self.assertTrue(self.browser.current_url.rstrip("/").endswith(ADDRESS))
         self.assertIn(ADDRESS, self.browser.page_source)
@@ -69,7 +68,6 @@ class BundlePageTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": 0}
 
         self.browser.get(f"{self.server_url}/{BUNDLE}")
-        self.accept_cookie()
 
         self.assertTrue(self.find_elems_by_class("consolidated"))
         # Validates the core/views.py fix: the resolved address list — not just

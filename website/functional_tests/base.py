@@ -230,12 +230,6 @@ class Setup(StaticLiveServerTestCase):
 class FunctionalTest(Setup):
     """Functional tests base class with attached helpers methods"""
 
-    def accept_cookie(self):
-        pass
-        # button = self.browser.find_element(By.CLASS_NAME, "accept-all")
-        # button.click()
-        # self.sleep(0.1)
-
     def sleep(self, seconds=DEFAULT_SLEEP):
         time.sleep(seconds)
 

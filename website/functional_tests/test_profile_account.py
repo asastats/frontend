@@ -7,7 +7,6 @@ class ProfileAccountTest(FunctionalTest):
     def test_profile_account_page_components(self):
         # Gary signs up
         self.create_cookie_and_go_to_bundlename_add_page("gary15@dwight.com")
-        self.accept_cookie()
 
         # On his home page he sees button that links to his profile page
         self.browser.get(self.server_url + "/home/")

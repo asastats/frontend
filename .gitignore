@@ -34,3 +34,8 @@ deploy/.env.testing
 website/static/css/tailwindcss
 website/static/css/daisyui.mjs
 website/static/css/daisyui-theme.mjs
+
+# Build output: minified copies of website/static/js, produced by
+# website/build-static.sh and preferred by collectstatic in production. Source
+# is what lives in the repo; this is regenerated.
+website/static/build/

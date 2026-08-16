@@ -254,6 +254,23 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = BASE_DIR.parent.parent.parent / "static"
 
+# Static files are served under a content-hashed name in production, so a
+# changed file is a changed URL and can be cached indefinitely. This replaces
+# the old `site.min021.js` -> `site.min022.js` convention, where the version
+# lived in the filename and every bump meant editing each referring template --
+# and a missed edit silently served a stale script.
+#
+# Only production and the staging host use it. Under this storage `{% static %}`
+# raises for any file missing from the manifest, which is the right behaviour
+# for a deploy and the wrong one for `runserver` before a collectstatic; see
+# config/settings/production.py.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+    },
+}
+
 DATA_PATH = BASE_DIR.parent.parent.parent / "data"
 
 BASE_CDN_URL = "https://cdn.asastats.com"
@@ -333,6 +350,7 @@ AVAILABLE_THEMES_BY_SCHEME = {
         "autumn",
         "lemonade",
         "silk",
+        "caramellatte",
         "cyberpunk",
         "githublight",
     ],
@@ -345,6 +363,7 @@ AVAILABLE_THEMES_BY_SCHEME = {
         "luxury",
         "dracula",
         "business",
+        "synthwave",
         "andromeda",
         "ayudark",
         "catppuccin",

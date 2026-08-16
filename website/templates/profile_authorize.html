@@ -90,6 +90,6 @@
 {% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Authorize&nbsp;address{% endblock %}
 {% block otherfooter %}
   <span id="id-wallet-flags" data-wallet-test="{% if wallet_test_mode %}1{% endif %}" hidden></span>
-  <script src="{% static 'js/profile-authorize.min001.js' %}"></script>
+  <script src="{% static 'js/profile-authorize.js' %}"></script>
   {{ block.super }}
 {% endblock %}

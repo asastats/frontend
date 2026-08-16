@@ -1,1 +1,0 @@
-function mainSubscriptions(){$(".checks").click(!1)}$(mainSubscriptions),"undefined"!=typeof exports&&(module.exports={mainSubscriptions:mainSubscriptions});

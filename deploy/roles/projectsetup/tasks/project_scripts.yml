@@ -27,6 +27,32 @@
   changed_when: "'No migrations to apply' not in projectsetup_migrate_command.stdout"
   tags: [project-setup, postgresql-create, run-project-scripts, update-project-code]
 
+# Minify our own JavaScript before collectstatic runs. static/build is placed
+# first in STATICFILES_DIRS in production, so collectstatic prefers the
+# minified copy over the readable source of the same name. Skipped without
+# error where the script is absent -- the site then ships readable sources,
+# which is larger but correct.
+- name: Build minified static assets
+  ansible.builtin.shell: |
+    set -o pipefail
+    ./build-static.sh
+  args:
+    chdir: "{{ site_path }}/source/{{ app_name }}/"
+    executable: /bin/bash
+  become: true
+  become_user: "{{ webapp_user }}"
+  register: projectsetup_build_static
+  changed_when: "'minified' in projectsetup_build_static.stdout"
+  failed_when: false
+  tags: [project-setup, run-project-scripts, update-project-code]
+
+# collectstatic must precede the gunicorn restart, not follow it: under
+# ManifestStaticFilesStorage `{% static %}` raises for anything missing from
+# staticfiles.json, so a worker serving pages before the manifest is written
+# returns 500s rather than merely unstyled pages.
+#
+# Deliberately no `--clear`: old hashed files should accumulate, so a reader
+# holding a page rendered by the previous release can still fetch its assets.
 - name: Run collectstatic management command
   ansible.builtin.shell: |
     set -o pipefail

@@ -20,8 +20,8 @@
 
    `source(none)` plus explicit `@source` rather than the docs' default
    auto-detection: this file lives in static/css/, and letting Tailwind scan
-   from here would drag in materialize.min.js, chart.min.js and every other
-   vendored bundle looking for class names.
+   from here would drag in chart.min.js, jquery and every other vendored
+   bundle looking for class names.
 
    The `asastats` theme below is not a tweak of a stock DaisyUI theme: every
    value is lifted from the swap modal's own token block in style.css, because
@@ -76,7 +76,8 @@
      core.tests.test_context_processors.
      ...every_offered_theme_is_built */
   themes: nord, dim, abyss, corporate,
-    retro, cyberpunk, valentine, halloween, garden, aqua, lofi, luxury, dracula, autumn, business, lemonade, silk;
+    retro, cyberpunk, valentine, halloween, garden, aqua, lofi, luxury, dracula, autumn, business, lemonade, silk,
+    caramellatte, synthwave;
 }
 
 /* --------------------------------------------------------------- brand light

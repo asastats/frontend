@@ -8,7 +8,6 @@ class ProfileAuthorizeWalletTest(FunctionalTest):
         # Wanda has signed up and set her Algorand address, but has not
         # authorized it yet, so she opens the authorization page
         self.create_cookie_and_go_to_authorize_page("wanda20@dwight.com")
-        self.accept_cookie()
 
         # She is on the authorization page and sees the address being authorized
         self.assertIn("/profile/authorize/", self.browser.current_url)
