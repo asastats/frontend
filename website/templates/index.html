@@ -38,13 +38,20 @@
         <input class="input input-ghost w-full focus:outline-none" id="id_address"{% if form.bundle.errors %} value="{{ form.bundle.errors.0|escape }}"{% endif %} name="address" maxlength="58" autofocus="autofocus" placeholder="Enter Algorand address" type="text">
         {% if form.address.errors %}<span class="text-error">{{ form.address.errors|escape }}</span>{% endif %}
         {{ form.bundle.as_hidden }}
+        {% comment %}
+          Provider icons come from the CDN, through the same `provider_icon`
+          filter every other template uses -- they were `{% templatetag openblock %} static %}` calls, but
+          there is no `static/icons/` directory in the project any more, so
+          nginx's `try_files` fallback had been quietly serving `empty.png`
+          in place of both of these.
+        {% endcomment %}
         {% if form.bundle.errors %}
         <div class="mt-3 flex justify-center gap-6">
           <div>
           <p>
             <label>
               <input id="ans" class="ns radio radio-primary radio-sm" name="ns" type="radio"  />
-              <img class="h-6 w-6 cursor-pointer" src="{% static 'icons/providers/ans.png' %}" alt="Algorand name service">
+              <img class="h-6 w-6 cursor-pointer" src="{{ 'ans'|provider_icon }}" alt="Algorand name service">
             </label>
           </p>
           </div>
@@ -52,7 +59,7 @@
           <p>
             <label>
               <input id="nfd" class="ns radio radio-primary radio-sm" name="ns" type="radio" />
-              <img class="h-6 w-6 cursor-pointer" src="{% static 'icons/providers/nfd.png' %}" alt="NF Domains">
+              <img class="h-6 w-6 cursor-pointer" src="{{ 'nfd'|provider_icon }}" alt="NF Domains">
             </label>
           </p>
           </div>

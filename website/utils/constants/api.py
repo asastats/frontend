@@ -76,6 +76,17 @@ API_GLOBAL_SETTINGS = {
         "16": "#777777",
         "17": "#000000",
     },
+    # Served to the mobile app, which joins this onto the site url to fetch a
+    # provider's icon. The website does NOT read these files -- its templates
+    # go through `provider_icon`, which points at the CDN -- so
+    # static/icons/providers/ exists for the legacy app alone and should be
+    # deleted along with it. Until then the two copies have to stay in step:
+    # a provider added to the CDN and not here shows up as a 404 in the app.
+    #
+    # Whoever writes the replacement app: return absolute urls here instead of
+    # a path for the client to join. That is what lets assets move without a
+    # client release -- this entry pointed at a directory that did not exist
+    # for some time, and nothing server-side could tell.
     "providers": {"path": "static/icons/providers/"},
     "slogans": ASASTATS_SLOGANS,
 }

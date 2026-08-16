@@ -1,4 +1,17 @@
 <!DOCTYPE html>
+<!--
+  Snapshot of a rendered address page, used as the DOM fixture for
+  address.test.js. It is captured output, not hand-written markup: when the
+  address page changes shape, re-capture it rather than editing it by hand.
+
+  Asset and provider icons are absolute CDN urls, which is what `asa_icon` and
+  `provider_icon` emit. They used to read /static/icons/..., a directory that
+  no longer exists in the project -- in the browser nginx's `try_files` served
+  empty.png in its place, and here they simply 404'd against jsdom.
+
+  The page still links Materialize: address.html is the last template on the
+  old base, and this fixture tracks it.
+-->
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -191,7 +204,7 @@
           <div class="collapsible-header token c0">
             <span>&nbsp;40,563.154606&nbsp;&nbsp;<span class="unit">ALGO</span></span>
             <div class="icondiv">
-              <img src="/static/icons/0t.png" alt="Algo logo" class="circle asaicon" />
+              <img src="https://cdn.asastats.com/icons/0t.png" alt="Algo logo" class="circle asaicon" />
             </div>
             <div class="right">
               &nbsp;<span class="val" data-val="40563.154606">40,563.15 ALGO</span>
@@ -295,19 +308,19 @@
 
   
     <a href="https://coinmarketcap.com/currencies/algorand/" target="_blank" title="ALGO page on CoinMarketCap">
-      <img class="provider" src="/static/icons/providers/coinmarketcap.png" alt="CoinMarketCap logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/coinmarketcap.png" alt="CoinMarketCap logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://www.livecoinwatch.com/price/Algorand-ALGO" target="_blank" title="ALGO page on Live Coin Watch">
-      <img class="provider" src="/static/icons/providers/livecoinwatch.png" alt="Live Coin Watch logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/livecoinwatch.png" alt="Live Coin Watch logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://dexscreener.com/algorand/2pifzw53rhcsfsymcfubw4xocxomb7xoyqsq6kgt3kvgjtl4hm6cozrnmm" target="_blank" title="ALGO page on DEX Screener">
-      <img class="provider" src="/static/icons/providers/dexscreener.png" alt="DEX Screener logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://hay.app/asset/0" target="_blank" title="ALGO page on Haystack Screener">
-      <img class="provider" src="/static/icons/providers/haystack.png" alt="Haystack logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
     </a>
   
   <br />
@@ -342,7 +355,7 @@
           <div class="collapsible-header token c1">
             <span>&nbsp;24,270,916.562820&nbsp;&nbsp;<span class="unit">ASASTATS</span></span>
             <div class="icondiv">
-              <img src="/static/icons/393537671t.png" alt="ASA Stats Token logo" class="circle asaicon" />
+              <img src="https://cdn.asastats.com/icons/393537671t.png" alt="ASA Stats Token logo" class="circle asaicon" />
             </div>
             <div class="right">
               &nbsp;<span class="val" data-val="3101.050133">3,101.05 ALGO</span>
@@ -520,15 +533,15 @@
 
   
     <a href="https://vestige.fi/asset/393537671/" target="_blank" title="ASASTATS-ALGO Vestige page">
-      <img class="provider" src="/static/icons/providers/vestige.png" alt="Vestige logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://hay.app/asset/393537671" target="_blank" title="Go to Haystack Screener ASASTATS page">
-      <img class="provider" src="/static/icons/providers/haystack.png" alt="Haystack logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://dexscreener.com/algorand/uxojx6njdglj3kalt3jygggxfpxjikmwjztxslb2kavy5o7wjhpa2b3hje" target="_blank" title="Go to DEX Screener ASASTATS page">
-      <img class="provider" src="/static/icons/providers/dexscreener.png" alt="DEX Screener logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
     </a>
   
   <br />
@@ -563,7 +576,7 @@
           <div class="collapsible-header token">
             <span>&nbsp;7,056.201688&nbsp;&nbsp;<span class="unit">TINY</span></span>
             <div class="icondiv">
-              <img src="/static/icons/2200000000t.png" alt="TINY logo" class="circle asaicon" />
+              <img src="https://cdn.asastats.com/icons/2200000000t.png" alt="TINY logo" class="circle asaicon" />
             </div>
             <div class="right">
               &nbsp;<span class="val" data-val="101.295256">101.30 ALGO</span>
@@ -689,15 +702,15 @@
 
   
     <a href="https://vestige.fi/asset/2200000000/" target="_blank" title="TINY-ALGO Vestige page">
-      <img class="provider" src="/static/icons/providers/vestige.png" alt="Vestige logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://hay.app/asset/2200000000" target="_blank" title="Go to Haystack Screener TINY page">
-      <img class="provider" src="/static/icons/providers/haystack.png" alt="Haystack logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://dexscreener.com/algorand/a7ggoadgpdso4tn3fqgwjhthx2x3supopnn2bwl4fovwmonbreaajl7ftm" target="_blank" title="Go to DEX Screener TINY page">
-      <img class="provider" src="/static/icons/providers/dexscreener.png" alt="DEX Screener logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
     </a>
   
   <br />
@@ -732,7 +745,7 @@
           <div class="collapsible-header token">
             <span>&nbsp;294,019.569798&nbsp;&nbsp;<span class="unit">YLDY</span></span>
             <div class="icondiv">
-              <img src="/static/icons/226701642t.png" alt="Yieldly logo" class="circle asaicon" />
+              <img src="https://cdn.asastats.com/icons/226701642t.png" alt="Yieldly logo" class="circle asaicon" />
             </div>
             <div class="right">
               &nbsp;<span class="val" data-val="6.336980">6.34 ALGO</span>
@@ -803,15 +816,15 @@
 
   
     <a href="https://vestige.fi/asset/226701642/" target="_blank" title="YLDY-ALGO Vestige page">
-      <img class="provider" src="/static/icons/providers/vestige.png" alt="Vestige logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://hay.app/asset/226701642" target="_blank" title="Go to Haystack Screener YLDY page">
-      <img class="provider" src="/static/icons/providers/haystack.png" alt="Haystack logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://dexscreener.com/algorand/vto4wopis4tayyecozxs6lhmace46mww36x3a7x5mkjvk37ucc6ifjfuli" target="_blank" title="Go to DEX Screener YLDY page">
-      <img class="provider" src="/static/icons/providers/dexscreener.png" alt="DEX Screener logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
     </a>
   
   <br />
@@ -844,7 +857,7 @@
           <div class="collapsible-header token">
             <span>&nbsp;0.286211&nbsp;&nbsp;<span class="unit">USDC</span></span>
             <div class="icondiv">
-              <img src="/static/icons/31566704t.png" alt="USDC logo" class="circle asaicon" />
+              <img src="https://cdn.asastats.com/icons/31566704t.png" alt="USDC logo" class="circle asaicon" />
             </div>
             <div class="right">
               &nbsp;<span class="val" data-val="3.139578">3.14 ALGO</span>
@@ -915,15 +928,15 @@
 
   
     <a href="https://vestige.fi/asset/31566704/" target="_blank" title="USDC-ALGO Vestige page">
-      <img class="provider" src="/static/icons/providers/vestige.png" alt="Vestige logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://hay.app/asset/31566704" target="_blank" title="Go to Haystack Screener USDC page">
-      <img class="provider" src="/static/icons/providers/haystack.png" alt="Haystack logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://dexscreener.com/algorand/2pifzw53rhcsfsymcfubw4xocxomb7xoyqsq6kgt3kvgjtl4hm6cozrnmm" target="_blank" title="Go to DEX Screener USDC page">
-      <img class="provider" src="/static/icons/providers/dexscreener.png" alt="DEX Screener logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
     </a>
   
   <br />
@@ -958,7 +971,7 @@
           <div class="collapsible-header token">
             <span>&nbsp;420.690000&nbsp;&nbsp;<span class="unit">BUSK</span></span>
             <div class="icondiv">
-              <img src="/static/icons/2611535339t.png" alt="Busk logo" class="circle asaicon" />
+              <img src="https://cdn.asastats.com/icons/2611535339t.png" alt="Busk logo" class="circle asaicon" />
             </div>
             <div class="right">
               &nbsp;<span class="val" data-val="0.001600">0.00 ALGO</span>
@@ -1030,15 +1043,15 @@
 
   
     <a href="https://vestige.fi/asset/2611535339/" target="_blank" title="BUSK-ALGO Vestige page">
-      <img class="provider" src="/static/icons/providers/vestige.png" alt="Vestige logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://hay.app/asset/2611535339" target="_blank" title="Go to Haystack Screener BUSK page">
-      <img class="provider" src="/static/icons/providers/haystack.png" alt="Haystack logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
     </a>&nbsp;&nbsp;
   
     <a href="https://dexscreener.com/algorand/yuljfzdz542fxzgfo6ky5t4ms2bawojphns5m3ckq5gqxati6lsiapyyey" target="_blank" title="Go to DEX Screener BUSK page">
-      <img class="provider" src="/static/icons/providers/dexscreener.png" alt="DEX Screener logo" />
+      <img class="provider" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
     </a>
   
   <br />
@@ -1084,7 +1097,7 @@
         
           
           <li id="3041662918" class="collection-item avatar fitem">
-            <img src="/static/icons/3041662918t.png" alt="Pera Cards Voucher logo" class="circle asaicon">
+            <img src="https://cdn.asastats.com/icons/3041662918t.png" alt="Pera Cards Voucher logo" class="circle asaicon">
             <span class="title">Pera Cards Voucher</span> <br>
             <a href="https://allo.info/asset/3041662918" target="_blank" title="Show in Allo">3041662918</a>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span> <br>
             <span>Amount: 1</span> <br>

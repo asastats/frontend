@@ -300,8 +300,8 @@ class TestFilters:
 
     # # provider_icon
     # The filter converts a Provider.name to the icon-filename convention
-    # used under static/icons/providers/: lowercase, whitespace stripped,
-    # no dashes. Matches the existing static-file naming (livecoinwatch.png,
+    # used under the CDN's icons/providers/: lowercase, whitespace stripped,
+    # no dashes. Matches the existing file naming (livecoinwatch.png,
     # coinmarketcap.png, etc.) rather than Django's |slugify which would
     # produce live-coin-watch.png and break the icon path.
     @pytest.mark.parametrize(
