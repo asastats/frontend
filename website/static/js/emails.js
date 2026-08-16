@@ -45,6 +45,7 @@ function mainEmails() {
   $("button[name='action_remove']").on("click", openModalConfirmRemoveEmail);
   $("button[name='action_send']").on("click", openModalConfirmResendVerification);
   $("#id_confirm").on("click", submitEmailAction);
+  $("#id_cclose").on("click", closeModalConfirm);
 }
 
 
@@ -65,16 +66,33 @@ function openModalConfirm(typ) {
   $("#id_pconfirm").text(CONSTANTS.m[typ]);
   $("#id_confirm")[0].dataset.target = typ;
   /**
-   * Modal div element
+   * Confirmation dialog element
    * @type {Object}
    */
   var modal = document.querySelector("#id_modalconfirm");
+  // A native <dialog>: showModal() brings the backdrop, focus capture and
+  // Escape-to-dismiss with it, so there is no M.Modal instance to fetch. The
+  // guard is for jsdom, which implements <dialog> as an ordinary element.
+  if (modal && modal.showModal)
+    modal.showModal();
+}
+
+
+/**
+ * Close the confirmation dialog without taking the action.
+ * @function closeModalConfirm
+ *
+ * @param {jQuery} event Triggered click event object
+ *
+ */
+function closeModalConfirm(event) {
   /**
-   * Instantiated bottom sheet modal object
+   * Confirmation dialog element
    * @type {Object}
    */
-  var instance = M.Modal.getInstance(modal);
-  instance.open();
+  var modal = document.querySelector("#id_modalconfirm");
+  if (modal && modal.close)
+    modal.close();
 }
 
 
@@ -126,6 +144,7 @@ function submitEmailAction(event) {
     action = "action_remove"
   else
     action = "action_send"
+  closeModalConfirm(event);
   $("button[name='" + action + "']").off("click");
   $("button[name='" + action + "']").trigger("click");
 }
@@ -142,6 +161,7 @@ if (typeof exports !== 'undefined') {
   module.exports = {
     mainEmails,
     openModalConfirm,
+    closeModalConfirm,
     openModalConfirmRemoveEmail,
     openModalConfirmResendVerification,
     submitEmailAction,

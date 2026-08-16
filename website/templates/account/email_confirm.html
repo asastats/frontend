@@ -23,8 +23,8 @@
 {% if confirmation %}
     <form id="email_confirm" method="POST" action="{% url 'account_confirm_email' confirmation.key %}">
         {% csrf_token %}
-        <div class="row center-align col s12">
-            <button id="id_confirm_email" class="primaryAction waves-effect waves-mydark btn whenmoon" type="submit">Confirm<i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i></button>
+        <div class="mt-5 text-center">
+            <button id="id_confirm_email" class="primaryAction btn btn-primary" type="submit">Confirm</button>
         </div>
     </form>
 {% else %}

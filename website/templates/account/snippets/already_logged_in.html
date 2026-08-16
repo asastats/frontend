@@ -1,8 +1,11 @@
 {% load i18n %}
 {% load account %}
-
+{% comment %}
+  The Materialize original was a `.chip` with a close icon that closed nothing
+  -- there was no handler behind it. This is a plain notice instead: no icon
+  font, and no control that does not work.
+{% endcomment %}
 {% user_display user as user_display %}
-<div class="chip myred-text z-depth-1">
-    <strong>{% trans "Note:" %}</strong> You are already logged in as {{ user_display }}.
-    <i class="material-icons close" aria-hidden="true">close</i>
+<div class="alert alert-info mb-6" role="status">
+    <span><strong>{% trans "Note:" %}</strong> You are already logged in as {{ user_display }}.</span>
 </div>

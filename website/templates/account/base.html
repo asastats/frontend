@@ -1,9 +1,18 @@
-{% extends 'base_home_legacy.html' %}
+{% extends 'base_home.html' %}
 {% load static %}
 {% load account %}
+{% comment %}
+  Shell for the allauth pages that are not login/signup -- email management,
+  the password flows, verification notices. Those two live on
+  account/base_auth.html instead, which is a wider two-column layout.
+
+  `auth-form` is the scope input.css uses to style allauth's widgets: allauth
+  renders them itself with no classes on them, so they cannot be reached the
+  way our own forms are. Everything inside this block is inside that scope.
+{% endcomment %}
 
 {% block middle_section %}
-<div class="row col s12 center-align">
+<div class="auth-form mx-auto max-w-2xl text-left">
     {% block account_already %}
         {% if user.is_authenticated %}
             {% include "account/snippets/already_logged_in.html" %}

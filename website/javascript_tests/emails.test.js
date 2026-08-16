@@ -2,8 +2,6 @@ const jquery = require('../static/js/jquery-2.2.4.min.js');
 
 window.$ = jquery;
 
-global.M = { Modal: { getInstance: jest.fn() } };
-
 const emails = require('../static/js/emails.js');
 
 const fixture =
@@ -11,14 +9,19 @@ const fixture =
   '<button name="action_send"></button>' +
   '<p id="id_pconfirm"></p>' +
   '<a id="id_confirm"></a>' +
-  '<div id="id_modalconfirm"></div>';
+  '<button id="id_cclose"></button>' +
+  '<dialog id="id_modalconfirm"></dialog>';
 
-let modalInstance;
+let dialog;
 
 beforeEach(() => {
   document.body.innerHTML = fixture;
-  modalInstance = { open: jest.fn() };
-  M.Modal.getInstance.mockReturnValue(modalInstance);
+  // jsdom implements <dialog> as an ordinary element: showModal and close are
+  // simply absent, so the real methods cannot be spied on and have to be
+  // supplied. emails.js guards on their presence for exactly this reason.
+  dialog = document.getElementById("id_modalconfirm");
+  dialog.showModal = jest.fn();
+  dialog.close = jest.fn();
   emails.mainEmails();
 });
 
@@ -34,6 +37,7 @@ describe("in SECTION: Setup", function () {
       $("button[name='action_remove']").off("click");
       $("button[name='action_send']").off("click");
       $("#id_confirm").off("click");
+      $("#id_cclose").off("click");
       emails.mainEmails();
       expect(getEvents($("button[name='action_remove']")[0]).click[0]
         .handler.name).toBe("openModalConfirmRemoveEmail");
@@ -41,6 +45,8 @@ describe("in SECTION: Setup", function () {
         .handler.name).toBe("openModalConfirmResendVerification");
       expect(getEvents($("#id_confirm")[0]).click[0].handler.name)
         .toBe("submitEmailAction");
+      expect(getEvents($("#id_cclose")[0]).click[0].handler.name)
+        .toBe("closeModalConfirm");
     });
   });
 });
@@ -49,11 +55,30 @@ describe("in SECTION: Setup", function () {
 describe("in SECTION: Helper functions", function () {
 
   describe("openModalConfirm function", function () {
-    it('sets the message and opens the modal', function () {
+    it('sets the message and opens the dialog', function () {
       emails.openModalConfirm("rme");
       expect($("#id_pconfirm").text()).toContain("remove the selected email");
       expect($("#id_confirm")[0].dataset.target).toBe("rme");
-      expect(modalInstance.open).toHaveBeenCalledWith();
+      expect(dialog.showModal).toHaveBeenCalledWith();
+    });
+
+    it('does not throw where <dialog> is unsupported', function () {
+      // Old browsers, and jsdom: the element is there but has no showModal.
+      delete dialog.showModal;
+      expect(() => emails.openModalConfirm("rme")).not.toThrow();
+      expect($("#id_pconfirm").text()).toContain("remove the selected email");
+    });
+  });
+
+  describe("closeModalConfirm function", function () {
+    it('closes the dialog', function () {
+      emails.closeModalConfirm(null);
+      expect(dialog.close).toHaveBeenCalledWith();
+    });
+
+    it('does not throw where <dialog> is unsupported', function () {
+      delete dialog.close;
+      expect(() => emails.closeModalConfirm(null)).not.toThrow();
     });
   });
 
@@ -91,6 +116,11 @@ describe("in SECTION: Helper functions", function () {
       $("#id_confirm")[0].dataset.target = "rve";
       emails.submitEmailAction(null);
       expect(handler).toHaveBeenCalled();
+    });
+    it('closes the dialog before re-submitting', function () {
+      $("#id_confirm")[0].dataset.target = "rme";
+      emails.submitEmailAction(null);
+      expect(dialog.close).toHaveBeenCalledWith();
     });
   });
 });
