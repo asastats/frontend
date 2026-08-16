@@ -29,67 +29,12 @@ afterEach(() => {
 
 describe("in SECTION: Helper functions", function () {
   // mainSite dark branch (covers the toggleText call on init)
-  describe("mainSite in dark mode", function () {
-    it("toggles text when the saved mode is dark", function () {
-      localStorage.setItem("mode", "dark");
-      site.mainSite();
-      expect($("html").hasClass("dark")).toBe(true);
-      expect($(".dark-toggle").attr("class")).toContain("darkbtn");
-    });
-  });
 
   // checkMode / isDark
-  describe("checkMode function", function () {
-    it("applies dark assets when footer data-mode is dark", function () {
-      $("#footer").attr("data-mode", "dark");
-      site.checkMode();
-      expect($("html").hasClass("dark")).toBe(true);
-      expect($("#logo").attr("src")).toContain("logo-dark.png");
-      expect($("#brand").attr("src")).toContain("asastats-dark.png");
-      expect($("#cpr").hasClass("mydark-text")).toBe(true);
-    });
-
-    it("applies dark assets when localStorage mode is dark", function () {
-      localStorage.setItem("mode", "dark");
-      site.checkMode();
-      expect($("html").hasClass("dark")).toBe(true);
-    });
-
-    it("applies bright assets otherwise", function () {
-      $("#footer").attr("data-mode", "light");
-      site.checkMode();
-      expect($("html").hasClass("dark")).toBe(false);
-      expect($("#logo").attr("src")).toContain("logo.png");
-      expect($("#brand").attr("src")).toContain("asastats.png");
-    });
-  });
 
   // toggleMode
-  describe("toggleMode function", function () {
-    it("switches mode from light to dark", function () {
-      localStorage.setItem("mode", "light");
-      site.toggleMode(null);
-      expect(localStorage.getItem("mode")).toBe("dark");
-    });
-    it("switches mode from dark to light", function () {
-      localStorage.setItem("mode", "dark");
-      site.toggleMode(null);
-      expect(localStorage.getItem("mode")).toBe("light");
-    });
-    it("defaults missing mode to dark", function () {
-      site.toggleMode(null);
-      expect(localStorage.getItem("mode")).toBe("dark");
-    });
-  });
 
   // toggleText
-  describe("toggleText function", function () {
-    it("toggles the dark toggle and text classes", function () {
-      site.toggleText();
-      expect($(".dark-toggle").hasClass("brightbtn")).toBe(true);
-      expect($(".txt").hasClass("myredlight-text")).toBe(true);
-    });
-  });
 
   // copyToClipboard
   describe("copyToClipboard function", function () {

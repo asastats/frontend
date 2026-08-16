@@ -1,14 +1,36 @@
 {% extends 'base.html' %}{% load static %}{% load core_extras %}
+{% comment %}
+  The address page: the last template to leave base.html, and the one with the
+  most behaviour behind it.
+
+  Three things changed beyond styling, all of them because Materialize is gone:
+
+  * the accordions are native <details>/<summary>. address.js no longer
+    initialises anything -- sections open and close without JavaScript, so they
+    keep working even if the script fails to load. The hook names moved with
+    them: `.collapsible-header` -> `.item-header`, `.collapsible-body` ->
+    `.item-body`, and the `<ul class="collapsible">` containers became
+    `.section-list`;
+  * `.tooltipped`/`data-tooltip` needed M.Tooltip to say anything at all. They
+    are DaisyUI `tooltip`/`data-tip` now: CSS only, nothing to initialise, and
+    they survive a JS error;
+  * the icon font is gone. The scroll-to-top control is an inline SVG, which
+    is one fewer font to load and does not render as a stray ligature while
+    the page is still fetching.
+
+  Everything address.js selects on is unchanged otherwise -- `.fitem`, `.val`,
+  `.unit`, `.price`, `.unitprice`, `.tdist`, `.nfticon`, `#filter`,
+  `#id-cons`, the chart canvases and their legends. core/tests/test_template_hooks.py
+  is what keeps that honest.
+{% endcomment %}
 {% block otherheader %}<meta name="format-detection" content="telephone=no">{% endblock %}
 {% block banner %}
 {% if banner %}
-<div class="container">
-  <div class="row" style="margin-bottom: 0;">
-    <div class="col s12 m8 push-m2 center-align" style="padding-top: 0.75rem;">
-      <a href="{{ banner.url }}" target="_blank" rel="noopener sponsored">
-        <img src="{% static banner.image %}" alt="{{ banner.alt }}" class="responsive-img">
-      </a>
-    </div>
+<div class="mx-auto w-full max-w-6xl px-4 pt-3">
+  <div class="mx-auto max-w-3xl text-center">
+    <a href="{{ banner.url }}" target="_blank" rel="noopener sponsored">
+      <img src="{% static banner.image %}" alt="{{ banner.alt }}" class="mx-auto h-auto max-w-full">
+    </a>
   </div>
 </div>
 {% endif %}
@@ -17,170 +39,187 @@
 <div id="id-swap-entry-container" hx-get="{% url 'swap_entry' url_value %}" hx-trigger="load" hx-swap="innerHTML"></div>
 {{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
 {% with total=account.total system=account.system_info account_info=account.account_info %}
-<h1 class="center-align tooltipped pricetip" data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }} data-total={{ total.totalusdc }} data-totalwnft={{ total.total }} data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }} data-tooltip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</h1>
-{% if system.warning %}
-  <h2 class="center-align myred-text">{{ system.warning }}</h2>
-{% endif %}
-{% if is_bundle %}
-  <h{% if bundle|length > 5 %}5{% else %}4{% endif %} class="center-align flow-text">
-  {% for addr in bundle %} <a href="{% url 'address' addr %}" target="_blank" title="Open address {{ addr }}">{{ addr|short_address }}</a> {% endfor %}
-  </h{% if bundle|length > 5 %}5{% else %}4{% endif %}>
-{% else %}
-  <h4 class="center-align flow-text truncate"><a href="{% explorer_url 'address' address.0 %}" target="_blank" title="Open address in {% explorer_name %}">{{ address.0 }}</a></h4>
-{% endif %}
 
-<div class="col s12 center-align">
-  {% if is_bundle %}
-    {% with historic=bundle|historic_data %}
-    {% if deployment_capabilities.permission|export_capability:historic.1 %}
-      {% if user.profile|historic_access:historic.1 %}
-      <a class="waves-effect waves-mydark btn-flat" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>&emsp;
-      {% endif %}
-      {% if user.profile|export_access:historic.1 %}
-      <a class="waves-effect waves-mydark btn-flat{% if report_available and not report_downloaded %} myred-text{% endif %}"
-        href="{% url 'export_bundle' bundle|bundle_hash %}"
-        title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
-        {% if report_available %}Download processed CSV files{% else %}CSV export{% endif %}</a>&emsp;
-      {% endif %}
-    {% endif %}
-    {% endwith %}
-  {% else %}
-    {% if deployment_capabilities.permission|export_capability:1 %}
-      {% if user.profile|historic_access:1 %}
-      <a class="waves-effect waves-mydark btn-flat" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>&emsp;
-      {% endif %}
-      {% if user.profile|export_access:1 %}
-      <a class="waves-effect waves-mydark btn-flat{% if report_available and not report_downloaded %} myred-text{% endif %}"
-        href="{% url 'export_address' address.0 %}"
-        title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
-        {% if report_available %}Download processed CSV file{% else %}CSV export{% endif %}</a>&emsp;
-      {% endif %}
-    {% endif %}
+<header class="text-center">
+  <h1 class="pricetip tooltip cursor-default text-4xl font-semibold tracking-tight sm:text-5xl"
+      data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }}
+      data-total={{ total.totalusdc }} data-totalwnft={{ total.total }}
+      data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}
+      data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</h1>
+
+  {% if system.warning %}
+    <h2 class="mt-3 text-lg font-medium text-error">{{ system.warning }}</h2>
   {% endif %}
-  {% if account_info.online %}<span title="{% if is_bundle %}One or more addresses are{% else %}Address is{% endif %} participating in Algorand consensus"><span class="btn-flat mysuccess-text disabled">Online</span></span>&emsp;{% endif %}
+
+  {% if is_bundle %}
+    <div class="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm">
+    {% for addr in bundle %}<a class="link link-hover" href="{% url 'address' addr %}" target="_blank" title="Open address {{ addr }}">{{ addr|short_address }}</a>{% endfor %}
+    </div>
+  {% else %}
+    <p class="mt-3 truncate text-sm">
+      <a class="link link-hover" href="{% explorer_url 'address' address.0 %}" target="_blank" title="Open address in {% explorer_name %}">{{ address.0 }}</a>
+    </p>
+  {% endif %}
+
+  <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+    {% if is_bundle %}
+      {% with historic=bundle|historic_data %}
+      {% if deployment_capabilities.permission|export_capability:historic.1 %}
+        {% if user.profile|historic_access:historic.1 %}
+        <a class="btn btn-ghost btn-sm" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+        {% endif %}
+        {% if user.profile|export_access:historic.1 %}
+        <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-ghost{% endif %}"
+          href="{% url 'export_bundle' bundle|bundle_hash %}"
+          title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
+          {% if report_available %}Download processed CSV files{% else %}CSV export{% endif %}</a>
+        {% endif %}
+      {% endif %}
+      {% endwith %}
+    {% else %}
+      {% if deployment_capabilities.permission|export_capability:1 %}
+        {% if user.profile|historic_access:1 %}
+        <a class="btn btn-ghost btn-sm" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+        {% endif %}
+        {% if user.profile|export_access:1 %}
+        <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-ghost{% endif %}"
+          href="{% url 'export_address' address.0 %}"
+          title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
+          {% if report_available %}Download processed CSV file{% else %}CSV export{% endif %}</a>
+        {% endif %}
+      {% endif %}
+    {% endif %}
+    {% if account_info.online %}<span class="badge badge-success badge-outline" title="{% if is_bundle %}One or more addresses are{% else %}Address is{% endif %} participating in Algorand consensus">Online</span>{% endif %}
+  </div>
+
+  {% if system.information %}<p class="mt-4 text-success">{{ system.information }}</p>{% endif %}
+</header>
+
+{% comment %}
+  The consolidated totals double as the charts' disclosure: the summary is the
+  six figures, and opening it reveals the charts they describe. That was a
+  Materialize collapsible whose open state had to be restored by JavaScript;
+  as a <details> the browser owns it, and address.js only records the state.
+{% endcomment %}
+<div class="mt-8 consolidated">
+  <details id="id-cons" class="group rounded-box border border-base-300 bg-base-100" open>
+    <summary id="id-cons-header" class="item-header consolidated cursor-pointer list-none p-4"
+      data-balance={{ consolidated.balance }} data-staked={{ consolidated.staked }}
+      data-liquidity={{ consolidated.liquidity }} data-defi={{ consolidated.defi }}>
+      <div class="grid grid-cols-2 gap-4 text-center sm:grid-cols-3 xl:grid-cols-6">
+        <div class="cons">
+          <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Balance</span>
+          <span class="cons-value val font-medium" data-val="{{ consolidated.balance }}">{{ consolidated.balance|floatformat:"2g" }} ALGO</span>
+        </div>
+        <div class="cons">
+          <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Staked</span>
+          <span class="cons-value val font-medium" data-val="{{ consolidated.staked }}">{{ consolidated.staked|floatformat:"2g" }} ALGO</span>
+        </div>
+        <div class="cons">
+          <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Liquidity</span>
+          <span class="cons-value val font-medium" data-val="{{ consolidated.liquidity }}">{{ consolidated.liquidity|floatformat:"2g" }} ALGO</span>
+        </div>
+        <div class="cons">
+          <span class="cons-text block text-xs uppercase tracking-wide opacity-60">DeFi</span>
+          <span class="cons-value val font-medium" data-val="{{ consolidated.defi }}">{{ consolidated.defi|floatformat:"2g" }} ALGO</span>
+        </div>
+        <div class="cons">
+          <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT estimated</span>
+          <span class="cons-value val font-medium" data-val="{{ total.nft }}">{{ total.nft|floatformat:"2g" }} ALGO</span>
+        </div>
+        <div class="cons">
+          <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT floor</span>
+          <span class="cons-value val font-medium" data-val="{{ consolidated.nftfloor }}">{{ consolidated.nftfloor|floatformat:"2g" }} ALGO</span>
+        </div>
+      </div>
+      <p class="cons-expand mt-3 text-center text-xs opacity-50 group-open:hidden">Click totals to show charts</p>
+    </summary>
+
+    <div id="id-cons-body" class="item-body consolidated border-t border-base-300 p-4">
+      <div class="charts grid gap-6 md:grid-cols-2">
+        <div class="chart-container flex items-center gap-2">
+          <div id="id-legend-distchart" class="legend w-1/6 text-xs"></div>
+          <div class="canvas w-5/6"><canvas id="id-distchart" width="500" height="{{ distchart|dist_height }}"></canvas></div>
+        </div>
+        <div id="id-chart-ratio" class="chart-container flex items-center gap-2">
+          <div id="id-legend-ratiochart" class="legend w-1/4 text-xs"></div>
+          <div class="canvas w-3/4"><canvas id="id-ratiochart" width="500" height="500"></canvas></div>
+        </div>
+        <div id="id-chart-ratiofloor" class="chart-container flex items-center gap-2">
+          <div id="id-legend-ratiochartfloor" class="legend w-1/4 text-xs"></div>
+          <div class="canvas w-3/4"><canvas id="id-ratiochartfloor" width="500" height="500"></canvas></div>
+        </div>
+        <div class="chart-container flex items-center gap-2">
+          <div id="id-legend-asachart" class="legend w-1/4 text-xs"></div>
+          <div class="canvas w-3/4"><canvas id="id-asachart" width="500" height="500"></canvas></div>
+        </div>
+        <div id="id-chart-nft" class="chart-container flex items-center gap-2">
+          <div id="id-legend-nftchart" class="legend w-1/4 text-xs"></div>
+          <div class="canvas w-3/4"><canvas id="id-nftchart" width="500" height="500"></canvas></div>
+        </div>
+        <div id="id-chart-nftfloor" class="chart-container flex items-center gap-2">
+          <div id="id-legend-nftfloorchart" class="legend w-1/4 text-xs"></div>
+          <div class="canvas w-3/4"><canvas id="id-nftfloorchart" width="500" height="500"></canvas></div>
+        </div>
+      </div>
+      <div class="floor algous mt-4 text-right">
+        <label class="inline-flex cursor-pointer items-center gap-2 text-sm" title="Show NFT floor values pie chart">
+          <input class="checkbox checkbox-sm" type="checkbox">
+          <span>NFT floor chart</span>
+        </label>
+      </div>
+    </div>
+  </details>
 </div>
 
-{% if system.information %}<h5 class="center-align mysuccess-text">{{ system.information }}</h5>{% endif %}
-<div class="row flex-stack">
-  <div class="col s12 consolidated">
-    <ul id="id-cons" class="collapsible consolidated">
-      <li id="li-cons" class="active consolidated">
-        <div id="id-cons-header" class="collapsible-header consolidated" data-balance={{ consolidated.balance }} data-staked={{ consolidated.staked }} data-liquidity={{ consolidated.liquidity }} data-defi={{ consolidated.defi }}>
-          <div class="col s12 center-align">
-            <div class="col s6 m4 xl2 cons">
-              <span class="cons-text">Balance</span><br>
-              <span class="cons-value val" data-val="{{ consolidated.balance }}">{{ consolidated.balance|floatformat:"2g" }} ALGO</span>
-            </div>
-            <div class="col s6 m4 xl2 cons">
-              <span class="cons-text">Staked</span><br>
-              <span class="cons-value val" data-val="{{ consolidated.staked }}">{{ consolidated.staked|floatformat:"2g" }} ALGO</span>
-            </div>
-            <div class="col s6 m4 xl2 cons">
-              <span class="cons-text">Liquidity</span><br>
-              <span class="cons-value val" data-val="{{ consolidated.liquidity }}">{{ consolidated.liquidity|floatformat:"2g" }} ALGO</span>
-            </div>
-            <div class="col s6 m4 xl2 cons">
-              <span class="cons-text">DeFi</span><br>
-              <span class="cons-value val" data-val="{{ consolidated.defi }}">{{ consolidated.defi|floatformat:"2g" }} ALGO</span>
-            </div>
-            <div class="col s6 m4 xl2 cons">
-              <span class="cons-text">NFT estimated</span><br>
-              <span class="cons-value val" data-val="{{ total.nft }}">{{ total.nft|floatformat:"2g" }} ALGO</span>
-            </div>
-            <div class="col s6 m4 xl2 cons">
-              <span class="cons-text">NFT floor</span><br>
-              <span class="cons-value val" data-val="{{ consolidated.nftfloor }}">{{ consolidated.nftfloor|floatformat:"2g" }} ALGO</span>
-            </div>
-          </div>
-        </div>
-        <div id="id-cons-body" class="collapsible-body consolidated">
-          <div class="col s12 charts">
-            <div class="col s12 m6 xl5 offset-xl1 chart-container valign-wrapper">
-              <div id="id-legend-distchart" class="col s2 legend"></div>
-              <div class="col s10 canvas"><canvas id="id-distchart" width="500" height="{{ distchart|dist_height }}"></canvas></div>
-            </div>
-            <div id="id-chart-ratio" class="col s12 m6 xl5 offset-xl1 chart-container scale-transition valign-wrapper">
-              <div id="id-legend-ratiochart" class="col s3 legend"></div>
-              <div class="col s9 canvas"><canvas id="id-ratiochart" width="500" height="500"></canvas></div>
-            </div>
-            <div id="id-chart-ratiofloor" class="col s12 m6 xl5 offset-xl1 chart-container scale-transition valign-wrapper">
-              <div id="id-legend-ratiochartfloor" class="col s3 legend"></div>
-              <div class="col s9 canvas"><canvas id="id-ratiochartfloor" width="500" height="500"></canvas></div>
-            </div>
-          </div>
-          <div class="col s12 charts">
-            <div class="col s12 m6 xl5 offset-xl1 chart-container valign-wrapper">
-              <div id="id-legend-asachart" class="col s3 legend"></div>
-              <div class="col s9 canvas"><canvas id="id-asachart" width="500" height="500"></canvas></div>
-            </div>
-            <div id="id-chart-nft" class="col s12 m6 xl5 offset-xl1 chart-container scale-transition valign-wrapper">
-              <div id="id-legend-nftchart" class="col s3 legend"></div>
-              <div class="col s9 canvas"><canvas id="id-nftchart" width="500" height="500"></canvas></div>
-            </div>
-            <div id="id-chart-nftfloor" class="col s12 m6 xl5 offset-xl1 chart-container scale-transition valign-wrapper">
-              <div id="id-legend-nftfloorchart" class="col s3 legend"></div>
-              <div class="col s9 canvas"><canvas id="id-nftfloorchart" width="500" height="500"></canvas></div>
-            </div>
-          </div>
-          <div class="col s12 right-align">
-            <div class="floor algous">
-              <label title="Show NFT floor values pie chart">
-                <input type="checkbox">
-                <span>NFT floor chart</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </li>
-    </ul>
+{% comment %}
+  Filter and display switches. `.switch` keeps its name because address.js
+  reads it, but it is a plain checkbox now rather than a Materialize lever.
+{% endcomment %}
+<div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+  <div class="filter">
+    <input class="input input-sm w-full max-w-xs" placeholder="Filter" id="filter" type="text">
   </div>
-  <div class="col s12 center-align cons-expand">
-    <span>Click totals to show charts</span>
-  </div>
-  <div class="col s12 valign-wrapper">
-    <div class="col s6 input-field filter">
-      <input placeholder="Filter" id="filter" type="text" class="validate">
-    </div>
-    <div class="col s6 right-align algous">
-      <div class="totalnonft">
-        <label title="Show total value without NFTs">
-          <input type="checkbox">
-          <span>Total without NFTs</span>
-        </label>
-      </div>
-      <div class="refresh">
-        <label title="Check for auto-refresh after 60 seconds of inactivity">
-          <input type="checkbox">
-          <span>Auto-refresh</span>
-        </label>
-      </div>
-      <div class="switch">
-      <label>
-        ALGO
-        <input type="checkbox">
-        <span class="lever"></span>
-        USD
+  <div class="algous flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+    <div class="totalnonft">
+      <label class="inline-flex cursor-pointer items-center gap-2" title="Show total value without NFTs">
+        <input class="checkbox checkbox-sm" type="checkbox">
+        <span>Total without NFTs</span>
       </label>
-      </div>
+    </div>
+    <div class="refresh">
+      <label class="inline-flex cursor-pointer items-center gap-2" title="Check for auto-refresh after 60 seconds of inactivity">
+        <input class="checkbox checkbox-sm" type="checkbox">
+        <span>Auto-refresh</span>
+      </label>
+    </div>
+    <div class="switch">
+      <label class="inline-flex cursor-pointer items-center gap-2">
+        <span>ALGO</span>
+        <input class="toggle toggle-sm" type="checkbox">
+        <span>USD</span>
+      </label>
     </div>
   </div>
-  {% include "snippets/asas.html" with asaitems=account.asaitems colors=colors pricealgo=total.pricealgo %}
-  {% if account.nftcollections %}{% include "snippets/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors %}{% endif %}
-  {% include "snippets/nonval.html" with notevals=account.notevals %}
-  <div class="fixed-action-btn">
-    <a id="scroll-to-top" class="btn-floating waves-effect waves-light mylight">
-      <i class="material-icons" aria-hidden="true">{{ 'scroll_up'|get_styling:"icon" }}</i>
-    </a>
-  </div>
-  {# The modal ships with the per-user #id-swap-entry-container partial above:  #}
-  {# including it here as well put two #swap-modal elements (and two sets of    #}
-  {# its controls) on the page for any linked viewer, of which swap.js only     #}
-  {# ever addressed the first. For anonymous viewers this copy was inert -- the #}
-  {# controller is loaded by that same partial and never arrived.               #}
 </div>
+
+{% include "snippets/asas.html" with asaitems=account.asaitems colors=colors pricealgo=total.pricealgo %}
+{% if account.nftcollections %}{% include "snippets/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors %}{% endif %}
+{% include "snippets/nonval.html" with notevals=account.notevals %}
+
+<a id="scroll-to-top" class="btn btn-circle btn-primary fixed bottom-6 right-6 z-20 opacity-0 transition-opacity [&.visible]:opacity-100" aria-label="Scroll to top" role="button">
+  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 19V5M5 12l7-7 7 7"/>
+  </svg>
+</a>
+{# The swap modal ships with the per-user #id-swap-entry-container partial at   #}
+{# the top: including it here as well put two #swap-modal elements (and two    #}
+{# sets of its controls) on the page for any linked viewer, of which swap.js   #}
+{# only ever addressed the first. For anonymous viewers this copy was inert -- #}
+{# the controller is loaded by that same partial and never arrived.            #}
 {% endwith %}
 {% endblock %}
 {% block otherfooter %}
 <script src="{% static 'js/chart.min002.js' %}"></script>
-<script src="{% static 'js/address.min033.js' %}"></script>
+<script src="{% static 'js/address.min034.js' %}"></script>
 {% endblock %}

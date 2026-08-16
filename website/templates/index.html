@@ -1,4 +1,4 @@
-{% extends 'base_tw.html' %}{% load static %}{% load core_extras %}
+{% extends 'base.html' %}{% load static %}{% load core_extras %}
 {% block otherheader %}
     <meta property="og:type" content="website" />
     <meta property="og:title" content="{{ WEBSITE_NAME }}" />
@@ -34,7 +34,13 @@
     <form method="POST" action="." id="id_form">
       {% csrf_token %}
       <div class="mt-6 flex items-center gap-2 rounded-field border border-base-300 bg-base-100 px-3">
-        <img class="h-5 w-5 flex-none opacity-60" src="{% static 'img/expand.png' %}" alt="Click to expand">
+        {% comment %}
+          `prefix` is a JS hook, not styling: index.js binds `replaceTextarea`
+          to it, which swaps the single-address input for a textarea so several
+          addresses can be pasted at once, then hides this icon. Dropping the
+          class silently removed the only way into multi-address entry.
+        {% endcomment %}
+        <img class="prefix h-5 w-5 flex-none cursor-pointer opacity-60" src="{% static 'img/expand.png' %}" alt="Click to expand" title="Enter several addresses">
         <input class="input input-ghost w-full focus:outline-none" id="id_address"{% if form.bundle.errors %} value="{{ form.bundle.errors.0|escape }}"{% endif %} name="address" maxlength="58" autofocus="autofocus" placeholder="Enter Algorand address" type="text">
         {% if form.address.errors %}<span class="text-error">{{ form.address.errors|escape }}</span>{% endif %}
         {{ form.bundle.as_hidden }}
@@ -110,5 +116,5 @@
 {% endblock %}
 {% block otherfooter %}
 <script type="application/ld+json">{% include "jsonld/index.jsonld" %}</script>
-<script src="{% static 'js/index.min002.js' %}"></script>
+<script src="{% static 'js/index.min003.js' %}"></script>
 {% endblock %}

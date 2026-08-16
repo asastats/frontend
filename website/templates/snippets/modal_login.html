@@ -1,89 +1,79 @@
-{% load static %}{% load i18n %}{% load core_extras %}<div id="modalLogin" class="modal">
-  <div class="modal-content">
-    <h3 class="center-align">Log in to {{ WEBSITE_NAME }}</h3>
+{% load static %}{% load i18n %}
+{% comment %}
+  DaisyUI login modal, for pages on base.html. The Materialize original
+  stays at snippets/modal_login.html until base.html is retired -- both exist
+  for the same reason the two base templates do.
 
-    <div class="row">
-      {% comment %} Three tabs; regular login is the default active panel. {% endcomment %}
-      <div class="col s12">
-        <ul class="tabs tabs-fixed-width">
-          <li class="tab col s4"><a class="active" href="#modal-tab-login">Log in</a></li>
-          <li class="tab col s4"><a href="#modal-tab-social">Social</a></li>
-          <li class="tab col s4"><a href="#modal-tab-wallet">Wallet</a></li>
-        </ul>
-      </div>
+  A native <dialog>: the browser owns the backdrop, focus capture and Escape,
+  so nothing here needs M.Modal, and the tabs are switched by
+  static/js/authmodal.js rather than M.Tabs.
 
+  The ids are the contract addressed by the functional tests, the allauth POST
+  and the wallet bridge -- #modalLogin, #modal-tab-login/social/wallet,
+  #id_login_modal, #id_password_modal, #id_cta_modal, #id_cancel -- so they are
+  unchanged; only the presentation differs.
+{% endcomment %}
+<dialog id="modalLogin" class="w-full max-w-2xl rounded-box border-0 bg-base-100 p-0 text-base-content backdrop:bg-black/50">
+  <div class="modal-content p-6">
+    <h3 class="text-center text-2xl font-semibold">Log in to {{ WEBSITE_NAME }}</h3>
+
+    {% comment %} Three tabs; regular login is the default active panel. {% endcomment %}
+    <div role="tablist" class="mt-5 grid grid-cols-3 gap-1 rounded-field bg-base-200 p-1">
+      <a role="tab" aria-selected="true" class="is-active cursor-pointer rounded-field py-2 text-center text-sm font-medium aria-selected:bg-base-100 aria-selected:shadow-sm" href="#modal-tab-login">Log in</a>
+      <a role="tab" aria-selected="false" class="cursor-pointer rounded-field py-2 text-center text-sm font-medium aria-selected:bg-base-100 aria-selected:shadow-sm" href="#modal-tab-social">Social</a>
+      <a role="tab" aria-selected="false" class="cursor-pointer rounded-field py-2 text-center text-sm font-medium aria-selected:bg-base-100 aria-selected:shadow-sm" href="#modal-tab-wallet">Wallet</a>
+    </div>
+
+    <div class="mt-5">
       {% comment %} ---- TAB 1: email / password (default) ---- {% endcomment %}
-      <div id="modal-tab-login" class="col s12">
+      <div id="modal-tab-login" class="modal-tab-panel is-active">
         <form class="login" id="modal_login_form" method="POST" action="{% url 'account_login' %}">
           {% csrf_token %}
           <input type="hidden" name="next" value="" id="id_modal_login_next" />
-          <div class="row center-align" style="margin-top:1.25rem">
-            <div class="input-field col s12 m10 offset-m1">
-              <i class="material-icons prefix" aria-hidden="true">{{ 'login'|get_styling:"icon" }}</i>
-              <input autofocus="autofocus" id="id_login_modal" name="login"
-                     placeholder="Username or email" type="text" required />
-              <label for="id_login_modal">Login:</label>
-            </div>
-            <div class="input-field col s12 m10 offset-m1">
-              <i class="material-icons prefix" aria-hidden="true">{{ 'password'|get_styling:"icon" }}</i>
-              <input id="id_password_modal" name="password" autocomplete="off"
-                     placeholder="Password" type="password" required />
-              <label for="id_password_modal">Password:</label>
-            </div>
-            <div class="col s12 m10 offset-m1 left-align">
-              <label title="Remember me on this computer">
-                <input name="remember" type="checkbox">
-                <span>Remember me</span>
-              </label>
-            </div>
-            <div class="center-align col s12">
-              <button class="waves-effect btn-flat auth" id="id_cta_modal" type="submit">
-                Log in <i class="material-icons right" aria-hidden="true">{{ 'auth_action'|get_styling:"icon" }}</i>
-              </button>
-            </div>
+          <label class="block">
+            <span class="mb-1 block text-sm">Login:</span>
+            <input class="input w-full" autofocus="autofocus" id="id_login_modal"
+                   name="login" placeholder="Username or email" type="text" required />
+          </label>
+          <label class="mt-4 block">
+            <span class="mb-1 block text-sm">Password:</span>
+            <input class="input w-full" id="id_password_modal" name="password"
+                   autocomplete="off" placeholder="Password" type="password" required />
+          </label>
+          <label class="mt-4 flex items-center gap-2 text-sm" title="Remember me on this computer">
+            <input class="checkbox checkbox-sm" name="remember" type="checkbox">
+            <span>Remember me</span>
+          </label>
+          <div class="mt-5 text-center">
+            <button class="btn btn-primary" id="id_cta_modal" type="submit">Log in</button>
           </div>
         </form>
       </div>
 
       {% comment %} ---- TAB 2: social providers ---- {% endcomment %}
-      <div id="modal-tab-social" class="col s12">
-        <div class="row" style="margin-top:1.25rem">
-          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
-            <img src="{% static 'img/social/discord.png' %}" alt="{% trans 'Discord logo' %}" />
-            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/discord/login/">Sign in with Discord</a>
-          </div>
-          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
-            <img src="{% static 'img/social/twitter.png' %}" alt="{% trans 'X logo' %}" />
-            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/twitter_oauth2/login/">Sign in with X</a>
-          </div>
-          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
-            <img src="{% static 'img/social/reddit.png' %}" alt="{% trans 'Reddit logo' %}" />
-            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/reddit/login/">Sign in with Reddit</a>
-          </div>
-          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
-            <img src="{% static 'img/social/github.png' %}" alt="{% trans 'GitHub logo' %}" />
-            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/github/login/">Sign in with GitHub</a>
-          </div>
-          <div class="valign-wrapper col s12 m8 offset-m2 socialsmall">
-            <img src="{% static 'img/social/google.png' %}" alt="{% trans 'Google logo' %}" />
-            <a class="waves-effect waves-dark btn-flat" role="button" href="/accounts/google/login/">Sign in with Google</a>
-          </div>
+      <div id="modal-tab-social" class="modal-tab-panel" hidden>
+        <div class="mx-auto flex max-w-sm flex-col gap-2">
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/discord/login/"><img class="h-5 w-5" src="{% static 'img/social/discord.png' %}" alt="{% trans 'Discord logo' %}" />Sign in with Discord</a>
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/twitter_oauth2/login/"><img class="h-5 w-5" src="{% static 'img/social/twitter.png' %}" alt="{% trans 'X logo' %}" />Sign in with X</a>
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/reddit/login/"><img class="h-5 w-5" src="{% static 'img/social/reddit.png' %}" alt="{% trans 'Reddit logo' %}" />Sign in with Reddit</a>
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/github/login/"><img class="h-5 w-5" src="{% static 'img/social/github.png' %}" alt="{% trans 'GitHub logo' %}" />Sign in with GitHub</a>
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/google/login/"><img class="h-5 w-5" src="{% static 'img/social/google.png' %}" alt="{% trans 'Google logo' %}" />Sign in with Google</a>
         </div>
       </div>
 
       {% comment %} ---- TAB 3: wallet sign-in (reuses the shared snippet) ---- {% endcomment %}
-      <div id="modal-tab-wallet" class="col s12">
+      <div id="modal-tab-wallet" class="modal-tab-panel" hidden>
         {% include "snippets/wallet_signing.html" %}
       </div>
     </div>
 
-    <div class="divider col s12 m10 offset-m1"></div>
-    <div class="row center-align col s12">
-      <a class="secondaryAction waves-effect waves-light btn-flat" href="{% url 'account_reset_password' %}">Forgot password?</a>
-      <a class="secondaryAction waves-effect waves-light btn-flat" href="{% url 'account_signup' %}">Don't have an account?</a>
+    <div class="divider my-5"></div>
+    <div class="flex flex-wrap items-center justify-center gap-4 text-sm">
+      <a class="secondaryAction link link-hover" href="{% url 'account_reset_password' %}">Forgot password?</a>
+      <a class="secondaryAction link link-hover" href="{% url 'account_signup' %}">Don't have an account?</a>
     </div>
-    <div class="right-align col s12">
-      <a href="#" class="waves-effect btn-flat modal-close" id="id_cancel">Cancel<i class="material-icons right" aria-hidden="true">{{ 'cancel'|get_styling:"icon" }}</i></a>&nbsp;
+    <div class="mt-5 text-right">
+      <button type="button" class="btn btn-ghost btn-sm id-modal-close" id="id_cancel">Cancel</button>
     </div>
   </div>
-</div>
+</dialog>

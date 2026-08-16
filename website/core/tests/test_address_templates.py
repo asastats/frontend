@@ -142,14 +142,17 @@ class TestAddressTemplateRenders:
         ):
             assert attr in html, f"Consolidated header missing {attr}"
 
-    def test_each_asaitem_emits_one_fitem_li(self, sample_payload):
+    def test_each_asaitem_emits_one_fitem_entry(self, sample_payload):
         # The filter logic in address.js (getNodesThatContain, fitem class
-        # filter) relies on each asaitem being a single <li class="fitem">.
+        # filter) relies on each asaitem being a single element carrying
+        # `fitem`. It was an <li> inside a Materialize collapsible; it is a
+        # <details> now, which is why the element name is not asserted -- only
+        # the id convention the filter and checkOpened both match on.
         import re
 
         html = render_to_string("address.html", _build_context(sample_payload))
         # Outer fitem wrappers for asaitems use id="f<assetid>".
-        fitem_ids = re.findall(r'<li[^>]+id="f(\d+)"', html)
+        fitem_ids = re.findall(r'<details[^>]+id="f(\d+)"', html)
         # We don't assert the exact number (some asaitems may have
         # value=0 and amount=0 and get skipped), but expect a healthy
         # majority of the 76 sample asaitems to render.
@@ -167,12 +170,14 @@ class TestAddressTemplateRenders:
         t_ids = re.findall(r'id="t(\d+)"[^>]+class="[^"]*nfticon', html)
         assert len(t_ids) > 0
 
-    def test_collapsible_section_classes_present(self, sample_payload):
-        # checkOpened("asa") / checkOpened("nft") use .asasec / .nftsec
-        # to find the right collapsible.
+    def test_section_container_classes_present(self, sample_payload):
+        # checkOpened("asa") / checkOpened("nft") use .asasec / .nftsec to find
+        # the right container, and the filter shows and hides `.section-list`.
+        # The containers were <ul class="collapsible ...">; the class names
+        # survive the move to <details> because the JS still selects on them.
         html = render_to_string("address.html", _build_context(sample_payload))
-        assert '<ul class="collapsible asasec">' in html
-        assert '<ul class="collapsible nftsec">' in html
+        assert 'class="asasec section-list' in html
+        assert 'class="nftsec section-list' in html
 
     def test_bundle_layout_emits_per_address_anchors(self, sample_payload):
         # Two addresses in the sample → two <a> anchors with the
@@ -205,7 +210,7 @@ class TestAddressTemplateRenders:
         # The sample has 1 noteval — the notevalsec block should appear
         # exactly once and include that asset's id.
         html = render_to_string("address.html", _build_context(sample_payload))
-        assert '<ul class="collapsible notevalsec">' in html
+        assert 'class="notevalsec section-list' in html
         assert "1 not evaluated" in html
 
     def test_provider_icon_paths_use_correct_slug(self, sample_payload):

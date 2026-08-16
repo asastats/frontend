@@ -2,7 +2,6 @@ const jquery = require('../static/js/jquery-2.2.4.min.js');
 
 window.$ = jquery;
 
-global.M = { textareaAutoResize: jest.fn() };
 
 const index = require('../static/js/index.js');
 
@@ -88,7 +87,11 @@ describe("in SECTION: Helper functions", function () {
       expect($("#id_addresses").length).toBe(1);
       expect($("#id_addresses").val()).toBe("ADDR-ONE");
       expect($("#id_bundle").val()).toBe("ADDR-ONE");
-      expect(M.textareaAutoResize).toHaveBeenCalled();
+      // `M.textareaAutoResize` used to be called here. The textarea grows
+      // through CSS `field-sizing: content` now, so what matters is that the
+      // replacement carries the class that does it -- there is no call left
+      // to assert.
+      expect($("#id_addresses").attr("class")).toContain("field-sizing:content");
     });
     it('updates the bundle when the textarea changes', function () {
       $("#id_address").val("ADDR-ONE");

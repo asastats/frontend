@@ -72,9 +72,9 @@ function fixture() {
     ' data-totalnftfloor="5" data-totalwnft="200" data-pricealgo="0.5"></span>' +
     '<div id="id-chart-nft"></div><div id="id-chart-nftfloor"></div>' +
     '<div id="id-chart-ratio"></div><div id="id-chart-ratiofloor"></div>' +
-    '<ul class="collapsible consolidated" id="id-cons">' +
-    '<li><div class="collapsible-header consolidated"></div>' +
-    '<div id="id-cons-body"></div></li></ul>' +
+    '<details class="consolidated" id="id-cons" open>' +
+    '<summary class="item-header consolidated"></summary>' +
+    '<div id="id-cons-body" class="item-body"></div></details>' +
     '<div class="floor"><input type="checkbox"></div>' +
     '<div class="switch"><input type="checkbox"></div>' +
     '<div class="refresh"><input type="checkbox"></div>' +
@@ -87,19 +87,19 @@ function fixture() {
     '<span class="val cons-value" data-val="3"></span>' +
     '<span class="val6 pricealgo" data-val="2"></span>' +
     '<span class="val6" data-val="3"></span>' +
-    '<ul class="collapsible asasec"><li class="fitem" id="fa0"></li>' +
-    '<li class="fitem active" id="fa1">' +
-    '<div class="collapsible-header nft"></div>' +
-    '<div class="collapsible-body">' + times + '</div></li></ul>' +
-    '<ul class="collapsible nftsec"><li class="fitem active" id="fn1">' +
-    '<div class="collapsible-header token"></div>' +
-    '<div class="collapsible-body">' + expiry + '</div></li></ul>' +
-    '<ul class="collapsible fsec">' +
-    '<li class="fitem" id="if1"><span>findme</span><span>findme</span></li>' +
-    '<li class="fitem" id="if2"><span>findme</span></li>' +
-    '<li class="fitem"><span>findme</span></li>' +
+    '<div class="asasec section-list"><details class="fitem" id="fa0"></details>' +
+    '<details class="fitem" id="fa1" open>' +
+    '<summary class="item-header nft"></summary>' +
+    '<div class="item-body">' + times + '</div></details></div>' +
+    '<div class="nftsec section-list"><details class="fitem" id="fn1" open>' +
+    '<summary class="item-header token"></summary>' +
+    '<div class="item-body">' + expiry + '</div></details></div>' +
+    '<div class="fsec section-list">' +
+    '<div class="fitem" id="if1"><span>findme</span><span>findme</span></div>' +
+    '<div class="fitem" id="if2"><span>findme</span></div>' +
+    '<div class="fitem"><span>findme</span></div>' +
     '<span class="nfticon" id="tif1" data-path="/x.png"></span>' +
-    '<span class="nfticon" id="other"></span></ul>' +
+    '<span class="nfticon" id="other"></span></div>' +
     '<span class="unit">a</span>' +
     '<img class="nft" data-src="/real.png"><img class="nft">' +
     '<div class="fixed-action-btn"><a id="scroll-to-top" class="btn-floating"></a></div>'
@@ -114,8 +114,6 @@ beforeEach(() => {
   window.Chart.mockImplementation(chartImpl);
   window.Chart.getChart.mockReset();
   window.Chart.getChart.mockReturnValue(chartInstance());
-  M.Collapsible.getInstance.mockClear();
-  M.Collapsible.getInstance.mockReturnValue({ close: jest.fn() });
   reloadMock = jest.fn();
   delete window.location;
   window.location = { reload: reloadMock };
@@ -297,7 +295,7 @@ describe("toggleDist", function () {
 
 describe("showTimes", function () {
   it('fills epoch spans with elapsed time', function () {
-    var header = $(".collapsible-header.nft")[0];
+    var header = $(".item-header.nft")[0];
     address.showTimes.call(header, null);
     expect($(".asasec .epoch").html()).toContain("ago on");
   });
@@ -317,8 +315,10 @@ describe("mainAddress", function () {
     jest.useFakeTimers();
     window.Chart.getChart.mockReturnValue(chartInstance());
     address.mainAddress();
-    expect($.prototype.collapsible).toHaveBeenCalled();
+    // Nothing to initialise: the accordions are native <details>. What
+    // mainAddress still owns is the charts and the event wiring.
     expect(window.Chart).toHaveBeenCalled();
+    expect($._data($("#id-cons")[0], "events").toggle).toBeDefined();
   });
 });
 
@@ -594,9 +594,24 @@ describe("NFT tooltips", function () {
   it('shows and hides the preview on hover and click', function () {
     jest.useFakeTimers();
     address.mainAddress();
-    $(".nfticon").trigger("mouseover");
-    $(".nfticon").trigger("click");
-    expect($(".nfticon").hasClass("nftpreview")).toBe(true);
+    $(".nfticon").first().trigger("mouseover");
+    // The preview is a real element now rather than a Materialize tooltip
+    // instance, so it can simply be looked for -- and looked for again after
+    // the click, which must remove it.
+    var preview = document.getElementById("id-nft-preview");
+    expect(preview).not.toBeNull();
+    expect(preview.querySelector("img").getAttribute("src")).toBe("/x.png");
+    $(".nfticon").first().trigger("click");
+    expect(document.getElementById("id-nft-preview")).toBeNull();
+  });
+
+  it('shows nothing for a thumbnail with no full image', function () {
+    // `#other` has no data-path. Building a preview from it would produce an
+    // <img src=""> -- a visible broken-image box hovering over the page.
+    jest.useFakeTimers();
+    address.mainAddress();
+    $("#other").trigger("mouseover");
+    expect(document.getElementById("id-nft-preview")).toBeNull();
   });
 });
 
@@ -605,7 +620,7 @@ describe("showExpiry / timeEntry", function () {
   it('fills expiry spans across ended, future and past', function () {
     jest.useFakeTimers();
     address.mainAddress();
-    $(".token.collapsible-header").trigger("click");
+    $(".token.item-header").trigger("click");
     var html = $(".nftsec .epoch").map(function () {
       return this.innerHTML;
     }).get().join(" ");
@@ -678,24 +693,38 @@ describe("consolidated section", function () {
   it('onConsolidatedClick stores the visibility state', function () {
     jest.useFakeTimers();
     address.mainAddress();
-    document.getElementById('id-cons-body').style.display = "block";
-    $(".collapsible-header.consolidated").trigger("click");
+    // `<details>.open` is the state now; `toggle` is what the browser fires
+    // when it changes, and what address.js listens for.
+    document.getElementById('id-cons').open = false;
+    $("#id-cons").trigger("toggle");
     expect(localStorage.setItem).toHaveBeenCalledWith("cons", "h");
   });
   it('onConsolidatedClick stores empty when the body is hidden', function () {
     jest.useFakeTimers();
     address.mainAddress();
-    document.getElementById('id-cons-body').style.display = "none";
-    $(".collapsible-header.consolidated").trigger("click");
+    document.getElementById('id-cons').open = true;
+    $("#id-cons").trigger("toggle");
     expect(localStorage.setItem).toHaveBeenCalledWith("cons", "");
   });
   it('checkConsolidated closes the section when stored hidden', function () {
     jest.useFakeTimers();
     localStorage.setItem("cons", "h");
-    var close = jest.fn();
-    M.Collapsible.getInstance.mockReturnValue({ close: close });
     window.Chart.getChart.mockReturnValue(chartInstance());
+    document.getElementById('id-cons').open = true;
     address.mainAddress();
-    expect(close).toHaveBeenCalledWith(0);
+    expect(document.getElementById('id-cons').open).toBe(false);
+  });
+
+  it('survives a page with no consolidated section', function () {
+    // checkConsolidated is not exported, so it is reached the way the page
+    // reaches it. Reading `.open` off null would throw inside mainAddress and
+    // abandon every binding declared after it -- the same failure mode that
+    // made home-page sorting inert.
+    jest.useFakeTimers();
+    window.Chart.getChart.mockReturnValue(chartInstance());
+    localStorage.setItem("cons", "h");
+    document.getElementById('id-cons').remove();
+    expect(function () { address.mainAddress(); }).not.toThrow();
+    expect($._data($("#filter")[0], "events").keypress).toBeDefined();
   });
 });

@@ -151,7 +151,7 @@ class BaseBundleNameForm(ModelForm):
         required=True,
         widget=Textarea(
             attrs={
-                "class": "materialize-textarea",
+                "class": "textarea w-full [field-sizing:content]",
                 "rows": 20,
                 "placeholder": "Enter Algorand addresses and/or .algo names",
             }

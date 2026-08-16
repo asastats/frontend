@@ -1,28 +1,38 @@
 {% load static %}{% load core_extras %}
+{% comment %}
+  Assets held but not valued, behind a single disclosure so they do not
+  compete with the valued ones. `.copy` is a JS hook: site.js binds
+  copy-to-clipboard to it and copies the *previous* element's text, so the
+  asset-id link has to stay immediately before it.
+{% endcomment %}
 {% if notevals %}
-<div class="col s12">
-  <ul class="collapsible notevalsec">
-    <li>
-      <div class="collapsible-header">{{ notevals|length }} not evaluated</div>
-      <div class="collapsible-body">
-        <ul class="collection">
-        {% for noteval in notevals %}
-          {% with asset=noteval.asset %}
-          <li id="{{ asset.id }}" class="collection-item avatar fitem">
-            <img src="{{ noteval|asa_icon }}" alt="{{ asset.name }} logo" class="circle asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
-            <span class="title">{{ asset.name }}</span> <br>
-            <a href="{% explorer_url 'asset' asset.id %}" target="_blank" title="Show in {% explorer_name %}">{{ asset.id }}</a>&nbsp;<span class="copy">&nbsp;&#128203;&nbsp;</span> <br>
-            <span>Amount: {{ noteval.amount|amount_repr:asset.decimals }}</span> <br>
-            <span>Unit name: {{ asset.unit }}</span> <br>
-            <span>Total supply: {{ asset.total|floatformat:"g" }}</span> <br>
-            <span>Decimals: {{ asset.decimals }}</span> <br>
-            {% if asset.url %}<span class="truncate" >URL: <a href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener" title="Official URL">{{ asset.url }}</a></span> <br>{% endif %}
-          </li>
-          {% endwith %}
-        {% endfor %}
-        </ul>
+<div class="notevalsec section-list mt-6">
+  <details class="group rounded-box border border-base-300 bg-base-100">
+    <summary class="item-header cursor-pointer list-none p-3 font-medium">{{ notevals|length }} not evaluated</summary>
+    <div class="item-body border-t border-base-300 p-3">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {% for noteval in notevals %}
+        {% with asset=noteval.asset %}
+        <div id="{{ asset.id }}" class="fitem rounded-box border border-base-300 p-3 text-sm">
+          <div class="flex items-center gap-2">
+            <img src="{{ noteval|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon h-8 w-8 flex-none rounded-full" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
+            <span class="title truncate font-medium">{{ asset.name }}</span>
+          </div>
+          <dl class="mt-2 space-y-1 text-xs text-base-content/70">
+            <div>
+              <a class="link link-hover" href="{% explorer_url 'asset' asset.id %}" target="_blank" title="Show in {% explorer_name %}">{{ asset.id }}</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
+            </div>
+            <div>Amount: {{ noteval.amount|amount_repr:asset.decimals }}</div>
+            <div>Unit name: {{ asset.unit }}</div>
+            <div>Total supply: {{ asset.total|floatformat:"g" }}</div>
+            <div>Decimals: {{ asset.decimals }}</div>
+            {% if asset.url %}<div class="truncate">URL: <a class="link link-hover" href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener" title="Official URL">{{ asset.url }}</a></div>{% endif %}
+          </dl>
+        </div>
+        {% endwith %}
+      {% endfor %}
       </div>
-    </li>
-  </ul>
+    </div>
+  </details>
 </div>
 {% endif %}

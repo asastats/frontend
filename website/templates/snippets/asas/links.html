@@ -1,10 +1,12 @@
 {% load static %}
 {% load core_extras %}
 {% if "Lofty" not in asset.name and asset.unit|slice:":4" != "anmc" %}
+  {% if asset.links %}<div class="mt-3 flex flex-wrap items-center justify-end gap-3">{% endif %}
   {% for ld in asset.links %}
     <a href="{{ ld.link }}" target="_blank" title="{{ ld.title }}">
-      <img class="provider" src="{{ ld.provider.name|provider_icon }}" alt="{{ ld.provider.name }} logo" />
-    </a>{% if not forloop.last %}&nbsp;&nbsp;{% endif %}
+      <img class="provider inline h-5 w-5" src="{{ ld.provider.name|provider_icon }}" alt="{{ ld.provider.name }} logo" />
+    </a>
   {% endfor %}
-  {% if asset.links %}<br />{% endif %}
+  {% if asset.links %}</div>{% endif %}
+
 {% endif %}

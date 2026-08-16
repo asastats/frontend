@@ -309,7 +309,10 @@ class TestBaseBundleNameForm:
 
     def test_basebundlenameform_addresses_field_widget_sets_class(self):
         form = BaseBundleNameForm()
-        assert form.fields["addresses"].widget.attrs["class"] == "materialize-textarea"
+        assert (
+            form.fields["addresses"].widget.attrs["class"]
+            == "textarea w-full [field-sizing:content]"
+        )
 
     def test_basebundlenameform_addresses_field_widget_sets_rows(self):
         form = BaseBundleNameForm()

@@ -5,7 +5,6 @@ const jquery = require('../static/js/jquery-2.2.4.min.js');
 
 window.$ = jquery;
 
-const materialize = require('../static/js/materialize.min.js');
 const index = require('../static/js/index.js');
 
 jest

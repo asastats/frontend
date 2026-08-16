@@ -1,51 +1,62 @@
 {% load static %}
 {% load core_extras %}
-<div class="col s12">
-  <ul class="collapsible asasec">
-    {% for asaitem in asaitems %}
-      {% with asset=asaitem.asset %}
-        <li id="f{{ asset.id }}" class="fitem">
-          <div class="collapsible-header token{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
-            <span>&nbsp;{{ asaitem.amount|amount_repr:asset.decimals }}&nbsp;&nbsp;<span class="unit">{{ asset.unit }}</span></span>
-            <div class="icondiv">
-              <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="circle asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
-            </div>
-            <div class="right">
-              &nbsp;<span class="val" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }} ALGO</span>
-            </div>
+{% comment %}
+  One <details> per valued asset. The structure is a contract with address.js:
+
+    * `.asasec` is the container it reopens a remembered entry inside;
+    * each entry is `id="f<asset id>"` with class `fitem` -- the filter shows
+      and hides these, and `checkOpened` matches on the id;
+    * `.token.item-header` is the summary it binds `showExpiry` to;
+    * `.item-body` is what `showTimes`/`showExpiry` search for epoch spans;
+    * `.val` carries the unvarnished value in `data-val`, which is what the
+      ALGO/USD switch recomputes from -- the visible text is rounded and is
+      not a safe source;
+    * `.unit` is rewritten in place when the currency switches.
+
+  Change the nesting or these names and the page still renders perfectly while
+  filtering, sorting and the currency switch quietly stop working.
+{% endcomment %}
+<div class="asasec section-list mt-8 space-y-2">
+  {% for asaitem in asaitems %}
+    {% with asset=asaitem.asset %}
+      <details id="f{{ asset.id }}" class="fitem group rounded-box border border-base-300 bg-base-100">
+        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
+          <div class="icondiv flex-none">
+            <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon h-8 w-8 rounded-full" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
           </div>
-          <div class="collapsible-body">
-            <ul class="collection">
-              <li id="{{ asset.id }}" class="collection-item fitem">
-                <div class="col s12 m9 push-m3 right-align asar">
-                  {% if url_value %}
-                  <div class="swap-asa-entry">
-                    <div class="col s12 asa">
-                      <div class="col s6 push-s6 m5 push-m7 right-align swap-action-column">
-                        <a class="btn waves-effect whenmoon swap-asa id-swap-swap-toggle"
-                          href="{% url 'swap_source' url_value asset.id %}"
-                          data-from="{{ asset.id }}"
-                          data-label-show="Swap" data-label-hide="Hide">
-                          <i class="material-icons right" aria-hidden="true">{{ 'swap'|get_styling:"icon" }}</i><span class="swap-label">Swap</span>
-                        </a>
-                      </div>
-                      <div id="swap-panel-{{ asset.id }}" class="col s6 pull-s6 m7 pull-m5 right-align hidden">
-                        <div class="id-swap-panel" data-from="{{ asset.id }}"></div>
-                      </div>
-                    </div>
+          <span class="min-w-0 flex-1 truncate">{{ asaitem.amount|amount_repr:asset.decimals }}&nbsp;<span class="unit font-medium">{{ asset.unit }}</span></span>
+          <span class="val flex-none font-medium" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }} ALGO</span>
+        </summary>
+
+        <div class="item-body border-t border-base-300 p-3">
+          <div id="{{ asset.id }}" class="fitem grid gap-4 md:grid-cols-4">
+            {% include "snippets/asas/meta.html" with asaitem=asaitem asset=asset %}
+            <div class="asar md:col-span-3 md:text-right">
+              {% if url_value %}
+              <div class="swap-asa-entry">
+                <div class="asa flex flex-wrap items-start justify-end gap-3">
+                  <div class="swap-action-column order-2">
+                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
+                      href="{% url 'swap_source' url_value asset.id %}"
+                      data-from="{{ asset.id }}"
+                      data-label-show="Swap" data-label-hide="Hide">
+                      <span class="swap-label">Swap</span>
+                    </a>
                   </div>
-                  {% endif %}                 
-                  {% for prog in asaitem.programs %}
-                    {% include "snippets/asas/program.html" with prog=prog asset=asset price=asaitem.price pricealgo=pricealgo forloop_counter=forloop.counter %}
-                  {% endfor %}
-                  {% include "snippets/asas/links.html" with asset=asset %}
+                  <div id="swap-panel-{{ asset.id }}" class="order-1 hidden flex-1 text-right">
+                    <div class="id-swap-panel" data-from="{{ asset.id }}"></div>
+                  </div>
                 </div>
-                {% include "snippets/asas/meta.html" with asaitem=asaitem asset=asset %}
-              </li>
-            </ul>
+              </div>
+              {% endif %}
+              {% for prog in asaitem.programs %}
+                {% include "snippets/asas/program.html" with prog=prog asset=asset price=asaitem.price pricealgo=pricealgo forloop_counter=forloop.counter %}
+              {% endfor %}
+              {% include "snippets/asas/links.html" with asset=asset %}
+            </div>
           </div>
-        </li>
-      {% endwith %}
-    {% endfor %}
-  </ul>
+        </div>
+      </details>
+    {% endwith %}
+  {% endfor %}
 </div>

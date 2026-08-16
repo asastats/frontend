@@ -21,22 +21,11 @@ $(mainSite);
  *
  */
 function mainSite() {
-  // `.sidenav()` and `.modal()` are jQuery plugins installed by Materialize,
-  // not calls on the `M` object, so the `typeof M` guards further down this
-  // file do not cover them. Pages on the DaisyUI base never load Materialize,
-  // and an unguarded call here throws inside jQuery's ready queue -- which
-  // abandons the queue, so every ready callback registered after this one
-  // silently never runs. That is how sorting and filtering on the home page
-  // came to be inert while the page itself looked perfectly healthy.
-  if ($.fn.sidenav)
-    $('.sidenav').sidenav();
-  if ($.fn.modal)
-    $('.modal').modal();
-  initLoginModalTabs();
-  checkMode();
-  if (isDark())
-    toggleText();
-  $('.dark-toggle').on('click', toggleMode);
+  // Materialize is gone from the project, so `.sidenav()` and `.modal()` --
+  // its jQuery plugins -- have nothing to initialise and no markup to find.
+  // The appearance controls went with it: `checkMode`/`toggleMode` swapped
+  // logo images and text classes that only the old base rendered. theme.js
+  // owns appearance now, through `<html data-theme>`.
   $(".copy").on("click", copyToClipboard);
   $(document)
     .off("click.swapgate")
@@ -51,24 +40,6 @@ function mainSite() {
  * SECTION: Helper functions
  * * * * * * * * * * * * * * * * * * * * * * * * * * *
  */
-
-/**
- * Check if user has saved Dark mode in local storage
- * @function checkMode
- *
- */
-function checkMode() {
-  if (isDark()) {
-    document.documentElement.classList.add('dark');
-    $("#logo").attr("src", "/static/logo-dark.png");
-    $("#brand").attr("src", "/static/asastats-dark.png");
-    $("#cpr").addClass("mydark-text");
-  } else {
-    document.documentElement.classList.remove('dark');
-    $("#logo").attr("src", "/static/logo.png");
-    $("#brand").attr("src", "/static/asastats.png");
-  }
-}
 
 
 /**
@@ -89,110 +60,41 @@ function copyToClipboard(event) {
 }
 
 
-/**
- * Return true if current mode from data variable or localStorage is true
- * @function isDark
- *
- */
- function isDark() {
-   // The `#footer` carrying `data-mode` belongs to the Materialize base. Pages
-   // on the DaisyUI base express appearance as `data-theme` and are handled by
-   // theme.js instead, so the element is simply not there -- and reading
-   // `.dataset` off null throws inside jQuery's ready queue, taking every
-   // later ready callback on the page down with it.
-   var footer = document.getElementById("footer");
-   return ((footer && footer.dataset.mode === "dark") || localStorage.getItem("mode") === "dark");
-}
-
-
-/**
- * Toggle bright/dark mode
- * @function toggleMode
- *
- * @param {jQuery} event Triggered click event object
- *
- */
-function toggleMode(event) {
-  localStorage.setItem('mode',
-    (localStorage.getItem('mode') || 'light') === 'light' ? 'dark' : 'light'
-  );
-  checkMode();
-  toggleText();
-}
-
-
-/**
- * Toggle text properties for mode
- * @function toggleText
- *
- */
-function toggleText() {
-  $(".dark-toggle").toggleClass("brightbtn darkbtn");
-  $(".txt").toggleClass("mydark-text myredlight-text");
-}
-
-
 /*
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * SECTION: Proprietary widgets and objects initialization functions
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  */
 
-/**
- * Initialize the login modal's content tabs and keep the active indicator
- * correct. Materialize tabs initialized inside a hidden modal cannot measure
- * their width, so the default ("Log in") underline is missing until the user
- * interacts; refreshing it on modal open fixes that. Safely does nothing on
- * pages where the modal is not rendered (e.g. for authenticated users).
- * @function initLoginModalTabs
- *
- */
-function initLoginModalTabs() {
-  var modalEl = document.getElementById('modalLogin');
-  if (!modalEl) {
-    return;
-  }
-  var tabsEl = modalEl.querySelector('.tabs');
-  if (!tabsEl || typeof M === 'undefined' || !M.Tabs) {
-    return;
-  }
-  var tabs = M.Tabs.getInstance(tabsEl) || M.Tabs.init(tabsEl);
-  var modal = M.Modal && M.Modal.getInstance(modalEl);
-  if (modal) {
-    modal.options.onOpenEnd = function () {
-      tabs.updateTabIndicator();
-    };
-  }
-}
 
 /**
- * Open the login modal when an anonymous visitor clicks a Swap button.
+ * Open the login dialog when an anonymous visitor clicks a Swap button.
  *
  * The address accordion is cached across users, so its per-asset Swap links are
  * shown to everyone and point at the "swap_source" URL (which redirects
- * anonymous users to the login page). The login modal is rendered only for
- * anonymous visitors, so its presence is the per-user signal: when it exists,
- * intercept the click and open the modal; otherwise (authenticated) let the swap
- * controller load its inline panel. If Materialize is unavailable, the click is
- * left to navigate to "swap_source", which redirects to the login page.
+ * anonymous users to the login page). The dialog is rendered only for anonymous
+ * visitors, so its presence is the per-user signal: when it exists, intercept
+ * the click and open it; otherwise (authenticated) let the swap controller load
+ * its inline panel.
+ *
+ * The dialog is a native <dialog> driven by authmodal.js. This used to go
+ * through `M.Modal.getInstance`, which returns null now that Materialize is
+ * gone -- so every anonymous Swap click fell through to a full-page redirect
+ * instead of opening the dialog in place.
  * @function swapLoginGate
  *
  * @param {jQuery} event Triggered click event object
  *
  */
 function swapLoginGate(event) {
-  var modalEl = document.getElementById('modalLogin');
-  var modal = modalEl && typeof M !== 'undefined' && M.Modal
-    ? M.Modal.getInstance(modalEl)
-    : null;
-  if (!modal) {
-    // No initialized login modal on this page (authenticated user, or the modal
-    // was cached out): let the click navigate to swap_source, which redirects to
-    // the login page.
+  var dialog = document.getElementById('modalLogin');
+  if (!dialog || !dialog.showModal) {
+    // No dialog on this page (authenticated user, or the markup was cached
+    // out): let the click navigate to swap_source, which redirects to login.
     return;
   }
   event.preventDefault();
-  // Record the intended swap URL on the modal's hidden login field. Both login
+  // Record the intended swap URL on the dialog's hidden login field. Both login
   // paths read it from there: the email/password form submits it, and the wallet
   // flow reads its value at verify time. This field is static markup in
   // modal_login.html (always present, never re-rendered by the wallet bundle),
@@ -201,34 +103,40 @@ function swapLoginGate(event) {
   if (nextInput) {
     nextInput.value = event.currentTarget.getAttribute('href') || '';
   }
-  modal.open();
+  if (!dialog.open) dialog.showModal();
 }
 
 /**
  * Turn a ``?swap_error=<code>`` query param (set by a server-side swap redirect)
- * into a Materialize toast, then strip the param so a refresh doesn't repeat it.
+ * into an on-page notice, then strip the param so a refresh doesn't repeat it.
+ *
+ * This was `M.toast`, which silently did nothing once Materialize was removed
+ * -- the redirect happened and the reason for it was never shown.
  * @function showSwapErrorToast
  *
  */
 function showSwapErrorToast() {
   var params = new URLSearchParams(window.location.search);
   var code = params.get('swap_error');
-  if (!code) {
-    return;
+  if (code) {
+    var messages = {
+      unlinked: 'You can only swap from an address linked to your account.'
+    };
+    var notice = document.createElement('div');
+    notice.className = 'alert alert-error fixed bottom-4 left-1/2 z-50 w-max max-w-[90vw] -translate-x-1/2';
+    notice.setAttribute('role', 'alert');
+    notice.textContent = messages[code] || 'Swap is not available.';
+    document.body.appendChild(notice);
+    setTimeout(function () { notice.remove(); }, 6000);
+
+    params.delete('swap_error');
+    var query = params.toString();
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname + (query ? '?' + query : '') + window.location.hash
+    );
   }
-  var messages = {
-    unlinked: 'You can only swap from an address linked to your account.'
-  };
-  if (typeof M !== 'undefined' && M.toast) {
-    M.toast({ html: messages[code] || 'Swap is not available.' });
-  }
-  params.delete('swap_error');
-  var query = params.toString();
-  window.history.replaceState(
-    {},
-    document.title,
-    window.location.pathname + (query ? '?' + query : '') + window.location.hash
-  );
 }
 /**
  * Initialize cookie consent widget
@@ -327,10 +235,6 @@ function initializeCookieConsent() {
 if (typeof exports !== 'undefined') {
   module.exports = {
     mainSite,
-    checkMode,
-    toggleMode,
-    toggleText,
-    initLoginModalTabs,
     swapLoginGate,
     showSwapErrorToast
   };

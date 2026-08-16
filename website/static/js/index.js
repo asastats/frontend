@@ -102,7 +102,7 @@ function setProgress(event) {
  *
  */
 function createTextarea(value) {
-  return '<textarea id="id_addresses" name="addresses" class="materialize-textarea" autofocus="autofocus" placeholder="Enter up to five Algorand addresses" >' + value + '</textarea>';
+  return '<textarea id="id_addresses" name="addresses" class="textarea w-full [field-sizing:content]" rows="3" autofocus="autofocus" placeholder="Enter up to five Algorand addresses" >' + value + '</textarea>';
 }
 
 /**
@@ -114,7 +114,10 @@ function replaceTextarea() {
   var value = $('#id_address').val();
   $('.prefix').hide();
   $('#id_address').replaceWith(createTextarea(value));
-  M.textareaAutoResize($('#id_addresses'));
+  // `M.textareaAutoResize` grew the box as addresses were pasted in. CSS
+  // `field-sizing: content` does the same thing without a framework, and the
+  // textarea's `rows` is a usable floor where it is unsupported.
+
   updateBundle();
   $("#id_addresses").on('change', updateBundle);
   $('#id_addresses').focus();

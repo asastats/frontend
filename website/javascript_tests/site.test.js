@@ -5,10 +5,8 @@ const jquery = require('../static/js/jquery-2.2.4.min.js');
 
 window.$ = jquery;
 
-$.prototype.sidenav = jest.fn();
-$.prototype.modal = jest.fn();
-
-const materialize = require('../static/js/materialize.min.js');
+// No Materialize import and no plugin stubs: the framework is gone from the
+// project, so these suites run in the same bare environment a real page has.
 const site = require('../static/js/site.js');
 
 jest
@@ -30,24 +28,15 @@ afterEach(() => {
  * * * * * * * * * * * * * * * * * * * * * * * * * * *
  */
 describe("in rendered index html", function () {
-  describe("share button exist", function () {
+  describe("footer links exist", function () {
     it('for X/Twitter', function () {
-      const href = $(".scbtn.twitbtn").attr('href');
-      expect(href).toEqual(expect.stringContaining("x.com"));
+      expect($('a[href*="x.com"]').length).toBeGreaterThan(0);
     });
-    it('for LinkedIn', function () {
-      const href = $(".scbtn.dscrbtn").attr('href');
-      expect(href).toEqual(expect.stringContaining("discord.gg"));
+    it('for Discord', function () {
+      expect($('a[href*="discord.gg"]').length).toBeGreaterThan(0);
     });
     it('for Reddit', function () {
-      const href = $(".scbtn.rdtbtn").attr('href');
-      expect(href).toEqual(expect.stringContaining("reddit.com"));
-    });
-  });
-  describe("other buttons exist", function () {
-    it('for dark/bright mode', function () {
-      const href = $(".scbtn.brightbtn").attr('href');
-      expect(href).toEqual("#");
+      expect($('a[href*="reddit.com"]').length).toBeGreaterThan(0);
     });
   });
 });
@@ -62,68 +51,32 @@ describe("in SECTION: Initialization", function () {
 
   // mainSite
   describe("mainSite function", function () {
-    it('initializes sidenav', function () {
-      const spyFunc = jest.spyOn($.prototype, "sidenav");
-      spyFunc.mockClear();
-      const index = require('../static/js/site.js');
-      index.mainSite();
-      expect(spyFunc).toHaveBeenCalledWith();
-    });
-    it('checks localStorage', function () {
-      const spyFunc = jest.spyOn(localStorage, "getItem");
-      spyFunc.mockClear();
+    it('binds copy-to-clipboard', function () {
+      // The index fixture carries no `.copy` control, so one is added here.
+      document.body.insertAdjacentHTML(
+        "beforeend", '<a class="copy" href="#">Copy</a>'
+      );
       site.mainSite();
-      expect(spyFunc).toHaveBeenCalled();
+      expect(getEvents($(".copy")[0]).click[0].handler.name)
+        .toBe("copyToClipboard");
     });
-    it('binds click event on dark/bright toggle button', function () {
-      $(".dark-toggle").off("click");
+
+    it('delegates the swap gate from the document', function () {
       site.mainSite();
-      var events = getEvents($(".dark-toggle")[0]);
-      expect(events).not.toBe(undefined);
-      expect(events.click[0].handler.name).toBe("toggleMode");
+      var events = getEvents(document);
+      expect(events.click.some(function (e) {
+        return e.handler.name === "swapLoginGate";
+      })).toBe(true);
     });
 
-    // The other half of the `$.fn.sidenav` / `$.fn.modal` guards: pages on the
-    // DaisyUI base never load Materialize, so those jQuery plugins are simply
-    // not there. What matters is not that the calls are skipped but that
-    // mainSite REACHES ITS LAST LINE -- it runs inside jQuery's ready queue,
-    // and a callback that throws abandons the rest of the queue, taking every
-    // other page script down with it. That is not a hypothetical: it is how
-    // sorting and filtering on the home page came to be silently inert.
-    describe('without Materialize, as on a DaisyUI page', function () {
-      var sidenav;
-      var modal;
-
-      beforeEach(function () {
-        sidenav = $.fn.sidenav;
-        modal = $.fn.modal;
-        delete $.fn.sidenav;
-        delete $.fn.modal;
-      });
-
-      afterEach(function () {
-        $.fn.sidenav = sidenav;
-        $.fn.modal = modal;
-      });
-
-      it('does not throw', function () {
-        expect(function () { site.mainSite(); }).not.toThrow();
-      });
-
-      it('still binds everything declared after the guarded calls', function () {
-        // The index fixture carries no `.copy` control, so one is added here:
-        // copy-to-clipboard is bound five lines below the guarded calls and is
-        // the binding furthest down mainSite that has an element to bind to.
-        document.body.insertAdjacentHTML(
-          "beforeend", '<a class="copy" href="#">Copy</a>'
-        );
-        $(".dark-toggle").off("click");
-        site.mainSite();
-        expect(getEvents($(".dark-toggle")[0]).click[0].handler.name)
-          .toBe("toggleMode");
-        expect(getEvents($(".copy")[0]).click[0].handler.name)
-          .toBe("copyToClipboard");
-      });
+    // mainSite runs inside jQuery's ready queue, and a callback that throws
+    // abandons the rest of the queue -- taking every other page script down
+    // with it. That is how home-page sorting and filtering came to be silently
+    // inert. Materialize is gone from the project entirely now, so the point
+    // is that mainSite reaches its last line with nothing of it present.
+    it('does not throw with no Materialize on the page', function () {
+      expect(typeof window.M).toBe("undefined");
+      expect(function () { site.mainSite(); }).not.toThrow();
     });
   });
 });
@@ -140,13 +93,21 @@ describe("in SECTION: Proprietary widgets", function () {
   });
   // swapLoginGate
   describe("swapLoginGate function", function () {
-    function ensureModal() {
-      if (!document.getElementById("modalLogin")) {
+    // A native <dialog>, driven by authmodal.js. jsdom does not implement
+    // showModal/close, so they are supplied -- which is also what lets the
+    // test assert the dialog was opened rather than inspecting a widget
+    // instance that no longer exists.
+    function ensureDialog() {
+      var dialog = document.getElementById("modalLogin");
+      if (!dialog) {
         document.body.insertAdjacentHTML(
-          "beforeend",
-          '<div id="modalLogin" class="modal"></div>'
+          "beforeend", '<dialog id="modalLogin"></dialog>'
         );
+        dialog = document.getElementById("modalLogin");
       }
+      dialog.showModal = jest.fn(function () { dialog.open = true; });
+      dialog.close = jest.fn(function () { dialog.open = false; });
+      return dialog;
     }
     function addToggle() {
       document.body.insertAdjacentHTML(
@@ -154,23 +115,20 @@ describe("in SECTION: Proprietary widgets", function () {
         '<a class="id-swap-swap-toggle" href="/swap/ADDR/123/">Swap</a>'
       );
     }
-    it("opens the login modal when an anonymous visitor clicks Swap", function () {
-      ensureModal();
-      var openSpy = jest.fn();
-      jest.spyOn(M.Modal, "getInstance").mockReturnValue({ open: openSpy });
+    it("opens the login dialog when an anonymous visitor clicks Swap", function () {
+      var dialog = ensureDialog();
       addToggle();
       var event = $.Event("click");
       $(".id-swap-swap-toggle").trigger(event);
-      expect(openSpy).toHaveBeenCalled();
+      expect(dialog.showModal).toHaveBeenCalled();
       expect(event.isDefaultPrevented()).toBe(true);
     });
-    it("records the swap URL on the hidden modal login field", function () {
-      ensureModal();
+    it("records the swap URL on the hidden login field", function () {
+      ensureDialog();
       document.body.insertAdjacentHTML(
         "beforeend",
         '<input id="id_modal_login_next" name="next" value="" />'
       );
-      jest.spyOn(M.Modal, "getInstance").mockReturnValue({ open: jest.fn() });
       addToggle();
       $(".id-swap-swap-toggle").trigger($.Event("click"));
       expect(document.getElementById("id_modal_login_next").value).toBe(
@@ -178,39 +136,33 @@ describe("in SECTION: Proprietary widgets", function () {
       );
     });
     it("stages an empty next when the Swap link has no href", function () {
-      ensureModal();
+      ensureDialog();
       document.body.insertAdjacentHTML(
         "beforeend",
         '<input id="id_modal_login_next" name="next" value="stale" />'
       );
-      jest.spyOn(M.Modal, "getInstance").mockReturnValue({ open: jest.fn() });
       document.body.insertAdjacentHTML(
-        "beforeend",
-        '<a class="id-swap-swap-toggle">Swap</a>'
+        "beforeend", '<a class="id-swap-swap-toggle">Swap</a>'
       );
       $(".id-swap-swap-toggle").trigger($.Event("click"));
       expect(document.getElementById("id_modal_login_next").value).toBe("");
     });
-    it("ignores a Swap click for an authenticated visitor (no modal)", function () {
-      var modalEl = document.getElementById("modalLogin");
-      if (modalEl) {
-        modalEl.parentNode.removeChild(modalEl);
-      }
-      var getInstance = jest.spyOn(M.Modal, "getInstance");
+    it("lets the click navigate for an authenticated visitor", function () {
+      // No dialog is rendered for a signed-in user, so the link must be left
+      // alone -- swap_source redirects anonymous visitors to login anyway.
+      var dialog = document.getElementById("modalLogin");
+      if (dialog) dialog.parentNode.removeChild(dialog);
       addToggle();
       var event = $.Event("click");
       $(".id-swap-swap-toggle").trigger(event);
-      expect(getInstance).not.toHaveBeenCalled();
       expect(event.isDefaultPrevented()).toBe(false);
     });
     it("does not double-bind across mainSite calls", function () {
-      ensureModal();
-      var openSpy = jest.fn();
-      jest.spyOn(M.Modal, "getInstance").mockReturnValue({ open: openSpy });
+      var dialog = ensureDialog();
       site.mainSite(); // second call must not add a second delegated handler
       addToggle();
       $(".id-swap-swap-toggle").trigger($.Event("click"));
-      expect(openSpy).toHaveBeenCalledTimes(1);
+      expect(dialog.showModal).toHaveBeenCalledTimes(1);
     });
   });
   // showSwapErrorToast
@@ -218,49 +170,33 @@ describe("in SECTION: Proprietary widgets", function () {
     afterEach(function () {
       window.history.replaceState({}, "", "/");
     });
-    it("fires a toast and strips the param when swap_error is present", function () {
+    function notice() {
+      return document.querySelector('[role="alert"]');
+    }
+    it("renders a notice and strips the param when swap_error is present", function () {
       window.history.replaceState({}, "", "/ADDR/?swap_error=unlinked");
-      var toastSpy = jest.spyOn(M, "toast").mockImplementation(function () {});
       site.showSwapErrorToast();
-      expect(toastSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          html: expect.stringContaining("linked to your account"),
-        })
-      );
+      expect(notice()).not.toBeNull();
+      expect(notice().textContent).toContain("linked to your account");
       expect(window.location.search).toBe("");
     });
     it("uses a generic message for an unknown code", function () {
       window.history.replaceState({}, "", "/ADDR/?swap_error=whatever");
-      var toastSpy = jest.spyOn(M, "toast").mockImplementation(function () {});
       site.showSwapErrorToast();
-      expect(toastSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ html: "Swap is not available." })
-      );
+      expect(notice().textContent).toBe("Swap is not available.");
+    });
+    it("removes the notice after a while", function () {
+      jest.useFakeTimers();
+      window.history.replaceState({}, "", "/ADDR/?swap_error=unlinked");
+      site.showSwapErrorToast();
+      jest.advanceTimersByTime(6001);
+      expect(notice()).toBeNull();
+      jest.useRealTimers();
     });
     it("does nothing without swap_error", function () {
       window.history.replaceState({}, "", "/ADDR/");
-      var toastSpy = jest.spyOn(M, "toast").mockImplementation(function () {});
       site.showSwapErrorToast();
-      expect(toastSpy).not.toHaveBeenCalled();
-    });
-    it("strips the param and does not throw when M.toast is unavailable", function () {
-      window.history.replaceState({}, "", "/ADDR/?swap_error=unlinked");
-      var original = M.toast;
-      M.toast = undefined;
-      try {
-        expect(function () {
-          site.showSwapErrorToast();
-        }).not.toThrow();
-        expect(window.location.search).toBe("");
-      } finally {
-        M.toast = original;
-      }
-    });
-    it("keeps other query params while stripping swap_error", function () {
-      window.history.replaceState({}, "", "/ADDR/?swap_error=unlinked&x=1");
-      jest.spyOn(M, "toast").mockImplementation(function () {});
-      site.showSwapErrorToast();
-      expect(window.location.search).toBe("?x=1");
+      expect(notice()).toBeNull();
     });
   });
 });

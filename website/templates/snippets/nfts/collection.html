@@ -1,24 +1,38 @@
 {% load static %}
 {% load core_extras %}
-<li id="f{{ coll.name|slugify }}" class="fitem">
-  <div class="collapsible-header nft{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
-    <div class="nftleft col s6">
-      <span>&nbsp;{{ coll.amount|floatformat:'-4g' }}&nbsp;from&nbsp;</span><span class="unit">{{ coll.name }}</span>&nbsp;&nbsp;
+{% comment %}
+  One <details> per NFT collection. Same contract as the asset entries:
+  `id="f<slug>"` + `.fitem` for the filter and for `checkOpened`,
+  `.nft.item-header` for the summary address.js binds `showTimes` to, and
+  `.val`/`data-val` for the currency switch.
+
+  `.nfticon` thumbnails are hooks twice over -- address.js shows and hides them
+  when filtering, and builds the hover preview from `data-path`. The `nft`
+  class on the images is what `deferImages` collects, so the large image is
+  fetched only after the page has loaded.
+{% endcomment %}
+<details id="f{{ coll.name|slugify }}" class="fitem group rounded-box border border-base-300 bg-base-100">
+  <summary class="nft item-header cursor-pointer list-none p-3{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="nftleft min-w-0 flex-1">
+        <span>{{ coll.amount|floatformat:'-4g' }} from </span><span class="unit font-medium">{{ coll.name }}</span>
+      </div>
+      <div class="nftright flex-none text-right">
+        <span class="badge badge-ghost badge-sm align-middle">BETA</span>
+        <span class="val font-medium" data-val="{{ coll.value }}">{{ coll.value|floatformat:'2g' }} ALGO</span>
+      </div>
     </div>
-    <div class="nftmid col s12 center-align">
+    <div class="nftmid mt-3 flex flex-wrap gap-2">
       {% for row in coll.nfts %}
-        <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
+        <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon h-12 w-12 rounded object-cover" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
       {% endfor %}
     </div>
-    <div class="nftright col s6 right-align">
-      <small><sub>BETA</sub></small>&nbsp;<span class="val" data-val="{{ coll.value }}">{{ coll.value|floatformat:'2g' }} ALGO</span>
-    </div>
-  </div>
-  <div class="collapsible-body">
-    <ul class="collection">
+  </summary>
+  <div class="item-body border-t border-base-300 p-3">
+    <div class="space-y-3">
       {% for row in coll.nfts %}
         {% include "snippets/nfts/item.html" with row=row %}
       {% endfor %}
-    </ul>
+    </div>
   </div>
-</li>
+</details>

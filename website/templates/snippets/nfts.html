@@ -1,9 +1,12 @@
 {% load static %}
 {% load core_extras %}
-<div class="col s12">
-  <ul class="collapsible nftsec">
-    {% for coll in nftcollections %}
-      {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors %}
-    {% endfor %}
-  </ul>
+{% comment %}
+  Container for the NFT collections. `.nftsec` is what address.js reopens a
+  remembered collection inside, and `.section-list` is what the filter shows
+  and hides -- both are hooks, not styling.
+{% endcomment %}
+<div class="nftsec section-list mt-6 space-y-2">
+  {% for coll in nftcollections %}
+    {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors %}
+  {% endfor %}
 </div>

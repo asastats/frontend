@@ -53,10 +53,15 @@ window.onload = initAddress;
  *
  */
 function mainAddress() {
-  $('.collapsible').collapsible();
-  $('.pricetip').tooltip();
-  $('.val').tooltip({ "enterDelay": 800 });
-  $(".collapsible-header.consolidated").on("click", onConsolidatedClick);
+  // The accordions are native <details> elements now, and the tooltips are
+  // CSS-only, so there is nothing left to initialise here: no
+  // `.collapsible()`, no `.tooltip()`, and no Materialize on this page at all.
+  // Sections open and close without JavaScript, which also means they keep
+  // working if this script fails to load.
+  // `toggle` fires on the <details>, not on its <summary>, and it fires for
+  // keyboard and programmatic opens too -- which a click handler on the
+  // header would miss.
+  $("#id-cons").on("toggle", onConsolidatedClick);
   $(".floor").find("input[type=checkbox]").on("change", toggleNftFloor);
   $(".switch").find("input[type=checkbox]").on("change", toggleCurrency);
   $(".refresh").find("input[type=checkbox]").on("change", toggleRefresh);
@@ -75,8 +80,8 @@ function mainAddress() {
   setNftFloor(localStorage.getItem('nftfloor') || '');
   checkConsolidated(localStorage.getItem('cons') || '');
   $("#filter").on("keypress", filterChange);
-  $(".nft.collapsible-header").on("click", showTimes);
-  $(".token.collapsible-header").on("click", showExpiry);
+  $(".nft.item-header").on("click", showTimes);
+  $(".token.item-header").on("click", showExpiry);
   $(".nfticon").on("mouseover", nftShowTooltip);
   $(".nfticon").on("click", nftHideTooltip);
   setInterval(timerIncrement, 1000);
@@ -190,7 +195,7 @@ function getNodesThatContain(text) {
  * @param {Array.Number} matches
  */
 function showMatchedNodes(matches) {
-  $(".collapsible").not(".consolidated").hide();
+  $(".section-list").hide();
   $(".fitem").hide();
   $(".nfticon").hide();
   if (matches.length === 0)
@@ -205,8 +210,8 @@ function showMatchedNodes(matches) {
   common.forEach(function (id, index) {
     $("#" + id).show();
     $("#" + id).parents(".fitem").show();
-    $("#" + id).parents(".collapsible").show();
-    $("#" + id).parents(".collapsible").find(".nfticon").each(function (idx) {
+    $("#" + id).parents(".section-list").show();
+    $("#" + id).parents(".section-list").find(".nfticon").each(function (idx) {
       if ($(this).attr("id") === "t" + id)
         $(this).show();
     });
@@ -225,7 +230,7 @@ function filterChange(evt) {
     var filter = $("#filter").val();
     if (filter == "") {
       $(".fitem").show();
-      $(".collapsible").not(".consolidated").show();
+      $(".section-list").show();
       $(".nfticon").show();
     } else {
       var matches = [];
@@ -776,9 +781,11 @@ function populatePieCharts() {
  *
  */
 function onConsolidatedClick(e) {
-  var body = document.getElementById('id-cons-body');
-  var value = body.style.display == "block" ? 'h' : '';
-  localStorage.setItem('cons', value);
+  // `<details>.open` is the state, and it is already updated by the time
+  // `toggle` fires. The old check read `style.display`, which only ever had a
+  // value because Materialize wrote one inline.
+  var section = document.getElementById('id-cons');
+  localStorage.setItem('cons', section && section.open ? '' : 'h');
 }
 
 
@@ -789,8 +796,10 @@ function onConsolidatedClick(e) {
 function checkConsolidated(value) {
   if (value === 'h') {
     var elem = document.getElementById('id-cons');
-    var instance = M.Collapsible.getInstance(elem);
-    instance.close(0);
+    // Closing a <details> is setting a property; there is no instance to
+    // fetch and nothing to animate.
+    if (elem)
+      elem.open = false;
   }
 }
 
@@ -877,7 +886,9 @@ function toggleNftFloor(e) {
  *
  */
 function nftHideTooltip(elem) {
-  $(".nftpreview").tooltip('close');
+  var preview = document.getElementById("id-nft-preview");
+  if (preview)
+    preview.remove();
 }
 
 
@@ -888,11 +899,26 @@ function nftHideTooltip(elem) {
  *
  */
 function nftShowTooltip(elem) {
-  $(this).addClass("tooltiped nftpreview");
-  $(".nftpreview").tooltip({
-    exitDelay: 0,
-    unsafeHTML: "<img src='" + this.dataset.path + "' >"
-  });
+  nftHideTooltip();
+  if (!this.dataset.path)
+    return;
+
+  // Built as elements rather than an HTML string. The old call handed
+  // `unsafeHTML` a concatenated `<img src='...'>`, so an engine-supplied path
+  // containing a quote could close the attribute and inject markup. Setting
+  // `.src` cannot do that whatever the value.
+  var preview = document.createElement("div");
+  preview.id = "id-nft-preview";
+  preview.className = "nftpreview";
+  var image = document.createElement("img");
+  image.src = this.dataset.path;
+  image.alt = this.alt || "";
+  preview.appendChild(image);
+
+  var box = this.getBoundingClientRect();
+  preview.style.top = (box.bottom + window.scrollY + 8) + "px";
+  preview.style.left = (box.left + window.scrollX) + "px";
+  document.body.appendChild(preview);
 }
 
 
@@ -946,7 +972,7 @@ function timeEntry(interval) {
 function showExpiry(elem) {
   var interval;
   var now = Date.now();
-  $(this).siblings(".collapsible-body").find("span.epoch").each(function () {
+  $(this).siblings(".item-body").find("span.epoch").each(function () {
     interval = parseInt(this.dataset.epoch) - now / 1000;
     isEnded = parseInt(this.dataset.epoch) - now / 1000;
     if (this.dataset.ended) {
@@ -970,7 +996,7 @@ function showExpiry(elem) {
 function showTimes(elem) {
   var interval;
   var now = Date.now();
-  $(this).siblings(".collapsible-body").find("span.epoch").each(function () {
+  $(this).siblings(".item-body").find("span.epoch").each(function () {
     interval = now / 1000 - parseInt(this.dataset.epoch);
     this.innerHTML = timeEntry(interval) + " ago on ";
   });
@@ -1121,8 +1147,12 @@ function toggleCurrency() {
  *
  */
 function toggleDist(event) {
+  // `hidden` is display:none under both frameworks, so the toggle survived
+  // the migration untouched. `z-depth-1` was Materialize's shadow; `shadow`
+  // is the DaisyUI/Tailwind one, and the pair is swapped rather than added
+  // so an expanded row reads as raised and a collapsed one as flush.
   $("#" + this.dataset.distid).toggleClass("hidden");
-  $(this).parent().toggleClass("z-depth-1 asar");
+  $(this).parent().toggleClass("shadow asar");
 }
 
 
@@ -1144,7 +1174,7 @@ function toggleTotalNoNft() {
  */
 
 /**
- * Check if a collapsible section should be opened
+ * Check if a section entry should be reopened
  *
  * @param {String} section
  *
@@ -1152,11 +1182,14 @@ function toggleTotalNoNft() {
 function checkOpened(section) {
   var id = localStorage.getItem("open" + section) || ''
   if (id != '') {
-    $('.collapsible.' + section + 'sec').children().each(function (index) {
+    // The entries are <details> children of the section container, so the one
+    // to reopen is addressed by id and opened directly -- no index into a
+    // widget's internal list.
+    $('.' + section + 'sec').children().each(function () {
       if ($(this).attr("id") == id) {
-        $('.collapsible.' + section + 'sec').collapsible('open', index);
+        this.open = true;
         localStorage.removeItem('open' + section);
-        return;
+        return false;
       }
     });
   }
@@ -1168,10 +1201,10 @@ function checkOpened(section) {
  *
  */
 function reloadPage() {
-  $('.collapsible.asasec').find('.fitem.active').each(function () {
+  $('.asasec').find('.fitem[open]').each(function () {
     localStorage.setItem('openasa', $(this).attr("id"));
   });
-  $('.collapsible.nftsec').find('.fitem.active').each(function () {
+  $('.nftsec').find('.fitem[open]').each(function () {
     localStorage.setItem('opennft', $(this).attr("id"));
   });
   window.location.reload();
