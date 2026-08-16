@@ -13,6 +13,7 @@
 - [manageAdapters](manageAdapters/README.md)
 - [manageBootstrap](manageBootstrap/README.md)
 - [manageBridge](manageBridge/README.md)
+- [notify](notify/README.md)
 - [swapBootstrap](swapBootstrap/README.md)
 - [swapBridge](swapBridge/README.md)
 - [walletComponent](walletComponent/README.md)
