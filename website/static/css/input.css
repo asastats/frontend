@@ -37,6 +37,34 @@
 @source "../../templates";
 @source "../../widgets";
 
+/* ------------------------------------------------------------------ themes
+   Third-party themes, vendored under themes/. Each file keeps the author's
+   `/*! ... *\/` banner, but Lightning CSS strips even preserve-comments when
+   minifying, so the built stylesheet cannot carry attribution on its own --
+   build-tailwind.sh prepends it to style.tw.css instead, THEMES.md records it
+   in the repo, and the appearance picker shows it to the reader.
+
+   They are CC BY 4.0: attribution is a licence condition, not a courtesy.
+   Deleting a theme means deleting its @import here, its file, and its entry
+   in settings.AVAILABLE_THEMES. */
+@import "./themes/andromeda.css";
+@import "./themes/ayudark.css";
+@import "./themes/catppuccin.css";
+@import "./themes/everforest.css";
+@import "./themes/flexoki.css";
+@import "./themes/githubdark.css";
+@import "./themes/githublight.css";
+@import "./themes/gruvbox.css";
+@import "./themes/kanagawa.css";
+@import "./themes/monokai.css";
+@import "./themes/nightfox.css";
+@import "./themes/nightowl.css";
+@import "./themes/onedarkpro.css";
+@import "./themes/rosepine.css";
+@import "./themes/solarized.css";
+@import "./themes/tokyonight.css";
+@import "./themes/vscode.css";
+
 @plugin "./daisyui.mjs" {
   /* Stock alternates offered in the picker, alongside the two `asastats`
      themes registered below. Stock `light` and `dark` are deliberately absent:
@@ -47,7 +75,8 @@
      is not built here renders an unstyled page. There is a test for it:
      core.tests.test_context_processors.
      ...every_offered_theme_is_built */
-  themes: nord, dim, abyss, corporate;
+  themes: nord, dim, abyss, corporate,
+    retro, cyberpunk, valentine, halloween, garden, aqua, lofi, luxury, dracula, autumn, business, lemonade, silk;
 }
 
 /* --------------------------------------------------------------- brand light

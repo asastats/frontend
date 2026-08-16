@@ -53,6 +53,10 @@ def global_constants(request):
         "DISCORD_INVITE": settings.DISCORD_INVITE,
         "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
         "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
+        "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
+        # Named in the picker. Several themes are third-party and
+        # CC BY 4.0, which makes the credit a licence condition.
+        "THEME_ATTRIBUTION": settings.THEME_ATTRIBUTION,
     }
 
 

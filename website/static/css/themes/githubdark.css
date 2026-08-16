@@ -1,0 +1,40 @@
+/*!
+ * Author: Dachi — https://github.com/dachinat
+ * License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+ * Repo: https://github.com/dachinat/daisyui-themes
+ */
+
+@plugin "../daisyui-theme.mjs" {
+    name: "githubdark";
+    default: false;
+    prefersdark: false;
+    color-scheme: "dark";
+    --color-base-100: #0f1317;
+    --color-base-200: #161b22;
+    --color-base-300: #21252c;
+    --color-base-content: #dbe1e6;
+    --color-primary: #106cd4;
+    --color-primary-content: oklch(96% 0.018 272.314);
+    --color-secondary: #ac81e9;
+    --color-secondary-content: oklch(94% 0.028 342.258);
+    --color-accent: #36b4be;
+    --color-accent-content: oklch(38% 0.063 188.416);
+    --color-neutral: #5298e9;
+    --color-neutral-content: oklch(92% 0.004 286.32);
+    --color-info: #a2d4e7;
+    --color-info-content: oklch(29% 0.066 243.157);
+    --color-success: #2dac4a;
+    --color-success-content: #eee8d5;
+    --color-warning: #dfb457;
+    --color-warning-content: oklch(41% 0.112 45.904);
+    --color-error: #e9726a;
+    --color-error-content: oklch(27% 0.105 12.094);
+    --radius-selector: 0.5rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.5rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+}

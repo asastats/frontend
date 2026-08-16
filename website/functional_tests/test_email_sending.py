@@ -1,8 +1,19 @@
-import pytest
 from django.core import mail
+from django.test import override_settings
 from selenium.webdriver.common.by import By
 
 from .base import FunctionalTest
+
+#: allauth throttles confirmation emails per address -- `confirm_email` defaults
+#: to "1/180s/key". The resend test adds an address (which sends the first
+#: confirmation) and immediately asks for another, so the second is refused and
+#: `mail.outbox` stays at one. Nothing is broken: the limit is doing its job,
+#: and the test was written before allauth grew it.
+#:
+#: Raising it for the test keeps the assertion honest -- the alternative,
+#: asserting one email, would pass equally well if resending were removed
+#: altogether. The other limits are left exactly as configured.
+UNTHROTTLED_CONFIRMATIONS = {"confirm_email": "10/m/key"}
 
 
 class EmailConfirmationTest(FunctionalTest):
@@ -41,6 +52,7 @@ class EmailConfirmationTest(FunctionalTest):
         self.sleep()
         self.assertIn("/home", self.browser.current_url)
 
+    @override_settings(ACCOUNT_RATE_LIMITS=UNTHROTTLED_CONFIRMATIONS)
     def test_email_verification_resending(self):
         # Dominic signs up
         email = "dominic@wayne.com"
@@ -90,8 +102,15 @@ class EmailConfirmationTest(FunctionalTest):
         link = self.browser.find_element(By.LINK_TEXT, email)
         self.assertEqual(link.get_attribute("href"), "mailto:{}".format(email))
 
-    @pytest.mark.skip(reason="This test fails occasionaly without a proper reason.")
     def test_email_removing(self):
+        # Previously skipped as "fails occasionaly without a proper reason".
+        # The reason turned out not to be in this test: the module's
+        # intermittent failure is a webdriver page-load hang (a 120s read
+        # timeout inside `browser.get`) that lands on whichever test runs
+        # first, and it was `test_email_confirmation` when measured. Run on
+        # its own this test passed 5/5 and the whole module 4/5, with the one
+        # failure being that hang in another test's setup.
+        #
         # Sergei signs up
         email = "sergei@wayne.com"
         self.create_cookie_and_go_to_bundlename_add_page(email)

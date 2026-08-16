@@ -101,6 +101,8 @@ class TestCoreContextProcessors:
             "DISCORD_INVITE": settings.DISCORD_INVITE,
             "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
             "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
+            "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
+            "THEME_ATTRIBUTION": settings.THEME_ATTRIBUTION,
         }
 
     # # AVAILABLE_THEMES
@@ -112,15 +114,21 @@ class TestCoreContextProcessors:
         the two cannot import from each other. A theme offered but not built
         renders as an unstyled page, so the drift is caught here instead.
         """
-        source = (
-            Path(settings.STATICFILES_DIRS[0]) / "css" / "input.css"
-        ).read_text()
+        css_dir = Path(settings.STATICFILES_DIRS[0]) / "css"
+        source = (css_dir / "input.css").read_text()
+        # Vendored themes are registered in their own files under themes/ and
+        # pulled in with `@import`, so the imports have to be followed -- a
+        # theme is just as unbuilt if the file exists but nothing imports it.
+        for relative in re.findall(r'@import\s+"([^"]+\.css)"', source):
+            imported = (css_dir / relative).resolve()
+            if imported.is_file():
+                source += "\n" + imported.read_text()
         # Comments first: a `/* ... */` in the themes list fuses to the name
         # that follows it, which silently swallowed "light" when this was
         # written the other way round.
         source = re.sub(r"/\*.*?\*/", "", source, flags=re.S)
         # `themes: a, b, c;` inside the daisyui plugin block, plus each
-        # `@plugin "./daisyui-theme.mjs" { name: "x"; ... }` registration.
+        # `@plugin ".../daisyui-theme.mjs" { name: "x"; ... }` registration.
         listed = re.search(r"themes:(.*?);", source, re.S)
         built = {
             name.strip()
@@ -131,7 +139,86 @@ class TestCoreContextProcessors:
 
         assert set(settings.AVAILABLE_THEMES) <= built, (
             "offered in settings.AVAILABLE_THEMES but not registered in "
-            f"input.css: {sorted(set(settings.AVAILABLE_THEMES) - built)}"
+            f"input.css or an imported theme file: "
+            f"{sorted(set(settings.AVAILABLE_THEMES) - built)}"
+        )
+
+    def test_core_context_processors_every_theme_is_in_the_right_group(self):
+        """A theme must sit under the heading its own `color-scheme` declares.
+
+        The picker groups by light and dark, and the grouping is hand-written
+        in settings while the truth lives in each theme's CSS. Getting one
+        wrong is not a crash -- a dark theme filed under Light simply looks
+        wrong to whoever picks it -- so it is checked against the compiled
+        stylesheet, which is where every theme, ours and stock and vendored
+        alike, ends up declaring its scheme.
+        """
+        css = (
+            Path(settings.STATICFILES_DIRS[0]) / "css" / "style.tw.css"
+        ).read_text()
+        declared = {}
+        for match in re.finditer(
+            r'\[data-theme=(?:"([^"]+)"|([\w-]+))\]\s*\{([^}]*)\}', css
+        ):
+            name = match.group(1) or match.group(2)
+            scheme = re.search(r"color-scheme:\s*([a-z]+)", match.group(3))
+            if scheme and name not in declared:
+                declared[name] = scheme.group(1)
+
+        assert declared, (
+            "no themes found in style.tw.css -- has it been built? "
+            "run ./build-tailwind.sh"
+        )
+
+        misfiled = {
+            theme: (group, declared[theme])
+            for group, themes in settings.AVAILABLE_THEMES_BY_SCHEME.items()
+            for theme in themes
+            if theme in declared and declared[theme] != group.lower()
+        }
+        assert not misfiled, (
+            "themes grouped under the wrong heading in "
+            "settings.AVAILABLE_THEMES_BY_SCHEME, as "
+            "theme: (grouped as, actually declares) -- "
+            f"{misfiled}"
+        )
+
+    def test_core_context_processors_theme_groups_have_no_duplicates(self):
+        """Guard the guard: the flat list is derived from the groups.
+
+        A theme listed in both groups would render twice in the picker and
+        would make every count-based assertion here quietly meaningless.
+        """
+        flat = settings.AVAILABLE_THEMES
+        assert len(flat) == len(set(flat)), (
+            "a theme appears in more than one group: "
+            f"{sorted({t for t in flat if flat.count(t) > 1})}"
+        )
+
+    def test_core_context_processors_attributed_themes_are_offered(self):
+        """Every theme we credit must actually be one we ship.
+
+        The attribution is a licence condition, so it has to describe reality:
+        crediting a theme that was deleted is misleading, and shipping one of
+        theirs without listing it here means the picker never credits it.
+        """
+        attributed = set(settings.THEME_ATTRIBUTION["themes"])
+        offered = set(settings.AVAILABLE_THEMES)
+
+        assert attributed <= offered, (
+            "credited in settings.THEME_ATTRIBUTION but no longer offered: "
+            f"{sorted(attributed - offered)}"
+        )
+
+        vendored = {
+            path.stem
+            for path in (
+                Path(settings.STATICFILES_DIRS[0]) / "css" / "themes"
+            ).glob("*.css")
+        }
+        assert vendored <= attributed, (
+            "vendored under static/css/themes/ but not credited in "
+            f"settings.THEME_ATTRIBUTION: {sorted(vendored - attributed)}"
         )
 
     # # walletconnect

@@ -1,0 +1,40 @@
+/*!
+ * Author: Dachi — https://github.com/dachinat
+ * License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+ * Repo: https://github.com/dachinat/daisyui-themes
+ */
+
+@plugin "../daisyui-theme.mjs" {
+    name: "gruvbox";
+    default: false;
+    prefersdark: false;
+    color-scheme: "dark";
+    --color-base-100: #282828;
+    --color-base-200: #1d2021;
+    --color-base-300: #3c3836;
+    --color-base-content: #fbf1c7;
+    --color-primary: #458588;
+    --color-primary-content: oklch(97% 0.014 254.604);
+    --color-secondary: #b16286;
+    --color-secondary-content: oklch(98% 0.001 106.423);
+    --color-accent: #d3869b;
+    --color-accent-content: oklch(97% 0.014 254.604);
+    --color-neutral: #d65d0e;
+    --color-neutral-content: oklch(98% 0.026 102.212);
+    --color-info: #83a598;
+    --color-info-content: oklch(29% 0.066 243.157);
+    --color-success: oklch(76% 0.177 163.223);
+    --color-success-content: oklch(26% 0.051 172.552);
+    --color-warning: #fabd2f;
+    --color-warning-content: oklch(28% 0.066 53.813);
+    --color-error: #fb4954;
+    --color-error-content: oklch(25% 0.092 26.042);
+    --radius-selector: 0.25rem;
+    --radius-field: 0.25rem;
+    --radius-box: 0rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 2px;
+    --depth: 1;
+    --noise: 0;
+}

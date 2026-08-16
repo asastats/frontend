@@ -1,0 +1,40 @@
+/*!
+ * Author: Dachi — https://github.com/dachinat
+ * License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+ * Repo: https://github.com/dachinat/daisyui-themes
+ */
+
+@plugin "../daisyui-theme.mjs" {
+    name: "ayudark";
+    default: false;
+    prefersdark: false;
+    color-scheme: "dark";
+    --color-base-100: #10121d;
+    --color-base-200: #20232f;
+    --color-base-300: #1a1c29;
+    --color-base-content: #b6b5b8;
+    --color-primary: #e39f4c;
+    --color-primary-content: oklch(98% 0.019 200.873);
+    --color-secondary: #bc94e8;
+    --color-secondary-content: oklch(98% 0.022 95.277);
+    --color-accent: #1e222d;
+    --color-accent-content: oklch(98% 0.001 106.423);
+    --color-neutral: #4dace5;
+    --color-neutral-content: oklch(98% 0.003 247.858);
+    --color-info: #b5b5b8;
+    --color-info-content: oklch(97% 0.013 236.62);
+    --color-success: #75c55c;
+    --color-success-content: oklch(98% 0.014 180.72);
+    --color-warning: oklch(70% 0.213 47.604);
+    --color-warning-content: oklch(98% 0.016 73.684);
+    --color-error: #d7646e;
+    --color-error-content: oklch(96% 0.015 12.422);
+    --radius-selector: 0.25rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.25rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 1;
+    --noise: 0;
+}

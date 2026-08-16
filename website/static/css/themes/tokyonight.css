@@ -1,0 +1,40 @@
+/*!
+ * Author: Dachi — https://github.com/dachinat
+ * License: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+ * Repo: https://github.com/dachinat/daisyui-themes
+ */
+
+@plugin "../daisyui-theme.mjs" {
+    name: "tokyonight";
+    default: false;
+    prefersdark: false;
+    color-scheme: "dark";
+    --color-base-100: rgb(22 22 30);
+    --color-base-200: rgb(18 18 24);
+    --color-base-300: rgb(36 40 59);
+    --color-base-content: rgb(169 177 214);
+    --color-primary: rgb(61 89 161);
+    --color-primary-content: rgb(122 162 247);
+    --color-secondary: rgb(187 154 247);
+    --color-secondary-content: oklch(94% 0.028 342.258);
+    --color-accent: rgb(217 0 105);
+    --color-accent-content: oklch(38% 0.063 188.416);
+    --color-neutral: #073642;
+    --color-neutral-content: oklch(92% 0.004 286.32);
+    --color-info: rgb(122 162 247);
+    --color-info-content: oklch(29% 0.066 243.157);
+    --color-success: rgb(26 188 156);
+    --color-success-content: oklch(37% 0.077 168.94);
+    --color-warning: rgb(224 175 104);
+    --color-warning-content: oklch(41% 0.112 45.904);
+    --color-error: rgb(219 75 75);
+    --color-error-content: oklch(27% 0.105 12.094);
+    --radius-selector: 0.5rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.5rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1.5px;
+    --depth: 0;
+    --noise: 0;
+}

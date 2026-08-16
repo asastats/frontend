@@ -309,26 +309,95 @@ MEDIUM_NAME = get_env_variable("MEDIUM_NAME", "@asastats")
 DISCORD_INVITE = get_env_variable("DISCORD_INVITE", "Vjx7w7pAC7")
 GITHUB_ORGANIZATION = get_env_variable("GITHUB_ORGANIZATION", "asastats")
 
-# Themes offered by the appearance picker, in the order they are listed. The
-# first two are ours, built from the swap modal's tokens; the rest are stock
-# DaisyUI. This list drives the picker only -- a theme must ALSO be registered
-# in static/css/input.css or it will have no CSS to apply. Keep the two in step;
-# ``core.tests.test_context_processors`` asserts they match.
+# Themes offered by the appearance picker, grouped by the `color-scheme` each
+# theme declares for itself. The grouping is presentation only -- the picker
+# renders a heading per group -- but it is not guesswork: every entry was read
+# out of the compiled stylesheet, and
+# ``core.tests.test_context_processors.
+# ...every_theme_is_in_the_group_matching_its_color_scheme``
+# re-reads it, so a theme filed under the wrong heading fails the suite rather
+# than looking merely odd.
+#
+# Within each group ours comes first, then stock DaisyUI, then the vendored
+# third-party set. A theme must ALSO be registered in static/css/input.css or
+# it has no CSS to apply; ``test_core_context_processors`` asserts that too.
+AVAILABLE_THEMES_BY_SCHEME = {
+    "Light": [
+        "asastats",
+        "nord",
+        "corporate",
+        "retro",
+        "valentine",
+        "garden",
+        "lofi",
+        "autumn",
+        "lemonade",
+        "silk",
+        "cyberpunk",
+        "githublight",
+    ],
+    "Dark": [
+        "asastats-dark",
+        "dim",
+        "abyss",
+        "halloween",
+        "aqua",
+        "luxury",
+        "dracula",
+        "business",
+        "andromeda",
+        "ayudark",
+        "catppuccin",
+        "everforest",
+        "flexoki",
+        "githubdark",
+        "gruvbox",
+        "kanagawa",
+        "monokai",
+        "nightfox",
+        "nightowl",
+        "onedarkpro",
+        "rosepine",
+        "solarized",
+        "tokyonight",
+        "vscode",
+    ],
+}
+
+# Flat list, kept for everything that does not care about the grouping -- the
+# guard tests, and `theme.js` deciding whether a saved value is still offered.
 AVAILABLE_THEMES = [
-    # Ours, built from the swap modal's tokens. The first is the default; the
-    # second is what a dark-preferring browser gets before any choice is made.
-    "asastats",
-    "asastats-dark",
-    # A short set of stock DaisyUI alternates. Each is here because it differs
-    # in character rather than merely in shade: a muted light, a soft dark, a
-    # maximum-contrast dark, and a plain high-legibility light. Stock "light"
-    # and "dark" are deliberately absent -- they are DaisyUI's own greys, and
-    # the brand pair already fills both roles.
-    "nord",
-    "dim",
-    "abyss",
-    "corporate",
+    theme for group in AVAILABLE_THEMES_BY_SCHEME.values() for theme in group
 ]
+
+# Themes that are not ours, keyed by theme name. The picker renders a credit
+# from this, which is how the CC BY attribution reaches the reader.
+THEME_ATTRIBUTION = {
+    "author": "Dachi",
+    "author_url": "https://github.com/dachinat",
+    "source_url": "https://github.com/dachinat/daisyui-themes",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "themes": [
+        "andromeda",
+        "ayudark",
+        "catppuccin",
+        "everforest",
+        "flexoki",
+        "githubdark",
+        "githublight",
+        "gruvbox",
+        "kanagawa",
+        "monokai",
+        "nightfox",
+        "nightowl",
+        "onedarkpro",
+        "rosepine",
+        "solarized",
+        "tokyonight",
+        "vscode",
+    ],
+}
 
 # --- Rotated secrets ---
 SIMPLE_JWT_KEY = get_env_variable("SIMPLE_JWT_KEY", "")

@@ -5,6 +5,17 @@
 
   A <details> rather than a JS dropdown: it opens without scripting, and
   theme.js only has to record the choice.
+
+  Grouped by light and dark, because 36 themes in one flat list is more than
+  anyone can scan and the first thing a reader wants to narrow by is which of
+  the two they are after. The grouping comes from the `color-scheme` each theme
+  declares for itself, not from a judgement made here.
+
+  The credit at the foot of the list is not decoration: several themes are
+  third-party and CC BY 4.0, which requires the author, the source and the
+  licence to be named wherever the work is used. This is the copy a reader can
+  actually see; the built stylesheet and THEMES.md carry the same notice for
+  anyone reading the code instead.
 {% endcomment %}
 <details class="dropdown dropdown-end flex-none">
   <summary class="btn btn-ghost btn-sm" aria-label="Appearance">
@@ -16,12 +27,22 @@
   </summary>
   <ul class="dropdown-content z-10 mt-2 max-h-96 w-52 overflow-y-auto rounded-box bg-base-100 p-2 shadow"
       id="id-theme-list">
-    {% for theme in AVAILABLE_THEMES %}
+    {% for group, themes in AVAILABLE_THEMES_BY_SCHEME.items %}
+    <li class="menu-title px-2 pt-2 text-xs uppercase tracking-wide">{{ group }}</li>
+    {% for theme in themes %}
     <li>
       <input type="radio" name="theme-dropdown" value="{{ theme }}"
              class="theme-controller btn btn-sm btn-block btn-ghost justify-start"
              aria-label="{{ theme }}">
     </li>
     {% endfor %}
+    {% endfor %}
+    {% if THEME_ATTRIBUTION.themes %}
+    <li class="mt-2 border-t border-base-300 px-2 pt-2 text-xs text-base-content/60">
+      Some themes by
+      <a class="link" href="{{ THEME_ATTRIBUTION.author_url }}" target="_blank" rel="noopener">{{ THEME_ATTRIBUTION.author }}</a>,
+      <a class="link" href="{{ THEME_ATTRIBUTION.license_url }}" target="_blank" rel="noopener">{{ THEME_ATTRIBUTION.license }}</a>
+    </li>
+    {% endif %}
   </ul>
 </details>
