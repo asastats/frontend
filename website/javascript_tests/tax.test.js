@@ -61,6 +61,41 @@ describe("in SECTION: Initialization", function () {
       expect(getEvents($("#process_form")[0]).submit[0].handler.name)
         .toBe("disableProcessSubmit");
     });
+
+    // The other half of the `$.fn.tooltip` guard. export.html is on the
+    // DaisyUI base, which never loads Materialize, so the plugin is absent --
+    // and the three bindings above are declared AFTER the tooltip call. An
+    // unguarded throw here runs inside jQuery's ready queue, so it would take
+    // out those bindings and every later ready callback on the page with them.
+    describe('without Materialize, as on the DaisyUI base', function () {
+      var tooltip;
+
+      beforeEach(function () {
+        tooltip = $.fn.tooltip;
+        delete $.fn.tooltip;
+      });
+
+      afterEach(function () {
+        $.fn.tooltip = tooltip;
+      });
+
+      it('does not throw', function () {
+        expect(function () { tax.mainTax(); }).not.toThrow();
+      });
+
+      it('still binds everything declared after the tooltip call', function () {
+        $("#download").off("click");
+        $("#back").off("click");
+        $("#process_form").off("submit");
+        tax.mainTax();
+        expect(getEvents($("#download")[0]).click[0].handler.name)
+          .toBe("removeError");
+        expect(getEvents($("#back")[0]).click[0].handler.name)
+          .toBe("setProgress");
+        expect(getEvents($("#process_form")[0]).submit[0].handler.name)
+          .toBe("disableProcessSubmit");
+      });
+    });
   });
 });
 

@@ -82,6 +82,49 @@ describe("in SECTION: Initialization", function () {
       expect(events).not.toBe(undefined);
       expect(events.click[0].handler.name).toBe("toggleMode");
     });
+
+    // The other half of the `$.fn.sidenav` / `$.fn.modal` guards: pages on the
+    // DaisyUI base never load Materialize, so those jQuery plugins are simply
+    // not there. What matters is not that the calls are skipped but that
+    // mainSite REACHES ITS LAST LINE -- it runs inside jQuery's ready queue,
+    // and a callback that throws abandons the rest of the queue, taking every
+    // other page script down with it. That is not a hypothetical: it is how
+    // sorting and filtering on the home page came to be silently inert.
+    describe('without Materialize, as on a DaisyUI page', function () {
+      var sidenav;
+      var modal;
+
+      beforeEach(function () {
+        sidenav = $.fn.sidenav;
+        modal = $.fn.modal;
+        delete $.fn.sidenav;
+        delete $.fn.modal;
+      });
+
+      afterEach(function () {
+        $.fn.sidenav = sidenav;
+        $.fn.modal = modal;
+      });
+
+      it('does not throw', function () {
+        expect(function () { site.mainSite(); }).not.toThrow();
+      });
+
+      it('still binds everything declared after the guarded calls', function () {
+        // The index fixture carries no `.copy` control, so one is added here:
+        // copy-to-clipboard is bound five lines below the guarded calls and is
+        // the binding furthest down mainSite that has an element to bind to.
+        document.body.insertAdjacentHTML(
+          "beforeend", '<a class="copy" href="#">Copy</a>'
+        );
+        $(".dark-toggle").off("click");
+        site.mainSite();
+        expect(getEvents($(".dark-toggle")[0]).click[0].handler.name)
+          .toBe("toggleMode");
+        expect(getEvents($(".copy")[0]).click[0].handler.name)
+          .toBe("copyToClipboard");
+      });
+    });
   });
 });
 
