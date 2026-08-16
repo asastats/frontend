@@ -21,8 +21,17 @@ $(mainSite);
  *
  */
 function mainSite() {
-  $('.sidenav').sidenav();
-  $('.modal').modal();
+  // `.sidenav()` and `.modal()` are jQuery plugins installed by Materialize,
+  // not calls on the `M` object, so the `typeof M` guards further down this
+  // file do not cover them. Pages on the DaisyUI base never load Materialize,
+  // and an unguarded call here throws inside jQuery's ready queue -- which
+  // abandons the queue, so every ready callback registered after this one
+  // silently never runs. That is how sorting and filtering on the home page
+  // came to be inert while the page itself looked perfectly healthy.
+  if ($.fn.sidenav)
+    $('.sidenav').sidenav();
+  if ($.fn.modal)
+    $('.modal').modal();
   initLoginModalTabs();
   checkMode();
   if (isDark())
@@ -86,7 +95,13 @@ function copyToClipboard(event) {
  *
  */
  function isDark() {
-   return (document.getElementById("footer").dataset.mode === "dark" || localStorage.getItem("mode") === "dark");
+   // The `#footer` carrying `data-mode` belongs to the Materialize base. Pages
+   // on the DaisyUI base express appearance as `data-theme` and are handled by
+   // theme.js instead, so the element is simply not there -- and reading
+   // `.dataset` off null throws inside jQuery's ready queue, taking every
+   // later ready callback on the page down with it.
+   var footer = document.getElementById("footer");
+   return ((footer && footer.dataset.mode === "dark") || localStorage.getItem("mode") === "dark");
 }
 
 

@@ -8,6 +8,13 @@
 {% block page_header %}Edit profile data{% endblock %}
 {% block middle_section %}
 <form method="POST" enctype="multipart/form-data" action="." id="id_form">
+    {% comment %}
+      The two columns below are grid children: fields on the left, the actions
+      that operate on them on the right. Without this wrapper the `col-span-*`
+      classes are inert -- the right column silently stacks under the fields,
+      which is how it looked on arrival here.
+    {% endcomment %}
+    <div class="grid gap-6 md:grid-cols-12 md:text-left">
     <div class="md:col-span-7">
     {% csrf_token %}
     {% for field in form.visible_fields %}
@@ -105,6 +112,7 @@
         <div>
             <a class="btn btn-primary" href="{% url 'socialaccount_connections' %}" id="id_connections">Social</a>
         </div>
+    </div>
     </div>
 </form>
 {% endblock %}

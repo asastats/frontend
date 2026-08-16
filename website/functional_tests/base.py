@@ -331,6 +331,33 @@ class FunctionalTest(Setup):
         )
         return state
 
+    def record_javascript_errors(self):
+        """Install an error recorder that survives navigation.
+
+        Call once, before the first ``get()``. Every page loaded afterwards
+        starts with a ``window.__jsErrors`` array that collects uncaught
+        exceptions and unhandled rejections, so ``javascript_errors()`` can
+        report what a page threw while it was loading -- which is the part a
+        test arriving after the fact can never see.
+        """
+        self.browser.execute_cdp_cmd(
+            "Page.addScriptToEvaluateOnNewDocument",
+            {
+                "source": "window.__jsErrors = [];"
+                "window.addEventListener('error', function (e) {"
+                "  window.__jsErrors.push(String(e.message) + '  (' +"
+                "    String(e.filename).split('/').pop() + ':' + e.lineno + ')');"
+                "});"
+                "window.addEventListener('unhandledrejection', function (e) {"
+                "  window.__jsErrors.push('unhandled rejection: ' + String(e.reason));"
+                "});"
+            },
+        )
+
+    def javascript_errors(self):
+        """Return what the current page threw since it started loading."""
+        return self.browser.execute_script("return window.__jsErrors || [];")
+
     def take_screenshot(self):
         filename = self._get_filename() + ".png"
         print("screenshotting to", filename)
