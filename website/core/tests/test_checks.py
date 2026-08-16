@@ -11,16 +11,33 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 import pytest
+from django.conf import settings
 
 from core.checks import EXPIRY_WARNING_DAYS, check_widgets_api_token
 
-#: Stand-in keys. Neither is any project's real key; the point of the pair is
-#: that a token minted with one must not validate against the other.
-OUR_KEY = "our-signing-key-for-tests-only-0123456789"
+#: Any key that is not this project's. Stands in for the engine's, which is
+#: how the real failure arrived.
 THEIR_KEY = "a-different-signing-key-eg-the-engines-987"
 
 
-def _token(key, lifetime=timedelta(days=365)):
+def _our_key():
+    """Return the key simplejwt will actually validate against.
+
+    Deliberately read at call time rather than overridden. simplejwt builds
+    its token backend from SIMPLE_JWT once, at import, and does not rebuild it
+    when the setting changes -- so a test that overrode SIMPLE_JWT only worked
+    when it happened to be the first thing in the process to import
+    simplejwt. Alone it passed; in the full suite something imported first and
+    the override was ignored, reporting a correctly-signed token as invalid.
+
+    Signing with the project's own key removes the ordering dependency
+    entirely, and is closer to what is being tested anyway: the check has to
+    agree with whatever key this deployment really uses.
+    """
+    return settings.SIMPLE_JWT_KEY
+
+
+def _token(key=None, lifetime=timedelta(days=365)):
     """Return an HS256 access token signed with `key`.
 
     The claim set matches what simplejwt issues, because ``AccessToken``
@@ -28,7 +45,7 @@ def _token(key, lifetime=timedelta(days=365)):
     missing either would be rejected for the wrong reason and the test would
     pass while proving nothing.
 
-    :param key: HMAC signing key
+    :param key: HMAC signing key; defaults to this project's
     :type key: str
     :param lifetime: how far from now the token expires
     :type lifetime: :class:`datetime.timedelta`
@@ -43,7 +60,7 @@ def _token(key, lifetime=timedelta(days=365)):
             "jti": uuid.uuid4().hex,
             "user_id": 1,
         },
-        key,
+        key or _our_key(),
         algorithm="HS256",
     )
 
@@ -54,18 +71,12 @@ def _ids(messages):
 
 @pytest.fixture(autouse=True)
 def our_signing_key(settings):
-    """Pin the project's key for every test in this module.
+    """Expose the settings fixture, without touching SIMPLE_JWT.
 
-    simplejwt caches its own view of SIMPLE_JWT, so both the bare
-    SIMPLE_JWT_KEY the check reads and the SIGNING_KEY simplejwt validates
-    with have to move together. pytest-django's `settings` fixture fires
-    `setting_changed`, which is what makes simplejwt pick the new one up.
+    Only WIDGETS_API_TOKEN is varied per test. SIMPLE_JWT is left exactly as
+    the deployment configures it -- see _our_key for why overriding it is a
+    trap.
     """
-    settings.SIMPLE_JWT_KEY = OUR_KEY
-    settings.SIMPLE_JWT = {
-        "ACCESS_TOKEN_LIFETIME": timedelta(days=365),
-        "SIGNING_KEY": OUR_KEY,
-    }
     return settings
 
 
@@ -74,7 +85,7 @@ class TestWidgetsApiTokenCheck:
 
     def test_core_check_passes_for_a_healthy_token(self, our_signing_key):
         """Guard the guard: the good case must be silent."""
-        our_signing_key.WIDGETS_API_TOKEN = _token(OUR_KEY)
+        our_signing_key.WIDGETS_API_TOKEN = _token()
         assert check_widgets_api_token(None) == []
 
     def test_core_check_reports_a_missing_signing_key(self, our_signing_key):
@@ -109,7 +120,7 @@ class TestWidgetsApiTokenCheck:
 
     def test_core_check_errors_on_an_expired_token(self, our_signing_key):
         our_signing_key.WIDGETS_API_TOKEN = _token(
-            OUR_KEY, lifetime=timedelta(days=-1)
+            lifetime=timedelta(days=-1)
         )
         messages = check_widgets_api_token(None)
         assert _ids(messages) == ["asastats.E002"]
@@ -126,7 +137,7 @@ class TestWidgetsApiTokenCheck:
         :type days: int
         """
         our_signing_key.WIDGETS_API_TOKEN = _token(
-            OUR_KEY, lifetime=timedelta(days=days, hours=1)
+            lifetime=timedelta(days=days, hours=1)
         )
         messages = check_widgets_api_token(None)
         assert _ids(messages) == ["asastats.W002"]
@@ -135,6 +146,6 @@ class TestWidgetsApiTokenCheck:
     def test_core_check_is_silent_well_before_expiry(self, our_signing_key):
         """One day the other side of the threshold must say nothing."""
         our_signing_key.WIDGETS_API_TOKEN = _token(
-            OUR_KEY, lifetime=timedelta(days=EXPIRY_WARNING_DAYS + 2)
+            lifetime=timedelta(days=EXPIRY_WARNING_DAYS + 2)
         )
         assert check_widgets_api_token(None) == []
