@@ -256,6 +256,58 @@
   justify-content: center;
 }
 
+/* Hooks emitted by the widgets submodule, under widgets/inhouse. Those
+   templates are deliberately framework-free -- plain HTML, semantic class
+   names and data attributes -- so that swapping the host's CSS framework never
+   requires touching the submodule. That is a Phase 0 invariant, and it is the
+   reason these rules live here rather than as utility classes over there.
+
+   The rule is one-directional: the host may style anything the widget emits,
+   the widget may not name anything the host defines. Adding `rounded-box` or
+   `btn` to a widget template would couple the submodule to DaisyUI and break
+   it for any other host. */
+.swap-page-title {
+  font-size: 1.875rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.swap-addresses {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.swap-addresses > li + li { margin-top: 0.5rem; }
+
+.swap-address {
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  background: var(--color-base-100);
+}
+
+.swap-address > summary {
+  padding: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+
+.swap-address > summary::-webkit-details-marker { display: none; }
+
+.swap-address[open] > summary { border-bottom: 1px solid var(--color-base-300); }
+
+.swap-address .id-swap-panel { padding: 1rem; }
+
+#id-swap-locked {
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  background: var(--color-base-200);
+}
+
 /* htmx feedback, outside a Tailwind layer so the opacity rules are not purged
    and do not lose to utilities. Mirrors the rewards suite. */
 [hx-indicator] {

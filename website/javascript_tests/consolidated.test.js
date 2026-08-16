@@ -59,8 +59,8 @@ function fixture() {
     '<canvas id="id-ratiochart"></canvas><div id="id-legend-ratiochart"></div>' +
     '<canvas id="id-asachart"></canvas><div id="id-legend-asachart"></div>' +
     '<canvas id="id-nftchart"></canvas><div id="id-legend-nftchart"></div>' +
-    '<ul class="collapsible" id="id-cons"><li><div id="id-cons-body"></div>' +
-    '</li></ul>' +
+    '<details id="id-cons" open><summary class="item-header consolidated">' +
+    '</summary><div id="id-cons-body" class="item-body"></div></details>' +
     '<div class="totalnonft"><input type="checkbox"></div>' +
     '<div class="header"><div><div class="unit">a</div></div></div>'
   );
@@ -478,13 +478,16 @@ describe("htmlLegendPlugin afterUpdate", function () {
 
 
 describe("onConsolidatedClick", function () {
-  it('stores h when the body is shown', function () {
-    document.getElementById('id-cons-body').style.display = "block";
+  // `<details>.open` is the state now, and it is already updated by the time
+  // `toggle` fires. The old tests set `style.display`, which only ever had a
+  // value because Materialize wrote one inline.
+  it('stores h when the section is closed', function () {
+    document.getElementById('id-cons').open = false;
     consolidated.onConsolidatedClick(null);
     expect(localStorage.setItem).toHaveBeenCalledWith('hcons', 'h');
   });
-  it('stores empty when the body is hidden', function () {
-    document.getElementById('id-cons-body').style.display = "none";
+  it('stores empty when the section is open', function () {
+    document.getElementById('id-cons').open = true;
     consolidated.onConsolidatedClick(null);
     expect(localStorage.setItem).toHaveBeenCalledWith('hcons', '');
   });
@@ -492,15 +495,22 @@ describe("onConsolidatedClick", function () {
 
 
 describe("checkConsolidated", function () {
-  it('closes the collapsible when the saved status is hidden', function () {
-    var close = jest.fn();
-    M.Collapsible.getInstance.mockReturnValue({ close: close });
+  it('closes the section when the saved status is hidden', function () {
+    document.getElementById('id-cons').open = true;
     consolidated.checkConsolidated('h');
-    expect(close).toHaveBeenCalledWith(0);
+    expect(document.getElementById('id-cons').open).toBe(false);
   });
   it('does nothing for other values', function () {
+    document.getElementById('id-cons').open = true;
     consolidated.checkConsolidated('');
-    expect(M.Collapsible.getInstance).not.toHaveBeenCalled();
+    expect(document.getElementById('id-cons').open).toBe(true);
+  });
+  it('survives a page with no consolidated section', function () {
+    // The widget host renders this script on pages that have no consolidated
+    // block; reading `.open` off null would throw inside mainConsolidated and
+    // abandon every binding after it.
+    document.getElementById('id-cons').remove();
+    expect(function () { consolidated.checkConsolidated('h'); }).not.toThrow();
   });
 });
 
@@ -509,7 +519,9 @@ describe("mainConsolidated", function () {
   it('initializes the page', function () {
     jest.useFakeTimers();
     consolidated.mainConsolidated();
-    expect($.prototype.collapsible).toHaveBeenCalled();
+    // Nothing to construct: the section is a native <details>. What
+    // mainConsolidated still owns is the charts and the toggle binding.
     expect(window.Chart).toHaveBeenCalled();
+    expect($._data($("#id-cons")[0], "events").toggle).toBeDefined();
   });
 });

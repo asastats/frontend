@@ -32,8 +32,11 @@ var chartDatasets = {};
  *
  */
 function mainConsolidated() {
-  $('.collapsible').collapsible();
-  $(".collapsible-header.consolidated").on("click", onConsolidatedClick);
+  // Native <details>: nothing to initialise, and `toggle` fires on the
+  // element itself for keyboard and programmatic opens too -- which a click
+  // handler on the header would miss. The `.collapsible()` call this replaces
+  // threw on every page that loaded it, because Materialize is gone.
+  $("#id-cons").off("toggle").on("toggle", onConsolidatedClick);
   populateDistChart();
   populatePieCharts();
   setTotalNoNft(localStorage.getItem('htotalnonft') || '');
@@ -583,9 +586,11 @@ function populatePieCharts() {
  *
  */
 function onConsolidatedClick(e) {
-  var body = document.getElementById('id-cons-body');
-  var value = body.style.display == "block" ? 'h' : '';
-  localStorage.setItem('hcons', value);
+  // `<details>.open` is the state, and it is already updated by the time
+  // `toggle` fires. The old check read `style.display`, which only ever had a
+  // value because Materialize wrote one inline.
+  var section = document.getElementById('id-cons');
+  localStorage.setItem('hcons', section && section.open ? '' : 'h');
 }
 
 
@@ -596,8 +601,10 @@ function onConsolidatedClick(e) {
 function checkConsolidated(value) {
   if (value === 'h') {
     var elem = document.getElementById('id-cons');
-    var instance = M.Collapsible.getInstance(elem);
-    instance.close(0);
+    // Closing a <details> is setting a property; there is no instance to
+    // fetch and nothing to animate.
+    if (elem)
+      elem.open = false;
   }
 }
 
