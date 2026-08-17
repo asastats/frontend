@@ -54,7 +54,12 @@
   * the appearance control was an unlabelled circle. It is still an icon, but
     it now says what it is to a screen reader and on hover.
 {% endcomment %}
-<header class="sticky top-0 z-30 border-b border-base-300 bg-base-100/95 backdrop-blur">
+{% comment %}
+  Deliberately not sticky. A bar that follows the reader costs the same strip
+  of screen on every page, and on the address page -- which is a long scroll
+  through assets -- that is the row they most want back.
+{% endcomment %}
+<header class="border-b border-base-300 bg-base-100">
   <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
     {% block navigation %}
     <a href="/" class="flex-none" aria-label="{{ WEBSITE_NAME }} home">
@@ -176,6 +181,12 @@
     <div class="mt-10 flex flex-col items-center gap-4 border-t border-base-300 pt-6 text-sm text-base-content/60 sm:flex-row sm:justify-between">
       <p>&copy;&nbsp;2026&nbsp;{{ WEBSITE_NAME }}</p>
       <nav class="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {% comment %}
+          The appearance control lives in the header, and index blanks the
+          header block -- so without this the landing page is the one page with
+          no way to change the theme at all.
+        {% endcomment %}
+        {% include "snippets/theme_picker.html" %}
         <a class="link link-hover" href="{% url 'about' %}">About</a>
         <a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a>
         <a class="link link-hover" href="{% url 'disclaimer' %}">Disclaimer</a>

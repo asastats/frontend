@@ -157,6 +157,18 @@ describe("in SECTION: Proprietary widgets", function () {
       $(".id-swap-swap-toggle").trigger(event);
       expect(event.isDefaultPrevented()).toBe(false);
     });
+    it("leaves an already-open dialog alone", function () {
+      // showModal() on an open <dialog> throws InvalidStateError, which would
+      // abort the handler and leave `next` staged but the reader stuck.
+      var dialog = ensureDialog();
+      dialog.open = true;
+      addToggle();
+
+      $(".id-swap-swap-toggle").trigger($.Event("click"));
+
+      expect(dialog.showModal).not.toHaveBeenCalled();
+    });
+
     it("does not double-bind across mainSite calls", function () {
       var dialog = ensureDialog();
       site.mainSite(); // second call must not add a second delegated handler
@@ -193,6 +205,17 @@ describe("in SECTION: Proprietary widgets", function () {
       expect(notice()).toBeNull();
       jest.useRealTimers();
     });
+    it("keeps the rest of the query and the hash when stripping the param", function () {
+      // The param is removed from a url that may carry others; dropping them
+      // too would silently discard state the page was opened with.
+      window.history.replaceState({}, "", "/ADDR/?keep=1&swap_error=unlinked#sec");
+      site.showSwapErrorToast();
+
+      expect(window.location.search).toBe("?keep=1");
+      expect(window.location.hash).toBe("#sec");
+      expect(window.location.pathname).toBe("/ADDR/");
+    });
+
     it("does nothing without swap_error", function () {
       window.history.replaceState({}, "", "/ADDR/");
       site.showSwapErrorToast();

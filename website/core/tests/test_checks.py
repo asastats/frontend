@@ -12,8 +12,9 @@ from datetime import datetime, timedelta, timezone
 import jwt
 import pytest
 from django.conf import settings
+from rest_framework_simplejwt.tokens import AccessToken
 
-from core.checks import EXPIRY_WARNING_DAYS, check_widgets_api_token
+from core.checks import EXPIRY_WARNING_DAYS, _expiry, check_widgets_api_token
 
 #: Any key that is not this project's. Stands in for the engine's, which is
 #: how the real failure arrived.
@@ -148,4 +149,40 @@ class TestWidgetsApiTokenCheck:
         our_signing_key.WIDGETS_API_TOKEN = _token(
             lifetime=timedelta(days=EXPIRY_WARNING_DAYS + 2)
         )
+        assert check_widgets_api_token(None) == []
+
+    def test_core_check_reads_the_expiry_off_a_token(self, our_signing_key):
+        """`_expiry` is where the warning threshold gets its date."""
+        token = AccessToken(_token(lifetime=timedelta(days=10)))
+
+        expires = _expiry(token)
+
+        assert expires is not None
+        assert 8 < (expires - datetime.now(tz=timezone.utc)).days < 11
+
+    def test_core_check_survives_a_token_carrying_no_expiry(self, our_signing_key):
+        """Defensive, and deliberately so.
+
+        simplejwt validates `exp` when it builds an AccessToken, so a token
+        without one cannot reach here today -- that is a guarantee of the
+        library, not of this code. If it ever stops holding, the check should
+        decline to judge rather than raise on every `manage.py` command.
+        """
+
+        class NoExpiry:
+            payload = {"token_type": "access"}
+
+        assert _expiry(NoExpiry()) is None
+
+    def test_core_check_is_silent_when_the_expiry_cannot_be_read(
+        self, our_signing_key, mocker
+    ):
+        """A token that verifies but has no readable expiry is not an error.
+
+        It is usable right now, which is what the check is asked about; the
+        warning is about a date, and there is no date to warn on.
+        """
+        our_signing_key.WIDGETS_API_TOKEN = _token()
+        mocker.patch("core.checks._expiry", return_value=None)
+
         assert check_widgets_api_token(None) == []
