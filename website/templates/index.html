@@ -21,7 +21,19 @@
     <meta name="twitter:image" content="{{ WEBSITE_URL }}/{{ WEBSITE_SHORT_NAME }}-logo1200.jpg" />
     <meta name="twitter:image:alt" content="{{ WEBSITE_NAME }} logo" />
 {% endblock %}
+{% comment %}
+  index is a bare landing page: no header, and so no appearance control in the
+  place every other page keeps one. A lone switcher floating above the logo
+  made it the first thing on the page, which is not what it is worth -- so it
+  goes in the footer instead, and `footer_appearance` exists for that. Every
+  other page leaves that block empty, so no page ends up with two.
+{% endcomment %}
 {% block header %}{% endblock %}
+{% block footer_appearance %}
+<div class="mt-3 flex justify-center">
+  {% include "snippets/theme_picker.html" %}
+</div>
+{% endblock %}
 {% block content %}
 <div class="mx-auto max-w-2xl text-center">
   <div>

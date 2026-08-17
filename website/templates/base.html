@@ -24,13 +24,23 @@
         "use strict";
         var saved = localStorage.getItem("theme");
         if (saved) document.documentElement.setAttribute("data-theme", saved);
+        // The typeface override is stamped here for the same reason: applied
+        // after paint it would swap the font under the reader's eyes.
+        var face = localStorage.getItem("typeface");
+        if (face) document.documentElement.setAttribute("data-typeface", face);
       })();
     </script>
     <title>{% block title %}{{ WEBSITE_NAME }}{% endblock %}</title>
     <meta name="description" content="{% block description %}{{ WEBSITE_NAME }} evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.{% endblock %}">
     <meta name="keywords" content="{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount{% endblock %}">
     {% block otherheader %}{% endblock %}
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald|Nunito">
+    {% comment %}
+      Fonts are self-hosted now -- every face is declared in typefaces.css and
+      served from static/fonts, so there is no request to Google here and no
+      third party told who reads this site. Only the pair the active theme uses
+      is downloaded: a browser fetches a font file when text actually matches
+      it, so declaring 77 families costs their declarations and nothing more.
+    {% endcomment %}
     <link href="{% static 'css/style.tw.css' %}" type="text/css" rel="stylesheet" media="screen">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -73,23 +83,29 @@
       <img class="h-9 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
     </a>
 
-    <nav class="ml-6 hidden items-center gap-1 md:flex" aria-label="Main">
-      {% for url_name, label in main_navigation %}
-      <a class="rounded-field px-3 py-2 text-sm font-medium text-base-content/70 transition
-                hover:bg-base-200 hover:text-base-content
-                aria-[current=page]:bg-base-200 aria-[current=page]:text-base-content"
-         href="{% url url_name %}"{% if url_name == request.resolver_match.url_name %} aria-current="page"{% endif %}>{{ label }}</a>
-      {% endfor %}
-    </nav>
-
+    {% comment %}
+      Logo left, navigation right, the way it has always been here. The list
+      itself is short and depends on the reader -- Home / API / Log out signed
+      in, Log in / API / Subscriptions signed out -- and comes from the context
+      processor, except Log in: that opens a dialog rather than navigating, so
+      it has no url to reverse and is rendered here, ahead of the rest.
+    {% endcomment %}
     <div class="ml-auto flex items-center gap-2">
       {% include "snippets/theme_picker.html" %}
 
-      {% if user.is_authenticated %}
-      <a class="btn btn-ghost btn-sm hidden md:inline-flex" id="logout" href="{% url 'account_logout' %}">Log out</a>
-      {% else %}
-      <a class="btn btn-primary btn-sm hidden md:inline-flex" href="#modalLogin">Log in</a>
-      {% endif %}
+      <nav class="hidden items-center gap-1 md:flex" aria-label="Main">
+        {% if not user.is_authenticated %}
+        <a class="rounded-field px-3 py-2 text-sm font-medium text-base-content/70 transition
+                  hover:bg-base-200 hover:text-base-content"
+           href="#modalLogin">Log in</a>
+        {% endif %}
+        {% for url_name, label in main_navigation %}
+        <a class="rounded-field px-3 py-2 text-sm font-medium text-base-content/70 transition
+                  hover:bg-base-200 hover:text-base-content
+                  aria-[current=page]:bg-base-200 aria-[current=page]:text-base-content"
+           href="{% url url_name %}"{% if url_name == 'account_logout' %} id="logout"{% endif %}{% if url_name == request.resolver_match.url_name %} aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
 
       {% comment %} Narrow screens: the same links, in a disclosure. {% endcomment %}
       <details class="dropdown dropdown-end md:hidden">
@@ -100,15 +116,12 @@
           </svg>
         </summary>
         <ul class="menu dropdown-content z-10 mt-2 w-56 rounded-box bg-base-100 p-2 shadow">
+          {% if not user.is_authenticated %}
+          <li><a href="#modalLogin">Log in</a></li>
+          {% endif %}
           {% for url_name, label in main_navigation %}
           <li><a href="{% url url_name %}">{{ label }}</a></li>
           {% endfor %}
-          <li class="menu-title mt-2 text-xs uppercase">Account</li>
-          {% if user.is_authenticated %}
-          <li><a href="{% url 'account_logout' %}">Log out</a></li>
-          {% else %}
-          <li><a href="#modalLogin">Log in</a></li>
-          {% endif %}
         </ul>
       </details>
     </div>
@@ -124,76 +137,109 @@
 </main>
 <footer class="mt-16 border-t border-base-300 bg-base-100">
   {% comment %}
-    Nineteen links in two centred rows read as a wall: nothing was findable
-    because nothing was grouped. They are columns under headings now, which is
-    the same information in the shape a reader scans -- and the shape that
-    tells them the site has an API, a token and a community without having to
-    read every label.
+    Four centred columns, and nothing beneath them.
+
+    The old footer was two structures stacked: a column grid, a rule, then a
+    second row for copyright, legal and the app stores. That split is
+    Materialize's -- `.page-footer` above `.footer-copyright` -- and it made the
+    footer read as two footers, the second one apparently an afterthought
+    holding whatever did not fit above. Legal and the app stores are an
+    ordinary group now, and the copyright is one closing line.
+
+    The former liquidity buttons were sprite images -- fixed at 133x32, with a
+    light background and both states baked in, so they could not follow a theme
+    and were invisible on the dark ones. They are ordinary links in the Token
+    column now, like everything else here.
   {% endcomment %}
-  <div class="mx-auto w-full max-w-6xl px-4 py-12">
-    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="mx-auto w-full max-w-6xl px-4 py-10 text-center">
 
-      <div>
-        <img class="h-9 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
-        <p class="mt-3 text-sm text-base-content/60">
-          Portfolio tracking and analytics for the Algorand blockchain.
-        </p>
+    {% comment %}
+      Copyright leads the tagline rather than closing the footer. It was the
+      last line under the columns, which is where a copyright traditionally
+      goes -- but that put the one piece of text nobody reads at the end of the
+      scroll, and gave the footer a second horizontal band to be the last thing
+      on the page. One line at the top carries both.
+    {% endcomment %}
+    <p class="text-sm text-base-content/60">
+      &copy;&nbsp;2026&nbsp;{{ WEBSITE_NAME }}
+      <span class="mx-1.5 opacity-40" aria-hidden="true">&middot;</span>
+      Portfolio tracking and analytics for the Algorand blockchain.
+    </p>
+
+    {% comment %}
+      `w-fit` on the grid is what centres it: the columns size to their content
+      and the block is then centred as a unit, rather than being stretched to
+      the full width with the text merely centred inside four wide cells --
+      which reads as four separate centrings, not one.
+
+      Each column is a heading and its list, so the groups stay real landmarks
+      for a screen reader instead of one flat run of links. Two columns below
+      `sm`, which is the only thing that changes on a narrow screen.
+    {% endcomment %}
+    <nav class="mt-8" aria-label="Footer">
+      <div class="mx-auto grid w-fit max-w-full grid-cols-2 gap-x-10 gap-y-8 sm:grid-cols-4 sm:gap-x-14">
+
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Product</h2>
+          <ul class="mt-3 space-y-2 text-sm">
+            {% if user.is_authenticated %}
+            <li><a class="link link-hover" href="{% url 'home' %}">Home</a></li>
+            {% else %}
+            <li><a class="link link-hover" href="#modalLogin">Log in</a></li>
+            {% endif %}
+            <li><a class="link link-hover" href="{% url 'features' %}">Features</a></li>
+            <li><a class="link link-hover" href="{% url 'subscriptions' %}">Subscriptions</a></li>
+            <li><a class="link link-hover" href="{% url 'swagger-ui' %}">API</a></li>
+            <li><a class="link link-hover" href="{% url 'faq' %}">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Token</h2>
+          {% comment %} Buy leads: it is the one entry here a reader acts on. {% endcomment %}
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a class="link link-hover" href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener">Buy ASASTATS</a></li>
+            <li><a class="link link-hover" href="{% url 'tokenomics' %}">Tokenomics</a></li>
+            <li><a class="link link-hover" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener">Pact liquidity</a></li>
+            <li><a class="link link-hover" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener">Tinyman liquidity</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Community</h2>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a class="link link-hover" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener">X</a></li>
+            <li><a class="link link-hover" href="https://discord.gg/{{ DISCORD_INVITE }}" target="_blank" rel="noopener">Discord</a></li>
+            <li><a class="link link-hover" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener">Reddit</a></li>
+            <li><a class="link link-hover" href="https://medium.com/{{ MEDIUM_NAME }}" target="_blank" rel="noopener">Medium</a></li>
+            <li><a class="link link-hover" href="https://github.com/{{ GITHUB_ORGANIZATION }}" target="_blank" rel="noopener">GitHub</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">About</h2>
+          <ul class="mt-3 space-y-2 text-sm">
+            <li><a class="link link-hover" href="{% url 'about' %}">About</a></li>
+            <li><a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a></li>
+            <li><a class="link link-hover" href="{% url 'disclaimer' %}">Disclaimer</a></li>
+            <li><a class="link link-hover" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener">App&nbsp;Store</a></li>
+            <li><a class="link link-hover" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener">Play&nbsp;Store</a></li>
+          </ul>
+        </div>
+
       </div>
+    </nav>
 
-      <div>
-        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Product</h2>
-        <ul class="mt-3 space-y-2 text-sm">
-          {% if user.is_authenticated %}
-          <li><a class="link link-hover" href="{% url 'home' %}">Home</a></li>
-          {% else %}
-          <li><a class="link link-hover" href="#modalLogin">Log in</a></li>
-          {% endif %}
-          <li><a class="link link-hover" href="{% url 'features' %}">Features</a></li>
-          <li><a class="link link-hover" href="{% url 'subscriptions' %}">Subscriptions</a></li>
-          <li><a class="link link-hover" href="{% url 'swagger-ui' %}">API</a></li>
-          <li><a class="link link-hover" href="{% url 'faq' %}">FAQ</a></li>
-        </ul>
-      </div>
-
-      <div>
-        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Token</h2>
-        <ul class="mt-3 space-y-2 text-sm">
-          <li><a class="link link-hover" href="{% url 'tokenomics' %}">Tokenomics</a></li>
-          <li><a class="link link-hover" href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener">Buy ASASTATS</a></li>
-          <li><a class="link link-hover" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener">Pact pool</a></li>
-          <li><a class="link link-hover" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener">Tinyman pool</a></li>
-        </ul>
-      </div>
-
-      <div>
-        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Community</h2>
-        <ul class="mt-3 space-y-2 text-sm">
-          <li><a class="link link-hover" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener">X</a></li>
-          <li><a class="link link-hover" href="https://discord.gg/{{ DISCORD_INVITE }}" target="_blank" rel="noopener">Discord</a></li>
-          <li><a class="link link-hover" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener">Reddit</a></li>
-          <li><a class="link link-hover" href="https://medium.com/{{ MEDIUM_NAME }}" target="_blank" rel="noopener">Medium</a></li>
-          <li><a class="link link-hover" href="https://github.com/{{ GITHUB_ORGANIZATION }}" target="_blank" rel="noopener">GitHub</a></li>
-        </ul>
-      </div>
-
-    </div>
-
-    <div class="mt-10 flex flex-col items-center gap-4 border-t border-base-300 pt-6 text-sm text-base-content/60 sm:flex-row sm:justify-between">
-      <p>&copy;&nbsp;2026&nbsp;{{ WEBSITE_NAME }}</p>
-      <nav class="flex flex-wrap items-center gap-x-5 gap-y-2">
-        {% comment %}
-          The appearance control lives in the header, and index blanks the
-          header block -- so without this the landing page is the one page with
-          no way to change the theme at all.
-        {% endcomment %}
-        {% include "snippets/theme_picker.html" %}
-        <a class="link link-hover" href="{% url 'about' %}">About</a>
-        <a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a>
-        <a class="link link-hover" href="{% url 'disclaimer' %}">Disclaimer</a>
-        <a class="link link-hover" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener">App&nbsp;Store</a>
-        <a class="link link-hover" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener">Play&nbsp;Store</a>
-      </nav>
-    </div>
+    {% comment %}
+      Empty on every page that has a header, because the header carries the
+      appearance control. index blanks the header, so it fills this instead --
+      a block rather than an unconditional include, because rendering the
+      control in both places gives a page two of them: a duplicated
+      `id-theme-list`, and two radio groups sharing the name `theme-dropdown`,
+      fighting over which theme shows as chosen. There are tests for exactly
+      one per page in core.tests.test_theme_control.
+    {% endcomment %}
+    {% block footer_appearance %}{% endblock %}
   </div>
 </footer>
 {% block login_modal %}{% if not user.is_authenticated %}{% include "snippets/modal_login.html" %}{% endif %}{% endblock %}

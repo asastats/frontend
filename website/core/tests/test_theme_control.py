@@ -93,3 +93,36 @@ class ThemeControlTest(TestCase):
 
         for group in response.context["AVAILABLE_THEMES_BY_SCHEME"]:
             self.assertContains(response, group)
+
+    # # exactly one control per page
+    #
+    # index is the only page that blanks the header block, so it carries its
+    # own control. The first attempt put one in the footer instead, which gave
+    # every *other* page two of them: a duplicated `id-theme-list`, and two
+    # radio groups sharing the name `theme-dropdown`, so the two menus fought
+    # over which theme was ticked. Nothing in the suite failed on the duplicate
+    # id -- it surfaced as a count mismatch in an unrelated assertion.
+    def test_core_theme_control_renders_once_for_a_signed_in_reader(self):
+        self._sign_in()
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, 'id="id-theme-list"', count=1)
+
+    def test_core_theme_control_renders_once_for_an_anonymous_reader(self):
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "data-theme-toggle", count=1)
+
+    def test_core_theme_control_renders_once_on_index_signed_in(self):
+        """index supplies its own, and must not also inherit one."""
+        self._sign_in()
+
+        response = self.client.get(reverse("index"))
+
+        self.assertContains(response, 'id="id-theme-list"', count=1)
+
+    def test_core_theme_control_renders_once_on_index_anonymous(self):
+        response = self.client.get(reverse("index"))
+
+        self.assertContains(response, "data-theme-toggle", count=1)

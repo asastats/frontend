@@ -4,6 +4,19 @@
 
 const T = require("../static/js/theme.js");
 
+/** Build the typeface picker the appearance page renders. */
+function mountTypefaces(names) {
+  document.body.innerHTML =
+    '<label><input type="radio" name="typeface-choice" value=""></label>' +
+    names
+      .map(
+        (n) =>
+          `<label data-typeface="${n}"><input type="radio" name="typeface-choice" value="${n}"></label>`
+      )
+      .join("");
+  return [...document.querySelectorAll("input[name='typeface-choice']")];
+}
+
 /** Build the light/dark switch a signed-out reader gets. */
 function mountToggle(light, dark) {
   document.body.innerHTML =
@@ -296,6 +309,140 @@ describe("currentTheme", function () {
     const restore = breakStorage("getItem");
     try {
       expect(T.currentTheme()).toBe("");
+    } finally {
+      restore();
+    }
+  });
+});
+
+
+describe("applyTypeface", function () {
+  beforeEach(function () {
+    document.documentElement.removeAttribute("data-typeface");
+    localStorage.clear();
+  });
+
+  it("stamps the pairing on the document", function () {
+    T.applyTypeface("rosepine");
+
+    expect(document.documentElement.getAttribute("data-typeface")).toBe(
+      "rosepine"
+    );
+  });
+
+  it("remembers it", function () {
+    T.applyTypeface("rosepine");
+
+    expect(localStorage.getItem(T.TYPEFACE_KEY)).toBe("rosepine");
+  });
+
+  it("an empty value clears the override rather than setting one", function () {
+    // "Theme default" is the empty choice: it returns the reader to whatever
+    // their theme brings, which means removing the attribute, not writing "".
+    T.applyTypeface("rosepine");
+
+    T.applyTypeface("");
+
+    expect(document.documentElement.hasAttribute("data-typeface")).toBe(false);
+    expect(localStorage.getItem(T.TYPEFACE_KEY)).toBeNull();
+  });
+
+  it("survives a localStorage that refuses to be written", function () {
+    const restore = breakStorage("setItem");
+    try {
+      expect(T.applyTypeface("rosepine")).toBe(true);
+      expect(document.documentElement.getAttribute("data-typeface")).toBe(
+        "rosepine"
+      );
+    } finally {
+      restore();
+    }
+  });
+
+  it("survives a localStorage that refuses to be cleared", function () {
+    const restore = breakStorage("removeItem");
+    try {
+      expect(T.applyTypeface("")).toBe(true);
+    } finally {
+      restore();
+    }
+  });
+});
+
+
+describe("wireTypefacePicker", function () {
+  beforeEach(function () {
+    document.documentElement.removeAttribute("data-typeface");
+    localStorage.clear();
+  });
+
+  it("applies the pairing that is chosen", function () {
+    const inputs = mountTypefaces(["rosepine", "nord"]);
+    T.wireTypefacePicker(document);
+
+    inputs[1].checked = true;
+    inputs[1].dispatchEvent(new Event("change"));
+
+    expect(document.documentElement.getAttribute("data-typeface")).toBe(
+      "rosepine"
+    );
+  });
+
+  it("ticks the saved pairing", function () {
+    localStorage.setItem(T.TYPEFACE_KEY, "nord");
+    const inputs = mountTypefaces(["rosepine", "nord"]);
+
+    T.wireTypefacePicker(document);
+
+    expect(inputs.find((i) => i.value === "nord").checked).toBe(true);
+  });
+
+  it("ticks Theme default when nothing is saved", function () {
+    const inputs = mountTypefaces(["rosepine"]);
+
+    T.wireTypefacePicker(document);
+
+    expect(inputs.find((i) => i.value === "").checked).toBe(true);
+  });
+
+  it("clears the override when Theme default is chosen", function () {
+    const inputs = mountTypefaces(["rosepine"]);
+    T.wireTypefacePicker(document);
+    inputs[1].checked = true;
+    inputs[1].dispatchEvent(new Event("change"));
+
+    inputs[0].checked = true;
+    inputs[0].dispatchEvent(new Event("change"));
+
+    expect(document.documentElement.hasAttribute("data-typeface")).toBe(false);
+  });
+
+  it("does not double-bind when wired twice", function () {
+    const inputs = mountTypefaces(["rosepine"]);
+    T.wireTypefacePicker(document);
+
+    expect(T.wireTypefacePicker(document)).toBe(0);
+  });
+
+  it("wires nothing on a page without the picker", function () {
+    // Which is every page but the appearance one, and the appearance page
+    // itself for a reader below the tier.
+    document.body.innerHTML = "";
+
+    expect(T.wireTypefacePicker(document)).toBe(0);
+  });
+
+  it("defaults to the whole document when called with no root", function () {
+    mountTypefaces(["rosepine"]);
+
+    expect(T.wireTypefacePicker()).toBe(2);
+  });
+
+  it("survives a localStorage that refuses to be read", function () {
+    mountTypefaces(["rosepine"]);
+    const restore = breakStorage("getItem");
+    try {
+      expect(T.wireTypefacePicker(document)).toBe(2);
     } finally {
       restore();
     }

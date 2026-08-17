@@ -25,8 +25,11 @@
 (function () {
   "use strict";
 
-  /** localStorage key shared with the inline head script in base_tw.html. */
+  /** localStorage key shared with the inline head script in base.html. */
   var STORAGE_KEY = "theme";
+
+  /** The reader's typeface override, if they have chosen one. */
+  var TYPEFACE_KEY = "typeface";
 
   /**
    * Apply `theme` to the document and remember it.
@@ -44,6 +47,71 @@
       // applies for this page; it just will not survive a reload.
     }
     return true;
+  }
+
+  /**
+   * Apply `typeface` to the document and remember it.
+   *
+   * The value is a pairing name, which happens to be a theme name: each theme
+   * brings a display and body face, and choosing a "typeface" is choosing to
+   * borrow another theme's pair. `[data-typeface]` is written after the theme
+   * blocks in the stylesheet, so it wins on source order.
+   *
+   * An empty value clears the override and returns the reader to whatever
+   * their theme brings, which is what the "Theme default" choice does.
+   *
+   * @param {string} typeface - a pairing name, or "" to clear
+   * @returns {boolean} whether anything was applied
+   */
+  function applyTypeface(typeface) {
+    if (typeface) {
+      document.documentElement.setAttribute("data-typeface", typeface);
+    } else {
+      document.documentElement.removeAttribute("data-typeface");
+    }
+    try {
+      if (typeface) {
+        localStorage.setItem(TYPEFACE_KEY, typeface);
+      } else {
+        localStorage.removeItem(TYPEFACE_KEY);
+      }
+    } catch (e) {
+      // Private-browsing quota rules can refuse the write. The choice still
+      // applies for this page; it just will not survive a reload.
+    }
+    return true;
+  }
+
+  /**
+   * Wire the typeface picker, if this reader has one.
+   *
+   * The control is rendered only above a subscription tier, so on most pages
+   * there is nothing to wire and this does nothing.
+   *
+   * @param {Document|Element} [root=document] - subtree to wire
+   * @returns {number} how many inputs were wired this call
+   */
+  function wireTypefacePicker(root) {
+    var host = root || document;
+    var inputs = host.querySelectorAll("input[name='typeface-choice']");
+    var saved = null;
+    try {
+      saved = localStorage.getItem(TYPEFACE_KEY);
+    } catch (e) {
+      saved = null;
+    }
+
+    var wired = 0;
+    Array.prototype.forEach.call(inputs, function (input) {
+      if (input.value === (saved || "")) input.checked = true;
+      if (input.dataset.typefaceBound === "1") return;
+      input.dataset.typefaceBound = "1";
+      input.addEventListener("change", function () {
+        applyTypeface(input.value);
+      });
+      wired += 1;
+    });
+    return wired;
   }
 
   /**
@@ -143,6 +211,9 @@
     module.exports = {
       STORAGE_KEY: STORAGE_KEY,
       applyTheme: applyTheme,
+      applyTypeface: applyTypeface,
+      TYPEFACE_KEY: TYPEFACE_KEY,
+      wireTypefacePicker: wireTypefacePicker,
       currentTheme: currentTheme,
       wireThemeToggle: wireThemeToggle,
       wireThemePicker: wireThemePicker,
@@ -152,15 +223,18 @@
       document.addEventListener("DOMContentLoaded", function () {
         wireThemePicker(document);
         wireThemeToggle(document);
+        wireTypefacePicker(document);
       });
     } else {
       wireThemePicker(document);
       wireThemeToggle(document);
+      wireTypefacePicker(document);
     }
     // The header can be replaced by an htmx swap; re-tick and re-bind after one.
     document.body.addEventListener("htmx:afterSwap", function () {
       wireThemePicker(document);
       wireThemeToggle(document);
+      wireTypefacePicker(document);
     });
   }
 })();

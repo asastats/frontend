@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from unittest import mock
 
+import pytest
 from django.conf import settings
 from django.urls import reverse
 
@@ -12,6 +13,7 @@ from api.client import BackendError
 from core.context_processors import (
     deployment_capabilities,
     global_constants,
+    load_typefaces,
     main_navigation,
     profile_navigation,
     walletconnect,
@@ -23,6 +25,107 @@ from core import context_processors as settings_module
 
 class TestCoreContextProcessors:
     """Testing class for :py:mod:`core.context_processors` functions."""
+
+    # # load_typefaces
+    #
+    # The cache is a module global, so it is reset around every test here: a
+    # value left behind would make the next test pass without reading anything.
+    @pytest.fixture(autouse=True)
+    def _reset_typeface_cache(self):
+        core.context_processors._TYPEFACES_CACHE = None
+        yield
+        core.context_processors._TYPEFACES_CACHE = None
+
+    def test_core_context_processors_load_typefaces_reads_the_build_output(
+        self, mocker
+    ):
+        path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")
+        path.read_text.return_value = (
+            '{"asastats": {"display": "Sora", "sans": "Inter", "mono": "Fira Code"}}'
+        )
+
+        result = load_typefaces()
+
+        assert result == {
+            "asastats": {"display": "Sora", "sans": "Inter", "mono": "Fira Code"}
+        }
+
+    def test_core_context_processors_load_typefaces_reads_once_per_process(
+        self, mocker
+    ):
+        """Every request renders a page; re-reading the file on each is waste."""
+        path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")
+        path.read_text.return_value = '{"asastats": {"sans": "Inter"}}'
+
+        load_typefaces()
+        load_typefaces()
+
+        path.read_text.assert_called_once_with()
+
+    def test_core_context_processors_load_typefaces_empty_when_file_is_missing(
+        self, mocker
+    ):
+        """The file is build output, so a deployment can be missing it.
+
+        Offering no typefaces costs a reader one setting; letting the OSError
+        out of a context processor takes down every page on the site.
+        """
+        path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")
+        path.read_text.side_effect = FileNotFoundError("no such file")
+        warning = mocker.patch("core.context_processors.logger.warning")
+
+        result = load_typefaces()
+
+        assert result == {}
+        warning.assert_called_once_with("Could not read %s", path, exc_info=True)
+
+    def test_core_context_processors_load_typefaces_empty_when_file_is_unreadable(
+        self, mocker
+    ):
+        """A permission or device error is an OSError like any other."""
+        path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")
+        path.read_text.side_effect = PermissionError("denied")
+        warning = mocker.patch("core.context_processors.logger.warning")
+
+        result = load_typefaces()
+
+        assert result == {}
+        warning.assert_called_once_with("Could not read %s", path, exc_info=True)
+
+    def test_core_context_processors_load_typefaces_empty_when_json_is_invalid(
+        self, mocker
+    ):
+        """A half-written file parses as far as the truncation, then raises.
+
+        Fed real malformed text rather than a raised ValueError, so this also
+        pins that `json.JSONDecodeError` is caught by the `ValueError` arm.
+        """
+        path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")
+        path.read_text.return_value = '{"asastats": {"sans": "Inte'
+        warning = mocker.patch("core.context_processors.logger.warning")
+
+        result = load_typefaces()
+
+        assert result == {}
+        warning.assert_called_once_with("Could not read %s", path, exc_info=True)
+
+    def test_core_context_processors_load_typefaces_does_not_retry_after_failure(
+        self, mocker
+    ):
+        """`{}` is not `None`, so the empty result is cached like any other.
+
+        A file that failed to read once will not start reading mid-process,
+        and retrying would put the failing read on every request instead.
+        """
+        path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")
+        path.read_text.side_effect = FileNotFoundError("no such file")
+        mocker.patch("core.context_processors.logger.warning")
+
+        load_typefaces()
+        second = load_typefaces()
+
+        assert second == {}
+        path.read_text.assert_called_once_with()
 
     # # deployment_capabilities
     def test_core_context_processors_deployment_capabilities_returns_cached_value(
@@ -114,21 +217,63 @@ class TestCoreContextProcessors:
         }
 
     # # main_navigation
-    def test_core_context_processors_main_navigation_functionality(self, mocker):
-        assert main_navigation(mocker.MagicMock()) == {
-            "main_navigation": settings_module.MAIN_NAVIGATION
+    def test_core_context_processors_main_navigation_signed_in(self, mocker):
+        request = mocker.MagicMock()
+        request.user.is_authenticated = True
+
+        assert main_navigation(request) == {
+            "main_navigation": settings_module.MAIN_NAVIGATION_AUTHENTICATED
         }
 
-    def test_core_context_processors_main_navigation_entries_resolve(self):
+    def test_core_context_processors_main_navigation_signed_out(self, mocker):
+        request = mocker.MagicMock()
+        request.user.is_authenticated = False
+
+        assert main_navigation(request) == {
+            "main_navigation": settings_module.MAIN_NAVIGATION_ANONYMOUS
+        }
+
+    def test_core_context_processors_main_navigation_without_a_user(self, mocker):
+        """Context processors run on responses AuthenticationMiddleware missed.
+
+        A 500 rendered from a request that never reached the middleware has no
+        `request.user`, and a header that raises there replaces the error page
+        with a second error. The signed-out list is the safe answer.
+        """
+        request = mocker.Mock(spec=[])
+
+        assert main_navigation(request) == {
+            "main_navigation": settings_module.MAIN_NAVIGATION_ANONYMOUS
+        }
+
+    @pytest.mark.parametrize(
+        "entries",
+        [
+            settings_module.MAIN_NAVIGATION_AUTHENTICATED,
+            settings_module.MAIN_NAVIGATION_ANONYMOUS,
+        ],
+    )
+    def test_core_context_processors_main_navigation_entries_resolve(self, entries):
         """Every entry must be a real url name.
 
         The header reverses these, so a renamed or removed view turns the whole
         navigation into a NoReverseMatch on every page of the site -- including
         the error page. Cheap to assert, expensive to discover.
         """
-        for url_name, label in settings_module.MAIN_NAVIGATION:
+        for url_name, label in entries:
             assert reverse(url_name), f"{url_name} does not reverse"
             assert label.strip(), f"{url_name} has an empty label"
+
+    def test_core_context_processors_main_navigation_offers_no_way_out_to_a_guest(
+        self, mocker
+    ):
+        """Log out on a page nobody is signed in to is a dead control."""
+        request = mocker.MagicMock()
+        request.user.is_authenticated = False
+
+        labels = [label for _, label in main_navigation(request)["main_navigation"]]
+
+        assert "Log out" not in labels
 
     # # profile_navigation
     def test_core_context_processors_profile_navigation_functionality(self, mocker):

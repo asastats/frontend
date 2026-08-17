@@ -20,6 +20,8 @@ which control they exercise.
 
 from django.conf import settings
 from django.urls import reverse
+
+from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 from selenium.webdriver.common.by import By
 
 from .base import FunctionalTest
@@ -256,4 +258,134 @@ class AppearancePageTest(FunctionalTest):
 
         self.assertIn(settings.THEME_ATTRIBUTION["author"], body)
         self.assertIn(settings.THEME_ATTRIBUTION["license"], body)
+
+
+class AppearanceTypefaceTest(FunctionalTest):
+    """The typeface picker, and the tier that guards it.
+
+    Choosing a theme is free to any signed-in reader; borrowing another theme's
+    typeface pairing is an Asastatser feature. Below the tier the choices are
+    still rendered -- disabled, inside a link to subscriptions -- so the reader
+    can see what the upgrade buys, the way the explorer preference does.
+    """
+
+    def _open(self, email, permission):
+        self.create_cookie_and_go_to_index_page_tier(email, permission=permission)
+        self.browser.get(self.server_url + reverse("profile_appearance"))
+
+    def _entitled(self):
+        self._open(
+            "typeface-paid@example.com",
+            SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
+        )
+
+    def _unentitled(self):
+        self._open(
+            "typeface-free@example.com",
+            SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"] - 1,
+        )
+
+    def _stamped_typeface(self):
+        return self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+            "data-typeface"
+        )
+
+    def _choose(self, value):
+        target = self.browser.find_element(
+            By.CSS_SELECTOR, f'input[name="typeface-choice"][value="{value}"]'
+        )
+        self.browser.execute_script(
+            "arguments[0].checked = true;"
+            "arguments[0].dispatchEvent(new Event('change'));",
+            target,
+        )
+
+    def test_an_entitled_reader_can_choose_a_pairing(self):
+        self._entitled()
+
+        self._choose("rosepine")
+
+        self.wait_until(lambda: self._stamped_typeface() == "rosepine")
+
+    def test_the_choice_survives_a_page_change(self):
+        """Stamped in the head before paint, like the theme."""
+        self._entitled()
+        self._choose("nord")
+        self.wait_until(lambda: self._stamped_typeface() == "nord")
+
+        self.browser.get(self.server_url + reverse("faq"))
+
+        self.wait_until(lambda: self._stamped_typeface() == "nord")
+
+    def test_theme_default_clears_the_override(self):
+        """The empty choice returns the reader to their theme's own pairing."""
+        self._entitled()
+        self._choose("nord")
+        self.wait_until(lambda: self._stamped_typeface() == "nord")
+
+        self._choose("")
+
+        self.wait_until(lambda: self._stamped_typeface() is None)
+
+    def test_the_typeface_is_independent_of_the_theme(self):
+        """Two axes: choosing a theme must not disturb a chosen pairing."""
+        self._entitled()
+        self._choose("nord")
+        self.wait_until(lambda: self._stamped_typeface() == "nord")
+
+        theme = self.browser.find_element(
+            By.CSS_SELECTOR, 'input[name="theme-dropdown"][value="abyss"]'
+        )
+        self.browser.execute_script(
+            "arguments[0].checked = true;"
+            "arguments[0].dispatchEvent(new Event('change'));",
+            theme,
+        )
+
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "abyss"
+        )
+        self.assertEqual(self._stamped_typeface(), "nord")
+
+    def test_an_unentitled_reader_sees_the_choices_but_cannot_use_them(self):
+        self._unentitled()
+
+        inputs = self.browser.find_elements(
+            By.CSS_SELECTOR, 'input[name="typeface-choice"]'
+        )
+        self.assertTrue(inputs, "the pairings were hidden rather than disabled")
+        self.assertTrue(
+            all(i.get_attribute("disabled") for i in inputs),
+            "a pairing was left usable below the tier",
+        )
+
+    def test_an_unentitled_reader_is_pointed_at_subscriptions(self):
+        self._unentitled()
+
+        link = self.browser.find_element(
+            By.CSS_SELECTOR, f'#id-section-typeface a[href="{reverse("subscriptions")}"]'
+        )
+        self.assertIn("Asastatser", link.get_attribute("title"))
+
+    def test_an_unentitled_reader_can_still_choose_a_theme(self):
+        """The tier buys typefaces, not themes."""
+        self._unentitled()
+
+        theme = self.browser.find_element(
+            By.CSS_SELECTOR, 'input[name="theme-dropdown"][value="nord"]'
+        )
+        self.assertIsNone(theme.get_attribute("disabled"))
+        self.browser.execute_script(
+            "arguments[0].checked = true;"
+            "arguments[0].dispatchEvent(new Event('change'));",
+            theme,
+        )
+
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "nord"
+        )
 

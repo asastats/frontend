@@ -1,0 +1,235 @@
+{
+ "abyss": {
+  "display": "Unbounded",
+  "sans": "Inter"
+ },
+ "acid": {
+  "display": "Syne",
+  "sans": "Space Grotesk"
+ },
+ "andromeda": {
+  "display": "Chakra Petch",
+  "sans": "IBM Plex Sans",
+  "mono": "JetBrains Mono"
+ },
+ "aqua": {
+  "display": "Lexend",
+  "sans": "Nunito Sans"
+ },
+ "asastats": {
+  "display": "Oswald",
+  "sans": "Nunito"
+ },
+ "asastats-dark": {
+  "display": "Oswald",
+  "sans": "Nunito"
+ },
+ "autumn": {
+  "display": "Zilla Slab",
+  "sans": "Karla"
+ },
+ "ayudark": {
+  "display": "Space Grotesk",
+  "sans": "Inter",
+  "mono": "IBM Plex Mono"
+ },
+ "black": {
+  "display": "Inter Tight",
+  "sans": "Inter"
+ },
+ "bumblebee": {
+  "display": "Archivo Black",
+  "sans": "Archivo"
+ },
+ "business": {
+  "display": "Merriweather",
+  "sans": "Source Sans 3"
+ },
+ "caramellatte": {
+  "display": "Fraunces",
+  "sans": "Karla"
+ },
+ "catppuccin": {
+  "display": "Comfortaa",
+  "sans": "Nunito Sans",
+  "mono": "JetBrains Mono"
+ },
+ "cmyk": {
+  "display": "Anton",
+  "sans": "Work Sans"
+ },
+ "coffee": {
+  "display": "Bitter",
+  "sans": "Cabin"
+ },
+ "corporate": {
+  "display": "Source Serif 4",
+  "sans": "IBM Plex Sans"
+ },
+ "cupcake": {
+  "display": "Quicksand",
+  "sans": "Nunito"
+ },
+ "cyberpunk": {
+  "display": "Bungee",
+  "sans": "Space Mono"
+ },
+ "dark": {
+  "display": "Plus Jakarta Sans",
+  "sans": "Inter"
+ },
+ "dim": {
+  "display": "Sora",
+  "sans": "Inter"
+ },
+ "dracula": {
+  "display": "JetBrains Mono",
+  "sans": "Inter"
+ },
+ "emerald": {
+  "display": "Outfit",
+  "sans": "Inter"
+ },
+ "everforest": {
+  "display": "Alegreya",
+  "sans": "Alegreya Sans",
+  "mono": "Fira Code"
+ },
+ "fantasy": {
+  "display": "Cinzel",
+  "sans": "Lora"
+ },
+ "flexoki": {
+  "display": "Newsreader",
+  "sans": "Literata",
+  "mono": "IBM Plex Mono"
+ },
+ "forest": {
+  "display": "Vollkorn",
+  "sans": "Source Sans 3"
+ },
+ "garden": {
+  "display": "Cormorant Garamond",
+  "sans": "Lato"
+ },
+ "githubdark": {
+  "display": "Familjen Grotesk",
+  "sans": "Inter",
+  "mono": "Source Code Pro"
+ },
+ "githublight": {
+  "display": "Familjen Grotesk",
+  "sans": "Inter",
+  "mono": "Source Code Pro"
+ },
+ "gruvbox": {
+  "display": "Bricolage Grotesque",
+  "sans": "Fira Sans",
+  "mono": "Fira Code"
+ },
+ "halloween": {
+  "display": "Creepster",
+  "sans": "Oswald"
+ },
+ "kanagawa": {
+  "display": "Zen Old Mincho",
+  "sans": "Zen Kaku Gothic New",
+  "mono": "M PLUS 1 Code"
+ },
+ "lemonade": {
+  "display": "Poppins",
+  "sans": "Nunito Sans"
+ },
+ "light": {
+  "display": "Plus Jakarta Sans",
+  "sans": "Inter"
+ },
+ "lofi": {
+  "display": "Space Grotesk",
+  "sans": "Inter"
+ },
+ "luxury": {
+  "display": "Marcellus",
+  "sans": "Jost"
+ },
+ "monokai": {
+  "display": "DM Mono",
+  "sans": "DM Sans",
+  "mono": "DM Mono"
+ },
+ "night": {
+  "display": "Manrope",
+  "sans": "Inter"
+ },
+ "nightfox": {
+  "display": "Red Hat Display",
+  "sans": "Red Hat Text",
+  "mono": "Red Hat Mono"
+ },
+ "nightowl": {
+  "display": "Epilogue",
+  "sans": "Manrope",
+  "mono": "JetBrains Mono"
+ },
+ "nord": {
+  "display": "Jost",
+  "sans": "Inter"
+ },
+ "onedarkpro": {
+  "display": "Be Vietnam Pro",
+  "sans": "Inter",
+  "mono": "Fira Code"
+ },
+ "pastel": {
+  "display": "Baloo 2",
+  "sans": "Nunito"
+ },
+ "retro": {
+  "display": "Alfa Slab One",
+  "sans": "Rokkitt"
+ },
+ "rosepine": {
+  "display": "Spectral",
+  "sans": "Karla",
+  "mono": "IBM Plex Mono"
+ },
+ "silk": {
+  "display": "Instrument Serif",
+  "sans": "DM Sans"
+ },
+ "solarized": {
+  "display": "IBM Plex Serif",
+  "sans": "IBM Plex Sans",
+  "mono": "IBM Plex Mono"
+ },
+ "sunset": {
+  "display": "Outfit",
+  "sans": "Karla"
+ },
+ "synthwave": {
+  "display": "Orbitron",
+  "sans": "Rajdhani"
+ },
+ "tokyonight": {
+  "display": "M PLUS 2",
+  "sans": "Rubik",
+  "mono": "M PLUS 1 Code"
+ },
+ "valentine": {
+  "display": "Playfair Display",
+  "sans": "Nunito"
+ },
+ "vscode": {
+  "display": "Barlow",
+  "sans": "Open Sans",
+  "mono": "Source Code Pro"
+ },
+ "winter": {
+  "display": "Raleway",
+  "sans": "Inter"
+ },
+ "wireframe": {
+  "display": "Architects Daughter",
+  "sans": "Kalam"
+ }
+}

@@ -34,6 +34,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.client import BackendError, download_export, fetch_price
 from api.main import fetch_and_serialize_account
+from core.context_processors import load_typefaces
 from core.forms import (
     DeactivateProfileForm,
     ProfileBundleNameForm,
@@ -1029,6 +1030,31 @@ class ProfileAppearanceView(TemplateView):
     """
 
     template_name = "profile_appearance.html"
+
+    def get_context_data(self, *args, **kwargs):
+        """Add the typeface catalogue and whether this reader may use it.
+
+        Both are page-scoped rather than published by a context processor: no
+        other page offers typefaces, and the gate follows the same shape as
+        ``ProfileSettingsView``'s explorer preference -- a method on Profile,
+        surfaced here, rendered as a disabled control below the tier.
+
+        The tier itself is not passed through: like the explorer preference,
+        the gate reads SUBSCRIPTION_TIER_PERMISSIONS directly and the template
+        names the tier in the sentence that explains it.
+
+        :var context["typefaces"]: pairing name -> {display, sans, mono}
+        :type context["typefaces"]: dict
+        :var context["can_access_typeface"]: may this reader override it
+        :type context["can_access_typeface"]: bool
+        :return: dict
+        """
+        context = super().get_context_data(*args, **kwargs)
+        context["typefaces"] = load_typefaces()
+        context["can_access_typeface"] = (
+            self.request.user.profile.can_access_typeface_setting()
+        )
+        return context
 
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")

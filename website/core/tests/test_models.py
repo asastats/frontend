@@ -2514,6 +2514,44 @@ class TestCoreModelsProfilePreferredExplorer:
             == "allo"
         )
 
+    def test_core_models_profile_can_access_typeface_setting_for_true(self):
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+            ).can_access_typeface_setting()
+            is True
+        )
+
+    def test_core_models_profile_can_access_typeface_setting_for_false(self):
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"] - 1
+            ).can_access_typeface_setting()
+            is False
+        )
+
+    def test_core_models_profile_can_access_typeface_setting_above_the_tier(self):
+        """The gate is a floor, not an equality -- higher tiers keep it."""
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Cluster"]
+            ).can_access_typeface_setting()
+            is True
+        )
+
+    def test_core_models_profile_typeface_is_a_higher_tier_than_explorer(self):
+        """The two gates are deliberately different, so neither implies the other.
+
+        Asserted rather than assumed: reusing the explorer's tier here would be
+        an easy and silent way to give the feature away, since both methods sit
+        beside each other and read almost identically.
+        """
+        entitled_for_explorer = Profile(
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        )
+        assert entitled_for_explorer.can_access_explorer_setting() is True
+        assert entitled_for_explorer.can_access_typeface_setting() is False
+
     def test_core_models_profile_can_access_explorer_setting_for_true(self):
         assert (
             Profile(

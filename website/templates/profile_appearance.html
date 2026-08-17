@@ -73,4 +73,77 @@
   </div>
   {% endif %}
 </section>
+
+{% comment %}
+  Typeface. Its own section rather than a column of the theme grid, because it
+  is an independent axis -- any pairing works with any theme -- and because it
+  is gated on a subscription tier while the theme is not.
+
+  The gate follows the explorer preference on profile_settings.html: below the
+  tier the choices are still rendered, disabled, inside a link to
+  subscriptions. Showing what is on offer is the point; hiding it would make
+  the upgrade an abstraction.
+
+  Each choice is another theme's pairing, named after that theme, because that
+  is what it is. "Theme default" clears the override, which is why its value is
+  empty. Every specimen renders in the face it offers, for the same reason the
+  theme swatches render in their own colours.
+{% endcomment %}
+<section class="rounded-box border border-base-300 bg-base-100" id="id-section-typeface">
+  <div class="border-b border-base-300 px-5 py-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="font-medium">Typeface</h2>
+        <p class="mt-1 text-sm text-base-content/60">
+          Every theme brings its own pair. Borrow another theme's if you prefer.
+        </p>
+      </div>
+      {% if not can_access_typeface %}
+      <span class="badge badge-outline">Asastatser and above</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="px-5 py-5">
+    {% if not can_access_typeface %}
+    <a href="{% url 'subscriptions' %}" class="block"
+       title="Available from the Asastatser tier — open subscriptions">
+    {% endif %}
+
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3{% if not can_access_typeface %} pointer-events-none opacity-60{% endif %}">
+      <label class="cursor-pointer">
+        <input type="radio" name="typeface-choice" value="" class="peer sr-only"
+               {% if not can_access_typeface %}disabled aria-disabled="true"{% endif %}>
+        <span class="flex h-full flex-col justify-center rounded-box border border-base-300 p-3
+                     transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
+          <span class="text-sm font-medium">Theme default</span>
+          <span class="text-xs text-base-content/60">Whatever the theme brings</span>
+        </span>
+      </label>
+      {% for name, faces in typefaces.items %}
+      <label class="cursor-pointer" data-typeface="{{ name }}">
+        <input type="radio" name="typeface-choice" value="{{ name }}" class="peer sr-only"
+               {% if not can_access_typeface %}disabled aria-disabled="true"{% endif %}>
+        <span class="flex h-full flex-col rounded-box border border-base-300 p-3
+                     transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
+          <span class="truncate text-base font-medium"
+                style="font-family: var(--typeface-display), sans-serif;">{{ faces.display }}</span>
+          <span class="truncate text-sm text-base-content/70"
+                style="font-family: var(--typeface-body), sans-serif;">{{ faces.sans }} — the quick brown fox</span>
+          <span class="mt-1 truncate text-xs text-base-content/50">from {{ name }}</span>
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+
+    {% if not can_access_typeface %}
+      <span class="mt-4 block text-xs text-base-content/60">
+        Choosing a typeface is available from the
+        <span class="text-primary">Asastatser</span> tier. Tap to upgrade.
+        Your theme's own pairing is applied either way.
+      </span>
+    </a>
+    {% endif %}
+  </div>
+</section>
 {% endblock %}

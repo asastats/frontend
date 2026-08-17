@@ -124,6 +124,20 @@ class Profile(models.Model):
         """
         return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
 
+    def can_access_typeface_setting(self):
+        """Return True if the user may override their theme's typeface.
+
+        Available from the Asastatser subscription tier upward; below that the
+        appearance page shows the choices disabled and routes a click to the
+        subscriptions page, the way the explorer preference does.
+
+        Choosing a *theme* is not gated -- only borrowing another theme's
+        typeface pairing is.
+
+        :return: Boolean
+        """
+        return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+
     def check_votes_and_permission(self):
         """Check and possibly update profile with new votes and permission values.
 
