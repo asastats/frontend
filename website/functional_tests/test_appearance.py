@@ -52,12 +52,28 @@ class AppearancePickerTest(FunctionalTest):
     def test_picker_offers_exactly_the_themes_settings_declares(self):
         """The picker is rendered from settings, so adding a theme is a
         settings change plus an input.css registration -- never a template
-        edit. core.tests.test_context_processors keeps those two in step."""
+        edit. core.tests.test_context_processors keeps those two in step.
+
+        Twelve, not all 57: a dropdown is for choosing and the appearance page
+        is for browsing. A fresh browser has used nothing, so the Recent group
+        is empty and these are all there is.
+        """
         radios = self._open_picker()
         self.assertEqual(
             [r.get_attribute("value") for r in radios],
-            list(settings.AVAILABLE_THEMES),
+            list(settings.DEFAULT_THEMES),
         )
+
+    def test_picker_links_to_the_rest(self):
+        """The other 45 have to be reachable from here, or they are lost."""
+        self._open_picker()
+
+        links = self.browser.find_elements(
+            By.CSS_SELECTOR,
+            f'#id-theme-list a[href="{reverse("profile_appearance")}"]',
+        )
+
+        self.assertTrue(links, "the dropdown offers no way to the full set")
 
     def test_no_theme_is_stamped_until_one_is_chosen(self):
         self.create_cookie_and_go_to_index_page("unstamped@example.com")
@@ -68,18 +84,18 @@ class AppearancePickerTest(FunctionalTest):
 
     def test_choosing_a_theme_applies_it_and_survives_a_page_change(self):
         radios = self._open_picker()
-        target = next(r for r in radios if r.get_attribute("value") == "abyss")
+        target = next(r for r in radios if r.get_attribute("value") == "dracula")
         self.browser.execute_script(
             "arguments[0].checked = true;"
             "arguments[0].dispatchEvent(new Event('change'));",
             target,
         )
-        self.wait_until(lambda: self._stamped_theme() == "abyss")
+        self.wait_until(lambda: self._stamped_theme() == "dracula")
 
         # The choice is client-side only, so it has to come back from storage,
         # and early enough that the page never paints the default first.
         self.browser.get(self.server_url + reverse("faq"))
-        self.wait_until(lambda: self._stamped_theme() == "abyss")
+        self.wait_until(lambda: self._stamped_theme() == "dracula")
 
     def test_the_picker_closes_once_a_theme_is_chosen(self):
         radios = self._open_picker()
@@ -405,3 +421,156 @@ class AppearanceTypefaceTest(FunctionalTest):
             ).get_attribute("data-theme") == "nord"
         )
 
+
+class AppearanceRecentThemesTest(FunctionalTest):
+    """The dropdown promotes what this browser has actually used.
+
+    The tally is localStorage only, like the theme it ranks. A tally that
+    synced while the theme did not would order the menu by a history this
+    browser never had -- so both live in the same place, and clearing site data
+    clears both together.
+
+    A theme counts when it survives a navigation, not when it is clicked. That
+    is the difference between choosing one and browsing the appearance page,
+    where every click applies a theme for a moment.
+    """
+
+    def _sign_in(self):
+        self.create_cookie_and_go_to_index_page("recent@example.com")
+
+    def _open_picker(self, page="disclaimer"):
+        self.browser.get(self.server_url + reverse(page))
+        self.browser.execute_script(
+            "document.querySelector('#id-theme-list').closest('details').open = true;"
+        )
+
+    def _choose(self, theme):
+        self.browser.execute_script(
+            "var r = document.querySelector("
+            "  \'#id-theme-list input[value=\"' + arguments[0] + '\"]\');"
+            "r.checked = true; r.dispatchEvent(new Event('change'));",
+            theme,
+        )
+
+    def _recent(self):
+        return [
+            el.get_attribute("value")
+            for el in self.browser.find_elements(
+                By.CSS_SELECTOR, "#id-theme-list [data-theme-recent] input"
+            )
+        ]
+
+    def _usage(self):
+        return self.browser.execute_script(
+            "return JSON.parse(localStorage.getItem('themeUsage') || '{}');"
+        )
+
+    def test_a_fresh_browser_has_no_recent_group(self):
+        self._sign_in()
+
+        self._open_picker()
+
+        self.assertEqual(self._recent(), [])
+        self.assertTrue(
+            self.browser.find_element(
+                By.CSS_SELECTOR, "#id-theme-recent-title"
+            ).get_attribute("hidden")
+        )
+
+    def test_a_chosen_theme_is_counted_once_it_survives_a_page(self):
+        self._sign_in()
+        self._open_picker()
+
+        self._choose("dracula")
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "dracula"
+        )
+        # Not counted yet: nothing has been navigated away from.
+        self.assertEqual(self._usage(), {})
+
+        self._open_picker("faq")
+
+        self.assertEqual(self._usage(), {"dracula": 1})
+
+    def test_a_used_theme_leads_the_dropdown(self):
+        self._sign_in()
+        self._open_picker()
+        self._choose("gruvbox")
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "gruvbox"
+        )
+
+        self._open_picker("faq")
+
+        self.assertEqual(self._recent(), ["gruvbox"])
+
+    def test_a_promoted_theme_is_not_offered_twice(self):
+        """Two radios sharing a name and a value fight over which is chosen."""
+        self._sign_in()
+        self._open_picker()
+        self._choose("mocha")
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "mocha"
+        )
+
+        self._open_picker("faq")
+
+        self.assertEqual(
+            len(
+                self.browser.find_elements(
+                    By.CSS_SELECTOR,
+                    "#id-theme-list input[name='theme-dropdown'][value='mocha']",
+                )
+            ),
+            1,
+        )
+
+    def test_browsing_more_pages_does_not_inflate_the_count(self):
+        """The count means chosen and kept, not page views."""
+        self._sign_in()
+        self._open_picker()
+        self._choose("tokyonight")
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "tokyonight"
+        )
+
+        self._open_picker("faq")
+        self._open_picker("disclaimer")
+        self._open_picker("faq")
+
+        self.assertEqual(self._usage(), {"tokyonight": 1})
+
+    def test_a_promoted_theme_still_applies_when_chosen(self):
+        """A cloned entry that does nothing when clicked is worse than none."""
+        self._sign_in()
+        self._open_picker()
+        self._choose("dracula")
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "dracula"
+        )
+        self._open_picker("faq")
+        self._choose("asastats")
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "asastats"
+        )
+
+        self._open_picker("disclaimer")
+        self._choose("dracula")
+
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.TAG_NAME, "html"
+            ).get_attribute("data-theme") == "dracula"
+        )

@@ -1,12 +1,12 @@
-{% extends 'base_home.html' %}
+{% extends 'base_profile.html' %}
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
 {% block title %}Profile account page - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}This is your profile account page where you can see your subscription tier or deactivate your account.{% endblock %}
 {% block keywords %}account,profile account,user account,user,profile{% endblock %}
-{% block page_header %}{{ user.profile.name }} profile account{% endblock %}
-{% block middle_section %}
+{% block profile_title %}{{ user.profile.name }} profile account{% endblock %}
+{% block profile_content %}
 <div class="grid gap-6 md:grid-cols-12 md:text-left">
 <div class="md:col-span-7">
   <div>
@@ -22,4 +22,4 @@
 </div>
 </div>
 {% endblock %}
-{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Account{% endblock %}
+{% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; Account{% endblock %}

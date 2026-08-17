@@ -112,11 +112,22 @@ class TokenomicsPageTest(TestCase):
                 "assets; run collectstatic where they exist to exercise this."
             )
 
+        # `load_transparency_reports()` groups by year -- a list of
+        # {"year": ..., "months": [...]} -- so the months are one level down.
+        # Read as a flat list this raised KeyError on the first entry, which
+        # went unnoticed because the skip above fires on any checkout without
+        # the PDFs.
+        # The link is `/transparency-report-YYYY-MM.pdf`, which is not the
+        # source filename: the loader matches `asastats-transparency-report-*`
+        # under STATIC_ROOT/assets, and the page serves them from the site root
+        # under the shorter name.
+        html = self.response.content.decode()
         missing = [
             f"{report['year']}-{report['month']}"
-            for report in reports
+            for group in reports
+            for report in group["months"]
             if f"transparency-report-{report['year']}-{report['month']}.pdf"
-            not in self.response.content.decode()
+            not in html
         ]
         self.assertEqual(
             missing,

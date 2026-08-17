@@ -19,17 +19,26 @@ class ProfileEditTest(FunctionalTest):
         self.assertIn("profile", self.browser.current_url)
 
         # He sees button that leads to home entitled "Back"
-        links = self.browser.find_elements(By.XPATH, '//a[@href="/home/"]')
+        #
+        # Matched by its text rather than by position in the list of links to
+        # /home/. The header renders one for the desktop nav and another for
+        # the mobile menu, and the footer a third, so an index here breaks
+        # whenever the chrome changes and says nothing about the button.
+        #
         # Materialize upper-cased button and link text in CSS; DaisyUI does
         # not, so the rendered casing is a design decision now rather than
         # something the content depends on.
-        self.assertIn("back", links[2].text.lower())
+        links = self.browser.find_elements(By.XPATH, '//a[@href="/home/"]')
+        self.assertTrue(
+            any(link.text.strip().lower() == "back" for link in links),
+            "the profile page has no Back button leading home",
+        )
 
         # He sees input box for editing his name
         label_for_name = self.browser.find_element(
             By.XPATH, '//label[@for="id_first_name"]'
         )
-        self.assertEqual(label_for_name.text, "First name:")
+        self.assertEqual(label_for_name.text, "First name")
         # He enters his name
         name = self.find_elem_by_id("id_first_name")
         name.send_keys("Robert")
@@ -38,7 +47,7 @@ class ProfileEditTest(FunctionalTest):
         label_for_lastname = self.browser.find_element(
             By.XPATH, '//label[@for="id_last_name"]'
         )
-        self.assertEqual(label_for_lastname.text, "Last name:")
+        self.assertEqual(label_for_lastname.text, "Last name")
 
         # He enters his last name and finally submits data
         lastname = self.find_elem_by_id("id_last_name")
@@ -68,7 +77,10 @@ class ProfileEditTest(FunctionalTest):
         label = self.browser.find_element(
             By.XPATH, '//label[@for="id_profile-0-address"]'
         )
-        self.assertEqual(label.text, "Address:")
+        # No colon. Django appends one via `label_tag`, which the page used to
+        # render; it now renders `label` itself, because `label_tag` put the
+        # value before the label and the page read "2EVGZ4... Address:".
+        self.assertEqual(label.text, "Address")
 
     def test_profile_page_other_buttons(self):
         # Malcolm signs up
@@ -127,8 +139,13 @@ class ProfileEditTest(FunctionalTest):
         with self.wait_for_page_load(timeout=5):
             back.click()
 
-        # He sees there's API token button
-        api = self.find_elem_by_id("id_profile_api")
+        # He sees there's a way to the API token page
+        #
+        # It was a button with its own id; the profile section carries a
+        # sub-nav now and the API token page is one of its entries, so the
+        # route is matched by where it leads rather than by an id the
+        # redesign removed.
+        api = self.browser.find_element(By.CSS_SELECTOR, 'a[href*="profile/api/"]')
         self.assertIn("profile/api/", api.get_attribute("href"))
 
         # He clicks it and finds himself on subscriptions page

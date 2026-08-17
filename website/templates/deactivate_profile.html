@@ -1,9 +1,9 @@
-{% extends 'base_home.html' %}
+{% extends 'base_profile.html' %}
 {% load i18n %}
 {% load core_extras %}
-{% block page_header %}Deactivate account{% endblock %}
+{% block profile_title %}Deactivate account{% endblock %}
 
-{% block middle_section %}
+{% block profile_content %}
 <p>{% blocktrans %}
     To deactivate your account you must enter the characters from the image. If you can't recognize provided characters try another combination by refreshing the page.
 {% endblocktrans %}</p>
@@ -31,4 +31,4 @@
 </form>
 {% endblock %}
 
-{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; Deactivate{% endblock %}
+{% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; Deactivate{% endblock %}

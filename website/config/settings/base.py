@@ -413,6 +413,48 @@ AVAILABLE_THEMES_BY_SCHEME = {
     ],
 }
 
+# What the header dropdown offers before a reader has chosen anything: six of
+# each scheme, ours leading both. The full set of 57 lives on the appearance
+# page, which is built for browsing; a dropdown is not, and 57 names in one is
+# a list you scan rather than choose from.
+#
+# Chosen for range rather than preference -- a warm light, a cool light, a
+# high-contrast dark, a muted dark -- so that whatever a reader is after, one of
+# these is close enough to it that they know the rest are worth a look.
+#
+# `theme.js` promotes whatever the reader actually uses above these, so this
+# list is a starting point rather than a ranking, and being absent from it
+# costs a theme nothing once someone picks it.
+DEFAULT_THEMES_BY_SCHEME = {
+    # Alphabetical after ours, like AVAILABLE_THEMES_BY_SCHEME above and for
+    # the same reason: a reader looking for a name should not have to scan.
+    "Light": [
+        "asastats",
+        "corporate",
+        "cupcake",
+        "latte",
+        "lofi",
+        "nord",
+    ],
+    "Dark": [
+        "asastats-dark",
+        "dracula",
+        "githubdark",
+        "gruvbox",
+        "mocha",
+        "tokyonight",
+    ],
+}
+
+DEFAULT_THEMES = [
+    theme for group in DEFAULT_THEMES_BY_SCHEME.values() for theme in group
+]
+
+#: How many used themes the dropdown lists above the defaults. Small on
+#: purpose: the point is that the theme you just picked is where you left it,
+#: not that the list becomes a history.
+RECENT_THEMES_SHOWN = 3
+
 # Flat list, kept for everything that does not care about the grouping -- the
 # guard tests, and `theme.js` deciding whether a saved value is still offered.
 AVAILABLE_THEMES = [

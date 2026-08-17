@@ -1,10 +1,15 @@
-"""Functional tests for the signed-in pages built on base_home.html.
+"""Functional tests for the signed-in pages, which now use two shells.
 
-These share a shell: a page header, a main column, and a narrow left rail
-carrying breadcrumbs. The rail used to be produced by Materialize's
-``push-m10``/``pull-m2`` pair, which put it left on wide screens while leaving
-the main column first in source; the tests below pin that arrangement, because
-getting it backwards would hand a phone the navigation before the content.
+The profile section moved to base_profile.html: one centred column with a
+segmented sub-nav across the top. base_home.html still carries the older
+arrangement -- a main column with a narrow left rail for breadcrumbs -- and
+home and the bundle-name pages are still on it.
+
+The rail assertions below therefore belong to base_home, not to every
+signed-in page. The rail was produced by Materialize's ``push-m10``/``pull-m2``
+pair, which put it left on wide screens while leaving the main column first in
+source; that arrangement is still pinned here, because getting it backwards
+would hand a phone the navigation before the content.
 
 Page-specific flows live in their own modules -- test_profile_edit,
 test_profile_authorize, test_profile_account -- which predate this one.
@@ -15,9 +20,10 @@ from selenium.webdriver.common.by import By
 
 from .base import FunctionalTest
 
-#: Pages on base_home.html reachable by any signed-in viewer. profile_api is
-#: absent on purpose: CanAccessApiMixin gates it on the subscription tier, so
-#: it needs a fixture of its own rather than a place in a broad sweep.
+#: Every page a signed-in viewer can reach without a tier, whichever shell it
+#: uses. profile_api is absent on purpose: CanAccessApiMixin gates it on the
+#: subscription tier, so it needs a fixture of its own rather than a place in a
+#: broad sweep.
 SIGNED_IN_PAGES = [
     "home",
     "profile",
@@ -26,6 +32,9 @@ SIGNED_IN_PAGES = [
     "profile_addresses",
     "deactivate_profile",
 ]
+
+#: The pages still on base_home.html, which is where the rail lives.
+RAILED_PAGES = ["home"]
 
 
 class SignedInShellTest(FunctionalTest):
@@ -46,13 +55,17 @@ class SignedInShellTest(FunctionalTest):
                     "Internal server error",
                     f"{name} raised in the view{state['why']}",
                 )
+                # Scoped to <main>, and accepting either level. The two shells
+                # disagree -- base_profile makes the page title an h1, base_home
+                # an h2 -- and the footer carries an h2 per group on every page,
+                # so an unscoped `h2` would pass on a page with no header at all.
                 self.assertTrue(
-                    self.browser.find_elements(By.CSS_SELECTOR, "h2"),
+                    self.browser.find_elements(By.CSS_SELECTOR, "main h1, main h2"),
                     f"{name} lost its page header{state['why']}",
                 )
                 self.assertTrue(
-                    self.browser.find_elements(By.TAG_NAME, "aside"),
-                    f"{name} lost the left rail{state['why']}",
+                    self.browser.find_elements(By.CSS_SELECTOR, "nav"),
+                    f"{name} lost its navigation{state['why']}",
                 )
 
     def test_the_main_column_precedes_the_rail_in_source_order(self):
@@ -60,18 +73,48 @@ class SignedInShellTest(FunctionalTest):
 
         On wide screens CSS moves the rail to the left; that is a visual
         reordering only, which is the whole reason source order matters here.
+
+        Asserted against base_home, which is the shell that still has a rail.
+        The profile section moved to base_profile and has none -- one centred
+        column stacks correctly by construction, with nothing to get backwards.
+        """
+        for name in RAILED_PAGES:
+            with self.subTest(page=name):
+                self.browser.get(self.server_url + reverse(name))
+                order = self.browser.execute_script(
+                    "var rail = document.querySelector('aside');"
+                    "if (!rail) return null;"
+                    "return Array.from(rail.parentElement.children).map("
+                    "  function (c) { return c.tagName; });"
+                )
+                self.assertIsNotNone(order, f"{name} lost the left rail")
+                self.assertLess(order.index("DIV"), order.index("ASIDE"))
+
+    def test_the_profile_section_has_no_rail_to_get_backwards(self):
+        """base_profile is one column, so the stacking question does not arise.
+
+        Pinned because the rail's removal is the point of that redesign: if an
+        aside reappears here, the section has drifted back to the old shell.
         """
         self.browser.get(self.server_url + reverse("profile"))
-        order = self.browser.execute_script(
-            "var grid = document.querySelector('aside').parentElement;"
-            "return Array.from(grid.children).map(function (c) { return c.tagName; });"
-        )
-        self.assertEqual(order.index("DIV") < order.index("ASIDE"), True)
+
+        self.assertFalse(self.browser.find_elements(By.TAG_NAME, "aside"))
 
     def test_breadcrumbs_lead_back_up_the_hierarchy(self):
+        """Found by their landmark, not by the box they sit in.
+
+        They used to live in the rail, so this looked for an `aside`; the
+        profile section has no rail now. What makes them breadcrumbs is the
+        labelled navigation landmark, which is the same in either shell and is
+        also how a screen reader finds them.
+        """
         self.browser.get(self.server_url + reverse("profile_account"))
-        rail = self.browser.find_element(By.TAG_NAME, "aside")
-        hrefs = [a.get_attribute("href") for a in rail.find_elements(By.TAG_NAME, "a")]
+
+        crumbs = self.browser.find_element(
+            By.CSS_SELECTOR, 'nav[aria-label="Breadcrumb"]'
+        )
+        hrefs = [a.get_attribute("href") for a in crumbs.find_elements(By.TAG_NAME, "a")]
+
         self.assertTrue(any(reverse("home") in h for h in hrefs))
         self.assertTrue(any(reverse("profile") in h for h in hrefs))
 

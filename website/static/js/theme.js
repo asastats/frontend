@@ -170,6 +170,167 @@
     return wired;
   }
 
+  /** How often each theme has been chosen and kept, as {theme: count}. */
+  var USAGE_KEY = "themeUsage";
+
+  /** The last theme counted, so a count is not repeated on every page. */
+  var COUNTED_KEY = "themeCounted";
+
+  /**
+   * Read the usage tally.
+   *
+   * @returns {Object} {theme: count}, empty when there is nothing to read
+   */
+  function themeUsage() {
+    try {
+      var raw = localStorage.getItem(USAGE_KEY);
+      var parsed = raw ? JSON.parse(raw) : null;
+      // Anything but an object means another tab, an older version or a person
+      // with devtools open wrote something else here. Start over rather than
+      // throw: this is a convenience, and it must never break the page.
+      if (!parsed || typeof parsed !== "object" || parsed.constructor === Array) {
+        return {};
+      }
+      return parsed;
+    } catch (e) {
+      return {};
+    }
+  }
+
+  /**
+   * Count the theme in use, once per change rather than once per page.
+   *
+   * Called on load, deliberately. The alternative is to count on the way out
+   * -- `beforeunload` or `pagehide` -- which is unreliable on mobile, where a
+   * tab is often killed without either firing.
+   *
+   * Counting at load time also gives the rule this exists for: flipping
+   * through swatches on the appearance page fires no page load, so browsing
+   * costs nothing, and the theme that survives a navigation is the one that
+   * scores. A reader who then visits ten more pages adds nothing further,
+   * which is why the count reads as "chosen and kept" rather than "page
+   * views".
+   *
+   * Nothing here is sent to the server. The theme is a client-side preference,
+   * so its tally belongs in the same place -- a tally that synced while the
+   * theme did not would order the menu by a history this browser never had.
+   *
+   * @returns {number} the theme's new count, or 0 when nothing was counted
+   */
+  function countThemeUse() {
+    var active = currentTheme();
+    if (!active) return 0;
+
+    try {
+      if (localStorage.getItem(COUNTED_KEY) === active) return 0;
+    } catch (e) {
+      return 0;
+    }
+
+    var usage = themeUsage();
+    var count = (typeof usage[active] === "number" ? usage[active] : 0) + 1;
+    usage[active] = count;
+
+    try {
+      localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+      localStorage.setItem(COUNTED_KEY, active);
+    } catch (e) {
+      // Quota or private browsing. The theme still applies; only the ordering
+      // of the menu is lost, which is the least important thing here.
+      return 0;
+    }
+    return count;
+  }
+
+  /**
+   * Return the most-used themes, most first.
+   *
+   * @param {number} limit - how many to return
+   * @returns {string[]} theme names, longest-serving first on a tie
+   */
+  function recentThemes(limit) {
+    var usage = themeUsage();
+    return Object.keys(usage)
+      .filter(function (theme) {
+        return typeof usage[theme] === "number" && usage[theme] > 0;
+      })
+      .sort(function (a, b) {
+        // Ties resolve by name so the order is stable between loads rather
+        // than depending on however the keys happened to be enumerated.
+        return usage[b] - usage[a] || (a < b ? -1 : 1);
+      })
+      .slice(0, limit);
+  }
+
+  /**
+   * Fill the dropdown's Recent group from what this browser has used.
+   *
+   * Items are cloned from one the template already rendered, so the markup for
+   * a theme entry exists in exactly one place. A theme promoted into Recent is
+   * removed from the list below, because two radios sharing a name and a value
+   * are one control rendered twice -- they fight over which shows as chosen.
+   *
+   * @param {Document|Element} [root=document] - subtree to fill
+   * @returns {number} how many themes were promoted
+   */
+  function wireRecentThemes(root) {
+    var host = root || document;
+    var list = host.querySelector("#id-theme-list");
+    var title = host.querySelector("#id-theme-recent-title");
+    if (!list || !title) return 0;
+
+    // Clear a previous run, so an htmx swap does not stack duplicates.
+    Array.prototype.forEach.call(
+      list.querySelectorAll("[data-theme-recent]"),
+      function (item) {
+        item.remove();
+      }
+    );
+
+    var limit = parseInt(list.dataset.recentShown, 10) || 0;
+    var wanted = recentThemes(limit);
+    if (!wanted.length) {
+      title.hidden = true;
+      return 0;
+    }
+
+    // The anchor moves with each insertion, so the group comes out in the
+    // order `wanted` is in. Inserting each one after the title instead would
+    // build the list backwards.
+    var anchor = title;
+    var promoted = 0;
+
+    wanted.forEach(function (theme) {
+      var existing = list.querySelector(
+        "input[name='theme-dropdown'][value='" + theme + "']"
+      );
+      var item;
+      if (existing) {
+        // Already on the list: move its row up rather than clone it, which is
+        // what keeps one theme from being two radios with the same value.
+        item = existing.closest("li");
+      } else {
+        var prototypeInput = list.querySelector("input[name='theme-dropdown']");
+        if (!prototypeInput) return;
+        item = prototypeInput.closest("li").cloneNode(true);
+        var input = item.querySelector("input");
+        input.value = theme;
+        input.setAttribute("aria-label", theme);
+        input.checked = false;
+        // The clone carries the prototype's bound flag; without clearing it
+        // wireThemePicker would skip this input and the entry would be inert.
+        delete input.dataset.themeBound;
+      }
+      item.dataset.themeRecent = "1";
+      anchor.parentNode.insertBefore(item, anchor.nextSibling);
+      anchor = item;
+      promoted += 1;
+    });
+
+    title.hidden = false;
+    return promoted;
+  }
+
   /**
    * Open the appearance tab that holds the theme currently in use.
    *
@@ -248,6 +409,12 @@
       TYPEFACE_KEY: TYPEFACE_KEY,
       wireTypefacePicker: wireTypefacePicker,
       currentTheme: currentTheme,
+      USAGE_KEY: USAGE_KEY,
+      COUNTED_KEY: COUNTED_KEY,
+      themeUsage: themeUsage,
+      countThemeUse: countThemeUse,
+      recentThemes: recentThemes,
+      wireRecentThemes: wireRecentThemes,
       selectSchemeTab: selectSchemeTab,
       wireThemeToggle: wireThemeToggle,
       wireThemePicker: wireThemePicker,
@@ -255,12 +422,16 @@
   } else {
     if (document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", function () {
+        countThemeUse();
+        wireRecentThemes(document);
         wireThemePicker(document);
         wireThemeToggle(document);
         wireTypefacePicker(document);
         selectSchemeTab(document);
       });
     } else {
+      countThemeUse();
+      wireRecentThemes(document);
       wireThemePicker(document);
       wireThemeToggle(document);
       wireTypefacePicker(document);
@@ -268,6 +439,7 @@
     }
     // The header can be replaced by an htmx swap; re-tick and re-bind after one.
     document.body.addEventListener("htmx:afterSwap", function () {
+      wireRecentThemes(document);
       wireThemePicker(document);
       wireThemeToggle(document);
       wireTypefacePicker(document);

@@ -147,6 +147,11 @@ def global_constants(request):
         "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
         "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
         "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
+        # What the header dropdown starts from. The appearance page uses the
+        # full set above; these are the ten it offers before a reader has
+        # picked anything of their own.
+        "DEFAULT_THEMES_BY_SCHEME": settings.DEFAULT_THEMES_BY_SCHEME,
+        "RECENT_THEMES_SHOWN": settings.RECENT_THEMES_SHOWN,
         # The pair the signed-out light/dark switch flips between.
         "BRAND_THEME_LIGHT": settings.BRAND_THEME_LIGHT,
         "BRAND_THEME_DARK": settings.BRAND_THEME_DARK,

@@ -552,3 +552,278 @@ describe("selectSchemeTab", () => {
     expect(T.selectSchemeTab()).toBe("Light");
   });
 });
+
+/*
+ * The dropdown offers ten themes, and promotes what this browser actually uses
+ * above them. The tally is localStorage only, like the theme it ranks: one
+ * that synced while the theme did not would order the menu by a history this
+ * browser never had.
+ */
+describe("theme usage", () => {
+  beforeEach(() => {
+    document.documentElement.removeAttribute("data-theme");
+    localStorage.clear();
+  });
+
+  describe("countThemeUse", () => {
+    it("counts the theme in use", () => {
+      T.applyTheme("mocha");
+
+      expect(T.countThemeUse()).toBe(1);
+      expect(T.themeUsage()).toEqual({ mocha: 1 });
+    });
+
+    it("counts a theme once however many pages follow", () => {
+      // The count means "chosen and kept", not "page views".
+      T.applyTheme("mocha");
+      T.countThemeUse();
+
+      expect(T.countThemeUse()).toBe(0);
+      expect(T.themeUsage()).toEqual({ mocha: 1 });
+    });
+
+    it("counts again when the reader changes theme and comes back", () => {
+      T.applyTheme("mocha");
+      T.countThemeUse();
+      T.applyTheme("latte");
+      T.countThemeUse();
+      T.applyTheme("mocha");
+
+      expect(T.countThemeUse()).toBe(2);
+      expect(T.themeUsage()).toEqual({ mocha: 2, latte: 1 });
+    });
+
+    it("counts nothing when no theme is set", () => {
+      expect(T.countThemeUse()).toBe(0);
+      expect(T.themeUsage()).toEqual({});
+    });
+
+    it("survives a tally that is not an object", () => {
+      // Another tab, an older version, or a person with devtools open.
+      localStorage.setItem(T.USAGE_KEY, '"nonsense"');
+      T.applyTheme("mocha");
+
+      expect(T.countThemeUse()).toBe(1);
+      expect(T.themeUsage()).toEqual({ mocha: 1 });
+    });
+
+    it("survives a tally that is an array", () => {
+      localStorage.setItem(T.USAGE_KEY, "[1,2,3]");
+
+      expect(T.themeUsage()).toEqual({});
+    });
+
+    it("survives a tally that is not valid JSON", () => {
+      localStorage.setItem(T.USAGE_KEY, "{nope");
+
+      expect(T.themeUsage()).toEqual({});
+    });
+
+    it("ignores a non-numeric count for a theme", () => {
+      localStorage.setItem(T.USAGE_KEY, '{"mocha":"lots"}');
+      T.applyTheme("mocha");
+
+      expect(T.countThemeUse()).toBe(1);
+    });
+  });
+
+  describe("when localStorage refuses", () => {
+    // Private browsing and quota limits. The theme still applies and the page
+    // still works; only the ordering of the menu is lost, which is the least
+    // important thing here.
+    it("counts nothing when the tally cannot be read", () => {
+      T.applyTheme("mocha");
+      const restore = breakStorage("getItem", "denied");
+
+      try {
+        expect(T.countThemeUse()).toBe(0);
+      } finally {
+        restore();
+      }
+    });
+
+    it("counts nothing when the tally cannot be written", () => {
+      T.applyTheme("mocha");
+      const restore = breakStorage("setItem", "quota");
+
+      try {
+        expect(T.countThemeUse()).toBe(0);
+      } finally {
+        restore();
+      }
+    });
+  });
+
+  describe("recentThemes", () => {
+    it("returns the most used first", () => {
+      localStorage.setItem(T.USAGE_KEY, '{"latte":1,"mocha":5,"nord":3}');
+
+      expect(T.recentThemes(3)).toEqual(["mocha", "nord", "latte"]);
+    });
+
+    it("honours the limit", () => {
+      localStorage.setItem(T.USAGE_KEY, '{"latte":1,"mocha":5,"nord":3}');
+
+      expect(T.recentThemes(2)).toEqual(["mocha", "nord"]);
+    });
+
+    it("breaks ties by name so the order does not wander", () => {
+      localStorage.setItem(T.USAGE_KEY, '{"nord":2,"latte":2}');
+
+      expect(T.recentThemes(2)).toEqual(["latte", "nord"]);
+    });
+
+    it("breaks ties by name whichever way the keys were stored", () => {
+      // The other ordering of the same tie, so the comparison is exercised in
+      // both directions rather than however this browser enumerated the keys.
+      localStorage.setItem(T.USAGE_KEY, '{"latte":2,"nord":2}');
+
+      expect(T.recentThemes(2)).toEqual(["latte", "nord"]);
+    });
+
+    it("skips themes with no uses", () => {
+      localStorage.setItem(T.USAGE_KEY, '{"latte":0,"mocha":2}');
+
+      expect(T.recentThemes(3)).toEqual(["mocha"]);
+    });
+
+    it("returns nothing when nothing has been used", () => {
+      expect(T.recentThemes(3)).toEqual([]);
+    });
+  });
+
+  describe("wireRecentThemes", () => {
+    /** The shape snippets/theme_picker.html renders. */
+    function mountDropdown() {
+      document.body.innerHTML = `
+        <ul id="id-theme-list" data-recent-shown="3">
+          <li id="id-theme-recent-title" hidden>Recent</li>
+          <li class="group">Light</li>
+          <li><input type="radio" name="theme-dropdown" value="asastats" aria-label="asastats"></li>
+          <li><input type="radio" name="theme-dropdown" value="latte" aria-label="latte"></li>
+          <li class="group">Dark</li>
+          <li><input type="radio" name="theme-dropdown" value="asastats-dark" aria-label="asastats-dark"></li>
+        </ul>`;
+    }
+
+    /** Theme values in the Recent group, in the order they appear. */
+    function recentValues() {
+      return [...document.querySelectorAll("[data-theme-recent] input")].map(
+        (i) => i.value
+      );
+    }
+
+    it("stays hidden until something has been used", () => {
+      mountDropdown();
+
+      expect(T.wireRecentThemes(document)).toBe(0);
+      expect(document.getElementById("id-theme-recent-title").hidden).toBe(true);
+    });
+
+    it("promotes used themes, most used first", () => {
+      mountDropdown();
+      localStorage.setItem(T.USAGE_KEY, '{"latte":1,"mocha":5,"nord":3}');
+
+      expect(T.wireRecentThemes(document)).toBe(3);
+      expect(recentValues()).toEqual(["mocha", "nord", "latte"]);
+      expect(document.getElementById("id-theme-recent-title").hidden).toBe(false);
+    });
+
+    it("clones an entry for a theme the dropdown does not list", () => {
+      // mocha is not among the ten defaults, so its row has to be made.
+      mountDropdown();
+      localStorage.setItem(T.USAGE_KEY, '{"mocha":2}');
+
+      T.wireRecentThemes(document);
+      const input = document.querySelector("[data-theme-recent] input");
+
+      expect(input.value).toBe("mocha");
+      expect(input.getAttribute("aria-label")).toBe("mocha");
+    });
+
+    it("moves a listed theme rather than duplicating it", () => {
+      // Two radios sharing a name and a value are one control rendered twice,
+      // and they fight over which shows as chosen.
+      mountDropdown();
+      localStorage.setItem(T.USAGE_KEY, '{"latte":2}');
+
+      T.wireRecentThemes(document);
+
+      expect(
+        document.querySelectorAll(
+          'input[name="theme-dropdown"][value="latte"]'
+        ).length
+      ).toBe(1);
+    });
+
+    it("leaves a promoted clone wirable", () => {
+      // The clone inherits the prototype's bound flag; if it is not cleared,
+      // wireThemePicker skips it and the entry does nothing when clicked.
+      mountDropdown();
+      T.wireThemePicker(document);
+      localStorage.setItem(T.USAGE_KEY, '{"mocha":2}');
+
+      T.wireRecentThemes(document);
+      T.wireThemePicker(document);
+      document
+        .querySelector('[data-theme-recent] input[value="mocha"]')
+        .dispatchEvent(new Event("change"));
+
+      expect(document.documentElement.getAttribute("data-theme")).toBe("mocha");
+    });
+
+    it("does not stack duplicates when run again", () => {
+      // An htmx swap re-runs the wiring over a list it already filled.
+      mountDropdown();
+      localStorage.setItem(T.USAGE_KEY, '{"mocha":2}');
+
+      T.wireRecentThemes(document);
+      T.wireRecentThemes(document);
+
+      expect(recentValues()).toEqual(["mocha"]);
+    });
+
+    it("honours the count the template asks for", () => {
+      mountDropdown();
+      document.getElementById("id-theme-list").dataset.recentShown = "1";
+      localStorage.setItem(T.USAGE_KEY, '{"latte":1,"mocha":5,"nord":3}');
+
+      expect(T.wireRecentThemes(document)).toBe(1);
+      expect(recentValues()).toEqual(["mocha"]);
+    });
+
+    it("promotes nothing when the template names no count", () => {
+      // A dropdown rendered without data-recent-shown asks for no Recent
+      // group; it must not silently pick a number of its own.
+      mountDropdown();
+      delete document.getElementById("id-theme-list").dataset.recentShown;
+      localStorage.setItem(T.USAGE_KEY, '{"mocha":2}');
+
+      expect(T.wireRecentThemes(document)).toBe(0);
+      expect(document.getElementById("id-theme-recent-title").hidden).toBe(true);
+    });
+
+    it("does nothing on a page with no dropdown", () => {
+      document.body.innerHTML = "";
+
+      expect(T.wireRecentThemes(document)).toBe(0);
+    });
+
+    it("does nothing when the list has no entry to clone from", () => {
+      document.body.innerHTML = `
+        <ul id="id-theme-list" data-recent-shown="3">
+          <li id="id-theme-recent-title" hidden>Recent</li>
+        </ul>`;
+      localStorage.setItem(T.USAGE_KEY, '{"mocha":2}');
+
+      expect(T.wireRecentThemes(document)).toBe(0);
+    });
+
+    it("defaults to the document when given no root", () => {
+      mountDropdown();
+      localStorage.setItem(T.USAGE_KEY, '{"mocha":2}');
+
+      expect(T.wireRecentThemes()).toBe(1);
+    });
+  });
+});

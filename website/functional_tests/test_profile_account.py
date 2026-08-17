@@ -28,12 +28,23 @@ class ProfileAccountTest(FunctionalTest):
             link.click()
 
         # He notices there's header with his email
-        header = self.find_elem_by_tag("h2")
+        #
+        # An h1, not an h2: base_profile makes the page title the document's
+        # top-level heading, where base_home had it one level down. Looking for
+        # an h2 now finds the first footer group heading instead.
+        header = self.find_elem_by_tag("h1")
         self.assertIn("gary15@dwight.com profile account", header.text)
 
         # He sees button that leads to profile page entitled "Back"
+        #
+        # Matched by text, not position: the breadcrumb and the section sub-nav
+        # both link to /profile/ now, so an index here tracks the chrome rather
+        # than the button.
         links = self.browser.find_elements(By.XPATH, '//a[@href="/profile/"]')
-        self.assertIn("back", links[0].text.lower())
+        self.assertTrue(
+            any(link.text.strip().lower() == "back" for link in links),
+            "the account page has no Back button leading to the profile",
+        )
 
         # He sees there's deactivate account button leading to deactivate page
         deactivate = self.find_elem_by_id("id_deactivate")

@@ -211,6 +211,8 @@ class TestCoreContextProcessors:
             "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
             "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
             "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
+            "DEFAULT_THEMES_BY_SCHEME": settings.DEFAULT_THEMES_BY_SCHEME,
+            "RECENT_THEMES_SHOWN": settings.RECENT_THEMES_SHOWN,
             "BRAND_THEME_LIGHT": settings.BRAND_THEME_LIGHT,
             "BRAND_THEME_DARK": settings.BRAND_THEME_DARK,
             "THEME_ATTRIBUTION": settings.THEME_ATTRIBUTION,
@@ -466,6 +468,51 @@ class TestCoreContextProcessors:
             "MIT themes need no interface credit, so listing them overstates "
             f"the obligation: {sorted(mit & attributed)}"
         )
+
+    # # dropdown defaults
+    def test_core_context_processors_default_themes_are_offered(self):
+        """A default that is not in the full set renders an unstyled page.
+
+        The dropdown's twelve are a subset of the appearance page's, not a
+        second list -- nothing may appear here that a reader cannot also find
+        on the page the dropdown links to.
+        """
+        missing = set(settings.DEFAULT_THEMES) - set(settings.AVAILABLE_THEMES)
+
+        assert not missing, f"offered in the dropdown but nowhere else: {sorted(missing)}"
+
+    def test_core_context_processors_default_themes_keep_their_scheme(self):
+        """A dark theme under the Light heading is a mislabelled menu."""
+        for scheme, themes in settings.DEFAULT_THEMES_BY_SCHEME.items():
+            for theme in themes:
+                assert theme in settings.AVAILABLE_THEMES_BY_SCHEME[scheme], (
+                    f"{theme} is listed under {scheme} in the dropdown but not "
+                    "on the appearance page"
+                )
+
+    def test_core_context_processors_default_themes_lead_with_ours(self):
+        """Ours is the default and the one most readers will want back."""
+        assert settings.DEFAULT_THEMES_BY_SCHEME["Light"][0] == settings.BRAND_THEME_LIGHT
+        assert settings.DEFAULT_THEMES_BY_SCHEME["Dark"][0] == settings.BRAND_THEME_DARK
+
+    def test_core_context_processors_default_themes_are_balanced(self):
+        """Neither scheme should look better served than the other."""
+        light = settings.DEFAULT_THEMES_BY_SCHEME["Light"]
+        dark = settings.DEFAULT_THEMES_BY_SCHEME["Dark"]
+
+        assert len(light) == len(dark), "the dropdown favours one scheme"
+
+    def test_core_context_processors_default_themes_are_not_duplicated(self):
+        flat = settings.DEFAULT_THEMES
+
+        assert len(flat) == len(set(flat)), (
+            "a theme is offered twice in the dropdown, which renders it as two "
+            f"radios sharing a value: {sorted({t for t in flat if flat.count(t) > 1})}"
+        )
+
+    def test_core_context_processors_recent_shown_leaves_room_for_the_rest(self):
+        """Recent is a nudge, not a replacement for the list underneath it."""
+        assert 0 < settings.RECENT_THEMES_SHOWN < len(settings.DEFAULT_THEMES)
 
     # # walletconnect
     def test_core_context_processors_walletconnect_functionality(self, mocker):

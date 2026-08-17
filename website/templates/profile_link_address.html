@@ -1,11 +1,11 @@
-{% extends 'base_home.html' %}
+{% extends 'base_profile.html' %}
 {% load static %}
 {% load core_extras %}
 {% block title %}Link address to profile - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Link an Algorand or EVM address to the user's profile.{% endblock %}
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
-{% block page_header %}Link address to profile{% endblock %}
-{% block middle_section %}
+{% block profile_title %}Link address to profile{% endblock %}
+{% block profile_content %}
 <div>
   <p>
     Connect another wallet to add it to your account. Linked addresses can sign
@@ -37,4 +37,4 @@
   <a class="btn btn-ghost" href="{% url 'profile_addresses' %}">Back</a>&nbsp;
 </div>
 {% endblock %}
-{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; <a href="{% url 'profile' %}">Profile</a> &raquo; <a href="{% url 'profile_addresses' %}">Addresses</a> &raquo; Link&nbsp;address{% endblock %}
+{% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; <a class="link link-hover" href="{% url 'profile_addresses' %}">Addresses</a> &rsaquo; Link&nbsp;address{% endblock %}
