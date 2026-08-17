@@ -1,0 +1,76 @@
+{% extends 'base_profile.html' %}
+{% load static %}
+{% comment %}
+  Appearance: pick a theme, seeing it rather than reading its name.
+
+  The header dropdown lists 38 names, which is a list you scan rather than
+  choose from -- "abyss" and "nightfox" tell a reader nothing. Here each theme
+  renders its own swatch, drawn with that theme's own tokens, so the choice is
+  made by looking.
+
+  Selection is the same mechanism as the dropdown: a radio named
+  `theme-dropdown`, wired by static/js/theme.js. Reusing the name means this
+  page needs no script of its own, and the two controls cannot disagree about
+  what is selected.
+
+  Typeface pairs will join this page once the families are self-hosted; the
+  theme sets a default and the reader will be able to override it, which is why
+  this is a page and not a menu.
+{% endcomment %}
+{% block title %}Appearance - {{ WEBSITE_NAME }}{% endblock %}
+{% block description %}Choose the theme used across {{ WEBSITE_URL }}.{% endblock %}
+{% block keywords %}appearance,theme,dark mode,light mode,customize{% endblock %}
+{% block profile_title %}Appearance{% endblock %}
+{% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; Appearance{% endblock %}
+
+{% block profile_content %}
+<section class="rounded-box border border-base-300 bg-base-100">
+  <div class="border-b border-base-300 px-5 py-4">
+    <h2 class="font-medium">Theme</h2>
+    <p class="mt-1 text-sm text-base-content/60">
+      Applies to this browser only, and takes effect as you choose.
+    </p>
+  </div>
+
+  {% for group, themes in AVAILABLE_THEMES_BY_SCHEME.items %}
+  <div class="px-5 py-5{% if not forloop.first %} border-t border-base-300{% endif %}">
+    <h3 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">{{ group }}</h3>
+    <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {% for theme in themes %}
+      {% comment %}
+        `data-theme` on the label makes the swatch render in the theme it
+        offers, so the preview is the real thing rather than an approximation
+        maintained by hand.
+      {% endcomment %}
+      <label class="cursor-pointer" data-theme="{{ theme }}">
+        <input type="radio" name="theme-dropdown" value="{{ theme }}" class="peer sr-only">
+        <span class="flex items-center gap-3 rounded-box border border-base-300 bg-base-100 p-3
+                     transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
+          <span class="flex flex-none gap-1" aria-hidden="true">
+            <span class="h-8 w-3 rounded bg-base-200"></span>
+            <span class="h-8 w-3 rounded bg-primary"></span>
+            <span class="h-8 w-3 rounded bg-secondary"></span>
+            <span class="h-8 w-3 rounded bg-accent"></span>
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-medium text-base-content">{{ theme }}</span>
+            <span class="block truncate text-xs text-base-content/60">The quick brown fox</span>
+          </span>
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if THEME_ATTRIBUTION.themes %}
+  <div class="border-t border-base-300 px-5 py-4 text-xs text-base-content/60">
+    Themes marked below are by
+    <a class="link" href="{{ THEME_ATTRIBUTION.author_url }}" target="_blank" rel="noopener">{{ THEME_ATTRIBUTION.author }}</a>
+    and used under
+    <a class="link" href="{{ THEME_ATTRIBUTION.license_url }}" target="_blank" rel="noopener">{{ THEME_ATTRIBUTION.license }}</a>:
+    {{ THEME_ATTRIBUTION.themes|join:", " }}.
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

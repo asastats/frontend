@@ -1,134 +1,146 @@
-{% extends 'base_home.html' %}
+{% extends 'base_profile.html' %}
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
-{% block title %}Profile page - {{ WEBSITE_NAME }}{% endblock %}
-{% block description %}This is your user's profile page where you can edit your data, together with your connected emails and social media accounts.{% endblock %}
-{% block keywords %}profile,edit profile,user data,user profile{% endblock %}
-{% block page_header %}Edit profile data{% endblock %}
-{% block middle_section %}
-<form method="POST" enctype="multipart/form-data" action="." id="id_form">
-    {% comment %}
-      The two columns below are grid children: fields on the left, the actions
-      that operate on them on the right. Without this wrapper the `col-span-*`
-      classes are inert -- the right column silently stacks under the fields,
-      which is how it looked on arrival here.
-    {% endcomment %}
-    <div class="grid gap-6 md:grid-cols-12 md:text-left">
-    <div class="md:col-span-7">
-    {% csrf_token %}
-    {% for field in form.visible_fields %}
-    <div class="mt-4 md:w-1/2 text-left">
-        {{ field }}
-        {{ field.label_tag }}
-        {% if field.errors %}<span class="text-error">{{ field.errors|escape }}</span>{% endif %}
-        {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
-    </div>
-    {% endfor %}
-    {% for field in form.hidden_fields %}
-      {{ field }}
-    {% endfor %}
-    {% if form.non_field_errors %}<div><span class="text-error">{{ form.non_field_errors }}</span></div>{% endif %}
-    <fieldset class="profile">
-        {{ profile_form.management_form }}
-        {% for form in profile_form %}
-            {% for field in form.visible_fields %}
-                {% if field.name != 'DELETE' %}
-                <div class="mt-4 text-left">
-                  {{ field }}
-                  {{ field.label_tag }}
-                  {% if field.errors %}<span class="text-error">{{ field.errors|escape }}</span>{% endif %}
-                  {% if field.help_text %}<p class="help">{{ field.help_text|safe }}</p>{% endif %}
-                </div>
-                {% endif %}
-            {% endfor %}
+{% comment %}
+  Three things changed beyond styling, all of them defects rather than taste:
 
-            <div class="mt-4 text-left">
-              {% if form.initial.address %}
-                {% if form.instance.profile.authorized %}
-                                {% explorer_url 'address' form.instance.profile.address as profile_address_url %}<span><a href="{{ profile_address_url }}" target="_blank" rel="noopener" title="Address authorization transaction in {% explorer_name %}">Address is authorized</a></span>
-                {% else %}
-                  <div class="mt-4 md:w-1/2 text-center">
-                    <span class="text-error">Address is not authorized</span>
-                  </div>
-                  <div class="mt-4 md:w-1/2 text-center">
-                    <a class="btn btn-ghost" href="{% url 'profile_authorize' %}">Authorize</a>&nbsp;
-                  </div>
-                {% endif %}
-              {% endif %}
-            </div>
-            <div class="mt-4 text-left">
-              <span>Permission: {{ form.instance.profile.permission|integer_comma }}</span>
-            </div>
-            {% if form.instance.profile.votes %}
-            <div class="mt-4 text-left">
-              <span>DAO votes: {{ form.instance.profile.votes|integer_comma }}</span>
-            </div>
-            {% endif %}
-            {% if form.instance.profile.authorized %}
-            <div class="mt-4 text-left">
-              <a class="btn btn-ghost" href="{% url 'profile_permission_fetch' %}">Refetch</a>&nbsp;
-            </div>
-            {% endif %}
-            {% for field in form.hidden_fields %}
-              {{ field }}
-            {% endfor %}
-            {% if form.non_field_errors %}<div><span class="text-error">{{ form.non_field_errors }}</span></div>{% endif %}
-        {% endfor %}
-    </fieldset>
-    {% if subscriptions %}
-    <br>
-    <h5>Subscription</h5>
-    <div class="text-left">
-        {% for link, text in subscriptions.items %}
-        <p><span>{{ link|safe }}: </span><span{% if text == "EXPIRED" %} class="text-error"{% endif %}>{{ text }}</span></p>
-        {% endfor %}
+  * `{{ field }}` was rendered BEFORE `{{ field.label_tag }}`. That was a
+    Materialize floating-label arrangement; without it the page read
+    "2EVGZ4... Address:" -- value first, label after. Labels come first now.
+  * the widgets in core/forms.py carry no class, so they rendered with no
+    border at all: the name fields were invisible, and only their labels
+    showed. The `.form-fields` scope in input.css styles bare widgets, which
+    is the same fix `.auth-form` already applied to allauth's.
+  * every control was a filled button, so Update carried no more weight than
+    Social. One primary per card now; everything else is quiet.
+{% endcomment %}
+{% block title %}Profile page - {{ WEBSITE_NAME }}{% endblock %}
+{% block description %}This is your profile page where you can change your profile data.{% endblock %}
+{% block keywords %}profile,user,edit profile,profile data{% endblock %}
+{% block profile_title %}Profile{% endblock %}
+{% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; Profile{% endblock %}
+
+{% block profile_content %}
+<form method="POST" enctype="multipart/form-data" action="." id="id_form" class="form-fields space-y-4">
+  {% csrf_token %}
+
+  {% comment %} ---- who you are ---- {% endcomment %}
+  <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="font-medium">Your details</h2>
     </div>
-    <div class="divider"></div>
-    {% endif %}
-    {% if messages %}
-    <br>
-    <div class="mx-auto max-w-3xl">
-        {% for message in messages %}
-        <div class="badge badge-outline bg-neutral text-neutral-content text-base-content/60 shadow">
-            {{ message }}
-        </div>
-        {% endfor %}
+    <div class="grid gap-4 px-5 py-5 sm:grid-cols-2">
+      {% for field in form.visible_fields %}
+      <div>
+        <label class="mb-1 block text-sm" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="mt-1 text-xs text-base-content/60">{{ field.help_text|safe }}</p>{% endif %}
+        {% if field.errors %}<p class="mt-1 text-sm text-error">{{ field.errors|escape }}</p>{% endif %}
+      </div>
+      {% endfor %}
     </div>
-    {% endif %}    
+    {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+    {% if form.non_field_errors %}<p class="px-5 pb-4 text-sm text-error">{{ form.non_field_errors }}</p>{% endif %}
+  </section>
+
+  {% comment %} ---- the authorized address and what it entitles you to ---- {% endcomment %}
+  <fieldset class="profile rounded-box border border-base-300 bg-base-100">
+    {{ profile_form.management_form }}
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="font-medium">Subscription address</h2>
     </div>
-    <div class="md:col-span-5">
-        <a class="btn btn-ghost" href="{% url 'home' %}">Back</a>&nbsp;
-        <button class="primaryAction btn btn-ghost submit" id="id_submit" type="submit">Update</button>
-        <br><br>
+    {% for form in profile_form %}
+    <div class="space-y-4 px-5 py-5">
+      {% for field in form.visible_fields %}
+        {% if field.name != 'DELETE' %}
         <div>
-          <a class="btn btn-primary" {% if user.has_usable_password %}href="{% url 'account_change_password' %}" id="id_changepassword"{% else %}href="{% url 'account_set_password' %}" id="id_setpassword"{% endif %}>
-            Password
-          </a>
+          <label class="mb-1 block text-sm" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-base-content/60">{{ field.help_text|safe }}</p>{% endif %}
+          {% if field.errors %}<p class="mt-1 text-sm text-error">{{ field.errors|escape }}</p>{% endif %}
         </div>
-        <div>
-            <a class="btn btn-primary" href="{% url 'account_email' %}" id="id_emails">Emails</a>
-        </div>
-        <div>
-            <a class="btn btn-primary" href="{% url 'socialaccount_connections' %}" id="id_connections">Social</a>
-        </div>
+        {% endif %}
+      {% endfor %}
+
+      {% comment %}
+        Authorization state, permission and votes are facts about the address
+        above, so they sit with it rather than in a column of their own.
+      {% endcomment %}
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-base-300 pt-4 text-sm">
+        {% if form.initial.address %}
+          {% if form.instance.profile.authorized %}
+            {% explorer_url 'address' form.instance.profile.address as profile_address_url %}
+            <span class="inline-flex items-center gap-1.5">
+              <span class="badge badge-success badge-sm">Authorized</span>
+              <a class="link link-hover text-xs" href="{{ profile_address_url }}" target="_blank" rel="noopener" title="Address authorization transaction in {% explorer_name %}">view transaction</a>
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-2">
+              <span class="badge badge-error badge-sm">Not authorized</span>
+              <a class="btn btn-outline btn-xs" href="{% url 'profile_authorize' %}">Authorize</a>
+            </span>
+          {% endif %}
+        {% endif %}
+
+        <span class="text-base-content/70">Permission
+          <span class="font-medium text-base-content">{{ form.instance.profile.permission|integer_comma }}</span>
+        </span>
+
+        {% if form.instance.profile.votes %}
+        <span class="text-base-content/70">DAO votes
+          <span class="font-medium text-base-content">{{ form.instance.profile.votes|integer_comma }}</span>
+        </span>
+        {% endif %}
+
+        {% if form.instance.profile.authorized %}
+        <a class="btn btn-ghost btn-xs" href="{% url 'profile_permission_fetch' %}">Refetch</a>
+        {% endif %}
+      </div>
     </div>
+    {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+    {% if form.non_field_errors %}<p class="px-5 pb-4 text-sm text-error">{{ form.non_field_errors }}</p>{% endif %}
+    {% endfor %}
+  </fieldset>
+
+  {% if subscriptions %}
+  <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="font-medium">Subscription</h2>
     </div>
+    <dl class="divide-y divide-base-300">
+      {% for link, text in subscriptions.items %}
+      <div class="flex items-center justify-between gap-4 px-5 py-3 text-sm">
+        <dt>{{ link|safe }}</dt>
+        <dd{% if text == "EXPIRED" %} class="text-error"{% endif %}>{{ text }}</dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </section>
+  {% endif %}
+
+  {% if messages %}
+  <div class="space-y-2">
+    {% for message in messages %}
+    <div class="alert" role="status">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% comment %}
+    One primary action. Update is what this page is for; the rest lead
+    elsewhere and are links, not buttons competing with it.
+  {% endcomment %}
+  <div class="flex flex-wrap items-center justify-between gap-4 rounded-box border border-base-300 bg-base-100 px-5 py-4">
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+      <a class="link link-hover" {% if user.has_usable_password %}href="{% url 'account_change_password' %}" id="id_changepassword"{% else %}href="{% url 'account_set_password' %}" id="id_setpassword"{% endif %}>Password</a>
+      <a class="link link-hover" href="{% url 'account_email' %}" id="id_emails">Emails</a>
+      <a class="link link-hover" href="{% url 'socialaccount_connections' %}" id="id_connections">Social accounts</a>
+    </div>
+    <div class="flex items-center gap-2">
+      <a class="btn btn-ghost btn-sm" href="{% url 'home' %}">Back</a>
+      <button class="primaryAction btn btn-primary btn-sm submit" id="id_submit" type="submit">Update</button>
+    </div>
+  </div>
 </form>
-{% endblock %}
-{% block breadcrumbs %}<a href="{% url 'home' %}">Home</a> &raquo; Profile{% endblock %}
-{% block left_section %}
-<div class="text-right">
-  <br>
-  <a class="btn btn-primary" href="{% url 'profile_account' %}" id="id_profile_account">Account</a>
-</div>
-<div class="text-right">
-  <a class="btn btn-primary" href="{% url 'profile_api' %}" id="id_profile_api">API token</a>
-</div>
-<div class="text-right">
-  <a class="btn btn-primary" href="{% url 'profile_addresses' %}" id="id_profile_addresses">Addresses</a>
-</div>
-<div class="text-right">
-  <a class="btn btn-primary" href="{% url 'profile_settings' %}" id="id_profile_settings">Settings</a>
-</div>
 {% endblock %}

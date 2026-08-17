@@ -1,32 +1,30 @@
 {% comment %}
-  Appearance picker, rendered from settings.AVAILABLE_THEMES so adding a theme
-  is a settings change plus an input.css registration -- and never a template
-  change. core.tests.test_context_processors asserts the two stay in step.
+  The appearance control, which is two different controls depending on who is
+  looking.
 
-  A <details> rather than a JS dropdown: it opens without scripting, and
-  theme.js only has to record the choice.
+  A signed-out reader gets a plain light/dark switch between the two brand
+  themes and nothing else -- the full list is a signed-in feature, and offering
+  38 names to someone who cannot keep the choice would be a menu that mostly
+  does not apply to them. A signed-in reader gets the list, with Customize at
+  the top leading to the appearance page where theme and typeface are chosen
+  properly.
 
-  Grouped by light and dark, because 36 themes in one flat list is more than
-  anyone can scan and the first thing a reader wants to narrow by is which of
-  the two they are after. The grouping comes from the `color-scheme` each theme
-  declares for itself, not from a judgement made here.
+  Both are driven by static/js/theme.js. The brand theme names are passed in as
+  data attributes rather than written into the script, so they stay in settings.
 
-  The credit at the foot of the list is not decoration: several themes are
-  third-party and CC BY 4.0, which requires the author, the source and the
-  licence to be named wherever the work is used. This is the copy a reader can
-  actually see; the built stylesheet and THEMES.md carry the same notice for
-  anyone reading the code instead.
+  The switch is a <button>, not a link: it changes the page rather than
+  navigating. The list is a <details>, so it opens without scripting.
 {% endcomment %}
+{% if user.is_authenticated %}
 <details class="dropdown dropdown-end flex-none">
   <summary class="btn btn-ghost btn-sm" aria-label="Appearance">
-    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="9"/>
-      <path d="M12 3a9 9 0 0 0 0 18 4.5 4.5 0 0 0 0-9 4.5 4.5 0 0 1 0-9Z"/>
-    </svg>
+    {% include "snippets/theme_icon.html" %}
   </summary>
-  <ul class="dropdown-content z-10 mt-2 max-h-96 w-52 overflow-y-auto rounded-box bg-base-100 p-2 shadow"
+  <ul class="dropdown-content z-10 mt-2 max-h-96 w-56 overflow-y-auto rounded-box bg-base-100 p-2 shadow"
       id="id-theme-list">
+    <li>
+      <a class="btn btn-sm btn-block btn-primary justify-start" href="{% url 'profile_appearance' %}">Customize…</a>
+    </li>
     {% for group, themes in AVAILABLE_THEMES_BY_SCHEME.items %}
     <li class="menu-title px-2 pt-2 text-xs uppercase tracking-wide">{{ group }}</li>
     {% for theme in themes %}
@@ -46,3 +44,14 @@
     {% endif %}
   </ul>
 </details>
+{% else %}
+<button type="button" class="btn btn-ghost btn-sm flex-none"
+        data-theme-toggle
+        data-theme-light="{{ BRAND_THEME_LIGHT }}"
+        data-theme-dark="{{ BRAND_THEME_DARK }}"
+        aria-pressed="false"
+        aria-label="Switch between light and dark"
+        title="Switch between light and dark">
+  {% include "snippets/theme_icon.html" %}
+</button>
+{% endif %}

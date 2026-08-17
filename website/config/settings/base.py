@@ -122,6 +122,8 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.deployment_capabilities",
                 "core.context_processors.global_constants",
+                "core.context_processors.main_navigation",
+                "core.context_processors.profile_navigation",
                 "core.context_processors.walletconnect",
             ],
         },
@@ -338,6 +340,12 @@ GITHUB_ORGANIZATION = get_env_variable("GITHUB_ORGANIZATION", "asastats")
 # Within each group ours comes first, then stock DaisyUI, then the vendored
 # third-party set. A theme must ALSO be registered in static/css/input.css or
 # it has no CSS to apply; ``test_core_context_processors`` asserts that too.
+# The two brand themes, named here so the light/dark switch a signed-out
+# reader sees can be handed its pair without any template or script hard-coding
+# them. They are also the first entry of their respective groups below.
+BRAND_THEME_LIGHT = "asastats"
+BRAND_THEME_DARK = "asastats-dark"
+
 AVAILABLE_THEMES_BY_SCHEME = {
     "Light": [
         "asastats",

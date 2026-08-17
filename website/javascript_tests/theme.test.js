@@ -4,6 +4,14 @@
 
 const T = require("../static/js/theme.js");
 
+/** Build the light/dark switch a signed-out reader gets. */
+function mountToggle(light, dark) {
+  document.body.innerHTML =
+    `<button data-theme-toggle data-theme-light="${light}" ` +
+    `data-theme-dark="${dark}" aria-pressed="false"></button>`;
+  return document.querySelector("[data-theme-toggle]");
+}
+
 /** Build the picker markup the theme_picker.html snippet renders. */
 function mountPicker(themes) {
   document.body.innerHTML =
@@ -157,5 +165,139 @@ describe("theme.js", () => {
       expect(inputs.some((i) => i.checked)).toBe(false);
       restore();
     });
+  });
+});
+
+
+describe("wireThemeToggle", function () {
+  beforeEach(function () {
+    document.documentElement.removeAttribute("data-theme");
+    localStorage.clear();
+  });
+
+  it("applies the dark theme first when nothing is set", function () {
+    const button = mountToggle("asastats", "asastats-dark");
+    T.wireThemeToggle(document);
+
+    button.click();
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe(
+      "asastats-dark"
+    );
+  });
+
+  it("switches back to light on a second click", function () {
+    const button = mountToggle("asastats", "asastats-dark");
+    T.wireThemeToggle(document);
+
+    button.click();
+    button.click();
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("asastats");
+  });
+
+  it("treats any other theme as not-dark, so the first click goes dark", function () {
+    // Someone picks `dracula` while signed in, then signs out. The switch has
+    // only two positions; landing on dark is the useful move, and doing
+    // nothing would look broken.
+    document.documentElement.setAttribute("data-theme", "dracula");
+    const button = mountToggle("asastats", "asastats-dark");
+    T.wireThemeToggle(document);
+
+    button.click();
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe(
+      "asastats-dark"
+    );
+  });
+
+  it("reflects the state for a screen reader", function () {
+    const button = mountToggle("asastats", "asastats-dark");
+    T.wireThemeToggle(document);
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+
+    button.click();
+    expect(button.getAttribute("aria-pressed")).toBe("true");
+
+    button.click();
+    expect(button.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("remembers the choice", function () {
+    const button = mountToggle("asastats", "asastats-dark");
+    T.wireThemeToggle(document);
+
+    button.click();
+
+    expect(localStorage.getItem(T.STORAGE_KEY)).toBe("asastats-dark");
+  });
+
+  it("ignores a button with no pair, rather than applying undefined", function () {
+    document.body.innerHTML = "<button data-theme-toggle></button>";
+
+    expect(T.wireThemeToggle(document)).toBe(0);
+    document.querySelector("[data-theme-toggle]").click();
+    expect(document.documentElement.getAttribute("data-theme")).toBeNull();
+  });
+
+  it("does not double-bind when wired twice", function () {
+    // The header can be replaced by an htmx swap, which re-runs the wiring.
+    // A second listener would toggle twice per click and appear to do nothing.
+    const button = mountToggle("asastats", "asastats-dark");
+    T.wireThemeToggle(document);
+    expect(T.wireThemeToggle(document)).toBe(0);
+
+    button.click();
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe(
+      "asastats-dark"
+    );
+  });
+
+  it("wires nothing on a page with no switch", function () {
+    document.body.innerHTML = "";
+    expect(T.wireThemeToggle(document)).toBe(0);
+  });
+
+  it("defaults to the whole document when called with no root", function () {
+    // The self-start path calls it that way, and an htmx swap re-runs it.
+    mountToggle("asastats", "asastats-dark");
+
+    expect(T.wireThemeToggle()).toBe(1);
+  });
+});
+
+
+describe("currentTheme", function () {
+  beforeEach(function () {
+    document.documentElement.removeAttribute("data-theme");
+    localStorage.clear();
+  });
+
+  it("prefers what is applied to the document", function () {
+    document.documentElement.setAttribute("data-theme", "nord");
+    localStorage.setItem(T.STORAGE_KEY, "dracula");
+
+    expect(T.currentTheme()).toBe("nord");
+  });
+
+  it("falls back to what was saved", function () {
+    localStorage.setItem(T.STORAGE_KEY, "dracula");
+
+    expect(T.currentTheme()).toBe("dracula");
+  });
+
+  it("returns an empty string when nothing is set", function () {
+    expect(T.currentTheme()).toBe("");
+  });
+
+  it("survives a localStorage that refuses to be read", function () {
+    // Private browsing can throw on access rather than return null.
+    const restore = breakStorage("getItem");
+    try {
+      expect(T.currentTheme()).toBe("");
+    } finally {
+      restore();
+    }
   });
 });

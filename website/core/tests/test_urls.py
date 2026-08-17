@@ -96,6 +96,12 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.SwapSourceRedirectView"
         assert url.name == "swap_source"
 
+    def test_core_urls_profile_appearance(self):
+        url = self._url_from_pattern(r"^profile/appearance/$")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "core.views.ProfileAppearanceView"
+        assert url.name == "profile_appearance"
+
     def test_core_urls_profile_settings(self):
         url = self._url_from_pattern(r"^profile/settings/$")
         assert isinstance(url, URLPattern)
@@ -265,4 +271,4 @@ class TestCoreUrls:
         assert url.name == "bundle_name"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 39
+        assert len(urls.urlpatterns) == 40

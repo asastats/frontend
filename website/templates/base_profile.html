@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load static %}
+{% comment %}
+  Shell for the profile section: profile, account, API token, addresses and
+  settings. They are one thing a reader moves between, so they get one frame.
+
+  What this replaces, and why. The profile pages inherited base_home's
+  three-column shape -- a breadcrumb rail on the left, content in the middle,
+  actions stacked on the right. On a profile page that produced two mostly
+  empty gutters, a ragged column of identical green pills for navigation, and
+  page actions sitting so far from the fields they operate on that the
+  relationship was invisible. Every control was the same weight, so nothing
+  read as the primary one.
+
+  Instead: a single centred column, a segmented sub-nav across the top, and
+  content in cards. The sub-nav is deliberately the same control as the
+  Sign up / Log in pair in account/base_auth.html -- one navigation idiom for
+  the whole site rather than a second one invented here. Actions belong in the
+  card footer beside what they act on.
+
+  Blocks:
+    profile_title    the page heading
+    profile_content  cards
+{% endcomment %}
+{% block content %}
+<div class="mx-auto w-full max-w-3xl">
+
+  <nav class="text-xs text-base-content/60" aria-label="Breadcrumb">
+    {% block breadcrumbs %}{% endblock %}
+  </nav>
+
+  <h1 class="mt-2 text-3xl font-semibold tracking-tight">{% block profile_title %}{% endblock %}</h1>
+
+  {% comment %}
+    `aria-current="page"` marks the active entry, so the state is announced and
+    not only painted -- the same contract the auth tabs use, and the one
+    test_auth_pages asserts on.
+
+    The active entry is read from the resolved url rather than declared by each
+    child. A child-declared marker is one more thing to keep in step, and the
+    failure mode is silent: copy a page, forget to change its marker, and two
+    tabs light up. The url is already the truth.
+  {% endcomment %}
+  <nav class="mt-6 flex flex-wrap gap-1 rounded-field bg-base-200 p-1" aria-label="Profile sections">
+    {% for url_name, label in profile_sections %}
+    <a class="flex-1 rounded-field px-3 py-2 text-center text-sm font-medium whitespace-nowrap
+              aria-[current=page]:bg-base-100 aria-[current=page]:shadow-sm"
+       href="{% url url_name %}"{% if url_name == request.resolver_match.url_name %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  <div class="mt-6 space-y-4">
+    {% block profile_content %}{% endblock %}
+  </div>
+
+</div>
+{% endblock %}

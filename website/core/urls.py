@@ -54,6 +54,11 @@ urlpatterns = [
     ),
     re_path(r"^profile/api/$", core_views.ProfileApiView.as_view(), name="profile_api"),
     re_path(
+        r"^profile/appearance/$",
+        core_views.ProfileAppearanceView.as_view(),
+        name="profile_appearance",
+    ),
+    re_path(
         r"^profile/settings/$",
         core_views.ProfileSettingsView.as_view(),
         name="profile_settings",

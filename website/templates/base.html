@@ -43,34 +43,48 @@
 <body class="min-h-screen bg-base-200 text-base-content flex flex-col">
 <script src="{% static 'js/csp-safe-handlers.js' %}"></script>
 {% block header %}
-<header>
-  <div class="navbar bg-base-100 border-b border-base-300">
-    <div class="mx-auto flex w-full max-w-6xl items-center gap-2 px-4">
-      {% block navigation %}
-      <a href="/" class="flex-none" aria-label="{{ WEBSITE_NAME }} home">
-        {% comment %}
-          `{% templatetag openblock %} static %}` rather than pasting the name onto
-          `{% templatetag openblock %} get_static_prefix %}`: under
-          ManifestStaticFilesStorage the served filename carries a content hash,
-          which only the `static` tag knows how to look up. A concatenated path
-          would 404 in production while working perfectly in development.
-        {% endcomment %}
-        <img class="h-8 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
-      </a>
+{% comment %}
+  Site chrome. Three changes worth knowing about:
 
-      <nav class="ml-auto hidden items-center gap-1 md:flex">
-        {% if user.is_authenticated %}
-        <a class="btn btn-ghost btn-sm" href="{% url 'home' %}">Home</a>
-        <a class="btn btn-ghost btn-sm" href="{% url 'swagger-ui' %}">API</a>
-        <a class="btn btn-ghost btn-sm" id="logout" href="{% url 'account_logout' %}">Logout</a>
-        {% else %}
-        <a class="btn btn-ghost btn-sm" href="#modalLogin">Log in</a>
-        <a class="btn btn-ghost btn-sm" href="{% url 'swagger-ui' %}">API</a>
-        <a class="btn btn-ghost btn-sm" href="{% url 'subscriptions' %}">Subscriptions</a>
-        {% endif %}
-      </nav>
+  * the primary nav marks the section you are in with `aria-current="page"`,
+    the same contract the auth tabs and the profile sub-nav use. Without it a
+    reader had no way to tell where they were except by reading the url;
+  * account actions are separated from navigation. Logout sat in the same row
+    as Home and API, so leaving the site looked like another destination;
+  * the appearance control was an unlabelled circle. It is still an icon, but
+    it now says what it is to a screen reader and on hover.
+{% endcomment %}
+<header class="sticky top-0 z-30 border-b border-base-300 bg-base-100/95 backdrop-blur">
+  <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
+    {% block navigation %}
+    <a href="/" class="flex-none" aria-label="{{ WEBSITE_NAME }} home">
+      {% comment %}
+        `{% templatetag openblock %} static %}` rather than pasting the name onto
+        `{% templatetag openblock %} get_static_prefix %}`: under
+        ManifestStaticFilesStorage the served filename carries a content hash,
+        which only the `static` tag knows how to look up. A concatenated path
+        would 404 in production while working perfectly in development.
+      {% endcomment %}
+      <img class="h-9 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
+    </a>
 
+    <nav class="ml-6 hidden items-center gap-1 md:flex" aria-label="Main">
+      {% for url_name, label in main_navigation %}
+      <a class="rounded-field px-3 py-2 text-sm font-medium text-base-content/70 transition
+                hover:bg-base-200 hover:text-base-content
+                aria-[current=page]:bg-base-200 aria-[current=page]:text-base-content"
+         href="{% url url_name %}"{% if url_name == request.resolver_match.url_name %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+
+    <div class="ml-auto flex items-center gap-2">
       {% include "snippets/theme_picker.html" %}
+
+      {% if user.is_authenticated %}
+      <a class="btn btn-ghost btn-sm hidden md:inline-flex" id="logout" href="{% url 'account_logout' %}">Log out</a>
+      {% else %}
+      <a class="btn btn-primary btn-sm hidden md:inline-flex" href="#modalLogin">Log in</a>
+      {% endif %}
 
       {% comment %} Narrow screens: the same links, in a disclosure. {% endcomment %}
       <details class="dropdown dropdown-end md:hidden">
@@ -80,26 +94,20 @@
             <path d="M4 7h16M4 12h16M4 17h16"/>
           </svg>
         </summary>
-        <ul class="menu dropdown-content z-10 mt-2 w-52 rounded-box bg-base-100 p-2 shadow">
+        <ul class="menu dropdown-content z-10 mt-2 w-56 rounded-box bg-base-100 p-2 shadow">
+          {% for url_name, label in main_navigation %}
+          <li><a href="{% url url_name %}">{{ label }}</a></li>
+          {% endfor %}
+          <li class="menu-title mt-2 text-xs uppercase">Account</li>
           {% if user.is_authenticated %}
-          <li><a href="{% url 'home' %}">Home</a></li>
+          <li><a href="{% url 'account_logout' %}">Log out</a></li>
           {% else %}
           <li><a href="#modalLogin">Log in</a></li>
           {% endif %}
-          <li><a href="{% url 'about' %}">About</a></li>
-          <li><a href="{% url 'tokenomics' %}">Tokenomics</a></li>
-          <li><a href="{% url 'subscriptions' %}">Subscriptions</a></li>
-          <li><a href="{% url 'swagger-ui' %}">API</a></li>
-          <li><a href="{% url 'faq' %}">FAQ</a></li>
-          <li><a href="{% url 'features' %}">Features</a></li>
-          <li><a href="{% url 'disclaimer' %}">Disclaimer</a></li>
-          {% if user.is_authenticated %}
-          <li><a href="{% url 'account_logout' %}">Logout</a></li>
-          {% endif %}
         </ul>
       </details>
-      {% endblock %}
     </div>
+    {% endblock %}
   </div>
 </header>
 {% endblock %}
@@ -109,48 +117,72 @@
     {% block content %}{% endblock %}
   </div>
 </main>
-<footer class="border-t border-base-300 bg-base-100">
-  <div class="mx-auto w-full max-w-6xl px-4 py-8 text-sm">
-    {% comment %}
-      Home / Log in belong here as well as in the header. The header nav is
-      `hidden md:flex`, so on a phone the only way in was the hamburger -- and
-      base.html has always carried the pair in this bar. Losing it left the
-      login dialog reachable only by typing a url.
-    {% endcomment %}
-    <nav class="flex flex-wrap justify-center gap-x-5 gap-y-2">
-      {% if user.is_authenticated %}
-      <a class="link link-hover" href="{% url 'home' %}">Home</a>
-      {% else %}
-      <a class="link link-hover" href="#modalLogin">Log in</a>
-      {% endif %}
-      <a class="link link-hover" href="{% url 'about' %}">About</a>
-      <a class="link link-hover" href="{% url 'tokenomics' %}">Tokenomics</a>
-      <a class="link link-hover" href="{% url 'subscriptions' %}">Subscriptions</a>
-      <a class="link link-hover" href="{% url 'swagger-ui' %}">API</a>
-      <a class="link link-hover" href="{% url 'faq' %}">FAQ</a>
-      <a class="link link-hover" href="{% url 'features' %}">Features</a>
-      <a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a>
-      <a class="link link-hover" href="{% url 'disclaimer' %}">Disclaimer</a>
-    </nav>
-    {% comment %}
-      The old footer rendered these as sprite buttons (.scbtn/.frmbtn), which
-      were background images in style.css -- a stylesheet this page no longer
-      loads. They are plain named links now: no sprite sheet, no icon font, and
-      readable to a screen reader without a title attribute doing the work.
-    {% endcomment %}
-    <nav class="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 opacity-80">
-      <a class="link link-hover" href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener">Buy ASASTATS</a>
-      <a class="link link-hover" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener">Pact pool</a>
-      <a class="link link-hover" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener">Tinyman pool</a>
-      <a class="link link-hover" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener">App&nbsp;Store</a>
-      <a class="link link-hover" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener">Play&nbsp;Store</a>
-      <a class="link link-hover" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener">X</a>
-      <a class="link link-hover" href="https://discord.gg/{{ DISCORD_INVITE }}" target="_blank" rel="noopener">Discord</a>
-      <a class="link link-hover" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener">Reddit</a>
-      <a class="link link-hover" href="https://medium.com/{{ MEDIUM_NAME }}" target="_blank" rel="noopener">Medium</a>
-      <a class="link link-hover" href="https://github.com/{{ GITHUB_ORGANIZATION }}" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-    <p class="mt-5 text-center opacity-60">&copy;&nbsp;2026&nbsp;ASA&nbsp;Stats</p>
+<footer class="mt-16 border-t border-base-300 bg-base-100">
+  {% comment %}
+    Nineteen links in two centred rows read as a wall: nothing was findable
+    because nothing was grouped. They are columns under headings now, which is
+    the same information in the shape a reader scans -- and the shape that
+    tells them the site has an API, a token and a community without having to
+    read every label.
+  {% endcomment %}
+  <div class="mx-auto w-full max-w-6xl px-4 py-12">
+    <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+
+      <div>
+        <img class="h-9 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
+        <p class="mt-3 text-sm text-base-content/60">
+          Portfolio tracking and analytics for the Algorand blockchain.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Product</h2>
+        <ul class="mt-3 space-y-2 text-sm">
+          {% if user.is_authenticated %}
+          <li><a class="link link-hover" href="{% url 'home' %}">Home</a></li>
+          {% else %}
+          <li><a class="link link-hover" href="#modalLogin">Log in</a></li>
+          {% endif %}
+          <li><a class="link link-hover" href="{% url 'features' %}">Features</a></li>
+          <li><a class="link link-hover" href="{% url 'subscriptions' %}">Subscriptions</a></li>
+          <li><a class="link link-hover" href="{% url 'swagger-ui' %}">API</a></li>
+          <li><a class="link link-hover" href="{% url 'faq' %}">FAQ</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Token</h2>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><a class="link link-hover" href="{% url 'tokenomics' %}">Tokenomics</a></li>
+          <li><a class="link link-hover" href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener">Buy ASASTATS</a></li>
+          <li><a class="link link-hover" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener">Pact pool</a></li>
+          <li><a class="link link-hover" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener">Tinyman pool</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Community</h2>
+        <ul class="mt-3 space-y-2 text-sm">
+          <li><a class="link link-hover" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener">X</a></li>
+          <li><a class="link link-hover" href="https://discord.gg/{{ DISCORD_INVITE }}" target="_blank" rel="noopener">Discord</a></li>
+          <li><a class="link link-hover" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener">Reddit</a></li>
+          <li><a class="link link-hover" href="https://medium.com/{{ MEDIUM_NAME }}" target="_blank" rel="noopener">Medium</a></li>
+          <li><a class="link link-hover" href="https://github.com/{{ GITHUB_ORGANIZATION }}" target="_blank" rel="noopener">GitHub</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="mt-10 flex flex-col items-center gap-4 border-t border-base-300 pt-6 text-sm text-base-content/60 sm:flex-row sm:justify-between">
+      <p>&copy;&nbsp;2026&nbsp;{{ WEBSITE_NAME }}</p>
+      <nav class="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <a class="link link-hover" href="{% url 'about' %}">About</a>
+        <a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a>
+        <a class="link link-hover" href="{% url 'disclaimer' %}">Disclaimer</a>
+        <a class="link link-hover" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener">App&nbsp;Store</a>
+        <a class="link link-hover" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener">Play&nbsp;Store</a>
+      </nav>
+    </div>
   </div>
 </footer>
 {% block login_modal %}{% if not user.is_authenticated %}{% include "snippets/modal_login.html" %}{% endif %}{% endblock %}

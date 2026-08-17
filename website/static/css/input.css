@@ -221,12 +221,18 @@
 [data-notice="info"] { border-color: var(--color-base-300); }
 
 /* allauth renders the login/signup widgets itself, with no classes on them, so
-   the fields cannot be given `input` in the template. Scoping to .auth-form
+   the fields cannot be given `input` in the template. Our own forms in
+   core/forms.py have the same gap -- several widgets carry no class -- so
+   `.form-fields` is the same rule under a name that is not about auth.
+   Scoping to these two
    styles exactly those bare widgets and nothing else. Written against the theme
    tokens rather than @apply, so it follows a theme change like everything else. */
 .auth-form input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 .auth-form select,
-.auth-form textarea {
+.auth-form textarea,
+.form-fields input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.form-fields select,
+.form-fields textarea {
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: var(--border) solid var(--color-base-300);
@@ -238,7 +244,10 @@
 }
 .auth-form input:focus-visible,
 .auth-form select:focus-visible,
-.auth-form textarea:focus-visible {
+.auth-form textarea:focus-visible,
+.form-fields input:focus-visible,
+.form-fields select:focus-visible,
+.form-fields textarea:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }

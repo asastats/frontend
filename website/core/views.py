@@ -1011,6 +1011,27 @@ class ProfileApiView(CanAccessApiMixin, TemplateView):
 
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
+class ProfileAppearanceView(TemplateView):
+    """Appearance page: choose a theme, with a preview of each.
+
+    Signed in only, and deliberately so. Appearance is stored client-side, in
+    localStorage, so it is a per-browser preference rather than account data --
+    but the *choice* is a signed-in feature: a signed-out reader gets the
+    light/dark switch in the header and nothing more.
+
+    The view carries no state of its own. Everything it renders comes from
+    settings through the context processors, and the selection is applied and
+    remembered by static/js/theme.js, which is the same code the header
+    dropdown uses. Nothing about the choice reaches the server.
+
+    :var template_name: name of the template to render
+    :type template_name: str
+    """
+
+    template_name = "profile_appearance.html"
+
+
+@method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
 class ProfileSettingsView(View):
     """User settings page: smart-router and preferred-explorer preferences.
 

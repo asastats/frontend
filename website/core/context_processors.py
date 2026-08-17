@@ -32,6 +32,54 @@ def deployment_capabilities(request):
     return {"deployment_capabilities": caps}
 
 
+#: The primary navigation, in the order it is shown. Entries are url names so
+#: the header can mark the active one by comparing against the resolved url --
+#: no page has to declare where it is.
+MAIN_NAVIGATION = [
+    ("home", "Home"),
+    ("features", "Features"),
+    ("subscriptions", "Subscriptions"),
+    ("swagger-ui", "API"),
+    ("faq", "FAQ"),
+]
+
+
+def main_navigation(request):
+    """Return the primary navigation for base.html.
+
+    :param request: Django request object
+    :type request: :class:`django.http.HttpRequest`
+    :return: dict
+    """
+    return {"main_navigation": MAIN_NAVIGATION}
+
+
+#: The profile section's sub-navigation, in the order it is shown. Rendered by
+#: base_profile.html, so adding a page there is a change here and nowhere else.
+PROFILE_SECTIONS = [
+    ("profile", "Profile"),
+    ("profile_account", "Account"),
+    ("profile_api", "API token"),
+    ("profile_addresses", "Addresses"),
+    ("profile_settings", "Settings"),
+    ("profile_appearance", "Appearance"),
+]
+
+
+def profile_navigation(request):
+    """Return the profile sub-navigation for base_profile.html.
+
+    A context processor rather than a per-view context entry: every page in
+    the section renders the same nav, and five views each building their own
+    copy is five chances for them to disagree about the order or a label.
+
+    :param request: Django request object
+    :type request: :class:`django.http.HttpRequest`
+    :return: dict
+    """
+    return {"profile_sections": PROFILE_SECTIONS}
+
+
 def global_constants(request):
     """Return collection of project's constants.
 
@@ -54,6 +102,9 @@ def global_constants(request):
         "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
         "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
         "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
+        # The pair the signed-out light/dark switch flips between.
+        "BRAND_THEME_LIGHT": settings.BRAND_THEME_LIGHT,
+        "BRAND_THEME_DARK": settings.BRAND_THEME_DARK,
         # Named in the picker. Several themes are third-party and
         # CC BY 4.0, which makes the credit a licence condition.
         "THEME_ATTRIBUTION": settings.THEME_ATTRIBUTION,

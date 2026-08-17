@@ -5,14 +5,20 @@ from pathlib import Path
 from unittest import mock
 
 from django.conf import settings
+from django.urls import reverse
 
 import core.context_processors
 from api.client import BackendError
 from core.context_processors import (
     deployment_capabilities,
     global_constants,
+    main_navigation,
+    profile_navigation,
     walletconnect,
 )
+# The navigation lists live on the module, not in Django settings: they are
+# structure rather than configuration, and nothing deploys differently.
+from core import context_processors as settings_module
 
 
 class TestCoreContextProcessors:
@@ -102,8 +108,74 @@ class TestCoreContextProcessors:
             "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
             "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
             "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
+            "BRAND_THEME_LIGHT": settings.BRAND_THEME_LIGHT,
+            "BRAND_THEME_DARK": settings.BRAND_THEME_DARK,
             "THEME_ATTRIBUTION": settings.THEME_ATTRIBUTION,
         }
+
+    # # main_navigation
+    def test_core_context_processors_main_navigation_functionality(self, mocker):
+        assert main_navigation(mocker.MagicMock()) == {
+            "main_navigation": settings_module.MAIN_NAVIGATION
+        }
+
+    def test_core_context_processors_main_navigation_entries_resolve(self):
+        """Every entry must be a real url name.
+
+        The header reverses these, so a renamed or removed view turns the whole
+        navigation into a NoReverseMatch on every page of the site -- including
+        the error page. Cheap to assert, expensive to discover.
+        """
+        for url_name, label in settings_module.MAIN_NAVIGATION:
+            assert reverse(url_name), f"{url_name} does not reverse"
+            assert label.strip(), f"{url_name} has an empty label"
+
+    # # profile_navigation
+    def test_core_context_processors_profile_navigation_functionality(self, mocker):
+        assert profile_navigation(mocker.MagicMock()) == {
+            "profile_sections": settings_module.PROFILE_SECTIONS
+        }
+
+    def test_core_context_processors_profile_navigation_entries_resolve(self):
+        for url_name, label in settings_module.PROFILE_SECTIONS:
+            assert reverse(url_name), f"{url_name} does not reverse"
+            assert label.strip(), f"{url_name} has an empty label"
+
+    def test_core_context_processors_appearance_is_in_the_profile_nav(self):
+        """The header's Customize link and the sub-nav must lead to one place.
+
+        Two routes to the same page is fine; two different pages is not, and
+        that is what a typo here would produce.
+        """
+        assert "profile_appearance" in [
+            url_name for url_name, _ in settings_module.PROFILE_SECTIONS
+        ]
+
+    # # brand themes
+    def test_core_context_processors_brand_themes_are_offered_and_built(self):
+        """The signed-out switch flips between these two, so they must exist.
+
+        A brand theme missing from AVAILABLE_THEMES would leave the switch
+        applying a `data-theme` the stylesheet has no rule for -- an unstyled
+        page, from a control that looks like it worked.
+        """
+        for theme in (settings.BRAND_THEME_LIGHT, settings.BRAND_THEME_DARK):
+            assert theme in settings.AVAILABLE_THEMES, (
+                f"{theme} is what the light/dark switch applies but it is not "
+                "offered in AVAILABLE_THEMES"
+            )
+
+    def test_core_context_processors_brand_themes_are_one_of_each_scheme(self):
+        """A switch between two themes of the same scheme would do nothing visible."""
+        groups = settings.AVAILABLE_THEMES_BY_SCHEME
+        assert settings.BRAND_THEME_LIGHT in groups["Light"], (
+            f"{settings.BRAND_THEME_LIGHT} is used as the switch's light theme "
+            "but is not grouped as one"
+        )
+        assert settings.BRAND_THEME_DARK in groups["Dark"], (
+            f"{settings.BRAND_THEME_DARK} is used as the switch's dark theme "
+            "but is not grouped as one"
+        )
 
     # # AVAILABLE_THEMES
     def test_core_context_processors_every_offered_theme_is_built(self):
