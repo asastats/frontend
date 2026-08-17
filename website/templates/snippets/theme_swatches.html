@@ -1,0 +1,35 @@
+{% comment %}
+  One grid of theme swatches. Included once per scheme, so the Dark and Light
+  tabs cannot drift apart in markup -- they are the same control over a
+  different list.
+
+  Takes `themes`, a list of theme names.
+
+  `data-theme` on the label makes each swatch render in the theme it offers, so
+  the preview is the real thing rather than an approximation maintained by hand.
+
+  Selection is the same mechanism as the header dropdown: a radio named
+  `theme-dropdown`, wired by static/js/theme.js. Reusing the name means this
+  page needs no script of its own, and the two controls cannot disagree about
+  what is selected.
+{% endcomment %}
+<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+  {% for theme in themes %}
+  <label class="cursor-pointer" data-theme="{{ theme }}">
+    <input type="radio" name="theme-dropdown" value="{{ theme }}" class="peer sr-only">
+    <span class="flex items-center gap-3 rounded-box border border-base-300 bg-base-100 p-3
+                 transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
+      <span class="flex flex-none gap-1" aria-hidden="true">
+        <span class="h-8 w-3 rounded bg-base-200"></span>
+        <span class="h-8 w-3 rounded bg-primary"></span>
+        <span class="h-8 w-3 rounded bg-secondary"></span>
+        <span class="h-8 w-3 rounded bg-accent"></span>
+      </span>
+      <span class="min-w-0 flex-1">
+        <span class="block truncate text-sm font-medium text-base-content">{{ theme }}</span>
+        <span class="block truncate text-xs text-base-content/60">The quick brown fox</span>
+      </span>
+    </span>
+  </label>
+  {% endfor %}
+</div>

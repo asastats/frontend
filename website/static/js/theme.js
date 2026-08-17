@@ -171,6 +171,39 @@
   }
 
   /**
+   * Open the appearance tab that holds the theme currently in use.
+   *
+   * The tabs are radio inputs with a fixed `checked` in the markup, so without
+   * this the page always opens on Dark -- and a reader on a light theme lands
+   * on a panel their theme is not in, with no sign that it is one tab away.
+   *
+   * Does nothing on pages with no tabs, which is every page but this one.
+   *
+   * @param {Document|Element} [root=document] - subtree to search
+   * @returns {string} the scheme opened, or "" when nothing was changed
+   */
+  function selectSchemeTab(root) {
+    var host = root || document;
+    var active = currentTheme();
+    if (!active) return "";
+
+    var chosen = host.querySelector(
+      "input[name='theme-dropdown'][value='" + active + "']"
+    );
+    if (!chosen) return "";
+
+    // The panel is the tab input's next sibling, so the tab for a panel is
+    // whichever tab input precedes it.
+    var panel = chosen.closest && chosen.closest("[role='tabpanel']");
+    if (!panel) return "";
+    var tab = panel.previousElementSibling;
+    if (!tab || tab.name !== "appearance-tab") return "";
+
+    tab.checked = true;
+    return tab.dataset.tabScheme || "";
+  }
+
+  /**
    * Wire the picker: tick the saved theme, and apply whatever is chosen.
    *
    * Idempotent, so it is safe to call again after an htmx swap replaces the
@@ -215,6 +248,7 @@
       TYPEFACE_KEY: TYPEFACE_KEY,
       wireTypefacePicker: wireTypefacePicker,
       currentTheme: currentTheme,
+      selectSchemeTab: selectSchemeTab,
       wireThemeToggle: wireThemeToggle,
       wireThemePicker: wireThemePicker,
     };
@@ -224,17 +258,20 @@
         wireThemePicker(document);
         wireThemeToggle(document);
         wireTypefacePicker(document);
+        selectSchemeTab(document);
       });
     } else {
       wireThemePicker(document);
       wireThemeToggle(document);
       wireTypefacePicker(document);
+      selectSchemeTab(document);
     }
     // The header can be replaced by an htmx swap; re-tick and re-bind after one.
     document.body.addEventListener("htmx:afterSwap", function () {
       wireThemePicker(document);
       wireThemeToggle(document);
       wireTypefacePicker(document);
+      selectSchemeTab(document);
     });
   }
 })();

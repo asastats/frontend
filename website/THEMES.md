@@ -23,15 +23,32 @@ These ship with DaisyUI (MIT) and need no separate attribution.
 
 ## Third-party — attribution required
 
-The themes under `static/css/themes/` are **not ours**:
+The themes under `static/css/themes/` are **not ours**, and they come from two
+sources under two licences.
 
 > Themes by **Dachi** — <https://github.com/dachinat>
 > Source: <https://github.com/dachinat/daisyui-themes>
 > Licence: **CC BY 4.0** — <https://creativecommons.org/licenses/by/4.0/>
 
-`andromeda`, `ayudark`, `catppuccin`, `everforest`, `flexoki`, `githubdark`,
-`githublight`, `gruvbox`, `kanagawa`, `monokai`, `nightfox`, `nightowl`,
-`onedarkpro`, `rosepine`, `solarized`, `tokyonight`, `vscode`.
+`andromeda`, `ayudark`, `everforest`, `flexoki`, `githubdark`, `githublight`,
+`gruvbox`, `kanagawa`, `monokai`, `nightfox`, `nightowl`, `onedarkpro`,
+`rosepine`, `solarized`, `tokyonight`, `vscode`.
+
+> Catppuccin — <https://github.com/catppuccin/daisyui>
+> Licence: **MIT**, Copyright (c) 2021 Catppuccin
+
+`latte`, `frappe`, `macchiato`, `mocha`. Shipped without the `catppuccin-`
+prefix the upstream package uses: the flavour names are distinctive on their
+own, and the full names crowded the picker.
+
+Only the CC BY set needs a credit in the interface. MIT is satisfied by keeping
+the copyright notice at the top of each vendored file, which those four do, so
+they are deliberately **absent** from `settings.THEME_ATTRIBUTION` — that list
+is the CC BY obligation, not a list of themes we did not write.
+
+Dachi's `catppuccin` was removed when these four arrived: it was one dark
+approximation of a palette that now ships in all four of its official
+flavours.
 
 CC BY 4.0 permits use, modification and redistribution **on condition that**
 the author, the source and the licence are named, and that changes are

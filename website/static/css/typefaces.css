@@ -197,20 +197,6 @@
   src: url("../fonts/cinzel-v26-latin-regular.woff2") format("woff2");
 }
 @font-face {
-  font-family: "Comfortaa";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("../fonts/comfortaa-v47-latin-700.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Comfortaa";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("../fonts/comfortaa-v47-latin-regular.woff2") format("woff2");
-}
-@font-face {
   font-family: "Cormorant Garamond";
   font-style: normal;
   font-weight: 700;
@@ -1081,11 +1067,6 @@
   --typeface-display: "Fraunces";
   --typeface-body: "Karla";
 }
-[data-theme="catppuccin"] {
-  --typeface-display: "Comfortaa";
-  --typeface-body: "Nunito Sans";
-  --typeface-mono: "JetBrains Mono";
-}
 [data-theme="cmyk"] {
   --typeface-display: "Anton";
   --typeface-body: "Work Sans";
@@ -1140,6 +1121,11 @@
   --typeface-display: "Vollkorn";
   --typeface-body: "Source Sans 3";
 }
+[data-theme="frappe"] {
+  --typeface-display: "Manrope";
+  --typeface-body: "Karla";
+  --typeface-mono: "JetBrains Mono";
+}
 [data-theme="garden"] {
   --typeface-display: "Cormorant Garamond";
   --typeface-body: "Lato";
@@ -1168,6 +1154,11 @@
   --typeface-body: "Zen Kaku Gothic New";
   --typeface-mono: "M PLUS 1 Code";
 }
+[data-theme="latte"] {
+  --typeface-display: "Fraunces";
+  --typeface-body: "Plus Jakarta Sans";
+  --typeface-mono: "JetBrains Mono";
+}
 [data-theme="lemonade"] {
   --typeface-display: "Poppins";
   --typeface-body: "Nunito Sans";
@@ -1183,6 +1174,16 @@
 [data-theme="luxury"] {
   --typeface-display: "Marcellus";
   --typeface-body: "Jost";
+}
+[data-theme="macchiato"] {
+  --typeface-display: "Space Grotesk";
+  --typeface-body: "Work Sans";
+  --typeface-mono: "JetBrains Mono";
+}
+[data-theme="mocha"] {
+  --typeface-display: "Bricolage Grotesque";
+  --typeface-body: "Sora";
+  --typeface-mono: "JetBrains Mono";
 }
 [data-theme="monokai"] {
   --typeface-display: "DM Mono";
@@ -1319,11 +1320,6 @@
   --typeface-display: "Fraunces";
   --typeface-body: "Karla";
 }
-[data-typeface="catppuccin"] {
-  --typeface-display: "Comfortaa";
-  --typeface-body: "Nunito Sans";
-  --typeface-mono: "JetBrains Mono";
-}
 [data-typeface="cmyk"] {
   --typeface-display: "Anton";
   --typeface-body: "Work Sans";
@@ -1378,6 +1374,11 @@
   --typeface-display: "Vollkorn";
   --typeface-body: "Source Sans 3";
 }
+[data-typeface="frappe"] {
+  --typeface-display: "Manrope";
+  --typeface-body: "Karla";
+  --typeface-mono: "JetBrains Mono";
+}
 [data-typeface="garden"] {
   --typeface-display: "Cormorant Garamond";
   --typeface-body: "Lato";
@@ -1406,6 +1407,11 @@
   --typeface-body: "Zen Kaku Gothic New";
   --typeface-mono: "M PLUS 1 Code";
 }
+[data-typeface="latte"] {
+  --typeface-display: "Fraunces";
+  --typeface-body: "Plus Jakarta Sans";
+  --typeface-mono: "JetBrains Mono";
+}
 [data-typeface="lemonade"] {
   --typeface-display: "Poppins";
   --typeface-body: "Nunito Sans";
@@ -1421,6 +1427,16 @@
 [data-typeface="luxury"] {
   --typeface-display: "Marcellus";
   --typeface-body: "Jost";
+}
+[data-typeface="macchiato"] {
+  --typeface-display: "Space Grotesk";
+  --typeface-body: "Work Sans";
+  --typeface-mono: "JetBrains Mono";
+}
+[data-typeface="mocha"] {
+  --typeface-display: "Bricolage Grotesque";
+  --typeface-body: "Sora";
+  --typeface-mono: "JetBrains Mono";
 }
 [data-typeface="monokai"] {
   --typeface-display: "DM Mono";

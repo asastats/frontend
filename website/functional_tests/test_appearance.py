@@ -349,25 +349,41 @@ class AppearanceTypefaceTest(FunctionalTest):
         )
         self.assertEqual(self._stamped_typeface(), "nord")
 
-    def test_an_unentitled_reader_sees_the_choices_but_cannot_use_them(self):
+    def test_an_unentitled_reader_gets_no_dead_controls(self):
+        """The Fonts tab is a link below the tier, not a panel of dead radios.
+
+        Rendering every pairing disabled read as a control that had broken
+        rather than one that has a price.
+        """
         self._unentitled()
 
-        inputs = self.browser.find_elements(
-            By.CSS_SELECTOR, 'input[name="typeface-choice"]'
-        )
-        self.assertTrue(inputs, "the pairings were hidden rather than disabled")
-        self.assertTrue(
-            all(i.get_attribute("disabled") for i in inputs),
-            "a pairing was left usable below the tier",
+        self.assertFalse(
+            self.browser.find_elements(
+                By.CSS_SELECTOR, 'input[name="typeface-choice"]'
+            ),
+            "a typeface control was rendered below the tier",
         )
 
     def test_an_unentitled_reader_is_pointed_at_subscriptions(self):
         self._unentitled()
 
-        link = self.browser.find_element(
-            By.CSS_SELECTOR, f'#id-section-typeface a[href="{reverse("subscriptions")}"]'
+        tab = self.browser.find_element(By.CSS_SELECTOR, "#id-tab-fonts")
+
+        self.assertEqual(tab.tag_name, "a")
+        self.assertEqual(
+            tab.get_attribute("href").split(self.live_server_url)[-1],
+            reverse("subscriptions"),
         )
-        self.assertIn("Asastatser", link.get_attribute("title"))
+        self.assertIn("Asastatser", tab.get_attribute("title"))
+
+    def test_an_entitled_reader_gets_fonts_as_a_tab(self):
+        """Above the tier it is a tab like Dark and Light, not a link away."""
+        self._entitled()
+
+        tab = self.browser.find_element(By.CSS_SELECTOR, "#id-tab-fonts")
+
+        self.assertEqual(tab.tag_name, "input")
+        self.assertEqual(tab.get_attribute("name"), "appearance-tab")
 
     def test_an_unentitled_reader_can_still_choose_a_theme(self):
         """The tier buys typefaces, not themes."""

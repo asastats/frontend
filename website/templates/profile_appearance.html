@@ -3,147 +3,114 @@
 {% comment %}
   Appearance: pick a theme, seeing it rather than reading its name.
 
-  The header dropdown lists 38 names, which is a list you scan rather than
-  choose from -- "abyss" and "nightfox" tell a reader nothing. Here each theme
-  renders its own swatch, drawn with that theme's own tokens, so the choice is
-  made by looking.
+  The header dropdown lists every theme by name, which is a list you scan
+  rather than choose from -- "abyss" and "nightfox" tell a reader nothing. Here
+  each theme renders its own swatch, drawn with that theme's own tokens, so the
+  choice is made by looking.
 
-  Selection is the same mechanism as the dropdown: a radio named
-  `theme-dropdown`, wired by static/js/theme.js. Reusing the name means this
-  page needs no script of its own, and the two controls cannot disagree about
-  what is selected.
+  Three tabs rather than one long page. 57 swatches in a single column meant
+  scrolling past every dark theme to reach a light one, and the typeface
+  section -- an independent axis, and the only gated one -- was stranded at the
+  bottom where a reader had to already know it existed.
 
-  Typeface pairs will join this page once the families are self-hosted; the
-  theme sets a default and the reader will be able to override it, which is why
-  this is a page and not a menu.
+  Dark leads because the two dark tabs of this site's own pair is what most
+  readers who come here are looking for; static/js/theme.js reselects whichever
+  tab holds the active theme on load, so the page opens where the reader is.
 {% endcomment %}
 {% block title %}Appearance - {{ WEBSITE_NAME }}{% endblock %}
-{% block description %}Choose the theme used across {{ WEBSITE_URL }}.{% endblock %}
-{% block keywords %}appearance,theme,dark mode,light mode,customize{% endblock %}
+{% block description %}Choose the theme and typeface used across {{ WEBSITE_URL }}.{% endblock %}
+{% block keywords %}appearance,theme,font,typeface,dark mode,light mode,customize{% endblock %}
 {% block profile_title %}Appearance{% endblock %}
 {% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; Appearance{% endblock %}
 
 {% block profile_content %}
 <section class="rounded-box border border-base-300 bg-base-100">
   <div class="border-b border-base-300 px-5 py-4">
-    <h2 class="font-medium">Theme</h2>
+    <h2 class="font-medium">Themes</h2>
     <p class="mt-1 text-sm text-base-content/60">
       Applies to this browser only, and takes effect as you choose.
     </p>
   </div>
 
-  {% for group, themes in AVAILABLE_THEMES_BY_SCHEME.items %}
-  <div class="px-5 py-5{% if not forloop.first %} border-t border-base-300{% endif %}">
-    <h3 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">{{ group }}</h3>
-    <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {% for theme in themes %}
-      {% comment %}
-        `data-theme` on the label makes the swatch render in the theme it
-        offers, so the preview is the real thing rather than an approximation
-        maintained by hand.
-      {% endcomment %}
-      <label class="cursor-pointer" data-theme="{{ theme }}">
-        <input type="radio" name="theme-dropdown" value="{{ theme }}" class="peer sr-only">
-        <span class="flex items-center gap-3 rounded-box border border-base-300 bg-base-100 p-3
-                     transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
-          <span class="flex flex-none gap-1" aria-hidden="true">
-            <span class="h-8 w-3 rounded bg-base-200"></span>
-            <span class="h-8 w-3 rounded bg-primary"></span>
-            <span class="h-8 w-3 rounded bg-secondary"></span>
-            <span class="h-8 w-3 rounded bg-accent"></span>
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm font-medium text-base-content">{{ theme }}</span>
-            <span class="block truncate text-xs text-base-content/60">The quick brown fox</span>
-          </span>
-        </span>
-      </label>
-      {% endfor %}
+  {% comment %}
+    Radio tabs, so the panels switch with no script: a reader whose JavaScript
+    failed still gets a working page rather than three headings and nothing
+    under them. The group is named `appearance-tab` so it cannot collide with
+    the `theme-dropdown` and `typeface-choice` radios inside the panels.
+  {% endcomment %}
+  <div role="tablist" class="tabs tabs-lift px-5 pt-5" id="id-appearance-tabs">
+
+    <input type="radio" name="appearance-tab" role="tab" class="tab" id="id-tab-dark"
+           aria-label="Dark" data-tab-scheme="Dark" checked>
+    <div role="tabpanel" class="tab-content border-base-300 bg-base-100 p-5">
+      {% include "snippets/theme_swatches.html" with themes=AVAILABLE_THEMES_BY_SCHEME.Dark %}
     </div>
+
+    <input type="radio" name="appearance-tab" role="tab" class="tab" id="id-tab-light"
+           aria-label="Light" data-tab-scheme="Light">
+    <div role="tabpanel" class="tab-content border-base-300 bg-base-100 p-5">
+      {% include "snippets/theme_swatches.html" with themes=AVAILABLE_THEMES_BY_SCHEME.Light %}
+    </div>
+
+    {% comment %}
+      Fonts is the one gated tab. Above the tier it is a tab like the others;
+      below it, it is a link to subscriptions instead -- the reader is told what
+      it costs and taken somewhere they can act, rather than shown a panel of
+      controls that do nothing when clicked.
+
+      Each choice is another theme's pairing, named after that theme, because
+      that is what it is. "Theme default" clears the override, which is why its
+      value is empty. Every specimen renders in the face it offers, for the same
+      reason the theme swatches render in their own colours.
+    {% endcomment %}
+    {% if can_access_typeface %}
+    <input type="radio" name="appearance-tab" role="tab" class="tab" id="id-tab-fonts"
+           aria-label="Fonts">
+    <div role="tabpanel" class="tab-content border-base-300 bg-base-100 p-5" id="id-section-typeface">
+      <p class="mb-4 text-sm text-base-content/60">
+        Every theme brings its own pair. Borrow another theme's if you prefer.
+      </p>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <label class="cursor-pointer">
+          <input type="radio" name="typeface-choice" value="" class="peer sr-only">
+          <span class="flex h-full flex-col justify-center rounded-box border border-base-300 p-3
+                       transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
+            <span class="text-sm font-medium">Theme default</span>
+            <span class="text-xs text-base-content/60">Whatever the theme brings</span>
+          </span>
+        </label>
+        {% for name, faces in typefaces.items %}
+        <label class="cursor-pointer" data-typeface="{{ name }}">
+          <input type="radio" name="typeface-choice" value="{{ name }}" class="peer sr-only">
+          <span class="flex h-full flex-col rounded-box border border-base-300 p-3
+                       transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
+            <span class="truncate text-base font-medium"
+                  style="font-family: var(--typeface-display), sans-serif;">{{ faces.display }}</span>
+            <span class="truncate text-sm text-base-content/70"
+                  style="font-family: var(--typeface-body), sans-serif;">{{ faces.sans }} — the quick brown fox</span>
+            <span class="mt-1 truncate text-xs text-base-content/50">from {{ name }}</span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <a role="tab" class="tab" id="id-tab-fonts" href="{% url 'subscriptions' %}"
+       title="Choosing a typeface is available from the Asastatser tier">
+      Fonts
+      <span class="badge badge-outline badge-xs ml-2">Asastatser</span>
+    </a>
+    {% endif %}
   </div>
-  {% endfor %}
 
   {% if THEME_ATTRIBUTION.themes %}
-  <div class="border-t border-base-300 px-5 py-4 text-xs text-base-content/60">
-    Themes marked below are by
+  <div class="mt-5 border-t border-base-300 px-5 py-4 text-xs text-base-content/60">
+    These themes are by
     <a class="link" href="{{ THEME_ATTRIBUTION.author_url }}" target="_blank" rel="noopener">{{ THEME_ATTRIBUTION.author }}</a>
     and used under
     <a class="link" href="{{ THEME_ATTRIBUTION.license_url }}" target="_blank" rel="noopener">{{ THEME_ATTRIBUTION.license }}</a>:
     {{ THEME_ATTRIBUTION.themes|join:", " }}.
   </div>
   {% endif %}
-</section>
-
-{% comment %}
-  Typeface. Its own section rather than a column of the theme grid, because it
-  is an independent axis -- any pairing works with any theme -- and because it
-  is gated on a subscription tier while the theme is not.
-
-  The gate follows the explorer preference on profile_settings.html: below the
-  tier the choices are still rendered, disabled, inside a link to
-  subscriptions. Showing what is on offer is the point; hiding it would make
-  the upgrade an abstraction.
-
-  Each choice is another theme's pairing, named after that theme, because that
-  is what it is. "Theme default" clears the override, which is why its value is
-  empty. Every specimen renders in the face it offers, for the same reason the
-  theme swatches render in their own colours.
-{% endcomment %}
-<section class="rounded-box border border-base-300 bg-base-100" id="id-section-typeface">
-  <div class="border-b border-base-300 px-5 py-4">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h2 class="font-medium">Typeface</h2>
-        <p class="mt-1 text-sm text-base-content/60">
-          Every theme brings its own pair. Borrow another theme's if you prefer.
-        </p>
-      </div>
-      {% if not can_access_typeface %}
-      <span class="badge badge-outline">Asastatser and above</span>
-      {% endif %}
-    </div>
-  </div>
-
-  <div class="px-5 py-5">
-    {% if not can_access_typeface %}
-    <a href="{% url 'subscriptions' %}" class="block"
-       title="Available from the Asastatser tier — open subscriptions">
-    {% endif %}
-
-    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3{% if not can_access_typeface %} pointer-events-none opacity-60{% endif %}">
-      <label class="cursor-pointer">
-        <input type="radio" name="typeface-choice" value="" class="peer sr-only"
-               {% if not can_access_typeface %}disabled aria-disabled="true"{% endif %}>
-        <span class="flex h-full flex-col justify-center rounded-box border border-base-300 p-3
-                     transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
-          <span class="text-sm font-medium">Theme default</span>
-          <span class="text-xs text-base-content/60">Whatever the theme brings</span>
-        </span>
-      </label>
-      {% for name, faces in typefaces.items %}
-      <label class="cursor-pointer" data-typeface="{{ name }}">
-        <input type="radio" name="typeface-choice" value="{{ name }}" class="peer sr-only"
-               {% if not can_access_typeface %}disabled aria-disabled="true"{% endif %}>
-        <span class="flex h-full flex-col rounded-box border border-base-300 p-3
-                     transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
-          <span class="truncate text-base font-medium"
-                style="font-family: var(--typeface-display), sans-serif;">{{ faces.display }}</span>
-          <span class="truncate text-sm text-base-content/70"
-                style="font-family: var(--typeface-body), sans-serif;">{{ faces.sans }} — the quick brown fox</span>
-          <span class="mt-1 truncate text-xs text-base-content/50">from {{ name }}</span>
-        </span>
-      </label>
-      {% endfor %}
-    </div>
-
-    {% if not can_access_typeface %}
-      <span class="mt-4 block text-xs text-base-content/60">
-        Choosing a typeface is available from the
-        <span class="text-primary">Asastatser</span> tier. Tap to upgrade.
-        Your theme's own pairing is applied either way.
-      </span>
-    </a>
-    {% endif %}
-  </div>
 </section>
 {% endblock %}

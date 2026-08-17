@@ -364,6 +364,7 @@ AVAILABLE_THEMES_BY_SCHEME = {
         "fantasy",
         "garden",
         "githublight",
+        "latte",
         "lemonade",
         "light",
         "lofi",
@@ -383,7 +384,6 @@ AVAILABLE_THEMES_BY_SCHEME = {
         "ayudark",
         "black",
         "business",
-        "catppuccin",
         "coffee",
         "dark",
         "dim",
@@ -391,11 +391,14 @@ AVAILABLE_THEMES_BY_SCHEME = {
         "everforest",
         "flexoki",
         "forest",
+        "frappe",
         "githubdark",
         "gruvbox",
         "halloween",
         "kanagawa",
         "luxury",
+        "macchiato",
+        "mocha",
         "monokai",
         "night",
         "nightfox",
@@ -416,8 +419,13 @@ AVAILABLE_THEMES = [
     theme for group in AVAILABLE_THEMES_BY_SCHEME.values() for theme in group
 ]
 
-# Themes that are not ours, keyed by theme name. The picker renders a credit
-# from this, which is how the CC BY attribution reaches the reader.
+# Dachi's themes, which are CC BY 4.0. The picker renders a credit from this,
+# which is how that attribution reaches the reader -- it is a licence
+# condition, so this list is not decoration and must track the imports.
+#
+# Nothing else belongs here. The Catppuccin flavours and the DaisyUI stock
+# themes are MIT, which is satisfied by the copyright banner kept at the top
+# of each vendored file and asks for nothing in the interface.
 THEME_ATTRIBUTION = {
     "author": "Dachi",
     "author_url": "https://github.com/dachinat",
@@ -427,7 +435,6 @@ THEME_ATTRIBUTION = {
     "themes": [
         "andromeda",
         "ayudark",
-        "catppuccin",
         "everforest",
         "flexoki",
         "githubdark",

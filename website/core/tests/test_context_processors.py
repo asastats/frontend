@@ -427,15 +427,44 @@ class TestCoreContextProcessors:
             f"{sorted(attributed - offered)}"
         )
 
-        vendored = {
-            path.stem
-            for path in (
-                Path(settings.STATICFILES_DIRS[0]) / "css" / "themes"
-            ).glob("*.css")
-        }
-        assert vendored <= attributed, (
-            "vendored under static/css/themes/ but not credited in "
-            f"settings.THEME_ATTRIBUTION: {sorted(vendored - attributed)}"
+    def test_core_context_processors_cc_by_themes_are_credited(self):
+        """Credit exactly the themes whose licence demands it -- no more.
+
+        Two licences are vendored under static/css/themes/. CC BY 4.0 requires
+        the author, source and licence be named where a reader can see them,
+        which is what THEME_ATTRIBUTION drives. MIT does not: it is satisfied by
+        the copyright notice kept at the top of the file, and crediting an MIT
+        theme in the picker would tell a reader something untrue about who is
+        owed what.
+
+        Keyed on each file's own banner rather than a list repeated here,
+        because the banner is the notice the licence is about -- deleting it to
+        make this test pass would be the actual violation.
+        """
+        attributed = set(settings.THEME_ATTRIBUTION["themes"])
+        theme_dir = Path(settings.STATICFILES_DIRS[0]) / "css" / "themes"
+
+        cc_by, mit, unlabelled = set(), set(), set()
+        for path in theme_dir.glob("*.css"):
+            banner = path.read_text()[:600].upper()
+            if "CC BY" in banner:
+                cc_by.add(path.stem)
+            elif "MIT" in banner:
+                mit.add(path.stem)
+            else:
+                unlabelled.add(path.stem)
+
+        assert not unlabelled, (
+            "vendored theme with no licence in its banner -- add the upstream "
+            f"notice rather than dropping it: {sorted(unlabelled)}"
+        )
+        assert cc_by <= attributed, (
+            "CC BY 4.0 and vendored, but not credited in "
+            f"settings.THEME_ATTRIBUTION: {sorted(cc_by - attributed)}"
+        )
+        assert not (mit & attributed), (
+            "MIT themes need no interface credit, so listing them overstates "
+            f"the obligation: {sorted(mit & attributed)}"
         )
 
     # # walletconnect

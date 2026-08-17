@@ -11,6 +11,7 @@ static/js/theme.js. A page offering a theme the header does not (or the other
 way round) would not fail anywhere: it would just quietly be two features.
 """
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -210,9 +211,9 @@ class ProfileAppearanceTypefaceTest(TestCase):
         response = self.client.get(self.url)
 
         self.assertTrue(response.context["can_access_typeface"])
-        # The same string the unentitled test asserts is present, so the two
-        # cannot both pass by accident.
-        self.assertNotContains(response, 'disabled aria-disabled="true"')
+        # Above the tier Fonts is a tab like Dark and Light: a radio input,
+        # with the pairings in the panel behind it.
+        self.assertContains(response, 'name="typeface-choice"')
 
     def test_core_views_appearance_unentitled_reader_may_not(self):
         self._unentitled()
@@ -221,27 +222,30 @@ class ProfileAppearanceTypefaceTest(TestCase):
 
         self.assertFalse(response.context["can_access_typeface"])
 
-    def test_core_views_appearance_unentitled_reader_still_sees_the_choices(self):
-        """Hiding them would make the upgrade an abstraction.
+    def test_core_views_appearance_unentitled_reader_gets_no_dead_controls(self):
+        """Below the tier the Fonts tab is a link, not a panel of dead radios.
 
-        The explorer preference does the same: render the control, disable it,
-        and let a click lead to subscriptions.
+        It used to render every pairing disabled, which read as a control that
+        had stopped working rather than one that has a price. Asserting the
+        exact string the entitled test asserts is present, so the two cannot
+        both pass by accident.
         """
+        self._unentitled()
+
+        response = self.client.get(self.url)
+
+        self.assertNotContains(response, 'name="typeface-choice"')
+
+    def test_core_views_appearance_unentitled_fonts_tab_is_the_upgrade_path(self):
+        """Clicking Fonts has to go somewhere the reader can act."""
         self._unentitled()
 
         response = self.client.get(self.url)
         html = response.content.decode()
 
-        for name in response.context["typefaces"]:
-            self.assertIn(f'value="{name}"', html)
-
-    def test_core_views_appearance_unentitled_choices_are_disabled(self):
-        """Rendered is not the same as usable."""
-        self._unentitled()
-
-        response = self.client.get(self.url)
-
-        self.assertContains(response, "disabled aria-disabled=\"true\"")
+        tab = html[html.index('id="id-tab-fonts"') - 200:]
+        tab = tab[: tab.index(">", tab.index('id="id-tab-fonts"')) + 1]
+        self.assertIn(reverse("subscriptions"), tab)
 
     def test_core_views_appearance_unentitled_reader_is_pointed_at_subscriptions(self):
         self._unentitled()
@@ -264,3 +268,115 @@ class ProfileAppearanceTypefaceTest(TestCase):
 
         for theme in response.context["AVAILABLE_THEMES"]:
             self.assertIn(f'value="{theme}"', html)
+
+
+class ProfileAppearanceTabsTest(TestCase):
+    """The page is three tabs: Dark, Light, Fonts.
+
+    57 swatches in one column meant scrolling past every dark theme to reach a
+    light one, and the typeface section sat below all of them where a reader
+    had to already know it was there.
+    """
+
+    def setUp(self):
+        self.url = reverse("profile_appearance")
+
+    def _sign_in(self, permission=0):
+        user = get_user_model().objects.create_user(
+            username="tabs@example.com", email="tabs@example.com", password="x"
+        )
+        profile = user.profile
+        profile.permission = permission
+        profile.save()
+        self.client.force_login(user)
+        return user
+
+    def test_core_views_appearance_has_a_tab_per_scheme(self):
+        self._sign_in()
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, 'id="id-tab-dark"')
+        self.assertContains(response, 'id="id-tab-light"')
+        self.assertContains(response, 'id="id-tab-fonts"')
+
+    def test_core_views_appearance_tabs_do_not_collide_with_the_pickers(self):
+        """Three radio groups share this page and must stay separate.
+
+        A tab named `theme-dropdown` would make switching tabs change the
+        theme, and clear whichever theme was chosen.
+        """
+        self._sign_in()
+
+        response = self.client.get(self.url)
+        html = response.content.decode()
+
+        tabs = html.count('name="appearance-tab"')
+        self.assertGreaterEqual(tabs, 2)
+        self.assertNotIn('name="appearance-tab" value=', html)
+
+    def _tab_region(self, response):
+        """Just the tabs.
+
+        The header carries its own picker listing every theme, and it renders
+        before this section -- searching the whole page finds those first and
+        would have every assertion here passing on the wrong control.
+        """
+        html = response.content.decode()
+        return html[html.index('id="id-appearance-tabs"'):]
+
+    def test_core_views_appearance_dark_tab_holds_the_dark_themes(self):
+        self._sign_in()
+
+        response = self.client.get(self.url)
+        html = self._tab_region(response)
+        dark_at = html.index('id="id-tab-dark"')
+        light_at = html.index('id="id-tab-light"')
+
+        for theme in settings.AVAILABLE_THEMES_BY_SCHEME["Dark"]:
+            at = html.index(f'value="{theme}"')
+            self.assertTrue(
+                dark_at < at < light_at, f"{theme} is not under the Dark tab"
+            )
+
+    def test_core_views_appearance_light_tab_holds_the_light_themes(self):
+        self._sign_in()
+
+        response = self.client.get(self.url)
+        html = self._tab_region(response)
+        light_at = html.index('id="id-tab-light"')
+
+        for theme in settings.AVAILABLE_THEMES_BY_SCHEME["Light"]:
+            self.assertGreater(
+                html.index(f'value="{theme}"'),
+                light_at,
+                f"{theme} is not under the Light tab",
+            )
+
+    def test_core_views_appearance_every_theme_appears_exactly_once(self):
+        """Two tabs over one list: a theme in both would be two controls."""
+        self._sign_in()
+
+        response = self.client.get(self.url)
+        html = self._tab_region(response)
+
+        for theme in settings.AVAILABLE_THEMES:
+            self.assertEqual(
+                html.count(f'name="theme-dropdown" value="{theme}"'),
+                1,
+                f"{theme} is offered more than once",
+            )
+
+    def test_core_views_appearance_opens_on_a_tab_without_scripting(self):
+        """The tabs are radios, so one must be checked in the markup itself.
+
+        theme.js moves the selection to whichever tab holds the active theme,
+        but a reader whose JavaScript failed still needs a populated panel
+        rather than three headings over nothing.
+        """
+        self._sign_in()
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, 'data-tab-scheme="Dark"')
+        self.assertContains(response, "checked")

@@ -448,3 +448,107 @@ describe("wireTypefacePicker", function () {
     }
   });
 });
+
+/*
+ * The appearance page's three tabs are radio inputs with Dark checked in the
+ * markup, so a reader on a light theme would land on a panel their theme is
+ * not in, with nothing to say it is one tab away.
+ */
+describe("selectSchemeTab", () => {
+  /** The shape profile_appearance.html renders. */
+  function mountTabs() {
+    document.body.innerHTML = `
+      <div role="tablist" id="id-appearance-tabs">
+        <input type="radio" name="appearance-tab" id="id-tab-dark"
+               data-tab-scheme="Dark" checked>
+        <div role="tabpanel">
+          <input type="radio" name="theme-dropdown" value="asastats-dark">
+          <input type="radio" name="theme-dropdown" value="mocha">
+        </div>
+        <input type="radio" name="appearance-tab" id="id-tab-light"
+               data-tab-scheme="Light">
+        <div role="tabpanel">
+          <input type="radio" name="theme-dropdown" value="asastats">
+          <input type="radio" name="theme-dropdown" value="latte">
+        </div>
+      </div>`;
+  }
+
+  beforeEach(() => {
+    document.documentElement.removeAttribute("data-theme");
+    localStorage.clear();
+  });
+
+  it("opens Light when a light theme is active", () => {
+    mountTabs();
+    T.applyTheme("latte");
+
+    expect(T.selectSchemeTab(document)).toBe("Light");
+    expect(document.getElementById("id-tab-light").checked).toBe(true);
+  });
+
+  it("opens Dark when a dark theme is active", () => {
+    mountTabs();
+    T.applyTheme("mocha");
+
+    expect(T.selectSchemeTab(document)).toBe("Dark");
+    expect(document.getElementById("id-tab-dark").checked).toBe(true);
+  });
+
+  it("leaves the markup's own choice alone with no theme set", () => {
+    mountTabs();
+
+    expect(T.selectSchemeTab(document)).toBe("");
+    expect(document.getElementById("id-tab-dark").checked).toBe(true);
+  });
+
+  it("does nothing for a theme that is no longer offered", () => {
+    // A theme culled from settings can still be sitting in localStorage.
+    mountTabs();
+    T.applyTheme("catppuccin");
+
+    expect(T.selectSchemeTab(document)).toBe("");
+  });
+
+  it("does nothing on a page with no tabs", () => {
+    // Which is every page but this one -- the header picker has no panels.
+    document.body.innerHTML =
+      '<input type="radio" name="theme-dropdown" value="latte">';
+    T.applyTheme("latte");
+
+    expect(T.selectSchemeTab(document)).toBe("");
+  });
+
+  it("ignores a panel that is not preceded by a tab", () => {
+    document.body.innerHTML = `
+      <div role="tabpanel">
+        <input type="radio" name="theme-dropdown" value="latte">
+      </div>`;
+    T.applyTheme("latte");
+
+    expect(T.selectSchemeTab(document)).toBe("");
+  });
+
+  it("still opens a tab that carries no scheme label", () => {
+    // The Fonts tab has no `data-tab-scheme`; the label is for reporting, and
+    // its absence must not stop the tab being selected.
+    document.body.innerHTML = `
+      <div role="tablist">
+        <input type="radio" name="appearance-tab" id="id-tab-x">
+        <div role="tabpanel">
+          <input type="radio" name="theme-dropdown" value="latte">
+        </div>
+      </div>`;
+    T.applyTheme("latte");
+
+    expect(T.selectSchemeTab(document)).toBe("");
+    expect(document.getElementById("id-tab-x").checked).toBe(true);
+  });
+
+  it("defaults to the document when given no root", () => {
+    mountTabs();
+    T.applyTheme("latte");
+
+    expect(T.selectSchemeTab()).toBe("Light");
+  });
+});

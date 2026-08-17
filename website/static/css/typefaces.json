@@ -49,11 +49,6 @@
   "display": "Fraunces",
   "sans": "Karla"
  },
- "catppuccin": {
-  "display": "Comfortaa",
-  "sans": "Nunito Sans",
-  "mono": "JetBrains Mono"
- },
  "cmyk": {
   "display": "Anton",
   "sans": "Work Sans"
@@ -108,6 +103,11 @@
   "display": "Vollkorn",
   "sans": "Source Sans 3"
  },
+ "frappe": {
+  "display": "Manrope",
+  "sans": "Karla",
+  "mono": "JetBrains Mono"
+ },
  "garden": {
   "display": "Cormorant Garamond",
   "sans": "Lato"
@@ -136,6 +136,11 @@
   "sans": "Zen Kaku Gothic New",
   "mono": "M PLUS 1 Code"
  },
+ "latte": {
+  "display": "Fraunces",
+  "sans": "Plus Jakarta Sans",
+  "mono": "JetBrains Mono"
+ },
  "lemonade": {
   "display": "Poppins",
   "sans": "Nunito Sans"
@@ -151,6 +156,16 @@
  "luxury": {
   "display": "Marcellus",
   "sans": "Jost"
+ },
+ "macchiato": {
+  "display": "Space Grotesk",
+  "sans": "Work Sans",
+  "mono": "JetBrains Mono"
+ },
+ "mocha": {
+  "display": "Bricolage Grotesque",
+  "sans": "Sora",
+  "mono": "JetBrains Mono"
  },
  "monokai": {
   "display": "DM Mono",
