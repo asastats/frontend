@@ -59,6 +59,66 @@
   }
 
   /**
+   * Step out of the way of a wallet's own picker, then come back.
+   *
+   * `showModal()` puts the login dialog in the browser's *top layer*, which
+   * sits above every element in the normal layer no matter what z-index they
+   * carry. Wallet SDKs render their picker as ordinary DOM appended to
+   * `<body>`, so from inside this dialog the picker was painted underneath it:
+   * unreachable without closing the dialog first, and the connect attempt died
+   * along with the flow when the reader did. That is why the same wallet works
+   * on the dedicated login page, which has no dialog to be trapped behind.
+   *
+   * Neither element can be persuaded to yield -- the top layer is not
+   * negotiable from CSS -- so the dialog leaves it. It closes as the picker
+   * opens, and reopens on the wallet tab once the picker is gone, which covers
+   * a completed connection and an abandoned one alike: either way the SDK
+   * removes what it added.
+   *
+   * If an SDK leaves its container behind, the dialog simply stays closed and
+   * the reader opens it again -- exactly the position they are in today.
+   *
+   * @param {Document} host - document holding the dialog
+   * @param {Element} dialog - the login dialog, already open
+   * @returns {boolean} whether the handoff was armed
+   */
+  function walletHandoff(host, dialog) {
+    if (typeof MutationObserver === "undefined") return false;
+
+    /** Everything on the body before the SDK ran: the page itself. */
+    var before = Array.prototype.slice.call(host.body.children);
+
+    /** What the SDK has appended since. Its removal is our cue to come back. */
+    var injected = [];
+
+    var observer = new MutationObserver(function (records) {
+      Array.prototype.forEach.call(records, function (record) {
+        Array.prototype.forEach.call(record.addedNodes, function (node) {
+          if (node.nodeType !== 1) return;
+          if (before.indexOf(node) !== -1) return;
+          if (injected.indexOf(node) === -1) injected.push(node);
+        });
+      });
+
+      // Nothing has appeared yet -- the SDK may still be loading.
+      if (!injected.length) return;
+
+      var stillThere = injected.some(function (node) {
+        return host.body.contains(node);
+      });
+      if (stillThere) return;
+
+      observer.disconnect();
+      openAuthModal(host);
+      showTab(host, "modal-tab-wallet");
+    });
+
+    observer.observe(host.body, { childList: true });
+    closeAuthModal(host);
+    return true;
+  }
+
+  /**
    * Delegate every interaction from one listener on the document.
    *
    * @param {Document} doc - document to bind to
@@ -89,6 +149,14 @@
       if (tab) {
         ev.preventDefault();
         showTab(host, tab.getAttribute("href").slice(1));
+        return;
+      }
+      // Not preventDefault'd and not returned early: the wallet package binds
+      // its own listener to this button and must still receive the click.
+      var connect = target.closest('[id^="connect-button-"]');
+      if (connect && connect.closest("#modalLogin")) {
+        var dialog = host.getElementById("modalLogin");
+        if (dialog && dialog.open) walletHandoff(host, dialog);
       }
     });
     return true;
@@ -100,6 +168,7 @@
       showTab: showTab,
       openAuthModal: openAuthModal,
       closeAuthModal: closeAuthModal,
+      walletHandoff: walletHandoff,
       wireAuthModal: wireAuthModal,
     };
   } else {

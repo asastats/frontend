@@ -189,3 +189,191 @@ describe("authmodal.js", () => {
     });
   });
 });
+
+/*
+ * The login dialog opens with showModal(), which puts it in the browser's top
+ * layer -- above every element in the normal layer, whatever z-index they
+ * carry. Wallet SDKs append their picker to <body> as ordinary DOM, so from
+ * inside the dialog it was painted underneath: the reader had to close the
+ * dialog to reach it, and the connect attempt died with the flow when they did.
+ * The dialog steps out of the top layer instead, and comes back when the
+ * picker is gone.
+ */
+describe("wallet handoff", () => {
+  /** Adds a wallet card with a connect button inside the dialog. */
+  function mountWalletTab(dialog) {
+    document.getElementById("modal-tab-wallet").innerHTML = `
+      <div id="wallet-connect">
+        <div id="wallet-pera">
+          <button id="connect-button-pera" type="button">Connect</button>
+        </div>
+      </div>`;
+    return document.getElementById("connect-button-pera");
+  }
+
+  /** MutationObserver callbacks are microtasks; let them run. */
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it("closes the dialog when a wallet connect starts", () => {
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+
+    connect.click();
+
+    expect(dialog.open).toBe(false);
+  });
+
+  it("lets the click through to the wallet package", () => {
+    // The wallet package binds its own listener to this button. Swallowing the
+    // click would close the dialog and connect nothing at all.
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    const walletListener = jest.fn();
+    connect.addEventListener("click", walletListener);
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+
+    connect.click();
+
+    expect(walletListener).toHaveBeenCalled();
+  });
+
+  it("reopens on the wallet tab once the picker is gone", async () => {
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+    connect.click();
+
+    const picker = document.createElement("div");
+    picker.id = "pera-wallet-modal";
+    document.body.appendChild(picker);
+    await settle();
+    expect(dialog.open).toBe(false);
+
+    picker.remove();
+    await settle();
+
+    expect(dialog.open).toBe(true);
+    expect(visiblePanel()).toBe("modal-tab-wallet");
+  });
+
+  it("stays closed while the picker is still up", async () => {
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+    connect.click();
+
+    document.body.appendChild(document.createElement("div"));
+    await settle();
+
+    expect(dialog.open).toBe(false);
+  });
+
+  it("does not mistake the page's own elements for the picker", async () => {
+    // Everything already on the body is the page. Counting it as the SDK's
+    // would mean waiting for the footer to be removed before reopening --
+    // which is to say, never.
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+
+    connect.click();
+    await settle();
+
+    expect(dialog.open).toBe(false);
+  });
+
+  it("ignores a text node the SDK leaves behind", async () => {
+    // A stray text node is not a picker. Counting one would arm the "gone"
+    // check against something that never had a visible presence.
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+    connect.click();
+
+    document.body.appendChild(document.createTextNode(" "));
+    await settle();
+
+    expect(dialog.open).toBe(false);
+  });
+
+  it("does not re-add a picker it is already tracking", async () => {
+    // Observers batch, so the same node can arrive in two records. Recording
+    // it twice would leave a phantom entry that never reports as removed.
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+    connect.click();
+
+    const picker = document.createElement("div");
+    document.body.appendChild(picker);
+    await settle();
+    document.body.appendChild(picker); // moved, not duplicated
+    await settle();
+
+    picker.remove();
+    await settle();
+
+    expect(dialog.open).toBe(true);
+  });
+
+  it("ignores a page element that is merely moved", async () => {
+    // Re-appending an existing child reports it as an addition. It was on the
+    // body before the picker opened, so it is the page, and the dialog must
+    // not sit waiting for the page to be dismantled before it reopens.
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+    connect.click();
+
+    document.body.appendChild(document.getElementById("opener"));
+    await settle();
+
+    expect(dialog.open).toBe(false);
+  });
+
+  it("ignores a connect button outside the login dialog", () => {
+    // The dedicated /accounts/login/ page renders the same wallet snippet with
+    // no dialog around it. There is nothing to step out of the way of there.
+    const dialog = mountModal();
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<button id="connect-button-defly" type="button">Connect</button>'
+    );
+    A.wireAuthModal(document);
+    A.openAuthModal(document);
+
+    document.getElementById("connect-button-defly").click();
+
+    expect(dialog.open).toBe(true);
+  });
+
+  it("does nothing when the dialog is already closed", () => {
+    const dialog = mountModal();
+    const connect = mountWalletTab(dialog);
+    A.wireAuthModal(document);
+
+    connect.click();
+
+    expect(dialog.close).not.toHaveBeenCalled();
+  });
+
+  it("reports when there is no MutationObserver to arm", () => {
+    const dialog = mountModal();
+    const saved = global.MutationObserver;
+    // eslint-disable-next-line no-global-assign
+    delete global.MutationObserver;
+
+    expect(A.walletHandoff(document, dialog)).toBe(false);
+
+    global.MutationObserver = saved;
+  });
+});
