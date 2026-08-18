@@ -448,3 +448,15 @@ class TestAddressTemplateRenders:
         element = html[start: html.index("</span>", start)]
 
         assert "sr-only" not in element
+
+    def test_no_line_breaks_survive_anywhere_on_the_page(self, sample_payload):
+        """`<br>` was the layout of every detail panel on this page.
+
+        Programs, asset metadata, single NFTs -- each fact was a `<span>`
+        followed by a break, so nothing could be spaced or aligned as a group.
+        Asserted across the whole render rather than per panel, because the
+        last three hid in `nfts/item.html` after the others were done.
+        """
+        html = render_to_string("address.html", _build_context(sample_payload))
+
+        assert "<br" not in html

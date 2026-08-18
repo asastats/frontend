@@ -15,6 +15,7 @@ chart beside it was in full colour. Nothing failed; the page was just uniformly
 grey where it should have been legible.
 """
 
+import re
 from pathlib import Path
 
 from django.conf import settings
@@ -151,3 +152,97 @@ class TestHistoricAssetsColours:
 
         assert 'input[type="text"]' in css
         assert "border:" in css.split('input[type="text"]', 1)[1][:400]
+
+    def test_historic_tabs_follow_the_segmented_control(self):
+        """One tab idiom for the site, and this was the last exception.
+
+        The swap modal's segmented control is the design every tablist
+        follows: a sunken tray, and the selected tab lifting onto the surface
+        colour. These were an underline treatment -- a bottom border on the
+        selected tab -- under a comment claiming they matched the login
+        dialog.
+        """
+        css = (
+            Path(settings.STATICFILES_DIRS[0]).parent
+            / "widgets" / "inhouse" / "historic" / "static" / "historic" / "style.css"
+        ).read_text()
+        tray = css.split(".historic-tabs {", 1)[1].split("}", 1)[0]
+        selected = css.split('.historic-tabs [role="tab"][aria-selected="true"] {', 1)
+        selected = selected[1].split("}", 1)[0]
+
+        assert "--color-base-200" in tray, "the tray is not sunken"
+        assert "--color-base-100" in selected, "the selected tab does not lift out"
+        assert "border-bottom" not in selected, "still an underline treatment"
+
+
+class TestHistoricSettingsPanel:
+    """The widget's own page: its notes, its controls and its buttons."""
+
+    def _index(self):
+        """The template with its Django comments stripped.
+
+        The comments describe what the markup no longer does -- "these were
+        `<blockquote>`s" -- so a test reading the raw file finds the very
+        thing it is asserting is gone.
+        """
+        raw = (
+            Path(settings.STATICFILES_DIRS[0]).parent
+            / "widgets" / "inhouse" / "historic" / "templates" / "historic"
+            / "index.html"
+        ).read_text()
+        return re.sub(
+            r"\{#.*?#\}|\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}",
+            "",
+            raw,
+            flags=re.DOTALL,
+        )
+
+    def _css(self):
+        return (
+            Path(settings.STATICFILES_DIRS[0]).parent
+            / "widgets" / "inhouse" / "historic" / "static" / "historic" / "style.css"
+        ).read_text()
+
+    def test_historic_index_uses_no_line_breaks_for_layout(self):
+        """Five of them, including a `<br><br>` before the reset form."""
+        assert "<br" not in self._index()
+
+    def test_historic_index_quotes_nothing(self):
+        """The notes were `<blockquote>`s, and nothing is being quoted.
+
+        A quotation element around the page's own prose tells a screen reader
+        the text came from somewhere else.
+        """
+        assert "<blockquote" not in self._index()
+
+    def test_historic_every_button_is_styled(self):
+        """The host's reset spares buttons, so these rendered -- as the
+        browser's own grey controls, beside the host's styled ones.
+
+        Each carries a class naming its role, and the stylesheet has a rule
+        for each: an unclassed button would fall back to the bare shape.
+        """
+        markup = self._index()
+        css = self._css()
+
+        buttons = re.findall(r"<button([^>]*)>", markup)
+        assert buttons, "no buttons found to check"
+        for attrs in buttons:
+            assert "class=" in attrs, f"unclassed button: <button{attrs}>"
+
+        for role in ("process", "reset", "danger"):
+            assert f"button.{role}" in css, f"no rule for a {role} button"
+
+    def test_historic_destructive_button_is_marked_as_such(self):
+        """Resetting discards every processed record for the bundle.
+
+        It is the one irreversible control on the page, so it says so in its
+        class and is drawn in the error colour rather than as the most
+        inviting thing on the panel.
+        """
+        markup = self._index()
+        at = markup.index("historic_reset")
+        form = markup[at: markup.index("</form>", at)]
+
+        assert 'class="danger"' in form
+        assert "--color-error" in self._css().split("button.danger", 1)[1][:200]
