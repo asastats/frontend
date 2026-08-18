@@ -22,7 +22,10 @@ from pathlib import Path
 
 import pytest
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.template.loader import get_template
+from django.test import TestCase
+from django.urls import reverse
 
 #: Directories under templates/ that hold things the loader should not compile.
 EXCLUDED_DIRS = {"jsonld"}
@@ -67,3 +70,63 @@ class TestEveryTemplateCompiles:
         :type name: str
         """
         get_template(name)
+
+
+class FooterLinksTest(TestCase):
+    """The footer is the site's full map, so what is missing from it is lost.
+
+    The header carries a short list that changes with the reader; everything
+    else is reachable only from here. A page that exists and is linked nowhere
+    is a page nobody finds.
+    """
+
+    def setUp(self):
+        self.url = reverse("about")
+
+    def _sign_in(self):
+        user = get_user_model().objects.create_user(
+            username="footer@example.com", email="footer@example.com", password="x"
+        )
+        self.client.force_login(user)
+        return user
+
+    def _footer(self, response):
+        html = response.content.decode()
+        return html[html.index("<footer") : html.index("</footer>")]
+
+    def test_core_footer_offers_the_sitemap(self):
+        footer = self._footer(self.client.get(self.url))
+
+        self.assertIn(reverse("sitemap"), footer)
+
+    def test_core_footer_offers_both_app_stores(self):
+        """They moved from a bottom strip into Product, where they belong."""
+        footer = self._footer(self.client.get(self.url))
+
+        self.assertIn("apps.apple.com", footer)
+        self.assertIn("play.google.com", footer)
+
+    def test_core_footer_offers_login_to_a_signed_out_reader(self):
+        footer = self._footer(self.client.get(self.url))
+
+        self.assertIn("#modalLogin", footer)
+
+    def test_core_footer_offers_no_login_to_a_signed_in_reader(self):
+        """A control that cannot do anything is worse than none."""
+        self._sign_in()
+
+        footer = self._footer(self.client.get(self.url))
+
+        self.assertNotIn("#modalLogin", footer)
+
+    def test_core_footer_offers_home_only_where_it_works(self):
+        """`home` redirects a signed-out visitor, so offering it bounces them.
+
+        It shared a slot with Log in until that moved to the About column; this
+        is what stops the move from leaving a dead link behind.
+        """
+        anonymous = self._footer(self.client.get(self.url))
+        self.assertNotIn(reverse("home"), anonymous)
+
+        self._sign_in()
+        self.assertIn(reverse("home"), self._footer(self.client.get(self.url)))
