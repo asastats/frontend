@@ -1671,6 +1671,109 @@ div.socfooter {
   --stripe: #656568;
 }
 
+/* Text you can act on: links, and values that act in place.
+   ==========================================================================
+   Three of the address page's controls are bare `<span>`s that address.js
+   binds a click to -- `.tdist` opens a program's distribution panel,
+   `.price` and `.unitprice` flip a price around. Materialize gave them a
+   dotted underline and a hover colour; the conversion carried over only
+   `cursor-pointer`, which is invisible until the pointer is already on them
+   and says nothing at all on a touch screen. They have looked like plain
+   text ever since.
+
+   The idiom here is decoration, not colour, and that is a measured decision
+   rather than a stylistic one. Colouring links with `--color-primary` -- the
+   obvious "use the theme's own accent" move -- fails WCAG AA (4.5:1) against
+   `--color-base-100` on 27 of the 57 themes we ship, and fails even the 3:1
+   large-text floor on 14 of them. Our own brand theme is among the worst:
+   `#00c896` on white is 2.16:1. `--color-base-content` clears 4.5:1 on every
+   theme, so text stays `currentColor` and the affordance is carried by the
+   underline, which is also what WCAG asks for when a link's colour contrast
+   against surrounding text is under 3:1.
+
+   That leaves a distinction worth keeping rather than flattening:
+
+     * an `<a class="link link-hover">` navigates away -- DaisyUI's own idiom,
+       untouched here: no underline at rest, solid underline on hover;
+     * a `.tdist` / `.price` / `.unitprice` acts *in place*. It has no href
+       and no other cue, so it carries a dotted underline at rest, and on
+       hover resolves to the same solid underline a link shows.
+
+   Dotted at rest, solid on hover: the two converge exactly where the reader
+   is pointing at one, which is where "this is clickable" needs saying, and
+   stay distinguishable everywhere else.
+
+   In `@layer components` on purpose, unlike the unlayered rules above, so a
+   template can still opt out with a utility -- an unlayered `.tdist` would
+   out-rank `no-underline` and there would be no way to turn this off.
+
+   Nothing here sets `color`, which is what lets the negative-value rows keep
+   theirs: `.tdist` is rendered with `text-error` on Borrowed, Loss and Debt
+   programs, and because only decoration is declared, that red flows straight
+   through to the underline via `currentColor` with no special case.
+   ========================================================================== */
+@layer components {
+  .tdist,
+  .price,
+  .unitprice {
+    cursor: pointer;
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+    text-decoration-color: color-mix(in oklab, currentColor 45%, transparent);
+    text-underline-offset: 4px;
+  }
+
+  /* Hover effects only where there is a pointer to hover with: on a touch
+     screen `:hover` sticks after a tap, leaving a row looking permanently
+     active. `:active` below is what gives touch its feedback instead. */
+  @media (hover: hover) and (pointer: fine) {
+    .tdist:hover,
+    .price:hover,
+    .unitprice:hover {
+      text-decoration-style: solid;
+      text-decoration-color: currentColor;
+    }
+  }
+
+  .tdist:active,
+  .price:active,
+  .unitprice:active {
+    text-decoration-style: solid;
+    text-decoration-color: currentColor;
+  }
+
+  /* These are not focusable yet -- they are spans with a click handler, so a
+     keyboard cannot reach them at all. The style is here so that adding
+     `tabindex`/`role` to the templates is a one-line change rather than a
+     one-line change plus a missing focus ring. */
+  .tdist:focus-visible,
+  .price:focus-visible,
+  .unitprice:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* `.copy` is a clipboard emoji, and an emoji ignores `color` -- it carries
+     its own. Opacity is the only channel it responds to. */
+  .copy {
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.12s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .copy:hover {
+      opacity: 1;
+    }
+  }
+
+  .copy:active {
+    opacity: 1;
+  }
+}
+
 /* ========================================================================= *
  * Wallet package hooks (Phase 0)
  *
