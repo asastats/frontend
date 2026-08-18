@@ -1474,38 +1474,26 @@ div.socfooter {
 }
 
 
-.collapsible-header.token {
-  border-left: 4px solid #ababab;
-  display: block;
-}
+/* The colour stripe down the left of every asset and collection row.
+   ------------------------------------------------------------------
+   It is not decoration: the colour matches that asset's slice in the pie
+   chart above, which is the only thing connecting a row to its share of the
+   portfolio. `charts.py` assigns each of the top items a slot, the template
+   renders it as `c{{ slot }}`, and the `.token.cN` / `.nft.cN` rules below
+   paint it.
 
+   The width used to be declared on `.collapsible-header`, a Materialize class
+   the markup stopped emitting when the address page was converted -- so all
+   seventeen colour rules have been setting `border-left-color` on a border
+   with no width, and every stripe has been invisible since. The hook is
+   `item-header` now, which is what the templates actually render.
 
-.collapsible-header.nft {
-  border-left: 4px solid #ababab;
-  display: flex;
-  padding-top: 15px;
-  padding-bottom: 5px;
-}
-
-
-.collapsible-body.nft {
-  border: none;
-}
-
-
-.collapsible.consolidated, .collapsible-header.consolidated, .collapsible-body.consolidated, ul.collapsible>li {
-  border: 0!important;
-  box-shadow: none!important;
-}
-
-
-.row .col.nftleft, .row .col.nftmid, .row .col.nftright {
-  padding: 0;
-}
-
-
-.row .col.nftmid {
-  margin-top: -5px;
+   `--stripe` rather than a repeated literal: the fallback grey is what an
+   asset outside the charted top items gets, and it belongs in one place. */
+.token.item-header,
+.nft.item-header {
+  --stripe: #ababab;
+  border-left: 4px solid var(--stripe);
 }
 
 
@@ -1520,167 +1508,167 @@ div.socfooter {
 
 
 .token.calgo {
-  border-left-color: #005a34;
+  --stripe: #005a34;
 }
 
 
 .token.c0 {
-  border-left-color: #e6194b;
+  --stripe: #e6194b;
 }
 
 
 .token.c1 {
-  border-left-color: #3cb44b;
+  --stripe: #3cb44b;
 }
 
 
 .token.c2 {
-  border-left-color: #ffe119;
+  --stripe: #ffe119;
 }
 
 
 .token.c3 {
-  border-left-color: #4363d8;
+  --stripe: #4363d8;
 }
 
 
 .token.c4 {
-  border-left-color: #f58231;
+  --stripe: #f58231;
 }
 
 
 .token.c5 {
-  border-left-color: #42d4f4;
+  --stripe: #42d4f4;
 }
 
 
 .token.c6 {
-  border-left-color: #f032e6;
+  --stripe: #f032e6;
 }
 
 
 .token.c7 {
-  border-left-color: #fabed4;
+  --stripe: #fabed4;
 }
 
 
 .token.c8 {
-  border-left-color: #469990;
+  --stripe: #469990;
 }
 
 
 .token.c9 {
-  border-left-color: #dcbeff;
+  --stripe: #dcbeff;
 }
 
 
 .token.c10 {
-  border-left-color: #9a6324;
+  --stripe: #9a6324;
 }
 
 
 .token.c11 {
-  border-left-color: #fffac8;
+  --stripe: #fffac8;
 }
 
 
 .token.c12 {
-  border-left-color: #800000;
+  --stripe: #800000;
 }
 
 
 .token.c13 {
-  border-left-color: #aaffc3;
+  --stripe: #aaffc3;
 }
 
 
 .token.c14 {
-  border-left-color: #000075;
+  --stripe: #000075;
 }
 
 
 .token.c15 {
-  border-left-color: #a9a9a9;
+  --stripe: #a9a9a9;
 }
 
 
 .nft.c0 {
-  border-left-color: #b86e80;
+  --stripe: #b86e80;
 }
 
 
 .nft.c1 {
-  border-left-color: #7aa680;
+  --stripe: #7aa680;
 }
 
 
 .nft.c2 {
-  border-left-color: #c1b66e;
+  --stripe: #c1b66e;
 }
 
 
 .nft.c3 {
-  border-left-color: #7d89b3;
+  --stripe: #7d89b3;
 }
 
 
 .nft.c4 {
-  border-left-color: #be9476;
+  --stripe: #be9476;
 }
 
 
 .nft.c5 {
-  border-left-color: #7db2bd;
+  --stripe: #7db2bd;
 }
 
 
 .nft.c6 {
-  border-left-color: #bc77b8;
+  --stripe: #bc77b8;
 }
 
 
 .nft.c7 {
-  border-left-color: #866587;
+  --stripe: #866587;
 }
 
 
 .nft.c8 {
-  border-left-color: #8d7b82;
+  --stripe: #8d7b82;
 }
 
 
 .nft.c9 {
-  border-left-color: #65716e;
+  --stripe: #65716e;
 }
 
 
 .nft.c10 {
-  border-left-color: #847b8f;
+  --stripe: #847b8f;
 }
 
 
 .nft.c11 {
-  border-left-color: #746565;
+  --stripe: #746565;
 }
 
 
 .nft.c12 {
-  border-left-color: #8f8e7e;
+  --stripe: #8f8e7e;
 }
 
 
 .nft.c13 {
-  border-left-color: #736565;
+  --stripe: #736565;
 }
 
 
 .nft.c14 {
-  border-left-color: #6f8f7d;
+  --stripe: #6f8f7d;
 }
 
 
 .nft.c15 {
-  border-left-color: #656568;
+  --stripe: #656568;
 }
 
 /* ========================================================================= *
@@ -1753,4 +1741,188 @@ div.socfooter {
 [data-notice="info"] {
   border-color: #ababab;
   background: rgba(171, 171, 171, 0.1);
+}
+
+/* ---- asset and collection rows ------------------------------------------
+   One shape for both section types: what you hold on the left, the icon or
+   thumbnails in the middle, the value on the right.
+
+   The three sit in one grid cell rather than three columns, because the middle
+   one has to centre on the row itself -- a middle column centres it only when
+   the text either side happens to be the same width, which it never is. The
+   old design did this with `position: absolute; left: 50%` and a negative
+   margin; a stacked grid gets the same result without the magic numbers, and
+   it lets the row grow to whatever the tallest cell needs.
+
+   Where a wide run of thumbnails reaches the text, it is drawn over it rather
+   than squeezing it -- again what the old design did.
+
+   The widget's own hooks are named alongside ours: its templates emit
+   `.nftleft` / `.nftmid` / `.nftright` and `.icondiv` / `.right`, and its
+   pages load this stylesheet, so both get one layout from one place. */
+.itemrow,
+.item-header.token,
+.item-header.nft {
+  display: grid;
+  align-items: center;
+}
+
+.itemrow > *,
+.item-header.token > *,
+.item-header.nft > * {
+  grid-area: 1 / 1;
+}
+
+.itemleft,
+.nftleft {
+  justify-self: start;
+  max-width: 45%;
+  min-width: 0;
+}
+
+.itemright,
+.nftright,
+.item-header .right {
+  justify-self: end;
+  max-width: 45%;
+  min-width: 0;
+  text-align: right;
+}
+
+.itemmid,
+.nftmid,
+.icondiv {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  justify-self: center;
+  max-width: 60%;
+  /* Above the text it may overlap; only these are raised, so the text either
+     side of them stays selectable. */
+  position: relative;
+  z-index: 1;
+}
+
+/* Both were 32px in the old design, and both should be: a collection holding
+   one NFT was rendering a taller row than an asset beside it purely because
+   its thumbnail was half again as large. */
+.asaicon,
+.nfticon {
+  height: 2rem;
+  width: 2rem;
+  flex: none;
+}
+
+.asaicon {
+  border-radius: 9999px;
+}
+
+.nfticon {
+  border-radius: 0.25rem;
+  object-fit: cover;
+}
+
+/* ---- NFT hover preview ---------------------------------------------------
+   The full-size image shown while a thumbnail is hovered. In production this
+   was a Materialize tooltip -- `$.tooltip({unsafeHTML: "<img ...>"})` -- so its
+   look came entirely from `.material-tooltip`. address.js builds the element
+   itself now, and nothing styled the class it gives it, which left the preview
+   `position: static`: the inline `top`/`left` it computes did nothing and the
+   image landed at the end of the document at its natural size.
+
+   Positioned absolutely because that is what those inline coordinates assume,
+   and appended to <body>, so it escapes the row's `overflow: hidden` and any
+   stacking context on the way.
+
+   `pointer-events: none` because it opens under the cursor: without it the
+   preview swallows the `mouseover` and the click that dismisses it, and the
+   thing flickers as the pointer crosses its own popup. */
+.nftpreview {
+  position: absolute;
+  z-index: 50;
+  padding: 0.25rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  background: var(--color-base-100);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+}
+
+.nftpreview img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 15rem;
+  max-height: 15rem;
+  border-radius: calc(var(--radius-box) - 0.25rem);
+}
+
+/* ---- charts ---------------------------------------------------------------
+   Six charts, each a legend beside its canvas. The widths were six copies of
+   an inline fraction on the address page (`w-1/6`, `w-1/4`, `w-3/4`) and one
+   CSS rule in the historic widget; this is that rule, and the page now emits
+   the same class names the widget does.
+
+   `min-width: 0` throughout is load-bearing: a flex item defaults to
+   `min-width: auto`, so a canvas carrying `width="500"` refuses to shrink
+   below it and runs off the side of a phone.
+
+   The legend stacks above its canvas on a narrow screen and moves beside it
+   when there is room. Held at a quarter of the row it would be a column of
+   single words on a phone -- and at the two-column breakpoint, a quarter of
+   half a page is narrower still, which is where the labels started wrapping
+   one word per line. */
+.charts {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .charts { grid-template-columns: repeat(2, 1fr); }
+}
+
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.chart-container .legend {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.75rem;
+}
+
+.chart-container .canvas {
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-container canvas {
+  max-width: 100%;
+}
+
+/* Side by side once the row is wide enough to hold both. The legend takes what
+   it needs between a floor and a ceiling rather than a fixed share, so a chart
+   of long asset names and one of short ones both read properly. */
+@media (min-width: 640px) {
+  .chart-container {
+    flex-direction: row;
+  }
+
+  .chart-container .legend {
+    width: auto;
+    flex: 0 1 auto;
+    min-width: 5rem;
+    max-width: 40%;
+  }
+
+  .chart-container .canvas {
+    width: auto;
+    flex: 1 1 auto;
+  }
 }

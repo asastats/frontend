@@ -137,29 +137,29 @@
 
     <div id="id-cons-body" class="item-body consolidated border-t border-base-300 p-4">
       <div class="charts grid gap-6 md:grid-cols-2">
-        <div class="chart-container flex min-w-0 items-center gap-2">
-          <div id="id-legend-distchart" class="legend w-1/6 min-w-0 text-xs"></div>
-          <div class="canvas w-5/6 min-w-0"><canvas class="max-w-full" id="id-distchart" width="500" height="{{ distchart|dist_height }}"></canvas></div>
+        <div class="chart-container">
+          <div id="id-legend-distchart" class="legend"></div>
+          <div class="canvas"><canvas id="id-distchart" width="500" height="{{ distchart|dist_height }}"></canvas></div>
         </div>
-        <div id="id-chart-ratio" class="chart-container flex min-w-0 items-center gap-2">
-          <div id="id-legend-ratiochart" class="legend w-1/4 min-w-0 text-xs"></div>
-          <div class="canvas w-3/4 min-w-0"><canvas class="max-w-full" id="id-ratiochart" width="500" height="500"></canvas></div>
+        <div id="id-chart-ratio" class="chart-container">
+          <div id="id-legend-ratiochart" class="legend"></div>
+          <div class="canvas"><canvas id="id-ratiochart" width="500" height="500"></canvas></div>
         </div>
-        <div id="id-chart-ratiofloor" class="chart-container flex min-w-0 items-center gap-2">
-          <div id="id-legend-ratiochartfloor" class="legend w-1/4 min-w-0 text-xs"></div>
-          <div class="canvas w-3/4 min-w-0"><canvas class="max-w-full" id="id-ratiochartfloor" width="500" height="500"></canvas></div>
+        <div id="id-chart-ratiofloor" class="chart-container">
+          <div id="id-legend-ratiochartfloor" class="legend"></div>
+          <div class="canvas"><canvas id="id-ratiochartfloor" width="500" height="500"></canvas></div>
         </div>
-        <div class="chart-container flex min-w-0 items-center gap-2">
-          <div id="id-legend-asachart" class="legend w-1/4 min-w-0 text-xs"></div>
-          <div class="canvas w-3/4 min-w-0"><canvas class="max-w-full" id="id-asachart" width="500" height="500"></canvas></div>
+        <div class="chart-container">
+          <div id="id-legend-asachart" class="legend"></div>
+          <div class="canvas"><canvas id="id-asachart" width="500" height="500"></canvas></div>
         </div>
-        <div id="id-chart-nft" class="chart-container flex min-w-0 items-center gap-2">
-          <div id="id-legend-nftchart" class="legend w-1/4 min-w-0 text-xs"></div>
-          <div class="canvas w-3/4 min-w-0"><canvas class="max-w-full" id="id-nftchart" width="500" height="500"></canvas></div>
+        <div id="id-chart-nft" class="chart-container">
+          <div id="id-legend-nftchart" class="legend"></div>
+          <div class="canvas"><canvas id="id-nftchart" width="500" height="500"></canvas></div>
         </div>
-        <div id="id-chart-nftfloor" class="chart-container flex min-w-0 items-center gap-2">
-          <div id="id-legend-nftfloorchart" class="legend w-1/4 min-w-0 text-xs"></div>
-          <div class="canvas w-3/4 min-w-0"><canvas class="max-w-full" id="id-nftfloorchart" width="500" height="500"></canvas></div>
+        <div id="id-chart-nftfloor" class="chart-container">
+          <div id="id-legend-nftfloorchart" class="legend"></div>
+          <div class="canvas"><canvas id="id-nftfloorchart" width="500" height="500"></canvas></div>
         </div>
       </div>
       <div class="floor algous mt-4 text-right">
@@ -176,7 +176,13 @@
   Filter and display switches. `.switch` keeps its name because address.js
   reads it, but it is a plain checkbox now rather than a Materialize lever.
 {% endcomment %}
-<div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+{% comment %}
+  In a card like everything else on the page. These controls sat bare between
+  the totals card and the first asset row, so the one region a reader operates
+  was the one region with no surface under it -- it read as a gap rather than
+  as a toolbar.
+{% endcomment %}
+<div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-box border border-base-300 bg-base-100 p-3">
   <div class="filter">
     <input class="input input-sm w-full max-w-xs" placeholder="Filter" id="filter" type="text">
   </div>

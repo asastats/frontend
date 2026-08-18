@@ -16,16 +16,37 @@
   Change the nesting or these names and the page still renders perfectly while
   filtering, sorting and the currency switch quietly stop working.
 {% endcomment %}
-<div class="asasec section-list mt-8 space-y-2">
+<div class="asasec section-list mt-8">
+  {% comment %}
+    Inside `.section-list` on purpose: the filter hides and shows that whole
+    container, so the heading travels with the rows it introduces rather than
+    labelling an empty gap.
+  {% endcomment %}
+  <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+    Assets <span class="ml-1 font-normal tabular-nums opacity-70">{{ asaitems|length }}</span>
+  </h2>
+  <div class="space-y-2">
   {% for asaitem in asaitems %}
     {% with asset=asaitem.asset %}
-      <details id="f{{ asset.id }}" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
-          <div class="icondiv flex-none">
-            <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon h-8 w-8 rounded-full" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
+      <details id="f{{ asset.id }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
+        {% comment %}
+          The same three cells as a collection row: what you hold, the icon,
+          what it is worth. The icon sits in the middle of the header, which is
+          where the old design put it -- `.icondiv` was absolutely positioned
+          at `left: 50%` there, and the conversion moved it to the start of a
+          flex row instead.
+
+          Amount first in source order, so a screen reader reads the holding
+          before its logo. The grid stacks all three in one cell, so the
+          middle one centres on the row rather than on whatever space the text
+          either side leaves it.
+        {% endcomment %}
+        <summary class="token item-header itemrow cursor-pointer list-none p-3{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
+          <span class="itemleft truncate">{{ asaitem.amount|amount_repr:asset.decimals }}&nbsp;<span class="unit font-medium">{{ asset.unit }}</span></span>
+          <div class="icondiv itemmid">
+            <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
           </div>
-          <span class="min-w-0 flex-1 truncate">{{ asaitem.amount|amount_repr:asset.decimals }}&nbsp;<span class="unit font-medium">{{ asset.unit }}</span></span>
-          <span class="val flex-none font-medium" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }} ALGO</span>
+          <span class="val itemright font-medium" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }} ALGO</span>
         </summary>
 
         <div class="item-body border-t border-base-300 p-3">
@@ -59,4 +80,5 @@
       </details>
     {% endwith %}
   {% endfor %}
+  </div>
 </div>

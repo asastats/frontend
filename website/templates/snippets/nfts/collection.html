@@ -11,21 +11,36 @@
   class on the images is what `deferImages` collects, so the large image is
   fetched only after the page has loaded.
 {% endcomment %}
-<details id="f{{ coll.name|slugify }}" class="fitem group rounded-box border border-base-300 bg-base-100">
+<details id="f{{ coll.name|slugify }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
   <summary class="nft item-header cursor-pointer list-none p-3{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
-    <div class="flex flex-wrap items-center gap-3">
-      <div class="nftleft min-w-0 flex-1">
+    {% comment %}
+      What you hold, the thumbnails, what it is worth.
+
+      The three sit in one grid cell rather than three columns: the thumbnails
+      have to centre on the middle of the header itself, and a middle column
+      only centres them when the text either side happens to be the same
+      width. Stacked, each cell aligns to its own edge and the thumbnails to
+      the centre of the row.
+
+      The thumbnails are drawn last and lifted, so where a long collection name
+      or a wide value reaches them they cover it rather than being squeezed --
+      the arrangement the old design had. The row grows to whichever cell is
+      tallest, so a collection with sixty of them still gets the height it
+      needs.
+    {% endcomment %}
+    <div class="nftrow itemrow">
+      <div class="nftleft itemleft">
         <span>{{ coll.amount|floatformat:'-4g' }} from </span><span class="unit font-medium">{{ coll.name }}</span>
       </div>
-      <div class="nftright flex-none text-right">
+      <div class="nftmid itemmid">
+        {% for row in coll.nfts %}
+          <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
+        {% endfor %}
+      </div>
+      <div class="nftright itemright">
         <span class="badge badge-ghost badge-sm align-middle">BETA</span>
         <span class="val font-medium" data-val="{{ coll.value }}">{{ coll.value|floatformat:'2g' }} ALGO</span>
       </div>
-    </div>
-    <div class="nftmid mt-3 flex flex-wrap gap-2">
-      {% for row in coll.nfts %}
-        <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon h-12 w-12 rounded object-cover" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
-      {% endfor %}
     </div>
   </summary>
   <div class="item-body border-t border-base-300 p-3">

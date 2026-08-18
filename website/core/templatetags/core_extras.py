@@ -27,7 +27,13 @@ def dict_get(mapping, key):
     :param key: lookup key
     :return: value at key, or empty string if missing
     """
-    if mapping is None:
+    # Not just `is None`: Django resolves a variable that is absent from the
+    # context to `string_if_invalid`, which is `""` by default -- so a template
+    # rendered before its slot map arrives hands this a string. The historic
+    # widget streams each batch of rows as its own websocket message, so the
+    # AttributeError that followed took the socket down instead of rendering a
+    # row without a colour.
+    if not hasattr(mapping, "get"):
         return ""
     return mapping.get(key, "")
 

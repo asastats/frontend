@@ -110,3 +110,79 @@ class TestCoreStylesheetResets:
             "the heading scale is emitted after the utilities, so `text-base` "
             "can no longer override it"
         )
+
+    def test_core_stylesheet_asset_rows_have_a_stripe_to_colour(self, stylesheet):
+        """The colour rules are useless without a border to put them on.
+
+        Each row carries a 4px left stripe whose colour matches that asset's
+        slice in the pie chart above -- the only thing tying a row to its share
+        of the portfolio. The width was declared on `.collapsible-header`, a
+        Materialize class the markup stopped emitting when the address page was
+        converted, so seventeen colour rules were setting `border-left-color`
+        on a border with no width and every stripe was invisible.
+
+        Nothing failed: the rows rendered, the colours were in the stylesheet,
+        and the only symptom was a missing 4px line nobody could test for.
+        """
+        assert re.search(
+            r"\.token\.item-header[^{]*\{[^}]*border-left:\s*4px", stylesheet
+        ), "asset rows have no left stripe"
+        assert re.search(
+            r"\.nft\.item-header[^{]*\{[^}]*border-left:\s*4px", stylesheet
+        ), "collection rows have no left stripe"
+
+    @pytest.mark.parametrize("slot", ["calgo", "c0", "c7", "c15"])
+    def test_core_stylesheet_stripe_slots_feed_the_border(self, stylesheet, slot):
+        """A slot must set the property the border actually reads.
+
+        Setting `border-left-color` worked only while the width lived in the
+        same rule; routed through `--stripe`, the two cannot drift apart again.
+        """
+        match = re.search(rf"\.token\.{slot}\{{([^}}]*)\}}", stylesheet)
+
+        assert match, f"no rule for slot {slot}"
+        assert "--stripe:" in match.group(1), (
+            f"slot {slot} sets something other than the stripe colour"
+        )
+
+    def test_core_stylesheet_keeps_no_collapsible_rules(self, stylesheet):
+        """`collapsible` is Materialize's; the address page stopped emitting it.
+
+        Rules left behind for a class nothing renders are how the stripe came
+        to be dead -- they look like working styling in the source.
+        """
+        assert "collapsible" not in stylesheet
+
+    def test_core_stylesheet_positions_the_nft_preview(self, stylesheet):
+        """The hover preview is a popup only if something positions it.
+
+        In production this was a Materialize tooltip, so its whole appearance
+        came from `.material-tooltip`. address.js builds the element itself
+        now and writes `top`/`left` on it -- which do nothing at all while the
+        element is `position: static`, so the full-size image landed at the
+        end of the document instead of beside the thumbnail. The markup was
+        right, the handler ran, and the feature was simply gone.
+        """
+        match = re.search(r"\.nftpreview\{([^}]*)\}", stylesheet)
+
+        assert match, "the preview has no styling, so it cannot appear as a popup"
+        assert "position:absolute" in match.group(1).replace(" ", ""), (
+            "the preview is not positioned, so its coordinates do nothing"
+        )
+
+    def test_core_stylesheet_preview_does_not_eat_its_own_events(self, stylesheet):
+        """It opens under the cursor, so it must not receive the pointer.
+
+        Otherwise it swallows the mouseover and the click that dismisses it,
+        and flickers as the pointer crosses the popup it just opened.
+        """
+        match = re.search(r"\.nftpreview\{([^}]*)\}", stylesheet)
+
+        assert "pointer-events:none" in match.group(1).replace(" ", "")
+
+    def test_core_stylesheet_preview_follows_the_theme(self, stylesheet):
+        """It is chrome, not chart data, so it takes the reader's theme."""
+        body = re.search(r"\.nftpreview\{([^}]*)\}", stylesheet).group(1)
+
+        assert "var(--color-base-100)" in body
+        assert "var(--color-base-300)" in body

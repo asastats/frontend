@@ -5,8 +5,18 @@
   remembered collection inside, and `.section-list` is what the filter shows
   and hides -- both are hooks, not styling.
 {% endcomment %}
-<div class="nftsec section-list mt-6 space-y-2">
+<div class="nftsec section-list mt-8">
+  {% comment %}
+    Inside `.section-list` on purpose: the filter hides and shows that whole
+    container, so the heading travels with the rows it introduces rather than
+    labelling an empty gap.
+  {% endcomment %}
+  <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+    NFT collections <span class="ml-1 font-normal tabular-nums opacity-70">{{ nftcollections|length }}</span>
+  </h2>
+  <div class="space-y-2">
   {% for coll in nftcollections %}
     {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors %}
   {% endfor %}
+  </div>
 </div>
