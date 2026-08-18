@@ -325,32 +325,34 @@ class ProfileAppearanceTabsTest(TestCase):
         html = response.content.decode()
         return html[html.index('id="id-appearance-tabs"'):]
 
+    def test_core_views_appearance_light_tab_holds_the_light_themes(self):
+        """Light comes first, matching the order the header dropdown uses."""
+        self._sign_in()
+
+        response = self.client.get(self.url)
+        html = self._tab_region(response)
+        light_at = html.index('id="id-tab-light"')
+        dark_at = html.index('id="id-tab-dark"')
+
+        self.assertLess(light_at, dark_at, "Dark is offered before Light")
+        for theme in settings.AVAILABLE_THEMES_BY_SCHEME["Light"]:
+            at = html.index(f'value="{theme}"')
+            self.assertTrue(
+                light_at < at < dark_at, f"{theme} is not under the Light tab"
+            )
+
     def test_core_views_appearance_dark_tab_holds_the_dark_themes(self):
         self._sign_in()
 
         response = self.client.get(self.url)
         html = self._tab_region(response)
         dark_at = html.index('id="id-tab-dark"')
-        light_at = html.index('id="id-tab-light"')
 
         for theme in settings.AVAILABLE_THEMES_BY_SCHEME["Dark"]:
-            at = html.index(f'value="{theme}"')
-            self.assertTrue(
-                dark_at < at < light_at, f"{theme} is not under the Dark tab"
-            )
-
-    def test_core_views_appearance_light_tab_holds_the_light_themes(self):
-        self._sign_in()
-
-        response = self.client.get(self.url)
-        html = self._tab_region(response)
-        light_at = html.index('id="id-tab-light"')
-
-        for theme in settings.AVAILABLE_THEMES_BY_SCHEME["Light"]:
             self.assertGreater(
                 html.index(f'value="{theme}"'),
-                light_at,
-                f"{theme} is not under the Light tab",
+                dark_at,
+                f"{theme} is not under the Dark tab",
             )
 
     def test_core_views_appearance_every_theme_appears_exactly_once(self):
@@ -378,5 +380,12 @@ class ProfileAppearanceTabsTest(TestCase):
 
         response = self.client.get(self.url)
 
-        self.assertContains(response, 'data-tab-scheme="Dark"')
-        self.assertContains(response, "checked")
+        # Light is the one marked checked in the markup, so that is the panel
+        # a reader without scripting lands on -- and it is the first tab, so
+        # the page does not open on a tab that is not the leftmost.
+        html = response.content.decode()
+        light_at = html.index('id="id-tab-light"')
+        checked_at = html.index("checked", light_at)
+        dark_at = html.index('id="id-tab-dark"')
+
+        self.assertLess(checked_at, dark_at, "the Light tab is not the checked one")

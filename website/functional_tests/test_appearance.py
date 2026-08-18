@@ -574,3 +574,117 @@ class AppearanceRecentThemesTest(FunctionalTest):
                 By.TAG_NAME, "html"
             ).get_attribute("data-theme") == "dracula"
         )
+
+
+class AppearanceTabsTest(FunctionalTest):
+    """The tabs must look like every other tablist on the site.
+
+    The swap modal's segmented control is the design the site follows, and the
+    login modal and the profile sub-nav already match it: a sunken tray, equal
+    columns, and the selected tab lifting out of it on the surface colour with
+    a shadow. This page used DaisyUI's `tabs-lift` -- folder tabs -- which was
+    the one control that did not.
+
+    Asserted through computed style rather than class names, because the point
+    is what a reader sees; a refactor that keeps the look is free to change how
+    it gets there.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.create_cookie_and_go_to_index_page_tier(
+            "tabs@example.com", permission=100
+        )
+        self.browser.get(self.server_url + reverse("profile_appearance"))
+
+    def _bg(self, element):
+        return self.browser.execute_script(
+            "return getComputedStyle(arguments[0]).backgroundColor;", element
+        )
+
+    def test_the_selected_tab_lifts_out_of_the_tray(self):
+        tray = self.browser.find_element(By.ID, "id-appearance-tabs")
+        selected = self.browser.find_element(By.ID, "id-tab-light")
+        unselected = self.browser.find_element(By.ID, "id-tab-dark")
+
+        self.assertNotEqual(
+            self._bg(selected), self._bg(tray), "the selected tab does not stand out"
+        )
+        self.assertEqual(
+            self._bg(unselected),
+            "rgba(0, 0, 0, 0)",
+            "an unselected tab is painted; only the selected one should be",
+        )
+
+    def test_the_tray_matches_the_profile_sub_nav(self):
+        """One idiom for the whole site, not one per page.
+
+        The sub-nav sits on this very page, directly above these tabs, so a
+        mismatch is visible in a single glance -- and it is the same control
+        the login modal and the swap modal use.
+        """
+        tray = self.browser.find_element(By.ID, "id-appearance-tabs")
+        sub_nav = self.browser.find_element(
+            By.CSS_SELECTOR, '[aria-label="Profile sections"]'
+        )
+
+        self.assertEqual(self._bg(tray), self._bg(sub_nav))
+
+    def test_the_tray_matches_the_login_modal(self):
+        """The same, across pages and across signed-in state.
+
+        The modal renders only for a signed-out reader, so the session is
+        dropped first -- which is also the only way to see the control this
+        page was supposed to copy.
+        """
+        tray_bg = self._bg(self.browser.find_element(By.ID, "id-appearance-tabs"))
+
+        self.browser.delete_all_cookies()
+        self.browser.get(self.server_url + reverse("about"))
+        modal_tray = self.browser.find_elements(
+            By.CSS_SELECTOR, '#modalLogin [role="tablist"]'
+        )
+
+        self.assertTrue(modal_tray, "the login modal renders no tablist")
+        self.assertEqual(tray_bg, self._bg(modal_tray[0]))
+
+    def test_the_tabs_share_the_row_evenly(self):
+        widths = [
+            tab.size["width"]
+            for tab in self.browser.find_elements(
+                By.CSS_SELECTOR, "#id-appearance-tabs > .tab"
+            )
+        ]
+
+        self.assertEqual(len(widths), 3)
+        self.assertLess(max(widths) - min(widths), 2, f"tabs are uneven: {widths}")
+
+    def test_choosing_a_tab_swaps_the_panel_without_scripting(self):
+        dark = self.browser.find_element(By.ID, "id-tab-dark")
+        self.browser.execute_script("arguments[0].click();", dark)
+
+        panels = self.browser.find_elements(By.CSS_SELECTOR, "#id-appearance-tabs > .tab-content")
+        shown = [p for p in panels if p.is_displayed()]
+
+        self.assertEqual(len(shown), 1, "exactly one panel should be visible")
+        self.assertTrue(
+            shown[0].find_elements(
+                By.CSS_SELECTOR, "input[value='asastats-dark']"
+            ),
+            "the Dark tab did not reveal the dark themes",
+        )
+
+    def test_light_leads_the_tabs(self):
+        """The header dropdown lists Light before Dark; this must agree."""
+        tabs = self.browser.find_elements(
+            By.CSS_SELECTOR, "#id-appearance-tabs > .tab"
+        )
+
+        # Below the Asastatser tier Fonts is a link rather than a radio, so it
+        # carries its name as text instead of an aria-label. Either is the
+        # accessible name; the order is what this pins.
+        names = [
+            (t.get_attribute("aria-label") or t.text).split()[0] for t in tabs
+        ]
+
+        self.assertEqual(names, ["Light", "Dark", "Fonts"])

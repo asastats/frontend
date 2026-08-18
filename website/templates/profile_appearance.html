@@ -13,9 +13,9 @@
   section -- an independent axis, and the only gated one -- was stranded at the
   bottom where a reader had to already know it existed.
 
-  Dark leads because the two dark tabs of this site's own pair is what most
-  readers who come here are looking for; static/js/theme.js reselects whichever
-  tab holds the active theme on load, so the page opens where the reader is.
+  Light leads, matching the order the header dropdown lists the groups in.
+  static/js/theme.js then reselects whichever tab holds the active theme on
+  load, so the page opens where the reader already is.
 {% endcomment %}
 {% block title %}Appearance - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Choose the theme and typeface used across {{ WEBSITE_URL }}.{% endblock %}
@@ -37,19 +37,38 @@
     failed still gets a working page rather than three headings and nothing
     under them. The group is named `appearance-tab` so it cannot collide with
     the `theme-dropdown` and `typeface-choice` radios inside the panels.
-  {% endcomment %}
-  <div role="tablist" class="tabs tabs-lift px-5 pt-5" id="id-appearance-tabs">
 
-    <input type="radio" name="appearance-tab" role="tab" class="tab" id="id-tab-dark"
-           aria-label="Dark" data-tab-scheme="Dark" checked>
-    <div role="tabpanel" class="tab-content border-base-300 bg-base-100 p-5">
-      {% include "snippets/theme_swatches.html" with themes=AVAILABLE_THEMES_BY_SCHEME.Dark %}
+    The same segmented control as the login modal's Log in / Social / Wallet
+    tabs and the profile sub-nav above -- which is itself the swap modal's
+    `.swap-modes`, written against theme tokens instead of `--swap-*`. A
+    sunken tray, equal columns, and the selected tab lifting out of it on
+    `bg-base-100` with a shadow.
+
+    `.tabs` and `.tab` stay because DaisyUI's `display:block` rule for the
+    panel needs both; only the look is overridden. `tabs-lift` is gone: that
+    is the folder-tab style, and it was the one control on the site that did
+    not match the rest.
+
+    Light first, to match the order the header dropdown lists the groups in.
+  {% endcomment %}
+  <div role="tablist"
+       class="tabs mx-5 mt-5 flex flex-wrap gap-1 rounded-field bg-base-200 p-1"
+       id="id-appearance-tabs">
+
+    <input type="radio" name="appearance-tab" role="tab" id="id-tab-light"
+           class="tab flex-1 cursor-pointer rounded-field py-2 text-center text-sm font-medium
+                  checked:bg-base-100 checked:shadow-sm"
+           aria-label="Light" data-tab-scheme="Light" checked>
+    <div role="tabpanel" class="tab-content -mx-1 -mb-1 mt-1 w-full rounded-box bg-base-100 p-5">
+      {% include "snippets/theme_swatches.html" with themes=AVAILABLE_THEMES_BY_SCHEME.Light %}
     </div>
 
-    <input type="radio" name="appearance-tab" role="tab" class="tab" id="id-tab-light"
-           aria-label="Light" data-tab-scheme="Light">
-    <div role="tabpanel" class="tab-content border-base-300 bg-base-100 p-5">
-      {% include "snippets/theme_swatches.html" with themes=AVAILABLE_THEMES_BY_SCHEME.Light %}
+    <input type="radio" name="appearance-tab" role="tab" id="id-tab-dark"
+           class="tab flex-1 cursor-pointer rounded-field py-2 text-center text-sm font-medium
+                  checked:bg-base-100 checked:shadow-sm"
+           aria-label="Dark" data-tab-scheme="Dark">
+    <div role="tabpanel" class="tab-content -mx-1 -mb-1 mt-1 w-full rounded-box bg-base-100 p-5">
+      {% include "snippets/theme_swatches.html" with themes=AVAILABLE_THEMES_BY_SCHEME.Dark %}
     </div>
 
     {% comment %}
@@ -64,9 +83,12 @@
       reason the theme swatches render in their own colours.
     {% endcomment %}
     {% if can_access_typeface %}
-    <input type="radio" name="appearance-tab" role="tab" class="tab" id="id-tab-fonts"
+    <input type="radio" name="appearance-tab" role="tab" id="id-tab-fonts"
+           class="tab flex-1 cursor-pointer rounded-field py-2 text-center text-sm font-medium
+                  checked:bg-base-100 checked:shadow-sm"
            aria-label="Fonts">
-    <div role="tabpanel" class="tab-content border-base-300 bg-base-100 p-5" id="id-section-typeface">
+    <div role="tabpanel" class="tab-content -mx-1 -mb-1 mt-1 w-full rounded-box bg-base-100 p-5"
+         id="id-section-typeface">
       <p class="mb-4 text-sm text-base-content/60">
         Every theme brings its own pair. Borrow another theme's if you prefer.
       </p>
@@ -95,7 +117,8 @@
       </div>
     </div>
     {% else %}
-    <a role="tab" class="tab" id="id-tab-fonts" href="{% url 'subscriptions' %}"
+    <a role="tab" id="id-tab-fonts" href="{% url 'subscriptions' %}"
+       class="tab flex-1 cursor-pointer rounded-field py-2 text-center text-sm font-medium"
        title="Choosing a typeface is available from the Asastatser tier">
       Fonts
       <span class="badge badge-outline badge-xs ml-2">Asastatser</span>
