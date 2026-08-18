@@ -605,6 +605,19 @@ describe("NFT tooltips", function () {
     expect(document.getElementById("id-nft-preview")).toBeNull();
   });
 
+  it('closes the preview when the pointer leaves the thumbnail', function () {
+    // What the Materialize tooltip did. Without it the preview hangs over the
+    // rows below while the reader moves on down the collection.
+    jest.useFakeTimers();
+    address.mainAddress();
+    $(".nfticon").first().trigger("mouseover");
+    expect(document.getElementById("id-nft-preview")).not.toBeNull();
+
+    $(".nfticon").first().trigger("mouseleave");
+
+    expect(document.getElementById("id-nft-preview")).toBeNull();
+  });
+
   it('shows nothing for a thumbnail with no full image', function () {
     // `#other` has no data-path. Building a preview from it would produce an
     // <img src=""> -- a visible broken-image box hovering over the page.

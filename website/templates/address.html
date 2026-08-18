@@ -47,8 +47,17 @@
       data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}
       data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</h1>
 
+  {% comment %}
+    A notice, not a section heading. This was an `<h2>` carrying red text,
+    which put a heading in the document outline that is not a section, and
+    left the message to be noticed by colour alone -- so a reader who does not
+    see colour got nothing, and a screen reader announced a heading rather
+    than a warning. `role="alert"` is what makes it interrupt.
+  {% endcomment %}
   {% if system.warning %}
-    <h2 class="mt-3 text-lg font-medium text-error">{{ system.warning }}</h2>
+    <div class="alert alert-warning mx-auto mt-4 max-w-2xl" role="alert">
+      <span>{{ system.warning }}</span>
+    </div>
   {% endif %}
 
   {% if is_bundle %}
@@ -92,7 +101,15 @@
     {% if account_info.online %}<span class="badge badge-success badge-outline" title="{% if is_bundle %}One or more addresses are{% else %}Address is{% endif %} participating in Algorand consensus">Online</span>{% endif %}
   </div>
 
-  {% if system.information %}<p class="mt-4 text-success">{{ system.information }}</p>{% endif %}
+  {% comment %}
+    The same, one level quieter: information is worth announcing once the
+    reader gets to it, not interrupting them, which is what `status` means.
+  {% endcomment %}
+  {% if system.information %}
+    <div class="alert alert-success mx-auto mt-4 max-w-2xl" role="status">
+      <span>{{ system.information }}</span>
+    </div>
+  {% endif %}
 </header>
 
 {% comment %}

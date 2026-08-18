@@ -83,6 +83,12 @@ function mainAddress() {
   $(".nft.item-header").on("click", showTimes);
   $(".token.item-header").on("click", showExpiry);
   $(".nfticon").on("mouseover", nftShowTooltip);
+  // Leaving the thumbnail closes it, which is what the Materialize tooltip
+  // did. Without this the preview stays on screen until something else is
+  // clicked, so moving down a long collection leaves one hanging over the
+  // rows below. The click binding stays: it dismisses the preview without
+  // moving the pointer off the thumbnail that opened it.
+  $(".nfticon").on("mouseleave", nftHideTooltip);
   $(".nfticon").on("click", nftHideTooltip);
   setInterval(timerIncrement, 1000);
   $(this).mousemove(resetTimer);

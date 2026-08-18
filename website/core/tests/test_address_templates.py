@@ -317,3 +317,36 @@ class TestAddressTemplateRenders:
             f"{set(distid_values) - set(target_ids)}, "
             f"orphan targets {set(target_ids) - set(distid_values)}"
         )
+
+    def test_system_messages_render_as_notices(self, sample_payload):
+        """A warning must not be a heading, and must not rely on colour.
+
+        Both were: `<h2 class="text-error">` and `<p class="text-success">`.
+        That put two entries in the document outline that are not sections,
+        and left a reader who does not see colour with nothing to distinguish
+        them from ordinary text. The roles are what make a screen reader treat
+        them as a warning and a status rather than prose.
+        """
+        context = _build_context(sample_payload)
+        context["account"]["system_info"] = {
+            "warning": "Engine is resyncing",
+            "information": "Prices refreshed",
+        }
+
+        html = render_to_string("address.html", context)
+
+        assert 'role="alert"' in html
+        assert "Engine is resyncing" in html
+        assert 'role="status"' in html
+        assert "Prices refreshed" in html
+        assert '<h2 class="mt-3 text-lg font-medium text-error">' not in html
+
+    def test_system_messages_are_absent_when_there_are_none(self, sample_payload):
+        """An empty alert box is worse than no box."""
+        context = _build_context(sample_payload)
+        context["account"]["system_info"] = {}
+
+        html = render_to_string("address.html", context)
+
+        assert 'role="alert"' not in html
+        assert 'role="status"' not in html
