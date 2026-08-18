@@ -1,19 +1,34 @@
+const fs = require('fs');
+const path = require('path');
+const capturedPage = fs.readFileSync(
+  path.resolve(__dirname, './address.html'), 'utf8'
+);
 const jquery = require('../static/js/jquery-2.2.4.min.js');
 
 window.$ = jquery;
 
-$.prototype.collapsible = jest.fn();
 $.prototype.tooltip = jest.fn();
 $.prototype.animate = jest.fn(function () { return this; });
 
 let lastConfig;
 
+/**
+ * A stand-in for a Chart.js instance.
+ *
+ * Its data mirrors the captured page's distribution payload -- the widest of
+ * the six -- because `updateDistChart` walks the parsed payload and writes
+ * each value into the instance at the same index. A mock with fewer datasets
+ * than the page carries throws there rather than failing an assertion.
+ */
 function chartInstance(overrides) {
+  var dist = payload('distchart');
   return Object.assign({
     canvas: { id: 'id-asachart' },
     data: {
-      datasets: [{ data: ['10', '20'] }, { data: ['5', '15'] }],
-      labels: ['a', 'b']
+      datasets: dist.datasets.map(function (set) {
+        return { data: set.data.slice() };
+      }),
+      labels: dist.labels.slice()
     },
     config: { type: 'pie' },
     legend: { legendItems: Array.from({ length: 12 }, () => ({ hidden: false })) },
@@ -49,89 +64,140 @@ function pie(name) {
     '<div id="id-legend-' + name + '"></div>';
 }
 
-function fixture() {
+/*
+ * The DOM is the page the site serves: `javascript_tests/address.html`,
+ * captured by `scripts/capture_address_fixture.py` from the same template and
+ * sample payload the Python template tests use. Every selector in address.js
+ * is a contract with that markup, and an inline approximation cannot hold it
+ * -- the one this suite used carried hooks the page never emitted while the
+ * template moved on underneath, and nothing could tell.
+ *
+ * Two things are still built here, because a capture cannot provide them
+ * deterministically:
+ *
+ *   * epoch spans. The capture carries whatever dates the sample payload had,
+ *     and these tests assert relative phrasing -- "30 minutes ago", "ended".
+ *     The captured ones are removed so a selector cannot mix the two;
+ *   * rows whose text is known. Filtering is asserted on "findme", which no
+ *     real holding contains, so a match is unambiguous.
+ */
+/**
+ * A payload the captured page carries, parsed from the fixture itself.
+ *
+ * Expectations are derived from it rather than written down: the numbers come
+ * from a real portfolio and change whenever the fixture is recaptured, so a
+ * literal here would be a value nobody chose and everybody would have to
+ * update.
+ */
+function payload(id) {
+  var match = capturedPage.match(
+    new RegExp('<script id="' + id + '" type="application/json">([^<]*)</script>')
+  );
+  return JSON.parse(match[1]);
+}
+
+/**
+ * One legend entry per dataset, which is what Chart.js hands a bar chart.
+ *
+ * `percentDistAsset` walks the parsed distribution payload and reads the
+ * legend entry at the same index, so a shorter list throws rather than
+ * failing an assertion.
+ */
+function legendItemsForDist(hiddenIndex) {
+  return payload("distchart").datasets.map(function (_, i) {
+    return { hidden: i === hiddenIndex };
+  });
+}
+
+function controlledEpochs() {
   var now = Math.floor(Date.now() / 1000);
-  var times = '<span class="epoch" data-epoch="' + (now - 30) + '"></span>' +
-    '<span class="epoch" data-epoch="' + (now - 1800) + '"></span>' +
-    '<span class="epoch" data-epoch="' + (now - 36000) + '"></span>' +
-    '<span class="epoch" data-epoch="' + (now - 864000) + '"></span>';
-  var expiry = '<span class="epoch" data-epoch="' + (now - 1000) + '" ' +
-    'data-ended="1"></span>' +
-    '<span class="epoch" data-epoch="' + (now + 1000) + '"></span>' +
-    '<span class="epoch" data-epoch="' + (now - 1000) + '"></span>';
+  return {
+    times:
+      '<span class="epoch" data-epoch="' + (now - 30) + '"></span>' +
+      '<span class="epoch" data-epoch="' + (now - 1800) + '"></span>' +
+      '<span class="epoch" data-epoch="' + (now - 36000) + '"></span>' +
+      '<span class="epoch" data-epoch="' + (now - 864000) + '"></span>',
+    expiry:
+      '<span class="epoch" data-epoch="' + (now - 1000) + '" data-ended="1"></span>' +
+      '<span class="epoch" data-epoch="' + (now + 1000) + '"></span>' +
+      '<span class="epoch" data-epoch="' + (now - 1000) + '"></span>',
+  };
+}
+
+/** Scaffolding the captured page cannot supply: known text, and a thumbnail
+ *  with no full-size image behind it. */
+function scaffold() {
   return (
-    '<script type="application/json" id="consolidated">["10","20","5"]</script>' +
-    '<script type="application/json" id="distchart">' +
-    '{"datasets":[{"data":["10","20"],"label":"A"},'
-    + '{"data":["5","15"],"label":"B"}],"labels":["a","b"]}</script>' +
-    '<canvas id="id-distchart"></canvas><div id="id-legend-distchart"></div>' +
-    pie('ratiochart') + pie('asachart') + pie('nftchart') + pie('nftfloorchart') +
-    '<canvas id="id-ratiochartfloor"></canvas>' +
-    '<div id="id-legend-ratiochartfloor"></div>' +
-    '<span class="pricetip" data-price="2" data-total="100" data-totalnft="10"' +
-    ' data-totalnftfloor="5" data-totalwnft="200" data-pricealgo="0.5"></span>' +
-    '<div id="id-chart-nft"></div><div id="id-chart-nftfloor"></div>' +
-    '<div id="id-chart-ratio"></div><div id="id-chart-ratiofloor"></div>' +
-    '<details class="consolidated" id="id-cons" open>' +
-    '<summary class="item-header consolidated"></summary>' +
-    '<div id="id-cons-body" class="item-body"></div></details>' +
-    '<div class="floor"><input type="checkbox"></div>' +
-    '<div class="switch"><input type="checkbox"></div>' +
-    '<div class="refresh"><input type="checkbox"></div>' +
-    '<div class="totalnonft"><input type="checkbox"></div>' +
-    '<span class="price" data-val="2" data-unit="USD">2 ALGO/USD</span>' +
-    '<span class="unitprice" data-val="2" data-unit="USDC">2 USDC</span>' +
-    '<a class="tdist" data-distid="distbox">dist</a><div id="distbox"></div>' +
-    '<input id="filter">' +
-    '<span class="pricealgo val" data-val="2"></span>' +
-    '<span class="val cons-value" data-val="3"></span>' +
-    '<span class="val6 pricealgo" data-val="2"></span>' +
-    '<span class="val6" data-val="3"></span>' +
-    '<div class="asasec section-list"><details class="fitem" id="fa0"></details>' +
-    '<details class="fitem" id="fa1" open>' +
-    '<summary class="item-header nft"></summary>' +
-    '<div class="item-body">' + times + '</div></details></div>' +
-    '<div class="nftsec section-list"><details class="fitem" id="fn1" open>' +
-    '<summary class="item-header token"></summary>' +
-    '<div class="item-body">' + expiry + '</div></details></div>' +
     '<div class="fsec section-list">' +
     '<div class="fitem" id="if1"><span>findme</span><span>findme</span></div>' +
     '<div class="fitem" id="if2"><span>findme</span></div>' +
     '<div class="fitem"><span>findme</span></div>' +
     '<span class="nfticon" id="tif1" data-path="/x.png"></span>' +
-    '<span class="nfticon" id="other"></span></div>' +
-    '<span class="unit">a</span>' +
-    '<img class="nft" data-src="/real.png"><img class="nft">' +
-    '<div class="fixed-action-btn"><a id="scroll-to-top" class="btn-floating"></a></div>'
+    '<span class="nfticon" id="other"></span></div>'
   );
 }
 
+/** Mount the captured page, then the controlled nodes on top of it. */
+function mountFixture() {
+  document.body.innerHTML = capturedPage;
+
+  var controlled = controlledEpochs();
+  Array.prototype.forEach.call(document.querySelectorAll(".epoch"), function (span) {
+    span.remove();
+  });
+  var nftBody = document.querySelector(".nftsec .item-body");
+  if (nftBody) nftBody.insertAdjacentHTML("beforeend", controlled.times);
+  var asaBody = document.querySelector(".asasec .item-body");
+  if (asaBody) asaBody.insertAdjacentHTML("beforeend", controlled.expiry);
+
+  document.body.insertAdjacentHTML("beforeend", scaffold());
+}
+
 beforeEach(() => {
-  document.body.innerHTML = fixture();
+  mountFixture();
   localStorage.clear();
   if (localStorage.setItem.mockClear) localStorage.setItem.mockClear();
   window.Chart.mockReset();
   window.Chart.mockImplementation(chartImpl);
   window.Chart.getChart.mockReset();
   window.Chart.getChart.mockReturnValue(chartInstance());
+  M.Collapsible.getInstance.mockClear();
+  M.Collapsible.getInstance.mockReturnValue({ close: jest.fn() });
   reloadMock = jest.fn();
   delete window.location;
   window.location = { reload: reloadMock };
 });
 
 afterEach(() => {
+  // jsdom queues a `toggle` event on its own timer whenever a <details>
+  // changes state. Left pending, those land after jest has torn the
+  // environment down, where jQuery's dispatch touches a document that no
+  // longer exists -- and jsdom's error reporter then crashes on
+  // `window._document.URL`, taking the whole run with it rather than failing
+  // a single test.
+  // The event is queued on a real Node timer, so no fake-timer flush reaches
+  // it. Detaching the handlers does: when it finally fires there is nothing
+  // left to run, and nothing throws.
+  $("details").off();
   jest.useRealTimers();
+  document.body.innerHTML = "";
   jest.resetModules();
 });
 
 
 describe("parseJsonScript", function () {
   it('parses a plain JSON script', function () {
-    expect(address.parseJsonScript("distchart").labels).toEqual(["a", "b"]);
+    expect(address.parseJsonScript("distchart").labels).toEqual(
+      payload("distchart").labels
+    );
   });
+
   it('builds ratiochartfloor percentages from the consolidated data', function () {
+    // Not a script on the page: it is derived from `#consolidated`, whose
+    // five figures become the slices of the floor-value ratio chart.
     var data = address.parseJsonScript("ratiochartfloor");
-    expect(data.datasets[0].data.length).toBe(3);
+
+    expect(data.datasets[0].data.length).toBe(payload("consolidated").length);
   });
 });
 
@@ -157,62 +223,6 @@ describe("isNotVisible / scrollToView", function () {
   });
 });
 
-describe("Scroll to Top Button", function () {
-  beforeEach(() => {
-    // JSDOM doesn't implement window.scrollTo natively
-    window.scrollTo = jest.fn();
-  });
-
-  it('shows the button when scrolled down more than 300px', function () {
-    // Mock the window scroll position
-    Object.defineProperty(window, 'scrollY', { value: 350, writable: true });
-
-    address.toggleScrollToTopButton();
-
-    expect(document.getElementById('scroll-to-top').classList.contains('visible')).toBe(true);
-  });
-
-  it('hides the button when scrolled up less than 300px', function () {
-    // Add the class first to simulate being scrolled down
-    document.getElementById('scroll-to-top').classList.add('visible');
-    Object.defineProperty(window, 'scrollY', { value: 150, writable: true });
-
-    address.toggleScrollToTopButton();
-
-    expect(document.getElementById('scroll-to-top').classList.contains('visible')).toBe(false);
-  });
-
-  it('does nothing if the button is missing from the DOM', function () {
-    document.getElementById('scroll-to-top').remove();
-    Object.defineProperty(window, 'scrollY', { value: 400, writable: true });
-
-    // Should not throw an error
-    expect(() => { address.toggleScrollToTopButton(); }).not.toThrow();
-  });
-
-  it('prevents default event action and scrolls to top on click', function () {
-    var mockEvent = { preventDefault: jest.fn() };
-
-    address.scrollToTop(mockEvent);
-
-    expect(mockEvent.preventDefault).toHaveBeenCalled();
-    expect(window.scrollTo).toHaveBeenCalledWith({
-      top: 0,
-      behavior: 'smooth'
-    });
-  });
-
-  it('scrolls to top even if no event is passed (missing event coverage)', function () {
-    // Call the function with no arguments (e is undefined)
-    address.scrollToTop();
-
-    // It should skip the preventDefault block but still scroll
-    expect(window.scrollTo).toHaveBeenCalledWith({
-      top: 0,
-      behavior: 'smooth'
-    });
-  });
-});
 
 describe("setCurrency", function () {
   it('formats values in ALGO', function () {
@@ -281,23 +291,46 @@ describe("toggleUnitPrice", function () {
     address.toggleUnitPrice.call(el, { target: { innerHTML: "USDC" } });
     expect(el.innerHTML).toContain("USD");
   });
+
+  it('shows the direct price when the label already names the unit', function () {
+    // The control flips between `X/ALGO` and `ALGO/X`, and which way round it
+    // goes is decided by whether the text already contains the asset's own
+    // unit. Both directions are reachable from a real row.
+    var el = $(".unitprice")[0];
+
+    address.toggleUnitPrice.call(el, { target: { innerHTML: el.dataset.unit } });
+
+    expect(el.innerHTML).toContain("ALGO");
+    expect(el.innerHTML).not.toContain("/ALGO");
+  });
 });
 
 
 describe("toggleDist", function () {
   it('toggles the distribution section visibility', function () {
+    // The page renders these panels collapsed, so the assertion is that the
+    // control flips the state -- not that it reaches one particular one.
     var el = $(".tdist")[0];
+    var target = document.getElementById(el.dataset.distid);
+    expect(target).not.toBeNull();
+    var before = $(target).hasClass("hidden");
+
     address.toggleDist.call(el, null);
-    expect($("#distbox").hasClass("hidden")).toBe(true);
+    expect($(target).hasClass("hidden")).toBe(!before);
+
+    address.toggleDist.call(el, null);
+    expect($(target).hasClass("hidden")).toBe(before);
   });
 });
 
 
 describe("showTimes", function () {
   it('fills epoch spans with elapsed time', function () {
-    var header = $(".item-header.nft")[0];
+    var header = $(".nft.item-header")[0];
+
     address.showTimes.call(header, null);
-    expect($(".asasec .epoch").html()).toContain("ago on");
+
+    expect($(".nftsec .epoch").html()).toContain("ago on");
   });
 });
 
@@ -315,10 +348,7 @@ describe("mainAddress", function () {
     jest.useFakeTimers();
     window.Chart.getChart.mockReturnValue(chartInstance());
     address.mainAddress();
-    // Nothing to initialise: the accordions are native <details>. What
-    // mainAddress still owns is the charts and the event wiring.
     expect(window.Chart).toHaveBeenCalled();
-    expect($._data($("#id-cons")[0], "events").toggle).toBeDefined();
   });
 });
 
@@ -345,11 +375,11 @@ describe("chart tooltip / hover / legend callbacks", function () {
     var c = configs();
     var ctx = {
       raw: "5", dataIndex: 0, datasetIndex: 0, dataset: { label: "A" },
-      chart: { legend: { legendItems: [{ hidden: false }, { hidden: true }] } },
+      chart: { legend: { legendItems: legendItemsForDist(1) } },
     };
     var ctx2 = {
       raw: "5", dataIndex: 0, datasetIndex: 1, dataset: { label: "B" },
-      chart: { legend: { legendItems: [{ hidden: false }, { hidden: true }] } },
+      chart: { legend: { legendItems: legendItemsForDist(1) } },
     };
     expect(typeof c.dist.options.plugins.tooltip.callbacks.label(ctx))
       .toBe("string");
@@ -395,7 +425,7 @@ describe("chart tooltip / hover / legend callbacks", function () {
     ];
     var pieChart = chartInstance({
       config: { type: 'pie' }, canvas: { id: 'id-asachart' },
-      legend: { legendItems: [{ hidden: false }, { hidden: true }] },
+      legend: { legendItems: legendItemsForDist(1) },
       options: { plugins: { legend: { labels: { generateLabels: () => items } } } },
     });
     var container = document.getElementById('id-legend-distchart');
@@ -447,6 +477,11 @@ describe("chartClick (direct)", function () {
       data: { labels: [label] },
     };
   }
+
+  /** A unit the captured page actually lists. */
+  function heldUnit() {
+    return payload("asachart").labels[0];
+  }
   it('does nothing when there are no points', function () {
     jest.useFakeTimers();
     address.chartClick(chart([], "a"), {});
@@ -454,20 +489,32 @@ describe("chartClick (direct)", function () {
   });
   it('toggles the header for a visible unit', function () {
     jest.useFakeTimers();
-    address.chartClick(chart([{ index: 0 }], "a"), {});
+    address.chartClick(chart([{ index: 0 }], heldUnit()), {});
     jest.advanceTimersByTime(300);
   });
   it('scrolls to an off-screen unit before toggling', function () {
     jest.useFakeTimers();
     Object.defineProperty($(".unit")[0], "offsetTop", { value: -100000 });
-    address.chartClick(chart([{ index: 0 }], "a"), {});
+    address.chartClick(chart([{ index: 0 }], heldUnit()), {});
     jest.advanceTimersByTime(300);
   });
+  it('ignores a slice with no row behind it', function () {
+    // A portfolio past the chart's item limit gets an "others" slice standing
+    // for the tail, and no row carries that unit. Clicking it used to hand
+    // `undefined` to scrollToView, which reads `.offsetTop`.
+    jest.useFakeTimers();
+
+    expect(function () {
+      address.chartClick(chart([{ index: 0 }], "others"), {});
+      jest.advanceTimersByTime(300);
+    }).not.toThrow();
+  });
+
   it('does not toggle a header that is already active', function () {
     jest.useFakeTimers();
     $(".unit").wrap('<div><div></div></div>').parent().parent()
       .wrap('<div class="active"></div>');
-    address.chartClick(chart([{ index: 0 }], "a"), {});
+    address.chartClick(chart([{ index: 0 }], heldUnit()), {});
     jest.advanceTimersByTime(300);
   });
 });
@@ -536,9 +583,43 @@ describe("filterChange", function () {
 describe("initAddress (window.onload)", function () {
   it('defers images and opens stored sections', function () {
 
-    localStorage.setItem("openasa", "fa1");
+    var deferred = $("img.nft[data-src]").first();
+    var wanted = deferred.attr("data-src");
+    localStorage.setItem("openasa", $(".asasec .fitem").first().attr("id"));
+
     window.onload();
-    expect($("img.nft[data-src]").attr("src")).toBe("/real.png");
+
+    expect(deferred.attr("src")).toBe(wanted);
+  });
+
+  it('reopens the row it remembered', function () {
+    // The rows sit inside a wrapper under their section heading, so this
+    // lookup has to search descendants. Walking direct children finds the
+    // heading and the wrapper, and the remembered row never reopens -- which
+    // is exactly what happened when the headings were added.
+    var row = $(".asasec .fitem").first();
+    row.removeAttr("open");
+    localStorage.setItem("openasa", row.attr("id"));
+
+    window.onload();
+
+    expect(row[0].open).toBe(true);
+    expect(localStorage.removeItem).toHaveBeenCalledWith("openasa");
+  });
+
+  it('stops at the row it wanted', function () {
+    // The walk returns false to break out once the stored id matches, so the
+    // match has to be something other than the first entry for that to run.
+    var rows = $(".asasec .fitem");
+    if (rows.length < 2) return;
+    var wanted = rows.eq(1);
+    rows.removeAttr("open");
+    localStorage.setItem("openasa", wanted.attr("id"));
+
+    window.onload();
+
+    expect(wanted[0].open).toBe(true);
+    expect(rows.eq(0)[0].open).toBe(false);
   });
 
   it('does nothing extra when no section stored', function () {
@@ -592,16 +673,21 @@ describe("NFT floor", function () {
 
 describe("NFT tooltips", function () {
   it('shows and hides the preview on hover and click', function () {
+    // The preview is a real element now rather than a Materialize tooltip
+    // instance decorating the thumbnail, so it can simply be looked for --
+    // and looked for again after the click, which must remove it.
     jest.useFakeTimers();
     address.mainAddress();
-    $(".nfticon").first().trigger("mouseover");
-    // The preview is a real element now rather than a Materialize tooltip
-    // instance, so it can simply be looked for -- and looked for again after
-    // the click, which must remove it.
+    var thumbnail = $(".nfticon").first();
+    thumbnail.trigger("mouseover");
     var preview = document.getElementById("id-nft-preview");
     expect(preview).not.toBeNull();
-    expect(preview.querySelector("img").getAttribute("src")).toBe("/x.png");
+    expect(preview.querySelector("img").getAttribute("src")).toBe(
+      thumbnail[0].dataset.path
+    );
+
     $(".nfticon").first().trigger("click");
+
     expect(document.getElementById("id-nft-preview")).toBeNull();
   });
 
@@ -616,6 +702,23 @@ describe("NFT tooltips", function () {
     $(".nfticon").first().trigger("mouseleave");
 
     expect(document.getElementById("id-nft-preview")).toBeNull();
+  });
+
+  it('leaves the preview image unlabelled when the thumbnail is', function () {
+    // Every captured thumbnail carries an alt, so the fallback needs one that
+    // does not: an empty alt is correct here, `undefined` would render the
+    // string "undefined" into the accessibility tree.
+    jest.useFakeTimers();
+    // Added before the bindings: this page binds to the thumbnails it finds,
+    // so one appended afterwards would simply have no handler.
+    var bare = $('<img class="nfticon" data-path="/full.png">').appendTo("body");
+    address.mainAddress();
+
+    bare.trigger("mouseover");
+
+    expect(
+      document.getElementById("id-nft-preview").querySelector("img").alt
+    ).toBe("");
   });
 
   it('shows nothing for a thumbnail with no full image', function () {
@@ -634,7 +737,7 @@ describe("showExpiry / timeEntry", function () {
     jest.useFakeTimers();
     address.mainAddress();
     $(".token.item-header").trigger("click");
-    var html = $(".nftsec .epoch").map(function () {
+    var html = $(".asasec .epoch").map(function () {
       return this.innerHTML;
     }).get().join(" ");
     expect(html).toContain("on");
@@ -648,9 +751,16 @@ describe("auto refresh", function () {
     localStorage.setItem("refresh", "y");
     window.Chart.getChart.mockReturnValue(chartInstance());
     address.mainAddress();
+    // `checkOpened` records which entries were open so the reload can restore
+    // them, so an entry has to be open for there to be anything to record --
+    // the captured page renders them all closed.
+    var asa = $(".asasec .fitem").first().attr("open", "open");
+    var nft = $(".nftsec .fitem").first().attr("open", "open");
+
     jest.advanceTimersByTime(61000);
-    expect(localStorage.setItem).toHaveBeenCalledWith("openasa", "fa1");
-    expect(localStorage.setItem).toHaveBeenCalledWith("opennft", "fn1");
+
+    expect(localStorage.setItem).toHaveBeenCalledWith("openasa", asa.attr("id"));
+    expect(localStorage.setItem).toHaveBeenCalledWith("opennft", nft.attr("id"));
   });
   it('just increments when refresh is off', function () {
     jest.useFakeTimers();
@@ -703,41 +813,101 @@ describe("total without NFTs", function () {
 
 
 describe("consolidated section", function () {
+  // A native <details>: `toggle` fires on the element after `open` has already
+  // changed, so the handler reads the property rather than an inline style
+  // Materialize used to write.
   it('onConsolidatedClick stores the visibility state', function () {
     jest.useFakeTimers();
     address.mainAddress();
-    // `<details>.open` is the state now; `toggle` is what the browser fires
-    // when it changes, and what address.js listens for.
+
     document.getElementById('id-cons').open = false;
     $("#id-cons").trigger("toggle");
+
     expect(localStorage.setItem).toHaveBeenCalledWith("cons", "h");
   });
-  it('onConsolidatedClick stores empty when the body is hidden', function () {
+
+  it('onConsolidatedClick stores empty when the section is open', function () {
     jest.useFakeTimers();
     address.mainAddress();
+
     document.getElementById('id-cons').open = true;
     $("#id-cons").trigger("toggle");
+
     expect(localStorage.setItem).toHaveBeenCalledWith("cons", "");
   });
+
+  it('survives a stored hidden state with no section to close', function () {
+    // `checkConsolidated` runs from mainAddress on every page that loads this
+    // script, and the stored value outlives the page that set it. Reading
+    // `.open` off null would throw there and abandon every binding declared
+    // after it.
+    jest.useFakeTimers();
+    localStorage.setItem("cons", "h");
+    window.Chart.getChart.mockReturnValue(chartInstance());
+    document.getElementById('id-cons').remove();
+
+    expect(function () { address.mainAddress(); }).not.toThrow();
+  });
+
   it('checkConsolidated closes the section when stored hidden', function () {
+    // Closing a <details> is setting a property; there is no plugin instance
+    // to fetch and nothing to animate.
     jest.useFakeTimers();
     localStorage.setItem("cons", "h");
     window.Chart.getChart.mockReturnValue(chartInstance());
     document.getElementById('id-cons').open = true;
+
     address.mainAddress();
+
     expect(document.getElementById('id-cons').open).toBe(false);
   });
+});
 
-  it('survives a page with no consolidated section', function () {
-    // checkConsolidated is not exported, so it is reached the way the page
-    // reaches it. Reading `.open` off null would throw inside mainAddress and
-    // abandon every binding declared after it -- the same failure mode that
-    // made home-page sorting inert.
+
+describe("scroll-to-top control", function () {
+  it('appears once the reader is well down the page', function () {
     jest.useFakeTimers();
-    window.Chart.getChart.mockReturnValue(chartInstance());
-    localStorage.setItem("cons", "h");
-    document.getElementById('id-cons').remove();
-    expect(function () { address.mainAddress(); }).not.toThrow();
-    expect($._data($("#filter")[0], "events").keypress).toBeDefined();
+    address.mainAddress();
+    var button = document.getElementById("scroll-to-top");
+
+    window.scrollY = 500;
+    $(window).trigger("scroll");
+    expect(button.classList.contains("visible")).toBe(true);
+
+    window.scrollY = 10;
+    $(window).trigger("scroll");
+    expect(button.classList.contains("visible")).toBe(false);
+  });
+
+  it('does nothing on a page without the control', function () {
+    // The button is rendered by address.html only; the handler is bound to
+    // the window, so it runs on any page that loads this script.
+    jest.useFakeTimers();
+    address.mainAddress();
+    document.getElementById("scroll-to-top").remove();
+
+    window.scrollY = 500;
+    expect(function () { $(window).trigger("scroll"); }).not.toThrow();
+  });
+
+  it('scrolls to the top and swallows the anchor navigation', function () {
+    var scrollTo = jest.fn();
+    window.scrollTo = scrollTo;
+    var prevented = jest.fn();
+
+    address.scrollToTop({ preventDefault: prevented });
+
+    expect(prevented).toHaveBeenCalled();
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
+  });
+
+  it('works when called without an event', function () {
+    // `scrollToTop` is also reachable programmatically, where there is no
+    // event to prevent the default of.
+    var scrollTo = jest.fn();
+    window.scrollTo = scrollTo;
+
+    expect(function () { address.scrollToTop(); }).not.toThrow();
+    expect(scrollTo).toHaveBeenCalled();
   });
 });

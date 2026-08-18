@@ -1,177 +1,60 @@
-<!DOCTYPE html>
 <!--
   Snapshot of a rendered address page, used as the DOM fixture for
-  address.test.js. It is captured output, not hand-written markup: when the
-  address page changes shape, re-capture it rather than editing it by hand.
+  address.test.js.
 
-  This copy was captured from the DaisyUI rebuild, by requesting the real page
-  against the live backend (see integration_tests -- a throwaway test wrote
-  `response.content` here). It is why the accordions are <details>/<summary>
-  rather than Materialize collapsibles, and why no Materialize stylesheet or
-  script is linked.
+  CAPTURED OUTPUT, NOT HAND-WRITTEN MARKUP. Regenerate it rather than editing
+  it: `scripts/capture_address_fixture.py` renders `address.html` against the
+  same trimmed sample payload the template tests use. Editing it by hand makes
+  the tests pass against a page the site does not serve, which is exactly what
+  happened before -- this file sat 3,000 lines behind the template while every
+  test went on passing, because nothing read it at all.
 
-  Asset and provider icons are absolute CDN urls, which is what `asa_icon` and
-  `provider_icon` emit.
+  Trimmed to three assets, two collections and one unevaluated entry: enough
+  to carry every hook address.js binds to, without loading a whole portfolio
+  into jsdom on each test.
 -->
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<div class="mx-auto w-full max-w-6xl px-4 py-8">
     
-    <script>
-      (function () {
-        "use strict";
-        var saved = localStorage.getItem("theme");
-        if (saved) document.documentElement.setAttribute("data-theme", saved);
-      })();
-    </script>
-    <title>ASA Stats</title>
-    <meta name="description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.">
-    <meta name="keywords" content="asastats,Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount">
-    <meta name="format-detection" content="telephone=no">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Oswald|Nunito">
-    <link href="/static/css/style.tw.css" type="text/css" rel="stylesheet" media="screen">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#ababab">
-    <meta name="msapplication-TileColor" content="#ababab">
-    <meta name="theme-color" content="#ffffff">
-</head>
-<body class="min-h-screen bg-base-200 text-base-content flex flex-col">
-<script src="/static/js/csp-safe-handlers.js"></script>
-
-<header>
-  <div class="navbar bg-base-100 border-b border-base-300">
-    <div class="mx-auto flex w-full max-w-6xl items-center gap-2 px-4">
-      
-      <a href="/" class="flex-none" aria-label="ASA Stats home">
-        <img class="h-8 w-auto" src="/static/asastats.png" alt="ASA Stats logo">
-      </a>
-
-      <nav class="ml-auto hidden items-center gap-1 md:flex">
-        
-        <a class="btn btn-ghost btn-sm" href="#modalLogin">Log in</a>
-        <a class="btn btn-ghost btn-sm" href="/api/v2/schema/swagger-ui/">API</a>
-        <a class="btn btn-ghost btn-sm" href="/subscriptions/">Subscriptions</a>
-        
-      </nav>
-
-      
-<details class="dropdown dropdown-end flex-none">
-  <summary class="btn btn-ghost btn-sm" aria-label="Appearance">
-    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-         stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="9"/>
-      <path d="M12 3a9 9 0 0 0 0 18 4.5 4.5 0 0 0 0-9 4.5 4.5 0 0 1 0-9Z"/>
-    </svg>
-  </summary>
-  <ul class="dropdown-content z-10 mt-2 max-h-96 w-52 overflow-y-auto rounded-box bg-base-100 p-2 shadow"
-      id="id-theme-list">
-    
-    <li>
-      <input type="radio" name="theme-dropdown" value="asastats"
-             class="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-             aria-label="asastats">
-    </li>
-    
-    <li>
-      <input type="radio" name="theme-dropdown" value="asastats-dark"
-             class="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-             aria-label="asastats-dark">
-    </li>
-    
-    <li>
-      <input type="radio" name="theme-dropdown" value="nord"
-             class="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-             aria-label="nord">
-    </li>
-    
-    <li>
-      <input type="radio" name="theme-dropdown" value="dim"
-             class="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-             aria-label="dim">
-    </li>
-    
-    <li>
-      <input type="radio" name="theme-dropdown" value="abyss"
-             class="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-             aria-label="abyss">
-    </li>
-    
-    <li>
-      <input type="radio" name="theme-dropdown" value="corporate"
-             class="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-             aria-label="corporate">
-    </li>
-    
-  </ul>
-</details>
-
-
-      
-      <details class="dropdown dropdown-end md:hidden">
-        <summary class="btn btn-ghost btn-sm" aria-label="Menu">
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <path d="M4 7h16M4 12h16M4 17h16"/>
-          </svg>
-        </summary>
-        <ul class="menu dropdown-content z-10 mt-2 w-52 rounded-box bg-base-100 p-2 shadow">
-          
-          <li><a href="#modalLogin">Log in</a></li>
-          
-          <li><a href="/about/">About</a></li>
-          <li><a href="/tokenomics/">Tokenomics</a></li>
-          <li><a href="/subscriptions/">Subscriptions</a></li>
-          <li><a href="/api/v2/schema/swagger-ui/">API</a></li>
-          <li><a href="/faq/">FAQ</a></li>
-          <li><a href="/features/">Features</a></li>
-          <li><a href="/disclaimer/">Disclaimer</a></li>
-          
-        </ul>
-      </details>
-      
-    </div>
-  </div>
-</header>
-
-
-
-
-<main class="flex-1">
-  <div class="mx-auto w-full max-w-6xl px-4 py-8">
-    
-<div id="id-swap-entry-container" hx-get="/swap-entry/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/" hx-trigger="load" hx-swap="innerHTML"></div>
-<script id="asachart" type="application/json">{"labels": ["ALGO", "ASASTATS", "CY\ud83d\udc80", "IPT", "U", "Nugget", "USDC", "HOG", "ALPHA", "others"], "datasets": [{"label": "ASA data", "data": ["41.35912727", "30.65756487", "10.80409401", "5.40249409", "3.47142126", "3.27982386", "1.78865598", "1.45153084", "1.31192229", "0.47336553"], "backgroundColor": ["#e6194B", "#3cb44b", "#ffe119", "#4363d8", "#f58231", "#42d4f4", "#f032e6", "#fabed4", "#469990", "#ababab"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="nftchart" type="application/json">{"labels": ["Fugu", "Loot Boxes"], "datasets": [{"label": "NFT data", "data": ["82.54799302", "17.45200698"], "backgroundColor": ["#b86e80", "#7aa680"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="ratiochart" type="application/json">{"labels": ["Balance", "Staked", "Liquidity", "DeFi", "NFT"], "datasets": [{"label": "Ratio data", "data": ["73.41427473", "4.80491832", "12.35641079", "3.32658768", "6.09781061"], "backgroundColor": ["#005a34", "#00c896", "#575757", "#ababab", "#c82500"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="distchart" type="application/json">{"labels": ["ALGO", "ASASTATS", "CY\ud83d\udc80", "IPT", "U", "Nugget", "USDC", "HOG", "ALPHA", "others"], "datasets": [{"label": "Balance", "data": ["32.94705100", "27.05166900", "4.13237100", "0.72208800", "0.97140200", "0.44787300", "0.56835800", "1.28080400", "0.44673300", "0.41768900"], "backgroundColor": "#005a34", "borderWidth": 0, "hoverOffset": 0}, {"label": "Staked", "data": ["0.00000000", "0.00000000", "2.10594800", "1.69826100", "0.00000000", "0.00000000", "0.00000000", "0.00000000", "0.71088400", "0.00000000"], "backgroundColor": "#00c896", "borderWidth": 0, "hoverOffset": 0}, {"label": "Liquidity", "data": ["3.54747900", "0.00000000", "3.27071700", "2.34671200", "0.00000000", "2.44618300", "0.00000000", "0.00000000", "0.00000000", "0.00000000"], "backgroundColor": "#575757", "borderWidth": 0, "hoverOffset": 0}, {"label": "DeFi", "data": ["0.00000000", "0.00000000", "0.02429700", "0.00000000", "2.09171600", "0.00000000", "1.00992000", "0.00000000", "0.00000000", "0.00000000"], "backgroundColor": "#ababab", "borderWidth": 0, "hoverOffset": 0}]}</script><script id="nftfloorchart" type="application/json">{"labels": ["Fugu", "Loot Boxes"], "datasets": [{"label": "NFT floor data", "data": ["100.00000000", "0.00000000"], "backgroundColor": ["#b86e80", "#7aa680"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="consolidated" type="application/json">[68.98603800000001, 4.515093, 11.611091, 3.125933, 4.0]</script>
+<div id="id-swap-entry-container" hx-get="/swap-entry/540A5D8CEC896E073F9170AF0A962503E69147CF/" hx-trigger="load" hx-swap="innerHTML"></div>
+<script id="asachart" type="application/json">{"labels": ["LFTY0046", "ALGO", "GOLD$"], "datasets": [{"label": "ASA data", "data": ["46.30882653", "30.93777671", "22.75339676"], "backgroundColor": ["#e6194B", "#3cb44b", "#ffe119"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="nftchart" type="application/json">{"labels": ["knitH3Ds", "Brave New World"], "datasets": [{"label": "NFT data", "data": ["59.57740263", "40.42259737"], "backgroundColor": ["#b86e80", "#7aa680"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="ratiochart" type="application/json">{"labels": ["Balance", "Staked", "Liquidity", "DeFi", "NFT"], "datasets": [{"label": "Ratio data", "data": ["19.90505845", "0.05883069", "1.34063723", "7.81680224", "79.45707481"], "backgroundColor": ["#005a34", "#00c896", "#575757", "#ababab", "#c82500"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="distchart" type="application/json">{"labels": ["LFTY0046", "ALGO", "GOLD$"], "datasets": [{"label": "Balance", "data": ["253.73559600", "115.53358100", "5.24640700"], "backgroundColor": "#005a34", "borderWidth": 0, "hoverOffset": 0}, {"label": "Staked", "data": ["0.00000000", "1.10690500", "0.00000000"], "backgroundColor": "#00c896", "borderWidth": 0, "hoverOffset": 0}, {"label": "Liquidity", "data": ["0.00000000", "25.22421800", "0.00000000"], "backgroundColor": "#575757", "borderWidth": 0, "hoverOffset": 0}, {"label": "DeFi", "data": ["0.00000000", "27.64974500", "119.42413900"], "backgroundColor": "#ababab", "borderWidth": 0, "hoverOffset": 0}]}</script><script id="nftfloorchart" type="application/json">{"labels": ["Brave New World", "knitH3Ds"], "datasets": [{"label": "NFT floor data", "data": ["68.75000000", "31.25000000"], "backgroundColor": ["#7aa680", "#b86e80"], "borderWidth": 1, "hoverOffset": 0}]}</script><script id="consolidated" type="application/json">[374.515584, 1.106905, 25.224218, 147.073884, 80.0]</script>
 
 
 <header class="text-center">
   <h1 class="pricetip tooltip cursor-default text-4xl font-semibold tracking-tight sm:text-5xl"
-      data-price=12.608802 data-pricealgo=0.079310
-      data-total=7.452584 data-totalwnft=93.968153
-      data-totalnft=5.730000 data-totalnftfloor=4.0
-      data-tip='7.45 USD (0.08 USD/ALGO)'>93.97 ALGO</h1>
+      data-price=8.698512 data-pricealgo=0.114962
+      data-total=216.302465 data-totalwnft=1881.509592
+      data-totalnft=1494.992484 data-totalnftfloor=80.0
+      data-tip='216.30 USD (0.11 USD/ALGO)'>1,881.51 ALGO</h1>
 
+  
   
 
   
-    <p class="mt-3 truncate text-sm">
-      <a class="link link-hover" href="https://allo.info/account/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M" target="_blank" title="Open address in Allo">OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M</a>
-    </p>
+    <div class="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm">
+    <a class="link link-hover" href="/2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU" target="_blank" title="Open address 2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU">2EVGZ...XNSIU</a><a class="link link-hover" href="/VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU" target="_blank" title="Open address VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU">VW55K...3CBSU</a>
+    </div>
   
 
   <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
     
       
+      
+        
+        <a class="btn btn-ghost btn-sm" href="/widgets/historic/540A5D8CEC896E073F9170AF0A962503E69147CF" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
         
         
+        <a class="btn btn-sm btn-ghost"
+          href="/export/540A5D8CEC896E073F9170AF0A962503E69147CF/"
+          title="Create and download CSV file">
+          CSV export</a>
+        
+      
       
     
     
   </div>
 
+  
   
 </header>
 
@@ -179,32 +62,32 @@
 <div class="mt-8 consolidated">
   <details id="id-cons" class="group rounded-box border border-base-300 bg-base-100" open>
     <summary id="id-cons-header" class="item-header consolidated cursor-pointer list-none p-4"
-      data-balance=68.98603800000001 data-staked=4.515093
-      data-liquidity=11.611091 data-defi=3.125933>
+      data-balance=374.515584 data-staked=1.106905
+      data-liquidity=25.224218 data-defi=147.073884>
       <div class="grid grid-cols-2 gap-4 text-center sm:grid-cols-3 xl:grid-cols-6">
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Balance</span>
-          <span class="cons-value val font-medium" data-val="68.98603800000001">68.99 ALGO</span>
+          <span class="cons-value val font-medium" data-val="374.515584">374.52 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Staked</span>
-          <span class="cons-value val font-medium" data-val="4.515093">4.52 ALGO</span>
+          <span class="cons-value val font-medium" data-val="1.106905">1.11 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Liquidity</span>
-          <span class="cons-value val font-medium" data-val="11.611091">11.61 ALGO</span>
+          <span class="cons-value val font-medium" data-val="25.224218">25.22 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">DeFi</span>
-          <span class="cons-value val font-medium" data-val="3.125933">3.13 ALGO</span>
+          <span class="cons-value val font-medium" data-val="147.073884">147.07 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT estimated</span>
-          <span class="cons-value val font-medium" data-val="5.730000">5.73 ALGO</span>
+          <span class="cons-value val font-medium" data-val="1494.992484">1,494.99 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT floor</span>
-          <span class="cons-value val font-medium" data-val="4.0">4.00 ALGO</span>
+          <span class="cons-value val font-medium" data-val="80.0">80.00 ALGO</span>
         </div>
       </div>
       <p class="cons-expand mt-3 text-center text-xs opacity-50 group-open:hidden">Click totals to show charts</p>
@@ -212,29 +95,29 @@
 
     <div id="id-cons-body" class="item-body consolidated border-t border-base-300 p-4">
       <div class="charts grid gap-6 md:grid-cols-2">
-        <div class="chart-container flex items-center gap-2">
-          <div id="id-legend-distchart" class="legend w-1/6 text-xs"></div>
-          <div class="canvas w-5/6"><canvas id="id-distchart" width="500" height="317"></canvas></div>
+        <div class="chart-container">
+          <div id="id-legend-distchart" class="legend"></div>
+          <div class="canvas"><canvas id="id-distchart" width="500" height="132"></canvas></div>
         </div>
-        <div id="id-chart-ratio" class="chart-container flex items-center gap-2">
-          <div id="id-legend-ratiochart" class="legend w-1/4 text-xs"></div>
-          <div class="canvas w-3/4"><canvas id="id-ratiochart" width="500" height="500"></canvas></div>
+        <div id="id-chart-ratio" class="chart-container">
+          <div id="id-legend-ratiochart" class="legend"></div>
+          <div class="canvas"><canvas id="id-ratiochart" width="500" height="500"></canvas></div>
         </div>
-        <div id="id-chart-ratiofloor" class="chart-container flex items-center gap-2">
-          <div id="id-legend-ratiochartfloor" class="legend w-1/4 text-xs"></div>
-          <div class="canvas w-3/4"><canvas id="id-ratiochartfloor" width="500" height="500"></canvas></div>
+        <div id="id-chart-ratiofloor" class="chart-container">
+          <div id="id-legend-ratiochartfloor" class="legend"></div>
+          <div class="canvas"><canvas id="id-ratiochartfloor" width="500" height="500"></canvas></div>
         </div>
-        <div class="chart-container flex items-center gap-2">
-          <div id="id-legend-asachart" class="legend w-1/4 text-xs"></div>
-          <div class="canvas w-3/4"><canvas id="id-asachart" width="500" height="500"></canvas></div>
+        <div class="chart-container">
+          <div id="id-legend-asachart" class="legend"></div>
+          <div class="canvas"><canvas id="id-asachart" width="500" height="500"></canvas></div>
         </div>
-        <div id="id-chart-nft" class="chart-container flex items-center gap-2">
-          <div id="id-legend-nftchart" class="legend w-1/4 text-xs"></div>
-          <div class="canvas w-3/4"><canvas id="id-nftchart" width="500" height="500"></canvas></div>
+        <div id="id-chart-nft" class="chart-container">
+          <div id="id-legend-nftchart" class="legend"></div>
+          <div class="canvas"><canvas id="id-nftchart" width="500" height="500"></canvas></div>
         </div>
-        <div id="id-chart-nftfloor" class="chart-container flex items-center gap-2">
-          <div id="id-legend-nftfloorchart" class="legend w-1/4 text-xs"></div>
-          <div class="canvas w-3/4"><canvas id="id-nftfloorchart" width="500" height="500"></canvas></div>
+        <div id="id-chart-nftfloor" class="chart-container">
+          <div id="id-legend-nftfloorchart" class="legend"></div>
+          <div class="canvas"><canvas id="id-nftfloorchart" width="500" height="500"></canvas></div>
         </div>
       </div>
       <div class="floor algous mt-4 text-right">
@@ -248,7 +131,8 @@
 </div>
 
 
-<div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+
+<div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-box border border-base-300 bg-base-100 p-3">
   <div class="filter">
     <input class="input input-sm w-full max-w-xs" placeholder="Filter" id="filter" type="text">
   </div>
@@ -278,16 +162,132 @@
 
 
 
-<div class="asasec section-list mt-8 space-y-2">
+<div class="asasec section-list mt-8">
+  
+  <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+    Assets <span class="ml-1 font-normal tabular-nums opacity-70">3</span>
+  </h2>
+  <div class="space-y-2">
   
     
-      <details id="f0" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c0">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/0t.png" alt="Algo logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
+      <details id="f393401013" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
+        
+        <summary class="token item-header itemrow cursor-pointer list-none p-3 c0">
+          <span class="itemleft truncate">1&nbsp;<span class="unit font-medium">LFTY0046</span></span>
+          <div class="icondiv itemmid">
+            <img src="https://cdn.asastats.com/icons/providers/lofty.png" alt="Lofty 3878 Windermere Rd logo" class="asaicon" data-fallback="/icons/empty.png" />
           </div>
-          <span class="min-w-0 flex-1 truncate">36.494530&nbsp;<span class="unit font-medium">ALGO</span></span>
-          <span class="val flex-none font-medium" data-val="36.494530">36.49 ALGO</span>
+          <span class="val itemright font-medium" data-val="253.735596">253.74 ALGO</span>
+        </summary>
+
+        <div class="item-body border-t border-base-300 p-3">
+          <div id="393401013" class="fitem grid gap-4 md:grid-cols-4">
+            
+
+
+<div class="asal text-left text-sm">
+  <span class="title font-medium">Lofty 3878 Windermere Rd</span>
+  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
+    <div>
+      <a class="link link-hover" href="https://allo.info/asset/393401013" target="_blank" title="Show in Allo">393401013</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
+    </div>
+    <div>Unit name: LFTY0046</div>
+    <div>Total supply: 2,792</div>
+    <div>Decimals: 0</div>
+    
+      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="253.735596" data-unit="LFTY0046" title="Click to show the reciprocal price">253.735596 ALGO</span></div>
+    
+    
+      <div class="truncate">URL: <a class="link link-hover" href="https://asset.lofty.ai/LFTY0046" target="_blank" rel="noopener" title="Official URL">https://asset.lofty.ai/LFTY0046</a></div>
+    
+  </dl>
+</div>
+
+            <div class="asar md:col-span-3 md:text-right">
+              
+              <div class="swap-asa-entry">
+                <div class="asa flex flex-wrap items-start justify-end gap-3">
+                  <div class="swap-action-column order-2">
+                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
+                      href="/swap/540A5D8CEC896E073F9170AF0A962503E69147CF/393401013/"
+                      data-from="393401013"
+                      data-label-show="Swap" data-label-hide="Hide">
+                      <span class="swap-label">Swap</span>
+                    </a>
+                  </div>
+                  <div id="swap-panel-393401013" class="order-1 hidden flex-1 text-right">
+                    <div class="id-swap-panel" data-from="393401013"></div>
+                  </div>
+                </div>
+              </div>
+              
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="253.735596">253.74 ALGO</span> <br />
+          
+          
+          
+          
+            
+              
+                <a class="link link-hover" href="https://www.lofty.ai/property_deal/3878-Windermere-Rd_Memphis-TN-38128" target="_blank" title="Property page">Property page</a>
+              
+              : <span>29.170000 USD/LFTY0046</span>
+              
+              <br />
+            
+          
+          
+          
+            
+              <span class="balance text-success">Balance:</span> <span>1 LFTY0046</span><br />
+              
+              <span class="price cursor-pointer text-xs opacity-70" data-unit="LFTY0046" data-val="253.735596">253.73559600 ALGO/LFTY0046</span> <br />
+            
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+              
+
+
+
+            </div>
+          </div>
+        </div>
+      </details>
+    
+  
+    
+      <details id="f0" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
+        
+        <summary class="token item-header itemrow cursor-pointer list-none p-3 c1">
+          <span class="itemleft truncate">169.514449&nbsp;<span class="unit font-medium">ALGO</span></span>
+          <div class="icondiv itemmid">
+            <img src="https://cdn.asastats.com/icons/0t.png" alt="Algo logo" class="asaicon" data-fallback="/icons/empty.png" />
+          </div>
+          <span class="val itemright font-medium" data-val="169.514449">169.51 ALGO</span>
         </summary>
 
         <div class="item-body border-t border-base-300 p-3">
@@ -319,7 +319,7 @@
                 <div class="asa flex flex-wrap items-start justify-end gap-3">
                   <div class="swap-action-column order-2">
                     <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/0/"
+                      href="/swap/540A5D8CEC896E073F9170AF0A962503E69147CF/0/"
                       data-from="0"
                       data-label-show="Swap" data-label-hide="Hide">
                       <span class="swap-label">Swap</span>
@@ -338,14 +338,14 @@
 
 
   
-  <a class="link link-hover" href="https://allo.info/account/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M" target="_blank" title="Go to Allo"><span class="balance text-success">Balance:</span></a> 
-  <span class="val font-medium" data-val="32.947051">32.95 ALGO</span><br />
+  <a class="link link-hover" href="https://allo.info/" target="_blank" title="Go to Allo"><span class="balance text-success">Balance:</span></a> 
+  <span class="val font-medium" data-val="115.533581">115.53 ALGO</span><br />
   
     
-      <span>[Available: <span>30.37 ALGO</span>]</span> <br />
+      <span>[Available: <span>23.13 ALGO</span>]</span> <br />
     
   
-  <span class="val pricealgo text-xs opacity-70" data-val="0.079310">0.079310 USD/ALGO</span> <br />
+  <span class="val pricealgo text-xs opacity-70" data-val="0.114962">0.114962 USD/ALGO</span> <br />
   <br />
 
 
@@ -366,10 +366,10 @@
           
             <span class="val font-medium"
                 
-                data-val="3.547479">3.55 ALGO</span> <br />
+                data-val="8.890945">8.89 ALGO</span> <br />
           
           
-           <a class="link link-hover" href="https://app.tinyman.org/#/pool/P5JPLAHAOWMJCAPKPBEIO4YQQFYAAHNYCHB3CWRDJEI6Q3HXHLFQZVF77U" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-CY💀</a> <br />
+           <a class="link link-hover" href="https://app.pact.fi/your-liquidity" target="_blank" title="Go to Pact LP application">Liquidity Pact LP ALGO-EURS</a> <br />
           
           
           
@@ -377,7 +377,1466 @@
           
             
               
-                <a class="link link-hover" href="https://www.cyberskulls.app/cyber-access" target="_blank" title="CyberSkulls LP staking">CyberSkulls LP staking</a>
+                <a class="link link-hover" href="https://app.pact.fi/farms?tab=yours" target="_blank" title="Pact farm">Pact farm</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="5.584254">5.58 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/ZA42RCTLUMWUUB6SXEUNTI72LVSGV3TJIUTCGLNQF3KNOXFBMEPXNST3MA" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-USDC</a> <br />
+          
+          
+          
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="3.000000">3.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.algorai.finance/" target="_blank" title="Go to AlgoRai application">AlgoRai deposit</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="3.000000">3.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3091600769" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="2.758171">2.76 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.pact.fi/your-liquidity" target="_blank" title="Go to Pact LP application">Liquidity Pact LP ALGO-ASASTATS</a> <br />
+          
+          
+          
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="2.500000">2.50 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.silodefi.com/options" target="_blank" title="Go to Silo application">Silo position</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="2.000000">2.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://exa.market/user/VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU?tab=offers-made" target="_blank" title="Go to EXA Market application">EXA offer escrow</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="2.000000">2.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3081507202" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="2.000000">2.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3091596183" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="2.000000">2.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3091633179" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.989871">1.99 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://v1.app.folks.finance/deposit" target="_blank" title="Go to Folks Finance application">Folks v1 deposit</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.695315">1.70 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/TRCEY5UZGTATGTF5K3U42IMDT467D4EHV7S5MYJBMLMYARYJOZFATORMUM" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-ORA</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://oranges.meme/#/mainnet" target="_blank" title="Orange deposit">Orange deposit</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.500000">1.50 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3088303753" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.156961">1.16 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.folks.finance/deposit" target="_blank" title="Go to Folks application">Folks v2 deposit</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.106905">1.11 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://reti.nodely.io/validators/4" target="_blank" title="Go to Reti application">Reti Pooling</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.100000">1.10 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3091586977" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.021606">1.02 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.pact.fi/your-liquidity" target="_blank" title="Go to Pact LP application">Liquidity Pact LP ALGO-ASASTATS</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://app.pact.fi/farms?tab=yours" target="_blank" title="Pact farm">Pact farm</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.017215">1.02 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/R5Y6PRR2NEOS27HB2HGQFUMKUUMPXAYUBU4BHDXY4TCEYNSWGPOKGCV66Q" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-gALGO</a> <br />
+          
+          
+          
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.000000">1.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3081502048" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.000000">1.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3082283619" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="1.000000">1.00 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/token-streams/streams/?id=3082286083" target="_blank" title="Go to CompX application">CompX token stream</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.807000">0.81 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.compx.io/swap" target="_blank" title="Go to CompX application">CompX escrows fee</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.693481">0.69 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.pact.fi/your-liquidity" target="_blank" title="Go to Pact LP application">Liquidity Pact LP ALGO-MOOJ</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://moonjuicealgo.site/liquidity" target="_blank" title="MoonJuice frozen liquidity">MoonJuice frozen liquidity</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.672610">0.67 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/DBTNL2C7RVOKQPGNSHAHQCU2X76TSATD623W52MRI3OF5PDCSYXQHVMQKQ" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-MOOJ</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://moonjuicealgo.site/liquidity" target="_blank" title="MoonJuice frozen liquidity">MoonJuice frozen liquidity</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.587739">0.59 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/VJAF4EYCH26ZEJTUOVYH6GH77BD7DQTFBZ26PFIZD6DRAGFCW2M4H5GYEQ" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-THC</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://app.compx.io/staking-pools" target="_blank" title="CompX LP staking">CompX LP staking</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.574189">0.57 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/56LW2HRYA7F6SYCQYC27EJIJI3MWV2NZFSKIGZMCAGMCQ6AKW2JYOY4P2Q" target="_blank" title="Go to Tinyman LP application">Liquidity Tinyman LP ALGO-ASASTATS</a> <br />
+          
+          
+          
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.495000">0.50 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.algodex.com/trade/" target="_blank" title="Go to AlgoDEX application">Algodex escrows fee</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.460299">0.46 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.humble.sh/pool" target="_blank" title="Go to Humble LP application">Liquidity Humble LP ALGO-DHARM</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://app.humble.sh/farm" target="_blank" title="Humble farm">Humble farm</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.335665">0.34 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/BWYH4H4BAKCYUFSG54P7GVGPGWKVZMCWZG7VT6MSCJYDJV564M7FFTLD6A" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-Jimmy</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://app.cometa.farm/farm" target="_blank" title="Cometa farm">Cometa farm</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.303000">0.30 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://swap.exa.market/" target="_blank" title="Go to EXA Market application">EXA Swap fee</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.303000">0.30 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://exa.market/" target="_blank" title="Go to EXA Market application">EXA offer fee</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.300345">0.30 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.humble.sh/pool" target="_blank" title="Go to Humble LP application">Liquidity Humble LP ALGO-SVANSY</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://app.humble.sh/farm" target="_blank" title="Humble farm">Humble farm</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.279099">0.28 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/YUVY2CTGNELUWM7XKKXTYKD27WLNPYKQQD4STLB3XJY5TPXYKURAPXLLPM" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-XVX</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://app.gainify.xyz/farms" target="_blank" title="Gainify farm">Gainify farm</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.223476">0.22 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.pact.fi/your-liquidity" target="_blank" title="Go to Pact LP application">Liquidity Pact LP ALGO-COMPX</a> <br />
+          
+          
+          
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.200913">0.20 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://octorand.com/collection/prime/gen2/7682" target="_blank" title="Go to Octorand application">Octorand vault</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.194000">0.19 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://support.perawallet.app/en/article/transacting-with-asset-inbox-1fbh60y/" target="_blank" title="Go to Pera application">Pera Asset Inbox</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.100000">0.10 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://octorand.com/collection/prime/gen2/3747" target="_blank" title="Go to Octorand application">Octorand vault</a> <br />
+          
+          
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.072421">0.07 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/XSCSYQK6W2WXXWR5YH4NJ5UZQGERIC7ZS2734N6QA3YEHMFPG3GDXSQZFU" target="_blank" title="Go to Tinyman LP application">Liquidity Tinyman LP ALGO-META</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://app.cometa.farm/farm" target="_blank" title="Cometa farm">Cometa farm</a>
+              
+              
+              
+              <br />
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.036582">0.04 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.tinyman.org/#/pool/KX6S647W6BEN6XHEJVMXK3UYLVNGT2Q6PHQSF5AA2JSSDFSOX7R4MESXRY" target="_blank" title="Go to Tinyman LP application">Liquidity Tinyman LP ALGO-YLDY</a> <br />
+          
+          
+          
+            
+          
+          
+          
+        </div>
+        
+      </div>
+      <br />
+    
+  
+
+
+
+              
+                
+
+
+
+
+  
+  
+    
+      <div class="asa flex flex-wrap items-start justify-end gap-3">
+        
+        <div class="asar order-2 text-right">
+          
+          
+            <span class="val font-medium"
+                
+                data-val="0.020806">0.02 ALGO</span> <br />
+          
+          
+           <a class="link link-hover" href="https://app.humble.sh/pool" target="_blank" title="Go to Humble LP application">Liquidity Humble LP ALGO-SMILE</a> <br />
+          
+          
+          
+            
+          
+            
+              
+                <a class="link link-hover" href="https://app.humble.sh/farm" target="_blank" title="Humble farm">Humble farm</a>
               
               
               
@@ -428,1246 +1887,35 @@
     
   
     
-      <details id="f393537671" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c1">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/393537671t.png" alt="ASA Stats Token logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
+      <details id="f246516580" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
+        
+        <summary class="token item-header itemrow cursor-pointer list-none p-3 c2">
+          <span class="itemleft truncate">0.104389&nbsp;<span class="unit font-medium">GOLD$</span></span>
+          <div class="icondiv itemmid">
+            <img src="https://cdn.asastats.com/icons/246516580t.png" alt="Meld Gold (g) logo" class="asaicon" data-fallback="/icons/empty.png" />
           </div>
-          <span class="min-w-0 flex-1 truncate">166,094.126991&nbsp;<span class="unit font-medium">ASASTATS</span></span>
-          <span class="val flex-none font-medium" data-val="27.051669">27.05 ALGO</span>
+          <span class="val itemright font-medium" data-val="124.670546">124.67 ALGO</span>
         </summary>
 
         <div class="item-body border-t border-base-300 p-3">
-          <div id="393537671" class="fitem grid gap-4 md:grid-cols-4">
+          <div id="246516580" class="fitem grid gap-4 md:grid-cols-4">
             
 
 
 <div class="asal text-left text-sm">
-  <span class="title font-medium">ASA Stats Token</span>
+  <span class="title font-medium">Meld Gold (g)</span>
   <dl class="mt-1 space-y-1 text-xs text-base-content/70">
     <div>
-      <a class="link link-hover" href="https://allo.info/asset/393537671" target="_blank" title="Show in Allo">393537671</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
+      <a class="link link-hover" href="https://allo.info/asset/246516580" target="_blank" title="Show in Allo">246516580</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
     </div>
-    <div>Unit name: ASASTATS</div>
-    <div>Total supply: 1,000,000,000</div>
-    <div>Decimals: 6</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="0.000163" data-unit="ASASTATS" title="Click to show the reciprocal price">0.000163 ALGO</span></div>
-    
-    
-      <div class="truncate">URL: <a class="link link-hover" href="https://www.asastats.com" target="_blank" rel="noopener" title="Official URL">https://www.asastats.com</a></div>
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/393537671/"
-                      data-from="393537671"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-393537671" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="393537671"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-1-393537671"
-                data-val="27.051669">27.05 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>166,094.126991 ASASTATS</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="ASASTATS" data-val="0.00016286950953699783">0.00016287 ALGO/ASASTATS</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-1-393537671" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.pact.fi/swap?pair=-ALGO:0/ASA+STATS+TOKEN:393537671(30,CONSTv201)" target="_blank" title="Pact swap">Pact swap</a> <span class="val font-medium" data-val="26.132750">26.13 ALGO</span> <br />
-                  
-                
-                
-                  <span>160,452.069121 ASASTATS</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="ASASTATS" data-val="0.00016286951077142413">6,139.88459389 ASASTATS/ALGO</span> <br />
-              </div>
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=393537671&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="0.918919">0.92 ALGO</span> <br />
-                  
-                
-                
-                  <span>5,642.057870 ASASTATS</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="ASASTATS" data-val="0.00016286947443167578">6,139.88596383 ASASTATS/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/393537671/" target="_blank" title="ASASTATS-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/393537671" target="_blank" title="Go to Haystack Screener ASASTATS page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://www.livecoinwatch.com/price/ASAStats-ASASTATS" target="_blank" title="Go to Live Coin Watch ASASTATS page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/livecoinwatch.png" alt="Live Coin Watch logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/uxojx6njdglj3kalt3jygggxfpxjikmwjztxslb2kavy5o7wjhpa2b3hje" target="_blank" title="Go to DEX Screener ASASTATS page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
-  </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
-    
-      <details id="f1141259202" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c2">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/1141259202t.png" alt="CYBER logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">498.7641&nbsp;<span class="unit font-medium">CY💀</span></span>
-          <span class="val flex-none font-medium" data-val="9.533333">9.53 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="1141259202" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">CYBER</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/1141259202" target="_blank" title="Show in Allo">1141259202</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: CY💀</div>
-    <div>Total supply: 5,000,000</div>
-    <div>Decimals: 4</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="0.019248" data-unit="CY💀" title="Click to show the reciprocal price">0.019248 ALGO</span></div>
-    
-    
-      <div class="truncate">URL: <a class="link link-hover" href="https://www.cyberskulls.app/" target="_blank" rel="noopener" title="Official URL">https://www.cyberskulls.app/</a></div>
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/1141259202/"
-                      data-from="1141259202"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-1141259202" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="1141259202"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-1-1141259202"
-                data-val="4.132371">4.13 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>216.2148 CY💀</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="CY💀" data-val="0.01911234106083395">0.01911234 ALGO/CY💀</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-1-1141259202" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=1141259202&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="2.685058">2.69 ALGO</span> <br />
-                  
-                
-                
-                  <span>140.4882 CY💀</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="CY💀" data-val="0.019112338260437532">52.32222172 CY💀/ALGO</span> <br />
-              </div>
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=1141259202&amp;asset_out=1134696561" target="_blank" title="Tinyman2 xALGO swap">Tinyman2 xALGO swap</a> <span class="val font-medium" data-val="1.447313">1.45 ALGO</span> <br />
-                  
-                
-                
-                  <span>75.7266 CY💀</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="CY💀" data-val="0.019112346256137207">52.32219983 CY💀/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-added-2-1141259202"
-                data-val="3.270717">3.27 ALGO</span> <br />
-          
-          
-           <a class="link link-hover" href="https://app.tinyman.org/#/pool/P5JPLAHAOWMJCAPKPBEIO4YQQFYAAHNYCHB3CWRDJEI6Q3HXHLFQZVF77U" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP ALGO-CY💀</a> <br />
-          
-          
-          
-            
-          
-            
-              
-                <a class="link link-hover" href="https://www.cyberskulls.app/cyber-access" target="_blank" title="CyberSkulls LP staking">CyberSkulls LP staking</a>
-              
-              
-              
-              <br />
-            
-          
-          
-          
-            
-              <span>Added: 171.1184 CY💀</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-added-2-1141259202" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=1141259202&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="1.838429">1.84 ALGO</span> <br />
-                  
-                
-                
-                  <span>96.1835 CY💀</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="CY💀" data-val="0.019113766914283636">52.31831091 CY💀/ALGO</span> <br />
-              </div>
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=1141259202&amp;asset_out=1134696561" target="_blank" title="Tinyman2 xALGO swap">Tinyman2 xALGO swap</a> <span class="val font-medium" data-val="1.432289">1.43 ALGO</span> <br />
-                  
-                
-                
-                  <span>74.9349 CY💀</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="CY💀" data-val="0.019113777425471976">52.31828213 CY💀/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-staked-3-1141259202"
-                data-val="2.105948">2.11 ALGO</span> <br />
-          
-          
-           <a class="link link-hover" href="https://www.cyberskulls.app/cyber-access" target="_blank" title="Go to CyberSkulls application">CyberSkulls stake</a> <br />
-          
-          
-          
-          
-          
-            
-              <span>Staked: 110.1686 CY💀</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-staked-3-1141259202" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=1141259202&amp;asset_out=1134696561" target="_blank" title="Tinyman2 xALGO swap">Tinyman2 xALGO swap</a> <span class="val font-medium" data-val="1.412242">1.41 ALGO</span> <br />
-                  
-                
-                
-                  <span>73.8787 CY💀</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="CY💀" data-val="0.019115685576492278">52.31305966 CY💀/ALGO</span> <br />
-              </div>
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=1141259202&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="0.693706">0.69 ALGO</span> <br />
-                  
-                
-                
-                  <span>36.2899 CY💀</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="CY💀" data-val="0.019115676813658895">52.31308364 CY💀/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-amount-4-1141259202"
-                data-val="0.024297">0.02 ALGO</span> <br />
-          
-          
-           <a class="link link-hover" href="https://www.cyberskulls.app/cyber-access" target="_blank" title="Go to CyberSkulls application">CyberSkulls reward</a> <br />
-          
-          
-          
-          
-          
-            
-              <span>Amount: 1.2623 CY💀</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-amount-4-1141259202" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=1141259202&amp;asset_out=1134696561" target="_blank" title="Tinyman2 xALGO swap">Tinyman2 xALGO swap</a> <span class="val font-medium" data-val="0.024297">0.02 ALGO</span> <br />
-                  
-                
-                
-                  <span>1.2623 CY💀</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="CY💀" data-val="0.01924819773429454">51.95291600 CY💀/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/1141259202/" target="_blank" title="CY💀-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/1141259202" target="_blank" title="Go to Haystack Screener CY💀 page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/p5jplahaowmjcapkpbeio4yqqfyaahnychb3cwrdjei6q3hxhlfqzvf77u" target="_blank" title="Go to DEX Screener CY💀 page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
-  </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
-    
-      <details id="f2342621554" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c3">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/2342621554t.png" alt="Infinite Potential Token  logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">631.5863592&nbsp;<span class="unit font-medium">IPT</span></span>
-          <span class="val flex-none font-medium" data-val="4.767061">4.77 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="2342621554" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">Infinite Potential Token </span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/2342621554" target="_blank" title="Show in Allo">2342621554</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: IPT</div>
-    <div>Total supply: 10,000,000</div>
-    <div>Decimals: 7</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="0.007548" data-unit="IPT" title="Click to show the reciprocal price">0.007548 ALGO</span></div>
-    
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/2342621554/"
-                      data-from="2342621554"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-2342621554" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="2342621554"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-added-1-2342621554"
-                data-val="2.346712">2.35 ALGO</span> <br />
-          
-          
-           <a class="link link-hover" href="https://app.tinyman.org/#/pool/LLTBHDCRZBVAKWNVLQR4VC7BRMBELNKQLIO2ER5QBUELORKUZ2FLG7XYE4" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP IPT-Nugget</a> <br />
-          
-          
-          
-            
-          
-            
-              
-                <a class="link link-hover" href="https://compx.io/app/staking" target="_blank" title="CompX LP staking">CompX LP staking</a>
-              
-              
-              
-              <br />
-            
-          
-          
-          
-            
-              <span>Added: 310.9228927 IPT</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-added-1-2342621554" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=2342621554&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="2.346712">2.35 ALGO</span> <br />
-                  
-                
-                
-                  <span>310.9228927 IPT</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="IPT" data-val="0.007547569043956731">132.49299134 IPT/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-staked-2-2342621554"
-                data-val="1.698261">1.70 ALGO</span> <br />
-          
-          
-           <a class="link link-hover" href="https://compx.io/app/staking/pool?poolId=3566482935" target="_blank" title="Go to CompX application">CompX staking</a> <br />
-          
-          
-          
-          
-          
-            
-              <span>Staked: 225 IPT</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-staked-2-2342621554" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=2342621554&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="1.698261">1.70 ALGO</span> <br />
-                  
-                
-                
-                  <span>225 IPT</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="IPT" data-val="0.007547826666666667">132.48846909 IPT/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-3-2342621554"
-                data-val="0.722088">0.72 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>95.6634665 IPT</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="IPT" data-val="0.007548210685005858">0.00754821 ALGO/IPT</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-3-2342621554" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=2342621554&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="0.722088">0.72 ALGO</span> <br />
-                  
-                
-                
-                  <span>95.6634665 IPT</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="IPT" data-val="0.007548210685005858">132.48172868 IPT/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/2342621554/" target="_blank" title="IPT-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/2342621554" target="_blank" title="Go to Haystack Screener IPT page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/chqtyzwl4xhh4jrekwvholggupndmvmhxaonq72rvgl7sk2n3xwt26jkgi" target="_blank" title="Go to DEX Screener IPT page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
-  </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
-    
-      <details id="f3081853135" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c4">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/3081853135t.png" alt="Magnet logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">1.90811&nbsp;<span class="unit font-medium">U</span></span>
-          <span class="val flex-none font-medium" data-val="3.063118">3.06 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="3081853135" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">Magnet</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/3081853135" target="_blank" title="Show in Allo">3081853135</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: U</div>
-    <div>Total supply: 750,000</div>
-    <div>Decimals: 5</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="1.605323" data-unit="U" title="Click to show the reciprocal price">1.605323 ALGO</span></div>
-    
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/3081853135/"
-                      data-from="3081853135"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-3081853135" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="3081853135"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-deposited-1-3081853135"
-                data-val="2.407968">2.41 ALGO</span> <br />
-          
-          
-           <a class="link link-hover" href="https://compx.io/app/markets/details?id=3607827540" target="_blank" title="Go to CompX application">CompX deposit</a> <br />
-          
-          
-          
-          
-          
-            
-              <span>Deposited: 1.50000 U</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-deposited-1-3081853135" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=3081853135&amp;asset_out=2537013734" target="_blank" title="Tinyman2 TALGO swap">Tinyman2 TALGO swap</a> <span class="val font-medium" data-val="2.407968">2.41 ALGO</span> <br />
-                  
-                
-                
-                  <span>1.50000 U</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="U" data-val="1.6053119999999999">0.62293187 U/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-2-3081853135"
-                data-val="0.971402">0.97 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>0.60511 U</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="U" data-val="1.6053312620845794">1.60533126 ALGO/U</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-2-3081853135" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=3081853135&amp;asset_out=2537013734" target="_blank" title="Tinyman2 TALGO swap">Tinyman2 TALGO swap</a> <span class="val font-medium" data-val="0.971402">0.97 ALGO</span> <br />
-                  
-                
-                
-                  <span>0.60511 U</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="U" data-val="1.6053312620845794">0.62292439 U/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="text-error">(<span class="val text-error tdist cursor-pointer"
-                data-distid="d-borrowed-3-3081853135"
-                data-val="-0.316252">0.32 ALGO</span>)</span> <br />
-          
-          
-           <a class="link link-hover" href="https://compx.io/app/markets/details?id=3607827540" target="_blank" title="Go to CompX application">CompX borrow</a> <br />
-          
-          
-          
-          
-          
-            
-              <span>Borrowed:</span> (<span class="text-error">0.19700 U</span><span>)</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-borrowed-3-3081853135" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=3081853135&amp;asset_out=2537013734" target="_blank" title="Tinyman2 TALGO swap">Tinyman2 TALGO swap</a> <span class="val font-medium" data-val="0.316252">0.32 ALGO</span> <br />
-                  
-                
-                
-                  <span>0.19700 U</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="U" data-val="1.6053401015228426">0.62292096 U/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/3081853135/" target="_blank" title="U-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/3081853135" target="_blank" title="Go to Haystack Screener U page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/35i7tspbsycep276dhlzdtop3w77gy76volbcakwicvfjuotqamrr6qza4" target="_blank" title="Go to DEX Screener U page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
-  </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
-    
-      <details id="f2699078351" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c5">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/2699078351t.png" alt="iLC Nugget logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">317,328&nbsp;<span class="unit font-medium">Nugget</span></span>
-          <span class="val flex-none font-medium" data-val="2.894056">2.89 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="2699078351" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">iLC Nugget</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/2699078351" target="_blank" title="Show in Allo">2699078351</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: Nugget</div>
+    <div>Unit name: GOLD$</div>
     <div>Total supply: 100,000,000,000</div>
-    <div>Decimals: 0</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="0.000009" data-unit="Nugget" title="Click to show the reciprocal price">0.000009 ALGO</span></div>
-    
-    
-      <div class="truncate">URL: <a class="link link-hover" href="https://www.ilovechicken.co.uk" target="_blank" rel="noopener" title="Official URL">www.ilovechicken.co.uk</a></div>
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/2699078351/"
-                      data-from="2699078351"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-2699078351" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="2699078351"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-added-1-2699078351"
-                data-val="2.446183">2.45 ALGO</span> <br />
-          
-          
-           <a class="link link-hover" href="https://app.tinyman.org/#/pool/LLTBHDCRZBVAKWNVLQR4VC7BRMBELNKQLIO2ER5QBUELORKUZ2FLG7XYE4" target="_blank" title="Go to Tinyman2 LP application">Liquidity Tinyman2 LP IPT-Nugget</a> <br />
-          
-          
-          
-            
-          
-            
-              
-                <a class="link link-hover" href="https://compx.io/app/staking" target="_blank" title="CompX LP staking">CompX LP staking</a>
-              
-              
-              
-              <br />
-            
-          
-          
-          
-            
-              <span>Added: 268,352 Nugget</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-added-1-2699078351" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=2699078351&amp;asset_out=2200000000" target="_blank" title="Tinyman2 TINY swap">Tinyman2 TINY swap</a> <span class="val font-medium" data-val="2.446183">2.45 ALGO</span> <br />
-                  
-                
-                
-                  <span>268,352 Nugget</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="Nugget" data-val="0.000009115575810875269">109,702.34034003 Nugget/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-2-2699078351"
-                data-val="0.447873">0.45 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>48,976 Nugget</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="Nugget" data-val="0.000009144744364586737">0.00000914 ALGO/Nugget</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-2-2699078351" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=2699078351&amp;asset_out=2200000000" target="_blank" title="Tinyman2 TINY swap">Tinyman2 TINY swap</a> <span class="val font-medium" data-val="0.447873">0.45 ALGO</span> <br />
-                  
-                
-                
-                  <span>48,976 Nugget</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="Nugget" data-val="0.000009144744364586737">109,352.42803205 Nugget/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/2699078351/" target="_blank" title="Nugget-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/2699078351" target="_blank" title="Go to Haystack Screener Nugget page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/vo4z5wkfzr3lgtekd32v7jmfaeoormnyxkfvzu23x2lyh7jinuulk7mwma" target="_blank" title="Go to DEX Screener Nugget page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
-  </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
-    
-      <details id="f31566704" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c6">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/31566704t.png" alt="USDC logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">0.125022&nbsp;<span class="unit font-medium">USDC</span></span>
-          <span class="val flex-none font-medium" data-val="1.578277">1.58 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="31566704" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">USDC</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/31566704" target="_blank" title="Show in Allo">31566704</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: USDC</div>
-    <div>Total supply: 18,446,744,073,709</div>
     <div>Decimals: 6</div>
     
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="12.608802" data-unit="USDC" title="Click to show the reciprocal price">12.608802 ALGO</span></div>
+      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="1195.905519" data-unit="GOLD$" title="Click to show the reciprocal price">1,195.905519 ALGO</span></div>
     
     
-      <div class="truncate">URL: <a class="link link-hover" href="https://www.centre.io/usdc" target="_blank" rel="noopener" title="Official URL">https://www.centre.io/usdc</a></div>
+      <div class="truncate">URL: <a class="link link-hover" href="https://meld.gold" target="_blank" rel="noopener" title="Official URL">https://meld.gold</a></div>
     
   </dl>
 </div>
@@ -1678,14 +1926,14 @@
                 <div class="asa flex flex-wrap items-start justify-end gap-3">
                   <div class="swap-action-column order-2">
                     <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/31566704/"
-                      data-from="31566704"
+                      href="/swap/540A5D8CEC896E073F9170AF0A962503E69147CF/246516580/"
+                      data-from="246516580"
                       data-label-show="Swap" data-label-hide="Hide">
                       <span class="swap-label">Swap</span>
                     </a>
                   </div>
-                  <div id="swap-panel-31566704" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="31566704"></div>
+                  <div id="swap-panel-246516580" class="order-1 hidden flex-1 text-right">
+                    <div class="id-swap-panel" data-from="246516580"></div>
                   </div>
                 </div>
               </div>
@@ -1705,36 +1953,64 @@
           
           
             <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-deposited-1-31566704"
-                data-val="1.009920">1.01 ALGO</span> <br />
+                data-distid="d-deposited-1-246516580"
+                data-val="119.424139">119.42 ALGO</span> <br />
           
           
-           <a class="link link-hover" href="https://compx.io/app/markets/details?id=3491050310" target="_blank" title="Go to CompX application">CompX deposit</a> <br />
+           <a class="link link-hover" href="https://app.algorai.finance/" target="_blank" title="Go to AlgoRai application">AlgoRai deposit</a> <br />
           
           
           
           
           
             
-              <span>Deposited: 0.080000 USDC</span> <br />
+              <span>Deposited: 0.100000 GOLD$</span> <br />
             
           
         </div>
         
-          <div id="d-deposited-1-31566704" class="order-1 hidden flex-1 rounded-box p-2 text-right">
+          <div id="d-deposited-1-246516580" class="order-1 hidden flex-1 rounded-box p-2 text-right">
             
               <div class="asa mb-2">
                 
                   
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=31566704&amp;asset_out=2537013734" target="_blank" title="Tinyman2 TALGO swap">Tinyman2 TALGO swap</a> <span class="val font-medium" data-val="1.009920">1.01 ALGO</span> <br />
+                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=246516580&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="98.684935">98.68 ALGO</span> <br />
                   
                 
                 
-                  <span>0.080000 USDC</span> <br />
+                  <span>0.082634 GOLD$</span> <br />
                 
                 
                 
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="USDC" data-val="12.623999999999999">0.07921420 USDC/ALGO</span> <br />
+                <span class="price cursor-pointer text-xs opacity-70" data-unit="GOLD$" data-val="1194.241292930271">0.00083735 GOLD$/ALGO</span> <br />
+              </div>
+            
+              <div class="asa mb-2">
+                
+                  
+                    <a class="link link-hover" href="https://app.folks.finance/" target="_blank" title="Pact swap (Folks)">Pact swap (Folks)</a> <span class="val font-medium" data-val="10.715590">10.72 ALGO</span> <br />
+                  
+                
+                
+                  <span>0.008972 GOLD$</span> <br />
+                
+                
+                
+                <span class="price cursor-pointer text-xs opacity-70" data-unit="GOLD$" data-val="1194.3368256798929">0.00083728 GOLD$/ALGO</span> <br />
+              </div>
+            
+              <div class="asa mb-2">
+                
+                  
+                    <a class="link link-hover" href="https://app.folks.finance/" target="_blank" title="Tinyman2 swap (Folks)">Tinyman2 swap (Folks)</a> <span class="val font-medium" data-val="10.023614">10.02 ALGO</span> <br />
+                  
+                
+                
+                  <span>0.008393 GOLD$</span> <br />
+                
+                
+                
+                <span class="price cursor-pointer text-xs opacity-70" data-unit="GOLD$" data-val="1194.2826164661028">0.00083732 GOLD$/ALGO</span> <br />
               </div>
             
           </div>
@@ -1761,8 +2037,8 @@
           
           
             <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-2-31566704"
-                data-val="0.568358">0.57 ALGO</span> <br />
+                data-distid="d-balance-2-246516580"
+                data-val="5.246407">5.25 ALGO</span> <br />
           
           
           
@@ -1770,27 +2046,41 @@
           
           
             
-              <span class="balance text-success">Balance:</span> <span>0.045022 USDC</span><br />
+              <span class="balance text-success">Balance:</span> <span>0.004389 GOLD$</span><br />
               
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="USDC" data-val="12.624006041490828">12.62400604 ALGO/USDC</span> <br />
+              <span class="price cursor-pointer text-xs opacity-70" data-unit="GOLD$" data-val="1195.3536113009798">1,195.35361130 ALGO/GOLD$</span> <br />
             
           
         </div>
         
-          <div id="d-balance-2-31566704" class="order-1 hidden flex-1 rounded-box p-2 text-right">
+          <div id="d-balance-2-246516580" class="order-1 hidden flex-1 rounded-box p-2 text-right">
             
               <div class="asa mb-2">
                 
                   
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=31566704&amp;asset_out=2537013734" target="_blank" title="Tinyman2 TALGO swap">Tinyman2 TALGO swap</a> <span class="val font-medium" data-val="0.568358">0.57 ALGO</span> <br />
+                    <a class="link link-hover" href="https://app.folks.finance/" target="_blank" title="Pact swap (Folks)">Pact swap (Folks)</a> <span class="val font-medium" data-val="4.354673">4.35 ALGO</span> <br />
                   
                 
                 
-                  <span>0.045022 USDC</span> <br />
+                  <span>0.003643 GOLD$</span> <br />
                 
                 
                 
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="USDC" data-val="12.624006041490828">0.07921416 USDC/ALGO</span> <br />
+                <span class="price cursor-pointer text-xs opacity-70" data-unit="GOLD$" data-val="1195.3535547625584">0.00083657 GOLD$/ALGO</span> <br />
+              </div>
+            
+              <div class="asa mb-2">
+                
+                  
+                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=246516580&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="0.891734">0.89 ALGO</span> <br />
+                  
+                
+                
+                  <span>0.000746 GOLD$</span> <br />
+                
+                
+                
+                <span class="price cursor-pointer text-xs opacity-70" data-unit="GOLD$" data-val="1195.3538873994637">0.00083657 GOLD$/ALGO</span> <br />
               </div>
             
           </div>
@@ -1808,154 +2098,15 @@
 
   <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
   
-    <a href="https://vestige.fi/asset/31566704/" target="_blank" title="USDC-ALGO Vestige page">
+    <a href="https://vestige.fi/asset/246516580/" target="_blank" title="GOLD$-ALGO Vestige page">
       <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
     </a>
   
-    <a href="https://hay.app/asset/31566704" target="_blank" title="Go to Haystack Screener USDC page">
+    <a href="https://hay.app/asset/246516580" target="_blank" title="Go to Haystack Screener GOLD$ page">
       <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
     </a>
   
-    <a href="https://dexscreener.com/algorand/2pifzw53rhcsfsymcfubw4xocxomb7xoyqsq6kgt3kvgjtl4hm6cozrnmm" target="_blank" title="Go to DEX Screener USDC page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
-    <a href="https://www.livecoinwatch.com/price/USDC-USDC" target="_blank" title="Go to Live Coin Watch USDC page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/livecoinwatch.png" alt="Live Coin Watch logo" />
-    </a>
-  
-  </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
-    
-      <details id="f3178895177" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c7">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/3178895177t.png" alt="LiquiHog logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">0.470865&nbsp;<span class="unit font-medium">HOG</span></span>
-          <span class="val flex-none font-medium" data-val="1.280804">1.28 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="3178895177" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">LiquiHog</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/3178895177" target="_blank" title="Show in Allo">3178895177</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: HOG</div>
-    <div>Total supply: 1,000,000</div>
-    <div>Decimals: 6</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="2.719522" data-unit="HOG" title="Click to show the reciprocal price">2.719522 ALGO</span></div>
-    
-    
-      <div class="truncate">URL: <a class="link link-hover" href="https://liquihog.com/" target="_blank" rel="noopener" title="Official URL">https://liquihog.com/</a></div>
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/3178895177/"
-                      data-from="3178895177"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-3178895177" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="3178895177"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-1-3178895177"
-                data-val="1.280804">1.28 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>0.470865 HOG</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="HOG" data-val="2.7201087360496112">2.72010874 ALGO/HOG</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-1-3178895177" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.liquihog.com/" target="_blank" title="STAMM FOLKS swap 0.3%">STAMM FOLKS swap 0.3%</a> <span class="val font-medium" data-val="1.280804">1.28 ALGO</span> <br />
-                  
-                
-                
-                  <span>0.470865 HOG</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="HOG" data-val="2.7201087360496112">0.36763236 HOG/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/3178895177/" target="_blank" title="HOG-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/3178895177" target="_blank" title="Go to Haystack Screener HOG page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/anhl6op7jd6rw53jikgbu7puvnerj3ki2kzgmdgndtcezd4w3zveuez56m" target="_blank" title="Go to DEX Screener HOG page">
+    <a href="https://dexscreener.com/algorand/djqqxvy2oz5sder6znxazve6f7enkp7r3raowycw5edfdnxowwfl5xrccq" target="_blank" title="Go to DEX Screener GOLD$ page">
       <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
     </a>
   
@@ -1969,496 +2120,38 @@
       </details>
     
   
-    
-      <details id="f2726252423" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3 c8">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/2726252423t.png" alt="Alpha Arcade logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">16.284173&nbsp;<span class="unit font-medium">ALPHA</span></span>
-          <span class="val flex-none font-medium" data-val="1.157616">1.16 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="2726252423" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">Alpha Arcade</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/2726252423" target="_blank" title="Show in Allo">2726252423</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: ALPHA</div>
-    <div>Total supply: 1,000,000,000</div>
-    <div>Decimals: 6</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="0.071089" data-unit="ALPHA" title="Click to show the reciprocal price">0.071089 ALGO</span></div>
-    
-    
-      <div class="truncate">URL: <a class="link link-hover" href="https://alphaarcade.com" target="_blank" rel="noopener" title="Official URL">https://alphaarcade.com</a></div>
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/2726252423/"
-                      data-from="2726252423"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-2726252423" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="2726252423"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-staked-1-2726252423"
-                data-val="0.710884">0.71 ALGO</span> <br />
-          
-          
-           <a class="link link-hover" href="https://www.alphaarcade.com/stake" target="_blank" title="Go to AlphaArcade application">Alpha Arcade stake</a> <br />
-          
-          
-          
-          
-          
-            
-              <span>Staked: 10 ALPHA</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-staked-1-2726252423" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=2726252423&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="0.710884">0.71 ALGO</span> <br />
-                  
-                
-                
-                  <span>10 ALPHA</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="ALPHA" data-val="0.0710884">14.06699265 ALPHA/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-2-2726252423"
-                data-val="0.446733">0.45 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>6.284173 ALPHA</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="ALPHA" data-val="0.07108859033638953">0.07108859 ALGO/ALPHA</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-2-2726252423" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=2726252423&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="0.446733">0.45 ALGO</span> <br />
-                  
-                
-                
-                  <span>6.284173 ALPHA</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="ALPHA" data-val="0.07108859033638953">14.06695498 ALPHA/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/2726252423/" target="_blank" title="ALPHA-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/2726252423" target="_blank" title="Go to Haystack Screener ALPHA page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/ir6b7djttxwwwt63zxu2v5dqtvffkgftbvggyunvhfuonwwpqeyl3qkgqq" target="_blank" title="Go to DEX Screener ALPHA page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
   </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
-    
-      <details id="f1265975021" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/1265975021t.png" alt="NIKO logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">4,186.279598&nbsp;<span class="unit font-medium">NIKO</span></span>
-          <span class="val flex-none font-medium" data-val="0.356380">0.36 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="1265975021" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">NIKO</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/1265975021" target="_blank" title="Show in Allo">1265975021</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: NIKO</div>
-    <div>Total supply: 3,141,592,653</div>
-    <div>Decimals: 6</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="0.000085" data-unit="NIKO" title="Click to show the reciprocal price">0.000085 ALGO</span></div>
-    
-    
-      <div class="truncate">URL: <a class="link link-hover" href="https://rxelms.com" target="_blank" rel="noopener" title="Official URL">rxelms.com</a></div>
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/1265975021/"
-                      data-from="1265975021"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-1265975021" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="1265975021"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-1-1265975021"
-                data-val="0.356380">0.36 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>4,186.279598 NIKO</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="NIKO" data-val="0.00008513048200847859">0.00008513 ALGO/NIKO</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-1-1265975021" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=1265975021&amp;asset_out=0" target="_blank" title="Tinyman2 swap">Tinyman2 swap</a> <span class="val font-medium" data-val="0.356380">0.36 ALGO</span> <br />
-                  
-                
-                
-                  <span>4,186.279598 NIKO</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="NIKO" data-val="0.00008513048200847859">11,746.67376957 NIKO/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/1265975021/" target="_blank" title="NIKO-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/1265975021" target="_blank" title="Go to Haystack Screener NIKO page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/7imfeqhiz4vkbey2y4qfjqu7iq6ztbejk5vevv3zphdpa4mh6ufrfrk5sq" target="_blank" title="Go to DEX Screener NIKO page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
-  </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
-    
-      <details id="f287867876" class="fitem group rounded-box border border-base-300 bg-base-100">
-        <summary class="token item-header flex cursor-pointer list-none items-center gap-3 p-3">
-          <div class="icondiv flex-none">
-            <img src="https://cdn.asastats.com/icons/287867876t.png" alt="Opulous logo" class="asaicon h-8 w-8 rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-          </div>
-          <span class="min-w-0 flex-1 truncate">158.7028093553&nbsp;<span class="unit font-medium">OPUL</span></span>
-          <span class="val flex-none font-medium" data-val="0.061309">0.06 ALGO</span>
-        </summary>
-
-        <div class="item-body border-t border-base-300 p-3">
-          <div id="287867876" class="fitem grid gap-4 md:grid-cols-4">
-            
-
-
-<div class="asal text-left text-sm">
-  <span class="title font-medium">Opulous</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
-      <a class="link link-hover" href="https://allo.info/asset/287867876" target="_blank" title="Show in Allo">287867876</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-    </div>
-    <div>Unit name: OPUL</div>
-    <div>Total supply: 500,000,000</div>
-    <div>Decimals: 10</div>
-    
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="0.000386" data-unit="OPUL" title="Click to show the reciprocal price">0.000386 ALGO</span></div>
-    
-    
-      <div class="truncate">URL: <a class="link link-hover" href="https://opulous.org/" target="_blank" rel="noopener" title="Official URL">https://opulous.org/</a></div>
-    
-  </dl>
-</div>
-
-            <div class="asar md:col-span-3 md:text-right">
-              
-              <div class="swap-asa-entry">
-                <div class="asa flex flex-wrap items-start justify-end gap-3">
-                  <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
-                      href="/swap/OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M/287867876/"
-                      data-from="287867876"
-                      data-label-show="Swap" data-label-hide="Hide">
-                      <span class="swap-label">Swap</span>
-                    </a>
-                  </div>
-                  <div id="swap-panel-287867876" class="order-1 hidden flex-1 text-right">
-                    <div class="id-swap-panel" data-from="287867876"></div>
-                  </div>
-                </div>
-              </div>
-              
-              
-                
-
-
-
-
-  
-  
-    
-      <div class="asa flex flex-wrap items-start justify-end gap-3">
-        
-        <div class="asar order-2 text-right">
-          
-          
-            <span class="val font-medium tdist cursor-pointer"
-                data-distid="d-balance-1-287867876"
-                data-val="0.061309">0.06 ALGO</span> <br />
-          
-          
-          
-          
-          
-          
-            
-              <span class="balance text-success">Balance:</span> <span>158.7028093553 OPUL</span><br />
-              
-              <span class="price cursor-pointer text-xs opacity-70" data-unit="OPUL" data-val="0.00038631326218518854">0.00038631 ALGO/OPUL</span> <br />
-            
-          
-        </div>
-        
-          <div id="d-balance-1-287867876" class="order-1 hidden flex-1 rounded-box p-2 text-right">
-            
-              <div class="asa mb-2">
-                
-                  
-                    <a class="link link-hover" href="https://app.tinyman.org/#/swap?asset_in=287867876&amp;asset_out=0" target="_blank" title="Tinyman swap">Tinyman swap</a> <span class="val font-medium" data-val="0.061309">0.06 ALGO</span> <br />
-                  
-                
-                
-                  <span>158.7028093553 OPUL</span> <br />
-                
-                
-                
-                <span class="price cursor-pointer text-xs opacity-70" data-unit="OPUL" data-val="0.00038631326218518854">2,588.57279282 OPUL/ALGO</span> <br />
-              </div>
-            
-          </div>
-        
-      </div>
-      <br />
-    
-  
-
-
-
-              
-              
-
-
-  <div class="mt-3 flex flex-wrap items-center justify-end gap-3">
-  
-    <a href="https://vestige.fi/asset/287867876/" target="_blank" title="OPUL-ALGO Vestige page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/vestige.png" alt="Vestige logo" />
-    </a>
-  
-    <a href="https://hay.app/asset/287867876" target="_blank" title="Go to Haystack Screener OPUL page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/haystack.png" alt="Haystack logo" />
-    </a>
-  
-    <a href="https://www.livecoinwatch.com/price/Opulous-OPUL" target="_blank" title="Go to Live Coin Watch OPUL page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/livecoinwatch.png" alt="Live Coin Watch logo" />
-    </a>
-  
-    <a href="https://dexscreener.com/algorand/6jrms5gwpsrhbdknwo46pdvmolwyurw2vxzewbr2qokhofnr2vlafdu3tu" target="_blank" title="Go to DEX Screener OPUL page">
-      <img class="provider inline h-5 w-5" src="https://cdn.asastats.com/icons/providers/dexscreener.png" alt="DEX Screener logo" />
-    </a>
-  
-  </div>
-
-
-
-            </div>
-          </div>
-        </div>
-      </details>
-    
-  
 </div>
 
 
 
 
-<div class="nftsec section-list mt-6 space-y-2">
+<div class="nftsec section-list mt-8">
+  
+  <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+    NFT collections <span class="ml-1 font-normal tabular-nums opacity-70">2</span>
+  </h2>
+  <div class="space-y-2">
   
     
 
 
-<details id="ffugu" class="fitem group rounded-box border border-base-300 bg-base-100">
+<details id="fknith3ds" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
   <summary class="nft item-header cursor-pointer list-none p-3 c0">
-    <div class="flex flex-wrap items-center gap-3">
-      <div class="nftleft min-w-0 flex-1">
-        <span>1 from </span><span class="unit font-medium">Fugu</span>
+    
+    <div class="nftrow itemrow">
+      <div class="nftleft itemleft">
+        <span>1 from </span><span class="unit font-medium">knitH3Ds</span>
       </div>
-      <div class="nftright flex-none text-right">
+      <div class="nftmid itemmid">
+        
+          <img id="t1150857258" src="/thumbnails/1150850000/1150857258t.png" alt="knitH3D 996 thumbnail" class="nfticon" data-path="/thumbnails/1150850000/1150857258.png" data-fallback="/thumbnails/nftt.png" />
+        
+      </div>
+      <div class="nftright itemright">
         <span class="badge badge-ghost badge-sm align-middle">BETA</span>
-        <span class="val font-medium" data-val="4.730000">4.73 ALGO</span>
+        <span class="val font-medium" data-val="215.980000">215.98 ALGO</span>
       </div>
-    </div>
-    <div class="nftmid mt-3 flex flex-wrap gap-2">
-      
-        <img id="t896297080" src="https://cdn.asastats.com/thumbnails/896290000/896297080t.png" alt="Fugu #746 thumbnail" class="nfticon h-12 w-12 rounded object-cover" data-path="https://cdn.asastats.com/thumbnails/896290000/896297080.png" data-fallback="https://cdn.asastats.com/thumbnails/nftt.png" />
-      
     </div>
   </summary>
   <div class="item-body border-t border-base-300 p-3">
@@ -2468,22 +2161,22 @@
 
 
 
-<div id="896297080" class="fitem rounded-box border border-base-300 p-3">
+<div id="1150857258" class="fitem rounded-box border border-base-300 p-3">
   <div class="grid gap-4 md:grid-cols-3">
 
     <div class="text-sm">
-      <div class="text-xs opacity-60">FUG746 1/1</div>
-      <div class="title font-medium">Fugu #746</div>
+      <div class="text-xs opacity-60">KH3D996 1/1</div>
+      <div class="title font-medium">knitH3D 996</div>
       <div class="mt-1 text-xs text-base-content/70">
-        <a class="link link-hover" href="https://allo.info/asset/896297080" target="_blank" title="Show in Allo">896297080</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
+        <a class="link link-hover" href="https://allo.info/asset/1150857258" target="_blank" title="Show in Allo">1150857258</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
       </div>
       
-      <div class="text-xs text-base-content/70">Rarity: 1419/1500</div>
+      <div class="text-xs text-base-content/70">Rarity: 373/999</div>
     </div>
 
     <div class="order-first md:order-none">
       
-      <a href="https://w3s.link/ipfs/bafkreiakeaw5mjvvfkfqohmib6g5gq6vdqbyoixc6gf2sr3y5syk5hkpbm" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="/static/nft.png" data-src="https://cdn.asastats.com/thumbnails/896290000/896297080.png" alt="Fugu #746 link" class="nft mx-auto h-auto max-w-full rounded-box transition hover:shadow-md" /></a>
+      <a href="https://ipfs.algonode.dev/ipfs/bafybeihyflk5qeledot6wypqog56nes6gs3twwqjgbwqsqtekbcnlpnhuu/Knith3Ds0996.jpg" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="/static/nft.png" data-src="/thumbnails/1150850000/1150857258.png" alt="knitH3D 996 link" class="nft mx-auto h-auto max-w-full rounded-box transition hover:shadow-md" /></a>
       
     </div>
 
@@ -2491,21 +2184,21 @@
       <div>
         <span class="badge badge-ghost badge-sm align-middle">BETA</span>
         <span class="text-xs opacity-60">Estimated value</span>
-        <span class="val font-medium" data-val="4.730000">4.73 ALGO</span>
+        <span class="val font-medium" data-val="215.980000">215.98 ALGO</span>
       </div>
       
       
         <div class="text-xs">
-          Last purchase: <span class="val font-medium" data-val="4.000000">4.00 ALGO</span><br>
-          <span class="epoch" data-epoch="1784047044"></span><a class="link link-hover" href="https://allo.info/tx/group/f2h6e93FfeXFMTPdZ%2F4IdN4i1bsyc2%2Bufn%2B4an11MBw%3D" target="_blank" title="Show purchase in Allo">Downbad</a>
+          Last purchase: <span class="val font-medium" data-val="210.000000">210.00 ALGO</span><br>
+          <span class="epoch" data-epoch="1691625566"></span><a class="link link-hover" href="https://allo.info/tx/group/At0brIbexeDsjZxpKrxpP52GQ1KfYNqFscbmmNdrfeg%3D" target="_blank" title="Show purchase in Allo">Rand Gallery</a>
         </div>
       
       
       
         
         <div class="text-xs">
-          Floor price: <span class="val font-medium" data-val="4.000000">4.00 ALGO</span><br>
-          <a class="link link-hover" href="https://www.downbad.farm/asset/896295278" target="_blank" title="Downbad link to NFT">Downbad</a>
+          Floor price: <span class="val font-medium" data-val="25.000000">25.00 ALGO</span><br>
+          <a class="link link-hover" href="https://www.asalytic.app/nft/1150853752" target="_blank" title="Asalytic link to NFT">Asalytic</a>
         </div>
         
       
@@ -2515,42 +2208,29 @@
   
     <div class="mt-3 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2 lg:grid-cols-3">
       
-        <div class="truncate"><strong>BG</strong>: Saltwater</div>
+        <div class="truncate"><strong>BACKDROP</strong>: Ommetaphobia</div>
       
-        <div class="truncate"><strong>Fins</strong>: Salmon fins</div>
+        <div class="truncate"><strong>SKIN</strong>: Cheese</div>
       
-        <div class="truncate"><strong>Body</strong>: Brown</div>
+        <div class="truncate"><strong>EXPRESSION</strong>: Content</div>
       
-        <div class="truncate"><strong>Brows</strong>: Unimpressed</div>
+        <div class="truncate"><strong>EYES</strong>: Yellow Striped</div>
       
-        <div class="truncate"><strong>Headwear</strong>: Iceberg</div>
+        <div class="truncate"><strong>OUTFIT</strong>: Stethoscope</div>
       
-        <div class="truncate"><strong>Clothes</strong>: Turtle pack</div>
-      
-        <div class="truncate"><strong>Earring</strong>: No earring</div>
-      
-        <div class="truncate"><strong>Mouth</strong>: Whaa</div>
-      
-        <div class="truncate"><strong>Eyes</strong>: OpenbigY</div>
-      
-        <div class="truncate"><strong>Extra</strong>: No extra</div>
-      
-        <div class="truncate"><strong>Extra2</strong>: No extra2</div>
+        <div class="truncate"><strong>HAT</strong>: Brainiac</div>
       
     </div>
   
 
   
-    <div class="mt-1 truncate text-xs text-base-content/70">URL: <a class="link link-hover" href="https://w3s.link/ipfs/bafkreiakeaw5mjvvfkfqohmib6g5gq6vdqbyoixc6gf2sr3y5syk5hkpbm" target="_blank" title="Visit additional NFT's URL">https://w3s.link/ipfs/bafkreiakeaw5mjvvfkfqohmib6g5gq6vdqbyoixc6gf2sr3y5syk5hkpbm</a></div>
+    <div class="mt-1 truncate text-xs text-base-content/70">image: <a class="link link-hover" href="https://ipfs.algonode.dev/ipfs/bafybeihyflk5qeledot6wypqog56nes6gs3twwqjgbwqsqtekbcnlpnhuu/Knith3Ds0996.jpg" target="_blank" title="Visit additional NFT's URL">https://ipfs.algonode.dev/ipfs/bafybeihyflk5qeledot6wypqog56nes6gs3twwqjgbwqsqtekbcnlpnhuu/Knith3Ds0996.jpg</a></div>
+  
+    <div class="mt-1 truncate text-xs text-base-content/70">URL: <a class="link link-hover" href="https://4everland.io/ipfs/bafkreibgtcd2dkija67n5xbt6bg43zn2cob4mkqqvede3iwuffmcvp6ckq" target="_blank" title="Visit additional NFT's URL">https://4everland.io/ipfs/bafkreibgtcd2dkija67n5xbt6bg43zn2cob4mkqqvede3iwuffmcvp6ckq</a></div>
   
     <div class="mt-1 truncate text-xs text-base-content/70">Template: <a class="link link-hover" href="https://template-ipfs://{ipfscid:1:raw:reserve:sha2-256}" target="_blank" title="Visit additional NFT's URL">template-ipfs://{ipfscid:1:raw:reserve:sha2-256}</a></div>
   
-    <div class="mt-1 truncate text-xs text-base-content/70">external_url: <a class="link link-hover" href="https://fugu.world" target="_blank" title="Visit additional NFT's URL">fugu.world</a></div>
-  
 
-  
-    <p class="mt-2 text-xs text-base-content/70">Description: Dive into the world of Fugu. A toxic community of pufferfish that turn their victims into fashion.
-Explore different regions under the sea to find your perfect style and become part of the creative process with continuous new traits and ideas.</p>
   
 </div>
 
@@ -2564,21 +2244,22 @@ Explore different regions under the sea to find your perfect style and become pa
     
 
 
-<details id="floot-boxes" class="fitem group rounded-box border border-base-300 bg-base-100">
+<details id="fbrave-new-world" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
   <summary class="nft item-header cursor-pointer list-none p-3 c1">
-    <div class="flex flex-wrap items-center gap-3">
-      <div class="nftleft min-w-0 flex-1">
-        <span>1 from </span><span class="unit font-medium">Loot Boxes</span>
+    
+    <div class="nftrow itemrow">
+      <div class="nftleft itemleft">
+        <span>1 from </span><span class="unit font-medium">Brave New World</span>
       </div>
-      <div class="nftright flex-none text-right">
+      <div class="nftmid itemmid">
+        
+          <img id="t1097895097" src="/thumbnails/1097890000/1097895097t.png" alt="Brave New World #3366 thumbnail" class="nfticon" data-path="/thumbnails/1097890000/1097895097.png" data-fallback="/thumbnails/nftt.png" />
+        
+      </div>
+      <div class="nftright itemright">
         <span class="badge badge-ghost badge-sm align-middle">BETA</span>
-        <span class="val font-medium" data-val="1.000000">1.00 ALGO</span>
+        <span class="val font-medium" data-val="146.540000">146.54 ALGO</span>
       </div>
-    </div>
-    <div class="nftmid mt-3 flex flex-wrap gap-2">
-      
-        <img id="t3195023158" src="https://cdn.asastats.com/thumbnails/3195020000/3195023158t.png" alt="BOXC thumbnail" class="nfticon h-12 w-12 rounded object-cover" data-path="https://cdn.asastats.com/thumbnails/3195020000/3195023158.png" data-fallback="https://cdn.asastats.com/thumbnails/nftt.png" />
-      
     </div>
   </summary>
   <div class="item-body border-t border-base-300 p-3">
@@ -2588,22 +2269,22 @@ Explore different regions under the sea to find your perfect style and become pa
 
 
 
-<div id="3195023158" class="fitem rounded-box border border-base-300 p-3">
+<div id="1097895097" class="fitem rounded-box border border-base-300 p-3">
   <div class="grid gap-4 md:grid-cols-3">
 
     <div class="text-sm">
-      <div class="text-xs opacity-60">ASFCBOXC 1/4100</div>
-      <div class="title font-medium">BOXC</div>
+      <div class="text-xs opacity-60">BNW3366 1/1</div>
+      <div class="title font-medium">Brave New World #3366</div>
       <div class="mt-1 text-xs text-base-content/70">
-        <a class="link link-hover" href="https://allo.info/asset/3195023158" target="_blank" title="Show in Allo">3195023158</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
+        <a class="link link-hover" href="https://allo.info/asset/1097895097" target="_blank" title="Show in Allo">1097895097</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
       </div>
       
-      
+      <div class="text-xs text-base-content/70">Rarity: 975/1776</div>
     </div>
 
     <div class="order-first md:order-none">
       
-      <a href="https://dweb.link/ipfs/bafybeic5anquec33nm2miuhvatkgzidawl2flot3idzdkpx5ntqriskc4e" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="/static/nft.png" data-src="https://cdn.asastats.com/thumbnails/3195020000/3195023158.png" alt="BOXC link" class="nft mx-auto h-auto max-w-full rounded-box transition hover:shadow-md" /></a>
+      <a href="https://ipfs.io/ipfs/QmQcBwphdevwz8CCFjP6DKYFVHua9Epdkkr8JPpxhf9sfm" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="/static/nft.png" data-src="/thumbnails/1097890000/1097895097.png" alt="Brave New World #3366 link" class="nft mx-auto h-auto max-w-full rounded-box transition hover:shadow-md" /></a>
       
     </div>
 
@@ -2611,16 +2292,23 @@ Explore different regions under the sea to find your perfect style and become pa
       <div>
         <span class="badge badge-ghost badge-sm align-middle">BETA</span>
         <span class="text-xs opacity-60">Estimated value</span>
-        <span class="val font-medium" data-val="1.000000">1.00 ALGO</span>
+        <span class="val font-medium" data-val="146.540000">146.54 ALGO</span>
       </div>
       
       
         <div class="text-xs">
-          Last purchase: <span class="val font-medium" data-val="1.000000">1.00 ALGO</span><br>
-          <span class="epoch" data-epoch="1769798745"></span><a class="link link-hover" href="https://allo.info/tx/group/MGpTeH%2Ffi9KOUO4gLw76sLPD6t6e5wchztjk76z4Gvk%3D" target="_blank" title="Show purchase in Allo">Asalytic</a>
+          Last purchase: <span class="val font-medium" data-val="10.000000">10.00 ALGO</span><br>
+          <span class="epoch" data-epoch="1705587518"></span><a class="link link-hover" href="https://allo.info/tx/group/h%2FVrevVmQaW2A%2Br9%2Fw66WFOuKJ4On1jMqaJtmBJ1JLg%3D" target="_blank" title="Show purchase in Allo">EXA Market</a>
         </div>
       
       
+      
+        
+        <div class="text-xs">
+          Floor price: <span class="val font-medium" data-val="55.000000">55.00 ALGO</span><br>
+          <a class="link link-hover" href="https://www.randgallery.com/algo-collection/?address=1209244183" target="_blank" title="Rand Gallery link to NFT">Rand Gallery</a>
+        </div>
+        
       
     </div>
   </div>
@@ -2628,23 +2316,23 @@ Explore different regions under the sea to find your perfect style and become pa
   
     <div class="mt-3 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2 lg:grid-cols-3">
       
-        <div class="truncate"><strong>Rarity Level</strong>: Common</div>
+        <div class="truncate"><strong>Cover Theme</strong>: The World Controller</div>
+      
+        <div class="truncate"><strong>Variation</strong>: 11</div>
       
     </div>
   
 
   
-    <div class="mt-1 truncate text-xs text-base-content/70">image: <a class="link link-hover" href="https://dweb.link/ipfs/bafybeic5anquec33nm2miuhvatkgzidawl2flot3idzdkpx5ntqriskc4e" target="_blank" title="Visit additional NFT's URL">https://dweb.link/ipfs/bafybeic5anquec33nm2miuhvatkgzidawl2flot3idzdkpx5ntqriskc4e</a></div>
+    <div class="mt-1 truncate text-xs text-base-content/70">media_url: <a class="link link-hover" href="https://ipfs.io/ipfs/QmQcBwphdevwz8CCFjP6DKYFVHua9Epdkkr8JPpxhf9sfm" target="_blank" title="Visit additional NFT's URL">https://ipfs.io/ipfs/QmQcBwphdevwz8CCFjP6DKYFVHua9Epdkkr8JPpxhf9sfm</a></div>
   
-    <div class="mt-1 truncate text-xs text-base-content/70">URL: <a class="link link-hover" href="https://dweb.link/ipfs/bafkreihot5d5zarocl7sn6jq2ekcjrko2etpdcahtnjzsrivcvfd6n6qlq" target="_blank" title="Visit additional NFT's URL">https://dweb.link/ipfs/bafkreihot5d5zarocl7sn6jq2ekcjrko2etpdcahtnjzsrivcvfd6n6qlq</a></div>
+    <div class="mt-1 truncate text-xs text-base-content/70">URL: <a class="link link-hover" href="https://4everland.io/ipfs/QmZYoJ2BYQ5wvHKjmg9twmQAar6vwMdB6v6UZXbxPhYN6R" target="_blank" title="Visit additional NFT's URL">https://4everland.io/ipfs/QmZYoJ2BYQ5wvHKjmg9twmQAar6vwMdB6v6UZXbxPhYN6R</a></div>
   
-    <div class="mt-1 truncate text-xs text-base-content/70">Template: <a class="link link-hover" href="https://template-ipfs://{ipfscid:1:raw:reserve:sha2-256}" target="_blank" title="Visit additional NFT's URL">template-ipfs://{ipfscid:1:raw:reserve:sha2-256}</a></div>
-  
-    <div class="mt-1 truncate text-xs text-base-content/70">external_url: <a class="link link-hover" href="https://artschoolfightclub.com" target="_blank" title="Visit additional NFT's URL">https://artschoolfightclub.com</a></div>
+    <div class="mt-1 truncate text-xs text-base-content/70">external_url: <a class="link link-hover" href="https://book.io" target="_blank" title="Visit additional NFT's URL">https://book.io</a></div>
   
 
   
-    <p class="mt-2 text-xs text-base-content/70">Description: ASFC - Common Loot Box</p>
+    <p class="mt-2 text-xs text-base-content/70">Description: I am I, and I wish I weren&#x27;t.</p>
   
 </div>
 
@@ -2655,51 +2343,33 @@ Explore different regions under the sea to find your perfect style and become pa
 </details>
 
   
+  </div>
 </div>
 
 
 
 
-<div class="notevalsec section-list mt-6">
+<div class="notevalsec section-list mt-8">
   <details class="group rounded-box border border-base-300 bg-base-100">
-    <summary class="item-header cursor-pointer list-none p-3 font-medium">2 not evaluated</summary>
+    <summary class="item-header cursor-pointer list-none p-3 font-medium">1 not evaluated</summary>
     <div class="item-body border-t border-base-300 p-3">
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       
         
-        <div id="3607827779" class="fitem rounded-box border border-base-300 p-3 text-sm">
+        <div id="808825661" class="fitem rounded-box border border-base-300 p-3 text-sm">
           <div class="flex items-center gap-2">
-            <img src="https://cdn.asastats.com/icons/3607827779t.png" alt="cU v3 logo" class="asaicon h-8 w-8 flex-none rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-            <span class="title truncate font-medium">cU v3</span>
+            <img src="https://cdn.asastats.com/icons/808825661t.png" alt="Wrapped ALGO logo" class="asaicon h-8 w-8 flex-none rounded-full" data-fallback="/icons/empty.png" />
+            <span class="title truncate font-medium">Wrapped ALGO</span>
           </div>
           <dl class="mt-2 space-y-1 text-xs text-base-content/70">
             <div>
-              <a class="link link-hover" href="https://allo.info/asset/3607827779" target="_blank" title="Show in Allo">3607827779</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
+              <a class="link link-hover" href="https://allo.info/asset/808825661" target="_blank" title="Show in Allo">808825661</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
             </div>
-            <div>Amount: 1.50000</div>
-            <div>Unit name: cU</div>
-            <div>Total supply: 750,000</div>
-            <div>Decimals: 5</div>
-            
-          </dl>
-        </div>
-        
-      
-        
-        <div id="3491050538" class="fitem rounded-box border border-base-300 p-3 text-sm">
-          <div class="flex items-center gap-2">
-            <img src="https://cdn.asastats.com/icons/3491050538t.png" alt="cUSDC v3 logo" class="asaicon h-8 w-8 flex-none rounded-full" data-fallback="https://cdn.asastats.com/icons/empty.png" />
-            <span class="title truncate font-medium">cUSDC v3</span>
-          </div>
-          <dl class="mt-2 space-y-1 text-xs text-base-content/70">
-            <div>
-              <a class="link link-hover" href="https://allo.info/asset/3491050538" target="_blank" title="Show in Allo">3491050538</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
-            </div>
-            <div>Amount: 0.079949</div>
-            <div>Unit name: cUSDC</div>
+            <div>Amount: 0.400000</div>
+            <div>Unit name: WALGO</div>
             <div>Total supply: 18,446,744,073,709</div>
             <div>Decimals: 6</div>
-            
+            <div class="truncate">URL: <a class="link link-hover" href="https://fxdx.exchange" target="_blank" rel="noopener" title="Official URL">https://fxdx.exchange</a></div>
           </dl>
         </div>
         
@@ -2724,329 +2394,3 @@ Explore different regions under the sea to find your perfect style and become pa
 
 
   </div>
-</main>
-<footer class="border-t border-base-300 bg-base-100">
-  <div class="mx-auto w-full max-w-6xl px-4 py-8 text-sm">
-    
-    <nav class="flex flex-wrap justify-center gap-x-5 gap-y-2">
-      
-      <a class="link link-hover" href="#modalLogin">Log in</a>
-      
-      <a class="link link-hover" href="/about/">About</a>
-      <a class="link link-hover" href="/tokenomics/">Tokenomics</a>
-      <a class="link link-hover" href="/subscriptions/">Subscriptions</a>
-      <a class="link link-hover" href="/api/v2/schema/swagger-ui/">API</a>
-      <a class="link link-hover" href="/faq/">FAQ</a>
-      <a class="link link-hover" href="/features/">Features</a>
-      <a class="link link-hover" href="https://www.asastats.com/auth_privacy.html" target="_blank" rel="noopener">Privacy</a>
-      <a class="link link-hover" href="/disclaimer/">Disclaimer</a>
-    </nav>
-    
-    <nav class="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 opacity-80">
-      <a class="link link-hover" href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener">Buy ASASTATS</a>
-      <a class="link link-hover" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener">Pact pool</a>
-      <a class="link link-hover" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener">Tinyman pool</a>
-      <a class="link link-hover" href="https://apps.apple.com/us/app/asa-stats-mobile/id6443547246" target="_blank" rel="noopener">App&nbsp;Store</a>
-      <a class="link link-hover" href="https://play.google.com/store/apps/details?id=com.asastats.app" target="_blank" rel="noopener">Play&nbsp;Store</a>
-      <a class="link link-hover" href="https://x.com/@asastatscom" target="_blank" rel="noopener">X</a>
-      <a class="link link-hover" href="https://discord.gg/Vjx7w7pAC7" target="_blank" rel="noopener">Discord</a>
-      <a class="link link-hover" href="https://www.reddit.com/r/asastats" target="_blank" rel="noopener">Reddit</a>
-      <a class="link link-hover" href="https://medium.com/@asastats" target="_blank" rel="noopener">Medium</a>
-      <a class="link link-hover" href="https://github.com/asastats" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-    <p class="mt-5 text-center opacity-60">&copy;&nbsp;2026&nbsp;ASA&nbsp;Stats</p>
-  </div>
-</footer>
-
-
-<dialog id="modalLogin" class="w-full max-w-2xl rounded-box border-0 bg-base-100 p-0 text-base-content backdrop:bg-black/50">
-  <div class="modal-content p-6">
-    <h3 class="text-center text-2xl font-semibold">Log in to ASA Stats</h3>
-
-    
-    <div role="tablist" class="mt-5 grid grid-cols-3 gap-1 rounded-field bg-base-200 p-1">
-      <a role="tab" aria-selected="true" class="is-active cursor-pointer rounded-field py-2 text-center text-sm font-medium aria-selected:bg-base-100 aria-selected:shadow-sm" href="#modal-tab-login">Log in</a>
-      <a role="tab" aria-selected="false" class="cursor-pointer rounded-field py-2 text-center text-sm font-medium aria-selected:bg-base-100 aria-selected:shadow-sm" href="#modal-tab-social">Social</a>
-      <a role="tab" aria-selected="false" class="cursor-pointer rounded-field py-2 text-center text-sm font-medium aria-selected:bg-base-100 aria-selected:shadow-sm" href="#modal-tab-wallet">Wallet</a>
-    </div>
-
-    <div class="mt-5">
-      
-      <div id="modal-tab-login" class="modal-tab-panel is-active">
-        <form class="login" id="modal_login_form" method="POST" action="/accounts/login/">
-          <input type="hidden" name="csrfmiddlewaretoken" value="ZCtr2qjgQ8e2ROlSRLMeaYEmDukWU8s0nMepmtP4EXtBIiGW6L60nJ9di77OVfKu">
-          <input type="hidden" name="next" value="" id="id_modal_login_next" />
-          <label class="block">
-            <span class="mb-1 block text-sm">Login:</span>
-            <input class="input w-full" autofocus="autofocus" id="id_login_modal"
-                   name="login" placeholder="Username or email" type="text" required />
-          </label>
-          <label class="mt-4 block">
-            <span class="mb-1 block text-sm">Password:</span>
-            <input class="input w-full" id="id_password_modal" name="password"
-                   autocomplete="off" placeholder="Password" type="password" required />
-          </label>
-          <label class="mt-4 flex items-center gap-2 text-sm" title="Remember me on this computer">
-            <input class="checkbox checkbox-sm" name="remember" type="checkbox">
-            <span>Remember me</span>
-          </label>
-          <div class="mt-5 text-center">
-            <button class="btn btn-primary" id="id_cta_modal" type="submit">Log in</button>
-          </div>
-        </form>
-      </div>
-
-      
-      <div id="modal-tab-social" class="modal-tab-panel" hidden>
-        <div class="mx-auto flex max-w-sm flex-col gap-2">
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/discord/login/"><img class="h-5 w-5" src="/static/img/social/discord.png" alt="Discord logo" />Sign in with Discord</a>
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/twitter_oauth2/login/"><img class="h-5 w-5" src="/static/img/social/twitter.png" alt="X logo" />Sign in with X</a>
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/reddit/login/"><img class="h-5 w-5" src="/static/img/social/reddit.png" alt="Reddit logo" />Sign in with Reddit</a>
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/github/login/"><img class="h-5 w-5" src="/static/img/social/github.png" alt="GitHub logo" />Sign in with GitHub</a>
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/google/login/"><img class="h-5 w-5" src="/static/img/social/google.png" alt="Google logo" />Sign in with Google</a>
-        </div>
-      </div>
-
-      
-      <div id="modal-tab-wallet" class="modal-tab-panel" hidden>
-        
-
-
-
-
-<div id="wallet-connect" data-api-base="/api/v2/wallet/login">
-  <input type="hidden" name="csrfmiddlewaretoken" value="ZCtr2qjgQ8e2ROlSRLMeaYEmDukWU8s0nMepmtP4EXtBIiGW6L60nJ9di77OVfKu">
-
-  <h5 class="text-lg font-semibold">Sign in with your wallet</h5>
-  <p class="mt-2 text-sm text-base-content/80">Connect a wallet you have already linked to your
-    account and prove control by signing a 0&nbsp;ALGO message. Nothing is sent to the
-    blockchain and there is no fee.</p>
-
-  <div id="app-error" class="alert alert-error mt-4" style="display:none">
-    Wallet connector failed to load. Please reload the page and try again.
-  </div>
-
-  <div class="mt-4 space-y-3">
-    
-    <div id="wallet-pera" class="card border border-base-300 bg-base-200">
-      <div class="card-body gap-3 p-4">
-        <h4 class="card-title text-base">Pera</h4>
-
-        <div class="flex flex-wrap gap-2">
-          <button id="connect-button-pera" type="button" class="btn btn-primary btn-sm">
-            Connect
-          </button>
-          <button id="set-active-button-pera" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Set active
-          </button>
-          <button id="disconnect-button-pera" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Disconnect
-          </button>
-        </div>
-
-        <label class="block">
-          
-          
-          <select id="account-select-pera" class="select select-sm w-full">
-            <option disabled selected>No accounts</option>
-          </select>
-          <span class="mt-1 block text-xs text-base-content/60">Select the account to sign in with</span>
-        </label>
-
-        <button id="auth-button-pera" type="button"
-                class="btn btn-primary btn-sm self-start" style="display:none">
-          Sign in
-        </button>
-      </div>
-    </div>
-    
-    <div id="wallet-defly" class="card border border-base-300 bg-base-200">
-      <div class="card-body gap-3 p-4">
-        <h4 class="card-title text-base">Defly</h4>
-
-        <div class="flex flex-wrap gap-2">
-          <button id="connect-button-defly" type="button" class="btn btn-primary btn-sm">
-            Connect
-          </button>
-          <button id="set-active-button-defly" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Set active
-          </button>
-          <button id="disconnect-button-defly" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Disconnect
-          </button>
-        </div>
-
-        <label class="block">
-          
-          
-          <select id="account-select-defly" class="select select-sm w-full">
-            <option disabled selected>No accounts</option>
-          </select>
-          <span class="mt-1 block text-xs text-base-content/60">Select the account to sign in with</span>
-        </label>
-
-        <button id="auth-button-defly" type="button"
-                class="btn btn-primary btn-sm self-start" style="display:none">
-          Sign in
-        </button>
-      </div>
-    </div>
-    
-    <div id="wallet-lute" class="card border border-base-300 bg-base-200">
-      <div class="card-body gap-3 p-4">
-        <h4 class="card-title text-base">Lute</h4>
-
-        <div class="flex flex-wrap gap-2">
-          <button id="connect-button-lute" type="button" class="btn btn-primary btn-sm">
-            Connect
-          </button>
-          <button id="set-active-button-lute" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Set active
-          </button>
-          <button id="disconnect-button-lute" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Disconnect
-          </button>
-        </div>
-
-        <label class="block">
-          
-          
-          <select id="account-select-lute" class="select select-sm w-full">
-            <option disabled selected>No accounts</option>
-          </select>
-          <span class="mt-1 block text-xs text-base-content/60">Select the account to sign in with</span>
-        </label>
-
-        <button id="auth-button-lute" type="button"
-                class="btn btn-primary btn-sm self-start" style="display:none">
-          Sign in
-        </button>
-      </div>
-    </div>
-    
-    <div id="wallet-kibisis" class="card border border-base-300 bg-base-200">
-      <div class="card-body gap-3 p-4">
-        <h4 class="card-title text-base">Kibisis</h4>
-
-        <div class="flex flex-wrap gap-2">
-          <button id="connect-button-kibisis" type="button" class="btn btn-primary btn-sm">
-            Connect
-          </button>
-          <button id="set-active-button-kibisis" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Set active
-          </button>
-          <button id="disconnect-button-kibisis" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Disconnect
-          </button>
-        </div>
-
-        <label class="block">
-          
-          
-          <select id="account-select-kibisis" class="select select-sm w-full">
-            <option disabled selected>No accounts</option>
-          </select>
-          <span class="mt-1 block text-xs text-base-content/60">Select the account to sign in with</span>
-        </label>
-
-        <button id="auth-button-kibisis" type="button"
-                class="btn btn-primary btn-sm self-start" style="display:none">
-          Sign in
-        </button>
-      </div>
-    </div>
-    
-    <div id="wallet-exodus" class="card border border-base-300 bg-base-200">
-      <div class="card-body gap-3 p-4">
-        <h4 class="card-title text-base">Exodus</h4>
-
-        <div class="flex flex-wrap gap-2">
-          <button id="connect-button-exodus" type="button" class="btn btn-primary btn-sm">
-            Connect
-          </button>
-          <button id="set-active-button-exodus" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Set active
-          </button>
-          <button id="disconnect-button-exodus" type="button"
-                  class="btn btn-ghost btn-sm" style="display:none">
-            Disconnect
-          </button>
-        </div>
-
-        <label class="block">
-          
-          
-          <select id="account-select-exodus" class="select select-sm w-full">
-            <option disabled selected>No accounts</option>
-          </select>
-          <span class="mt-1 block text-xs text-base-content/60">Select the account to sign in with</span>
-        </label>
-
-        <button id="auth-button-exodus" type="button"
-                class="btn btn-primary btn-sm self-start" style="display:none">
-          Sign in
-        </button>
-      </div>
-    </div>
-    
-  </div>
-</div>
-
-<div id="evm-wallet-connect"
-     data-api-base="/api/v2/wallet/login"
-     data-wc-project-id="111111111111111111111"
-     class="evm-signing">
-  <input type="hidden" name="csrfmiddlewaretoken" value="ZCtr2qjgQ8e2ROlSRLMeaYEmDukWU8s0nMepmtP4EXtBIiGW6L60nJ9di77OVfKu">
-
-  <h5>Other chains (EVM)</h5>
-  <p>Connect an Ethereum-compatible wallet and prove control by signing a
-    message. Nothing is sent on-chain and there is no fee.</p>
-
-  
-
-  <div id="evm-app-error" data-notice="error" role="alert" style="display:none">
-    No EVM wallet found. Install a browser wallet, or configure WalletConnect.
-  </div>
-
-  <div id="evm-wallet-list" class="evm-wallet-list">
-    <!-- Connector buttons are injected here by the frontend bundle. -->
-  </div>
-</div>
-
-
-      </div>
-    </div>
-
-    <div class="divider my-5"></div>
-    <div class="flex flex-wrap items-center justify-center gap-4 text-sm">
-      <a class="secondaryAction link link-hover" href="/accounts/password/reset/">Forgot password?</a>
-      <a class="secondaryAction link link-hover" href="/accounts/signup/">Don't have an account?</a>
-    </div>
-    <div class="mt-5 text-right">
-      <button type="button" class="btn btn-ghost btn-sm id-modal-close" id="id_cancel">Cancel</button>
-    </div>
-  </div>
-</dialog>
-
-
-<script src="/static/js/jquery-2.2.4.min.js"></script>
-<script src="/static/js/htmx.min.js"></script>
-<script src="/static/js/site.js"></script>
-<script src="/static/js/theme.js"></script>
-<script src="/static/js/authmodal.js"></script>
-<script type="module" src="/static/js/bundle.js"></script>
-
-<script src="/static/js/chart.js"></script>
-<script src="/static/js/address.js"></script>
-
-</body>
-</html>

@@ -657,6 +657,11 @@ function chartClick(chart, evt) {
     var firstPoint = points[0];
     var label = chart.data.labels[firstPoint.index];
     var unit = $(".unit").filter(function () { return ($(this).text() === label) });
+    // Not every slice has a row behind it: a portfolio past
+    // PIE_CHART_MAXIMUM_ITEMS gets an "others" slice that stands for the tail,
+    // and nothing on the page carries that unit. Without this, clicking it
+    // hands `undefined` to scrollToView, which reads `.offsetTop` and throws.
+    if (!unit.length) return;
     var unmoved = scrollToView(unit.get(0), duration);
     var header = unit.parent().parent();
     if (!header.parent().hasClass("active"))
@@ -676,6 +681,13 @@ function chartClick(chart, evt) {
 function populateDistChart() {
   var name = "distchart";
   var canvas = document.getElementById('id-' + name);
+  // The canvases live inside the consolidated <details>, so a page rendered
+  // without that section has none of them. `mainAddress` calls this before it
+  // binds the filter, the currency switch and the rest, and a throw here
+  // abandons every one of those -- the same way the home page lost its
+  // sorting. `checkConsolidated` already guards for the section being absent;
+  // this is the other half of that.
+  if (!canvas) return;
   var ctx = canvas.getContext('2d');
   var chart = new Chart(ctx, {
     type: 'bar', data: parseJsonScript(name), options: {
@@ -738,6 +750,7 @@ function populateDistChart() {
 function populatePieCharts() {
   ["ratiochart", "ratiochartfloor", "asachart", "nftchart", "nftfloorchart"].forEach(function (name) {
     var canvas = document.getElementById('id-' + name);
+    if (!canvas) return;
     var ctx = canvas.getContext('2d');
     var chart = new Chart(ctx, {
       type: 'pie', data: parseJsonScript(name), options: {
@@ -821,6 +834,12 @@ function setNftFloor(value) {
   var nftfloordiv = document.getElementById('id-chart-nftfloor');
   var ratiodiv = document.getElementById('id-chart-ratio');
   var ratiofloordiv = document.getElementById('id-chart-ratiofloor');
+
+  // All four live inside the consolidated <details>, so they are absent
+  // together on a page without it -- and this runs from `mainAddress` before
+  // the filter and the currency switch are bound, so a throw here takes those
+  // with it.
+  if (!nftdiv || !nftfloordiv || !ratiodiv || !ratiofloordiv) return;
 
   if (value === 'y') {
     nftdiv.classList.remove('scale-in');
@@ -1100,11 +1119,12 @@ function setCurrency(code) {
       else
         this.dataset.position = 'right';
     });
+    // No `pricealgo` check here, unlike the `.val` loop above: that class is
+    // rendered on `.val` spans only (snippets/asas/program.html), and the one
+    // template that emits `.val6` pairs it with `.unitprice`. The condition
+    // was copied down with the loop and could never be true.
     $("span.val6").each(function () {
-      if ($(this).hasClass("pricealgo"))
-        this.innerHTML = dec6(price) + " ALGO/USD";
-      else
-        this.innerHTML = parseFloat(this.dataset.val / price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " USD";
+      this.innerHTML = parseFloat(this.dataset.val / price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " USD";
     });
   } else {
     $(".pricetip").each(function () {
@@ -1123,10 +1143,7 @@ function setCurrency(code) {
         this.dataset.position = 'right';
     });
     $("span.val6").each(function () {
-      if ($(this).hasClass("pricealgo"))
-        this.innerHTML = dec6(pricealgo) + " USD/ALGO";
-      else
-        this.innerHTML = parseFloat(this.dataset.val).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " ALGO";
+      this.innerHTML = parseFloat(this.dataset.val).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " ALGO";
     });
   }
   setTotalCharts();
@@ -1191,7 +1208,12 @@ function checkOpened(section) {
     // The entries are <details> children of the section container, so the one
     // to reopen is addressed by id and opened directly -- no index into a
     // widget's internal list.
-    $('.' + section + 'sec').children().each(function () {
+    // `.find()`, not `.children()`: the rows are wrapped inside the section
+    // rather than being its direct children -- the section carries a heading
+    // above them -- so a child walk finds the heading and the wrapper and
+    // never reaches an entry. The remembered row then silently fails to
+    // reopen after a refresh.
+    $('.' + section + 'sec').find('.fitem').each(function () {
       if ($(this).attr("id") == id) {
         this.open = true;
         localStorage.removeItem('open' + section);
