@@ -41,11 +41,26 @@
 {% with total=account.total system=account.system_info account_info=account.account_info %}
 
 <header class="text-center">
-  <h1 class="pricetip tooltip cursor-default text-4xl font-semibold tracking-tight sm:text-5xl"
-      data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }}
-      data-total={{ total.totalusdc }} data-totalwnft={{ total.total }}
-      data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}
-      data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</h1>
+  {% comment %}
+    The heading was the number itself, so a screen reader announced "heading
+    level one, 1,234.56 ALGO" -- a figure with nothing saying what it counts,
+    on a page whose actual subject (the address) sat below it as a paragraph.
+
+    The label cannot go inside `.pricetip`: the currency switch and the
+    total-without-NFTs toggle both assign to that element's `innerHTML`, so
+    any markup within it is discarded the first time a reader flips to USD.
+    The label is a sibling, and `.pricetip` is now a span the h1 wraps -- the
+    data attributes move with it, since address.js reads them off
+    `$(".pricetip")[0]`.
+  {% endcomment %}
+  <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
+    <span class="sr-only">Total value:</span>
+    <span class="pricetip tooltip cursor-default"
+        data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }}
+        data-total={{ total.totalusdc }} data-totalwnft={{ total.total }}
+        data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}
+        data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</span>
+  </h1>
 
   {% comment %}
     A notice, not a section heading. This was an `<h2>` carrying red text,

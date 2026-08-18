@@ -30,15 +30,18 @@
      an ``[Available: X ALGO]`` sub-row from prog.linked, and a per-ALGO USD
      price line from the account-level pricealgo. No distribution panel.
      {% endcomment %}
-  <a class="link link-hover" href="{% explorer_base %}{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to {% explorer_name %}"><span class="balance text-success">Balance:</span></a> 
-  <span class="val font-medium" data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span><br />
-  {% for ld in prog.linked %}
-    {% if ld.text == "Available" %}
-      <span>[Available: <span>{{ ld.value|floatformat:'2g' }} ALGO</span>]</span> <br />
-    {% endif %}
-  {% endfor %}
-  <span class="val pricealgo text-xs opacity-70" data-val="{{ pricealgo }}">{{ pricealgo|floatformat:'6g' }} USD/ALGO</span> <br />
-  <br />
+  <div class="space-y-1">
+    <div class="flex flex-wrap items-baseline justify-end gap-x-2">
+      <a class="link link-hover" href="{% explorer_base %}{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to {% explorer_name %}"><span class="balance text-success">Balance:</span></a>
+      <span class="val font-medium" data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span>
+    </div>
+    {% for ld in prog.linked %}
+      {% if ld.text == "Available" %}
+        <div class="text-sm text-base-content/70">Available: {{ ld.value|floatformat:'2g' }} ALGO</div>
+      {% endif %}
+    {% endfor %}
+    <div><span class="val pricealgo text-xs opacity-70" data-val="{{ pricealgo }}">{{ pricealgo|floatformat:'6g' }} USD/ALGO</span></div>
+  </div>
 {% else %}
   {% comment %} Generic program panel (including non-ALGO Balance rows). Dispatches
      on prog.distribution for the two-panel layout (left: summary, right:
@@ -50,85 +53,104 @@
       <div class="asa flex flex-wrap items-start justify-end gap-3">
         {% comment %} W1 — initial class is always ``asar``; the toggle JS swaps to
            ``shadow`` when the user expands. {% endcomment %}
-        <div class="asar order-2 text-right">
+        <div class="asar order-2 space-y-1 text-right" data-program-panel>
           {% comment %} W7 — negative-value programs (Borrowed, Loss, Debt)
              render the ALGO value inside parens with ``text-error`` styling,
              matching the legacy template's display for keys like ``ffb``,
              ``afb``, ``gab``, ``gl``. The trigger is purely numeric:
              ``prog.value < 0``. Inside the parens we display the absolute
              value — the parens + red styling already convey the negative
-             semantics, and the legacy template did the same. {% endcomment %}
-          {% if prog.value|is_negative %}
-            <span class="text-error">(<span class="val text-error{% if has_breakdown %} tdist cursor-pointer{% endif %}"
-                {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
-                data-val="{{ prog.value }}">{{ prog.value|abs_value|floatformat:'2g' }} ALGO</span>)</span> <br />
-          {% else %}
-            <span class="val font-medium{% if has_breakdown %} tdist cursor-pointer{% endif %}"
-                {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
-                data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span> <br />
-          {% endif %}
+             semantics, and the legacy template did the same.
+
+             `data-program-panel` is what `toggleDist` swaps `shadow`/`asar`
+             on. It is an attribute rather than a class because those two are
+             what the toggle changes, and a hook it toggles is a hook it
+             cannot find again. {% endcomment %}
+          <div>
+            {% if prog.value|is_negative %}
+              <span class="text-error">(<span class="val text-error{% if has_breakdown %} tdist cursor-pointer{% endif %}"
+                  {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
+                  data-val="{{ prog.value }}">{{ prog.value|abs_value|floatformat:'2g' }} ALGO</span>)</span>
+            {% else %}
+              <span class="val font-medium{% if has_breakdown %} tdist cursor-pointer{% endif %}"
+                  {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
+                  data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span>
+            {% endif %}
+          </div>
+
           {% if program.url %}
-           <a class="link link-hover" href="{% program_url program.url %}" target="_blank" title="{{ program|program_url_title }}">{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</a> <br />
+          <div><a class="link link-hover" href="{% program_url program.url %}" target="_blank" title="{{ program|program_url_title }}">{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</a></div>
           {% elif program.name %}
-            <span>{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</span> <br />
+          <div>{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</div>
           {% endif %}
-          {% comment %} W5/W6 — render linked rows BEFORE the "Type/Balance: amount
-             unit" line, and filter out "Source LP token" rows. {% endcomment %}
+
+          {% comment %} W5/W6 — linked rows BEFORE the "Type/Balance: amount
+             unit" line, with "Source LP token" rows filtered out. One line per
+             row: these were `<span>` runs separated by `<br />`, so nothing
+             could be spaced or aligned as a group. {% endcomment %}
           {% for ld in prog.linked %}
             {% if ld.text != "Source LP token" %}
+            <div class="text-sm text-base-content/70">
               {% if ld.link %}
                 <a class="link link-hover" href="{{ ld.link }}" target="_blank" title="{{ ld.text }}">{{ ld.text }}</a>
               {% else %}
-                <span>{{ ld.text }}</span>
+                {{ ld.text }}
               {% endif %}
-              {% if ld.value %}: <span>{{ ld.value|floatformat:'-6g' }}{% if ld.info %} {{ ld.info }}{% endif %}</span>{% endif %}
-              {% if ld.amount %} (<span>{{ ld.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span>){% endif %}
-              <br />
+              {% if ld.value %}: {{ ld.value|floatformat:'-6g' }}{% if ld.info %} {{ ld.info }}{% endif %}{% endif %}
+              {% if ld.amount %} ({{ ld.amount|amount_repr:asset.decimals }} {{ asset.unit }}){% endif %}
+            </div>
             {% endif %}
           {% endfor %}
+
           {% comment %} The bottom amount-line. For "Balance" programs it gets a
-             green-styled ``balance`` label; for everything else it's plain text
-             with "Type: amount unit". W7 — for negative-amount programs the
-             ``amount unit`` portion is wrapped in parens with ``text-error``
-             styling. Followed by the per-row price line in both cases (W2 for
-             Balance, W3 for the generic flow's per-distribution rows below). {% endcomment %}
+             green-styled ``balance`` label; for everything else "Type: amount
+             unit". W7 — negative amounts are parenthesised and red. Followed by
+             the per-row price line in both cases. {% endcomment %}
           {% if asset.id != 0 and prog.amount %}
             {% if program.type == "Balance" %}
-              <span class="balance text-success">Balance:</span> <span>{{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span><br />
+            <div><span class="balance text-success">Balance:</span> {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
               {% dist_price prog asset.decimals as prog_price %}
-              {% if prog_price %}<span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ prog_price }}">{{ prog_price|floatformat:'-8g' }} ALGO/{{ asset.unit }}</span> <br />{% endif %}
+              {% if prog_price %}<div><span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ prog_price }}">{{ prog_price|floatformat:'-8g' }} ALGO/{{ asset.unit }}</span></div>{% endif %}
             {% elif prog.amount|is_negative %}
-              <span>{{ program.type }}:</span> (<span class="text-error">{{ prog.amount|abs_value|amount_repr:asset.decimals }} {{ asset.unit }}</span><span>)</span> <br />
+            <div>{{ program.type }}: (<span class="text-error">{{ prog.amount|abs_value|amount_repr:asset.decimals }} {{ asset.unit }}</span>)</div>
             {% else %}
-              <span>{{ program.type }}: {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span> <br />
+            <div>{{ program.type }}: {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
             {% endif %}
           {% endif %}
         </div>
         {% if has_breakdown %}
-          <div id="d-{{ distid_base }}-{{ asset.id }}" class="order-1 hidden flex-1 rounded-box p-2 text-right">
+          {% comment %} The breakdown, revealed beside the summary rather than
+             under it. A surface and a border because it is a panel about the
+             row it sits next to, not more of the same column -- until now it
+             was bare text distinguished from the summary only by position.
+             {% endcomment %}
+          <div id="d-{{ distid_base }}-{{ asset.id }}"
+               class="order-1 hidden flex-1 space-y-2 rounded-box border border-base-300 bg-base-200 p-3 text-right">
             {% for d in dist %}
-              <div class="asa mb-2">
+              <div class="asa">
                 {% with dlink=d.link %}
+                <div class="flex flex-wrap items-baseline justify-end gap-x-2">
                   {% if dlink.url %}
-                    <a class="link link-hover" href="{{ dlink.url }}" target="_blank" title="{{ dlink.text }}">{{ dlink.text }}</a> <span class="val font-medium" data-val="{{ d.value }}">{{ d.value|floatformat:'2g' }} ALGO</span> <br />
+                    <a class="link link-hover" href="{{ dlink.url }}" target="_blank" title="{{ dlink.text }}">{{ dlink.text }}</a>
                   {% else %}
-                    <span>{{ dlink.text|default:"" }}</span> <span class="val font-medium" data-val="{{ d.value }}">{{ d.value|floatformat:'2g' }} ALGO</span> <br />
+                    <span>{{ dlink.text|default:"" }}</span>
                   {% endif %}
+                  <span class="val font-medium" data-val="{{ d.value }}">{{ d.value|floatformat:'2g' }} ALGO</span>
+                </div>
                 {% endwith %}
                 {% if d.amount %}
-                  <span>{{ d.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span> <br />
+                <div class="text-sm text-base-content/70">{{ d.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
                 {% endif %}
                 {% comment %} W3 — per-distribution price line, e.g.
                    "0.10966392 USDC/ALGO". The value is 1/price (asset units
                    per 1 ALGO). Skipped for ALGO and when price missing. {% endcomment %}
                 {% dist_price d asset.decimals as row_price %}
-                {% if row_price and asset.id != 0 %}<span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ row_price }}">{{ row_price|invert_price|floatformat:'-8g' }} {{ asset.unit }}/ALGO</span> <br />{% endif %}
+                {% if row_price and asset.id != 0 %}<div><span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ row_price }}">{{ row_price|invert_price|floatformat:'-8g' }} {{ asset.unit }}/ALGO</span></div>{% endif %}
               </div>
             {% endfor %}
           </div>
         {% endif %}
       </div>
-      <br />
     {% endwith %}
   {% endwith %}
 {% endif %}

@@ -7,7 +7,6 @@ $.prototype.tooltip = jest.fn();
 const tax = require('../static/js/tax.js');
 
 const fixture =
-  '<a class="providertip"></a>' +
   '<form id="process_form"><button id="process"></button></form>' +
   '<button id="download"></button>' +
   '<button id="refresh"></button>' +
@@ -37,11 +36,17 @@ describe("in SECTION: Initialization", function () {
 
   // mainTax
   describe("mainTax function", function () {
-    it('initializes the provider tooltips', function () {
+    it('initializes no tooltip plugin', function () {
+      // The hints were Materialize tooltips, initialised here. They are CSS
+      // now -- `data-tip` on the label -- so there is nothing to construct,
+      // and calling a plugin that left with the framework would throw inside
+      // jQuery's ready queue and abandon the three bindings after it.
       var spyFunc = jest.spyOn($.prototype, "tooltip");
       spyFunc.mockClear();
+
       tax.mainTax();
-      expect(spyFunc).toHaveBeenCalledWith();
+
+      expect(spyFunc).not.toHaveBeenCalled();
     });
     it('binds pageshow event on window', function () {
       $(window).off("pageshow");
@@ -62,11 +67,11 @@ describe("in SECTION: Initialization", function () {
         .toBe("disableProcessSubmit");
     });
 
-    // The other half of the `$.fn.tooltip` guard. export.html is on the
-    // DaisyUI base, which never loads Materialize, so the plugin is absent --
-    // and the three bindings above are declared AFTER the tooltip call. An
-    // unguarded throw here runs inside jQuery's ready queue, so it would take
-    // out those bindings and every later ready callback on the page with them.
+    // There is no plugin call left to guard -- the hints are CSS tooltips --
+    // but the shape of the old failure is worth keeping a test for: anything
+    // reintroduced here runs inside jQuery's ready queue, ahead of the three
+    // bindings below it, and a throw would take them and every later ready
+    // callback on the page with it.
     describe('without Materialize, as on the DaisyUI base', function () {
       var tooltip;
 

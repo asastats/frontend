@@ -1,39 +1,66 @@
-{% load core_extras %}<form method="POST" action="." id="process_form">
+{% load core_extras %}
+{% comment %}
+  The tax-export form: which provider's format to produce, and two options
+  about what goes into it.
+
+  Every hint on this page was a Materialize tooltip -- `.tooltipped` with
+  `data-tooltip` and `data-position`, initialised by `$.fn.tooltip()`. That
+  plugin left with Materialize, so `tax.js` guards the call and the hints have
+  been rendering as nothing at all: the "Not implemented yet" note on every
+  provider but Koinly, and both option help texts from `core/forms.py`, were
+  invisible. They are DaisyUI tooltips now -- CSS only, `data-tip`, nothing to
+  initialise -- and the two option hints are also written out beneath their
+  labels, because a hint a reader has to hover to discover is one most readers
+  never discover.
+
+  `#process_form` and `#process` are `tax.js` hooks. `.providertip` is gone
+  with the plugin call that was its only reader.
+{% endcomment %}
+<form method="POST" action="." id="process_form" class="form-fields mt-6 space-y-6">
 {% csrf_token %}
-<div class="mt-4">
-  <div>
-  {% for radio in form.provider %}
-    <div class="w-1/2 md:w-1/4">
-    <p{% if radio.choice_label != "Koinly" %} class="tooltipped providertip" data-position="bottom" data-tooltip="Not implemented yet"{% endif %}>
-      <label>
-      {{ radio.tag }}
+
+  <fieldset>
+    <legend class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Format</legend>
+    <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      {% for radio in form.provider %}
+      <label class="flex cursor-pointer items-center gap-2 rounded-field border border-base-300 p-3 text-sm
+                    {% if radio.choice_label != 'Koinly' %} tooltip{% endif %}"
+             {% if radio.choice_label != "Koinly" %}data-tip="Not implemented yet"{% endif %}>
+        {{ radio.tag }}
         <span>{{ radio.choice_label }}</span>
       </label>
-    </p>
+      {% endfor %}
     </div>
-  {% endfor %}
-  </div>
-  <div>
-    <div class="text-center">
-    <p{% if form.use_mve.help_text %} class="tooltipped providertip" data-position="top" data-tooltip="{{ form.use_mve.help_text|safe }}"{% endif %}>
-      <label>
+  </fieldset>
+
+  <fieldset class="space-y-3">
+    <legend class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Options</legend>
+    <div class="mt-3">
+      <label class="flex cursor-pointer items-start gap-2 text-sm">
         {{ form.use_mve }}
         <span>{{ form.use_mve.label }}</span>
       </label>
-    </p>
-    </div> 
-    <div class="text-center">
-      <p{% if form.non_zero.help_text %} class="tooltipped providertip" data-position="top" data-tooltip="{{ form.non_zero.help_text|safe }}"{% endif %}>
-        <label>
-          {{ form.non_zero }}
-          <span>{{ form.non_zero.label }}</span>
-        </label>
-      </p>
-      </div>
+      {% if form.use_mve.help_text %}
+      <p class="mt-1 pl-6 text-xs text-base-content/60">{{ form.use_mve.help_text|safe }}</p>
+      {% endif %}
     </div>
-</div>
-{% if form.non_field_errors %}<div><span class="text-error">{{form.non_field_errors}}</span></div>{% endif %}
-<div class="mx-auto max-w-2xl text-center">
-  <button class="btn btn-primary" id="process" type="submit">Process</button>
-</div>
+
+    <div>
+      <label class="flex cursor-pointer items-start gap-2 text-sm">
+        {{ form.non_zero }}
+        <span>{{ form.non_zero.label }}</span>
+      </label>
+      {% if form.non_zero.help_text %}
+      <p class="mt-1 pl-6 text-xs text-base-content/60">{{ form.non_zero.help_text|safe }}</p>
+      {% endif %}
+    </div>
+  </fieldset>
+
+  {% if form.non_field_errors %}
+  <p class="text-sm text-error">{{ form.non_field_errors }}</p>
+  {% endif %}
+
+  <div class="text-center">
+    <button class="btn btn-primary" id="process" type="submit">Process</button>
+  </div>
 </form>

@@ -15,6 +15,9 @@ chart beside it was in full colour. Nothing failed; the page was just uniformly
 grey where it should have been legible.
 """
 
+from pathlib import Path
+
+from django.conf import settings
 from django.template.loader import render_to_string
 
 #: `asa_batch` skips any item with an empty body, so rows need one.
@@ -96,3 +99,55 @@ class TestHistoricAssetsColours:
         html = _render("asa_batch", items=[_asa_item(1, "AAA")])
 
         assert "item-header token" in html
+
+    def test_historic_assets_use_no_line_breaks_for_layout(self):
+        """Thirty-six `<br />` tags were the layout of the expanded row.
+
+        Each fact was a `<span>` followed by a break, so nothing could be
+        spaced or aligned as a unit -- and the gap between one program and the
+        next was a trailing break inside the last one, which is the list's job.
+        """
+        html = _render(
+            "asa_batch", items=[_asa_item(1, "AAA")], colors={1: "0"}
+        )
+
+        assert "<br" not in html
+
+    def test_historic_asset_metadata_is_a_real_definition_list(self):
+        """The labels were written into the text of `<span>`s.
+
+        So nothing tied "Total supply" to its number for a reader who cannot
+        see the layout -- the panel announced a run of sentences rather than
+        pairs.
+        """
+        html = _render("asa_batch", items=[_asa_item(1, "AAA")], colors={})
+
+        assert "<dt" in html
+        assert html.count("<dt") == html.count("<dd")
+
+    def test_historic_asset_id_keeps_its_copy_control_adjacent(self):
+        """`.copy` copies the text of the element immediately before it."""
+        html = _render("asa_batch", items=[_asa_item(1, "AAA")], colors={})
+        at = html.index('<span class="copy')
+
+        assert html[:at].rstrip().endswith("</a>")
+
+    def test_historic_filter_is_a_visible_field(self):
+        """The widget's one text input had no border and no background.
+
+        Its page loads the host stylesheet, whose reset clears both from every
+        `input` -- so the filter rendered as a blank gap. Buttons were spared,
+        because the reset restores `appearance: button` for them, which is why
+        this went unnoticed for so long.
+
+        Checked in the stylesheet rather than the markup: the fix belongs to
+        the widget's own CSS, since the widget styles what it emits.
+        """
+        # `BASE_DIR` points at the settings package, not the project root.
+        css = (
+            Path(settings.STATICFILES_DIRS[0]).parent
+            / "widgets" / "inhouse" / "historic" / "static" / "historic" / "style.css"
+        ).read_text()
+
+        assert 'input[type="text"]' in css
+        assert "border:" in css.split('input[type="text"]', 1)[1][:400]

@@ -70,9 +70,16 @@
                 </div>
               </div>
               {% endif %}
-              {% for prog in asaitem.programs %}
-                {% include "snippets/asas/program.html" with prog=prog asset=asset price=asaitem.price pricealgo=pricealgo forloop_counter=forloop.counter %}
-              {% endfor %}
+              {% comment %}
+                Each program panel used to end with a `<br />` to separate it
+                from the next. Spacing between siblings belongs to the list
+                that holds them, not to the last line of each one.
+              {% endcomment %}
+              <div class="space-y-4">
+                {% for prog in asaitem.programs %}
+                  {% include "snippets/asas/program.html" with prog=prog asset=asset price=asaitem.price pricealgo=pricealgo forloop_counter=forloop.counter %}
+                {% endfor %}
+              </div>
               {% include "snippets/asas/links.html" with asset=asset %}
             </div>
           </div>

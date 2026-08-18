@@ -13,18 +13,44 @@
 {% endcomment %}
 <div class="asal text-left text-sm">
   <span class="title font-medium">{{ asset.name }}</span>
-  <dl class="mt-1 space-y-1 text-xs text-base-content/70">
-    <div>
+  {% comment %}
+    A real definition list: this was a `<dl>` whose children were plain
+    `<div>`s with the label written into the text, so it announced a list with
+    no terms and no definitions in it -- the one structure a screen reader
+    could have used to read "Total supply" and its number as a pair.
+
+    Laid out as a two-column grid on the same element, so the values line up
+    with each other instead of each starting wherever its label ended.
+    `items-baseline` because a term and its value are one line of text.
+  {% endcomment %}
+  <dl class="mt-1 grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-1 text-xs text-base-content/70">
+    <dt class="sr-only">{% if asset.id != 0 %}Asset id{% else %}Explorer{% endif %}</dt>
+    <dd class="col-span-2">
+      {% comment %}
+        `.copy` copies the text of the element immediately before it
+        (`$(this).prev()` in site.js), so the link and the control have to stay
+        adjacent siblings -- no wrapper may come between them.
+      {% endcomment %}
       <a class="link link-hover" href="{% if asset.id != 0 %}{% explorer_url 'asset' asset.id %}{% else %}{% explorer_base %}{% endif %}" target="_blank" title="Show in {% explorer_name %}">{% if asset.id != 0 %}{{ asset.id }}{% else %}{% explorer_name %}{% endif %}</a>{% if asset.id != 0 %}<span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>{% endif %}
-    </div>
-    <div>Unit name: {{ asset.unit }}</div>
-    <div>Total supply: {{ asset.total|floatformat:'g' }}</div>
-    <div>Decimals: {{ asset.decimals }}</div>
+    </dd>
+
+    <dt>Unit name</dt>
+    <dd class="text-base-content">{{ asset.unit }}</dd>
+
+    <dt>Total supply</dt>
+    <dd class="text-base-content tabular-nums">{{ asset.total|floatformat:'g' }}</dd>
+
+    <dt>Decimals</dt>
+    <dd class="text-base-content tabular-nums">{{ asset.decimals }}</dd>
+
     {% if asaitem.price %}
-      <div>Price for unit: <span class="val6 unitprice cursor-pointer" data-val="{{ asaitem.price }}" data-unit="{{ asset.unit }}" title="Click to show the reciprocal price">{{ asaitem.price|floatformat:'-6g' }} ALGO</span></div>
+    <dt>Price for unit</dt>
+    <dd><span class="val6 unitprice cursor-pointer text-base-content" data-val="{{ asaitem.price }}" data-unit="{{ asset.unit }}" title="Click to show the reciprocal price">{{ asaitem.price|floatformat:'-6g' }} ALGO</span></dd>
     {% endif %}
+
     {% if asset.url %}
-      <div class="truncate">URL: <a class="link link-hover" href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener" title="Official URL">{{ asset.url }}</a></div>
+    <dt>URL</dt>
+    <dd class="min-w-0 truncate"><a class="link link-hover" href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener" title="Official URL">{{ asset.url }}</a></dd>
     {% endif %}
   </dl>
 </div>

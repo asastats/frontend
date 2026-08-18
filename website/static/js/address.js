@@ -1175,7 +1175,13 @@ function toggleDist(event) {
   // is the DaisyUI/Tailwind one, and the pair is swapped rather than added
   // so an expanded row reads as raised and a collapsed one as flush.
   $("#" + this.dataset.distid).toggleClass("hidden");
-  $(this).parent().toggleClass("shadow asar");
+  // Found by a stable attribute rather than by `.parent()`: the control is the
+  // value span, and which element it sits directly inside is a layout
+  // decision -- wrapping those lines in a block, which is what replacing a
+  // column of `<br>` tags means, would silently move the shadow onto the
+  // wrapper. Not `.closest(".asar")` either: `asar` is half of what this
+  // toggles, so the second click would no longer find the panel.
+  $(this).closest("[data-program-panel]").toggleClass("shadow asar");
 }
 
 

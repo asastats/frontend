@@ -186,3 +186,18 @@ class TestCoreStylesheetResets:
 
         assert "var(--color-base-100)" in body
         assert "var(--color-base-300)" in body
+
+    def test_core_stylesheet_reset_strips_bare_form_controls(self, stylesheet):
+        """The premise for the rule the widget needs.
+
+        Preflight clears `background-color` and `border` from every `input`,
+        on the reasoning that a design system draws its own fields. Asserted so
+        that a Tailwind upgrade which stops doing it shows up here rather than
+        leaving a compensating rule in place with nothing to compensate for.
+        """
+        match = re.search(
+            r"button,input,select,optgroup,textarea\{([^}]*)\}", stylesheet
+        )
+
+        assert match, "preflight no longer resets form controls as a group"
+        assert "background-color:#0000" in match.group(1).replace(" ", "")

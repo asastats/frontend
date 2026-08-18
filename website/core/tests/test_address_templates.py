@@ -350,3 +350,101 @@ class TestAddressTemplateRenders:
 
         assert 'role="alert"' not in html
         assert 'role="status"' not in html
+
+    def test_program_panels_use_no_line_breaks_for_layout(self, sample_payload):
+        """`<br>` was the layout in the expanded row: eighteen of them.
+
+        Each line was a `<span>` followed by a break, so nothing could be
+        spaced, aligned or wrapped as a group -- and the gap between one
+        program and the next was a trailing break inside the last one.
+        """
+        html = render_to_string("address.html", _build_context(sample_payload))
+        panels = html[html.index('data-program-panel'):]
+
+        assert "<br" not in panels[: panels.index("</details>")]
+
+    def test_program_panel_carries_the_toggle_hook(self, sample_payload):
+        """`toggleDist` finds the panel by this attribute.
+
+        It used to take `$(this).parent()`, which made the panel's shadow a
+        hostage of how the lines around it were nested -- wrapping them, which
+        is what removing the `<br>` tags meant, moved the shadow elsewhere.
+        An attribute, not a class: `asar` is half of what the toggle swaps, so
+        a class would stop matching after the first click.
+        """
+        html = render_to_string("address.html", _build_context(sample_payload))
+
+        assert html.count("data-program-panel") == html.count("asar order-2")
+
+    def test_distribution_breakdown_is_a_panel(self, sample_payload):
+        """It sits beside the summary, so it needs to read as its own surface.
+
+        Bare text in the next column is distinguishable from the summary only
+        by position, which is not a distinction on a narrow screen where the
+        two stack.
+        """
+        html = render_to_string("address.html", _build_context(sample_payload))
+        # `<div id="d-`, not `id="d-`: the control above it carries the same
+        # value in `data-distid`, and that comes first in the markup.
+        start = html.index('<div id="d-')
+        panel = html[start: start + 400]
+
+        assert "bg-base-200" in panel
+        assert "border-base-300" in panel
+
+    def test_asset_metadata_is_a_real_definition_list(self, sample_payload):
+        """The `<dl>` had no `<dt>` or `<dd>` in it.
+
+        Its children were plain `<div>`s with the label written into the text,
+        so it announced a list with no terms and no definitions -- the one
+        structure that could have told a screen reader "Total supply" and its
+        number are a pair. Sighted readers lost nothing; everyone else lost
+        the only thing making it a list.
+        """
+        html = render_to_string("address.html", _build_context(sample_payload))
+
+        assert "<dt" in html
+        assert html.count("<dt") == html.count("<dd")
+
+    def test_asset_id_keeps_its_copy_control_adjacent(self, sample_payload):
+        """`copyToClipboard` copies `$(this).prev()`.
+
+        So the explorer link and the copy control have to stay immediate
+        siblings: a wrapper between them copies the wrapper's text, or
+        nothing.
+        """
+        html = render_to_string("address.html", _build_context(sample_payload))
+        # From the start of the tag, not the class attribute inside it.
+        at = html.index('<span class="copy')
+        before = html[:at]
+
+        assert before.rstrip().endswith("</a>"), (
+            "something now sits between the asset id and its copy control"
+        )
+
+    def test_the_total_says_what_it_counts(self, sample_payload):
+        """The heading was the figure alone.
+
+        "Heading level one, 1,234.56 ALGO" names a number, not a page -- and
+        the page's actual subject, the address, sat below it as a paragraph.
+        """
+        html = render_to_string("address.html", _build_context(sample_payload))
+        heading = html[html.index("<h1"): html.index("</h1>")]
+
+        assert "sr-only" in heading
+        assert "Total value" in heading
+
+    def test_the_label_is_not_inside_the_element_the_script_rewrites(
+        self, sample_payload
+    ):
+        """`.pricetip` has its `innerHTML` assigned on every currency switch.
+
+        A label placed inside it survives exactly until the reader flips to
+        USD, which is the kind of accessibility fix that tests green and then
+        quietly disappears in use.
+        """
+        html = render_to_string("address.html", _build_context(sample_payload))
+        start = html.index('class="pricetip')
+        element = html[start: html.index("</span>", start)]
+
+        assert "sr-only" not in element

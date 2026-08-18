@@ -27,10 +27,16 @@ from django.conf import settings
 GRID_FROM_PARENT = {}
 
 #: Matches `col-span-3`, `md:col-span-7`, `lg:col-span-2` and friends.
-COL_SPAN = re.compile(r"[\w:]*\bcol-span-\w+")
+#: `col-span-3`, `md:col-span-7`, and the arbitrary form `col-span-[3]`.
+COL_SPAN = re.compile(r"[\w:]*\bcol-span-(?:\w+|\[[^\]]+\])")
 
 #: Matches any grid-template declaration: `grid-cols-4`, `md:grid-cols-12`.
-GRID_COLS = re.compile(r"[\w:]*\bgrid-cols-\w+")
+#: The same for the container. The arbitrary form matters: a template
+#: declaring `grid-cols-[auto_1fr]` -- a label column sized to its content,
+#: which is the natural shape for a definition list -- was reported as
+#: declaring no grid at all, because `\w+` stops at the bracket. A guard that
+#: cannot see a correct declaration sends people to change working markup.
+GRID_COLS = re.compile(r"[\w:]*\bgrid-cols-(?:\w+|\[[^\]]+\])")
 
 
 def _templates_using_col_span():

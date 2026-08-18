@@ -23,11 +23,6 @@ $(mainTax);
  */
 function mainTax() {
   $(window).on('pageshow', setDefault);
-  // Materialize's jQuery plugin; absent on the DaisyUI base, where calling it
-  // throws inside jQuery's ready queue and abandons every later callback --
-  // including the three bindings right below this line.
-  if ($.fn.tooltip)
-    $('.providertip').tooltip();
   $("#download").on('click', removeError);
   $("#back").on('click', setProgress);
   $("#process_form").on('submit', disableProcessSubmit);
