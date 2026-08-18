@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import sys
 from datetime import timedelta
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from dotenv import load_dotenv
 
@@ -289,6 +289,9 @@ CACHES = {
 CACHE_TTL = 60 * 90  # Cache time to live is 90 minutes.
 
 SITE_ID = 1
+#: The default for locally served sites, which is http. production.py raises it
+#: to https, so this is the base of a per-environment layering rather than a
+#: value to reconcile with WEBSITE_URL.
 SITEMAP_PROTOCOL = "http"
 
 GOOGLE_OWNERSHIP_FILE = "google68d340e6b473efac.html"
@@ -318,7 +321,13 @@ REST_FRAMEWORK = {
 WEBSITE_NAME = get_env_variable("WEBSITE_NAME", "ASA Stats")
 WEBSITE_SHORT_NAME = get_env_variable("WEBSITE_SLUG_NAME", "asastats")
 WEBSITE_URL = get_env_variable("WEBSITE_URL", "https://www.asastats.com")
-WEBSITE_DOMAIN = get_env_variable("WEBSITE_URL", "https://www.asastats.com")
+#: The bare host, derived from the URL rather than read from it: this was
+#: `get_env_variable("WEBSITE_URL", ...)`, so a setting named DOMAIN held a
+#: full URL. The mobile privacy page renders `info@{{ WEBSITE_DOMAIN }}`, which
+#: came out as `info@https://www.asastats.com`, and production.py builds a
+#: cookie domain from it -- an invalid one, though nothing reads
+#: COOKIE_ARGUMENTS any more since cookie consent was removed.
+WEBSITE_DOMAIN = urlparse(WEBSITE_URL).netloc or WEBSITE_URL
 WEBSITE_BASE_DOMAIN = get_env_variable("WEBSITE_BASE_DOMAIN", "asastats.com")
 X_HANDLE = get_env_variable("X_HANDLE", "@asastatscom")
 SUBREDDIT_NAME = get_env_variable("SUBREDDIT_NAME", "asastats")

@@ -4,7 +4,9 @@
 <div class="mx-auto max-w-3xl text-center">
   <div>
     <div>
-      <h1 class="text-center">Export to CSV</h1>
+      <header class="mx-auto mb-10 max-w-3xl text-center">
+        <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Export to CSV</h1>
+      </header>
       {% if bundle %}
         <h4 class="text-center text-lg">
         {% for addr in bundle %}&nbsp;<a href="{% url 'export_address' addr %}" target="_blank" title="CSV report for address {{ addr }}">{{ addr|short_address }}</a>&nbsp;{% endfor %}

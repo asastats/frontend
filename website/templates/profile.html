@@ -28,7 +28,7 @@
   {% comment %} ---- who you are ---- {% endcomment %}
   <section class="rounded-box border border-base-300 bg-base-100">
     <div class="border-b border-base-300 px-5 py-4">
-      <h2 class="font-medium">Your details</h2>
+      <h2 class="text-base font-medium">Your details</h2>
     </div>
     <div class="grid gap-4 px-5 py-5 sm:grid-cols-2">
       {% for field in form.visible_fields %}
@@ -48,7 +48,7 @@
   <fieldset class="profile rounded-box border border-base-300 bg-base-100">
     {{ profile_form.management_form }}
     <div class="border-b border-base-300 px-5 py-4">
-      <h2 class="font-medium">Subscription address</h2>
+      <h2 class="text-base font-medium">Subscription address</h2>
     </div>
     {% for form in profile_form %}
     <div class="space-y-4 px-5 py-5">
@@ -106,7 +106,7 @@
   {% if subscriptions %}
   <section class="rounded-box border border-base-300 bg-base-100">
     <div class="border-b border-base-300 px-5 py-4">
-      <h2 class="font-medium">Subscription</h2>
+      <h2 class="text-base font-medium">Subscription</h2>
     </div>
     <dl class="divide-y divide-base-300">
       {% for link, text in subscriptions.items %}

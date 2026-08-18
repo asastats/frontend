@@ -60,3 +60,53 @@ class TestCoreStylesheetResets:
         selector would move any inline dialog added later.
         """
         assert not re.search(r"(?<![-\w:])dialog\s*\{[^{}]*margin:\s*auto", stylesheet)
+
+    @pytest.mark.parametrize("level", ["h1", "h2", "h3", "h4", "h5", "h6"])
+    def test_core_stylesheet_gives_every_heading_a_size(self, stylesheet, level):
+        """Without this an h1 is a paragraph in bold-ish clothing.
+
+        Preflight sets `font-size: inherit; font-weight: inherit` on h1..h6 --
+        a deliberate choice, on the reasoning that a design system supplies its
+        own scale. We supplied only the family for a while, so every page that
+        did not add utilities of its own rendered its headings at body size:
+        features, tokenomics, faq, about and the error pages all did.
+
+        Parametrised, so a partial scale fails with the level named.
+        """
+        assert re.search(
+            rf"(?:^|[,}}]){level}\{{[^}}]*font-size:", stylesheet
+        ), f"{level} has no size in the built stylesheet"
+
+    def test_core_stylesheet_heading_scale_descends(self, stylesheet):
+        """h1 must not be smaller than h3, whatever the numbers are.
+
+        The sizes themselves are a design decision and may change; that they
+        get smaller as the level grows is what makes them a hierarchy.
+        """
+        sizes = []
+        for level in ("h1", "h2", "h3", "h4", "h5", "h6"):
+            match = re.search(
+                rf"(?:^|[,}}]){level}\{{[^}}]*font-size:([0-9.]+)rem", stylesheet
+            )
+            assert match, f"{level} has no rem size to compare"
+            sizes.append(float(match.group(1)))
+
+        assert sizes == sorted(sizes, reverse=True), (
+            f"the scale is not descending: {sizes}"
+        )
+
+    def test_core_stylesheet_headings_can_still_be_overridden(self, stylesheet):
+        """A card header at `text-base` has to beat the base scale.
+
+        Base is the lowest layer, so utilities win -- but only while the scale
+        stays in `@layer base`. Written outside it, these rules would out-rank
+        every `text-*` utility in the project and there would be no way to opt
+        out of them, which is what the profile card headers rely on.
+        """
+        heading = re.search(r"(?:^|[,}])h1\{[^}]*font-size:", stylesheet)
+        assert heading, "no h1 size to place"
+
+        assert heading.start() < stylesheet.index(".text-base{"), (
+            "the heading scale is emitted after the utilities, so `text-base` "
+            "can no longer override it"
+        )

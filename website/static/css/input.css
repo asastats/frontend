@@ -197,6 +197,41 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--typeface-display, "Oswald"), ui-sans-serif, system-ui, sans-serif;
   }
+
+  /* Preflight resets every heading to `font-size: inherit; font-weight:
+     inherit`, on the reasoning that a design system should choose its own
+     scale rather than inherit the browser's. We restored the family and
+     stopped there, so for a while the scale was "whatever each template
+     remembered to add" -- and the pages that added nothing (features,
+     tokenomics, faq, about, the error pages) rendered every heading at body
+     size, an h1 indistinguishable from a paragraph.
+
+     A default scale here means a page cannot come out flat by omission. It is
+     the lowest layer, so any template that wants a different size says so with
+     a utility and wins -- a card header at `text-base` is then a decision
+     somebody made, which is what it should have been all along. */
+  h1 { font-size: 1.875rem; line-height: 1.2; font-weight: 600; }
+  h2 { font-size: 1.5rem; line-height: 1.25; font-weight: 600; }
+  h3 { font-size: 1.25rem; line-height: 1.3; font-weight: 600; }
+  h4 { font-size: 1.125rem; line-height: 1.4; font-weight: 600; }
+  h5 { font-size: 1rem; line-height: 1.5; font-weight: 600; }
+  h6 { font-size: 0.875rem; line-height: 1.5; font-weight: 600; }
+
+  /* Preflight zeroes every margin too, which on a prose page means each
+     section heading sits directly on the paragraph above it -- the reason the
+     content pages read as one undifferentiated column. Scoped to `article`,
+     which is what those pages wrap their prose in, so cards and components
+     keep spacing their own headings with utilities.
+
+     `:first-child` because the first heading follows the page header, which
+     already carries the gap. */
+  article :is(h2, h3, h4) {
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+  article > :is(h2, h3, h4):first-child {
+    margin-top: 0;
+  }
   code, kbd, samp, pre {
     font-family: var(--typeface-mono, ui-monospace), SFMono-Regular, monospace;
   }
