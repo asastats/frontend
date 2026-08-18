@@ -54,6 +54,7 @@ from core.models import BundleName, Profile
 from core.permission_provider import get_permission_provider
 from core.permissions import (
     CanAccessApiMixin,
+    CanAccessAppearanceMixin,
     CanAccessAuthorizeMixin,
     CanAddBundleNameMixin,
     CanUseBundleNamesMixin,
@@ -1012,13 +1013,16 @@ class ProfileApiView(CanAccessApiMixin, TemplateView):
 
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
-class ProfileAppearanceView(TemplateView):
+class ProfileAppearanceView(CanAccessAppearanceMixin, TemplateView):
     """Appearance page: choose a theme, with a preview of each.
 
-    Signed in only, and deliberately so. Appearance is stored client-side, in
-    localStorage, so it is a per-browser preference rather than account data --
-    but the *choice* is a signed-in feature: a signed-out reader gets the
-    light/dark switch in the header and nothing more.
+    Asastatser and up. Appearance is stored client-side, in localStorage, so
+    it is a per-browser preference rather than account data -- but the *range*
+    of the choice is what the subscription buys: below Intro the header offers
+    the two brand themes, Intro adds the twelve in `settings.DEFAULT_THEMES`,
+    and this page is where the remaining forty-five live. Reaching it is the
+    permission, which is why the gate is on the view and not on the controls
+    inside it.
 
     The view carries no state of its own. Everything it renders comes from
     settings through the context processors, and the selection is applied and

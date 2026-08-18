@@ -434,6 +434,13 @@ AVAILABLE_THEMES_BY_SCHEME = {
 # `theme.js` promotes whatever the reader actually uses above these, so this
 # list is a starting point rather than a ranking, and being absent from it
 # costs a theme nothing once someone picks it.
+#
+# None of these may come from THEME_ATTRIBUTION. The credit CC BY requires is
+# rendered on the appearance page and in the dropdown's footer, and an Intro
+# reader sees neither -- they get this list with no credit line and no link to
+# the page carrying one, so a CC BY theme here would be used without the
+# attribution its licence asks for. There is a test for it in
+# core.tests.test_context_processors.
 DEFAULT_THEMES_BY_SCHEME = {
     # Alphabetical after ours, like AVAILABLE_THEMES_BY_SCHEME above and for
     # the same reason: a reader looking for a name should not have to scan.
@@ -448,10 +455,10 @@ DEFAULT_THEMES_BY_SCHEME = {
     "Dark": [
         "asastats-dark",
         "dracula",
-        "githubdark",
-        "gruvbox",
+        "halloween",
         "mocha",
-        "tokyonight",
+        "night",
+        "synthwave",
     ],
 }
 

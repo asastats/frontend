@@ -2517,7 +2517,7 @@ class TestCoreModelsProfilePreferredExplorer:
     def test_core_models_profile_can_access_typeface_setting_for_true(self):
         assert (
             Profile(
-                permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
             ).can_access_typeface_setting()
             is True
         )
@@ -2525,7 +2525,7 @@ class TestCoreModelsProfilePreferredExplorer:
     def test_core_models_profile_can_access_typeface_setting_for_false(self):
         assert (
             Profile(
-                permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"] - 1
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Professional"] - 1
             ).can_access_typeface_setting()
             is False
         )
@@ -2538,6 +2538,43 @@ class TestCoreModelsProfilePreferredExplorer:
             ).can_access_typeface_setting()
             is True
         )
+
+    def test_core_models_profile_theme_gates_climb_by_tier(self):
+        """Three gates, three tiers, in order: themes, the page, the fonts.
+
+        Asserted together because they are only meaningful relative to each
+        other -- each tier is defined by what the one below it cannot reach,
+        and the methods sit beside each other reading almost identically.
+        """
+        intro = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
+        assert intro.can_access_theme_setting() is True
+        assert intro.can_access_appearance_page() is False
+        assert intro.can_access_typeface_setting() is False
+
+        asastatser = Profile(
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        )
+        assert asastatser.can_access_theme_setting() is True
+        assert asastatser.can_access_appearance_page() is True
+        assert asastatser.can_access_typeface_setting() is False
+
+        professional = Profile(
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
+        )
+        assert professional.can_access_typeface_setting() is True
+
+    def test_core_models_profile_no_subscription_reaches_no_theme_gate(self):
+        """A signed-in reader without a tier gets what a signed-out one does.
+
+        Signing in is not what buys the themes -- the header offers the two
+        brand themes and the light/dark switch, exactly as it does to a
+        visitor who never signed in at all.
+        """
+        free = Profile(permission=0)
+
+        assert free.can_access_theme_setting() is False
+        assert free.can_access_appearance_page() is False
+        assert free.can_access_typeface_setting() is False
 
     def test_core_models_profile_typeface_is_a_higher_tier_than_explorer(self):
         """The two gates are deliberately different, so neither implies the other.

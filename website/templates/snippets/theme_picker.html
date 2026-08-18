@@ -2,20 +2,26 @@
   The appearance control, which is two different controls depending on who is
   looking.
 
-  A signed-out reader gets a plain light/dark switch between the two brand
-  themes and nothing else -- the full list is a signed-in feature, and offering
-  a menu of themes to someone who cannot keep the choice would be a menu that
-  mostly does not apply to them. A signed-in reader gets a short list, with
-  Customize at the top leading to the appearance page where the full set of
-  themes and the typeface pairings are chosen properly.
+  Three readers, not two, and signing in is not what separates them:
 
-  Ten themes here, not 57: a dropdown is for choosing and the appearance page is
-  for browsing. Which ten comes from settings.DEFAULT_THEMES_BY_SCHEME, with a
-  Recent group above them that theme.js fills from what this browser has
-  actually used -- so the theme you picked last is where you left it, and the
-  ten below it never move. That is the whole reason Recent is a separate group
-  rather than the list re-sorting itself: a menu that reorders under a reader
-  makes their muscle memory wrong every time they use it.
+  * below the Intro tier -- signed out, or signed in without a subscription --
+    a plain light/dark switch between the two brand themes. Choosing a theme
+    is a subscription feature, not a sign-in one;
+  * Intro: the twelve themes in `settings.DEFAULT_THEMES`, and nothing else.
+    No Customize link and no credit line, because that tier reaches neither
+    the appearance page nor any theme requiring attribution -- which is why
+    none of the twelve may be a CC BY theme;
+  * Asastatser and up: the same twelve, plus Customize leading to the
+    appearance page, where every theme is offered and the credit rendered.
+
+  Twelve themes here, not 57: a dropdown is for choosing and the appearance
+  page is for browsing. Which twelve comes from
+  settings.DEFAULT_THEMES_BY_SCHEME, with a Recent group above them that
+  theme.js fills from what this browser has actually used -- so the theme you
+  picked last is where you left it, and the twelve below it never move. That
+  is the whole reason Recent is a separate group rather than the list
+  re-sorting itself: a menu that reorders under a reader makes their muscle
+  memory wrong every time they use it.
 
   Both controls are driven by static/js/theme.js. The brand theme names are
   passed in as data attributes rather than written into the script, so they stay
@@ -24,16 +30,18 @@
   The switch is a <button>, not a link: it changes the page rather than
   navigating. The list is a <details>, so it opens without scripting.
 {% endcomment %}
-{% if user.is_authenticated %}
+{% if user.is_authenticated and user.profile.can_access_theme_setting %}
 <details class="dropdown dropdown-end flex-none">
   <summary class="btn btn-ghost btn-sm" aria-label="Appearance">
     {% include "snippets/theme_icon.html" %}
   </summary>
   <ul class="dropdown-content z-10 mt-2 max-h-96 w-56 overflow-y-auto rounded-box bg-base-100 p-2 shadow"
       id="id-theme-list" data-recent-shown="{{ RECENT_THEMES_SHOWN }}">
+    {% if user.profile.can_access_appearance_page %}
     <li>
       <a class="btn btn-sm btn-block btn-primary justify-start" href="{% url 'profile_appearance' %}">Customize…</a>
     </li>
+    {% endif %}
 
     {% comment %}
       Empty and hidden until theme.js has something to put in it. Rendered here
@@ -54,11 +62,19 @@
     {% endfor %}
     {% endfor %}
 
+    {% if user.profile.can_access_appearance_page %}
     <li class="mt-2 border-t border-base-300 px-2 pt-2">
       <a class="link text-xs" href="{% url 'profile_appearance' %}">All themes and fonts…</a>
     </li>
+    {% endif %}
 
-    {% if THEME_ATTRIBUTION.themes %}
+    {% comment %}
+      The credit is a licence condition on the themes it names, so it is
+      rendered wherever those themes can be reached. None of the twelve above
+      is one of them, so a reader who never reaches the appearance page is not
+      shown a credit for themes they were never offered.
+    {% endcomment %}
+    {% if THEME_ATTRIBUTION.themes and user.profile.can_access_appearance_page %}
     <li class="mt-2 px-2 pt-1 text-xs text-base-content/60">
       Some themes by
       <a class="link" href="{{ THEME_ATTRIBUTION.author_url }}" target="_blank" rel="noopener">{{ THEME_ATTRIBUTION.author }}</a>,

@@ -33,7 +33,9 @@ class AppearancePickerTest(FunctionalTest):
     def _open_picker(self, page="disclaimer"):
         # The list is rendered only for a signed-in reader, so every test in
         # this class needs a session before it can see one.
-        self.create_cookie_and_go_to_index_page("picker@example.com")
+        self.create_cookie_and_go_to_index_page_tier(
+            "picker@example.com", permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        )
         self.browser.get(self.server_url + reverse(page))
         # A <details>, so it opens without scripting; open it directly rather
         # than clicking, which keeps the test about the choice, not the widget.
@@ -64,9 +66,31 @@ class AppearancePickerTest(FunctionalTest):
             list(settings.DEFAULT_THEMES),
         )
 
-    def test_picker_links_to_the_rest(self):
-        """The other 45 have to be reachable from here, or they are lost."""
+    def test_picker_offers_intro_no_way_to_the_rest(self):
+        """Intro cannot open the appearance page, so it is not offered.
+
+        The other forty-five themes are what the next tier buys; a link here
+        would be a control whose only outcome is a redirect to subscriptions.
+        """
         self._open_picker()
+
+        links = self.browser.find_elements(
+            By.CSS_SELECTOR,
+            f'#id-theme-list a[href="{reverse("profile_appearance")}"]',
+        )
+
+        self.assertFalse(links, "Intro is offered a page it cannot open")
+
+    def test_picker_links_a_subscriber_to_the_rest(self):
+        """From Asastatser the other forty-five are reachable from here."""
+        self.create_cookie_and_go_to_index_page_tier(
+            "picker-paid@example.com",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
+        )
+        self.browser.get(self.server_url + reverse("disclaimer"))
+        self.browser.execute_script(
+            "document.querySelector('#id-theme-list').closest('details').open = true;"
+        )
 
         links = self.browser.find_elements(
             By.CSS_SELECTOR,
@@ -76,7 +100,10 @@ class AppearancePickerTest(FunctionalTest):
         self.assertTrue(links, "the dropdown offers no way to the full set")
 
     def test_no_theme_is_stamped_until_one_is_chosen(self):
-        self.create_cookie_and_go_to_index_page("unstamped@example.com")
+        self.create_cookie_and_go_to_index_page_tier(
+            "unstamped@example.com",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
+        )
         self.browser.get(self.server_url + reverse("disclaimer"))
         # Unstamped means DaisyUI's own default applies -- the `asastats` theme
         # is registered with `default: true`, so the page is still branded.
@@ -110,7 +137,10 @@ class AppearancePickerTest(FunctionalTest):
     def test_the_picker_is_reachable_from_every_page_that_has_the_new_header(self):
         # index deliberately blanks {% block header %} -- it is a bare
         # landing page -- so it has no picker to find.
-        self.create_cookie_and_go_to_index_page("everypage@example.com")
+        self.create_cookie_and_go_to_index_page_tier(
+            "everypage@example.com",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
+        )
         for page in ("faq", "subscriptions", "account_login", "disclaimer"):
             with self.subTest(page=page):
                 self.browser.get(self.server_url + reverse(page))
@@ -181,7 +211,9 @@ class AppearancePageTest(FunctionalTest):
     """The appearance page behind Customize."""
 
     def _open(self, email="appearance@example.com"):
-        self.create_cookie_and_go_to_index_page(email)
+        self.create_cookie_and_go_to_index_page_tier(
+            email, permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        )
         self.browser.get(self.server_url + reverse("profile_appearance"))
 
     def _stamped_theme(self):
@@ -196,7 +228,10 @@ class AppearancePageTest(FunctionalTest):
 
     def test_customize_in_the_header_leads_here(self):
         """The dropdown's first entry is the way in, so it has to arrive."""
-        self.create_cookie_and_go_to_index_page("customize@example.com")
+        self.create_cookie_and_go_to_index_page_tier(
+            "customize@example.com",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
+        )
         self.browser.get(self.server_url + reverse("disclaimer"))
         self.browser.execute_script(
             "document.querySelector('#id-theme-list').closest('details').open = true;"
@@ -290,15 +325,17 @@ class AppearanceTypefaceTest(FunctionalTest):
         self.browser.get(self.server_url + reverse("profile_appearance"))
 
     def _entitled(self):
+        """May use the typefaces: Professional and up."""
         self._open(
             "typeface-paid@example.com",
-            SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
+            SUBSCRIPTION_TIER_PERMISSIONS["Professional"],
         )
 
     def _unentitled(self):
+        """Reaches the page and every theme on it, but not the fonts."""
         self._open(
             "typeface-free@example.com",
-            SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"] - 1,
+            SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
         )
 
     def _stamped_typeface(self):
@@ -390,7 +427,9 @@ class AppearanceTypefaceTest(FunctionalTest):
             tab.get_attribute("href").split(self.live_server_url)[-1],
             reverse("subscriptions"),
         )
-        self.assertIn("Asastatser", tab.get_attribute("title"))
+        # The tier named is the one that unlocks typefaces, which is a tier
+        # above the one that unlocks this page.
+        self.assertIn("Professional", tab.get_attribute("title"))
 
     def test_an_entitled_reader_gets_fonts_as_a_tab(self):
         """Above the tier it is a tab like Dark and Light, not a link away."""
@@ -436,7 +475,9 @@ class AppearanceRecentThemesTest(FunctionalTest):
     """
 
     def _sign_in(self):
-        self.create_cookie_and_go_to_index_page("recent@example.com")
+        self.create_cookie_and_go_to_index_page_tier(
+            "recent@example.com", permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        )
 
     def _open_picker(self, page="disclaimer"):
         self.browser.get(self.server_url + reverse(page))
@@ -497,16 +538,16 @@ class AppearanceRecentThemesTest(FunctionalTest):
     def test_a_used_theme_leads_the_dropdown(self):
         self._sign_in()
         self._open_picker()
-        self._choose("gruvbox")
+        self._choose("halloween")
         self.wait_until(
             lambda: self.browser.find_element(
                 By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "gruvbox"
+            ).get_attribute("data-theme") == "halloween"
         )
 
         self._open_picker("faq")
 
-        self.assertEqual(self._recent(), ["gruvbox"])
+        self.assertEqual(self._recent(), ["halloween"])
 
     def test_a_promoted_theme_is_not_offered_twice(self):
         """Two radios sharing a name and a value fight over which is chosen."""
@@ -535,18 +576,18 @@ class AppearanceRecentThemesTest(FunctionalTest):
         """The count means chosen and kept, not page views."""
         self._sign_in()
         self._open_picker()
-        self._choose("tokyonight")
+        self._choose("night")
         self.wait_until(
             lambda: self.browser.find_element(
                 By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "tokyonight"
+            ).get_attribute("data-theme") == "night"
         )
 
         self._open_picker("faq")
         self._open_picker("disclaimer")
         self._open_picker("faq")
 
-        self.assertEqual(self._usage(), {"tokyonight": 1})
+        self.assertEqual(self._usage(), {"night": 1})
 
     def test_a_promoted_theme_still_applies_when_chosen(self):
         """A cloned entry that does nothing when clicked is worse than none."""
@@ -593,7 +634,8 @@ class AppearanceTabsTest(FunctionalTest):
     def setUp(self):
         super().setUp()
         self.create_cookie_and_go_to_index_page_tier(
-            "tabs@example.com", permission=100
+            "tabs@example.com",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
         )
         self.browser.get(self.server_url + reverse("profile_appearance"))
 

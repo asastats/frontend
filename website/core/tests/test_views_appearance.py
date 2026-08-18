@@ -25,7 +25,17 @@ class ProfileAppearanceViewTest(TestCase):
     def setUp(self):
         self.url = reverse("profile_appearance")
 
-    def _sign_in(self, username="appearance@example.com", permission=0):
+    def _sign_in(
+        self,
+        username="appearance@example.com",
+        permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
+    ):
+        """Signed in AND entitled by default.
+
+        Reaching this page is itself a subscription feature now -- the view
+        redirects anyone below Asastatser -- so a bare signed-in user is no
+        longer a reader of this page.
+        """
         user = get_user_model().objects.create_user(
             username=username, email=username, password="top_secret"
         )
@@ -143,13 +153,19 @@ class ProfileAppearanceTypefaceTest(TestCase):
         return user
 
     def _entitled(self):
+        """May use the typefaces: Professional and up."""
         return self._sign_in(
-            "paid@example.com", SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+            "paid@example.com", SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
         )
 
     def _unentitled(self):
+        """May open the page, but not the Fonts tab.
+
+        Asastatser exactly: the tier that reaches the page and every theme on
+        it, and stops one short of the typefaces.
+        """
         return self._sign_in(
-            "free@example.com", SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"] - 1
+            "themes@example.com", SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
         )
 
     # # the catalogue
@@ -253,7 +269,9 @@ class ProfileAppearanceTypefaceTest(TestCase):
         response = self.client.get(self.url)
 
         self.assertContains(response, reverse("subscriptions"))
-        self.assertContains(response, "Asastatser")
+        # The tier named is the one that unlocks typefaces, which is no longer
+        # the tier that unlocks this page.
+        self.assertContains(response, "Professional")
 
     def test_core_views_appearance_theme_choice_is_not_gated(self):
         """The tier buys typefaces, not themes.
@@ -281,7 +299,8 @@ class ProfileAppearanceTabsTest(TestCase):
     def setUp(self):
         self.url = reverse("profile_appearance")
 
-    def _sign_in(self, permission=0):
+    def _sign_in(self, permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]):
+        """Entitled by default: the view redirects anyone below Asastatser."""
         user = get_user_model().objects.create_user(
             username="tabs@example.com", email="tabs@example.com", password="x"
         )

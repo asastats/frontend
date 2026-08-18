@@ -72,10 +72,11 @@
     </div>
 
     {% comment %}
-      Fonts is the one gated tab. Above the tier it is a tab like the others;
-      below it, it is a link to subscriptions instead -- the reader is told what
-      it costs and taken somewhere they can act, rather than shown a panel of
-      controls that do nothing when clicked.
+      Fonts is the one gated tab on a page that is itself gated: reaching
+      this page takes Asastatser, and the typefaces take Professional. Above
+      that tier it is a tab like the others; below it, a link to subscriptions
+      -- the reader is told what it costs and taken somewhere they can act,
+      rather than shown a panel of controls that do nothing when clicked.
 
       Each choice is another theme's pairing, named after that theme, because
       that is what it is. "Theme default" clears the override, which is why its
@@ -119,9 +120,9 @@
     {% else %}
     <a role="tab" id="id-tab-fonts" href="{% url 'subscriptions' %}"
        class="tab flex-1 cursor-pointer rounded-field py-2 text-center text-sm font-medium"
-       title="Choosing a typeface is available from the Asastatser tier">
+       title="Choosing a typeface is available from the Professional tier">
       Fonts
-      <span class="badge badge-outline badge-xs ml-2">Asastatser</span>
+      <span class="badge badge-outline badge-xs ml-2">Professional</span>
     </a>
     {% endif %}
   </div>

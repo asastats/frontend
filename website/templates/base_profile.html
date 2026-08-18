@@ -42,10 +42,17 @@
     tabs light up. The url is already the truth.
   {% endcomment %}
   <nav class="mt-6 flex flex-wrap gap-1 rounded-field bg-base-200 p-1" aria-label="Profile sections">
+    {% comment %}
+      Appearance is skipped below the Asastatser tier: the view redirects a
+      reader who cannot open it, so offering the tab would be a control whose
+      only outcome is being sent somewhere else.
+    {% endcomment %}
     {% for url_name, label in profile_sections %}
+    {% if url_name != "profile_appearance" or user.profile.can_access_appearance_page %}
     <a class="flex-1 rounded-field px-3 py-2 text-center text-sm font-medium whitespace-nowrap
               aria-[current=page]:bg-base-100 aria-[current=page]:shadow-sm"
        href="{% url url_name %}"{% if url_name == request.resolver_match.url_name %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endif %}
     {% endfor %}
   </nav>
 

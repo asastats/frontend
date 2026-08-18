@@ -510,6 +510,27 @@ class TestCoreContextProcessors:
             f"radios sharing a value: {sorted({t for t in flat if flat.count(t) > 1})}"
         )
 
+    def test_core_context_processors_default_themes_carry_no_attribution(self):
+        """The dropdown's twelve may not include a theme that needs crediting.
+
+        CC BY asks that the author, source and licence be named where the work
+        is used. That credit is rendered in two places -- the appearance page,
+        and the footer of this dropdown -- and an Intro reader reaches neither:
+        the page is above their tier, and the credit line in the dropdown is
+        rendered only for tiers that can open the page.
+
+        So a CC BY theme among the defaults would be shown to a reader who is
+        never shown its attribution, which is the one thing the licence asks
+        for. Hence: those themes live on the appearance page and nowhere else.
+        """
+        attributed = set(settings.THEME_ATTRIBUTION["themes"])
+        defaults = set(settings.DEFAULT_THEMES)
+
+        assert not (defaults & attributed), (
+            "offered without the credit their licence requires: "
+            f"{sorted(defaults & attributed)}"
+        )
+
     def test_core_context_processors_recent_shown_leaves_room_for_the_rest(self):
         """Recent is a nudge, not a replacement for the list underneath it."""
         assert 0 < settings.RECENT_THEMES_SHOWN < len(settings.DEFAULT_THEMES)

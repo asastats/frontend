@@ -66,6 +66,22 @@ class CanAccessApiMixin(SubscribeRedirection):
         return self.request.user.profile.can_access_api()
 
 
+class CanAccessAppearanceMixin(SubscribeRedirection):
+    """Class for determining if user may open the profile appearance page."""
+
+    def test_func(self):
+        """Return True if the user's tier reaches the appearance page.
+
+        The page is where every theme is offered, so reaching it *is* the
+        permission -- an Intro reader has the header's twelve and no link
+        here. A denied reader lands on subscriptions rather than a 403: the
+        page is something to buy, not something to be refused.
+
+        :return: Boolean
+        """
+        return self.request.user.profile.can_access_appearance_page()
+
+
 class CanAccessAuthorizeMixin(ProfileRedirection):
     """Class with method for determining if user is allowed to access API."""
 

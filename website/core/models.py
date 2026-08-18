@@ -124,19 +124,47 @@ class Profile(models.Model):
         """
         return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
 
-    def can_access_typeface_setting(self):
-        """Return True if the user may override their theme's typeface.
+    def can_access_theme_setting(self):
+        """Return True if the user may choose from the header's theme list.
 
-        Available from the Asastatser subscription tier upward; below that the
-        appearance page shows the choices disabled and routes a click to the
-        subscriptions page, the way the explorer preference does.
+        Available from the Intro subscription tier upward. Below it -- signed
+        out, or signed in without a subscription -- the header offers the
+        light/dark switch between the two brand themes and nothing else: the
+        choice is a subscription feature, not a sign-in one.
 
-        Choosing a *theme* is not gated -- only borrowing another theme's
-        typeface pairing is.
+        The list this unlocks is `settings.DEFAULT_THEMES`, not every theme
+        the project ships. The rest arrive with the appearance page.
+
+        :return: Boolean
+        """
+        return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+
+    def can_access_appearance_page(self):
+        """Return True if the user may open the profile appearance page.
+
+        Available from the Asastatser subscription tier upward, and it is what
+        unlocks the full set of themes: the page is where every theme is
+        offered and previewed. An Intro reader has the header list and no link
+        to this page at all.
 
         :return: Boolean
         """
         return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+
+    def can_access_typeface_setting(self):
+        """Return True if the user may override their theme's typeface.
+
+        Available from the Professional subscription tier upward; below that
+        the appearance page shows the Fonts tab as a link to subscriptions,
+        the way the explorer preference routes a click.
+
+        Choosing a *theme* is gated separately and lower -- see
+        :meth:`can_access_theme_setting` and
+        :meth:`can_access_appearance_page`.
+
+        :return: Boolean
+        """
+        return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
 
     def check_votes_and_permission(self):
         """Check and possibly update profile with new votes and permission values.

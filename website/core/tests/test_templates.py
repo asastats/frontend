@@ -18,6 +18,7 @@ Both surfaced as a wall of failures in the functional suite, pointing at the
 pages rather than at the cause.
 """
 
+import re
 from pathlib import Path
 
 import pytest
@@ -94,6 +95,19 @@ class FooterLinksTest(TestCase):
         html = response.content.decode()
         return html[html.index("<footer") : html.index("</footer>")]
 
+    def _columns(self, response):
+        """Return {heading: [link text, ...]} for the footer's groups."""
+        footer = self._footer(response)
+        columns = {}
+        for name, body in re.findall(
+            r"<h2[^>]*>([\w ]+)</h2>(.*?)</ul>", footer, re.DOTALL
+        ):
+            columns[name] = [
+                re.sub(r"<[^>]+>", "", item).replace("\xa0", " ").strip()
+                for item in re.findall(r"<li>(.*?)</li>", body, re.DOTALL)
+            ]
+        return columns
+
     def test_core_footer_offers_the_sitemap(self):
         footer = self._footer(self.client.get(self.url))
 
@@ -120,13 +134,29 @@ class FooterLinksTest(TestCase):
         self.assertNotIn("#modalLogin", footer)
 
     def test_core_footer_offers_home_only_where_it_works(self):
-        """`home` redirects a signed-out visitor, so offering it bounces them.
-
-        It shared a slot with Log in until that moved to the About column; this
-        is what stops the move from leaving a dead link behind.
-        """
+        """`home` redirects a signed-out visitor, so offering it bounces them."""
         anonymous = self._footer(self.client.get(self.url))
         self.assertNotIn(reverse("home"), anonymous)
 
         self._sign_in()
         self.assertIn(reverse("home"), self._footer(self.client.get(self.url)))
+
+    def test_core_footer_account_link_keeps_one_slot(self):
+        """Log in and Home are the same affordance, so they share a place.
+
+        Gating them into different columns made the footer rearrange itself on
+        sign-in: Home appeared in Product while Log in vanished from About, so
+        two columns changed length for what is one link.
+        """
+        anonymous = self._columns(self.client.get(self.url))
+        self._sign_in()
+        signed_in = self._columns(self.client.get(self.url))
+
+        self.assertEqual(
+            anonymous["Product"],
+            signed_in["Product"],
+            "the Product column changes with the reader",
+        )
+        self.assertEqual(anonymous["About"][0], "Log in")
+        self.assertEqual(signed_in["About"][0], "Home")
+        self.assertEqual(anonymous["About"][1:], signed_in["About"][1:])
