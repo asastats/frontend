@@ -61,3 +61,47 @@ class SubscriptionsPageTest(FunctionalTest):
         self.assertEqual(len(links), 4)
         for link in links:
             self.assertIn("subtopia.io", link.get_attribute("href"))
+
+    def test_the_four_subscribe_buttons_sit_on_one_line(self):
+        """The price row must align across the four cards.
+
+        Equal card height is not enough on its own, and that is what the cards
+        had: they were stretched to a common total, so anything that changed
+        one card's lower half moved its button. Two of the four carry a
+        `* Conditional` footnote and the others do not, so those two sat
+        visibly higher; a feature label wrapping to a second line does the
+        same.
+
+        The cards are a subgrid of the pricing grid now, so the description and
+        the price row each take a row whose height is shared across all four
+        columns -- the alignment holds whatever the content below it does.
+        """
+        self.browser.set_window_size(1400, 1200)
+        self.browser.get(self.server_url + reverse("subscriptions"))
+
+        tops = [
+            button.location["y"]
+            for button in self.browser.find_elements(
+                By.CSS_SELECTOR, "#user .card-actions a"
+            )
+        ]
+
+        self.assertEqual(len(tops), 4)
+        self.assertEqual(
+            len(set(tops)), 1, f"the SUBSCRIBE buttons are on {len(set(tops))} lines: {tops}"
+        )
+
+    def test_the_card_descriptions_share_a_row(self):
+        """The row above the buttons is what makes them line up.
+
+        Asserted separately so a failure says which half of the card drifted,
+        rather than only that the buttons moved.
+        """
+        self.browser.set_window_size(1400, 1200)
+        self.browser.get(self.server_url + reverse("subscriptions"))
+
+        bodies = self.browser.find_elements(By.CSS_SELECTOR, "#user .card-body")
+        heights = [body.size["height"] for body in bodies]
+
+        self.assertEqual(len(heights), 4)
+        self.assertEqual(len(set(heights)), 1, f"description rows differ: {heights}")
