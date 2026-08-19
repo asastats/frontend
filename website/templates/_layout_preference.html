@@ -1,0 +1,13 @@
+{% load static %}
+{# Non-cached, per-reader. The address page is cached and shared between      #}
+{# signed-in readers, so their layout cannot be rendered into it; this partial #}
+{# carries it instead and the script stamps it on <html>.                      #}
+{#                                                                             #}
+{# base.html has already stamped whatever was remembered from the last visit,  #}
+{# before paint. This corrects that only when the two disagree -- a reader who #}
+{# changed the setting elsewhere, or whose subscription lapsed -- so the       #}
+{# common case reflows nothing.                                                #}
+<span id="id-layout-preference"
+      data-layout="{{ layout }}"
+      data-layout-position="{{ layout_position }}"></span>
+<script src="{% static 'js/layout.js' %}"></script>

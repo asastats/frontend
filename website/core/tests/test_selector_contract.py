@@ -381,19 +381,29 @@ class TestPositionIdentity:
 class TestPositionPresentation:
     """Rows and cards are the same markup with a different area map."""
 
-    def test_the_component_declares_a_presentation(self, page):
-        """Bare `.position` has no areas, so its children would overlap.
+    def test_the_component_declares_no_presentation(self, page):
+        """The inverse of what this once asserted, and the reason matters.
 
-        The modifier is not decoration: it is what places the summary and the
-        breakdown.
+        Placement now comes from `data-layout-position` on the root element,
+        because the reader's layout cannot be rendered into this page -- the
+        cache entry is shared between signed-in readers, so a modifier written
+        here would hand the first reader's choice to everyone after them. See
+        `core/tests/test_address_layout.py`.
+
+        Rows is the CSS default, so a `.position` carrying no modifier is fully
+        laid out; the hazard the old assertion guarded against is gone rather
+        than merely unasserted.
         """
-        unplaced = [
+        declared = [
             str(el)[:70]
             for el in page.select(".position")
-            if not ({"position--rows", "position--cards"} & el.classes)
+            if {"position--rows", "position--cards"} & el.classes
         ]
 
-        assert not unplaced, f"{len(unplaced)} positions with no presentation class"
+        assert not declared, (
+            f"{len(declared)} positions carry a presentation class; the layout "
+            "belongs on the root element, not in this cached markup"
+        )
 
     def test_the_summary_comes_before_the_breakdown_in_the_source(self, page):
         """So a screen reader and a keyboard meet the whole before the parts.

@@ -208,7 +208,7 @@ depend on it.
 | ``.position``          | ``data-pid-ambiguous`` when, and only when, the id names more than | Lets the page say "cannot promise" instead of pinning one and hoping. Six rows in  |
 |                        | one position                                                       | the reference bundle                                                               |
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
-| ``.position``          | one of ``.position--rows`` / ``.position--cards``                  | Bare ``.position`` declares no grid areas, so its children would overlap           |
+| ``.position``          | **no** presentation class --- see below                            | The reader's layout may not be rendered into this cached page                      |
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | ``.position-summary``  | also carries ``asar`` and ``data-program-panel``                   | ``toggleDist`` swaps ``shadow``/``asar`` on it                                     |
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
@@ -223,12 +223,68 @@ the parts. The old row put the breakdown first and pulled it back with
 reading order --- and made a second layout impossible without a second copy of
 the markup.
 
-The two modifiers are named a second time in ``utils/constants/core.py``, as each
-layout's ``position`` key --- that registry is what decides which one a reader's page
-renders. Rename a modifier here and the registry hands out a class that no longer
-exists, which is silent: ``.position`` alone still matches, and its children
-overlap. ``test_utils_layouts_registry_position_is_a_known_modifier`` pins the
-registry side; change both together.
+Where the presentation lives
+""""""""""""""""""""""""""""
+
+**Not on the component.** Placement is selected by ``data-layout-position`` on
+the root ``<html>`` element:
+
+.. code-block:: css
+
+   .position { grid-template-areas: "breakdown summary"; }          /* rows */
+   [data-layout-position="cards"] .position {
+     grid-template-areas: "summary" "breakdown";
+   }
+
+Rows is the default, so a ``.position`` with no ancestor attribute is still fully
+laid out --- the historic widget renders this component with none of the address
+page's chrome and depends on that.
+
+This is not a style preference. **The address page's cache entry is shared
+between signed-in readers**, so a modifier class written into the component would
+hand the first reader's layout to everybody who followed. ``cache_page`` is a
+*view* decorator, so it runs inside the middleware: ``SessionMiddleware`` appends
+``Vary: Cookie`` in its ``process_response``, which happens after
+``learn_cache_key`` has already recorded which headers to key the entry on. The
+header is on the finished response and plays no part in the lookup --- reading it
+as evidence of per-reader caching is an easy and expensive mistake.
+
+So the preference travels off the cache, the same route the swap config takes:
+
+``core.views.LayoutPreferenceView``
+  A non-cached partial at ``/layout-preference/``, loaded by htmx on the address
+  page. Takes no address --- a reader's layout does not depend on which address
+  they are looking at.
+
+``static/js/layout.js``
+  Stamps ``data-layout-position`` from that partial and mirrors it into
+  ``localStorage``.
+
+``base.html``
+  Re-stamps the remembered value inline **before paint**, exactly as it does for
+  the theme and the typeface. Without it every visit would reflow once when the
+  partial landed.
+
+The two values are named a second time in ``utils/constants/core.py``, as each
+layout's ``position`` key. Rename one and the registry hands out an attribute
+value no stylesheet matches, which is silent --- the page simply stays in rows.
+``test_utils_layouts_registry_position_is_a_known_modifier`` pins the registry
+side and
+``core/tests/test_selector_contract.py::TestPositionPresentation`` pins the
+markup side; change both together.
+
+.. warning::
+
+   ``core/tests/test_address_layout.py`` demonstrates the shared cache entry
+   directly, and includes a test that fails if the suite is ever run with
+   caching disabled --- ``config.settings.development`` uses ``DummyCache``,
+   under which every one of these tests passes vacuously and the page looks
+   perfectly isolated. ``frontend/pytest.ini`` pins the automated-test settings
+   for this reason. A probe run outside that rootdir does not get them.
+
+   If those tests start failing, the caching changed. Check whether
+   ``AddressView`` gained ``vary_on_cookie``; if so, the partial can be dropped
+   and the layout rendered inline after all. Do not weaken the assertions.
 
 **What may never become a handle**: the value, the amount, the distribution, or
 the row's place in the list. All four change between two loads of the same

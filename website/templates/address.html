@@ -37,6 +37,12 @@
 {% endblock %}
 {% block content %}
 <div id="id-swap-entry-container" hx-get="{% url 'swap_entry' url_value %}" hx-trigger="load" hx-swap="innerHTML"></div>
+{% comment %} The reader's layout, off the cache. This page's cache entry is
+   shared between signed-in readers, so their choice cannot be rendered into it
+   -- see core/views.py:LayoutPreferenceView. base.html has already stamped the
+   remembered value before paint, so this usually confirms rather than changes
+   it. {% endcomment %}
+<div id="id-layout-preference-container" hx-get="{% url 'layout_preference' %}" hx-trigger="load" hx-swap="innerHTML"></div>
 {{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
 {% with total=account.total system=account.system_info account_info=account.account_info %}
 

@@ -36,10 +36,9 @@ from unittest import mock
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.core.cache import cache
-from django.test import Client
-from django.test import RequestFactory
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
+from django.test import Client, RequestFactory
 
 from core.views import BaseAddressView
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
@@ -49,7 +48,9 @@ ADDRESS = "VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU"
 
 #: The real bundle payload, so the page renders its full asset list rather than
 #: a trimmed stand-in that might not reach the position component at all.
-SAMPLE = Path(__file__).parent.parent.parent / "utils/tests/sample_serialized_540A5.json"
+SAMPLE = (
+    Path(__file__).parent.parent.parent / "utils/tests/sample_serialized_540A5.json"
+)
 
 
 @pytest.fixture(scope="module")
@@ -194,44 +195,117 @@ class TestMarkupDoesNotCarryTheReadersLayout:
             return client.get(f"/{ADDRESS}").content.decode()
 
     @pytest.mark.django_db
-    def test_the_component_ships_the_default_presentation(self, payload):
+    def test_the_component_carries_no_presentation_class(self, payload):
         cache.clear()
         html = self._render(None, payload)
 
-        assert "position--rows" in html
+        assert "position--rows" not in html
         assert "position--cards" not in html
 
     @pytest.mark.django_db
-    def test_a_compact_reader_still_gets_the_default(self, payload):
-        """Not the desired behaviour -- the safe one, until it comes off the cache.
+    def test_two_readers_render_the_same_bytes(self, payload):
+        """Their layouts arrive separately, so the page itself is identical.
 
-        A reader who chose the compact layout sees the default until the
-        preference is delivered off the cached page. Wrong-but-shared beats
-        right-for-whoever-loaded-it-first.
+        This is what makes the shared cache entry safe rather than merely
+        tolerated: there is nothing reader-specific in it to leak. Both renders
+        are fresh -- the cache is cleared between them -- so this is a property
+        of the template, not of the cache handing back what it stored.
+
+        Two *signed-in* readers, because the signed-out page legitimately
+        differs: no theme picker, and a login modal.
         """
         cache.clear()
-        user = _user(
+        compact = _user(
             "layoutmk-1",
             permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
             layout="classic-compact",
         )
-        html = self._render(user, payload)
+        classic = _user(
+            "layoutmk-2",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
+            layout="classic",
+        )
+        first = self._render(compact, payload)
+        cache.clear()
+        second = self._render(classic, payload)
 
-        assert "position--cards" not in html
+        assert first == second
 
     @pytest.mark.django_db
-    def test_every_position_declares_a_presentation(self, payload):
-        """A bare `.position` declares no grid areas, so its children overlap.
+    def test_the_page_still_renders_positions(self, payload):
+        """Guards the two assertions above from passing on an empty page.
 
-        Counted rather than sampled: the component has two branches, and the
-        wallet's own ALGO balance goes through the one that is easy to forget.
+        Both are absence checks, and absence is also what a page with no
+        positions at all would show.
         """
         cache.clear()
         html = self._render(None, payload)
 
-        assert html.count('class="position position--') == html.count(
-            'class="position position--rows"'
+        assert html.count('class="position"') > 1
+
+
+@pytest.mark.django_db
+class TestLayoutPreferencePartial:
+    """The non-cached route the preference actually travels."""
+
+    url = "/layout-preference/"
+
+    def test_anonymous_reader_gets_the_default(self):
+        response = Client().get(self.url)
+
+        assert response.status_code == 200
+        assert 'data-layout-position="rows"' in response.content.decode()
+
+    def test_signed_in_reader_gets_their_own(self):
+        user = _user(
+            "layoutpart-1",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
+            layout="classic-compact",
         )
+        html = _client_for(user).get(self.url).content.decode()
+
+        assert 'data-layout-position="cards"' in html
+        assert 'data-layout="classic-compact"' in html
+
+    def test_the_partial_is_not_cached(self):
+        """Two readers, one after the other, each get their own answer.
+
+        The whole point of the partial. If it ever picks up a cache decorator
+        this fails, which is the only way that mistake surfaces -- it looks
+        entirely correct in a single-user browser.
+        """
+        compact = _user(
+            "layoutpart-2",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
+            layout="classic-compact",
+        )
+        classic = _user(
+            "layoutpart-3",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
+            layout="classic",
+        )
+        first = _client_for(compact).get(self.url).content.decode()
+        second = _client_for(classic).get(self.url).content.decode()
+
+        assert 'data-layout-position="cards"' in first
+        assert 'data-layout-position="rows"' in second
+
+    def test_a_lapsed_reader_is_handed_the_default(self):
+        """The tier gate applies here too, not only where the choice is saved."""
+        user = _user("layoutpart-4", permission=0, layout="money-column")
+        html = _client_for(user).get(self.url).content.decode()
+
+        assert 'data-layout-position="rows"' in html
+        assert 'data-layout="classic"' in html
+
+    def test_the_address_page_asks_for_it(self, payload):
+        """The partial is useless if nothing loads it."""
+        cache.clear()
+        p1, p2, p3, p4 = _render_patches(payload)
+        with p1, p2, p3, p4:
+            html = Client().get(f"/{ADDRESS}").content.decode()
+
+        assert self.url in html
 
 
 @pytest.mark.django_db
@@ -308,6 +382,6 @@ class TestCachedPageIsSharedBetweenReaders:
 
         backend = settings.CACHES["default"]["BACKEND"]
 
-        assert "dummy" not in backend.lower(), (
-            f"caching is disabled ({backend}); this module cannot detect anything"
-        )
+        assert (
+            "dummy" not in backend.lower()
+        ), f"caching is disabled ({backend}); this module cannot detect anything"

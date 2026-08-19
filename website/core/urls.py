@@ -111,6 +111,12 @@ urlpatterns = [
         core_views.SwapEntryView.as_view(),
         name="swap_entry",
     ),
+    # No address in the path: the layout is the reader's, not the page's.
+    re_path(
+        r"^layout-preference/$",
+        core_views.LayoutPreferenceView.as_view(),
+        name="layout_preference",
+    ),
     re_path(
         r"^swap/(\w{40}|\w{58})/(\d+)/$",
         core_views.SwapSourceRedirectView.as_view(),

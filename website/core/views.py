@@ -86,6 +86,7 @@ from utils.helpers import (
     safe_referer,
     weighted_randomized_banner,
 )
+from utils.layouts import layout_for_user
 from utils.userhelpers import check_authorization_transaction
 from walletauth.gating import linked_addresses_for_user
 from widgethost.registry import (
@@ -1403,6 +1404,40 @@ class DeactivateProfileView(FormView):
         """
         form.deactivate_profile(self.request)
         return super().form_valid(form)
+
+
+class LayoutPreferenceView(TemplateView):
+    """Non-cached htmx partial carrying the reader's address-page layout.
+
+    The address page is ``cache_page``'d and its entry is **shared between
+    signed-in readers** -- ``cache_page`` is a view decorator, so
+    ``learn_cache_key`` records what to key on before ``SessionMiddleware``
+    appends ``Vary: Cookie``, and that header therefore plays no part in the
+    lookup. Anything per-reader rendered into that page is handed to whoever
+    asks next, so the layout arrives here instead, exactly as the swap config
+    does in :class:`SwapEntryView`.
+
+    Takes no address argument, unlike the swap entry: which layout a reader gets
+    does not depend on which address they are looking at. That also means one
+    response serves every address page, so it costs a request rather than a
+    render.
+
+    :var template_name: relative path to the partial template
+    :type template_name: str
+    """
+
+    template_name = "_layout_preference.html"
+
+    def get_context_data(self, *args, **kwargs):
+        """Resolve the reader's layout, defaulting for anyone signed out.
+
+        :return: dict
+        """
+        context = super().get_context_data(*args, **kwargs)
+        context["layout"], context["layout_position"] = layout_for_user(
+            self.request.user
+        )
+        return context
 
 
 class SwapEntryView(TemplateView):

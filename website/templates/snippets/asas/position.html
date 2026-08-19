@@ -6,22 +6,20 @@
    deposit, a borrow -- and, where the engine can decompose it, the panel
    listing what the figure is made of.
 
-   Rows and cards are the same markup. Placement is a class on the root:
+   Rows and cards are the same markup, and this template says nothing about
+   which one applies. Placement comes from `data-layout-position` on `<html>`;
+   rows is what you get with no attribute at all.
 
-     .position            the component, laid out by named grid areas
-     .position--rows      breakdown beside the summary   (default)
-     .position--cards     breakdown beneath the summary  (compact layouts)
+   **The presentation must never be rendered in here.** `cache_page` on
+   `AddressView` is a view decorator, so it runs inside the middleware:
+   `Vary: Cookie` is added by SessionMiddleware *after* `learn_cache_key` has
+   recorded what to key on, and the entry is therefore shared between signed-in
+   readers. A modifier class written here would hand the first reader's layout
+   to everybody who follows. `core/tests/test_address_layout.py` demonstrates
+   that, and asserts this component stays presentation-free.
 
-   **This is hard-coded to `rows`, and must stay that way while it is rendered
-   from the cached address page.** `cache_page` on `AddressView` is a view
-   decorator, so it runs inside the middleware: `Vary: Cookie` is added by
-   SessionMiddleware *after* `learn_cache_key` has already recorded what to key
-   on, and the entry is therefore shared between signed-in readers. Rendering
-   the reader's own layout here hands the first reader's choice to everybody who
-   follows. `core/tests/test_address_layout.py` demonstrates that directly.
-
-   The reader's layout is resolved by `utils.layouts.layout_for_user` and has to
-   reach the page off the cache -- the way `_swap_entry.html` does.
+   The reader's layout is resolved by `utils.layouts.layout_for_user` and
+   reaches the page off the cache -- the way `_swap_entry.html` does.
 
    Source order is presentation-neutral: summary first, then breakdown, with
    the areas deciding where each lands. The old markup put the breakdown first
@@ -51,7 +49,7 @@
   {% comment %} The wallet's own ALGO. The one position with nowhere to go --
      it is already home -- so it links to the explorer rather than to a venue,
      and it never decomposes. {% endcomment %}
-  <div class="position position--rows" data-pid="{{ prog.pid }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
+  <div class="position" data-pid="{{ prog.pid }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
     <div class="position-summary asar space-y-1" data-program-panel>
       <div class="flex flex-wrap items-baseline justify-end gap-x-2">
         <a class="link link-hover" href="{% explorer_base %}{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to {% explorer_name %}"><span class="balance text-success">Balance:</span></a>
@@ -68,7 +66,7 @@
 {% else %}
   {% with dist=prog.distribution counter=forloop_counter|stringformat:"s" %}
     {% with distid_base=program.type|slugify|add:"-"|add:counter has_breakdown=dist|length %}
-      <div class="position position--rows" data-pid="{{ prog.pid }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
+      <div class="position" data-pid="{{ prog.pid }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
         {% comment %} `data-program-panel` is what `toggleDist` swaps
            `shadow`/`asar` on. An attribute rather than a class because those
            two are exactly what the toggle changes, and a hook it toggles is a

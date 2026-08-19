@@ -28,6 +28,14 @@
         // after paint it would swap the font under the reader's eyes.
         var face = localStorage.getItem("typeface");
         if (face) document.documentElement.setAttribute("data-typeface", face);
+        // The address-page layout, for the same reason again -- but unlike the
+        // two above it is a *server* preference, so what is remembered here is
+        // a copy. The address page is cached and shared between readers, so it
+        // cannot render the reader's own layout; a non-cached partial confirms
+        // it after load and corrects this value when it disagrees. Stamping the
+        // remembered one first is what stops the page reflowing on every visit.
+        var pos = localStorage.getItem("layout-position");
+        if (pos) document.documentElement.setAttribute("data-layout-position", pos);
       })();
     </script>
     <title>{% block title %}{{ WEBSITE_NAME }}{% endblock %}</title>

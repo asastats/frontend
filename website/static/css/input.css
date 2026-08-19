@@ -1938,6 +1938,18 @@ div.socfooter {
    for a screen reader and a keyboard -- the parts arrived before the whole --
    and left no way to add a second layout without a second copy of the markup.
 
+   Which presentation applies is decided by `data-layout-position` on `<html>`,
+   NOT by a modifier class on each `.position`. That is what lets the reader's
+   layout arrive after the page does: the address page is cached and shared
+   between readers, so their choice is stamped onto the root element -- from
+   localStorage before paint, the way the theme is -- and one attribute flips
+   every position at once. A per-element modifier would have meant rewriting
+   every row in JavaScript after load.
+
+   Rows is the default, so a `.position` with no ancestor attribute at all is
+   still laid out. The historic widget renders this component without any of
+   the address page's chrome and relies on that.
+
    The summary keeps `text-align: right`: every ALGO figure on the page lines
    up on one rule, which is how the sub-amounts inside a breakdown can be seen
    to add up to the figure above them. */
@@ -1945,17 +1957,14 @@ div.socfooter {
   display: grid;
   gap: 0.75rem;
   align-items: start;
-}
-
-/* Breadth first: the breakdown opens beside the summary, sharing its row. */
-.position--rows {
+  /* Breadth first: the breakdown opens beside the summary, sharing its row. */
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "breakdown summary";
 }
 
 /* Depth first: the breakdown opens beneath, keeping the money column intact
    in a layout too narrow to put two things side by side. */
-.position--cards {
+[data-layout-position="cards"] .position {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     "summary"
@@ -1973,9 +1982,11 @@ div.socfooter {
 
 /* Below the breakpoint the two-column row has nowhere to put a second column,
    so every position falls back to the stacked reading regardless of which
-   presentation asked for it. */
+   presentation asked for it. Written as the same declarations rather than by
+   reusing the cards selector, because this is a different reason for the same
+   result: too narrow, not chosen. */
 @media (max-width: 640px) {
-  .position--rows {
+  .position {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "summary"
