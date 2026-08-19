@@ -226,3 +226,45 @@ EXPLORERS = {
         "application": "application/{value}",
     },
 }
+
+DEFAULT_ADDRESS_LAYOUT = "classic"
+ADDRESS_LAYOUTS = {
+    "classic": {
+        "name": "Classic",
+        "summary": "One asset per row, breakdown beside the figure.",
+        "position": "rows",
+        "tier": None,
+    },
+    "classic-compact": {
+        "name": "Classic compact",
+        "summary": "The same page with the breakdown beneath each figure.",
+        "position": "cards",
+        "tier": "Intro",
+    },
+    "money-column": {
+        "name": "Money column",
+        "summary": "Grouped by where the money is, with charts and filters.",
+        "position": "rows",
+        "tier": "Asastatser",
+    },
+    "money-column-compact": {
+        "name": "Money column compact",
+        "summary": "The money column as cards, for narrow screens.",
+        "position": "cards",
+        "tier": "Asastatser",
+    },
+}
+"""Address-page layouts the reader may choose between.
+
+``position`` names the modifier the position component is rendered with --
+``.position--rows`` or ``.position--cards``, see
+``templates/snippets/asas/position.html``. It is the one part of a layout that
+already exists; the rest arrive with the layout templates themselves.
+
+``tier`` is the *minimum* subscription tier for that layout, or ``None`` for one
+available to everybody. This is a per-entry gate rather than a single
+permission check because the tiers cut through the list rather than around it:
+the default layout is always available, its compact form arrives with Intro, and
+the money column with Asastatser. Keys are persisted on ``Profile``, so treat
+them as data: rename one and every reader who chose it silently falls back.
+"""

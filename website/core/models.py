@@ -25,6 +25,12 @@ from utils.constants.users import (
 )
 from utils.explorers import normalized_explorer
 from utils.helpers import bundle_from_addresses, create_bundle
+from utils.layouts import (
+    layout_choices,
+    layout_position,
+    locked_layouts,
+    normalized_layout,
+)
 from utils.userhelpers import (
     is_system_reserved_url_path,
     slugified_bundle_name,
@@ -57,6 +63,7 @@ class Profile(models.Model):
     currency = models.CharField(max_length=5, blank=True, default="ALGO")
     preferred_router = models.CharField(max_length=32, blank=True, default="")
     preferred_explorer = models.CharField(max_length=32, blank=True, default="")
+    preferred_layout = models.CharField(max_length=32, blank=True, default="")
 
     def __str__(self):
         """Return string representation of the profile instance
@@ -112,6 +119,59 @@ class Profile(models.Model):
         :return: str
         """
         return normalized_explorer(self.preferred_explorer)
+
+    def preferred_layout_or_default(self):
+        """Return the chosen address-page layout, or the default.
+
+        Permission *is* re-checked here, unlike
+        :meth:`preferred_explorer_or_default`, and the difference is deliberate.
+        Every explorer is worth the same, so the gate there is on changing the
+        setting and a saved value keeps applying. The layouts are handed out by
+        tier, so the layout is itself the benefit: a lapsed subscription falls
+        back to the default while the stored choice waits for a renewal.
+
+        :return: str
+        """
+        return normalized_layout(self.preferred_layout, self.permission)
+
+    def preferred_layout_position(self):
+        """Return the position-component modifier for the reader's layout.
+
+        ``"rows"`` or ``"cards"``, completing ``.position--<modifier>``.
+
+        :return: str
+        """
+        return layout_position(self.preferred_layout_or_default())
+
+    def layout_choices(self):
+        """Return the ``(key, name)`` layout pairs this profile may choose.
+
+        :return: list
+        """
+        return layout_choices(self.permission)
+
+    def locked_layouts(self):
+        """Return the layouts this profile cannot choose, with their tiers.
+
+        :return: list
+        """
+        return locked_layouts(self.permission)
+
+    def can_access_layout_setting(self):
+        """Return True if the user may choose an address-page layout.
+
+        Available from the Intro subscription tier upward -- the tier at which a
+        second layout first exists. Below it the choice is not withheld so much
+        as empty: the default layout is the only one such a reader is entitled
+        to, so the settings page shows the control disabled and routes a click
+        to subscriptions, as the explorer preference does.
+
+        Which layouts the list then holds is a separate, per-layout question --
+        see :func:`utils.layouts.can_access_layout`.
+
+        :return: Boolean
+        """
+        return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
 
     def can_access_explorer_setting(self):
         """Return True if the user may choose a preferred explorer.

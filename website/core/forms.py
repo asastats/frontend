@@ -349,3 +349,48 @@ class ProfileExplorerForm(ModelForm):
             label="Explorer",
             widget=Select(attrs={"class": "select"}),
         )
+
+
+class ProfileLayoutForm(ModelForm):
+    """Form for choosing the profile's preferred address-page layout.
+
+    Layout choices come from the layout registry, so adding a layout there
+    surfaces it here with no change to this form -- but unlike the router and
+    explorer selects, the options depend on *who is asking*: the registry hands
+    layouts out by subscription tier, and this form offers only the ones the
+    bound profile is entitled to.
+
+    That is also the whole of the enforcement. Because the choices are the
+    entitlement, a POST naming a layout above the reader's tier fails
+    validation the same way a POST naming a layout that does not exist fails --
+    there is no second check to forget, and no path by which an unentitled value
+    reaches the database.
+    """
+
+    class Meta:
+        model = Profile
+        fields = ("preferred_layout",)
+
+    def __init__(self, *args, **kwargs):
+        """Populate the layout select with the profile's entitled layouts.
+
+        With no instance a ModelForm builds an empty one, and an empty profile
+        carries no permission -- so an unbound form offers the default layout
+        alone, which is the right answer rather than an accident.
+
+        :var profile: the bound profile, whose permission decides the options
+        :type profile: :class:`Profile`
+        """
+        super().__init__(*args, **kwargs)
+        profile = self.instance
+        self.fields["preferred_layout"] = ChoiceField(
+            choices=profile.layout_choices(),
+            required=True,
+            label="Address page layout",
+            widget=Select(attrs={"class": "select"}),
+        )
+        # Show the layout actually in force, not the stored key: unset is "",
+        # and a key saved under a since-lapsed tier is no longer an option, so
+        # either would render a select with nothing selected while the address
+        # page shows the default.
+        self.initial["preferred_layout"] = profile.preferred_layout_or_default()
