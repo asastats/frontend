@@ -255,14 +255,10 @@ class AsaItemProgramSerializer(Serializer):
     :type AsaItemProgramSerializer.distribution: :class:`DistributionSerializer`
     :var AsaItemProgramSerializer.linked: serilazer of data linked to ASA item program
     :type AsaItemProgramSerializer.linked: :class:`LinkedDataSerializer`
-
-    .. note::
-       Two further keys appear in the output and are not declared here:
-       ``pid``, the position's stable identifier, and ``pid_ambiguous``, set
-       when that identifier names more than one position in the same asset.
-       They are added by :class:`AsaItemSerializer`, because a position is only
-       identifiable together with its asset and this serializer never sees one.
-       See :mod:`api.position_id`.
+    :var AsaItemProgramSerializer.pid: position's stable identifier
+    :type AsaItemProgramSerializer.pid: :class:`CharField`
+    :var AsaItemProgramSerializer.pid_ambiguous: whether `pid` names more than one
+    :type AsaItemProgramSerializer.pid_ambiguous: :class:`BooleanField`
     """
 
     program = AsaProgramSerializer()
@@ -271,6 +267,13 @@ class AsaItemProgramSerializer(Serializer):
     proxy = StringRelatedField(many=True)
     distribution = DistributionSerializer(many=True)
     linked = LinkedDataSerializer(many=True)
+    # Declared so the schema documents them, and read-only so DRF skips them
+    # rather than reaching into an instance that has no such attribute: a
+    # position is only identifiable together with its asset, and this
+    # serializer never sees one. :class:`AsaItemSerializer` fills in the real
+    # values afterwards. See :mod:`api.position_id`.
+    pid = CharField(read_only=True, required=False)
+    pid_ambiguous = BooleanField(read_only=True, required=False)
 
     def to_representation(self, instance):
         """Return collection of non-empty field-value pairs.

@@ -200,13 +200,19 @@ class TestAnnotation:
 
         assert all(p["pid"] for p in programs)
 
-    def test_unambiguous_positions_are_not_flagged(self):
-        """The flag has to mean something, so it must be absent by default."""
+    def test_the_flag_is_written_even_when_false(self):
+        """Absent-when-false would make two different things look the same.
+
+        A consumer could not tell "this position is uniquely identified" from
+        "this build does not report ambiguity", and the OpenAPI schema would
+        have to call the field optional for a reason that has nothing to do
+        with the client. Gzipped it costs under 200 bytes on the whole bundle.
+        """
         programs = [_program(name="a"), _program(name="b")]
 
         annotate_positions(0, programs)
 
-        assert not any("pid_ambiguous" in p for p in programs)
+        assert [p["pid_ambiguous"] for p in programs] == [False, False]
 
     def test_indistinguishable_positions_are_flagged_not_renumbered(self):
         """An ordinal suffix would be unique and wrong.
@@ -375,3 +381,41 @@ class TestSerializerIntegration:
         result = api.serializers.AsaItemSerializer().to_representation(object())
 
         assert result == {"asset": {"id": 0}}
+
+
+class TestOpenApiSchema:
+    """The published contract has to describe what the endpoint actually sends."""
+
+    @pytest.fixture(scope="class")
+    def component(self):
+        from drf_spectacular.generators import SchemaGenerator
+
+        schema = SchemaGenerator().get_schema(request=None, public=True)
+        return schema["components"]["schemas"]["UserAsaProgram"]
+
+    @pytest.mark.parametrize(
+        "field,expected_type", [("pid", "string"), ("pid_ambiguous", "boolean")]
+    )
+    def test_the_identifier_fields_are_published(self, component, field, expected_type):
+        """Undocumented response fields are how a client library goes stale.
+
+        Nothing else in this suite snapshots the schema, so without this a
+        field could be added to the output and never described.
+        """
+        assert field in component["properties"], f"{field} is missing from the schema"
+        assert component["properties"][field]["type"] == expected_type
+
+    @pytest.mark.parametrize("field", ["pid", "pid_ambiguous"])
+    def test_the_identifier_fields_are_read_only(self, component, field):
+        """They are derived from the payload, never accepted from a client."""
+        assert component["properties"][field]["readOnly"] is True
+
+    @pytest.mark.parametrize("field", ["pid", "pid_ambiguous"])
+    def test_the_identifier_fields_are_required(self, component, field):
+        """Both are on every position, so a generated client may rely on them.
+
+        This is the assertion that keeps `annotate_positions` writing the flag
+        unconditionally: make it conditional again and the schema starts
+        promising something the endpoint does not always send.
+        """
+        assert field in component["required"]

@@ -93,7 +93,7 @@ def position_id(asset_id, program):
 
 
 def annotate_positions(asset_id, programs):
-    """Add ``pid`` to every program, and ``pid_ambiguous`` where it is shared.
+    """Give every program a ``pid`` and a ``pid_ambiguous``.
 
     Mutates in place and returns the same list, so it can be dropped into a
     serializer's ``to_representation`` without rebuilding the structure.
@@ -115,10 +115,15 @@ def annotate_positions(asset_id, programs):
         counts[program["pid"]] = counts.get(program["pid"], 0) + 1
 
     for program in programs:
-        if counts[program["pid"]] > 1:
-            # Deliberately a flag rather than a suffix: see the module
-            # docstring. A consumer that pins this position has to be told it
-            # may not be able to find its way back to this exact row.
-            program["pid_ambiguous"] = True
+        # Deliberately a flag rather than a suffix: see the module docstring. A
+        # consumer that pins this position has to be told it may not be able to
+        # find its way back to this exact row.
+        #
+        # Always written, never omitted. The rest of this API drops empty
+        # values, but a flag that is absent when false forces every consumer to
+        # tell "not ambiguous" apart from "this build does not report it", and
+        # the OpenAPI schema would have to describe it as optional when the
+        # only reason it is missing is that the answer was no.
+        program["pid_ambiguous"] = counts[program["pid"]] > 1
 
     return programs
