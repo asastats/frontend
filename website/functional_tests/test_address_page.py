@@ -89,7 +89,34 @@ class AssetRowLayoutTest(FunctionalTest):
     """
 
     def _render(self):
+        """Load the page with every section unfolded.
+
+        The load-more rule hides the tail of each section past
+        ``ADDRESS_SECTION_THRESHOLD`` of its magnitude, and a hidden row has no
+        geometry -- every measurement in this class would read zero and compare
+        it against zero, which passes as often as it fails. Unfolding restores
+        the premise these tests were written under: that every row rendered is
+        a row laid out.
+
+        Clicked rather than styled around, so the control itself is exercised on
+        the way to every other assertion here.
+        """
         self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.browser.execute_script(
+            "document.querySelectorAll('[data-show-more]')"
+            ".forEach(function (button) { button.click(); });"
+        )
+        # Then wait for the images those rows brought with them. `deferImages`
+        # assigns every `src` after load, so thumbnails arrive without reserved
+        # space and each one that lands pushes the rows below it down. Measuring
+        # before they settle compares a coordinate read now against one the page
+        # wrote a moment ago, which is a race that reports as a layout bug.
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return Array.prototype.every.call("
+                "  document.images, function (img) { return img.complete; });"
+            )
+        )
 
     def _computed(self, element, prop):
         return self.browser.execute_script(
@@ -429,3 +456,113 @@ class AssetRowLayoutTest(FunctionalTest):
                     self.browser.execute_script("return window.innerWidth;") + 1,
                     "the page scrolls sideways",
                 )
+
+
+class SectionFoldingTest(FunctionalTest):
+    """The load-more rule, measured in a browser.
+
+    Whether a row is *displayed* is the one thing neither the contract tests nor
+    jest can answer: the markup carries every row either way, and the difference
+    lives entirely in a stylesheet rule keyed off a class on an ancestor.
+    """
+
+    def _load(self):
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+
+    def _rows(self, section):
+        return self.browser.find_elements(
+            By.CSS_SELECTOR, f".{section} [data-folding] > .fitem"
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_tail_of_a_section_starts_hidden(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Hidden, not absent -- the filter still has to be able to find them."""
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self._load()
+
+        rows = self._rows("asasec")
+        self.assertTrue(rows, "the page rendered no asset rows")
+        hidden = [row for row in rows if not row.is_displayed()]
+
+        self.assertTrue(hidden, "nothing was folded away")
+        self.assertLess(
+            len(hidden),
+            len(rows),
+            "the whole section was folded, leaving nothing to read",
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_control_reveals_them_and_puts_them_back(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self._load()
+
+        button = self.browser.find_element(
+            By.CSS_SELECTOR, ".asasec [data-show-more]"
+        )
+        rows = self._rows("asasec")
+
+        self.browser.execute_script("arguments[0].click();", button)
+        self.assertTrue(
+            all(row.is_displayed() for row in rows),
+            "a row stayed hidden after the section was unfolded",
+        )
+        self.assertEqual(button.get_attribute("aria-expanded"), "true")
+
+        self.browser.execute_script("arguments[0].click();", button)
+        self.assertTrue(
+            any(not row.is_displayed() for row in rows),
+            "the section did not fold up again",
+        )
+        self.assertEqual(button.get_attribute("aria-expanded"), "false")
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_control_says_how_many_and_of_what(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """"Show more" tells a reader nothing about whether it is worth a tap."""
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self._load()
+
+        button = self.browser.find_element(
+            By.CSS_SELECTOR, ".asasec [data-show-more]"
+        )
+        hidden = len([row for row in self._rows("asasec") if not row.is_displayed()])
+
+        self.assertIn(str(hidden), button.text)
+        self.assertIn("assets", button.text)
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_unfolding_one_section_leaves_the_other_folded(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self._load()
+
+        self.browser.execute_script(
+            "document.querySelector('.asasec [data-show-more]').click();"
+        )
+
+        self.assertTrue(
+            any(not row.is_displayed() for row in self._rows("nftsec")),
+            "unfolding the assets also unfolded the collections",
+        )

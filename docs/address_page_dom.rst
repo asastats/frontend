@@ -291,11 +291,12 @@ the row's place in the list. All four change between two loads of the same
 page. That is why ``pid`` exists, and the same rule applies to any attribute the
 markup might be tempted to key on.
 
-Pin controls
-^^^^^^^^^^^^
+Entry controls
+^^^^^^^^^^^^^^
 
-``templates/snippets/pin.html`` renders one control, included from the asset and
-collection headers. ``static/js/pins.js`` reads them.
+``templates/snippets/entry_controls.html`` renders the grip and the pin,
+included from the asset and collection headers. ``static/js/pins.js`` reads
+them: the pin sends a row to the top of its section, the grip reorders it.
 
 +--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | Selector                 | Required                                                           | Why                                                                                |
@@ -325,9 +326,73 @@ served order is captured once before anything moves and every arrangement is
 rebuilt from it, so unpinning returns a row to where it belongs rather than to
 wherever it ended up.
 
-Pins are stored in ``localStorage`` under ``pins:<path>`` and never sent to the
-server. The path is the address or bundle hash, so every page namespaces itself
-and the historic widget's copy of this page stays separate for free.
+The grip carries ``data-drag`` with the same id, and offers three ways to move a
+row: a pointer drag (Pointer Events, **not** HTML5 drag-and-drop, which does not
+fire on touch at all), the arrow keys, and Home/End. The keyboard path is not a
+courtesy --- a drag is unusable without sight and awkward with a tremor, and this
+is the same operation. After a move the grip's own ``aria-label`` gains "Now 2 of
+7"; rewriting the label the reader's focus is already on beats a live region that
+can drift out of step with it.
+
+A drag stays inside its own group: a pinned row reorders among pinned rows, an
+unpinned row among unpinned. Crossing would mean either silently pinning a row or
+recording an order the next render undoes.
+
+Arrangement is stored in ``localStorage`` under ``pins:<path>`` and
+``order:<path>``, and never sent to the server. The path is the address or
+bundle hash, so every page namespaces itself and the historic widget's copy of
+this page stays separate for free.
+
+.. warning::
+
+   **The served order is captured on the container element, and the handlers
+   bind once per document.** Both guard against this script running twice --- it
+   is a plain ``<script>`` today, but the page already pulls one in through an
+   htmx partial, and a second execution with module-scoped state binds a second
+   set of delegated handlers. The symptom is silent: one arrow key moves a row
+   two places, and every single-test run passes.
+
+Folded rows
+^^^^^^^^^^^
+
+A section shows the rows accounting for the first
+``settings.ADDRESS_SECTION_THRESHOLD`` of its magnitude and folds the rest behind
+a control. ``utils/cutoff.py`` is the rule; ``static/js/showmore.js`` reveals
+them.
+
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| Selector                 | Required                                                           | Why                                                                                |
++==========================+====================================================================+====================================================================================+
+| ``[data-folding]``       | on the container of a section's rows                               | The class is toggled here, not on sixty rows individually                          |
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| ``.fitem.folded``        | on every row past the cutoff                                       | Hidden by CSS, still in the document --- the filter has to be able to find it      |
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| ``[data-show-more]``     | ``aria-expanded="false"`` as rendered                              | The reader expands it; the stylesheet reads the attribute for the rows *and* for   |
+|                          |                                                                    | the button's own label, so the two cannot disagree                                 |
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| ``.show-more-open`` /    | both rendered inside the control                                   | Keeping the text out of the script is what stops the label and the attribute       |
+| ``.show-more-close``     |                                                                    | drifting apart                                                                     |
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+
+**Every row is rendered, and the tail is marked rather than withheld.** The
+payload is in hand before the page renders, so a request to reveal dust would
+cost more than the markup does, and the reader gets an instant answer instead of
+a spinner. ``display: none`` rather than a height or an opacity, so a folded row
+is out of the accessibility tree and out of tab order --- a reader hearing sixty
+rows they cannot see is worse served than one who presses a button.
+
+**Magnitude, not value.** A borrow is negative by rule, so a signed running total
+sails past the threshold and back, hiding material rows on the way. An early
+version of this reported "the last -68.8% of value".
+
+.. note::
+
+   Anything measuring geometry must unfold first. A hidden row has no box, so a
+   layout assertion reads zero and compares it against zero --- which passes as
+   often as it fails. ``AssetRowLayoutTest._render`` clicks every control and
+   then waits for ``document.images`` to settle, because ``deferImages`` assigns
+   each ``src`` after load and every thumbnail that lands pushes the rows below
+   it down.
 
 ``[data-program-panel]``
 ^^^^^^^^^^^^^^^^^^^^^^^^

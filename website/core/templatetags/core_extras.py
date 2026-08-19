@@ -9,6 +9,7 @@ from core.exportpermissions import tier_allows
 from utils import explorers as explorer_constants
 from utils.constants.charts import PIE_CHART_MAXIMUM_ITEMS
 from utils.constants.core import DEFAULT_EXPLORER, ELEMENTS_STYLING, USDC_ID
+from utils.cutoff import cutoff
 from utils.helpers import bundle_from_addresses
 
 register = Library()
@@ -545,3 +546,44 @@ def program_url(context, program_url):
             )
 
     return program_url
+
+
+@register.filter
+def visible_count(rows):
+    """Return how many of ``rows`` to show before offering the rest.
+
+    The load-more rule, applied identically at every level of the address page:
+    assets, NFT collections, and the items inside a collection. See
+    :mod:`utils.cutoff` for the rule itself and for why it measures magnitude
+    rather than value.
+
+    A filter rather than view context because the third level is per-collection
+    -- there is no one number the view could pass down, and computing 55 of them
+    into the context would only be this call with more indirection.
+
+    :param rows: the section's rows, each a dict carrying a ``value``
+    :type rows: list
+    :return: how many rows to show
+    :rtype: int
+    """
+    if not rows:
+        return 0
+    return cutoff([row.get("value") for row in rows])
+
+
+@register.filter
+def hidden_count(rows):
+    """Return how many of ``rows`` the load-more rule folds away.
+
+    The complement of :func:`visible_count`, as its own filter because Django's
+    ``add`` cannot subtract one variable from another -- and "Show 68 more" is
+    worth more to a reader than "Show more".
+
+    :param rows: the section's rows, each a dict carrying a ``value``
+    :type rows: list
+    :return: how many rows are folded
+    :rtype: int
+    """
+    if not rows:
+        return 0
+    return len(rows) - visible_count(rows)

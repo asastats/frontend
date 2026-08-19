@@ -14,9 +14,16 @@
   <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50">
     NFT collections <span class="ml-1 font-normal tabular-nums opacity-70">{{ nftcollections|length }}</span>
   </h2>
-  <div class="space-y-2">
+  {% comment %} The same load-more rule the assets use -- see
+     `utils/cutoff.py`, and the note in `snippets/asas.html`. {% endcomment %}
+  {% with shown=nftcollections|visible_count %}
+  <div class="space-y-2" data-folding>
   {% for coll in nftcollections %}
-    {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors %}
+    {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors index=forloop.counter0 shown=shown %}
   {% endfor %}
   </div>
+  {% if nftcollections|length > shown %}
+    {% include "snippets/show_more.html" with hidden=nftcollections|hidden_count noun="collections" %}
+  {% endif %}
+  {% endwith %}
 </div>

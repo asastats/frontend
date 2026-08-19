@@ -490,6 +490,67 @@ class TestPinControls:
             )
 
 
+class TestFoldedRows:
+    """What `showmore.js` and the stylesheet need to find.
+
+    The load-more rule renders every row and marks the tail, so a folded row is
+    present in the document and hidden by CSS. That is a deliberate trade: the
+    payload is in hand before the page renders, so a request to reveal dust
+    would cost more than the markup does.
+    """
+
+    def test_each_section_marks_its_rows_container(self, page):
+        """`[data-folding]` is the element the class is toggled on.
+
+        The rows are not touched individually -- rewriting sixty of them would
+        be the same result at sixty times the cost.
+        """
+        assert page.select("[data-folding]"), "no section opted into folding"
+
+    def test_a_section_with_a_control_has_folded_rows(self, page):
+        """And the converse: a control with nothing to reveal is a dead button."""
+        for control in page.select("[data-show-more]"):
+            section = control.find_parent(class_="section-list")
+
+            assert section is not None, "a show-more control outside any section"
+            assert section.select(".fitem.folded"), (
+                "a show-more control in a section with nothing folded"
+            )
+
+    def test_folded_rows_only_appear_where_a_control_exists(self, page):
+        """Otherwise the rows are hidden with no way to reach them."""
+        for section in page.select(".section-list"):
+            if section.select(".fitem.folded"):
+                assert section.select("[data-show-more]"), (
+                    "folded rows in a section with no control to reveal them"
+                )
+
+    def test_the_control_reports_its_state(self, page):
+        for control in page.select("[data-show-more]"):
+            assert control.get("aria-expanded") == "false", (
+                "the control must ship collapsed; the reader expands it"
+            )
+
+    def test_the_control_carries_both_labels(self, page):
+        """The stylesheet shows one, keyed off `aria-expanded`.
+
+        Keeping the text out of the script means the attribute a screen reader
+        reads and the text a sighted reader sees cannot drift apart.
+        """
+        for control in page.select("[data-show-more]"):
+            assert control.select(".show-more-open")
+            assert control.select(".show-more-close")
+
+    def test_a_folded_row_is_still_a_complete_entry(self, page):
+        """It is hidden, not withheld -- the filter still has to find it.
+
+        `checkOpened` and the text filter both walk every `.fitem`, so a folded
+        row that lacked an id or its controls would break searching for it.
+        """
+        for row in page.select(".fitem.folded"):
+            assert row.get("id"), "a folded row with no id"
+
+
 class TestNftPairing:
     """The thumbnail-to-entry link the filter depends on."""
 

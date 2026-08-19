@@ -25,10 +25,17 @@
   <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50">
     Assets <span class="ml-1 font-normal tabular-nums opacity-70">{{ asaitems|length }}</span>
   </h2>
-  <div class="space-y-2">
+  {% comment %} The load-more rule: show the rows accounting for the first
+     `ADDRESS_SECTION_THRESHOLD` of this section's magnitude, fold the rest.
+     See `utils/cutoff.py`. Every row is rendered either way -- the tail is
+     marked, not withheld -- because the payload is already in hand and a
+     second request to reveal dust would cost more than the markup does.
+  {% endcomment %}
+  {% with shown=asaitems|visible_count %}
+  <div class="space-y-2" data-folding>
   {% for asaitem in asaitems %}
     {% with asset=asaitem.asset %}
-      <details id="f{{ asset.id }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
+      <details id="f{{ asset.id }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100{% if forloop.counter0 >= shown %} folded{% endif %}">
         {% comment %}
           The same three cells as a collection row: what you hold, the icon,
           what it is worth. The icon sits in the middle of the header, which is
@@ -91,4 +98,8 @@
     {% endwith %}
   {% endfor %}
   </div>
+  {% if asaitems|length > shown %}
+    {% include "snippets/show_more.html" with hidden=asaitems|hidden_count noun="assets" %}
+  {% endif %}
+  {% endwith %}
 </div>

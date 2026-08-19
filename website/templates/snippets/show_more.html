@@ -1,0 +1,26 @@
+{% comment %} Reveals the rows the load-more rule folded away.
+
+   The rows are already in the document, marked `.folded` -- this does not
+   fetch anything. The payload is in hand by the time the page renders, so a
+   round trip to reveal dust would cost more than the markup already does, and
+   the reader gets an instant answer instead of a spinner.
+
+   The control names how many and what, because "Show more" tells a reader
+   nothing about whether it is worth the tap: eight more assets and two hundred
+   more are different decisions.
+
+   Both labels are rendered and the stylesheet shows one, keyed off
+   `aria-expanded`. That way the state lives in exactly one place -- the
+   attribute a screen reader already reads -- instead of being duplicated as
+   text the script has to keep in step with it.
+
+   Required context:
+     hidden  how many rows are folded
+     noun    what they are, plural, e.g. "assets"
+{% endcomment %}
+<div class="mt-3 text-center">
+  <button type="button" class="btn btn-ghost btn-sm show-more" data-show-more aria-expanded="false">
+    <span class="show-more-open">Show {{ hidden }} more {{ noun }}</span>
+    <span class="show-more-close">Show fewer {{ noun }}</span>
+  </button>
+</div>

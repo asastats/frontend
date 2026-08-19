@@ -11,7 +11,7 @@
   class on the images is what `deferImages` collects, so the large image is
   fetched only after the page has loaded.
 {% endcomment %}
-<details id="f{{ coll.name|slugify }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100">
+<details id="f{{ coll.name|slugify }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100{% if shown and index >= shown %} folded{% endif %}">
   <summary class="nft item-header cursor-pointer list-none p-3{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
     {% comment %}
       What you hold, the thumbnails, what it is worth.
