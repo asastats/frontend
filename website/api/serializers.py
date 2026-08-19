@@ -23,6 +23,7 @@ from api.data import (
     API_EXAMPLE_NFD_NAME2,
     NFT_SALE_TYPES,
 )
+from api.position_id import annotate_positions
 
 
 # # INPUT
@@ -254,6 +255,14 @@ class AsaItemProgramSerializer(Serializer):
     :type AsaItemProgramSerializer.distribution: :class:`DistributionSerializer`
     :var AsaItemProgramSerializer.linked: serilazer of data linked to ASA item program
     :type AsaItemProgramSerializer.linked: :class:`LinkedDataSerializer`
+
+    .. note::
+       Two further keys appear in the output and are not declared here:
+       ``pid``, the position's stable identifier, and ``pid_ambiguous``, set
+       when that identifier names more than one position in the same asset.
+       They are added by :class:`AsaItemSerializer`, because a position is only
+       identifiable together with its asset and this serializer never sees one.
+       See :mod:`api.position_id`.
     """
 
     program = AsaProgramSerializer()
@@ -343,6 +352,23 @@ class AsaItemSerializer(Serializer):
     amount = IntegerField()
     price = DecimalField(max_digits=20, decimal_places=6)
     programs = AsaItemProgramSerializer(many=True)
+
+    def to_representation(self, instance):
+        """Serialize, then give every position a stable identifier.
+
+        Done here rather than on :class:`AsaItemProgramSerializer` because a
+        position is only identifiable together with its asset, and this is the
+        first place both are in hand. Working on the serialized output also
+        keeps it independent of whatever shape the engine hands in.
+
+        :param instance: ASA item's serializer instance
+        :type instance: :class:`AsaItemSerializer`
+        :return: dict
+        """
+        result = super().to_representation(instance)
+        asset = result.get("asset") or {}
+        annotate_positions(asset.get("id"), result.get("programs"))
+        return result
 
 
 # # NFT
