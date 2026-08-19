@@ -291,6 +291,44 @@ the row's place in the list. All four change between two loads of the same
 page. That is why ``pid`` exists, and the same rule applies to any attribute the
 markup might be tempted to key on.
 
+Pin controls
+^^^^^^^^^^^^
+
+``templates/snippets/pin.html`` renders one control, included from the asset and
+collection headers. ``static/js/pins.js`` reads them.
+
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| Selector                 | Required                                                           | Why                                                                                |
++==========================+====================================================================+====================================================================================+
+| ``[data-pin]``           | the id of the ``.fitem`` it sits inside                            | The id is what survives a reload. An index or a row number does not --- the same   |
+|                          |                                                                    | reasoning that produced ``pid`` for positions                                      |
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| ``[data-pin]``           | ``aria-pressed="false"`` **as rendered**                           | The page is cached and shared; a pressed control here would be pressed for whoever |
+|                          |                                                                    | asked next. The script presses the reader's own                                    |
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| ``[data-pin]``           | an ``aria-label``                                                  | The control's only content is an inline SVG                                        |
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+| ``.fitem.pinned``        | applied client-side only                                           | Same reason as ``aria-pressed``                                                    |
++--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
+
+**Only top-level entries carry a control.** An NFT item is itself a ``.fitem``
+nested inside its collection's ``.fitem``, and ``pins.js`` derives the container
+it reorders from the control's own entry --- so a control rendered on a nested
+entry would reorder a collection's items instead of the collections.
+``test_nested_entries_have_no_control`` is what keeps that true.
+
+**Entries are moved in the DOM, not reordered with CSS ``order``.** ``order``
+would avoid a reflow, but it moves a row visually while leaving it where it was
+for a screen reader and for keyboard navigation --- the exact fault the position
+component was rebuilt to remove, and it would be no more acceptable here. The
+served order is captured once before anything moves and every arrangement is
+rebuilt from it, so unpinning returns a row to where it belongs rather than to
+wherever it ended up.
+
+Pins are stored in ``localStorage`` under ``pins:<path>`` and never sent to the
+server. The path is the address or bundle hash, so every page namespaces itself
+and the historic widget's copy of this page stays separate for free.
+
 ``[data-program-panel]``
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

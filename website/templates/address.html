@@ -266,4 +266,9 @@
 {% block otherfooter %}
 <script src="{% static 'js/chart.min.js' %}"></script>
 <script src="{% static 'js/address.js' %}"></script>
+{% comment %} After address.js, which captures nothing about row order --
+   `checkOpened` finds entries by id and the filter by class, so both survive a
+   reorder. pins.js records the served order before its first move, so it has to
+   run before anything else moves a row. {% endcomment %}
+<script src="{% static 'js/pins.js' %}"></script>
 {% endblock %}

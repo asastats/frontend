@@ -1883,6 +1883,61 @@ div.socfooter {
   min-width: 0;
 }
 
+/* The left cell carries the pin control ahead of the holding, so it needs to
+   lay two things out rather than one. Scoped to `.itemleft` and not to
+   `.nftleft`: the historic widget emits only the latter and has no pins, so
+   grouping them here would change a layout for no reason.
+
+   `baseline` rather than `center` so the icon sits on the same line as the
+   figure beside it, and the truncation moves to the inner span -- on the cell
+   itself it would clip the button too. */
+.itemleft {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+}
+
+/* ---- pin ------------------------------------------------------------------
+   Pins an asset or collection to the top of its section. Rendered unpressed
+   for everybody and pressed by `pins.js` from the reader's own browser --
+   the page it sits in is cached and shared, so its markup cannot know who is
+   reading it.
+
+   Dim until wanted: a row carries a figure, a name and a value, and a control
+   competing with those at full strength would be the loudest thing in a list
+   of two hundred. It resolves on hover, on focus, and permanently once set. */
+.pin {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+  color: var(--color-base-content);
+  opacity: 0.25;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.pin:hover,
+.pin:focus-visible {
+  opacity: 1;
+}
+
+/* Pressed is a colour change as well as an opacity one, so the state survives
+   for a reader who cannot tell 25% from 100% of the same hue. */
+.pin[aria-pressed="true"] {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+/* The head of a pinned row, so the reason it is out of value order is visible
+   without hovering anything. */
+.fitem.pinned > .item-header {
+  box-shadow: inset 2px 0 0 0 var(--color-primary);
+}
+
 .itemright,
 .nftright,
 .item-header .right {

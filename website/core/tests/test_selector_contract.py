@@ -424,6 +424,72 @@ class TestPositionPresentation:
                 assert named.index("summary") < named.index("breakdown")
 
 
+class TestPinControls:
+    """What `pins.js` needs to find, and what it must not find.
+
+    Pins live in the reader's browser and never reach the server, so the page
+    ships every control in the same state for everybody. That is not a
+    simplification -- this page's cache entry is shared, so a pressed control
+    rendered here would be pressed for whoever asked next.
+    """
+
+    def test_every_asset_and_collection_offers_one(self, page):
+        """One control per top-level entry, and none anywhere else."""
+        controls = page.select("[data-pin]")
+
+        assert controls, "no pin controls on the page"
+
+    def test_each_control_names_its_own_entry(self, page):
+        """`data-pin` is the entry id, which is how a pin outlives a reload.
+
+        Anything else -- an index, a row number, the value -- changes between
+        two loads of the same page, which is the same reasoning that produced
+        `pid` for positions.
+        """
+        for control in page.select("[data-pin]"):
+            target = control["data-pin"]
+            entry = control.find_parent(class_="fitem")
+
+            assert entry is not None, f"{target} control sits outside any entry"
+            assert entry.get("id") == target, (
+                f"pin names {target} but sits in {entry.get('id')}"
+            )
+
+    def test_controls_ship_unpressed(self, page):
+        """The reader's own pins are pressed by the script, not by the server."""
+        pressed = [
+            c for c in page.select("[data-pin]") if c.get("aria-pressed") != "false"
+        ]
+
+        assert not pressed, f"{len(pressed)} controls are not shipped unpressed"
+
+    def test_no_entry_ships_marked_as_pinned(self, page):
+        """Same reason: `.pinned` is applied client-side or not at all."""
+        assert not page.select(".fitem.pinned")
+
+    def test_nested_entries_have_no_control(self, page):
+        """An NFT item is a `.fitem` inside its collection's `.fitem`.
+
+        `pins.js` derives the container to reorder from the control's own
+        entry, so a control on a nested entry would reorder a collection's
+        items instead of the collections. It finds none because none is
+        rendered: the outermost `.fitem` above a control's own entry must not
+        exist.
+        """
+        for control in page.select("[data-pin]"):
+            entry = control.find_parent(class_="fitem")
+            outer = entry.find_parent(class_="fitem")
+
+            assert outer is None, f"{entry.get('id')} is a nested entry"
+
+    def test_each_control_is_labelled(self, page):
+        """The icon is the only content, so the label is the whole name."""
+        for control in page.select("[data-pin]"):
+            assert control.get("aria-label"), (
+                f"{control['data-pin']} control has no accessible name"
+            )
+
+
 class TestNftPairing:
     """The thumbnail-to-entry link the filter depends on."""
 

@@ -30,7 +30,8 @@
     {% endcomment %}
     <div class="nftrow itemrow">
       <div class="nftleft itemleft">
-        <span>{{ coll.amount|floatformat:'-4g' }} from </span><span class="unit font-medium">{{ coll.name }}</span>
+        {% include "snippets/pin.html" with pin_id=coll.name|slugify pin_label=coll.name %}
+        <span class="truncate"><span>{{ coll.amount|floatformat:'-4g' }} from </span><span class="unit font-medium">{{ coll.name }}</span></span>
       </div>
       <div class="nftmid itemmid">
         {% for row in coll.nfts %}
