@@ -1897,15 +1897,69 @@ div.socfooter {
   gap: 0.375rem;
 }
 
-/* ---- pin ------------------------------------------------------------------
-   Pins an asset or collection to the top of its section. Rendered unpressed
-   for everybody and pressed by `pins.js` from the reader's own browser --
-   the page it sits in is cached and shared, so its markup cannot know who is
-   reading it.
+/* ---- entry controls -------------------------------------------------------
+   The grip and the pin: reorder a row, or send it to the top. Rendered at rest
+   for everybody and set by `pins.js` from the reader's own browser -- the page
+   they sit in is cached and shared, so its markup cannot know who is reading
+   it.
 
-   Dim until wanted: a row carries a figure, a name and a value, and a control
+   Dim until wanted: a row carries a figure, a name and a value, and controls
    competing with those at full strength would be the loudest thing in a list
-   of two hundred. It resolves on hover, on focus, and permanently once set. */
+   of two hundred. They resolve when the row is hovered, when either is
+   focused, and permanently once a pin is set.
+
+   The whole group is revealed by hovering the row rather than each control
+   separately, because a reader looking for the grip should not have to find it
+   first. */
+.entry-controls {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.grip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+  color: var(--color-base-content);
+  opacity: 0;
+  cursor: grab;
+  touch-action: none;
+  transition: opacity 0.15s ease;
+}
+
+/* Hidden until the row is hovered, but never hidden from the keyboard: an
+   `opacity: 0` control is still focusable and still announced, and this is the
+   only way to reorder without a pointer. */
+.item-header:hover .grip,
+.grip:focus-visible {
+  opacity: 0.45;
+}
+
+.grip:hover,
+.grip:focus-visible {
+  opacity: 1;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+/* The row being dragged, lifted off the list so its edges are visible against
+   the rows it is moving past. */
+.fitem.dragging {
+  opacity: 0.85;
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.2));
+  position: relative;
+  z-index: 1;
+}
+
+/* No transition on the rows themselves: they are re-parented mid-drag, and an
+   animated position would chase the pointer rather than follow it. */
 .pin {
   flex: none;
   align-self: center;

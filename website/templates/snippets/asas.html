@@ -43,7 +43,7 @@
         {% endcomment %}
         <summary class="token item-header itemrow cursor-pointer list-none p-3{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
           <span class="itemleft">
-            {% include "snippets/pin.html" with pin_id=asset.id pin_label=asset.unit %}
+            {% include "snippets/entry_controls.html" with entry_id=asset.id entry_label=asset.unit %}
             <span class="truncate">{{ asaitem.amount|amount_repr:asset.decimals }}&nbsp;<span class="unit font-medium">{{ asset.unit }}</span></span>
           </span>
           <div class="icondiv itemmid">
