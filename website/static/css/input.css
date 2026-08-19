@@ -1927,6 +1927,62 @@ div.socfooter {
   object-fit: cover;
 }
 
+/* ---- position -------------------------------------------------------------
+   One position in an asset's breakdown, and the panel saying what its figure
+   is made of. Rows and cards render the same markup; only the areas differ.
+
+   Laid out by named areas rather than by flex `order`, because the two
+   presentations disagree about where the breakdown goes and agree about
+   everything else. The old row put the breakdown first in the source and
+   pulled it back with `order-1`/`order-2`, which reversed the reading order
+   for a screen reader and a keyboard -- the parts arrived before the whole --
+   and left no way to add a second layout without a second copy of the markup.
+
+   The summary keeps `text-align: right`: every ALGO figure on the page lines
+   up on one rule, which is how the sub-amounts inside a breakdown can be seen
+   to add up to the figure above them. */
+.position {
+  display: grid;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+/* Breadth first: the breakdown opens beside the summary, sharing its row. */
+.position--rows {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "breakdown summary";
+}
+
+/* Depth first: the breakdown opens beneath, keeping the money column intact
+   in a layout too narrow to put two things side by side. */
+.position--cards {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "summary"
+    "breakdown";
+}
+
+.position-summary { grid-area: summary; }
+
+.position-breakdown { grid-area: breakdown; }
+
+/* `hidden` is the toggle's own hook and has to keep winning over the grid
+   placement above, which would otherwise lay out a closed panel's empty box
+   and leave the summary short of the full width. */
+.position-breakdown.hidden { display: none; }
+
+/* Below the breakpoint the two-column row has nowhere to put a second column,
+   so every position falls back to the stacked reading regardless of which
+   presentation asked for it. */
+@media (max-width: 640px) {
+  .position--rows {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "summary"
+      "breakdown";
+  }
+}
+
 /* ---- NFT hover preview ---------------------------------------------------
    The full-size image shown while a thumbnail is hovered. In production this
    was a Materialize tooltip -- `$.tooltip({unsafeHTML: "<img ...>"})` -- so its

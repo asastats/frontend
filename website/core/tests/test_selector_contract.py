@@ -300,6 +300,120 @@ class TestAddressableEntries:
         assert not orphans, f"entries outside any .section-list: {orphans[:5]}"
 
 
+class TestPositionIdentity:
+    """`data-pid` is how a position is named across a refresh.
+
+    Pinning, deep links and the saved layout all key on it. Everything else the
+    markup could offer as a handle -- the value, the amount, the row's place in
+    the list -- changes between two loads of the same page, which is the whole
+    reason `api.position_id` exists.
+    """
+
+    def test_every_position_carries_its_identity(self, page):
+        """A position without one drops out of a reader's saved layout.
+
+        Silently: nothing throws, the row renders, and only the pin is gone.
+        """
+        positions = page.select(".position")
+        assert positions, "no .position components rendered"
+        missing = [
+            str(el)[:80] for el in positions if not (el.get("data-pid") or "").strip()
+        ]
+
+        assert not missing, f"{len(missing)} positions without a data-pid"
+
+    def test_identities_are_versioned(self, page):
+        """The prefix is what makes a stale stored pin recognisable.
+
+        Change the recipe without bumping it and old pins match nothing, with
+        no way to tell that from a position that simply closed.
+        """
+        from api.position_id import PID_VERSION
+
+        pids = [el["data-pid"] for el in page.select(".position")]
+
+        assert all(pid.startswith(f"{PID_VERSION}-") for pid in pids)
+
+    def test_ambiguity_is_declared_where_it_exists(self, page):
+        """Six rows in this bundle share an identity with another row.
+
+        Two Lofty AMM entries, two Cometa stakes, two Gora.fi delegations. The
+        attribute is what lets the page say "cannot promise" instead of pinning
+        one and hoping.
+        """
+        by_pid = {}
+        for el in page.select(".position"):
+            by_pid.setdefault(el["data-pid"], []).append(el)
+
+        for pid, shared in by_pid.items():
+            if len(shared) > 1:
+                assert all(el.has_attr("data-pid-ambiguous") for el in shared), (
+                    f"{pid} names {len(shared)} positions without saying so"
+                )
+
+    def test_unambiguous_positions_are_not_flagged(self, page):
+        """Otherwise the flag means nothing and the page cannot act on it."""
+        by_pid = {}
+        for el in page.select(".position"):
+            by_pid.setdefault(el["data-pid"], []).append(el)
+        wrong = [
+            pid
+            for pid, shared in by_pid.items()
+            if len(shared) == 1 and shared[0].has_attr("data-pid-ambiguous")
+        ]
+
+        assert not wrong, f"flagged but unique: {wrong[:5]}"
+
+    def test_the_breakdown_panel_is_addressable_within_one_render(self, page):
+        """`data-distid` keeps the loop counter rather than using the pid.
+
+        The panel id only has to be unique on the page, and two ambiguous
+        positions share a pid -- keying the DOM id on it would give them the
+        same element and the toggle would open the wrong breakdown.
+        """
+        panels = page.select(".position-breakdown")
+        ids = [el.get("id") for el in panels]
+
+        assert all(ids), "a breakdown panel has no id for its control to open"
+        assert len(set(ids)) == len(ids), "two breakdown panels share an id"
+
+
+class TestPositionPresentation:
+    """Rows and cards are the same markup with a different area map."""
+
+    def test_the_component_declares_a_presentation(self, page):
+        """Bare `.position` has no areas, so its children would overlap.
+
+        The modifier is not decoration: it is what places the summary and the
+        breakdown.
+        """
+        unplaced = [
+            str(el)[:70]
+            for el in page.select(".position")
+            if not ({"position--rows", "position--cards"} & el.classes)
+        ]
+
+        assert not unplaced, f"{len(unplaced)} positions with no presentation class"
+
+    def test_the_summary_comes_before_the_breakdown_in_the_source(self, page):
+        """So a screen reader and a keyboard meet the whole before the parts.
+
+        The old row put the breakdown first and pulled it back with `order-1`,
+        which reversed the reading order to buy a visual arrangement that named
+        grid areas give for nothing.
+        """
+        for position in page.select(".position"):
+            children = [c for c in position.children if c.classes]
+            names = [
+                "summary" if "position-summary" in c.classes else
+                "breakdown" if "position-breakdown" in c.classes else None
+                for c in children
+            ]
+            named = [n for n in names if n]
+            if "breakdown" in named:
+                assert named.index("summary") < named.index("breakdown")
+
+
 class TestNftPairing:
     """The thumbnail-to-entry link the filter depends on."""
 

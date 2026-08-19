@@ -1,0 +1,156 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} One position: a single row in an asset's breakdown.
+
+   This is the atom the address page is built from. A balance, an LP stake, a
+   deposit, a borrow -- and, where the engine can decompose it, the panel
+   listing what the figure is made of.
+
+   Rows and cards are the same markup. Placement is a class on the root:
+
+     .position            the component, laid out by named grid areas
+     .position--rows      breakdown beside the summary   (default)
+     .position--cards     breakdown beneath the summary  (compact layouts)
+
+   Source order is presentation-neutral: summary first, then breakdown, with
+   the areas deciding where each lands. The old markup put the breakdown first
+   and pulled it back with `order-1`/`order-2`, which meant a screen reader and
+   a keyboard met the parts before the whole, and a second layout could not be
+   added without a second copy of the markup.
+
+   Required context:
+     prog            one item from asaitem.programs (dict with keys
+                     program, value, amount, distribution, proxy, linked, pid)
+     asset           the parent asaitem.asset dict
+     price           the parent asaitem.price (ALGO per 1 unit of asset)
+     pricealgo       account.total.pricealgo (used by the ALGO Balance row)
+     forloop_counter parent loop's forloop.counter (for unique distid IDs)
+
+   `data-pid` is the position's stable identity, from `api.position_id`. It
+   survives a refresh where neither the value nor the row's place in the list
+   does, and it is what pinning, deep links and the saved layout key on. Where
+   the payload cannot tell two positions apart, `data-pid-ambiguous` says so
+   rather than letting a caller trust a name that means both of them.
+
+   The DOM id of the breakdown panel keeps the loop counter instead: it only
+   has to be unique within one render, and two ambiguous positions share a pid.
+{% endcomment %}
+{% with program=prog.program %}
+{% if program.type == "Balance" and asset.id == 0 %}
+  {% comment %} The wallet's own ALGO. The one position with nowhere to go --
+     it is already home -- so it links to the explorer rather than to a venue,
+     and it never decomposes. {% endcomment %}
+  <div class="position position--rows" data-pid="{{ prog.pid }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
+    <div class="position-summary asar space-y-1" data-program-panel>
+      <div class="flex flex-wrap items-baseline justify-end gap-x-2">
+        <a class="link link-hover" href="{% explorer_base %}{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to {% explorer_name %}"><span class="balance text-success">Balance:</span></a>
+        <span class="val font-medium" data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span>
+      </div>
+      {% for ld in prog.linked %}
+        {% if ld.text == "Available" %}
+          <div class="text-sm text-base-content/70">Available: {{ ld.value|floatformat:'2g' }} ALGO</div>
+        {% endif %}
+      {% endfor %}
+      <div><span class="val pricealgo text-xs opacity-70" data-val="{{ pricealgo }}">{{ pricealgo|floatformat:'6g' }} USD/ALGO</span></div>
+    </div>
+  </div>
+{% else %}
+  {% with dist=prog.distribution counter=forloop_counter|stringformat:"s" %}
+    {% with distid_base=program.type|slugify|add:"-"|add:counter has_breakdown=dist|length %}
+      <div class="position position--rows" data-pid="{{ prog.pid }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
+        {% comment %} `data-program-panel` is what `toggleDist` swaps
+           `shadow`/`asar` on. An attribute rather than a class because those
+           two are exactly what the toggle changes, and a hook it toggles is a
+           hook it cannot find again. {% endcomment %}
+        <div class="position-summary asar space-y-1 text-right" data-program-panel>
+          {% comment %} Negative-value programs -- Borrowed, Loss, Debt -- show
+             the magnitude in parens and in red, because the sign is the whole
+             point of the row: it is the one figure that subtracts. {% endcomment %}
+          <div>
+            {% if prog.value|is_negative %}
+              <span class="text-error">(<span class="val text-error{% if has_breakdown %} tdist cursor-pointer{% endif %}"
+                  {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
+                  data-val="{{ prog.value }}">{{ prog.value|abs_value|floatformat:'2g' }} ALGO</span>)</span>
+            {% else %}
+              <span class="val font-medium{% if has_breakdown %} tdist cursor-pointer{% endif %}"
+                  {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
+                  data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span>
+            {% endif %}
+          </div>
+
+          {% comment %} The venue. This is the link that accompanies the figure:
+             the amount acts here on the page, the name leaves for the platform
+             holding the funds. {% endcomment %}
+          {% if program.url %}
+          <div><a class="link link-hover" href="{% program_url program.url %}" target="_blank" title="{{ program|program_url_title }}">{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</a></div>
+          {% elif program.name %}
+          <div>{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</div>
+          {% endif %}
+
+          {% comment %} Linked rows before the amount line, with "Source LP
+             token" filtered out -- it identifies the position rather than
+             describing it, and is consumed by `api.position_id`. One element
+             per line: these were `<span>` runs separated by `<br />`, so
+             nothing could be spaced or aligned as a group. {% endcomment %}
+          {% for ld in prog.linked %}
+            {% if ld.text != "Source LP token" %}
+            <div class="text-sm text-base-content/70">
+              {% if ld.link %}
+                <a class="link link-hover" href="{{ ld.link }}" target="_blank" title="{{ ld.text }}">{{ ld.text }}</a>
+              {% else %}
+                {{ ld.text }}
+              {% endif %}
+              {% if ld.value %}: {{ ld.value|floatformat:'-6g' }}{% if ld.info %} {{ ld.info }}{% endif %}{% endif %}
+              {% if ld.amount %} ({{ ld.amount|amount_repr:asset.decimals }} {{ asset.unit }}){% endif %}
+            </div>
+            {% endif %}
+          {% endfor %}
+
+          {% comment %} The amount line: how much of the asset, as opposed to
+             what it is worth. Balance rows get the green label; everything
+             else is named by its type. {% endcomment %}
+          {% if asset.id != 0 and prog.amount %}
+            {% if program.type == "Balance" %}
+            <div><span class="balance text-success">Balance:</span> {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
+              {% dist_price prog asset.decimals as prog_price %}
+              {% if prog_price %}<div><span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ prog_price }}">{{ prog_price|floatformat:'-8g' }} ALGO/{{ asset.unit }}</span></div>{% endif %}
+            {% elif prog.amount|is_negative %}
+            <div>{{ program.type }}: (<span class="text-error">{{ prog.amount|abs_value|amount_repr:asset.decimals }} {{ asset.unit }}</span>)</div>
+            {% else %}
+            <div>{{ program.type }}: {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        {% if has_breakdown %}
+          {% comment %} What the figure above is made of. A surface and a
+             border because it is a panel about the row beside it, not more of
+             the same column. {% endcomment %}
+          <div id="d-{{ distid_base }}-{{ asset.id }}"
+               class="position-breakdown hidden space-y-2 rounded-box border border-base-300 bg-base-200 p-3 text-right">
+            {% for d in dist %}
+              <div class="asa">
+                {% with dlink=d.link %}
+                <div class="flex flex-wrap items-baseline justify-end gap-x-2">
+                  {% if dlink.url %}
+                    <a class="link link-hover" href="{{ dlink.url }}" target="_blank" title="{{ dlink.text }}">{{ dlink.text }}</a>
+                  {% else %}
+                    <span>{{ dlink.text|default:"" }}</span>
+                  {% endif %}
+                  <span class="val font-medium" data-val="{{ d.value }}">{{ d.value|floatformat:'2g' }} ALGO</span>
+                </div>
+                {% endwith %}
+                {% if d.amount %}
+                <div class="text-sm text-base-content/70">{{ d.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
+                {% endif %}
+                {% dist_price d asset.decimals as row_price %}
+                {% if row_price and asset.id != 0 %}<div><span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ row_price }}">{{ row_price|invert_price|floatformat:'-8g' }} {{ asset.unit }}/ALGO</span></div>{% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endwith %}
+  {% endwith %}
+{% endif %}
+{% endwith %}

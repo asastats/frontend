@@ -61,7 +61,7 @@ BRANCH_STRADDLING = {
     "password_reset_from_key.html": (
         "the token_fail branch and the form branch share closing markup"
     ),
-    "program.html": (
+    "position.html": (
         "the Balance-on-ALGO branch and the general branch share closing markup"
     ),
 }
