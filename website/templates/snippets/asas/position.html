@@ -12,6 +12,17 @@
      .position--rows      breakdown beside the summary   (default)
      .position--cards     breakdown beneath the summary  (compact layouts)
 
+   **This is hard-coded to `rows`, and must stay that way while it is rendered
+   from the cached address page.** `cache_page` on `AddressView` is a view
+   decorator, so it runs inside the middleware: `Vary: Cookie` is added by
+   SessionMiddleware *after* `learn_cache_key` has already recorded what to key
+   on, and the entry is therefore shared between signed-in readers. Rendering
+   the reader's own layout here hands the first reader's choice to everybody who
+   follows. `core/tests/test_address_layout.py` demonstrates that directly.
+
+   The reader's layout is resolved by `utils.layouts.layout_for_user` and has to
+   reach the page off the cache -- the way `_swap_entry.html` does.
+
    Source order is presentation-neutral: summary first, then breakdown, with
    the areas deciding where each lands. The old markup put the breakdown first
    and pulled it back with `order-1`/`order-2`, which meant a screen reader and

@@ -86,7 +86,6 @@ from utils.helpers import (
     safe_referer,
     weighted_randomized_banner,
 )
-from utils.layouts import layout_for_user
 from utils.userhelpers import check_authorization_transaction
 from walletauth.gating import linked_addresses_for_user
 from widgethost.registry import (
@@ -383,15 +382,12 @@ class BaseAddressView(TemplateView):
         context["banner"] = weighted_randomized_banner()
         context["url_value"] = url_value
 
-        # The reader's chosen layout. Rendered inline rather than fetched by a
-        # second request the way the swap entry is: `cache_page` here inherits
-        # `Vary: Cookie` from the session, so each signed-in reader already has
-        # their own cache entry -- base.html has been rendering per-reader
-        # chrome into this page all along. `test_address_layout.py` pins that,
-        # because the day the page stops varying is the day this leaks.
-        context["layout"], context["layout_position"] = layout_for_user(
-            self.request.user
-        )
+        # No per-reader state belongs in this context. The response is cached
+        # and the entry is shared between signed-in readers -- `cache_page` is a
+        # view decorator, so `learn_cache_key` runs before SessionMiddleware
+        # adds `Vary: Cookie`, and the header therefore plays no part in the
+        # lookup. The reader's layout arrives off the cache instead; see
+        # `core/tests/test_address_layout.py`.
 
         # Heavy lifting: pull the serialized payload through the API cache.
         # On miss this still runs the full prepare_context/fetch_account

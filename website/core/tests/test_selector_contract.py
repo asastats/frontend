@@ -1,7 +1,13 @@
 """The interface between ``address.html`` and the scripts that read it.
 
-Every assertion here corresponds to a line in ``SELECTOR_CONTRACT.md`` and to a
-real binding in ``static/js/address.js`` or ``static/js/site.js``. They exist
+Every assertion here corresponds to a real binding in ``static/js/address.js``
+or ``static/js/site.js``, and each one's docstring says which. ``SELECTOR_CONTRACT.md``
+is the longer prose companion -- read it before renaming anything on that page --
+but it is documentation, not a fixture: nothing here reads it, and moving or
+renaming it must never fail a test. The reasoning that stops a rename lives in
+the docstrings below, because that is what prints when one of these fails.
+
+They exist
 because the address page has twice shipped a silent regression of exactly this
 shape: markup moved, nothing threw, no test failed, and behaviour was quietly
 gone -- the jest fixture drifting 3,000 lines behind its template, and the
@@ -18,18 +24,12 @@ When a layout genuinely needs to move something asserted here, change the
 contract, this test and the JavaScript in the same commit.
 """
 
-from pathlib import Path
-
 import pytest
 from django.template.loader import render_to_string
 
 from core.tests.dom import parse
 
 from core.tests.test_address_templates import _build_context, sample_payload  # noqa: F401
-
-#: The prose half of this contract. Kept beside the tests deliberately: the
-#: reasoning is what stops a name being renamed, not the assertion.
-CONTRACT_DOC = Path(__file__).parent.parent.parent / "SELECTOR_CONTRACT.md"
 
 
 @pytest.fixture(scope="module")
@@ -593,30 +593,3 @@ class TestSiteWideControls:
         which is exactly the kind of cross-file coupling worth writing down.
         """
         assert page.select(".copy"), "no .copy controls on the page"
-
-
-class TestContractDocumentation:
-    """The document and the test have to stay in step."""
-
-    @pytest.mark.parametrize(
-        "name",
-        [
-            ".pricetip",
-            ".fitem",
-            ".tdist",
-            "data-program-panel",
-            ".nfticon",
-            ".section-list",
-            "span.val",
-        ],
-    )
-    def test_every_protected_name_is_documented(self, name):
-        """A test whose reasoning nobody can read gets deleted, not fixed.
-
-        The document is where a developer finds out *why* a name matters
-        before renaming it; these assertions are only the enforcement.
-        """
-        doc = CONTRACT_DOC
-
-        assert doc.is_file(), "SELECTOR_CONTRACT.md is missing"
-        assert name in doc.read_text(), f"{name} is asserted here but not documented"
