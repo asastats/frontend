@@ -286,6 +286,46 @@ markup side; change both together.
    ``AddressView`` gained ``vary_on_cookie``; if so, the partial can be dropped
    and the layout rendered inline after all. Do not weaken the assertions.
 
+Pinning a position
+""""""""""""""""""
+
+``[data-pin-position]`` sends one position to the top of its asset's list.
+``[data-positions]`` marks the list it reorders within, and a single-position
+asset renders no control --- pinning within a list of one changes nothing.
+
+The hard part is saying *which* position. Three pids in the reference bundle name
+two rows each: two Lofty AMM entries, two Cometa stakes, two Gora.fi delegations.
+Every identifying field the payload carries is identical for both, and the only
+things that differ --- the value and the amount --- are the two things that change
+between loads. Those rows carry ``data-pid-ambiguous``.
+
+``data-amount`` is the tiebreaker, and **it is deliberately not part of the
+pid**:
+
+* Hashing it into the id would change the id whenever the amount changed, which
+  is the one property the id exists to have. That would destabilise all 190
+  positions to fix 6.
+* Amount rather than value, because value moves with the price on every load
+  while amount moves only when the reader actually stakes or unstakes. The
+  witness is stable in exactly the situation the pin has to survive.
+
+Restoration is: one pid match, use it; several, take the nearest amount, with an
+exact match winning outright. An ordinal was rejected --- unique but *unstable*,
+so a pin follows the rank rather than the position and silently lands on the
+other row.
+
+.. note::
+
+   This can still choose wrongly, but only if two positions of one program cross
+   in magnitude between visits --- far narrower than the ordinal, which breaks on
+   *any* reordering, and the cost is a row appearing at the top of a list. The
+   row says so: a pinned ambiguous position takes a warning-coloured stripe
+   rather than the primary one.
+
+   ``test_the_witness_is_not_part_of_the_identity`` asserts the ambiguous pairs
+   really do differ in amount --- and fails if the sample ever stops containing
+   an ambiguous pair, so the fallback cannot quietly become untested.
+
 **What may never become a handle**: the value, the amount, the distribution, or
 the row's place in the list. All four change between two loads of the same
 page. That is why ``pid`` exists, and the same rule applies to any attribute the

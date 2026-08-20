@@ -41,6 +41,12 @@
    the payload cannot tell two positions apart, `data-pid-ambiguous` says so
    rather than letting a caller trust a name that means both of them.
 
+   `data-amount` is the tiebreaker for exactly those rows -- see `pins.js`. It
+   is deliberately *not* part of the pid: hashing it in would change the id
+   whenever the amount changed, which is the one thing the id exists to survive.
+   Amount rather than value because it moves only when the reader actually
+   stakes or unstakes, while value moves with the price on every load.
+
    The DOM id of the breakdown panel keeps the loop counter instead: it only
    has to be unique within one render, and two ambiguous positions share a pid.
 {% endcomment %}
@@ -49,7 +55,7 @@
   {% comment %} The wallet's own ALGO. The one position with nowhere to go --
      it is already home -- so it links to the explorer rather than to a venue,
      and it never decomposes. {% endcomment %}
-  <div class="position" data-pid="{{ prog.pid }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
+  <div class="position" data-pid="{{ prog.pid }}" data-amount="{{ prog.amount|default_if_none:'' }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
     <div class="position-summary asar space-y-1" data-program-panel>
       <div class="flex flex-wrap items-baseline justify-end gap-x-2">
         <a class="link link-hover" href="{% explorer_base %}{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to {% explorer_name %}"><span class="balance text-success">Balance:</span></a>
@@ -66,7 +72,7 @@
 {% else %}
   {% with dist=prog.distribution counter=forloop_counter|stringformat:"s" %}
     {% with distid_base=program.type|slugify|add:"-"|add:counter has_breakdown=dist|length %}
-      <div class="position" data-pid="{{ prog.pid }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
+      <div class="position" data-pid="{{ prog.pid }}" data-amount="{{ prog.amount|default_if_none:'' }}"{% if prog.pid_ambiguous %} data-pid-ambiguous{% endif %}>
         {% comment %} `data-program-panel` is what `toggleDist` swaps
            `shadow`/`asar` on. An attribute rather than a class because those
            two are exactly what the toggle changes, and a hook it toggles is a
@@ -76,6 +82,22 @@
              the magnitude in parens and in red, because the sign is the whole
              point of the row: it is the one figure that subtracts. {% endcomment %}
           <div>
+            {% comment %} The pin, ahead of the figure. Only where there is more
+               than one position to order: pinning within a list of one says
+               nothing, and a control that cannot change anything is worse than
+               no control. {% endcomment %}
+            {% if position_count > 1 %}
+              <button type="button" class="pin pin-position"
+                      data-pin-position="{{ prog.pid }}"
+                      data-amount="{{ prog.amount|default_if_none:'' }}"
+                      aria-pressed="false"
+                      title="Pin to the top of this asset"
+                      aria-label="Pin {{ program.name|default:program.type }} to the top of {{ asset.unit }}">
+                <svg class="pin-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false">
+                  <path fill="currentColor" d="M9.5 1a.5.5 0 0 0-.5.5v.6L6.8 4.3a3.3 3.3 0 0 0-2 .9.5.5 0 0 0 0 .7l2.6 2.6-3.9 4.6a.4.4 0 0 0 .6.6l4.6-3.9 2.6 2.6a.5.5 0 0 0 .7 0 3.3 3.3 0 0 0 .9-2l2.2-2.2h.6a.5.5 0 0 0 0-1h-.8a.5.5 0 0 0-.35.15L11.9 9.6a.5.5 0 0 0-.15.35 2.3 2.3 0 0 1-.3 1.15L4.9 4.55A2.3 2.3 0 0 1 6.05 4.25a.5.5 0 0 0 .35-.15L9 1.5A.5.5 0 0 0 9.15 1z"/>
+                </svg>
+              </button>
+            {% endif %}
             {% if prog.value|is_negative %}
               <span class="text-error">(<span class="val text-error{% if has_breakdown %} tdist cursor-pointer{% endif %}"
                   {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}

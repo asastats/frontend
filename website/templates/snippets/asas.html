@@ -85,9 +85,12 @@
                 from the next. Spacing between siblings belongs to the list
                 that holds them, not to the last line of each one.
               {% endcomment %}
-              <div class="space-y-4">
+              {% comment %} `data-positions` marks the list `pins.js` reorders
+                 within. `pinnable` is passed rather than recomputed per row:
+                 a single position has no order to change. {% endcomment %}
+              <div class="space-y-4" data-positions>
                 {% for prog in asaitem.programs %}
-                  {% include "snippets/asas/program.html" with prog=prog asset=asset price=asaitem.price pricealgo=pricealgo forloop_counter=forloop.counter %}
+                  {% include "snippets/asas/program.html" with prog=prog asset=asset price=asaitem.price pricealgo=pricealgo forloop_counter=forloop.counter position_count=asaitem.programs|length %}
                 {% endfor %}
               </div>
               {% include "snippets/asas/links.html" with asset=asset %}

@@ -490,6 +490,86 @@ class TestPinControls:
             )
 
 
+class TestPositionPins:
+    """Pinning one position within its asset, and the witness that allows it.
+
+    Three pids in the reference bundle name two rows each. The payload carries
+    nothing that tells those pairs apart, so the amount is stored beside the pin
+    as a tiebreaker -- see `static/js/pins.js`.
+    """
+
+    def test_the_position_list_is_marked(self, page):
+        """`[data-positions]` is the container `pins.js` reorders within."""
+        assert page.select("[data-positions]"), "no position list opted in"
+
+    def test_every_position_carries_the_witness(self, page):
+        """Including unambiguous ones, so the attribute is never conditional.
+
+        A witness present only on ambiguous rows would make the reader's stored
+        pin depend on a judgement the page made at render time -- and that
+        judgement can change when the payload does.
+        """
+        for position in page.select(".position"):
+            assert position.has_attr("data-amount"), (
+                f"{position.get('data-pid')} carries no amount to disambiguate by"
+            )
+
+    def test_the_witness_is_not_part_of_the_identity(self, page):
+        """Two positions sharing a pid must still differ in amount.
+
+        If the amount were hashed into the pid these would be distinct ids and
+        this test would be vacuous -- which is exactly the design being
+        prevented, because the id would then change whenever the amount did.
+        """
+        by_pid = {}
+        for position in page.select(".position"):
+            by_pid.setdefault(position.get("data-pid"), []).append(
+                position.get("data-amount")
+            )
+
+        shared = {pid: amounts for pid, amounts in by_pid.items() if len(amounts) > 1}
+        assert shared, "no ambiguous positions in the sample; the fallback is untested"
+        for pid, amounts in shared.items():
+            assert len(set(amounts)) == len(amounts), (
+                f"{pid} names rows that even the amount cannot tell apart"
+            )
+
+    def test_ambiguous_positions_say_so(self, page):
+        """The pin still works there; the page just does not overpromise."""
+        for position in page.select(".position"):
+            pid = position.get("data-pid")
+            twins = [p for p in page.select(".position") if p.get("data-pid") == pid]
+            if len(twins) > 1:
+                assert position.has_attr("data-pid-ambiguous")
+
+    def test_controls_ship_unpressed(self, page):
+        for control in page.select("[data-pin-position]"):
+            assert control.get("aria-pressed") == "false"
+
+    def test_a_control_sits_inside_the_position_it_pins(self, page):
+        """`togglePosition` reads the amount off the row, not off the control.
+
+        Two rows can share a pid, and the reader pressed one of them -- so the
+        row is the answer to "which one", and the control has to be inside it.
+        """
+        for control in page.select("[data-pin-position]"):
+            position = control.find_parent(class_="position")
+
+            assert position is not None, "a position pin outside any position"
+            assert position.get("data-pid") == control["data-pin-position"]
+
+    def test_a_lone_position_offers_no_pin(self, page):
+        """Pinning within a list of one changes nothing, so it is not offered."""
+        for container in page.select("[data-positions]"):
+            positions = [
+                child for child in container.children if "position" in child.classes
+            ]
+            if len(positions) == 1:
+                assert not positions[0].select("[data-pin-position]"), (
+                    "a single-position asset offers a control that cannot act"
+                )
+
+
 class TestFoldedRows:
     """What `showmore.js` and the stylesheet need to find.
 

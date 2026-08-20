@@ -39,6 +39,7 @@
   /** localStorage keys; the page's own path completes them. */
   var PINS_PREFIX = "pins:";
   var ORDER_PREFIX = "order:";
+  var POSITIONS_PREFIX = "positions:";
   /** Marks a pinned entry for the stripe in input.css. */
   var PINNED_CLASS = "pinned";
   /** On the entry being dragged, for the lifted look. */
@@ -317,6 +318,7 @@
       layout(parent, pinned, order);
     });
     mark(root, pinned);
+    applyPositions(root);
   }
 
   /**
@@ -366,6 +368,179 @@
     }
     write(pinned);
     apply(root);
+  }
+
+  // -- pinning positions ----------------------------------------------------
+
+  /**
+   * @returns {string} the localStorage key holding this page's pinned positions.
+   */
+  function positionsKey() {
+    return POSITIONS_PREFIX + pagePath();
+  }
+
+  /**
+   * Read the pinned positions for this page.
+   *
+   * Each entry is `{pid, amount}`. The amount is a *witness*, not part of the
+   * identity -- see :func:`resolve`.
+   *
+   * @returns {object[]} pinned positions, in the order they were pinned.
+   */
+  function readPositions() {
+    return load(positionsKey(), Array.isArray, []).filter(function (entry) {
+      return entry && typeof entry.pid === "string";
+    });
+  }
+
+  /**
+   * @param {object[]} entries - pinned positions in pin order.
+   */
+  function writePositions(entries) {
+    save(positionsKey(), entries);
+  }
+
+  /**
+   * Find the position a stored pin refers to.
+   *
+   * Most pids name exactly one row and this is a lookup. Some do not: where the
+   * payload carries nothing that tells two positions of the same program apart
+   * -- same asset, same type, same venue, same link -- they hash to the same
+   * pid, and the row is marked `data-pid-ambiguous`.
+   *
+   * For those, the stored **amount** breaks the tie. It is not part of the pid
+   * on purpose: hashing it in would change the id whenever the amount changed,
+   * which is the one property the id exists to have. Amount rather than value
+   * because value moves with the price on every load, while amount moves only
+   * when the reader actually stakes or unstakes -- so the witness is stable in
+   * exactly the situation the pin has to survive.
+   *
+   * An exact amount wins outright; otherwise the nearest. This can still pick
+   * the wrong row, but only if two positions of one program cross in magnitude
+   * between visits -- far narrower than an ordinal, which breaks on *any*
+   * reordering -- and the row says so via `data-pid-ambiguous`.
+   *
+   * @param {object} pin - `{pid, amount}` as stored.
+   * @param {Document|Element} root - where to look.
+   * @returns {Element|null} the matching position, or null if it is gone.
+   */
+  function resolve(pin, root) {
+    var candidates = Array.prototype.slice.call(
+      root.querySelectorAll('.position[data-pid="' + pin.pid + '"]'),
+    );
+    if (candidates.length <= 1) return candidates[0] || null;
+
+    var wanted = parseFloat(pin.amount);
+    if (isNaN(wanted)) return candidates[0];
+
+    var best = null;
+    var bestGap = Infinity;
+    candidates.forEach(function (candidate) {
+      var amount = parseFloat(candidate.getAttribute("data-amount"));
+      if (isNaN(amount)) return;
+      var gap = Math.abs(amount - wanted);
+      if (gap < bestGap) {
+        bestGap = gap;
+        best = candidate;
+      }
+    });
+    return best || candidates[0];
+  }
+
+  /**
+   * Lay out one asset's positions: pinned first, the rest as served.
+   *
+   * @param {Element} parent - a `[data-positions]` container.
+   * @param {Element[]} resolved - the pinned positions, in pin order.
+   */
+  function layoutPositions(parent, resolved) {
+    var entries = parent[SERVED_PROP];
+    if (!entries) return;
+
+    var top = resolved.filter(function (position) {
+      return position.parentNode === parent;
+    });
+    var rest = entries.filter(function (position) {
+      return top.indexOf(position) === -1;
+    });
+    top.concat(rest).forEach(function (position) {
+      parent.appendChild(position);
+    });
+  }
+
+  /**
+   * Apply the stored position pins.
+   *
+   * @param {Document|Element} root - the subtree to arrange.
+   */
+  function applyPositions(root) {
+    var pins = readPositions();
+    var resolved = [];
+    pins.forEach(function (pin) {
+      var position = resolve(pin, root);
+      if (position) resolved.push(position);
+    });
+
+    var parents = [];
+    Array.prototype.forEach.call(
+      root.querySelectorAll("[data-positions]"),
+      function (parent) {
+        if (!parent[SERVED_PROP]) {
+          parent[SERVED_PROP] = Array.prototype.filter.call(
+            parent.children,
+            function (child) {
+              return child.classList.contains("position");
+            },
+          );
+        }
+        parents.push(parent);
+      },
+    );
+
+    parents.forEach(function (parent) {
+      layoutPositions(parent, resolved);
+    });
+
+    Array.prototype.forEach.call(
+      root.querySelectorAll("[data-pin-position]"),
+      function (control) {
+        var position = control.closest(".position");
+        var isPinned = position && resolved.indexOf(position) !== -1;
+        control.setAttribute("aria-pressed", isPinned ? "true" : "false");
+        if (position) position.classList.toggle(PINNED_CLASS, isPinned);
+      },
+    );
+  }
+
+  /**
+   * Toggle a position's pin.
+   *
+   * Identified by the control's own row rather than by the pid alone: two rows
+   * can share a pid, and the reader pressed one of them. The amount is captured
+   * from that row at pin time, which is what makes it the witness.
+   *
+   * @param {Element} control - the pressed control.
+   * @param {Document|Element} root - the subtree to re-arrange.
+   */
+  function togglePosition(control, root) {
+    var position = control.closest(".position");
+    if (!position) return;
+
+    var pid = position.getAttribute("data-pid");
+    var amount = position.getAttribute("data-amount");
+    var pins = readPositions();
+    var at = -1;
+    pins.forEach(function (pin, index) {
+      if (at === -1 && resolve(pin, root) === position) at = index;
+    });
+
+    if (at === -1) {
+      pins.push({ pid: pid, amount: amount });
+    } else {
+      pins.splice(at, 1);
+    }
+    writePositions(pins);
+    applyPositions(root);
   }
 
   // -- reordering -----------------------------------------------------------
@@ -565,13 +740,26 @@
    * an htmx swap -- need no rebinding.
    */
   function init() {
-    if (!document.querySelector("[data-pin]")) return;
+    // Either control is reason enough to run: an asset list and a position list
+    // are arranged independently, and a page carrying only one of them still
+    // has an arrangement to restore.
+    if (!document.querySelector("[data-pin], [data-pin-position]")) return;
 
     // Arrange first, so a second execution still picks up entries that arrived
     // since the first -- it just does not bind a second set of handlers.
     apply(document);
     if (document.documentElement.hasAttribute(BOUND_ATTR)) return;
     document.documentElement.setAttribute(BOUND_ATTR, "");
+
+    document.addEventListener("click", function (event) {
+      var position = event.target.closest
+        ? event.target.closest("[data-pin-position]")
+        : null;
+      if (!position) return;
+      event.preventDefault();
+      event.stopPropagation();
+      togglePosition(position, document);
+    });
 
     document.addEventListener("click", function (event) {
       var control = event.target.closest ? event.target.closest("[data-pin]") : null;
@@ -617,5 +805,11 @@
     writeOrder: writeOrder,
     storageKey: storageKey,
     orderKey: orderKey,
+    readPositions: readPositions,
+    writePositions: writePositions,
+    togglePosition: togglePosition,
+    applyPositions: applyPositions,
+    resolve: resolve,
+    positionsKey: positionsKey,
   };
 })();

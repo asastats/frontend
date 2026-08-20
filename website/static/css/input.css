@@ -2021,6 +2021,35 @@ div.socfooter {
   box-shadow: inset 2px 0 0 0 var(--color-primary);
 }
 
+/* The position-level pin sits inline with the figure it belongs to, inside a
+   right-aligned column, so it needs no cell of its own. Smaller than the row
+   control: it acts on one line of a breakdown rather than on a whole holding,
+   and reading the same weight would overstate it. */
+.pin-position {
+  vertical-align: baseline;
+  margin-right: 0.25rem;
+  opacity: 0;
+}
+
+.position:hover .pin-position,
+.pin-position:focus-visible,
+.pin-position[aria-pressed="true"] {
+  opacity: 1;
+}
+
+.position.pinned > .position-summary {
+  box-shadow: inset 2px 0 0 0 var(--color-primary);
+  padding-left: 0.5rem;
+}
+
+/* A position whose identity the payload cannot pin down. The pin still works
+   -- `pins.js` falls back to the nearest amount -- but the reader is told the
+   promise is weaker than it looks, rather than finding out when it lands on
+   the other row. */
+.position[data-pid-ambiguous].pinned > .position-summary {
+  box-shadow: inset 2px 0 0 0 var(--color-warning);
+}
+
 .itemright,
 .nftright,
 .item-header .right {
