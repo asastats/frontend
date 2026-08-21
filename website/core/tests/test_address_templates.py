@@ -14,6 +14,8 @@ import pytest
 from django.template.loader import render_to_string
 from django.test import RequestFactory
 
+from core.tests.dom import parse
+
 # # Integration: render address.html against the real sample payload
 SAMPLE_PATH = (
     Path(__file__).parent.parent.parent  # repo root from core/tests/
@@ -36,6 +38,15 @@ def _build_context(sample_payload, is_bundle=True):
     """Build a context that mimics the new BaseAddressView's output."""
     from collections import namedtuple
     from decimal import Decimal
+
+    from api.position_id import annotate_positions
+
+    # The captured file predates `pid`, which `AsaItemSerializer` now adds on
+    # the way out. The view receives an already-annotated payload from the
+    # internal API, so annotating here is what makes this context match what
+    # the page is actually rendered from rather than an older shape of it.
+    for item in sample_payload.get("asaitems", []):
+        annotate_positions(item["asset"]["id"], item.get("programs"))
 
     from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
@@ -371,10 +382,18 @@ class TestAddressTemplateRenders:
         is what removing the `<br>` tags meant, moved the shadow elsewhere.
         An attribute, not a class: `asar` is half of what the toggle swaps, so
         a class would stop matching after the first click.
+
+        Counts `asar` rather than the old `asar order-2`: the order utilities
+        went when the position became a grid with named areas, and which
+        utilities sit beside the hook is a layout decision. That the hook and
+        the class the toggle swaps live on the same element is not.
         """
         html = render_to_string("address.html", _build_context(sample_payload))
+        page = parse(html)
 
-        assert html.count("data-program-panel") == html.count("asar order-2")
+        panels = page.select("[data-program-panel]")
+        assert panels
+        assert all("asar" in panel.classes for panel in panels)
 
     def test_distribution_breakdown_is_a_panel(self, sample_payload):
         """It sits beside the summary, so it needs to read as its own surface.

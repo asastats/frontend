@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% load static %}
+{% load core_extras %}
+{% comment %} The money-column address page: designs 2 and 3.
+
+   One template, two layouts. `compact` comes from the view, off the layout
+   registry, and adds a single class -- `.rows.cards` -- exactly as the
+   prototype builds its compact form. Two template files would duplicate every
+   asset row, venue group and chart in order to change a handful of grid rules.
+
+   What makes this design the design: **one money column**. Asset headers,
+   venue subtotals, position rows and NFT lines all put their figure in a cell
+   `--col` wide at the same x, so a reader compares down the page rather than
+   across it. Break that alignment anywhere and the rest is decoration.
+
+   Charts here are inline SVG, not Chart.js. Design 1 keeps Chart.js and this
+   page does not load it. The reasons are in `frontend/docs/address_page_dom.rst`:
+   57 themes an SVG `fill` can follow and a canvas cannot, slices that are real
+   buttons sharing one filter state, and ~200 KB saved.
+
+   Nothing per-reader may be rendered here beyond the layout itself. The cache
+   entry is keyed on `(address, layout)` and shared by every reader on that
+   layout, so the swap entry arrives as a separate non-cached partial, and the
+   pins and saved order live in the reader's own browser. See
+   `core/tests/test_address_layout.py`.
+{% endcomment %}
+{% block title %}{{ url_value|short_address }} | {{ WEBSITE_NAME }}{% endblock %}
+{% block otherheader %}<meta name="format-detection" content="telephone=no">{% endblock %}
+
+{% block banner %}
+{% if banner %}
+{% include "snippets/banner.html" with banner=banner %}
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% comment %} One scope class for the whole design. Every rule in the
+   money-column block of `input.css` is written under it, so nothing here can
+   reach design 1's markup even by accident -- the two pages share a base
+   template and a stylesheet, and design 1 is meant to stay untouched.
+{% endcomment %}
+<div class="money-page">
+<div id="id-swap-entry-container" hx-get="{% url 'swap_entry' url_value %}" hx-trigger="load" hx-swap="innerHTML"></div>
+{% comment %} The same six payload blocks design 1 emits. The data is identical;
+   only the renderer changes -- `money.js` draws them as SVG. {% endcomment %}
+{{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
+
+{% with total=account.total system=account.system_info account_info=account.account_info %}
+
+<header class="head">
+  <div class="head-grid">
+    <div class="total-block">
+      <div class="eyebrow">Portfolio value</div>
+      {% comment %} The heading carries a label a screen reader can use, for the
+         same reason design 1's does: a figure announced with nothing saying
+         what it counts is not a heading.
+
+         The unit goes *inside* `.pricetip`, not in a sibling span. `address.js`
+         overwrites this element's `innerHTML` wholesale when the currency
+         switches, and it writes the unit as part of the string -- a sibling
+         would survive that and read "1,881.51 USD ALGO". {% endcomment %}
+      <h1 class="total">
+        <span class="sr-only">Total value:</span>
+        <span class="pricetip num cursor-default"
+            data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }}
+            data-total={{ total.totalusdc }} data-totalwnft={{ total.total }}
+            data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}
+            data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</span>
+      </h1>
+      <div class="total-sub">
+        <span class="num">{{ total.totalusdc|floatformat:"2g" }} USD at {{ total.pricealgo|floatformat:"6g" }} USD/ALGO</span>
+      </div>
+      <p class="total-note">Everything this address holds.</p>
+      <div class="total-sub">
+        {% if is_bundle %}
+          {% for addr in bundle %}<a class="addr" href="{% url 'address' addr %}" title="Open address {{ addr }}">{{ addr|short_address }}</a>{% endfor %}
+        {% else %}
+          {% for addr in address %}<a class="addr" href="{% explorer_base %}account/{{ addr }}" target="_blank" title="Open {{ addr }} in the explorer">{{ addr|short_address }}</a>{% endfor %}
+        {% endif %}
+        {% if account_info.online %}<span class="state-chip">Online</span>{% endif %}
+      </div>
+    </div>
+    <div class="head-actions">
+      {% comment %} The same gates and the same URL names design 1 uses. These
+         are entitlement checks, not decoration: `export_capability` asks
+         whether the deployment offers it at all, and `historic_access` /
+         `export_access` whether this reader reaches it. Copied rather than
+         reinvented so the two designs cannot come to different conclusions
+         about who may download what. {% endcomment %}
+      {% if is_bundle %}
+        {% with historic=bundle|historic_data %}
+        {% if deployment_capabilities.permission|export_capability:historic.1 %}
+          {% if user.profile|historic_access:historic.1 %}
+          <a class="btn" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+          {% endif %}
+          {% if user.profile|export_access:historic.1 %}
+          <a class="btn{% if report_available and not report_downloaded %} btn-primary{% endif %}"
+            href="{% url 'export_bundle' bundle|bundle_hash %}"
+            title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
+            {% if report_available %}Download processed CSV files{% else %}CSV export{% endif %}</a>
+          {% endif %}
+        {% endif %}
+        {% endwith %}
+      {% else %}
+        {% if deployment_capabilities.permission|export_capability:1 %}
+          {% if user.profile|historic_access:1 %}
+          <a class="btn" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+          {% endif %}
+          {% if user.profile|export_access:1 %}
+          <a class="btn{% if report_available and not report_downloaded %} btn-primary{% endif %}"
+            href="{% url 'export_address' address.0 %}"
+            title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
+            {% if report_available %}Download processed CSV file{% else %}CSV export{% endif %}</a>
+          {% endif %}
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if system.warning %}
+<p class="warn" role="alert">{{ system.warning }}</p>
+{% endif %}
+{% if system.information %}
+<p class="band-note" role="status">{{ system.information }}</p>
+{% endif %}
+{% if processing_tax %}
+<p class="band-note" role="status">Your tax report is being processed.</p>
+{% endif %}
+
+{% include "snippets/money/band.html" with consolidated=consolidated total=total %}
+
+{% comment %} Pinned positions. The band is rendered empty and hidden; the
+   reader's own browser fills it from `localStorage`. It cannot be rendered
+   server-side at all -- the entry is shared, and one reader's pins are not
+   another's. {% endcomment %}
+<section class="section pinned" id="pinned-section" hidden>
+  <div class="section-head">
+    <h2 class="eyebrow">Pinned</h2>
+    <span class="count num" id="pin-count"></span>
+  </div>
+  <div class="pin-grid" id="pin-grid"></div>
+  <p class="band-note">Drag to reorder. A pin remembers the position, not the number.</p>
+</section>
+
+<section class="section asasec" id="asa-section">
+  <div class="section-head">
+    <h2 class="eyebrow">Assets</h2>
+    <span class="count num">{{ account.asaitems|length }}</span>
+  </div>
+  {% comment %} The two idioms, named once, above the list that uses them.
+     A reader meets `.out` and `.tdist` two hundred times on this page; telling
+     them apart by experiment is a poor use of anyone's afternoon. {% endcomment %}
+  <p class="idioms">
+    <span><b>A venue name</b> leaves the site.</span>
+    <span><b>A dotted figure</b> opens what it is made of, here on the page.</span>
+    <span>A plain figure is just the figure.</span>
+  </p>
+  {% with shown=account.asaitems|visible_count %}
+  <div class="rows{% if compact %} cards{% endif %}" data-folding>
+    {% for asaitem in account.asaitems %}
+      {% include "snippets/money/asset.html" with asaitem=asaitem colors=colors shown=shown index=forloop.counter0 %}
+    {% endfor %}
+  </div>
+  {% if account.asaitems|length > shown %}
+    {% include "snippets/show_more.html" with hidden=account.asaitems|hidden_count noun="assets" %}
+  {% endif %}
+  {% endwith %}
+</section>
+
+{% if account.nftcollections %}
+{% include "snippets/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors %}
+{% endif %}
+{% include "snippets/nonval.html" with notevals=account.notevals %}
+
+<a id="scroll-to-top" class="btn btn-circle btn-primary fixed bottom-6 right-6 z-20 opacity-0 transition-opacity [&.visible]:opacity-100" aria-label="Scroll to top" role="button">
+  <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 19V5M5 12l7-7 7 7"/>
+  </svg>
+</a>
+{% endwith %}
+</div>
+{% endblock %}
+
+{% block otherfooter %}
+{% comment %} No `chart.min.js` here: this design draws its own charts. {% endcomment %}
+<script src="{% static 'js/address.js' %}"></script>
+<script src="{% static 'js/showmore.js' %}"></script>
+<script src="{% static 'js/pins.js' %}"></script>
+<script src="{% static 'js/money.js' %}"></script>
+{% endblock %}

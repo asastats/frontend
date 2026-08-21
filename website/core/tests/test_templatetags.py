@@ -31,6 +31,8 @@ from core.templatetags.core_extras import (
     short_addresses,
     split_by_space,
     strid,
+    hidden_count,
+    visible_count,
 )
 from utils.tests.fixtures import (
     TEST_ADDRESS,
@@ -706,3 +708,61 @@ class TestCoreExtrasExplorerTags:
         assert program_url(context, "address=123456") == (
             "https://lora.algokit.io/mainnet/account/123456"
         )
+
+
+class TestCoreExtrasFoldCounts:
+    """The load-more filters, used by all three designs.
+
+    :func:`visible_count` and :func:`hidden_count` are thin wrappers over
+    :func:`utils.cutoff.cutoff`, which has its own suite. What is worth pinning
+    here is the wrapping: the empty-section case, and that the two are exact
+    complements. A section whose counts disagree renders a "Show 3 more" button
+    that reveals two rows, or none.
+    """
+
+    def _rows(self, *values):
+        """Build section rows carrying only what the filters read."""
+        return [{"value": value} for value in values]
+
+    def test_core_extras_visible_count_of_nothing_is_zero(self):
+        """An address with no assets at all -- a fresh or emptied one.
+
+        Reached before `cutoff` is called, because summing an empty section
+        would divide by a zero total.
+        """
+        assert visible_count([]) == 0
+
+    def test_core_extras_hidden_count_of_nothing_is_zero(self):
+        assert hidden_count([]) == 0
+
+    @pytest.mark.parametrize("rows", [None, [], ()])
+    def test_core_extras_fold_counts_survive_an_absent_section(self, rows):
+        """A template may pass a key the payload never set."""
+        assert visible_count(rows) == 0
+        assert hidden_count(rows) == 0
+
+    def test_core_extras_fold_counts_are_complements(self):
+        """Together they must account for every row, exactly once.
+
+        This is what the "Show N more" label depends on: it names
+        `hidden_count`, and the rows it reveals are the ones past
+        `visible_count`.
+        """
+        rows = self._rows(100, 50, 20, 5, 1, 0.5, 0.2, 0.1, 0.05, 0.01)
+
+        assert visible_count(rows) + hidden_count(rows) == len(rows)
+
+    def test_core_extras_a_short_section_hides_nothing(self):
+        """Below the floor there is no tail to fold, so no control renders."""
+        rows = self._rows(5, 4, 3)
+
+        assert hidden_count(rows) == 0
+        assert visible_count(rows) == 3
+
+    def test_core_extras_a_long_tail_of_dust_is_folded(self):
+        """The case the rule exists for: a few holdings worth reading, and a
+        long tail of dust that would otherwise lead the page."""
+        rows = self._rows(1000, *([0.001] * 200))
+
+        assert hidden_count(rows) > 0
+        assert visible_count(rows) < len(rows)

@@ -1,0 +1,83 @@
+{% load core_extras %}
+{% comment %} "Where the money is": the allocation band, its figures, and the
+   charts panel underneath.
+
+   Three drawings of one set of numbers -- the stacked bar, the five figures,
+   and the donuts. They share `allocation_bands`, so they cannot disagree; a
+   reader who sees the bar and the figures tell different stories has no way to
+   know which one lied.
+
+   The segments and figures are **not** controls yet. The prototype makes each
+   one a real `<button>` that filters the whole page, and that is what they will
+   become -- but a button that does nothing when pressed is worse than a figure
+   that never claimed it would, so until the filter is wired they are the static
+   readings they actually are. `data-band` is already here for it to bind to.
+
+   When they do become buttons they carry `aria-pressed` and share one filter
+   state with the donut slices, so the three can never disagree. That state is
+   the reader's and lives in their browser: this page's cache entry is shared by
+   everyone on the layout.
+
+   The category colours do **not** follow the theme. All 57 themes recolour the
+   chrome around this band, but balance-is-green and NFT-is-red have to mean the
+   same thing in every one of them, or the bar, the figures and the donut stop
+   being readable as the same fact.
+
+   The charts panel is a `<details>`: closed, the page costs nothing to draw:
+   open, `money.js` renders the donuts as inline SVG from the JSON payload
+   blocks. Design 1's Chart.js is not loaded here at all.
+
+   Required context:
+     consolidated  utils.structs.Consolidated totals
+     total         account.total
+{% endcomment %}
+<section class="band">
+  <div class="band-head">
+    <div>
+      <h2 class="eyebrow">Where the money is</h2>
+      <p class="band-note">Every position this address holds, by what it is doing.</p>
+    </div>
+    <p class="band-note num" id="band-readout"></p>
+  </div>
+
+  {% with bands=consolidated|allocation_bands:total %}
+  {% comment %} The bar. Widths are the categories' shares of their own sum, so
+     the segments reach the full width -- a rounding gap at the right-hand end
+     reads as money that went missing. {% endcomment %}
+  <div class="allocation-bar" id="allocation-bar">
+    {% for band in bands %}
+      {% if band.share %}
+      <span class="cat-{{ band.key }}"
+            style="width: {{ band.share|floatformat:'4' }}%"
+            data-band="{{ band.key }}"
+            title="{{ band.label }}: {{ band.value|floatformat:'2g' }} ALGO">
+        <span class="sr-only">{{ band.label }}: {{ band.value|floatformat:'2g' }} ALGO</span>
+      </span>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="figs">
+    {% for band in bands %}
+    <div class="fig cat-{{ band.key }}" data-band="{{ band.key }}">
+      <span class="fig-key"><span class="dot"></span>{{ band.label }}</span>
+      <span class="fig-val num val{% if band.value|is_negative %} neg{% endif %}" data-val="{{ band.value }}">{{ band.value|floatformat:'2g' }} <span class="unit">ALGO</span></span>
+      <span class="fig-share num">{{ band.share|floatformat:'1' }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endwith %}
+
+  <details class="charts" id="charts">
+    <summary>
+      <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      <span>Charts</span>
+      <span class="charts-hint">the same numbers, drawn</span>
+    </summary>
+    {% comment %} Filled by `money.js` on first open. Empty in the markup on
+       purpose: an SVG for six charts is a great deal of bytes to ship to every
+       reader who never opens the panel. {% endcomment %}
+    <div class="charts-grid" id="charts-grid"></div>
+    <p class="band-note" id="charts-note"></p>
+  </details>
+</section>

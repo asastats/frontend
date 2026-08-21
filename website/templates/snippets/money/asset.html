@@ -1,0 +1,132 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} One asset, in the money-column designs.
+
+   A `<details>` rather than a button and a panel, as design 1 uses: the page
+   works with the script disabled, the open state is the browser's to remember,
+   and a screen reader is told it is a disclosure without being told so twice.
+
+   The header is five rigid cells -- grip, tile, identity, value, pin -- and
+   the fourth is the money column, `--col` wide, the same width the venue
+   subtotals and every position row inside use. Below 620px they cannot all fit,
+   and the stylesheet drops to two rows with the value under the name; see the
+   media query in `input.css` for the measurement behind that number.
+
+   `.fitem` and the `f<id>` id are design 1's contract, kept on purpose:
+   `pins.js` finds an entry with `closest('.fitem')`, `showmore.js` folds on
+   `.fitem.folded`, and the ids are what an arrangement is remembered against.
+   Reusing them is what lets a reader's saved order survive switching designs.
+
+   Required context:
+     asaitem   one entry from account.asaitems
+     colors    asset id -> colour slot map
+     shown     how many rows this section shows before folding
+     index     this row's zero-based position in the section
+{% endcomment %}
+{% with asset=asaitem.asset %}
+<details id="f{{ asset.id }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}">
+  <summary class="chead">
+    {% comment %} Reorder and pin: rendered at rest for everybody, set by the
+       reader's own browser. This page's cache entry is shared between readers
+       on the same layout, so the markup cannot know who is reading it.
+
+       Rendered as direct children of `.chead`, because each is a named grid
+       area -- a wrapper element would collapse both into one cell. There was a
+       shared `entry_controls.html` snippet that wrapped them; it was written
+       for design 1 back when the controls were going there, and nothing
+       included it once design 1 was restored, so it is gone.
+    {% endcomment %}
+    <button type="button"
+            class="grip"
+            data-drag="f{{ asset.id }}"
+            title="Drag to reorder, or use the arrow keys"
+            aria-label="Reorder {{ asset.unit }}. Press the up or down arrow to move it.">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M6 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm6-10a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+      </svg>
+    </button>
+
+    {% comment %} The asset's icon, in the tile the prototype reserves for it.
+       Design 1's fallback attribute is kept: `site.js` swaps in the empty icon
+       when a CDN asset 404s, and without it a missing logo renders as a broken
+       image glyph. {% endcomment %}
+    <span class="mono-tile{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
+      <img src="{{ asaitem|asa_icon }}" alt="" class="asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
+    </span>
+
+    <span class="cid">
+      <span class="cid-top">
+        <span class="cid-name">{{ asset.name|default:asset.unit }}</span>
+        <span class="cid-amt num">{{ asaitem.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span>
+      </span>
+      <span class="cid-meta">
+        <span class="num">{{ asaitem.programs|length }} position{{ asaitem.programs|length|pluralize }}</span>
+        {% with groups=asaitem.programs|program_groups %}
+        {% if groups|length > 1 %}<span class="num">{{ groups|length }} programs</span>{% endif %}
+        {% endwith %}
+      </span>
+    </span>
+
+    {% comment %} The money column. `data-val` carries the unvarnished figure --
+       the visible text is rounded, and the ALGO/USD switch must not recompute
+       from it. {% endcomment %}
+    <span class="cval">
+      <span class="v val" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }}</span>
+      <span class="u unit">ALGO</span>
+    </span>
+
+    {% comment %} The prototype puts a dismiss control in this cell -- hide an
+       asset from the list. That is a separate feature and is not built; the
+       pin is, and it is what this design needs here, so the cell carries the
+       pin. {% endcomment %}
+    <button type="button"
+            class="pin"
+            data-pin="f{{ asset.id }}"
+            aria-pressed="false"
+            title="Pin to the top of this section"
+            aria-label="Pin {{ asset.unit }} to the top of this section">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M9.5 1a.5.5 0 0 0-.5.5v.6L6.8 4.3a3.3 3.3 0 0 0-2 .9.5.5 0 0 0 0 .7l2.6 2.6-3.9 4.6a.4.4 0 0 0 .6.6l4.6-3.9 2.6 2.6a.5.5 0 0 0 .7 0 3.3 3.3 0 0 0 .9-2l2.2-2.2h.6a.5.5 0 0 0 0-1h-.8a.5.5 0 0 0-.35.15L11.9 9.6a.5.5 0 0 0-.15.35 2.3 2.3 0 0 1-.3 1.15L4.9 4.55A2.3 2.3 0 0 1 6.05 4.25a.5.5 0 0 0 .35-.15L9 1.5A.5.5 0 0 0 9.15 1z"/>
+      </svg>
+    </button>
+  </summary>
+
+  <div class="cbody">
+    <div class="cbody-inner">
+      {% comment %} Facts about the asset itself, above the positions: they
+         describe the thing being held, not any one holding of it. {% endcomment %}
+      <dl class="meta">
+        <div><dt>Asset ID</dt><dd><a class="out" href="{% explorer_base %}asset/{{ asset.id }}" target="_blank" title="Open asset {{ asset.id }} in the explorer">{{ asset.id }}</a></dd></div>
+        {% if asaitem.price %}<div><dt>Price</dt><dd class="num">{{ asaitem.price|floatformat:'-8g' }} ALGO</dd></div>{% endif %}
+        {% if asset.decimals is not None %}<div><dt>Decimals</dt><dd class="num">{{ asset.decimals }}</dd></div>{% endif %}
+        {% if asset.total %}<div><dt>Total supply</dt><dd class="num">{{ asset.total|amount_repr:asset.decimals }}</dd></div>{% endif %}
+      </dl>
+
+      {% comment %} Positions, stacked under the venue holding them, each venue
+         carrying its own subtotal in the money column. A reader with the same
+         asset in four places is asking "how much of it is on Tinyman", and a
+         flat list makes them add it up themselves. See `program_groups`.
+      {% endcomment %}
+      <div class="program-groups">
+        {% for group in asaitem.programs|program_groups %}
+        <div class="pgroup" data-positions>
+          <div class="pgroup-head">
+            <span class="pgroup-name">
+              {% if group.url %}<a class="out" href="{% program_url group.url %}" target="_blank" title="Open {{ group.name }}">{{ group.name }}</a>{% else %}{{ group.name|default:"Wallet balance" }}{% endif %}
+              <span class="n">{{ group.positions|length }}</span>
+            </span>
+            <span class="pgroup-total num val" data-val="{{ group.total }}">{{ group.total|floatformat:'2g' }} <span class="unit">ALGO</span></span>
+            <span></span>
+          </div>
+          {% for prog in group.positions %}
+            {% include "snippets/money/position.html" with prog=prog asset=asset counter=forloop.counter %}
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% include "snippets/asas/links.html" with asset=asset %}
+    </div>
+  </div>
+</details>
+{% endwith %}

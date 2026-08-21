@@ -2604,3 +2604,92 @@ class TestCoreModelsProfilePreferredExplorer:
             ).can_access_explorer_setting()
             is False
         )
+
+
+class TestCoreModelsProfilePreferredLayout:
+    """Testing class for the :class:`Profile` preferred_layout preference."""
+
+    def test_core_models_profile_preferred_layout_defaults_blank(self):
+        assert Profile().preferred_layout == ""
+
+    def test_core_models_profile_preferred_layout_or_default_when_unset(self):
+        assert Profile().preferred_layout_or_default() == "classic"
+
+    def test_core_models_profile_preferred_layout_or_default_returns_choice(self):
+        profile = Profile(
+            preferred_layout="money-column",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
+        )
+        assert profile.preferred_layout_or_default() == "money-column"
+
+    def test_core_models_profile_preferred_layout_or_default_when_unknown(self):
+        profile = Profile(
+            preferred_layout="bogus",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Cluster"],
+        )
+        assert profile.preferred_layout_or_default() == "classic"
+
+    def test_core_models_profile_preferred_layout_or_default_when_tier_lapses(self):
+        """A layout is the benefit, so it stops applying when the tier does.
+
+        Deliberately unlike :meth:`preferred_explorer_or_default`, which
+        re-checks nothing: every explorer is worth the same, so a saved one
+        keeps applying. Asserted because the two methods sit beside each other
+        and reading one as the other would quietly give the feature away.
+        """
+        lapsed = Profile(preferred_layout="money-column", permission=0)
+
+        assert lapsed.preferred_layout_or_default() == "classic"
+        assert lapsed.preferred_layout == "money-column", "the choice is remembered"
+
+    def test_core_models_profile_layout_choices_at_trial_is_default_alone(self):
+        assert Profile(permission=0).layout_choices() == [("classic", "Classic")]
+
+    def test_core_models_profile_layout_choices_grow_with_the_tier(self):
+        intro = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
+        asastatser = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
+
+        assert len(intro.layout_choices()) == 1
+        assert len(asastatser.layout_choices()) == 3
+
+    def test_core_models_profile_locked_layouts_complement_the_choices(self):
+        intro = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
+        assert len(intro.locked_layouts()) == 2
+
+    def test_core_models_profile_locked_layouts_empty_when_all_unlocked(self):
+        asastatser = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
+        assert asastatser.locked_layouts() == []
+
+    def test_core_models_profile_can_access_layout_setting_for_true(self):
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+            ).can_access_layout_setting()
+            is True
+        )
+
+    def test_core_models_profile_can_access_layout_setting_for_false(self):
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
+            ).can_access_layout_setting()
+            is False
+        )
+
+    def test_core_models_profile_layout_setting_gate_is_not_the_layout_gate(self):
+        """Reaching the section is not reaching every option in it.
+
+        The coarse gate opens at Intro, but both money-column layouts stay shut
+        until Asastatser -- so an Intro reader sees a working select holding
+        only the default, and the other two named below it with the tier they
+        need. This is the one preference on that page where the two questions
+        have different answers.
+        """
+        intro = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
+
+        assert intro.can_access_layout_setting() is True
+        assert [key for key, _ in intro.layout_choices()] == ["classic"]
+        assert [entry["tier"] for entry in intro.locked_layouts()] == [
+            "Asastatser",
+            "Asastatser",
+        ]

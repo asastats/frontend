@@ -32,6 +32,7 @@ from core.forms import (
     ProfileExplorerForm,
     ProfileFormSet,
     ProfileInlineForm,
+    ProfileLayoutForm,
     ProfileRouterForm,
     UpdateUserForm,
 )
@@ -44,6 +45,7 @@ from utils.constants.tax import (
 )
 from utils.constants.users import (
     BUNDLENAME_PUBLIC_HELP_TEXT,
+    SUBSCRIPTION_TIER_PERMISSIONS,
     TOO_LONG_USER_FIRST_NAME_ERROR,
     TOO_LONG_USER_LAST_NAME_ERROR,
 )
@@ -761,3 +763,73 @@ class TestProfileExplorerForm:
     def test_profileexplorerform_rejects_unknown_explorer(self):
         form = ProfileExplorerForm(data={"preferred_explorer": "bogus"})
         assert form.is_valid() is False
+
+
+class TestProfileLayoutForm:
+    """Testing class for :class:`ProfileLayoutForm`."""
+
+    def test_profilelayoutform_issubclass_of_modelform(self):
+        assert issubclass(ProfileLayoutForm, ModelForm)
+
+    def test_profilelayoutform_meta_model_and_fields(self):
+        assert ProfileLayoutForm.Meta.model is Profile
+        assert ProfileLayoutForm.Meta.fields == ("preferred_layout",)
+
+    def test_profilelayoutform_choices_come_from_registry(self):
+        form = ProfileLayoutForm()
+        assert isinstance(form.fields["preferred_layout"], ChoiceField)
+        assert form.fields["preferred_layout"].choices[0] == ("classic", "Classic")
+
+    def test_profilelayoutform_unbound_offers_only_the_default(self):
+        """No instance means no permission, so nothing gated is on offer."""
+        form = ProfileLayoutForm()
+        assert form.fields["preferred_layout"].choices == [("classic", "Classic")]
+
+    def test_profilelayoutform_choices_follow_the_instance_tier(self):
+        profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
+        form = ProfileLayoutForm(instance=profile)
+        assert len(form.fields["preferred_layout"].choices) == 3
+
+    def test_profilelayoutform_accepts_an_entitled_layout(self):
+        profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
+        form = ProfileLayoutForm(
+            data={"preferred_layout": "money-column"}, instance=profile
+        )
+        assert form.is_valid() is True
+
+    def test_profilelayoutform_rejects_a_layout_above_the_tier(self):
+        """The choices are the entitlement -- there is no second check to skip.
+
+        A forged POST naming a paid layout fails here rather than in the view,
+        which is why the view has no per-layout permission test of its own.
+        """
+        profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
+        form = ProfileLayoutForm(
+            data={"preferred_layout": "money-column"}, instance=profile
+        )
+        assert form.is_valid() is False
+
+    def test_profilelayoutform_rejects_unknown_layout(self):
+        profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Cluster"])
+        form = ProfileLayoutForm(data={"preferred_layout": "bogus"}, instance=profile)
+        assert form.is_valid() is False
+
+    def test_profilelayoutform_initial_is_the_layout_in_force(self):
+        """An unset field would otherwise render a select with nothing chosen."""
+        profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
+        form = ProfileLayoutForm(instance=profile)
+        assert form.initial["preferred_layout"] == "classic"
+
+    def test_profilelayoutform_initial_ignores_a_lapsed_choice(self):
+        """The select shows what the address page shows, not the stored key."""
+        profile = Profile(preferred_layout="money-column", permission=0)
+        form = ProfileLayoutForm(instance=profile)
+        assert form.initial["preferred_layout"] == "classic"
+
+    def test_profilelayoutform_initial_keeps_an_entitled_choice(self):
+        profile = Profile(
+            preferred_layout="money-column",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
+        )
+        form = ProfileLayoutForm(instance=profile)
+        assert form.initial["preferred_layout"] == "money-column"

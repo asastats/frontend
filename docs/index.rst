@@ -14,6 +14,8 @@ Welcome to ASA Stats frontend documentation!
    provisioning
    howto
    troubleshooting
+   themes
+   address_page_dom
    api
    frontend
 

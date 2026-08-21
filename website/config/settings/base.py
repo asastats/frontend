@@ -288,6 +288,22 @@ CACHES = {
 }
 CACHE_TTL = 60 * 90  # Cache time to live is 90 minutes.
 
+#: Share of a section's total magnitude the visible rows must account for
+#: before the rest are folded behind a "show more" control. See
+#: :mod:`utils.cutoff` for why this is measured on ``abs(value)``.
+#:
+#: A project setting rather than a reader preference, deliberately: the address
+#: page's cache entry is shared between readers, so a per-reader threshold could
+#: not be rendered into it. 0.995 keeps the long tail of dust out of the first
+#: screen while still leading with anything that is a twentieth of a percent of
+#: the money.
+ADDRESS_SECTION_THRESHOLD = 0.995
+
+#: Never fold a section down below this many rows. A wallet whose single largest
+#: holding is 99.9% of its value would otherwise show one row and hide the rest,
+#: which reads as a broken page rather than a tidy one.
+ADDRESS_SECTION_FLOOR = 8
+
 SITE_ID = 1
 #: The default for locally served sites, which is http. production.py raises it
 #: to https, so this is the base of a per-environment layering rather than a

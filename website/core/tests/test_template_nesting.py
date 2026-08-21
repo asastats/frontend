@@ -128,13 +128,20 @@ class TestCoreTemplateNesting:
 
         assert problem is None, f"{path.name} {problem}"
 
-    def test_core_template_nesting_skips_only_the_two_known_templates(self):
+    def test_core_template_nesting_skips_only_the_known_templates(self):
         """The exemption list must stay an exception, not become the rule.
 
         A pattern-based skip is what the first version of this test used, and
         it silently excused half the templates in the project -- including the
         one whose defect prompted the test. A named list cannot do that
         quietly: growing it is an edit somebody has to justify.
+
+        Raised from two to three on 2026-08-20 for the money-column designs'
+        copy of `program.html`, and **back to two on 2026-08-21** when that copy
+        was replaced. Its successor, `snippets/money/position.html`, is balanced
+        in every branch and needs no exemption -- which is the outcome to want:
+        the list shrank because the markup improved, not because the rule was
+        relaxed. A third entry should have to argue for itself again.
         """
         assert len(BRANCH_STRADDLING) <= 2
         assert len(CHECKED) > 0.9 * (len(CHECKED) + len(BRANCH_STRADDLING))

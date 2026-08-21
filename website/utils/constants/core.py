@@ -226,3 +226,48 @@ EXPLORERS = {
         "application": "application/{value}",
     },
 }
+
+DEFAULT_ADDRESS_LAYOUT = "classic"
+ADDRESS_LAYOUTS = {
+    "classic": {
+        "name": "Classic",
+        "summary": "One asset per row, breakdown beside the figure.",
+        "template": "address.html",
+        "compact": False,
+        "tier": None,
+    },
+    "money-column": {
+        "name": "Money column",
+        "summary": "Grouped by where the money is, with charts and filters.",
+        "template": "address_money.html",
+        "compact": False,
+        "tier": "Asastatser",
+    },
+    "money-column-compact": {
+        "name": "Money column compact",
+        "summary": "The money column as tiles, for narrow screens.",
+        "template": "address_money.html",
+        "compact": True,
+        "tier": "Asastatser",
+    },
+}
+"""Address-page layouts the reader may choose between.
+
+``template`` names the page the layout renders, and ``compact`` says whether it
+renders in its dense form. The two axes are separate because they are not
+one-to-one: the money column and its compact form are *one* template with a
+flag, exactly as the prototype builds them (``.rows`` versus ``.rows.cards``).
+Giving each layout its own template file instead would duplicate every asset
+row, venue group and chart to change a handful of grid rules.
+
+The layout key, not the template, is what the address page's cache entry is
+keyed on -- two layouts sharing a template still differ in the markup they
+produce, so they cannot share an entry. See ``core.views.BaseAddressView``.
+
+``tier`` is the *minimum* subscription tier for that layout, or ``None`` for one
+available to everybody. This is a per-entry gate rather than a single
+permission check because the tiers cut through the list rather than around it:
+the default layout is always available and the money column arrives with
+Asastatser. Keys are persisted on ``Profile``, so treat them as data: rename one
+and every reader who chose it silently falls back.
+"""

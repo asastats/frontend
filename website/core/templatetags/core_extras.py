@@ -9,6 +9,7 @@ from core.exportpermissions import tier_allows
 from utils import explorers as explorer_constants
 from utils.constants.charts import PIE_CHART_MAXIMUM_ITEMS
 from utils.constants.core import DEFAULT_EXPLORER, ELEMENTS_STYLING, USDC_ID
+from utils.cutoff import cutoff
 from utils.helpers import bundle_from_addresses
 
 register = Library()
@@ -545,3 +546,188 @@ def program_url(context, program_url):
             )
 
     return program_url
+
+
+@register.filter
+def visible_count(rows):
+    """Return how many of ``rows`` to show before offering the rest.
+
+    The load-more rule, applied identically at every level of the address page:
+    assets, NFT collections, and the items inside a collection. See
+    :mod:`utils.cutoff` for the rule itself and for why it measures magnitude
+    rather than value.
+
+    A filter rather than view context because the third level is per-collection
+    -- there is no one number the view could pass down, and computing 55 of them
+    into the context would only be this call with more indirection.
+
+    :param rows: the section's rows, each a dict carrying a ``value``
+    :type rows: list
+    :return: how many rows to show
+    :rtype: int
+    """
+    if not rows:
+        return 0
+    return cutoff([row.get("value") for row in rows])
+
+
+@register.filter
+def hidden_count(rows):
+    """Return how many of ``rows`` the load-more rule folds away.
+
+    The complement of :func:`visible_count`, as its own filter because Django's
+    ``add`` cannot subtract one variable from another -- and "Show 68 more" is
+    worth more to a reader than "Show more".
+
+    :param rows: the section's rows, each a dict carrying a ``value``
+    :type rows: list
+    :return: how many rows are folded
+    :rtype: int
+    """
+    if not rows:
+        return 0
+    return len(rows) - visible_count(rows)
+
+
+@register.filter
+def program_groups(programs):
+    """Group an asset's positions by the program holding them, with subtotals.
+
+    The money-column designs stack positions under their program rather than
+    listing them flat, because "how much of this asset is locked in CompX" is
+    the question a reader with the same asset in nine places is actually asking,
+    and a flat list makes them add it up themselves.
+
+    **By program, not by venue**, and the distinction is not pedantic. The
+    payload's ``program.name`` is a venue for most position types -- "AlgoRai
+    deposit", "CompX token stream", "Wallet balance" -- but for liquidity
+    positions it is the category "Liquidity", with the actual venue in
+    ``program.code`` ("Pact LP ALGO-EURS"). So the reference address groups 18
+    LP positions across five venues under one "Liquidity" heading. That is a
+    useful grouping and an honest one; calling it a venue grouping would not be,
+    and splitting `code` on whitespace to recover the venue would be guessing at
+    a string the engine never promised the shape of.
+
+    Grouping happens here rather than in the view because it is presentation:
+    design 1 renders the same programs ungrouped, and the serialized payload is
+    shared with the JSON API, which must not grow a website-shaped key.
+
+    Order is first appearance, not value. The payload arrives ordered by the
+    engine, and re-sorting here would put the subtotal ordering at odds with the
+    position ordering inside each group for no gain -- the toolbar sorts, later,
+    and it sorts both together.
+
+    A position with no program name is its own group under the empty string,
+    which the template renders as the asset's own balance rather than inventing
+    a label for it.
+
+    :param programs: one asaitem's ``programs`` list
+    :type programs: list
+    :var groups: program name mapped to its accumulating group
+    :type groups: dict
+    :return: list of dicts with ``name``, ``url``, ``positions`` and ``total``
+    :rtype: list
+    """
+    groups = {}
+    for program in programs or ():
+        source = program.get("program") or {}
+        name = source.get("name") or ""
+        group = groups.setdefault(
+            name, {"name": name, "url": source.get("url"), "positions": [], "total": 0}
+        )
+        group["positions"].append(program)
+        try:
+            group["total"] += float(program.get("value") or 0)
+        except (TypeError, ValueError):
+            # A value the engine could not evaluate contributes nothing to the
+            # subtotal rather than discarding the whole group's arithmetic.
+            pass
+    return list(groups.values())
+
+
+#: The allocation categories, in the order the band draws them. The keys match
+#: the ``--c-*`` custom properties and the ``.cat-*`` classes in ``input.css``,
+#: and the order matches ``utils.structs.Consolidated`` so the two cannot drift.
+ALLOCATION_BANDS = (
+    ("balance", "Balance"),
+    ("staked", "Staked"),
+    ("liquidity", "Liquidity"),
+    ("defi", "DeFi"),
+    ("nft", "NFT"),
+)
+
+
+@register.filter
+def allocation_bands(consolidated, total):
+    """Return the five allocation categories with their values and shares.
+
+    The "where the money is" band, the category figures beside it and the ratio
+    donut are three drawings of one set of numbers, so they are computed once
+    here rather than three times in the template. A reader who sees the band and
+    the figures disagree has no way to tell which one lied.
+
+    ``consolidated`` supplies four categories and ``total`` the fifth: NFTs are
+    valued separately from the programs, so
+    :class:`utils.structs.Consolidated`'s last field is the NFT *floor*, not the
+    NFT holding, and using it here would quietly under-report.
+
+    Shares are of the categories' own sum rather than of ``total.total``. The
+    band is a decomposition and its segments have to reach the full width; a
+    rounding gap at the right-hand end reads as missing money.
+
+    :param consolidated: consolidated totals
+    :type consolidated: :class:`utils.structs.Consolidated`
+    :param total: account totals
+    :type total: :class:`utils.structs.Total`
+    :var values: category key mapped to its value
+    :type values: dict
+    :var summed: the categories' own sum, the denominator for every share
+    :type summed: float
+    :return: list of dicts with ``key``, ``label``, ``value`` and ``share``
+    :rtype: list
+    """
+    if consolidated is None:
+        return []
+
+    def _number(value):
+        """Return ``value`` as a float, or 0.0 if it is not one."""
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _field(source, name):
+        """Read ``name`` off a namedtuple *or* a dict.
+
+        The two arguments arrive in different shapes and always have:
+        ``consolidated`` is a :class:`utils.structs.Consolidated` namedtuple
+        built by the view, while ``total`` is ``account.total`` -- a plain dict
+        straight out of the serialized payload. Reading both with ``getattr``
+        silently returned 0 for every NFT holding, and the band drew four
+        categories summing to 100% while omitting what was, on the reference
+        address, the largest one.
+        """
+        if isinstance(source, dict):
+            return _number(source.get(name, 0))
+        return _number(getattr(source, name, 0))
+
+    values = {
+        "balance": _field(consolidated, "balance"),
+        "staked": _field(consolidated, "staked"),
+        "liquidity": _field(consolidated, "liquidity"),
+        "defi": _field(consolidated, "defi"),
+        "nft": _field(total, "nft"),
+    }
+    # Magnitude, not the signed value: a borrowed position is a negative number
+    # and a band cannot be drawn a negative width. It still belongs in the
+    # picture, so it contributes its size and keeps its sign in the figure.
+    summed = sum(abs(value) for value in values.values())
+    return [
+        {
+            "key": key,
+            "label": label,
+            "value": values[key],
+            "share": (abs(values[key]) / summed * 100) if summed else 0,
+        }
+        for key, label in ALLOCATION_BANDS
+    ]

@@ -976,6 +976,104 @@ class ProfileSettingsPageTest(TestCase):
             )
         self.assertTemplateUsed(response, "profile_settings.html")
 
+    def _post_layout(self, layout):
+        """POST the layout section and return the response.
+
+        :param layout: the layout key to submit
+        :type layout: str
+        :return: :class:`HttpResponse`
+        """
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            return self.client.post(
+                reverse("profile_settings"),
+                data={"section": "layout", "preferred_layout": layout},
+            )
+
+    def test_settings_page_layout_post_saves_for_entitled_user(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.save()
+        response = self._post_layout("money-column")
+        self.assertRedirects(response, reverse("profile_settings"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.preferred_layout == "money-column"
+        tags = [m.extra_tags for m in get_messages(response.wsgi_request)]
+        assert tags == ["layout"]
+
+    def test_settings_page_layout_post_redirects_unentitled_to_subscriptions(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
+        self.user.profile.save()
+        response = self._post_layout("money-column")
+        self.assertRedirects(response, reverse("subscriptions"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.preferred_layout == ""
+
+    def test_settings_page_layout_post_above_tier_rerenders_rather_than_redirects(
+        self,
+    ):
+        """Two different refusals, told apart.
+
+        An Intro reader may use this section -- so a POST naming a layout they
+        have not paid for is a wrong answer, not a closed door, and comes back
+        as a form error on the page rather than as a trip to subscriptions.
+        """
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.user.profile.save()
+        response = self._post_layout("money-column")
+        self.assertTemplateUsed(response, "profile_settings.html")
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.preferred_layout == ""
+
+    def test_settings_page_layout_post_invalid_rerenders_template(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.user.profile.save()
+        response = self._post_layout("bogus")
+        self.assertTemplateUsed(response, "profile_settings.html")
+
+    def test_settings_page_layout_post_saves_a_paid_layout_at_its_tier(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.save()
+        response = self._post_layout("money-column")
+        self.assertRedirects(response, reverse("profile_settings"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.preferred_layout == "money-column"
+
+    def test_settings_page_offers_the_layout_section_to_entitled_user(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.user.profile.save()
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+        self.assertContains(response, 'id="id_save_layout"')
+        self.assertContains(response, 'value="layout"')
+
+    def test_settings_page_disables_the_layout_section_below_intro(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
+        self.user.profile.save()
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+        self.assertNotContains(response, 'id="id_save_layout"')
+        self.assertContains(response, 'id="id-section-layout"')
+
+    def test_settings_page_names_the_layouts_the_reader_cannot_have(self):
+        """A select showing two of four options has to say why.
+
+        The section is open at Intro but the money column is not, so the page
+        names what is missing and the tier that unlocks it rather than leaving
+        the reader to wonder whether the rest exist.
+        """
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.user.profile.save()
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+        self.assertContains(response, "Money column")
+        self.assertContains(response, "Asastatser")
+
+    def test_settings_page_names_nothing_locked_when_all_unlocked(self):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.save()
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+        self.assertNotContains(response, "&mdash; from the")
+
 
 class SwapEntryViewTest(TestCase):
     """Testing class for :class:`core.views.SwapEntryView`."""

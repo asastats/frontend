@@ -64,11 +64,29 @@ class TestBaseAddressViewClass:
         assert issubclass(BaseAddressView, TemplateView)
 
     def test_uses_address_template(self):
-        assert BaseAddressView.template_name == "address.html"
+        """The template is chosen per layout now, not fixed on the class.
+
+        `template_name` is deliberately unset: leaving it as `address.html`
+        alongside a `get_template_names` that answers something else would give
+        two sources of truth for one question, and the stale one looks
+        authoritative.
+        """
+        assert BaseAddressView.template_name is None
+        assert BaseAddressView().get_template_names() == ["address.html"]
+
+    def test_default_layout_needs_no_dispatch(self):
+        """A view built by hand still renders, and renders design 1.
+
+        `get_context_data` and `get_template_names` both read `self.layout`. If
+        only `dispatch` ever set it, every caller that builds the view directly
+        -- this module does it fifty times -- would fail on an attribute that
+        looks like it should always be there.
+        """
+        assert BaseAddressView().layout == "classic"
 
     def test_address_view_subclasses_base(self):
-        # The two concrete views differ only in their @cache_page decorator;
-        # they must continue to delegate render logic to BaseAddressView.
+        # The two concrete views differ only in their cache timeout; they must
+        # continue to delegate render logic to BaseAddressView.
         assert issubclass(AddressView, BaseAddressView)
         assert issubclass(AddressViewCustom, BaseAddressView)
 
@@ -436,6 +454,12 @@ class TestBaseAddressViewGetContextData:
             "nftfloorchart",
             "consolidated",
             "url_value",
+            # The layout and its compact flag are the only reader-derived keys
+            # allowed here, and only because the cache entry is keyed on the
+            # layout. Anything else about the reader would be served to whoever
+            # asked next -- see `core/tests/test_address_layout.py`.
+            "layout",
+            "compact",
         }
         assert set(context.keys()) == expected
 

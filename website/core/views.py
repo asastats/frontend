@@ -40,6 +40,7 @@ from core.forms import (
     ProfileBundleNameForm,
     ProfileExplorerForm,
     ProfileFormSet,
+    ProfileLayoutForm,
     ProfileRouterForm,
     UpdateUserForm,
 )
@@ -68,6 +69,7 @@ from utils.constants.core import (
     CACHE_TTL_ADDRESS,
     CACHE_TTL_CUSTOM_ADDRESS,
     CONTENT_TYPES_FOR_EXTENSION,
+    DEFAULT_ADDRESS_LAYOUT,
 )
 from utils.constants.nameservice import NAME_SERVICE_MULTIPLE
 from utils.constants.users import (
@@ -85,6 +87,7 @@ from utils.helpers import (
     safe_referer,
     weighted_randomized_banner,
 )
+from utils.layouts import layout_compact, layout_for_user, layout_template
 from utils.userhelpers import check_authorization_transaction
 from walletauth.gating import linked_addresses_for_user
 from widgethost.registry import (
@@ -318,11 +321,36 @@ class BaseAddressView(TemplateView):
     onto ``account`` directly.
     """
 
-    template_name = "address.html"
+    cache_timeout = CACHE_TTL_ADDRESS
+
+    #: The layout to render, replaced per request by :meth:`dispatch`. A class
+    #: attribute rather than something only ``dispatch`` sets, so the view is
+    #: constructible and renderable on its own: ``get_context_data`` and
+    #: ``get_template_names`` both read it, and a view whose context blows up
+    #: unless a particular earlier method ran is a trap for the next caller.
+    #: The default is the ungated layout, so the fallback is always renderable.
+    layout = DEFAULT_ADDRESS_LAYOUT
 
     def dispatch(self, request, *args, **kwargs):
-        """Validate URL value, resolve any bundle to its address list, stash
-        for :meth:`get_context_data`.
+        """Validate URL value, resolve any bundle, render through the layout's
+        own cache entry.
+
+        The caching happens here rather than as a decorator on the class because
+        the entry has to be keyed on *(address, layout)*, and the layout is only
+        known once there is a request to read it from. ``cache_page`` keys on
+        the full path plus the headers named in ``Vary``, neither of which
+        carries a server-side preference, so the layout is folded in as the key
+        prefix -- one entry per layout per address, and readers on the same
+        layout still share.
+
+        ``Vary: Cookie`` cannot do this job. ``cache_page`` is a view decorator,
+        so ``learn_cache_key`` records what to key on before
+        ``SessionMiddleware`` appends that header, and it therefore plays no
+        part in the lookup; and even if it did, keying on the whole cookie would
+        give every session its own entry and lose the sharing entirely.
+
+        Validation runs before the cache is consulted, so a forbidden address is
+        rejected on every request rather than only on a miss.
 
         :param request: Django request object
         :type request: :class:`django.http.HttpRequest`
@@ -330,6 +358,8 @@ class BaseAddressView(TemplateView):
         :type url_value: str
         :var addresses: public Algorand addresses separated by spaces
         :type addresses: str
+        :var cached: the parent dispatch wrapped in this layout's cache entry
+        :type cached: function
         :return: object
         """
         url_value = self.args[0].upper()
@@ -348,7 +378,18 @@ class BaseAddressView(TemplateView):
 
             check_forbidden_addresses(self.addresses)
 
-        return super().dispatch(request, *args, **kwargs)
+        self.layout = layout_for_user(getattr(request, "user", None))
+        cached = cache_page(self.cache_timeout, key_prefix=f"layout-{self.layout}")(
+            super().dispatch
+        )
+        return cached(request, *args, **kwargs)
+
+    def get_template_names(self):
+        """Return the template the reader's layout renders.
+
+        :return: list
+        """
+        return [layout_template(self.layout)]
 
     def get_context_data(self, *args, **kwargs):
         """Populate context with the API 2.0 serialized payload plus charts.
@@ -380,6 +421,16 @@ class BaseAddressView(TemplateView):
 
         context["banner"] = weighted_randomized_banner()
         context["url_value"] = url_value
+
+        # The layout and its compact flag are the *only* reader-derived values
+        # this context may carry, because they are the only ones the cache key
+        # accounts for (see `dispatch`). Everything else about the reader --
+        # their addresses, their router, their subscription -- is shared between
+        # signed-in readers by the cache entry and must stay out; the swap entry
+        # is loaded as a separate non-cached partial for exactly that reason.
+        # See `core/tests/test_address_layout.py`.
+        context["layout"] = self.layout
+        context["compact"] = layout_compact(self.layout)
 
         # Heavy lifting: pull the serialized payload through the API cache.
         # On miss this still runs the full prepare_context/fetch_account
@@ -416,14 +467,18 @@ class BaseAddressView(TemplateView):
         return context
 
 
-@method_decorator(cache_page(CACHE_TTL_ADDRESS), name="dispatch")
 class AddressView(BaseAddressView):
     """Addresses calls"""
 
 
-@method_decorator(cache_page(CACHE_TTL_CUSTOM_ADDRESS), name="dispatch")
 class AddressViewCustom(BaseAddressView):
-    """Custom addresses caching calls"""
+    """Custom addresses caching calls.
+
+    :var cache_timeout: seconds a rendered page is kept, per layout
+    :type cache_timeout: int
+    """
+
+    cache_timeout = CACHE_TTL_CUSTOM_ADDRESS
 
 
 @method_decorator(cache_page(CACHE_TTL), name="dispatch")
@@ -1063,14 +1118,19 @@ class ProfileAppearanceView(CanAccessAppearanceMixin, TemplateView):
 
 @method_decorator(login_required(login_url="/accounts/login/"), name="dispatch")
 class ProfileSettingsView(View):
-    """User settings page: smart-router and preferred-explorer preferences.
+    """User settings page: smart-router, explorer and address-layout choices.
 
-    Router options are discovered (manifests with ``category = "swap"``) and
-    explorer options come from the explorer registry, so new entries appear
-    automatically. The router section records a preference only; the explorer
-    section is additionally gated on the Intro subscription tier -- below it the
-    template renders the control disabled and a click routes to subscriptions,
-    and a forged POST is redirected there too.
+    Router options are discovered (manifests with ``category = "swap"``),
+    explorer options come from the explorer registry and layout options from the
+    layout registry, so new entries appear automatically. The router section
+    records a preference only; the explorer and layout sections are additionally
+    gated on the Intro subscription tier -- below it the template renders the
+    control disabled and a click routes to subscriptions, and a forged POST is
+    redirected there too.
+
+    The layout section carries a second, finer gate the other two do not need:
+    which layouts the select holds depends on the tier as well, and that lives
+    in the form's choices rather than here. See :class:`ProfileLayoutForm`.
 
     :var template_name: name of the template to render
     :type template_name: str
@@ -1079,7 +1139,7 @@ class ProfileSettingsView(View):
     template_name = "profile_settings.html"
 
     def _context(self, request):
-        """Return the base context with both preference forms bound to profile.
+        """Return the base context with each preference form bound to profile.
 
         :param request: current request
         :type request: :class:`HttpRequest`
@@ -1089,7 +1149,9 @@ class ProfileSettingsView(View):
         return {
             "form": ProfileRouterForm(instance=profile),
             "explorer_form": ProfileExplorerForm(instance=profile),
+            "layout_form": ProfileLayoutForm(instance=profile),
             "can_access_explorer": profile.can_access_explorer_setting(),
+            "can_access_layout": profile.can_access_layout_setting(),
         }
 
     def get(self, request, *args, **kwargs):
@@ -1102,14 +1164,31 @@ class ProfileSettingsView(View):
     def post(self, request, *args, **kwargs):
         """Persist the submitted section and redirect back (post/redirect/get).
 
-        The ``section`` field selects which form is processed. The explorer
-        section requires Intro permission; an unentitled submission is sent to
-        the subscriptions page rather than saved.
+        The ``section`` field selects which form is processed. The explorer and
+        layout sections require Intro permission; an unentitled submission is
+        sent to the subscriptions page rather than saved. A layout *above* the
+        reader's tier is a different failure -- the reader may use this section,
+        just not that option -- so it is left to fail validation and comes back
+        as a form error rather than a redirect.
 
         :return: :class:`HttpResponse`
         """
         profile = request.user.profile
         section = request.POST.get("section", "router")
+
+        if section == "layout":
+            if not profile.can_access_layout_setting():
+                return redirect("subscriptions")
+            form = ProfileLayoutForm(data=request.POST, instance=profile)
+            if form.is_valid():
+                form.save()
+                messages.success(
+                    request, "Layout preference saved.", extra_tags="layout"
+                )
+                return redirect("profile_settings")
+            context = self._context(request)
+            context["layout_form"] = form
+            return render(request, self.template_name, context)
 
         if section == "explorer":
             if not profile.can_access_explorer_setting():

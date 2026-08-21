@@ -1,0 +1,158 @@
+{% load core_extras %}
+{% comment %} One position: the atom of the money-column designs.
+
+   A position is one program under one asset -- a balance, a stake, an LP
+   share. The row is three cells wide and the middle one is *the money column*:
+   every position in every venue under every asset puts its figure at the same
+   x, which is what lets a reader compare down the page instead of across it.
+   That alignment is the design; if a row here stops using `--col`, the design
+   is gone whatever else survives.
+
+   `.position` wraps the row *and* its breakdown, rather than the two being
+   siblings. Pinning reorders `.position` elements, and a breakdown left behind
+   when its row moves would sit under a different position entirely -- the kind
+   of fault that looks like a rendering glitch and is actually wrong data.
+
+   The two link idioms are load-bearing and must stay distinguishable *at rest*,
+   because a reader deciding where to click has not pointed at anything yet:
+
+     `.out`    leaves the site (a venue, an explorer). Underline on hover.
+     `.tdist`  acts in place -- opens the breakdown below. Dotted at rest,
+               resolving to solid under the pointer.
+
+   A figure with no breakdown gets neither, and is just a figure.
+
+   One divergence from the prototype, deliberately: the row's class is
+   `.position`, not the prototype's `.pos`. `static/js/pins.js` and its jest
+   suite already address positions by that name and are covered to 100%; a
+   cosmetic rename would churn a tested engine to no reader's benefit. The
+   prototype is the spec for the *design*, not for identifiers.
+
+   `data-pid` is the stable position identifier from `api/position_id.py`. It
+   is what a position pin remembers, and it deliberately does *not* hash the
+   amount: the amount moves, and hashing it would restabilise nothing while
+   destabilising every position that never changed. Where a pid names more than
+   one row -- three do in the reference bundle -- `data-amount` is the witness
+   that tells them apart. See `static/js/pins.js`.
+
+   Required context:
+     prog     one entry from asaitem.programs
+     counter  the parent loop's forloop.counter, for a unique breakdown id
+              when a position carries no pid
+     asset    the parent asaitem.asset dict
+{% endcomment %}
+{% with program=prog.program dist=prog.distribution %}
+{% with has_breakdown=dist|length %}
+<div class="position"
+     {% if prog.pid %}data-pid="{{ prog.pid }}"
+     data-amount="{{ prog.amount|default_if_none:'' }}"
+     {% if prog.pid_ambiguous %}data-pid-ambiguous="true"{% endif %}{% endif %}>
+  <div class="position-row">
+  <div class="position-left">
+    <div class="position-title">
+      {% comment %} The form, as a chip: Balance, Staked, LP. Short enough to
+         read as a label rather than a sentence, and coloured by the category it
+         belongs to so the allocation band above and this row agree. {% endcomment %}
+      {% if program.type %}<span class="form-chip">{{ program.type }}</span>{% endif %}
+      <span class="position-label">
+        {% if program.url %}
+          <a class="out" href="{% program_url program.url %}" target="_blank" title="{{ program|program_url_title }}">{{ program.name }}{% if program.code %} {{ program.code }}{% endif %}</a>
+        {% elif program.name %}
+          {{ program.name }}{% if program.code %} {{ program.code }}{% endif %}
+        {% else %}
+          {{ asset.unit }}
+        {% endif %}
+      </span>
+    </div>
+    {% comment %} What the position is made of, one line: the holding, and any
+       linked facts the engine attached. "Source LP token" is filtered out here
+       exactly as design 1 filters it -- it names the wrapper, not a holding.
+    {% endcomment %}
+    <div class="position-sub">
+      {% if prog.amount %}
+        <span class="num">{% if prog.amount|is_negative %}({{ prog.amount|abs_value|amount_repr:asset.decimals }}){% else %}{{ prog.amount|amount_repr:asset.decimals }}{% endif %} {{ asset.unit }}</span>
+      {% endif %}
+      {% for ld in prog.linked %}
+        {% if ld.text != "Source LP token" %}
+        <span>
+          {% if ld.link %}<a class="out" href="{{ ld.link }}" target="_blank" title="{{ ld.text }}">{{ ld.text }}</a>{% else %}{{ ld.text }}{% endif %}
+          {% if ld.value %}<span class="num">{{ ld.value|floatformat:'-6g' }}{% if ld.info %} {{ ld.info }}{% endif %}</span>{% endif %}
+        </span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  {% comment %} The money column. `data-val` carries the unvarnished figure --
+     the visible text is rounded and is not a safe source for the currency
+     switch to recompute from. Same contract as design 1's `.val`.
+  {% endcomment %}
+  <div class="position-val">
+    {% if has_breakdown %}
+      <button type="button"
+              class="amt tdist val{% if prog.value|is_negative %} neg{% endif %}"
+              data-distid="dist-{{ asset.id }}-{{ prog.pid|default:counter }}"
+              data-val="{{ prog.value }}"
+              aria-expanded="false"
+              title="What this figure is made of">{% if prog.value|is_negative %}({{ prog.value|abs_value|floatformat:'2g' }}){% else %}{{ prog.value|floatformat:'2g' }}{% endif %}</button>
+    {% else %}
+      <span class="amt val{% if prog.value|is_negative %} neg{% endif %}" data-val="{{ prog.value }}">{% if prog.value|is_negative %}({{ prog.value|abs_value|floatformat:'2g' }}){% else %}{{ prog.value|floatformat:'2g' }}{% endif %}</span>
+    {% endif %}
+    <span class="u unit">ALGO</span>
+  </div>
+
+  {% comment %} Position-level pinning. The button is rendered at rest for
+     everybody and set by the reader's own browser, for the same reason the
+     asset-row controls are: this page's cache entry is shared between readers
+     on the same layout. {% endcomment %}
+  {% if prog.pid %}
+  <button type="button"
+          class="pin-btn"
+          data-pin-position="{{ prog.pid }}"
+          data-amount="{{ prog.amount|default_if_none:'' }}"
+          aria-pressed="false"
+          title="Pin this position to the top of the page"
+          aria-label="Pin {{ program.name|default:asset.unit }} {{ program.type|default:'' }} to the top of the page">
+    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false">
+      <path fill="currentColor" d="M9.5 1a.5.5 0 0 0-.5.5v.6L6.8 4.3a3.3 3.3 0 0 0-2 .9.5.5 0 0 0 0 .7l2.6 2.6-3.9 4.6a.4.4 0 0 0 .6.6l4.6-3.9 2.6 2.6a.5.5 0 0 0 .7 0 3.3 3.3 0 0 0 .9-2l2.2-2.2h.6a.5.5 0 0 0 0-1h-.8a.5.5 0 0 0-.35.15L11.9 9.6a.5.5 0 0 0-.15.35 2.3 2.3 0 0 1-.3 1.15L4.9 4.55A2.3 2.3 0 0 1 6.05 4.25a.5.5 0 0 0 .35-.15L9 1.5A.5.5 0 0 0 9.15 1z"/>
+    </svg>
+  </button>
+  {% else %}
+  <span></span>
+  {% endif %}
+  </div>
+
+{% comment %} Level three: what the amount above is made of. Rendered *under*
+   the row rather than beside it, because it is a decomposition of one figure
+   and the money column is where that figure lives -- putting it in a side panel
+   would break the alignment the design is built on.
+{% endcomment %}
+{% if has_breakdown %}
+<div id="dist-{{ asset.id }}-{{ prog.pid|default:counter }}" class="dist" hidden>
+  <p class="dist-note">What the {{ prog.value|floatformat:'2g' }} ALGO above is made of.</p>
+  {% for d in dist %}
+    {% with dlink=d.link %}
+    <div class="position-row">
+      <div class="position-left">
+        <div class="position-title">
+          <span class="position-label">
+            {% if dlink.url %}<a class="out" href="{{ dlink.url }}" target="_blank" title="{{ dlink.text }}">{{ dlink.text }}</a>{% else %}{{ dlink.text|default:"" }}{% endif %}
+          </span>
+        </div>
+        {% if d.amount %}
+        <div class="position-sub"><span class="num">{{ d.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span></div>
+        {% endif %}
+      </div>
+      <div class="position-val">
+        <span class="amt val{% if d.value|is_negative %} neg{% endif %}" data-val="{{ d.value }}">{{ d.value|floatformat:'2g' }}</span>
+        <span class="u unit">ALGO</span>
+      </div>
+      <span></span>
+    </div>
+    {% endwith %}
+  {% endfor %}
+</div>
+{% endif %}
+</div>
+{% endwith %}
+{% endwith %}

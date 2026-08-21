@@ -1883,6 +1883,164 @@ div.socfooter {
   min-width: 0;
 }
 
+/* ---- folded rows ----------------------------------------------------------
+   The tail of a section: everything past the point where the visible rows
+   account for `ADDRESS_SECTION_THRESHOLD` of its magnitude. See
+   `utils/cutoff.py`.
+
+   `display: none` rather than a height or an opacity: a folded row must be out
+   of the accessibility tree and out of tab order, not merely invisible. A
+   reader on a screen reader hearing sixty rows they cannot see is worse served
+   than one who has to press a button.
+
+   The container opts in with `data-folding`, so a section that renders no
+   control -- because nothing was folded -- cannot hide rows by accident if the
+   class ever appears in the markup. */
+[data-folding] .fitem.folded {
+  display: none;
+}
+
+[data-folding].unfolded .fitem.folded {
+  display: revert;
+}
+
+/* One button, two labels, whichever the state calls for. Keeping the text out
+   of the script means the attribute a screen reader reads and the text a
+   sighted reader sees cannot disagree. */
+.show-more[aria-expanded="false"] .show-more-close,
+.show-more[aria-expanded="true"] .show-more-open {
+  display: none;
+}
+
+/* ---- entry controls -------------------------------------------------------
+   The grip and the pin: reorder a row, or send it to the top. Rendered at rest
+   for everybody and set by `pins.js` from the reader's own browser -- the page
+   they sit in is cached and shared, so its markup cannot know who is reading
+   it.
+
+   Dim until wanted: a row carries a figure, a name and a value, and controls
+   competing with those at full strength would be the loudest thing in a list
+   of two hundred. They resolve when the row is hovered, when either is
+   focused, and permanently once a pin is set.
+
+   The whole group is revealed by hovering the row rather than each control
+   separately, because a reader looking for the grip should not have to find it
+   first. */
+.grip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+  color: var(--color-base-content);
+  opacity: 0;
+  cursor: grab;
+  touch-action: none;
+  transition: opacity 0.15s ease;
+}
+
+/* Hidden until the row is hovered, but never hidden from the keyboard: an
+   `opacity: 0` control is still focusable and still announced, and this is the
+   only way to reorder without a pointer. */
+.item-header:hover .grip,
+.grip:focus-visible {
+  opacity: 0.45;
+}
+
+.grip:hover,
+.grip:focus-visible {
+  opacity: 1;
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+/* The row being dragged, lifted off the list so its edges are visible against
+   the rows it is moving past. */
+.fitem.dragging {
+  opacity: 0.85;
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.2));
+  position: relative;
+  z-index: 1;
+}
+
+/* No transition on the rows themselves: they are re-parented mid-drag, and an
+   animated position would chase the pointer rather than follow it. */
+.pin {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+  color: var(--color-base-content);
+  opacity: 0.25;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.pin:hover,
+.pin:focus-visible {
+  opacity: 1;
+}
+
+/* Pressed is a colour change as well as an opacity one, so the state survives
+   for a reader who cannot tell 25% from 100% of the same hue. */
+.pin[aria-pressed="true"] {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+/* The head of a pinned row, so the reason it is out of value order is visible
+   without hovering anything. */
+.fitem.pinned > .item-header {
+  box-shadow: inset 2px 0 0 0 var(--color-primary);
+}
+
+/* The position-level pin sits inline with the figure it belongs to, inside a
+   right-aligned column, so it needs no cell of its own. Smaller than the row
+   control: it acts on one line of a breakdown rather than on a whole holding,
+   and reading the same weight would overstate it. */
+.pin-btn {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem;
+  border-radius: 0.25rem;
+  color: var(--color-base-content);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.position:hover .pin-btn,
+.pin-btn:focus-visible,
+.pin-btn[aria-pressed="true"] {
+  opacity: 1;
+}
+
+.pin-btn[aria-pressed="true"] {
+  color: var(--color-primary);
+}
+
+.position.pinned > .position-row {
+  box-shadow: inset 2px 0 0 0 var(--color-primary);
+  padding-left: 0.5rem;
+}
+
+/* A position whose identity the payload cannot pin down. The pin still works
+   -- `pins.js` falls back to the nearest amount -- but the reader is told the
+   promise is weaker than it looks, rather than finding out when it lands on
+   the other row. */
+.position[data-pid-ambiguous].pinned > .position-row {
+  box-shadow: inset 2px 0 0 0 var(--color-warning);
+}
+
 .itemright,
 .nftright,
 .item-header .right {
@@ -2027,5 +2185,958 @@ div.socfooter {
   .chart-container .canvas {
     width: auto;
     flex: 1 1 auto;
+  }
+}
+
+/* ============================================================================
+   THE MONEY-COLUMN DESIGNS (2 and 3)
+   ============================================================================
+   Only `address_money.html` and `templates/snippets/money/*` use any of this.
+   Design 1 is the untouched old page and must stay untouched: nothing below
+   may select a class design 1 renders. `core/tests/test_selector_contract.py`
+   and `test_money_design_classes.py` between them hold that line.
+
+   Ported from the prototype, with its private token set replaced by the
+   theme's. The prototype was standalone raw CSS with its own `--surface`,
+   `--ink` and `--line`; here every one of those becomes the DaisyUI token that
+   already means the same thing, so all 57 themes recolour this design the way
+   they recolour every other page.
+
+   The five category colours are the deliberate exception -- see `--c-*` below.
+
+   Two class names diverge from the prototype on purpose. DaisyUI already owns
+   `.card` and `.stack`, and `.stack` in particular sets `display: grid` with
+   every child in one area, which would render the five-segment allocation bar
+   as one segment covering the other four. They are `.mcard` and
+   `.allocation-bar` here. */
+
+/* ---- tokens ---------------------------------------------------------------
+   `--col` is the money column: one width, shared by asset headers, venue
+   subtotals, position rows and NFT lines, so every figure on the page sits on
+   the same rule. A reader compares down the page instead of across it. This is
+   the design; a row that stops using it has left the design behind whatever
+   else it keeps.
+
+   The category colours do NOT follow the theme, and that is not an oversight.
+   The allocation bar, the five figures and the donut are three drawings of one
+   set of numbers, and balance-is-green has to mean the same thing in all 57
+   themes or they stop reading as the same picture. They are checked for
+   contrast against both light and dark surfaces rather than against any one
+   theme's background. */
+.money-page {
+  --col: 8.5rem;
+  --c-balance: #0b7a5b;
+  --c-staked: #1f7a9c;
+  --c-liquidity: #3f5bd6;
+  --c-defi: #a8630c;
+  --c-nft: #b3324a;
+}
+
+/* The dark variants are lighter and less saturated: the light-theme hues are
+   chosen to sit on white and go muddy on a dark surface. Keyed off the theme's
+   own scheme rather than `prefers-color-scheme`, because a reader on a dark
+   theme in a light OS must get the dark set. */
+[data-theme] .money-page {
+  --c-balance: light-dark(#0b7a5b, #3ecf9a);
+  --c-staked: light-dark(#1f7a9c, #54c3e8);
+  --c-liquidity: light-dark(#3f5bd6, #93a3f7);
+  --c-defi: light-dark(#a8630c, #e0a548);
+  --c-nft: light-dark(#b3324a, #f0708a);
+}
+
+.cat-balance { color: var(--c-balance); }
+.cat-staked { color: var(--c-staked); }
+.cat-liquidity { color: var(--c-liquidity); }
+.cat-defi { color: var(--c-defi); }
+.cat-nft { color: var(--c-nft); }
+
+/* The allocation bar's segments are painted, not tinted: `currentColor` lets
+   one class serve both the bar segment and the figure's dot. */
+.allocation-bar > .cat-balance,
+.allocation-bar > .cat-staked,
+.allocation-bar > .cat-liquidity,
+.allocation-bar > .cat-defi,
+.allocation-bar > .cat-nft {
+  background: currentColor;
+}
+
+/* ---- shared idioms -------------------------------------------------------- */
+
+/* Tabular figures, so a column of numbers has its digits line up. Without this
+   the money column aligns its right edge and nothing else, which is most of the
+   benefit thrown away. */
+.money-page .num,
+.money-page .amt,
+.money-page .total {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.money-page .neg {
+  color: var(--color-error);
+}
+
+.money-page .eyebrow {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* `.out` leaves the site, `.tdist` acts in place. They have to be told apart
+   *at rest*, not only under the pointer: a reader deciding where to click has
+   not pointed at anything yet. `.tdist` is already defined for design 1 and is
+   shared deliberately -- same meaning, same treatment, one definition. */
+.money-page .out {
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .money-page .out:hover { text-decoration: underline; }
+}
+
+.money-page .out:active { text-decoration: underline; }
+
+/* ---- page head ------------------------------------------------------------ */
+.money-page .head {
+  padding: 2rem 0 1.5rem;
+}
+
+.money-page .head-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.money-page .total-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.money-page .total {
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6.5vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.money-page .total .unit {
+  font-size: 0.38em;
+  letter-spacing: 0;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  margin-left: 0.35em;
+  font-weight: 500;
+}
+
+.money-page .total-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+}
+
+.money-page .total-note {
+  font-size: 0.6875rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+.money-page .addr {
+  font-size: 0.75rem;
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  border-radius: 999px;
+  padding: 0.1875rem 0.625rem;
+  text-decoration: none;
+}
+
+.money-page .addr:hover {
+  border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
+}
+
+.money-page .head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.money-page .state-chip {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid currentColor;
+  color: var(--color-success);
+}
+
+/* ---- allocation band ------------------------------------------------------
+   "Where the money is": the bar, the five figures, and the charts panel. Three
+   drawings of one set of numbers, computed once by `allocation_bands`. */
+.money-page .band {
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  padding: 1.125rem 1.25rem 1rem;
+}
+
+.money-page .band-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.625rem;
+  margin-bottom: 0.875rem;
+}
+
+.money-page .band-note {
+  font-size: 0.75rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* The bar. `gap` rather than borders between segments, so a 0.4% slice is still
+   visibly its own thing instead of a hairline swallowed by its neighbours. */
+.money-page .allocation-bar {
+  display: flex;
+  height: 0.75rem;
+  border-radius: 0.1875rem;
+  overflow: hidden;
+  gap: 2px;
+  background: var(--color-base-200);
+}
+
+.money-page .allocation-bar > * {
+  height: 100%;
+  min-width: 3px;
+  border-radius: 2px;
+}
+
+.money-page .figs {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.money-page .fig {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  align-items: flex-start;
+  border: 1px solid var(--color-base-300);
+  border-radius: 0.5rem;
+  padding: 0.5625rem 0.6875rem;
+  background: var(--color-base-100);
+  text-align: left;
+}
+
+.money-page .fig-key {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: inherit;
+}
+
+.money-page .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: currentColor;
+  flex: none;
+}
+
+/* The figure itself is the theme's ink, not the category colour: the category
+   is carried by the dot and the label, and a wall of five coloured numbers is
+   harder to read than five black ones with coloured keys. */
+.money-page .fig-val {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-base-content);
+}
+
+.money-page .fig-share {
+  font-size: 0.6875rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* ---- charts panel --------------------------------------------------------- */
+.money-page .charts {
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-base-300);
+  padding-top: 0.75rem;
+}
+
+.money-page .charts > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+}
+
+.money-page .charts > summary::-webkit-details-marker { display: none; }
+
+.money-page .charts > summary:hover { color: var(--color-base-content); }
+
+.money-page .charts[open] > summary .chev { transform: rotate(90deg); }
+
+.money-page .chev { transition: transform 0.15s ease; }
+
+.money-page .charts-hint {
+  font-weight: 400;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  font-size: 0.72rem;
+}
+
+.money-page .charts-grid {
+  margin-top: 1rem;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.money-page .chart { min-width: 0; }
+
+.money-page .chart h4 {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  margin-bottom: 0.625rem;
+}
+
+.money-page .chart-row {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: center;
+}
+
+.money-page .donut {
+  width: 116px;
+  height: 116px;
+  overflow: visible;
+}
+
+.money-page .keys {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  min-width: 0;
+}
+
+.money-page .key {
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  gap: 0.4375rem;
+  align-items: baseline;
+  font-size: 0.72rem;
+  text-align: left;
+}
+
+.money-page .key i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+/* The name takes the theme's ink while the swatch keeps the slice's colour:
+   the legend is read as text and coloured text at this size is the first thing
+   to fail a contrast check on a light theme. */
+.money-page .key .kn {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-base-content);
+}
+
+.money-page .key .kv {
+  font-size: 0.65rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* ---- sections and the asset row ------------------------------------------- */
+.money-page .section { margin-top: 1.875rem; }
+
+.money-page .section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.625rem;
+}
+
+.money-page .section-head .count {
+  font-size: 0.6875rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* The two idioms, named above the list that uses them. */
+.money-page .idioms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 1.125rem;
+  font-size: 0.72rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  margin-bottom: 0.625rem;
+}
+
+.money-page .idioms b {
+  font-weight: 500;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+}
+
+.money-page .rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.money-page .mcard {
+  background: var(--color-base-100);
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  overflow: hidden;
+}
+
+.money-page .mcard:hover {
+  border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
+}
+
+.money-page .mcard[open] {
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+}
+
+/* ---- the asset header: where the money column starts -----------------------
+   Five rigid cells. Named areas rather than bare columns because the narrow
+   layout rearranges them, and `order` on a grid would move the tab sequence
+   with the boxes -- the value would be read before the name it belongs to. */
+.money-page .chead {
+  display: grid;
+  grid-template-columns: 22px 38px minmax(0, 1fr) var(--col) 26px;
+  grid-template-areas: "grip tile id val pin";
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  list-style: none;
+}
+
+.money-page .chead::-webkit-details-marker { display: none; }
+
+.money-page .chead > .grip { grid-area: grip; }
+.money-page .chead > .mono-tile { grid-area: tile; }
+.money-page .chead > .cid { grid-area: id; }
+.money-page .chead > .cval { grid-area: val; }
+.money-page .chead > .pin { grid-area: pin; }
+
+/* The grip is already defined for design 1's rows; here it needs to be a grid
+   child and to reveal on the card rather than on an `.item-header`. */
+.money-page .chead > .grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  opacity: 0;
+}
+
+.money-page .mcard:hover .grip,
+.money-page .grip:focus-visible {
+  opacity: 1;
+}
+
+.money-page .mono-tile {
+  width: 38px;
+  height: 38px;
+  border-radius: 0.5625rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--color-base-200);
+  border: 1px solid var(--color-base-300);
+  overflow: hidden;
+}
+
+.money-page .mono-tile img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.money-page .cid {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+}
+
+.money-page .cid-top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.money-page .cid-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.money-page .cid-amt,
+.money-page .cid-meta {
+  font-size: 0.72rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+.money-page .cid-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* The money column's cell. Right-aligned so the digits line up on one rule --
+   that alignment is what lets a reader see the venue subtotals adding up to the
+   asset's figure without doing the arithmetic. */
+.money-page .cval {
+  text-align: right;
+  display: block;
+}
+
+.money-page .cval .v {
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  display: block;
+}
+
+.money-page .cval .u {
+  font-size: 0.65rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+.money-page .cbody {
+  border-top: 1px solid var(--color-base-300);
+  background: var(--color-base-100);
+}
+
+.money-page .cbody-inner { padding: 0.25rem 0.875rem 0.875rem; }
+
+.money-page .meta {
+  display: grid;
+  gap: 0.25rem 1.125rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  padding: 0.75rem 0 0.875rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px dashed var(--color-base-300);
+  font-size: 0.75rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+.money-page .meta div {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.money-page .meta dt { flex: none; }
+
+.money-page .meta dd {
+  margin: 0;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+  font-size: 0.72rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- program groups ------------------------------------------------------- */
+.money-page .program-groups {
+  display: flex;
+  flex-direction: column;
+}
+
+.money-page .pgroup {
+  border-top: 1px solid var(--color-base-300);
+}
+
+.money-page .pgroup:first-child { border-top: 0; }
+
+/* The subtotal sits in the money column, same width, same edge -- which is the
+   whole reason a reader can see four venue figures adding up to the asset's. */
+.money-page .pgroup-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--col) 26px;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.6875rem 0 0.3125rem;
+}
+
+.money-page .pgroup-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.money-page .pgroup-name .n {
+  font-size: 0.65rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  font-weight: 500;
+}
+
+.money-page .pgroup-total {
+  text-align: right;
+  font-size: 0.78rem;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+}
+
+/* ---- the position row: the atom ------------------------------------------
+   `.position` wraps the row and its breakdown; `.position-row` is the grid.
+   The wrapper exists because pinning reorders positions, and a breakdown left
+   behind by its row would sit under a different position entirely. */
+.money-page .position-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--col) 26px;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.4375rem 0.5rem 0.4375rem 0;
+  margin-left: -0.5rem;
+  padding-left: 0.5rem;
+  border-radius: 0.4375rem;
+  transition: background 0.1s ease;
+}
+
+.money-page .position-row:hover {
+  background: var(--color-base-200);
+}
+
+.money-page .position-left {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.money-page .position-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* The form of the holding -- Balance, Staked, LP -- as a chip rather than a
+   sentence, tinted from its own text colour so it reads as a label at a glance
+   without needing a fifth palette. */
+.money-page .form-chip {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-radius: 0.25rem;
+  padding: 0.09375rem 0.3125rem;
+  flex: none;
+  background: color-mix(in oklab, currentColor 12%, transparent);
+}
+
+.money-page .position-label {
+  font-size: 0.84rem;
+  color: var(--color-base-content);
+  min-width: 0;
+}
+
+.money-page .position-sub {
+  font-size: 0.72rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+}
+
+.money-page .position-val {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.money-page .amt {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.money-page .position-val .u {
+  font-size: 0.625rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  display: block;
+  margin-top: 1px;
+}
+
+/* ---- level three: what the figure is made of ------------------------------
+   Under the row, not beside it. It decomposes one figure, and that figure lives
+   in the money column -- a side panel would break the alignment the design is
+   built on. The rule down its left edge is what says "these belong to the line
+   above" without a heading saying so. */
+.money-page .dist {
+  margin: 0 0 0.625rem 0;
+  padding: 0.5rem 0 0.25rem 1.125rem;
+  border-left: 2px solid color-mix(in oklab, var(--color-base-content) 30%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.money-page .dist-note {
+  font-size: 0.6875rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  margin-bottom: 0.25rem;
+}
+
+.money-page .dist .position-row {
+  padding-top: 0.3125rem;
+  padding-bottom: 0.3125rem;
+}
+
+.money-page .dist .position-label { font-size: 0.78rem; }
+
+.money-page .dist .amt { font-size: 0.78rem; }
+
+/* ---- pinned band ---------------------------------------------------------- */
+.money-page .pinned { margin-top: 1.625rem; }
+
+.money-page .pin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 0.5rem;
+}
+
+.money-page .pin-card {
+  border: 1px solid color-mix(in oklab, var(--color-base-content) 30%, transparent);
+  border-radius: 0.5625rem;
+  padding: 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  min-width: 0;
+  background: var(--color-base-100);
+  position: relative;
+}
+
+/* A pin whose position is not on this page any more. The card stays -- silently
+   dropping it would tell the reader nothing about why the thing they pinned
+   vanished -- but it stops claiming the number is current. */
+.money-page .pin-card.stale {
+  border-style: dashed;
+}
+
+.money-page .pin-card.stale .amt {
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* A pin that resolved by the amount witness rather than outright: the pid names
+   more than one row. It landed somewhere, and the reader is told the promise is
+   weaker than it looks rather than finding out when it lands on the other one. */
+.money-page .pin-card.ambiguous {
+  border-color: var(--color-warning);
+}
+
+/* ---- design 3: the compact form -------------------------------------------
+   Designs 2 and 3 are one template and one set of rules; this block is the
+   whole difference between them. `compact` on the layout adds `.cards` to the
+   list, and the asset rows become a tile grid.
+
+   Written as an override of the full form rather than as a parallel set,
+   because everything they share -- the money column inside an opened card, the
+   venue groups, the position rows, the breakdown -- must stay literally the
+   same rules. Two copies would drift, and the first sign of it would be a
+   reader reporting that one design shows a figure the other does not. */
+.money-page .rows.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  gap: 0.5rem;
+}
+
+/* An opened tile takes the full width. Its contents are the money column, venue
+   subtotals and position rows at their normal size -- compact is about the
+   closed list, not about cramming the detail. */
+.money-page .rows.cards .mcard[open] {
+  grid-column: 1 / -1;
+}
+
+/* The header becomes a stack: name and value above, facts below. The five-cell
+   grid cannot survive at 158px -- the fixed cells alone leave the name nothing. */
+.money-page .rows.cards .chead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  /* Room on the right for the pin, which is positioned into that corner. */
+  padding: 0.75rem 1.875rem 0.75rem 0.75rem;
+  position: relative;
+}
+
+.money-page .rows.cards .chead > .grip,
+.money-page .rows.cards .chead > .mono-tile {
+  display: none;
+}
+
+/* The tile's pin goes to the corner: a flex column has no fifth cell for it. */
+.money-page .rows.cards .chead > .pin {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+}
+
+.money-page .rows.cards .cid { gap: 0.25rem; min-width: 0; }
+
+/* In a 158px tile the name and the holding cannot share a line: the holding is
+   a long number in a monospace face and wrapping is not available to it, so it
+   ran out past the card's edge and over its neighbour. Stacked, and each
+   truncated on its own. */
+.money-page .rows.cards .cid-top {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  flex-wrap: nowrap;
+}
+
+.money-page .rows.cards .cid-name,
+.money-page .rows.cards .cid-amt,
+.money-page .rows.cards .cid-meta {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.money-page .rows.cards .cid-name { font-size: 0.8125rem; }
+
+.money-page .rows.cards .cval { text-align: left; }
+
+.money-page .rows.cards .cval .v {
+  font-size: 1.0625rem;
+  letter-spacing: -0.025em;
+}
+
+/* An opened tile is back to full width, so the header can have its columns
+   again -- minus the drag handle, which a grid of tiles has no order to change. */
+.money-page .rows.cards .mcard[open] .chead {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) var(--col);
+  grid-template-areas: "tile id val";
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.money-page .rows.cards .mcard[open] .chead > .mono-tile { display: grid; }
+
+.money-page .rows.cards .mcard[open] .cval { text-align: right; }
+
+/* ---- responsive ----------------------------------------------------------
+   Two steps, both measured against the money column rather than guessed. */
+
+/* First the column narrows: at this width the name still has room, but 8.5rem
+   of value beside it starts pushing longer asset names into ellipsis. */
+@media (max-width: 860px) {
+  .money-page { --col: 7rem; }
+}
+
+/* Below this the five rigid cells cannot all fit. The fixed ones alone -- grip,
+   tile, money column, dismiss, and four gaps -- leave the name under 90px,
+   which is what made "STASIS EURO" break one word per line and the 38px tile
+   overflow its 34px cell in the prototype.
+
+   Drag and dismiss leave the flow, and the value drops beneath the name so the
+   name gets the full width. `--col: auto` because a fixed money column is
+   exactly what there is no longer room for: below this width there is one
+   figure per row to read, not a column of them to compare. */
+@media (max-width: 620px) {
+  .money-page { --col: auto; }
+
+  .money-page .mcard { position: relative; }
+
+  .money-page .chead {
+    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-areas:
+      "tile id"
+      "tile val";
+    gap: 2px 0.6875rem;
+    padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+    align-items: start;
+  }
+
+  .money-page .chead > .grip { display: none; }
+  .money-page .chead > .mono-tile { align-self: center; }
+
+  /* Out of the flow, into the corner. The two-row template names no cell for
+     it, so left in the grid it lands in an implicit third row and stretches
+     every card by its full height -- with the card looking merely, and
+     inexplicably, too tall. */
+  .money-page .chead > .pin {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    opacity: 1;
+    grid-area: auto;
+  }
+  .money-page .chead > .cval { text-align: left; }
+  .money-page .chead > .cval .v { font-size: 0.9375rem; }
+
+  .money-page .chead > .cval .u {
+    display: inline;
+    margin-left: 0.25rem;
+  }
+
+  .money-page .cid-meta { gap: 0.375rem; }
+
+  /* The position row and the venue head lose their third cell for the same
+     reason: with `--col: auto` the value cell sizes to its content, and a
+     26px column reserved for a control that is hidden anyway is 26px stolen
+     from the name. */
+  .money-page .position-row,
+  .money-page .pgroup-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .money-page .position-row > .pin-btn { display: none; }
+
+  .money-page .rows.cards {
+    grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+  }
+
+  .money-page .chart-row {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
   }
 }
