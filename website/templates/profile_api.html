@@ -2,35 +2,92 @@
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
+{% comment %} The API token page.
+
+  **The copy controls were dead.** `site.js` binds `copyToClipboard` to `.copy`
+  and copies `$(this).prev()`; both clipboard spans here carried
+  `cursor-pointer` and no `.copy`, so they said "click me" and did nothing.
+  Three other templates -- `snippets/asas/meta.html`, `nonval.html`,
+  `nfts/item.html` -- had it right, which is why this went unnoticed: the
+  control looks identical and only this copy of it was inert. Fixed, and the
+  contract is now written down where the next person will read it.
+
+  Rebuilt otherwise from a page that used `<br><br>` five times for spacing and
+  put the tier in a right-hand column opposite the tokens, as though the two
+  were comparable. A token is a secret to be copied once and pasted elsewhere;
+  it wants width, a monospace face and an unmissable copy control, not half a
+  grid.
+
+  `id_obtain` is kept: it is the handle for obtaining a pair.
+{% endcomment %}
 {% block title %}API token data - ASA Stats{% endblock %}
 {% block description %}This is the page where you can see and refresh your API token.{% endblock %}
 {% block keywords %}account,API,API token,API token refresh,API token access{% endblock %}
 {% block profile_title %}ASA Stats API token{% endblock %}
 {% block profile_content %}
-<div class="grid gap-6 md:grid-cols-12 md:text-left">
-<div class="md:col-span-7">
-  <div class="text-left">
-    {% if refresh %}
-    <span>Refresh token:</span><br><br>
-    <span class="break-words">{{ refresh }}</span>&nbsp;<span class="cursor-pointer">&nbsp;&#128203;&nbsp;</span>
-    <br><br>
-    {% endif %}
-    {% if access %}
-    <span>Access token:</span><br><br>
-    <span class="break-words">{{ access }}</span>&nbsp;<span class="cursor-pointer">&nbsp;&#128203;&nbsp;</span>
-    <br><br>
-    {% endif %}
-  </div>
+<div class="space-y-4">
+
+  <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">API tokens</h2>
+      <dl class="flex items-baseline gap-2 text-sm">
+        <dt class="text-base-content/60">Active tier</dt>
+        <dd class="font-medium text-primary">{{ user.profile.tier_name|upper }}</dd>
+      </dl>
+    </div>
+
+    <div class="space-y-5 px-5 py-5">
+      {% if refresh or access %}
+        {% comment %} The token is the whole point of the page, so it gets the
+           full width and a monospace face -- a 200-character string in a
+           proportional face is unreadable and unverifiable by eye.
+
+           `.copy` must be the element **immediately after** the one it copies:
+           `copyToClipboard` reads `$(this).prev()`. A wrapper between them
+           silently breaks it, which is exactly how the pair below came to be
+           inert. {% endcomment %}
+        {% if refresh %}
+        <div>
+          <p class="mb-1 text-sm text-base-content/60" id="id_refresh_label">Refresh token</p>
+          <div class="flex items-start gap-2">
+            <code class="min-w-0 flex-1 break-all rounded-box border border-base-300 bg-base-200 px-3 py-2 text-xs" aria-labelledby="id_refresh_label">{{ refresh }}</code><button type="button" class="copy btn btn-ghost btn-sm" title="Copy refresh token" aria-label="Copy refresh token">&#128203;</button>
+          </div>
+          <p class="mt-1 text-xs text-base-content/60">Use this one to obtain a new access token when the current one expires.</p>
+        </div>
+        {% endif %}
+
+        {% if access %}
+        <div>
+          <p class="mb-1 text-sm text-base-content/60" id="id_access_label">Access token</p>
+          <div class="flex items-start gap-2">
+            <code class="min-w-0 flex-1 break-all rounded-box border border-base-300 bg-base-200 px-3 py-2 text-xs" aria-labelledby="id_access_label">{{ access }}</code><button type="button" class="copy btn btn-ghost btn-sm" title="Copy access token" aria-label="Copy access token">&#128203;</button>
+          </div>
+          <p class="mt-1 text-xs text-base-content/60">Send this one as the <code class="text-xs">Authorization</code> header on API requests.</p>
+        </div>
+        {% endif %}
+      {% else %}
+        {% comment %} An empty state that says what to do, rather than an empty
+           area above a button. {% endcomment %}
+        <p class="text-sm text-base-content/60">
+          You have no tokens yet. Obtaining a pair gives you a refresh token and
+          an access token for the ASA Stats API.
+        </p>
+      {% endif %}
+
+      <div class="flex flex-wrap items-center gap-3">
+        <a class="btn btn-primary" href="{% url 'profile_api' %}?refresh=yes" id="id_obtain">
+          {% if refresh or access %}Obtain a new pair{% else %}Obtain token pair{% endif %}
+        </a>
+        {% if refresh or access %}
+        <p class="text-xs text-base-content/60">Obtaining a new pair invalidates the tokens above.</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
   <div>
-    <a class="btn btn-primary" href="{% url 'profile_api' %}?refresh=yes" id="id_obtain">Obtain token pair</a>
+    <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>
   </div>
-</div>
-<div class="md:col-span-5">
-  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>&nbsp;
-  <br><br>
-  <span>Active tier: </span><span class="text-primary">{{ user.profile.tier_name|upper }}</span>
-  <br><br>
-</div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; API&nbsp;token{% endblock %}

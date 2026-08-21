@@ -2,89 +2,139 @@
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
+{% comment %} Authorizing the address that carries your permission value.
+
+  Two routes to the same result -- connect a wallet, or send a 0 ALGO
+  transaction by hand -- and the page now says so before offering either, rather
+  than presenting the wallet cards and leaving the fallback to be discovered
+  inside a collapsible with no lead-in.
+
+  What changed and why:
+
+  * **`<blockquote>` for addresses.** Nothing here is being quoted. The same
+    call was already made for the historic page, where
+    `test_historic_assets_template.py` asserts the element is gone. Addresses
+    and the note are `<code>` now, monospace, with a copy control -- these exist
+    to be copied exactly, and a proportional face makes an Algorand address
+    impossible to check by eye.
+  * **The messages block carried four colour classes at once** --
+    `badge-outline bg-neutral text-neutral-content text-base-content/60` -- so
+    which one won depended on source order. They are alerts now, and they carry
+    `role="alert"`/`role="status"`, without which a message that appears after
+    load is announced to nobody.
+  * `<!-- HTML comments -->` shipped three banner rules to every reader. Django
+    comments do not.
+  * `<br><br>` before the check button, and a 7/5 grid whose right-hand column
+    held one button.
+
+  `.copy` copies the text of the element **immediately before** it -- see
+  `copyToClipboard` in `site.js`. A wrapper between the two silently breaks it.
+
+  Kept: `id_check`, which `functional_tests/test_profile_authorize.py` uses, and
+  `#wallet-connect` with `data-api-base`, which the wallet bundle finds by id.
+{% endcomment %}
 {% block title %}Authorize user address - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Authorize your public Algorand address by connecting your wallet, or with a manual 0 ALGO transaction, to receive your permission value from the ASA Stats Permission dApp.{% endblock %}
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,permission,Permission dApp{% endblock %}
 {% block profile_title %}Algorand/EVM address authorization{% endblock %}
 {% block profile_content %}
-<div class="grid gap-6 md:grid-cols-12 md:text-left">
-<div class="md:col-span-7">
-
-  <div>
-    Authorize the following address you've provided:
-    <blockquote>
-      {{ user.profile.address }}
-    </blockquote>
-  </div>
+<div class="space-y-4">
 
   {% if messages %}
-  <div>
+  <div class="space-y-2">
     {% for message in messages %}
       {% if "error" in message.tags %}
-      <div><span class="text-error">{{ message }}</span></div>
+      <div class="alert alert-error" role="alert">{{ message }}</div>
       {% else %}
-      <div class="badge badge-outline bg-neutral text-neutral-content text-base-content/60 shadow">
-        {{ message }}
-      </div>
+      <div class="alert" role="status">{{ message }}</div>
       {% endif %}
     {% endfor %}
   </div>
   {% endif %}
 
+  {% comment %} ---- what is being authorized ---- {% endcomment %}
+  <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">Address to authorize</h2>
+    </div>
+    <div class="px-5 py-5">
+      <div class="flex items-start gap-2">
+        <code class="min-w-0 flex-1 break-all rounded-box border border-base-300 bg-base-200 px-3 py-2 text-xs">{{ user.profile.address }}</code><button type="button" class="copy btn btn-ghost btn-sm" title="Copy address" aria-label="Copy address">&#128203;</button>
+      </div>
+      <p class="mt-3 max-w-prose text-sm text-base-content/60">
+        Authorizing proves the address is yours. Once it is, the ASA Stats
+        Permission dApp reads your token holding and sets your tier. Connect the
+        wallet below, or use the manual transaction if your wallet cannot
+        connect here.
+      </p>
+    </div>
+  </section>
+
   {% csrf_token %}
 
-  <!-- ============================================================= -->
-  <!-- PRIMARY: connect a wallet                                     -->
-  <!-- ============================================================= -->
-  <div id="wallet-connect" data-api-base="/api/v2/wallet">
-    {% include "snippets/wallet_cards.html" %}
-  </div>
+  {% comment %} ---- route one: connect ---- {% endcomment %}
+  <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">Connect a wallet</h2>
+    </div>
+    <div class="space-y-5 px-5 py-5">
+      <div id="wallet-connect" data-api-base="/api/v2/wallet">
+        {% include "snippets/wallet_cards.html" %}
+      </div>
+      {% include "snippets/evm_signing.html" with evm_api_base="/api/v2/wallet/link" %}
+    </div>
+  </section>
 
-  <!-- ============================================================= -->
-  <!-- EVM wallet                                                    -->
-  <!-- ============================================================= -->
-  {% include "snippets/evm_signing.html" with evm_api_base="/api/v2/wallet/link" %}
-
-  <!-- ============================================================= -->
-  <!-- FALLBACK: manual escrow transaction (collapsible)             -->
-  <!-- ============================================================= -->
-  <div>
-    {# Native <details>: this was a Materialize collapsible, and nothing on   #}
-    {# this page initialises one any more.                                     #}
-    <details class="rounded-box border border-base-300 bg-base-100">
-      <summary class="cursor-pointer p-4 font-medium">
-        Authorize with a manual transaction instead
-      </summary>
-      <div class="p-4 pt-0">
-          To authorize without connecting a wallet, send a 0 ALGO transaction
-          from your address to our Administration pool address:
-          <blockquote>
-            E7TR4BUASOGSHRRE2IBUHTHSNZGKU2DQDU5UF77L7VBITNVQGW5SCMS7OI
-          </blockquote>
-          <div class="mx-auto w-3/4">
-            <img class="max-w-full h-auto"
-                 src="{% static 'img/admpool-qrcode.png' %}"
-                 alt="QR code of the ASA Stats Administration pool address">
-          </div>
-          For us to identify you, add the following text to the transaction
-          <span class="text-error">NOTE</span> field:
-          <blockquote>
-            {{ user.profile.address_authorization_note|lower }}
-          </blockquote>
-          After the transaction is confirmed on the blockchain, click below.
-          <br><br>
-          <a class="btn btn-primary"
-             href="{% url 'profile_authorize_check' %}" id="id_check">Check transaction</a>
+  {% comment %} ---- route two: by hand ----
+     A native `<details>`: this was a Materialize collapsible and nothing on the
+     page initialises one any more. Closed by default because connecting is the
+     route most readers want, but it is now announced by a heading rather than
+     sitting unlabelled at the foot of the page. {% endcomment %}
+  <details class="rounded-box border border-base-300 bg-base-100">
+    <summary class="cursor-pointer px-5 py-4 text-base font-medium">
+      Authorize with a manual transaction instead
+    </summary>
+    <div class="space-y-4 border-t border-base-300 px-5 py-5">
+      <div>
+        <p class="max-w-prose text-sm text-base-content/70">
+          Send a 0 ALGO transaction from your address to the ASA Stats
+          Administration pool address:
+        </p>
+        <div class="mt-2 flex items-start gap-2">
+          <code class="min-w-0 flex-1 break-all rounded-box border border-base-300 bg-base-200 px-3 py-2 text-xs">E7TR4BUASOGSHRRE2IBUHTHSNZGKU2DQDU5UF77L7VBITNVQGW5SCMS7OI</code><button type="button" class="copy btn btn-ghost btn-sm" title="Copy pool address" aria-label="Copy Administration pool address">&#128203;</button>
         </div>
-    </details>
+      </div>
+
+      <div>
+        <p class="max-w-prose text-sm text-base-content/70">
+          So we can identify you, put this text in the transaction's
+          <strong>note</strong> field:
+        </p>
+        <div class="mt-2 flex items-start gap-2">
+          <code class="min-w-0 flex-1 break-all rounded-box border border-base-300 bg-base-200 px-3 py-2 text-xs">{{ user.profile.address_authorization_note|lower }}</code><button type="button" class="copy btn btn-ghost btn-sm" title="Copy note" aria-label="Copy the transaction note">&#128203;</button>
+        </div>
+      </div>
+
+      {% comment %} The QR encodes the pool address, for sending from a phone.
+         Capped rather than three-quarters of whatever the column happens to be:
+         a QR code past a certain size is not easier to scan, only larger.
+      {% endcomment %}
+      <div>
+        <img class="h-auto w-full max-w-[220px] rounded-box border border-base-300 bg-base-100 p-2"
+             src="{% static 'img/admpool-qrcode.png' %}"
+             alt="QR code of the ASA Stats Administration pool address">
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <a class="btn btn-primary" href="{% url 'profile_authorize_check' %}" id="id_check">Check transaction</a>
+        <p class="text-xs text-base-content/60">Click once the transaction is confirmed on the blockchain.</p>
+      </div>
+    </div>
+  </details>
+
+  <div>
+    <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>
   </div>
-
-</div>
-
-<div class="md:col-span-5">
-  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>&nbsp;
-  <br>
-</div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; Authorize&nbsp;address{% endblock %}

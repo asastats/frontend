@@ -7,9 +7,24 @@
 {% block description %}Manage your public Algorand and EVM addresses linked to your profile.{% endblock %}
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
 {% block profile_title %}Manage linked addresses{% endblock %}
+{% comment %} The linked-address list.
+
+  Structure is load-bearing and deliberately untouched: `partialdef
+  address_list inline` renders here on first paint *and* makes the fragment
+  addressable as `profile_addresses.html#address_list`, which is what
+  `core/views_connected_addresses.py` re-renders into
+  `#connected-addresses-list` after every operation. `.connected-address-row`
+  is what `functional_tests/test_profile_pages.py` counts.
+
+  What changed is the chrome and the button hierarchy. Every action was a plain
+  `btn`, so "Remove" -- which is irreversible and asks for confirmation --
+  looked exactly like "Make primary", and "Add address", the reason most people
+  open this page, looked like neither. One primary per view, destructive
+  actions marked as such, and the rest quiet.
+{% endcomment %}
 {% block profile_content %}
-<div>
-  <p>
+<div class="space-y-4">
+  <p class="max-w-prose text-sm text-base-content/70">
     Your primary address carries your subscription, governance and permissions.
     Making an address primary, or enabling sign-in for one, asks you to sign
     with your current primary wallet.
@@ -24,7 +39,11 @@
     data-ops-url="{% url 'profile_addresses_action' %}"
     hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
   >
-    <div id="connected-addresses-list">
+    <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">Linked addresses</h2>
+    </div>
+    <div id="connected-addresses-list" class="px-5 py-4">
       {% comment %}
         Rendered server-side. `inline` renders here on first paint AND makes the
         fragment addressable as "<this template>#address_list" for htmx swaps.
@@ -43,30 +62,35 @@
               </span>
             </summary>
           <div class="address-detail">
-            <div class="mb-1 break-all font-mono text-sm">{{ row.address }}</div>
-            <div class="mb-4 text-sm text-base-content/60">({{ row.chain }})</div>
+            <div class="flex items-start gap-2">
+              <code class="min-w-0 flex-1 break-all rounded-box border border-base-300 bg-base-200 px-3 py-2 text-xs">{{ row.address }}</code><button type="button" class="copy btn btn-ghost btn-sm" title="Copy address" aria-label="Copy address">&#128203;</button>
+            </div>
+            <div class="mb-4 mt-1 text-xs text-base-content/60">{{ row.chain }}</div>
             <div class="address-actions">
               {% if row.is_primary %}
                 <span class="text-sm text-base-content/70">This is your primary address.</span>
               {% else %}
-                <button type="button" class="btn"
+                <button type="button" class="btn btn-outline btn-sm"
                         data-stepup data-operation="set_primary" data-target-id="{{ row.id }}">
                   Make primary
                 </button>
                 {% if row.login_enabled %}
-                  <button type="button" class="btn"
+                  <button type="button" class="btn btn-ghost btn-sm"
                           hx-post="{% url 'profile_addresses_action' %}"
                           hx-vals='{"operation": "set_login", "target_id": {{ row.id }}, "enabled": false}'
                           hx-target="#connected-addresses-list" hx-swap="innerHTML">
                     Disable login
                   </button>
                 {% else %}
-                  <button type="button" class="btn"
+                  <button type="button" class="btn btn-ghost btn-sm"
                           data-stepup data-operation="set_login" data-target-id="{{ row.id }}" data-enabled="true">
                     Enable login
                   </button>
                 {% endif %}
-                <button type="button" class="btn"
+                {% comment %} Marked as destructive, and outline rather than
+                   filled: findable without being the most inviting thing in
+                   the row. `hx-confirm` is the real guard. {% endcomment %}
+                <button type="button" class="btn btn-outline btn-error btn-sm"
                         hx-post="{% url 'profile_addresses_action' %}"
                         hx-vals='{"operation": "remove", "target_id": {{ row.id }}}'
                         hx-target="#connected-addresses-list" hx-swap="innerHTML"
@@ -84,14 +108,15 @@
       </ul>
       {% endpartialdef %}
     </div>
-
-    <div class="mt-6">
-      <a class="btn" href="{{ link_address_url }}">Add address</a>
+    <div class="border-t border-base-300 px-5 py-4">
+      <a class="btn btn-primary btn-sm" href="{{ link_address_url }}">Add address</a>
     </div>
+    </section>
   </div>
-</div>
-<div>
-  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>&nbsp;
+
+  <div>
+    <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>
+  </div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; Linked&nbsp;addresses{% endblock %}

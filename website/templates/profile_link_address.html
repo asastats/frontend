@@ -1,40 +1,78 @@
 {% extends 'base_profile.html' %}
 {% load static %}
 {% load core_extras %}
+{% comment %} Linking a second wallet to an existing profile.
+
+  Two wallet families, two very different sets of software, and previously two
+  bare `<div>`s in a row with nothing saying where one ended and the next began.
+  A reader with only an Algorand wallet met a heading-less empty area below
+  their own wallets and no way to know it was for something else. They are
+  sections now, each named.
+
+  Three contracts this page has to keep, none of them obvious from the markup:
+
+  * `#wallet-connect` and `#evm-wallet-connect` are found by the wallet bundle
+    by id, and `data-api-base` on each is what points them at the *link*
+    endpoint rather than the login one. Changing either silently turns this page
+    into the sign-in page.
+  * `#app-error` is revealed by the bundle assigning `style.display = "block"`,
+    so its `style="display:none"` is the contract and not a stray inline style.
+    `wallet/src/main.test.ts` asserts on exactly that markup.
+  * The EVM half is `snippets/evm_signing.html`, shared with the authorize
+    page. This template used to hand-roll its own copy of that container, and
+    the copy was wrong twice over: it had no `#evm-app-error`, so a reader with
+    no EVM wallet met an empty box and no explanation
+    (`evmWalletComponent.showNoWallets` looks for that id and does nothing
+    without it); and it read `wallet_connect_project_id`, which nothing
+    provides. The context processor supplies `WALLET_CONNECT_PROJECT_ID`, so
+    the attribute was always empty and WalletConnect was unconfigured on this
+    page alone. Using the snippet fixes both and stops the two pages drifting
+    again.
+{% endcomment %}
 {% block title %}Link address to profile - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Link an Algorand or EVM address to the user's profile.{% endblock %}
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,EVM address,permission,Permission dApp{% endblock %}
 {% block profile_title %}Link address to profile{% endblock %}
 {% block profile_content %}
-<div>
-  <p>
+<div class="space-y-4">
+  <p class="max-w-prose text-sm text-base-content/70">
     Connect another wallet to add it to your account. Linked addresses can sign
-    in and be used in user widgets; they do not change your primary address or its
-    permissions.
+    in and be used in user widgets; they do not change your primary address or
+    its permissions.
   </p>
 
   {% csrf_token %}
 
-  {# Algorand wallets: same markup as the authorize page, link endpoint. #}
-  <div id="wallet-connect" data-api-base="/api/v2/wallet/link">
-    {% include "snippets/wallet_cards.html" %}
-  </div>
+  <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">Algorand wallets</h2>
+    </div>
+    <div class="px-5 py-5">
+      <div id="wallet-connect" data-api-base="/api/v2/wallet/link">
+        {% include "snippets/wallet_cards.html" %}
+      </div>
+    </div>
+  </section>
 
-  {# EVM / xChain wallets: same container as the authorize page, link endpoint. #}
-  <div
-    id="evm-wallet-connect"
-    data-api-base="/api/v2/wallet/link"
-    data-wc-project-id="{{ wallet_connect_project_id|default:'' }}"
-  >
-    <div id="evm-wallet-list"></div>
-  </div>
+  <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">EVM wallets</h2>
+    </div>
+    <div class="px-5 py-5">
+      {% include "snippets/evm_signing.html" with evm_api_base="/api/v2/wallet/link" %}
+    </div>
+  </section>
 
-  <div id="app-error" class="rounded-box bg-base-100 p-5 shadow-sm alert alert-error" style="display:none">
+  {% comment %} Page-level failure: the wallet list itself could not be
+     fetched, so neither section above can work. `role="alert"` is what makes it
+     interrupt rather than wait to be noticed. {% endcomment %}
+  <div id="app-error" class="alert alert-error" style="display:none" role="alert">
     Something went wrong initializing wallets.
   </div>
-</div>
-<div>
-  <a class="btn btn-ghost" href="{% url 'profile_addresses' %}">Back</a>&nbsp;
+
+  <div>
+    <a class="btn btn-ghost" href="{% url 'profile_addresses' %}">Back</a>
+  </div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; <a class="link link-hover" href="{% url 'profile_addresses' %}">Addresses</a> &rsaquo; Link&nbsp;address{% endblock %}

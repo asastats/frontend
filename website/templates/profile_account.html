@@ -2,24 +2,72 @@
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
+{% comment %} The account page: what you are subscribed to, and how to leave.
+
+  Rebuilt from a 25-line page that used `<br><br>` twice for vertical spacing
+  and `&nbsp;` for horizontal, inside a 7/5 column split holding one line of
+  text on each side. The split was inherited from a denser page and made the
+  tier and the deactivate link read as two comparable things placed side by
+  side, when one is a status and the other is the most destructive action in
+  the account.
+
+  They are two sections now, in the card idiom `profile.html` established, and
+  deactivation is at the bottom where a destructive action belongs.
+
+  Kept for the functional tests, which are a contract in both directions:
+    * `id_deactivate` on the link to the deactivate page;
+    * a link to `/profile/` whose text is exactly "Back";
+    * the h1, which `base_profile` builds from `profile_title`.
+{% endcomment %}
 {% block title %}Profile account page - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}This is your profile account page where you can see your subscription tier or deactivate your account.{% endblock %}
 {% block keywords %}account,profile account,user account,user,profile{% endblock %}
 {% block profile_title %}{{ user.profile.name }} profile account{% endblock %}
 {% block profile_content %}
-<div class="grid gap-6 md:grid-cols-12 md:text-left">
-<div class="md:col-span-7">
+<div class="space-y-4">
+
+  {% comment %} ---- what you are subscribed to ---- {% endcomment %}
+  <section class="rounded-box border border-base-300 bg-base-100">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">Subscription</h2>
+    </div>
+    <div class="px-5 py-5">
+      {% comment %} A description list rather than two spans: the tier is the
+         value of a named thing, and that is what `dt`/`dd` are for. It also
+         gives a screen reader the pairing, which "Active tier:" followed by a
+         coloured word does not. {% endcomment %}
+      <dl class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <dt class="text-sm text-base-content/60">Active tier</dt>
+        <dd class="font-medium text-primary">{{ user.profile.tier_name|upper }}</dd>
+      </dl>
+      <p class="mt-3 text-sm text-base-content/60">
+        Your tier follows the ASA Stats token held by your authorized address.
+        <a class="link link-hover" href="{% url 'subscriptions' %}">See what each tier includes</a>.
+      </p>
+    </div>
+  </section>
+
+  {% comment %} ---- leaving ----
+     Its own section, last, and visually separated: it is the one control here
+     that cannot be undone by clicking again. Outline rather than filled --
+     findable without being inviting, which a solid red button in the middle of
+     a settings page is not. {% endcomment %}
+  <section class="rounded-box border border-error/30 bg-base-100">
+    <div class="border-b border-error/30 px-5 py-4">
+      <h2 class="text-base font-medium">Deactivate account</h2>
+    </div>
+    <div class="flex flex-wrap items-center justify-between gap-4 px-5 py-5">
+      <p class="max-w-prose text-sm text-base-content/60">
+        Deactivating removes your profile and your saved bundles. Your addresses
+        stay on the chain and can be looked up without an account.
+      </p>
+      <a class="btn btn-outline btn-error btn-sm" href="{% url 'deactivate_profile' %}" id="id_deactivate">Deactivate account</a>
+    </div>
+  </section>
+
   <div>
-    <span>Active tier: </span><span class="text-primary">{{ user.profile.tier_name|upper }}</span>
+    <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>
   </div>
-</div>
-<div class="md:col-span-5">
-  <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>&nbsp;
-  <div>
-    <br><br>
-    If you want to deactivate your account <a href="{% url 'deactivate_profile' %}" id="id_deactivate">click here</a>
-  </div>
-</div>
 </div>
 {% endblock %}
 {% block breadcrumbs %}<a class="link link-hover" href="{% url 'home' %}">Home</a> &rsaquo; <a class="link link-hover" href="{% url 'profile' %}">Profile</a> &rsaquo; Account{% endblock %}
