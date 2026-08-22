@@ -290,6 +290,42 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         self.browser.execute_script("arguments[0].open = true;", card)
         return card
 
+    def _open_first_grouped_asset(self):
+        """Open the first asset that shows a venue subtotal, and return it.
+
+        A subtotal is only rendered for a group holding *more* than one
+        position: with a single position the subtotal and the row beneath it
+        carried the same figure three lines apart, and they can never differ,
+        so the header says nothing and the row carries the figure alone.
+
+        That makes `_open_first_asset` the wrong handle for anything measuring
+        subtotals -- the first asset is usually ALGO, one wallet balance, no
+        subtotal anywhere in it. This walks until it finds one and fails
+        loudly if the payload has none, rather than skipping.
+        """
+        for card in self.browser.find_elements(By.CSS_SELECTOR, self.ASSETS):
+            self.browser.execute_script("arguments[0].open = true;", card)
+            if card.find_elements(By.CSS_SELECTOR, ".pgroup-total"):
+                return card
+        self.fail("no asset in the payload holds a venue group of more than one")
+
+    def _group_total(self, group):
+        """Return what a `.pgroup` says it is worth, however it says it.
+
+        Two shapes, one number: a group of several carries `.pgroup-total` in
+        the header, and a group of one carries nothing there because its single
+        position row already shows the figure. Reading only the header would
+        make every single-position group count as zero.
+        """
+        cells = group.find_elements(By.CSS_SELECTOR, ".pgroup-total")
+        if cells:
+            return float(cells[0].get_attribute("data-val"))
+        rows = group.find_elements(By.CSS_SELECTOR, ".position")
+        self.assertEqual(
+            1, len(rows), "a group with no subtotal holds more than one position"
+        )
+        return float(rows[0].get_attribute("data-value"))
+
     def _open_every_asset(self):
         """Open every asset row on the page.
 
@@ -318,13 +354,19 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         adding up to the asset's own. The markup can be entirely correct while
         this is false -- one stray `padding-right` on the row is enough -- so
         nothing short of the laid-out geometry tests it.
+
+        The asset is chosen for holding a group of more than one, because those
+        are the only groups that render a subtotal at all; see
+        `_open_first_grouped_asset`. Both kinds of cell have to be on the page
+        for the measurement to mean anything -- a run that found only position
+        figures would compare a column against itself.
         """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         self._sign_in()
         self._open_page()
-        card = self._open_first_asset()
+        card = self._open_first_grouped_asset()
 
         subtotals = card.find_elements(By.CSS_SELECTOR, ".pgroup-total")
         figures = card.find_elements(By.CSS_SELECTOR, ".position-row > .position-val")
@@ -378,6 +420,12 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         on each venue. If the subtotals do not sum to the figure in the header
         above them, the grouping has invented an answer -- which is worse than
         the flat list it replaced.
+
+        Summed through `_group_total`, not off `.pgroup-total`: a group of one
+        renders no subtotal, so reading the header cells alone counts every
+        such group as nothing and every mixed asset comes up short. That is how
+        this test failed when the duplicate figure was removed, and the reason
+        it is worth saying is that the failure looked like a totalling bug.
         """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
@@ -392,13 +440,11 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         for card in cards:
             self.browser.execute_script("arguments[0].open = true;", card)
             header = card.find_element(By.CSS_SELECTOR, ".chead .cval .val")
-            subtotals = card.find_elements(By.CSS_SELECTOR, ".pgroup-total")
-            if not subtotals:
+            groups = card.find_elements(By.CSS_SELECTOR, ".pgroup")
+            if not groups:
                 continue
             total = float(header.get_attribute("data-val"))
-            summed = sum(
-                float(cell.get_attribute("data-val")) for cell in subtotals
-            )
+            summed = sum(self._group_total(group) for group in groups)
             with self.subTest(asset=card.get_attribute("id")):
                 # A tenth of an ALGO: the payload's own values are floats and
                 # the sum of a dozen of them is not bit-identical to the total

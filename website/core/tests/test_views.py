@@ -23,6 +23,8 @@ from core.forms import (
 )
 from core.models import BundleName, Profile
 from utils.constants.core import INVALID_ADDRESS_TEXT
+
+from . import dom
 from utils.constants.users import (
     DUPLICATE_BUNDLE_ERROR,
     REQUIRED_BUNDLE_NAME_ERROR,
@@ -322,6 +324,103 @@ class HomePageTest(TestCase):
         self.assertContains(
             response, reverse("bundlename_edit", args=[bundlename.name])
         )
+
+
+class HomeProfileLinkTest(TestCase):
+    """What the link to the profile page calls the reader.
+
+    It used to be the email and nothing else, which was wrong in two
+    directions: a reader who had set a name was still addressed by their email
+    address, and an account with no email -- a wallet sign-in never asks for
+    one -- got a link with no text in it at all, which is a link a keyboard can
+    focus and a screen reader cannot announce.
+
+    `profile.name` is the existing answer to "what do we call this reader"
+    (first and last name if either is set, else the username, else the local
+    part of the email), so the link leads with that. The email follows it only
+    when there is one and it is not already what was just said -- otherwise the
+    common case, an account whose username *is* its email, printed the same
+    string twice side by side.
+
+    All three cases are here rather than in a functional test because they are
+    about which of several fields is rendered, which the markup answers
+    exactly; the functional suite holds the one assertion the markup cannot
+    make, that the reader is named once on the whole page.
+    """
+
+    def _sign_in(self, **fields):
+        """Create and sign in a reader with the given user fields."""
+        user = user_model.objects.create(username="linktest", **fields)
+        user.set_password("12345o")
+        user.save()
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            self.client.login(username="linktest", password="12345o")
+        return user
+
+    def _node(self, response):
+        """Return the profile link, requiring there to be exactly one."""
+        found = dom.parse(response.content.decode()).by_id("id_profile")
+        self.assertEqual(1, len(found), "the home page has no one link to the profile")
+        return found[0]
+
+    def _link(self, response):
+        """Return the text of the profile link, whitespace collapsed."""
+        return " ".join(self._node(response).text().split())
+
+    def test_a_reader_who_set_a_name_is_called_by_it(self):
+        """The bug the reader reported: a set name was ignored."""
+        user = self._sign_in(
+            email="named@example.com", first_name="Ada", last_name="Lovelace"
+        )
+
+        text = self._link(self.client.get(reverse("home")))
+
+        self.assertEqual(f"Ada Lovelace {user.email}", text)
+
+    def test_the_email_follows_the_name_rather_than_replacing_it(self):
+        """Two facts, one link.
+
+        Split across two anchors they would be two tab stops to one
+        destination, so both spans sit inside the single link.
+        """
+        self._sign_in(email="named@example.com", first_name="Ada")
+
+        node = self._node(self.client.get(reverse("home")))
+
+        self.assertEqual("a", node.tag)
+        self.assertEqual(2, len(node.select("span")))
+
+    def test_an_account_with_no_email_still_has_link_text(self):
+        """A wallet sign-in never asks for one.
+
+        Without this the anchor was empty: focusable, announced as nothing, and
+        invisible to a reader looking for the way to their profile.
+        """
+        self._sign_in(email="")
+
+        text = self._link(self.client.get(reverse("home")))
+
+        self.assertEqual("linktest", text)
+
+    def test_an_email_that_is_already_the_name_is_not_repeated(self):
+        """The common case: signing up with an email makes it the username.
+
+        `profile.name` falls back to the username, so naming the email again
+        after it would print the same string twice, three characters apart.
+        """
+        user = user_model.objects.create(
+            username="same@example.com", email="same@example.com"
+        )
+        user.set_password("12345o")
+        user.save()
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            self.client.login(username="same@example.com", password="12345o")
+
+        text = self._link(self.client.get(reverse("home")))
+
+        self.assertEqual("same@example.com", text)
 
 
 class EditProfilePageTest(TestCase):
@@ -753,12 +852,19 @@ class BundleNameDeletePageTest(TestCase):
         self.assertTemplateUsed(response, "bundlename_delete.html")
 
     def test_bundlename_delete_displays_name_bundlename(self):
+        """The page names the bundle and says the deletion is final.
+
+        The wording changed on 2026-08-22 -- "Are you sure you want to delete
+        this bundle name?" never said *which* one, on a page reached from a list
+        of them. What is asserted now is the name and the finality, which is
+        what the page is for; the sentence carrying them is copy.
+        """
         response = self.client.get(
             reverse("bundlename_delete", args=[self.bundlename.name])
         )
-        self.assertContains(
-            response, "Are you sure you want to delete this bundle name?"
-        )
+
+        self.assertContains(response, self.bundlename.name)
+        self.assertContains(response, "cannot be undone")
 
     def test_bundlename_delete_post_redirects_to_home_page(self):
         response = self.client.post(

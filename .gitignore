@@ -12,6 +12,7 @@ docs/_build
 .scannerwork
 coverage.xml
 website/javascript_tests/coverage/
+website/coverage/
 node_modules
 .npmrc
 scripts/logs

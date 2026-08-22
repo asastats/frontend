@@ -45,7 +45,12 @@ class SitemapHtmlPageTest(FunctionalTest):
         reset_password.click()
 
         # She finds herself on reset password page
-        header = self.find_elem_by_tag("h2")
+        #
+        # Scoped to <main> and an h1. `account/base.html` extends base_home,
+        # which makes the page title an h1 as base_profile already did -- so an
+        # unscoped `h2` now finds the first footer group heading instead, which
+        # is "Product" on every page and would pass nowhere.
+        header = self.find_elem_by_css("main h1")
         self.assertIn("Forgotten your password?", header.text)
 
 

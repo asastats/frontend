@@ -317,8 +317,16 @@ class TestBaseBundleNameForm:
         )
 
     def test_basebundlenameform_addresses_field_widget_sets_rows(self):
+        """Three, and it is a *minimum*.
+
+        The widget carries `field-sizing: content`, which makes `rows` the
+        floor the box grows from rather than its size. It was twenty, so a
+        bundle holding one address got a box taller than the rest of the form
+        put together.
+        """
         form = BaseBundleNameForm()
-        assert form.fields["addresses"].widget.attrs["rows"] == 20
+        assert form.fields["addresses"].widget.attrs["rows"] == 3
+        assert "[field-sizing:content]" in form.fields["addresses"].widget.attrs["class"]
 
     def test_basebundlenameform_addresses_field_widget_sets_placeholder(self):
         form = BaseBundleNameForm()

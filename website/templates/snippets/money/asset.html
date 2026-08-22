@@ -153,9 +153,20 @@
             <span class="pgroup-name">
               <span class="pgroup-venue">{% if group.url %}<a class="out" href="{% program_url group.url %}" target="_blank" title="Open {{ group.name }}">{{ group.name }}</a>{% else %}{{ group.name|default:"Wallet balance" }}{% endif %}</span>
               <span class="pgroup-asset">{{ asset.unit|default:asset.name }}</span>
-              <span class="n">{{ group.positions|length }}</span>
+              {% comment %} The count, and the subtotal below it, are both about
+                 there being *several* positions. A group holding one had the
+                 same figure twice, three lines apart -- the subtotal beside the
+                 venue and the position's own value under it -- and they cannot
+                 differ, because with one position the subtotal is that
+                 position. So a group of one says neither, and the row beneath
+                 carries the figure alone. {% endcomment %}
+              {% if group.positions|length > 1 %}<span class="n">{{ group.positions|length }}</span>{% endif %}
             </span>
+            {% if group.positions|length > 1 %}
             <span class="pgroup-total num val" data-val="{{ group.total }}">{{ group.total|floatformat:'2g' }} <span class="unit">ALGO</span></span>
+            {% else %}
+            <span></span>
+            {% endif %}
             <span></span>
           </div>
           {% for prog in group.positions %}

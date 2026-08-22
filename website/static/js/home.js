@@ -91,13 +91,14 @@ function changeFiltering(event) {
     $(".cardiv").show();
   } else {
     $(".cardiv").hide();
-    cards = $('.cardiv').filter(function () {
-      return $(this).children().children().attr('title').toLowerCase().indexOf(value) > -1;
-    });
-    cards.show();
+    // The data attributes only. There used to be a fifth pass reading
+    // `$(this).children().children().attr('title')`, which on every row was the
+    // literal string "Evaluate bundle" -- so typing "eval" revealed the whole
+    // list and the title matched nothing anybody would search for. It also tied
+    // the filter to how deeply the row happened to be nested.
     ["name", "addresses", "created", "modified"].forEach(function (attr) {
       cards = $('.cardiv').filter(function () {
-        return $(this).attr('data-' + attr).toLowerCase().indexOf(value) > -1;
+        return ($(this).attr('data-' + attr) || "").toLowerCase().indexOf(value) > -1;
       });
       cards.show();
     });

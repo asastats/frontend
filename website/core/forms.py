@@ -143,23 +143,39 @@ class BaseBundleNameForm(ModelForm):
     :type public: :class:`.BooleanField`
     """
 
+    # `length` is not an HTML attribute and never did anything; the model's
+    # own max_length is what limits this. Left in place rather than quietly
+    # turned into `maxlength`, which would be a validation change wearing a
+    # styling change's clothes -- but the field is full width now, because a
+    # browser-default text box beside a full-width textarea reads as a
+    # different kind of field.
     name = CharField(
         required=True,
-        widget=TextInput(attrs={"autofocus": "autofocus", "length": "50"}),
+        widget=TextInput(
+            attrs={
+                "autofocus": "autofocus",
+                "length": "50",
+                "class": "input w-full",
+            }
+        ),
     )
     addresses = CharField(
         required=True,
         widget=Textarea(
             attrs={
                 "class": "textarea w-full [field-sizing:content]",
-                "rows": 20,
+                # Three rows, not twenty. `field-sizing: content` makes `rows`
+                # the *minimum*, so the box grows with what is pasted into it --
+                # twenty rows meant a bundle of one address got a box taller
+                # than the rest of the form put together.
+                "rows": 3,
                 "placeholder": "Enter Algorand addresses and/or .algo names",
             }
         ),
     )
     public = BooleanField(
         required=False,
-        widget=CheckboxInput(),
+        widget=CheckboxInput(attrs={"class": "checkbox checkbox-sm"}),
         label="Public URL",
         help_text=BUNDLENAME_PUBLIC_HELP_TEXT,
     )

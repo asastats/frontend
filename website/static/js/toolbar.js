@@ -623,9 +623,19 @@
       });
       group.classList.toggle(HIDDEN_CLASS, kept === 0);
       var total = group.querySelector(".pgroup-total");
-      if (total) write(total, subtotal);
+      if (total) {
+        write(total, subtotal);
+        // A subtotal over a single row is that row's own figure said twice,
+        // three lines apart, and the two cannot differ. The template leaves it
+        // out for a group served with one position; a filter can take a bigger
+        // group down to one, so the same rule applies here.
+        total.hidden = kept === 1;
+      }
       var count = group.querySelector(".pgroup-name .n");
-      if (count) count.textContent = String(kept);
+      if (count) {
+        count.textContent = String(kept);
+        count.hidden = kept === 1;
+      }
     });
 
     // Every other figure on the page keeps its own value and only changes

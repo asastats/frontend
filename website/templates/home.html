@@ -1,54 +1,157 @@
 {% extends 'base_home.html' %}
 {% load i18n %}{% load static %}{% load core_extras %}
+{% comment %} The reader's bundles.
+
+  Rebuilt on 2026-08-22 from a page that centred every line, spaced with
+  `<br><br>`, and put each bundle's name *above* the card rather than in it --
+  so a bundle was three separate things: a centred name, a centred "Historic
+  data" link, and a wide box whose entire area was a fourth link to a fourth
+  place. Nothing said which of the three destinations a click would take, and a
+  column of centred names of different widths has no edge to scan down.
+
+  The rail is gone with the shell. It held one box printing
+  `profile.name`, `user.username` and `user.email` -- which are the same
+  address three times on every account that signed up with one.
+
+  Contracts `home.js` and the functional tests depend on, none of them styling:
+
+    `.bundlenames`      the sorter replaces its contents with its own children
+                        re-sorted, so each card must stay a **direct div child**
+    `.cardiv`           what the filter shows and hides
+    `data-name` etc.    the sort keys and what the filter matches on
+    `#id_panel`         the sort/filter block; `test_home_filtering` asserts it
+                        is absent for a reader with too few bundles to sort
+    `#id_name` `#id_size` `#id_created` `#id_modified`  the sort radios, whose
+                        ids are read as the field name -- `this.id.slice(3)`
+    `#id_desc` `#id_filter` `#id_add` `#id_profile`
+{% endcomment %}
 {% block title %}Home page - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}This is your home page of the {{ WEBSITE_URL }} website and all of your bundle names are listed here.{% endblock %}
 {% block keywords %}home,home page,homepage,bundle names{% endblock %}
-{% block page_header %}{{ profile.name }}'s home page{% endblock %}
-
-{% block left_section %}
-<div class="rounded-box border border-base-300 bg-base-100 divide-y divide-base-300 home">
-    <a href="{% url 'profile' %}" class="p-4" id="id_profile">
-        <span>{{ profile.name }}</span>
-        <p>{{ user.username }}<br>
-            {{ user.email }}
-        </p>
-    </a>
-</div>
-<br><br>
-{% endblock %}
+{% block page_header %}Your bundles{% endblock %}
+{% block breadcrumbs %}Home{% endblock %}
 
 {% block middle_section %}
-{% if user.profile.show_sort_and_filter %}
-<div id="id_panel">
-  {% include "snippets/home_sorting.html" %}
-  {% include "snippets/home_filtering.html" %}
-</div>
-<div class="divider"></div>
-{% endif %}
-{% if user.profile.address == "" %}<br><span class="text-error">To begin using additional features, you must add and authorize your subscription/DAO address on the <a href="{% url 'profile' %}">profile page</a>.</span><br>{% endif %}
-{# `bundlenames` is a JS hook: home.js sorts and filters `$(".bundlenames > div")`. #}
-<div class="bundlenames">
-  {% include "snippets/home_bundlenames.html" with collection=profile.bundlenames %}
-</div>
-<div>
-  <br><a class="btn btn-primary" id="id_add" role="button" href="{% url 'bundlename_add' %}">Add bundle name</a>
-  <br>&nbsp;
-</div>
+{% comment %} The account, once, as a line under the heading rather than as a
+   box in a gutter. `id_profile` is kept: it is how the functional tests reach
+   the profile page from here.
+
+   `profile.name` rather than the email, because it already answers "what do we
+   call this reader": first and last name if either is set, else the username,
+   else the local part of the email. Naming the email directly ignored a name
+   the reader had gone and set, and left an account without one -- a wallet
+   sign-in has no email at all -- falling back through a different chain.
+
+   The email comes after it when there is one and it is not already what we
+   just said. Both are inside the link: it is one thing, "your account", and
+   two adjacent links to the same page would be two tab stops for one
+   destination.
+
+   The space between the two spans is load-bearing and must not be tidied away:
+   `ml-2` separates them for the eye only, and without real whitespace the
+   accessible name of the link is "Ada Lovelacenamed@example.com" -- one word,
+   read as one word. {% endcomment %}
+<p class="-mt-4 text-sm">
+  <a class="link link-hover text-base-content/60" href="{% url 'profile' %}" id="id_profile">
+    <span>{{ profile.name|default:"Your profile" }}</span>{% if user.email and user.email != profile.name %} <span class="ml-2 text-base-content/40">{{ user.email }}</span>{% endif %}
+  </a>
+</p>
+
 {% if messages %}
-<div class="mx-auto max-w-3xl">
+<div class="space-y-2">
   {% for message in messages %}
+    {% comment %} Alerts with a live-region role. This was a badge carrying
+       four colour classes at once -- `badge-outline bg-neutral
+       text-neutral-content text-base-content/60` -- so which won depended on
+       source order, and a message appearing after load was announced to
+       nobody. The same fix the authorize page got. {% endcomment %}
     {% if "error" in message.tags %}
-    <div><span class="text-error">{{ message }}</span></div>
+    <div class="alert alert-error" role="alert">{{ message }}</div>
     {% else %}
-    <div class="badge badge-outline bg-neutral text-neutral-content text-base-content/60 shadow">
-        {{ message }}
-    </div>   
+    <div class="alert" role="status">{{ message }}</div>
     {% endif %}
   {% endfor %}
 </div>
 {% endif %}
+
+{% if user.profile.address == "" %}
+<div class="alert alert-warning" role="status">
+  <span>To use the rest of the site, add and authorise your subscription address on the
+    <a class="link" href="{% url 'profile' %}">profile page</a>.</span>
+</div>
+{% endif %}
+
+<section class="rounded-box border border-base-300 bg-base-100">
+  <div class="flex flex-wrap items-baseline justify-between gap-3 border-b border-base-300 px-5 py-4">
+    <h2 class="text-base font-medium">Bundles</h2>
+    <span class="text-sm tabular-nums text-base-content/60">{{ profile.bundlenames|length }}</span>
+  </div>
+
+  {% if user.profile.show_sort_and_filter %}
+  {% comment %} Sorting and filtering, in the card header rather than floating
+     above the page. The radios keep their ids and their `name=sort`; what
+     changed is that they are a segmented control instead of two ragged
+     fieldsets with the second pushed down five units so its rows never lined
+     up with the first's.
+
+     `sr-only` on the input rather than `hidden`: a hidden radio is not
+     focusable, and arrow-key navigation within a radio group is the reason to
+     use radios here at all. {% endcomment %}
+  <div id="id_panel" class="space-y-2 border-b border-base-300 px-5 py-4">
+    {% comment %} Two rows, not one. Four sort options, a label and a
+       Descending toggle do not fit a card's width beside each other: the
+       segmented group's own content sets a floor it cannot shrink below, so the
+       row pushed past both edges of the card and clipped the label.
+
+       `min-w-0` on the group and on each label, so they can shrink at all -- a
+       flex item's default `min-width: auto` refuses to go below its content,
+       which is what made `flex-1` here do nothing. {% endcomment %}
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold uppercase tracking-wide text-base-content/50" id="sort-label">Sort</span>
+      <div class="flex min-w-0 flex-1 gap-1 rounded-field bg-base-200 p-1" role="group" aria-labelledby="sort-label">
+        {% comment %} Written out rather than looped: the id *is* the contract
+           -- `changeSorting` reads the sort field as `this.id.slice(3)` -- and
+           a loop building the id hides the four names from anyone grepping for
+           them. {% endcomment %}
+        <label class="min-w-0 flex-1 cursor-pointer truncate rounded-field px-2 py-1.5 text-center text-sm font-medium has-[:checked]:bg-base-100 has-[:checked]:shadow-sm">
+          <input class="sr-only" type="radio" name="sort" id="id_name" checked><span>Name</span>
+        </label>
+        <label class="min-w-0 flex-1 cursor-pointer truncate rounded-field px-2 py-1.5 text-center text-sm font-medium has-[:checked]:bg-base-100 has-[:checked]:shadow-sm">
+          <input class="sr-only" type="radio" name="sort" id="id_size"><span>Size</span>
+        </label>
+        <label class="min-w-0 flex-1 cursor-pointer truncate rounded-field px-2 py-1.5 text-center text-sm font-medium has-[:checked]:bg-base-100 has-[:checked]:shadow-sm">
+          <input class="sr-only" type="radio" name="sort" id="id_created"><span>Created</span>
+        </label>
+        <label class="min-w-0 flex-1 cursor-pointer truncate rounded-field px-2 py-1.5 text-center text-sm font-medium has-[:checked]:bg-base-100 has-[:checked]:shadow-sm">
+          <input class="sr-only" type="radio" name="sort" id="id_modified"><span>Modified</span>
+        </label>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <label class="min-w-40 flex-1">
+        <span class="sr-only">Filter bundles by name or address</span>
+        <input class="input input-sm w-full" placeholder="Filter by name or address" id="id_filter" type="text">
+      </label>
+      <label class="flex flex-none cursor-pointer items-center gap-2 rounded-field px-3 py-1.5 text-sm whitespace-nowrap ring-1 ring-base-300 has-[:checked]:bg-base-200 has-[:checked]:ring-base-content/30">
+        <input class="sr-only" type="checkbox" id="id_desc">
+        <span>Descending</span>
+      </label>
+    </div>
+  </div>
+  {% endif %}
+
+  {% comment %} `bundlenames` is the JS hook: home.js sorts and filters
+     `$(".bundlenames > div")`, so every card is a direct div child of this. {% endcomment %}
+  <div class="bundlenames divide-y divide-base-300">
+    {% include "snippets/home_bundlenames.html" with collection=profile.bundlenames %}
+  </div>
+
+  <div class="border-t border-base-300 px-5 py-4">
+    <a class="btn btn-primary btn-sm" id="id_add" role="button" href="{% url 'bundlename_add' %}">Add bundle name</a>
+  </div>
+</section>
 {% endblock %}
-{% block breadcrumbs %}Home{% endblock %}
+
 {% block otherfooter %}
 <script src="{% static 'js/home.js' %}"></script>
 {% endblock %}

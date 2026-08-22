@@ -1,42 +1,76 @@
 {% load core_extras %}
-{% comment %}
-  One card per bundle name. The structure here is a contract with home.js:
+{% comment %} One row per bundle.
 
-    * each card is a DIRECT <div> child of .bundlenames -- the sorter does
-      `$(".bundlenames").html($(this).children("div").sort(...))`;
-    * the card keeps the `cardiv` class, which the filter shows and hides;
-    * the data-name/created/modified/size attributes are the sort keys;
-    * the filter reads `$(this).children().children().attr('title')`, so the
-      <h5> wrapping the link must stay exactly one level down.
+  The old card was four links to three destinations with nothing to tell them
+  apart: the name went to the evaluation, a line under it went to the historic
+  widget, and the entire box below -- addresses, size badge and all -- was a
+  fourth link to the edit form. A reader could not know where a click would take
+  them without watching the status bar.
 
-  Change the nesting and sorting or filtering breaks silently.
+  Now the name is the row's one obvious link (evaluate, which is what a reader
+  came for), and the two other destinations are named buttons at the end of the
+  row. Nothing else is clickable.
+
+  The structure is a contract with `home.js`:
+
+    * each row is a **direct div child** of `.bundlenames` -- the sorter does
+      `$(".bundlenames").html($(this).children("div").sort(...))`, so a wrapper
+      here would leave it sorting one element;
+    * the row keeps `.cardiv`, which the filter shows and hides;
+    * `data-name` / `-addresses` / `-created` / `-modified` / `-size` are the
+      sort keys *and* what the filter matches on.
+
+  The filter used to read `$(this).children().children().attr('title')` as well,
+  which was the literal string "Evaluate bundle" on every row -- so typing
+  "eval" showed everything and the title matched nothing a reader would type.
+  `home.js` matches on the data attributes only now.
 {% endcomment %}
 {% for bundlename in collection %}
 <div
-  class="cardiv"
+  class="cardiv px-5 py-4"
   data-name="{{ bundlename.name }}"
   data-addresses="{{ bundlename.addresses }}"
   data-created="{{ bundlename.str_created }}"
   data-modified="{{ bundlename.str_modified }}"
   data-size="{{ bundlename.size }}"
 >
-  <h5 class="text-center text-base font-medium">
-    <a class="link link-hover" href="{% url 'bundle_name' bundlename.name %}" target="_blank" title="Evaluate bundle">{{ bundlename.name }}</a>
-  </h5>
-  {% if bundlename.can_access_historic_widget %}
-  <div class="text-center text-sm">
-    <a class="link link-hover" href="{% url 'historic' bundlename.bundle %}" target="_blank" title="Process and show bundle's historic data">Historic data</a>
-  </div>
-  {% endif %}
-  <a href="{% url 'bundlename_edit' bundlename.name %}">
-    <div class="card mt-2 border border-base-300 bg-base-100 transition hover:shadow-md" title="{{ bundlename.description }}">
-      <div class="card-body gap-2 p-4 text-base-content/70">
-        <span class="badge badge-sm self-end">{{ bundlename.size }}</span>
-        <p class="break-words text-sm">
-          {{ bundlename.addresses|short_addresses }}
-        </p>
+  <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+    <div class="min-w-0 flex-1">
+      <div class="flex flex-wrap items-baseline gap-2">
+        <a class="link link-hover font-medium" href="{% url 'bundle_name' bundlename.name %}" target="_blank"
+           title="Evaluate {{ bundlename.name }}">{{ bundlename.name }}</a>
+        {% comment %} The count, said rather than shown. It was a bare number in
+           a badge floating at the card's top-right corner, which reads as an
+           index or a notification. {% endcomment %}
+        <span class="text-xs tabular-nums text-base-content/60">{{ bundlename.size }} address{{ bundlename.size|pluralize:"es" }}</span>
       </div>
+      <p class="mt-1 break-words text-sm text-base-content/60">{{ bundlename.addresses|short_addresses }}</p>
+      {% if bundlename.description %}
+      <p class="mt-1 text-xs text-base-content/50">{{ bundlename.description }}</p>
+      {% endif %}
     </div>
-  </a>
+
+    {% comment %} The two secondary destinations, named. Ghost buttons rather
+       than links: they are actions on this row, and one filled control per
+       view already belongs to "Add bundle name". {% endcomment %}
+    <div class="flex flex-none flex-wrap items-center gap-1">
+      {% if bundlename.can_access_historic_widget %}
+      <a class="btn btn-ghost btn-xs" href="{% url 'historic' bundlename.bundle %}" target="_blank"
+         title="Process and show historic data for {{ bundlename.name }}">Historic</a>
+      {% endif %}
+      <a class="btn btn-ghost btn-xs" href="{% url 'bundlename_edit' bundlename.name %}"
+         title="Edit {{ bundlename.name }}">Edit</a>
+    </div>
+  </div>
+</div>
+{% empty %}
+{% comment %} An empty state that says what to do. The old page rendered
+   nothing at all here, so a new account met a heading, a gap, and a button.
+{% endcomment %}
+<div class="px-5 py-8 text-center">
+  <p class="text-sm text-base-content/60">No bundles yet.</p>
+  <p class="mt-1 text-xs text-base-content/50">
+    A bundle is a group of addresses evaluated together as one portfolio.
+  </p>
 </div>
 {% endfor %}

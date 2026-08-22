@@ -459,6 +459,12 @@ class ToolbarTest(FunctionalTest):
         Hiding a category has to take its positions out of every subtotal above
         them, or the reader is shown venue figures that no longer sum to the
         asset header they sit under -- which is worse than not filtering at all.
+
+        Read through `_group_figure`, because a group does not always show a
+        subtotal: a group of one never renders one, and a filter that leaves one
+        position visible makes the toolbar hide the one that is there. Both are
+        the same rule -- a subtotal that would only repeat the row below it is
+        not shown -- and in both the group's figure is on that row.
         """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
@@ -480,15 +486,41 @@ class ToolbarTest(FunctionalTest):
             if not groups:
                 continue
             header = self._number(card.find_element(By.CSS_SELECTOR, ".cval .val").text)
-            summed = sum(
-                self._number(group.find_element(By.CSS_SELECTOR, ".pgroup-total").text)
-                for group in groups
-            )
+            summed = sum(self._group_figure(group) for group in groups)
             with self.subTest(asset=card.get_attribute("id")):
                 self.assertAlmostEqual(header, summed, delta=0.02)
             checked += 1
 
         self.assertGreater(checked, 3, "too few assets survived the filter to prove it")
+
+    def _group_figure(self, group):
+        """Return the figure a `.pgroup` is currently showing.
+
+        Read off the rendered text rather than `data-val`, because what is
+        under test is what the toolbar recomputed and painted, not what the
+        server sent. When the subtotal is hidden -- one visible position, so it
+        would only repeat the row -- that row is the group's figure.
+        """
+        totals = [
+            cell
+            for cell in group.find_elements(By.CSS_SELECTOR, ".pgroup-total")
+            if cell.is_displayed()
+        ]
+        if totals:
+            return self._number(totals[0].text)
+        rows = [
+            cell
+            for cell in group.find_elements(
+                By.CSS_SELECTOR, ".position > .position-row > .position-val > .amt"
+            )
+            if cell.is_displayed()
+        ]
+        self.assertEqual(
+            1,
+            len(rows),
+            "a group showing no subtotal has more than one position visible",
+        )
+        return self._number(rows[0].text)
 
     @staticmethod
     def _number(text):

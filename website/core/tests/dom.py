@@ -134,15 +134,32 @@ class Element:
     # -- content ----------------------------------------------------------
 
     def text(self, strip=True):
-        """All text in this element and its descendants, joined.
+        """All text in this element and its descendants, in document order.
+
+        Order matters and used not to be kept: this put the element's own text
+        nodes first and its children's after, so ``<a> <span>Ada</span>
+        <span>ada@x</span></a>`` read back as ``Adaada@x`` -- the separating
+        space was real, sat between the two spans, and was reported before both
+        of them. What a screen reader announces is exactly this string, so a
+        test asking whether two facts run together got the wrong answer.
+
+        Each text node remembers how many children preceded it, which is what
+        makes the interleaving possible.
 
         :param strip: collapse surrounding whitespace
         :type strip: bool
         :return: str
         """
-        parts = list(self._text)
-        for child in self.children:
-            parts.append(child.text(strip=False))
+        parts = []
+        cursor = 0
+        for position, chunk in self._text:
+            while cursor < position:
+                parts.append(self.children[cursor].text(strip=False))
+                cursor += 1
+            parts.append(chunk)
+        while cursor < len(self.children):
+            parts.append(self.children[cursor].text(strip=False))
+            cursor += 1
         joined = "".join(parts)
         return joined.strip() if strip else joined
 
@@ -291,7 +308,10 @@ class _Builder(HTMLParser):
                 return
 
     def handle_data(self, data):
-        self.stack[-1]._text.append(data)
+        # Paired with the number of children already seen, so `text()` can put
+        # it back where it was rather than in front of all of them.
+        node = self.stack[-1]
+        node._text.append((len(node.children), data))
 
 
 def parse(html):

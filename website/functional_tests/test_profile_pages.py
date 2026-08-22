@@ -1,18 +1,20 @@
-"""Functional tests for the signed-in pages, which now use two shells.
+"""Functional tests for the signed-in pages, which share one shape.
 
-The profile section moved to base_profile.html: one centred column with a
-segmented sub-nav across the top. base_home.html still carries the older
-arrangement -- a main column with a narrow left rail for breadcrumbs -- and
-home and the bundle-name pages are still on it.
+Both shells are a single centred column now. ``base_profile.html`` adds a
+segmented sub-nav across the top; ``base_home.html`` -- home and the three
+bundle-name forms -- does not, because those pages are not a section a reader
+moves between.
 
-The rail assertions below therefore belong to base_home, not to every
-signed-in page. The rail was produced by Materialize's ``push-m10``/``pull-m2``
-pair, which put it left on wide screens while leaving the main column first in
-source; that arrangement is still pinned here, because getting it backwards
-would hand a phone the navigation before the content.
+There used to be a rail here, and these tests used to pin the source order that
+kept a phone from meeting the navigation before the content. It was produced by
+Materialize's ``push-m10``/``pull-m2`` pair. The profile section left it on
+2026-08-22 and home followed the same day, so there is no source-order question
+left to get backwards: one column stacks correctly by construction. What is
+pinned instead is that no ``aside`` comes back.
 
 Page-specific flows live in their own modules -- test_profile_edit,
-test_profile_authorize, test_profile_account -- which predate this one.
+test_profile_authorize, test_profile_account, test_home_page -- most of which
+predate this one.
 """
 
 from django.urls import reverse
@@ -33,12 +35,12 @@ SIGNED_IN_PAGES = [
     "deactivate_profile",
 ]
 
-#: The pages still on base_home.html, which is where the rail lives.
-RAILED_PAGES = ["home"]
+#: Every signed-in page, both shells. Nothing here should grow a rail again.
+SINGLE_COLUMN_PAGES = SIGNED_IN_PAGES
 
 
 class SignedInShellTest(FunctionalTest):
-    """The shared shell: every page gets a header, a main column and a rail."""
+    """The shared shape: a header, breadcrumbs, and one centred column."""
 
     def setUp(self):
         super().setUp()
@@ -55,10 +57,10 @@ class SignedInShellTest(FunctionalTest):
                     "Internal server error",
                     f"{name} raised in the view{state['why']}",
                 )
-                # Scoped to <main>, and accepting either level. The two shells
-                # disagree -- base_profile makes the page title an h1, base_home
-                # an h2 -- and the footer carries an h2 per group on every page,
-                # so an unscoped `h2` would pass on a page with no header at all.
+                # Scoped to <main>. Both shells make the page title an h1 now,
+                # but the sweep still accepts either level: the footer carries
+                # an h2 per group on every page, so an unscoped selector would
+                # pass on a page with no header at all.
                 self.assertTrue(
                     self.browser.find_elements(By.CSS_SELECTOR, "main h1, main h2"),
                     f"{name} lost its page header{state['why']}",
@@ -68,37 +70,25 @@ class SignedInShellTest(FunctionalTest):
                     f"{name} lost its navigation{state['why']}",
                 )
 
-    def test_the_main_column_precedes_the_rail_in_source_order(self):
-        """A phone stacks in source order, so the content has to come first.
+    def test_no_signed_in_page_has_a_rail(self):
+        """One centred column everywhere, so the stacking question cannot arise.
 
-        On wide screens CSS moves the rail to the left; that is a visual
-        reordering only, which is the whole reason source order matters here.
+        This replaced a test asserting the opposite -- that home *had* a rail
+        and that the main column preceded it in source, so a phone met the
+        content first. Both shells dropped the rail on 2026-08-22, for the same
+        reason: on these pages it held breadcrumbs and a box repeating the
+        reader's email, and three-quarters of the column was empty.
 
-        Asserted against base_home, which is the shell that still has a rail.
-        The profile section moved to base_profile and has none -- one centred
-        column stacks correctly by construction, with nothing to get backwards.
+        Pinned as an absence because a rail is the kind of thing that comes back
+        when somebody needs somewhere to put a new control.
         """
-        for name in RAILED_PAGES:
+        for name in SINGLE_COLUMN_PAGES:
             with self.subTest(page=name):
                 self.browser.get(self.server_url + reverse(name))
-                order = self.browser.execute_script(
-                    "var rail = document.querySelector('aside');"
-                    "if (!rail) return null;"
-                    "return Array.from(rail.parentElement.children).map("
-                    "  function (c) { return c.tagName; });"
+                self.assertFalse(
+                    self.browser.find_elements(By.TAG_NAME, "aside"),
+                    f"{name} grew a rail again",
                 )
-                self.assertIsNotNone(order, f"{name} lost the left rail")
-                self.assertLess(order.index("DIV"), order.index("ASIDE"))
-
-    def test_the_profile_section_has_no_rail_to_get_backwards(self):
-        """base_profile is one column, so the stacking question does not arise.
-
-        Pinned because the rail's removal is the point of that redesign: if an
-        aside reappears here, the section has drifted back to the old shell.
-        """
-        self.browser.get(self.server_url + reverse("profile"))
-
-        self.assertFalse(self.browser.find_elements(By.TAG_NAME, "aside"))
 
     def test_breadcrumbs_lead_back_up_the_hierarchy(self):
         """Found by their landmark, not by the box they sit in.

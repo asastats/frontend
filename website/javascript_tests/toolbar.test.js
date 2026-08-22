@@ -695,6 +695,73 @@ describe("sorting", () => {
 });
 
 
+describe("a subtotal that would only repeat the row below it", () => {
+  /**
+   * Add a second position to the first asset's group.
+   *
+   * Every group in the base fixture holds one, which is the case the template
+   * handles by rendering no subtotal at all. What is under test here is the
+   * other half of the same rule: a group served with several that a *filter*
+   * reduces to one, where the subtotal exists and the toolbar has to hide it.
+   *
+   * @param {string} cat - the category the extra position belongs to.
+   */
+  function widen(cat) {
+    document
+      .querySelector("#f1 .pgroup")
+      .appendChild(position({ owner: "f1", cat, value: 5, search: "wallet aaa" }));
+  }
+
+  test("a group of one hides the subtotal and the count", () => {
+    // The reported case: "Wallet balance 1 ... 1.03 ALGO" with the position row
+    // three lines below saying 1.03 ALGO again. With one position the subtotal
+    // *is* that position, so the two can never differ and only one is shown.
+    load();
+
+    expect(document.querySelector("#f1 .pgroup-total").hidden).toBe(true);
+    expect(document.querySelector("#f1 .pgroup-name .n").hidden).toBe(true);
+  });
+
+  test("a group of several shows both, and the subtotal is their sum", () => {
+    widen("staked");
+
+    load();
+
+    const total = document.querySelector("#f1 .pgroup-total");
+    expect(total.hidden).toBe(false);
+    expect(total.textContent.trim()).toBe("45.00 ALGO");
+    const count = document.querySelector("#f1 .pgroup-name .n");
+    expect(count.hidden).toBe(false);
+    expect(count.textContent).toBe("2");
+  });
+
+  test("a filter that leaves one position hides them again", () => {
+    widen("staked");
+    load();
+
+    document.querySelector('.figs [data-band="staked"]').click();
+
+    const total = document.querySelector("#f1 .pgroup-total");
+    expect(total.hidden).toBe(true);
+    // Still recomputed while hidden: unhiding it must not show a stale figure
+    // from before the filter.
+    expect(total.textContent.trim()).toBe("40.00 ALGO");
+    expect(document.querySelector("#f1 .pgroup-name .n").hidden).toBe(true);
+  });
+
+  test("lifting the filter brings both back", () => {
+    widen("staked");
+    load();
+    document.querySelector('.figs [data-band="staked"]').click();
+
+    document.querySelector('.figs [data-band="staked"]').click();
+
+    expect(document.querySelector("#f1 .pgroup-total").hidden).toBe(false);
+    expect(document.querySelector("#f1 .pgroup-name .n").hidden).toBe(false);
+  });
+});
+
+
 describe("currency", () => {
   test("switching to USD converts every figure and every unit", () => {
     load();
