@@ -672,6 +672,162 @@ def holdings_amount(asaitem):
         return "0"
 
 
+def _number(value):
+    """Return ``value`` as a float, or 0.0 if it is not one.
+
+    The payload is not uniform -- an asset's value arrives as a float and an
+    NFT floor as a decimal string -- and every figure this module renders has
+    to survive one that arrived as neither. Module level rather than nested in
+    the one filter that first needed it, because three now do and a second copy
+    is a second rule.
+
+    :param value: a figure in whatever form the payload carries it
+    :return: float
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _collection_totals(collection):
+    """Return ``(estimate, floor)`` for one NFT collection, as floats.
+
+    :param collection: one entry from account.nftcollections
+    :type collection: dict
+    :var floor: summed floor price across the collection's items
+    :type floor: float
+    :return: tuple of two floats
+    """
+    floor = 0.0
+    for row in (collection or {}).get("nfts") or ():
+        prices = ((row or {}).get("nft") or {}).get("floor") or ()
+        # A list, because an item can be floored on several marketplaces. The
+        # first is the one design 1 reports, so it is the one used here too --
+        # differing on which floor is "the" floor would be a worse divergence
+        # than either choice.
+        if prices:
+            floor += _number(prices[0].get("price"))
+    return _number((collection or {}).get("value")), floor
+
+
+@register.filter
+def collection_floor(collection):
+    """Return a collection's summed floor price.
+
+    The estimate is what the section totals; the floor is what a marketplace
+    will pay for the same items today, and the gap between them is the only
+    fact about a collection that one figure cannot express. Summed here rather
+    than in the template because Django cannot add a list of nested values.
+
+    An item nobody floors contributes nothing, which is right: a floor of zero
+    and no floor at all are the same amount of money. The card says which it is
+    with a chip, not with the number.
+
+    :param collection: one entry from account.nftcollections
+    :type collection: dict
+    :return: float
+    """
+    return _collection_totals(collection)[1]
+
+
+@register.filter
+def collection_above_floor(collection):
+    """Return how much of a collection's estimate sits above its floor.
+
+    The second half of the two-part bar. Never negative -- an estimate below
+    the floor would draw a bar backwards -- and never quite zero, because a
+    flex basis of 0 collapses the whole bar rather than showing one full side.
+
+    :param collection: one entry from account.nftcollections
+    :type collection: dict
+    :var estimate: the collection's estimated value
+    :type estimate: float
+    :var floor: the collection's summed floor
+    :type floor: float
+    :return: float
+    """
+    estimate, floor = _collection_totals(collection)
+    return max(estimate - floor, 0.001)
+
+
+@register.filter
+def clears_floor(row):
+    """Return True if an NFT's estimate reaches the floor it is priced against.
+
+    A filter rather than a template comparison, because both figures arrive as
+    decimal *strings* and ``{% if a > b %}`` compares those lexically: "215.98"
+    sorts below "25.00", so the reference address would have read "the estimate
+    does not clear it" on an item worth eight times its floor.
+
+    An item with no floor clears nothing, and the template renders a different
+    line for that case rather than asking this.
+
+    :param row: one entry from a collection's ``nfts``
+    :type row: dict
+    :var floors: the item's floor prices, one per marketplace
+    :type floors: list
+    :return: bool
+    """
+    floors = ((row or {}).get("nft") or {}).get("floor") or ()
+    if not floors:
+        return False
+    return _number((row or {}).get("price")) >= _number(floors[0].get("price"))
+
+
+@register.filter
+def beats_last_purchase(nft):
+    """Return True if an NFT's best purchase price exceeds its most recent one.
+
+    Both are the same transaction for most items, and showing the pair twice
+    says nothing. Worth showing when they differ, because a best price well
+    above the last one is the item's own history telling the reader what it has
+    been worth.
+
+    A filter for the same reason as :func:`clears_floor`: the prices are decimal
+    strings, and ``{% if a > b %}`` compares them lexically -- "9.5" beats
+    "210.0". Design 1 makes that comparison in the template and this design does
+    not, which is a deliberate divergence rather than drift: the answer there is
+    sometimes wrong, and design 1 is finished and not to be edited.
+
+    :param nft: one ``row.nft`` from a collection
+    :type nft: dict
+    :return: bool
+    """
+    best = (nft or {}).get("max_purchase") or {}
+    last = (nft or {}).get("last_purchase") or {}
+    if not best:
+        return False
+    return _number(best.get("price")) > _number(last.get("price"))
+
+
+@register.filter
+def collection_tile(name):
+    """Return the short label for a collection's tile.
+
+    A collection has no logo of its own, so the tile carries initials the way a
+    monospaced avatar does. Four characters is what fits the 38px tile at the
+    prototype's type size; longer names are cut rather than scaled, because
+    shrinking the type to fit makes some tiles unreadable and the rest
+    inconsistent.
+
+    Word initials when a name has several words -- "Brave New World" gives
+    "BNW", which a reader recognises -- and the leading characters otherwise.
+
+    :param name: the collection's name
+    :type name: str
+    :var words: the name's whitespace-separated parts
+    :type words: list
+    :return: str
+    """
+    words = str(name or "").split()
+    if not words:
+        return "?"
+    if len(words) > 1:
+        return "".join(word[0] for word in words[:4]).upper()
+    return words[0][:4].upper()
+
+
 @register.filter
 def position_band(program):
     """Return the allocation category one position belongs to.
@@ -772,13 +928,6 @@ def allocation_bands(consolidated, total):
     """
     if consolidated is None:
         return []
-
-    def _number(value):
-        """Return ``value`` as a float, or 0.0 if it is not one."""
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return 0.0
 
     def _field(source, name):
         """Read ``name`` off a namedtuple *or* a dict.

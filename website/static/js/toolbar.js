@@ -328,7 +328,27 @@
       return kept[card.id] > 0;
     });
 
+    filterCollections();
+
     return { rows: rows, live: live, values: values, totals: totals };
+  }
+
+  /**
+   * Apply the search to the NFT collections.
+   *
+   * The search only -- the category filter has nothing to say about a
+   * collection, which is the NFT band's own business and is a whole section
+   * rather than a category of position. A reader filtering for a collection's
+   * name is asking about the same page, so leaving that section untouched
+   * would show them every collection beside three matching assets.
+   */
+  function filterCollections() {
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".money-page .nftsec .rows > .fitem"),
+      function (card) {
+        card.classList.toggle(HIDDEN_CLASS, !matches(card));
+      }
+    );
   }
 
   // -- the load-more rule ---------------------------------------------------
@@ -526,9 +546,15 @@
     });
 
     // Every other figure on the page keeps its own value and only changes
-    // currency: a position's value is not a subtotal of anything.
+    // currency: a position's value is not a subtotal of anything, and neither
+    // is an NFT's estimate, floor or purchase price. The NFT section is in this
+    // list because it is part of this design now -- it used to be design 1's
+    // markup, whose figures `address.js` converted.
     Array.prototype.forEach.call(
-      document.querySelectorAll(".money-page .position-val .val, .money-page .dist .val"),
+      document.querySelectorAll(
+        ".money-page .position-val .val, .money-page .dist .val," +
+          " .money-page .nftsec .val"
+      ),
       function (element) {
         write(element, num(element, "data-val"));
       }

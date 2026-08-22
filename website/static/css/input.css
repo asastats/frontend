@@ -2658,6 +2658,195 @@ div.socfooter {
   box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
 }
 
+/* ---- the NFT section ------------------------------------------------------
+   A collection is an asset card, so almost nothing is needed here: `.fitem`,
+   `.chead` and `--col` already apply. What is left is the art beside the facts,
+   and the facts themselves, which are the money column one more time. */
+
+/* The collection's initials, where an asset has its icon. */
+.money-page .mono-tile.nft {
+  border-radius: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--color-base-300), var(--color-base-200));
+}
+
+/* Floor against estimate, as one bar. Two flex children rather than a width
+   each, so the pair always fills the track: what the reader is being shown is
+   the *ratio*, and a bar that stopped short would read as a third quantity. */
+.money-page .mix {
+  display: flex;
+  height: 4px;
+  width: 7.375rem;
+  gap: 1.5px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--color-base-300);
+}
+
+.money-page .mix i {
+  display: block;
+  height: 100%;
+  border-radius: 1px;
+  min-width: 1px;
+}
+
+.money-page .mix-floor { background: var(--c-nft); }
+
+.money-page .mix-rest {
+  background: color-mix(in oklab, var(--c-nft) 28%, transparent);
+}
+
+/* The thumbnails, at the top of an opened collection. They scroll rather than
+   wrap: a collection of sixty would otherwise push its first item three screens
+   down, and the strip is for recognising the collection, not for reading it. */
+.money-page .nft-strip {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding: 0.75rem 0 0.875rem;
+  border-bottom: 1px dashed var(--color-base-300);
+  margin-bottom: 0.25rem;
+}
+
+.money-page .nft-strip .nfticon {
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: 0.25rem;
+  object-fit: cover;
+}
+
+.money-page .nft-body {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 10.5rem minmax(0, 1fr);
+  padding: 0.875rem 0;
+  border-top: 1px solid var(--color-base-300);
+}
+
+.money-page .nft-body:first-of-type { border-top: 0; }
+
+/* Square, because the art is. The striped ground shows through while the image
+   is still deferred and stays visible behind a transparent PNG, so a slow
+   connection sees a placeholder that belongs to the design rather than a gap. */
+.money-page .nft-art {
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-base-300);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(45deg,
+      color-mix(in oklab, var(--c-nft) 9%, transparent) 0 6px,
+      transparent 6px 12px),
+    var(--color-base-200);
+}
+
+.money-page .nft-art:hover {
+  border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
+}
+
+.money-page .nft-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.money-page .nft-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+/* The money column, one more time -- the reason this section was rebuilt. An
+   item's estimate, its floor and what was paid for it land at the same x as the
+   collection subtotal above them and every asset further up the page.
+
+   Three tracks, not two, and the third is empty. Every other row on the page
+   reserves 26px on the right for a pin, so a two-track row puts its figure 38px
+   further right -- the reserved cell plus the gap -- and the column breaks at
+   exactly the section this was rebuilt to bring into it. Measured, and
+   `functional_tests/test_address_money_nfts.py` keeps it measured. */
+.money-page .nft-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--col) 26px;
+  gap: 0.75rem;
+  align-items: baseline;
+}
+
+.money-page .nft-line .k {
+  font-size: 0.78rem;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+  min-width: 0;
+}
+
+.money-page .nft-line .k b { font-weight: 600; }
+
+.money-page .nft-line .k small {
+  display: block;
+  font-size: 0.6875rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* What the figure is. "25.00 ALGO" and "25.00 ALGO paid" are different facts,
+   and the second word is what makes the column readable without a header. */
+.money-page .qualifier {
+  display: block;
+  font-size: 0.625rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+.money-page .amt.none {
+  color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
+}
+
+.money-page .traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3125rem;
+}
+
+.money-page .trait {
+  font-size: 0.6875rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: 0.3125rem;
+  padding: 0.125rem 0.4375rem;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+  background: var(--color-base-200);
+}
+
+.money-page .trait b {
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.59rem;
+  letter-spacing: 0.06em;
+  margin-right: 0.25rem;
+}
+
+.money-page .nft-note {
+  font-size: 0.75rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+.money-page .state-chip.listed { color: var(--c-balance); }
+
+/* "No floor" is not good news and not bad news -- it is an absence. The base
+   chip is `--color-success`, which is right for "Online" in the header and
+   reads as an achievement here. */
+.money-page .state-chip.quiet {
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+@media (max-width: 640px) {
+  .money-page .nft-body { grid-template-columns: minmax(0, 1fr); }
+  .money-page .nft-art { max-width: 12rem; }
+}
+
 /* ---- the toolbar ----------------------------------------------------------
    Sticky, because its whole purpose is to change what is below it and a reader
    who has scrolled to a row cannot reach a control that scrolled away. The
@@ -3324,7 +3513,8 @@ div.socfooter {
      26px column reserved for a control that is hidden anyway is 26px stolen
      from the name. */
   .money-page .position-row,
-  .money-page .pgroup-head {
+  .money-page .pgroup-head,
+  .money-page .nft-line {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 

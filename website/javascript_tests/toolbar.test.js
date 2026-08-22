@@ -355,8 +355,24 @@ function mountPage() {
 
   page.appendChild(section);
 
+  // The NFT section, as the money column renders it: collections are asset
+  // cards in a `.rows` list, so the search reaches them the same way.
   const nft = document.createElement("section");
   nft.className = "section nftsec";
+  const nftRows = document.createElement("div");
+  nftRows.className = "rows";
+  nftRows.id = "nft-list";
+  [
+    ["fn1", "Brave New World"],
+    ["fn2", "Poppin Puffins"],
+  ].forEach(([id, name]) => {
+    const collection = document.createElement("details");
+    collection.className = "fitem mcard";
+    collection.id = id;
+    collection.setAttribute("data-search", name);
+    nftRows.appendChild(collection);
+  });
+  nft.appendChild(nftRows);
   page.appendChild(nft);
 
   document.body.appendChild(page);
@@ -1463,5 +1479,49 @@ describe("the load-more rule's floor", () => {
     toolbar.render();
 
     expect(unfolded()).toEqual(["f1"]);
+  });
+});
+
+describe("the search and the NFT section", () => {
+  /** Ids of the collections a reader can see. */
+  function collections() {
+    return Array.prototype.slice
+      .call(document.querySelectorAll("#nft-list > .fitem"))
+      .filter((el) => !el.classList.contains("tb-hidden"))
+      .map((el) => el.id);
+  }
+
+  test("a query narrows the collections too", () => {
+    // Filtering for a collection's name and being shown every collection
+    // beside three matching assets is not filtering the page.
+    load();
+    const field = document.getElementById("tb-q");
+
+    field.value = "brave";
+    field.dispatchEvent(new window.Event("input"));
+
+    expect(collections()).toEqual(["fn1"]);
+  });
+
+  test("the category filter leaves them alone", () => {
+    // A collection is not a position and has no category. The NFT band is what
+    // shows and hides this section, and it does it wholesale.
+    load();
+
+    document.querySelector('.figs [data-band="staked"]').click();
+
+    expect(collections()).toEqual(["fn1", "fn2"]);
+  });
+
+  test("clearing the query brings them back", () => {
+    load();
+    const field = document.getElementById("tb-q");
+    field.value = "brave";
+    field.dispatchEvent(new window.Event("input"));
+
+    field.value = "";
+    field.dispatchEvent(new window.Event("input"));
+
+    expect(collections()).toEqual(["fn1", "fn2"]);
   });
 });

@@ -346,6 +346,45 @@
   }
 
   /**
+   * Fill every "N ago" span in the NFT section.
+   *
+   * `.epoch` is design 1's contract and the money-column section keeps it, but
+   * the *filling* could not be kept: `showTimes` is bound to
+   * `.nft.item-header` and looks for `.item-body` siblings, and this design has
+   * neither -- a collection is a `<details>` with a `.chead` and a `.cbody`. So
+   * the section rendered "Last purchase on Rand Gallery" with no indication of
+   * when, which reads as a rendering fault rather than as missing data.
+   * `functional_tests/test_address_money_nfts.py` is what noticed.
+   *
+   * Filled once on load rather than when a collection opens. Design 1 defers it
+   * because its handler is per-collection; there is no handler here, and
+   * formatting sixty-five intervals is not work worth deferring.
+   *
+   * `timeEntry` is `address.js`'s, which this page loads first, and is used so
+   * the two designs word the same fact the same way. The fallback is a plain
+   * date rather than nothing: a reader who is told a purchase happened is owed
+   * when, and a script that failed to load is not their problem.
+   *
+   * @param {Document|Element} root - the subtree to fill. Required: every
+   *   caller has one in hand, and a default would be a branch no test could
+   *   reach.
+   */
+  function epochs(root) {
+    var now = Date.now() / 1000;
+    Array.prototype.forEach.call(
+      root.querySelectorAll(".money-page .epoch[data-epoch]"),
+      function (element) {
+        var at = parseInt(element.getAttribute("data-epoch"), 10);
+        if (!isFinite(at)) return;
+        element.textContent =
+          typeof window.timeEntry === "function"
+            ? window.timeEntry(now - at) + " ago"
+            : new Date(at * 1000).toLocaleDateString();
+      }
+    );
+  }
+
+  /**
    * Bind the breakdown controls.
    *
    * Delegated from the document, so the rows `pins.js` moves -- and any that
@@ -375,6 +414,7 @@
    */
   function init() {
     breakdowns();
+    epochs(document);
 
     var panel = document.getElementById("charts");
     var grid = document.getElementById("charts-grid");
@@ -406,6 +446,7 @@
     init: init,
     breakdowns: breakdowns,
     toggleBreakdown: toggleBreakdown,
+    epochs: epochs,
     redrawAllocation: redrawAllocation,
   };
 })();

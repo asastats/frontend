@@ -622,3 +622,88 @@ describe("redrawing the allocation from a filtered view", () => {
     expect(() => money.redrawAllocation({ balance: 1 }, 1, "ALGO")).not.toThrow();
   });
 });
+
+describe("dating the NFT purchases", () => {
+  /**
+   * `.epoch` is design 1's contract and the money-column NFT section keeps it,
+   * but the filling could not be kept: `showTimes` binds to `.nft.item-header`
+   * and looks for `.item-body` siblings, and this design has neither. So the
+   * section said "Last purchase on Rand Gallery" with no indication of when.
+   */
+  function mountEpoch(seconds) {
+    const page = document.createElement("div");
+    page.className = "money-page";
+    const span = document.createElement("span");
+    span.className = "epoch";
+    span.setAttribute("data-epoch", String(seconds));
+    page.appendChild(span);
+    document.body.appendChild(page);
+    return span;
+  }
+
+  afterEach(() => {
+    delete window.timeEntry;
+  });
+
+  test("an interval is worded the way design 1 words it", () => {
+    // Both designs describe the same fact, so they use the same formatter --
+    // `address.js`'s, which this page loads first.
+    window.timeEntry = (interval) => `${Math.round(interval / 86400)} days`;
+    const span = mountEpoch(Math.floor(Date.now() / 1000) - 86400 * 3);
+
+    load().epochs(document);
+
+    expect(span.textContent).toBe("3 days ago");
+  });
+
+  test("without that formatter a plain date is still shown", () => {
+    // A reader told a purchase happened is owed when. A script that failed to
+    // load is not their problem, and an empty span reads as a rendering fault
+    // rather than as missing data.
+    const span = mountEpoch(1691625566);
+
+    load().epochs(document);
+
+    expect(span.textContent).not.toBe("");
+    expect(Number.isNaN(Date.parse(span.textContent))).toBe(false);
+  });
+
+  test("an epoch that is not a number is left alone", () => {
+    const span = mountEpoch("whenever");
+
+    load().epochs(document);
+
+    expect(span.textContent).toBe("");
+  });
+
+  test("it fills every span on the page, not only the first", () => {
+    window.timeEntry = () => "2 days";
+    const first = mountEpoch(1691625566);
+    const second = mountEpoch(1691625566);
+
+    load().epochs(document);
+
+    expect(first.textContent).toBe("2 days ago");
+    expect(second.textContent).toBe("2 days ago");
+  });
+
+  test("a subtree can be filled on its own", () => {
+    window.timeEntry = () => "1 day";
+    mountEpoch(1691625566);
+    const scoped = document.createElement("div");
+    document.body.appendChild(scoped);
+
+    load().epochs(scoped);
+
+    expect(document.querySelector(".epoch").textContent).toBe("");
+  });
+
+  test("init fills them without being asked", () => {
+    window.timeEntry = () => "5 days";
+    const span = mountEpoch(1691625566);
+
+    load().init();
+
+    expect(span.textContent).toBe("5 days ago");
+  });
+});

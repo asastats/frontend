@@ -1,0 +1,145 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} One NFT inside an open collection.
+
+  Two columns: the art, and the facts beside it. Every fact is a `.nft-line` --
+  a label on the left and a figure in `--col` on the right -- so an item's
+  estimate, its floor and what was paid for it all land in the same column as
+  the collection subtotal above and the asset values further up the page. That
+  is the difference from design 1's version, which lays the same facts out as
+  three columns of running text with the numbers wherever they fall.
+
+  Each line pairs a figure with what it *means*, because none of these numbers
+  means anything alone: an estimate above a floor and one below it are the same
+  number and opposite news. Design 1 renders "Floor price: 25.00 ALGO" and
+  leaves the reader to compare it against a figure eight lines away.
+
+  Hooks kept, all of them shared with design 1's scripts:
+
+    `.fitem` + `id="<nft id>"`   the filter matches and reveals these
+    `.val` + `data-val`          every figure the currency switch recomputes
+    `.epoch` + `data-epoch`      `showTimes` fills these when the collection
+                                 opens, so they are deliberately empty here
+    `class="nft"` + `data-src`   `deferImages` swaps in the full image after
+                                 load and installs the CDN fallback
+    `.copy`                      `site.js` copies the element *before* it
+
+  Required context:
+    row  one entry from a collection's ``nfts``
+{% endcomment %}
+{% with nft=row.nft amount=row.amount price=row.price %}
+{% with floor=nft.floor.0 %}
+<div id="{{ nft.id }}" class="fitem nft-body">
+
+  {% comment %} The art. A link to the original through an IPFS gateway, which
+     is the only copy that is not ours -- the thumbnail and the full image both
+     come off our CDN. A `Vault` or `Locked` first URL is the custody record
+     rather than the artwork, so the second is used when that is what is there;
+     design 1 makes the same choice. {% endcomment %}
+  {% with primary=nft.urls.0 secondary=nft.urls.1 %}
+  <a class="nft-art"
+     href="{% if primary.typ == 'Vault' or primary.typ == 'Locked' %}{{ secondary.url }}{% else %}{{ primary.url }}{% endif %}"
+     target="_blank" rel="noopener"
+     title="View the original through an IPFS gateway">
+    <img src="{% static 'nft.png' %}" data-src="{{ BASE_CDN_URL }}{{ nft.image }}"
+         data-fallback="{{ BASE_CDN_URL }}/thumbnails/nft.png"
+         alt="{{ nft.name }}" class="nft" />
+  </a>
+  {% endwith %}
+
+  <div class="nft-facts">
+
+    <div class="nft-line">
+      <div class="k">
+        <b>{{ nft.name }}</b>
+        <small>
+          {% if nft.unit %}{{ nft.unit }} · {% endif %}{{ amount }} of {{ nft.total }} ·
+          <a class="out" href="{% explorer_url 'asset' nft.id %}" target="_blank" title="Show in {% explorer_name %}">{{ nft.id }}</a><button type="button" class="copy" title="Copy asset id" aria-label="Copy asset id">&#128203;</button>
+          {% if nft.rarity %} · rarity {{ nft.rarity }}{% endif %}
+        </small>
+      </div>
+      <div class="position-val">
+        <span class="amt val" data-val="{{ price }}">{{ price|floatformat:'2g' }}</span>
+        <span class="u unit">ALGO</span>
+        <small class="qualifier">estimated</small>
+      </div>
+    </div>
+
+    {% comment %} The floor, and what it says about the estimate. Both branches
+       render a line: "no marketplace reports one" is a fact about the holding
+       and leaving the row out would make its absence look like an oversight.
+    {% endcomment %}
+    {% if floor %}
+    <div class="nft-line">
+      <div class="k">
+        <a class="out" href="{{ floor.link }}" target="_blank" title="Go to {{ floor.market.name }}">Floor on {{ floor.market.name }}</a>
+        <small>{% if row|clears_floor %}the estimate sits above it{% else %}the estimate does not clear it{% endif %}</small>
+      </div>
+      <div class="position-val">
+        <span class="amt val" data-val="{{ floor.price }}">{{ floor.price|floatformat:'2g' }}</span>
+        <span class="u unit">ALGO</span>
+      </div>
+    </div>
+    {% else %}
+    <div class="nft-line">
+      <div class="k">Floor<small>no marketplace reports one</small></div>
+      <div class="position-val"><span class="amt none">&mdash;</span></div>
+    </div>
+    {% endif %}
+
+    {% for listing in nft.listings %}
+    <div class="nft-line">
+      <div class="k">
+        <span class="state-chip listed">{% if 'AB2' in listing.market.name %}escrowed{% else %}listed{% endif %}</span>
+        <a class="out" href="{{ listing.link }}" target="_blank" title="{{ listing.market.name }} link to NFT">your ask on {{ listing.market.name }}</a>
+      </div>
+      <div class="position-val">
+        <span class="amt val" data-val="{{ listing.price }}">{{ listing.price|floatformat:'2g' }}</span>
+        <span class="u unit">ALGO</span>
+        <small class="qualifier">asking</small>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if nft.last_purchase %}
+    <div class="nft-line">
+      <div class="k">
+        <a class="out" href="{{ nft.last_purchase.link }}" target="_blank" title="Show the purchase transaction">Last purchase on {{ nft.last_purchase.market.name }}</a>
+        <small><span class="epoch" data-epoch="{{ nft.last_purchase.epoch }}"></span></small>
+      </div>
+      <div class="position-val">
+        <span class="amt val" data-val="{{ nft.last_purchase.price }}">{{ nft.last_purchase.price|floatformat:'2g' }}</span>
+        <span class="u unit">ALGO</span>
+        <small class="qualifier">paid</small>
+      </div>
+    </div>
+    {% endif %}
+
+    {% comment %} Only when it beats the last purchase: otherwise the two lines
+       are the same transaction said twice, which is what the reference address
+       shows for most items. {% endcomment %}
+    {% if nft|beats_last_purchase %}
+    <div class="nft-line">
+      <div class="k">
+        <a class="out" href="{{ nft.max_purchase.link }}" target="_blank" title="Show the purchase transaction">Best purchase on {{ nft.max_purchase.market.name }}</a>
+        <small><span class="epoch" data-epoch="{{ nft.max_purchase.epoch }}"></span></small>
+      </div>
+      <div class="position-val">
+        <span class="amt val" data-val="{{ nft.max_purchase.price }}">{{ nft.max_purchase.price|floatformat:'2g' }}</span>
+        <span class="u unit">ALGO</span>
+        <small class="qualifier">paid</small>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if nft.traits %}
+    <div class="traits">
+      {% for tr in nft.traits %}<span class="trait"><b>{{ tr.name }}</b>{{ tr.value }}</span>{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if nft.description %}<p class="nft-note">{{ nft.description }}</p>{% endif %}
+  </div>
+</div>
+{% endwith %}
+{% endwith %}

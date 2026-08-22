@@ -196,8 +196,11 @@
   {% endwith %}
 </section>
 
+{% comment %} The money-column NFT section, not design 1's. Its collections are
+   asset cards -- same `.chead`, same `--col` -- so the money column runs to the
+   bottom of the page instead of stopping at the assets. {% endcomment %}
 {% if account.nftcollections %}
-{% include "snippets/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors %}
+{% include "snippets/money/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors compact=compact %}
 {% endif %}
 {% include "snippets/nonval.html" with notevals=account.notevals %}
 

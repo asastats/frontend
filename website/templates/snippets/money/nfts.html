@@ -1,0 +1,47 @@
+{% load core_extras %}
+{% comment %} The NFT section, in the money-column designs.
+
+  Until now this page included design 1's `snippets/nfts.html` unchanged, which
+  made the section a different design bolted to the bottom of this one: its rows
+  are a three-column flex arrangement with the value wherever the text left room,
+  so **the money column stopped at the assets**. That column is the design --
+  every figure on the page at the same x, so a reader compares down rather than
+  across -- and a section that opts out of it is not a section of this page.
+
+  So a collection is an asset card here: the same `.fitem.mcard` shell, the same
+  five-cell `.chead`, the same `--col`. The figures line up with the assets
+  above them, and the reader can read the two sections as one list.
+
+  Hooks kept from design 1, because the scripts that use them are shared:
+
+    `.nftsec`        `address.js` reopens a remembered collection inside it, its
+                     filter shows and hides it, and `toolbar.js` hides it when
+                     the reader switches the NFT band off.
+    `.section-list`  what design 1's filter hides. Kept so the two sections
+                     behave alike under it.
+    `[data-folding]` the load-more rule, same as the assets.
+
+  Required context:
+    nftcollections  account.nftcollections
+    nft_colors      collection name -> colour slot
+{% endcomment %}
+<section class="section nftsec section-list" id="nft-section">
+  <div class="section-head">
+    <h2 class="eyebrow">NFT collections</h2>
+    <span class="count num">{{ nftcollections|length }}</span>
+  </div>
+  {% with shown=nftcollections|visible_count %}
+  <div class="rows{% if compact %} cards{% endif %}" id="nft-list" data-folding>
+    {% for coll in nftcollections %}
+      {% include "snippets/money/collection.html" with coll=coll nft_colors=nft_colors shown=shown index=forloop.counter0 %}
+    {% endfor %}
+  </div>
+  {% comment %} Directly after the list it unfolds: `showmore.js` finds its
+     container by the control wrapper's previous sibling. Putting anything
+     between the two points it at the wrong element -- which is exactly what
+     happened in the asset section. {% endcomment %}
+  {% if nftcollections|length > shown %}
+    {% include "snippets/show_more.html" with hidden=nftcollections|hidden_count noun="collections" %}
+  {% endif %}
+  {% endwith %}
+</section>

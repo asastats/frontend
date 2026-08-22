@@ -687,6 +687,66 @@ element the value span sits directly inside is a layout decision, and
 ``.closest(".asar")`` would break on the second click because ``asar`` is half of
 what gets toggled.
 
+The NFT section
+"""""""""""""""
+
+*Designs 2 and 3 only.* ``snippets/money/nfts.html``, ``collection.html`` and
+``nft.html``.
+
+This section was design 1's markup included unchanged until pass 3, and the
+reason it had to be rebuilt is a measurement rather than a preference: design
+1's collection rows put the value wherever the text leaves room, so **the money
+column stopped at the assets**. Half a page aligned to a column and half not is
+not a page with a money column.
+
+So a collection is an asset card: the same ``.fitem.mcard``, the same five-cell
+``.chead``, the same ``--col``. An NFT's facts are ``.nft-line`` rows, which are
+the same three tracks a position row uses. The page now has five levels that put
+a figure on one edge, and
+``functional_tests/test_address_money_nfts.py`` measures all five together:
+
+.. code-block:: text
+
+   asset header       #asset-list > .fitem .chead > .cval
+   venue subtotal     #asset-list .pgroup-total
+   position row       #asset-list .position-row > .position-val
+   collection header  #nft-list > .fitem .chead > .cval
+   NFT line           #nft-list .nft-line .position-val
+
+.. warning::
+
+   ``.nft-line`` declares **three** grid tracks and leaves the third empty. Every
+   other row on the page reserves 26px on the right for a pin; a two-track row
+   puts its figure 38px further right -- the reserved cell plus the gap -- and
+   the column breaks at exactly the section the rebuild was bringing into it.
+   That is what the first build of this section did.
+
+Hooks kept from design 1, because the scripts are shared: ``.nftsec``,
+``.section-list``, ``.nfticon`` with ``data-path``, ``.epoch`` with
+``data-epoch``, ``class="nft"`` with ``data-src``.
+
+``.epoch`` is the one where keeping the hook was not enough. ``showTimes`` binds
+to ``.nft.item-header`` and fills ``span.epoch`` inside ``.item-body`` siblings,
+and this design has neither -- so the section rendered "Last purchase on Rand
+Gallery" with no indication of when. ``money.js`` fills them now, on load rather
+than on open, using ``address.js``'s ``timeEntry`` so both designs word the same
+fact the same way.
+
+Two comparisons are filters rather than template expressions, and both were
+wrong as expressions. The payload's prices are decimal *strings*, so
+``{% if a > b %}`` compares them character by character: ``"215.98" < "25.00"``,
+which would have reported an item worth eight times its floor as not clearing
+it. ``clears_floor`` and ``beats_last_purchase`` do the arithmetic instead.
+Design 1 makes the ``max_purchase`` comparison in the template and still gets it
+wrong sometimes; that is a deliberate divergence, because design 1 is finished
+and is not to be edited.
+
+The floor bar (``.mix``) is the one fact about a collection that a single figure
+cannot express: the estimate is what the section totals, the floor is what a
+marketplace will pay today, and the gap is the risk. Its two halves are flex
+children rather than widths, so the pair always fills the track -- what is being
+shown is a ratio, and a bar that stopped short would read as a third quantity.
+
 The toolbar
 """""""""""
 

@@ -1,0 +1,107 @@
+{% load static %}
+{% load core_extras %}
+{% comment %} One NFT collection, built as an asset card.
+
+  Deliberately the same shell as `snippets/money/asset.html`: `.fitem.mcard`,
+  a five-cell `.chead`, `--col` for the figure. A collection *is* a holding, and
+  giving it its own layout would break the one thing this design promises.
+
+  Two cells differ in what they hold, not in where they are:
+
+  * the tile is the collection's initials rather than an asset icon, because a
+    collection has no logo of its own -- `.mono-tile.nft` is the prototype's
+    treatment for exactly this;
+  * `.cid-meta` carries the floor/estimate split as a two-part bar, which is
+    the one fact about a collection that a single figure cannot express. The
+    estimate is what the section totals; the floor is what a marketplace will
+    actually pay today, and the gap between them is the whole risk.
+
+  Contracts kept from design 1, all of them script hooks:
+
+    `id="f<slug>"` + `.fitem`   the filter, `checkOpened`, `pins.js`
+    `.nfticon` + `data-path`    `address.js` builds the hover preview from it
+                                and hides them while filtering
+    `.val` + `data-val`         every figure the currency switch recomputes
+    `data-fallback`             `site.js` swaps in the placeholder on a 404
+
+  The thumbnails move to the top of the *opened* card, where design 1 keeps
+  them in the closed header. The header here is a five-cell grid with a fixed
+  money column, and a collection of sixty thumbnails would either overflow it or
+  squeeze the name to nothing. What replaces them as the closed row's glance
+  value is the tile and the floor bar, which say what the collection is and what
+  it is really worth.
+
+  Required context:
+    coll        one entry from account.nftcollections
+    nft_colors  collection name -> colour slot
+    shown       how many rows this section shows before folding
+    index       this row's zero-based position
+{% endcomment %}
+{% with slug=coll.name|slugify est=coll.value floor=coll|collection_floor %}
+<details id="f{{ slug }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
+         data-sort-value="{{ coll.value }}"
+         data-sort-amount="{{ coll.amount|default:0 }}"
+         data-sort-name="{{ coll.name|default:''|lower }}"
+         data-sort-positions="{{ coll.nfts|length }}"
+         data-search="{{ coll.name|default:'' }}">
+  <summary class="chead">
+    {% comment %} No grip and no pin: `pins.js` arranges the containers its
+       controls appear in, and reordering collections is not something this
+       design offers yet. The cells are still named, so the money column lands
+       in the same place as an asset's. {% endcomment %}
+    <span></span>
+
+    <span class="mono-tile nft{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">{{ coll.name|collection_tile }}</span>
+
+    <span class="cid">
+      <span class="cid-top">
+        <span class="cid-name">{{ coll.name }}</span>
+        <span class="cid-amt num">{{ coll.amount|floatformat:'-4g' }} held</span>
+        {% if not floor %}<span class="state-chip quiet">no floor</span>{% endif %}
+      </span>
+      <span class="cid-meta">
+        {% comment %} Floor against estimate. `flex` rather than a width so the
+           two always fill the bar: a collection whose floor is most of its
+           estimate reads as solid, one where it is a sliver reads as mostly
+           hope. The `0.001` keeps a zero side from collapsing the flex
+           calculation, so an all-floor or no-floor collection still draws.
+        {% endcomment %}
+        <span class="mix" title="Floor {{ floor|floatformat:'2g' }} of an estimated {{ est|floatformat:'2g' }} ALGO">
+          <i class="mix-floor" style="flex: {{ floor|default:0.001 }}"></i>
+          <i class="mix-rest" style="flex: {{ coll|collection_above_floor }}"></i>
+        </span>
+        {% comment %} "floor 0.00" reads as a floor of nothing, which is a
+           different claim from no marketplace reporting one -- and the chip
+           beside the name has already said which this is. {% endcomment %}
+        {% if floor %}<span class="num">floor <span class="val" data-val="{{ floor }}">{{ floor|floatformat:'2g' }}</span></span>{% else %}<span class="num">no floor reported</span>{% endif %}
+        <span class="num">{{ coll.nfts|length }} item{{ coll.nfts|length|pluralize }}</span>
+      </span>
+    </span>
+
+    <span class="cval">
+      <span class="v val" data-val="{{ coll.value }}">{{ coll.value|floatformat:'2g' }}</span>
+      <span class="u unit">ALGO</span>
+    </span>
+
+    <span></span>
+  </summary>
+
+  <div class="cbody">
+    <div class="cbody-inner">
+      {% comment %} The thumbnails, once, at the top of the open card. Design 1
+         puts them in the closed header; here the header is a five-cell grid
+         with a fixed money column and sixty thumbnails would either overflow it
+         or squeeze the name to nothing. {% endcomment %}
+      <div class="nft-strip">
+        {% for row in coll.nfts %}
+          <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
+        {% endfor %}
+      </div>
+
+      {% for row in coll.nfts %}
+        {% include "snippets/money/nft.html" with row=row %}
+      {% endfor %}
+    </div>
+  </div>
+</details>
+{% endwith %}

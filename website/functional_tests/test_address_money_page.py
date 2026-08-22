@@ -421,7 +421,13 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         self._sign_in()
         self.open_address()
 
-        folded = self.browser.find_elements(By.CSS_SELECTOR, ".rows .fitem.folded")
+        # Scoped to the asset list. The NFT section is a `.rows` container too
+        # since it was rebuilt in the money column, and an unscoped selector
+        # collects its folded rows as well -- which the asset section's own
+        # control does not reveal.
+        folded = self.browser.find_elements(
+            By.CSS_SELECTOR, "#asset-list > .fitem.folded"
+        )
         if not folded:
             self.skipTest("the sample address is short enough to need no fold")
 
@@ -430,7 +436,9 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
             "the folded tail was on screen before anything asked for it",
         )
 
-        control = self.browser.find_element(By.CSS_SELECTOR, "[data-show-more]")
+        control = self.browser.find_element(
+            By.CSS_SELECTOR, ".money-page .asasec [data-show-more]"
+        )
         self.assertEqual("false", control.get_attribute("aria-expanded"))
         control.click()
 

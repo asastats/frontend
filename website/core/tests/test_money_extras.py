@@ -27,6 +27,11 @@ import pytest
 from core.templatetags.core_extras import (
     allocation_bands,
     amount_repr,
+    beats_last_purchase,
+    clears_floor,
+    collection_above_floor,
+    collection_floor,
+    collection_tile,
     holdings_amount,
     position_band,
     program_groups,
@@ -432,3 +437,211 @@ class TestHoldingsAmount:
             checked += 1
 
         assert checked > 50, "too few assets to prove anything"
+
+
+def _item(price, floor=None, last=None, best=None):
+    """Build one entry of a collection's ``nfts`` list."""
+    nft = {}
+    if floor is not None:
+        nft["floor"] = [{"price": floor, "market": {"name": "Asalytic"}}]
+    if last is not None:
+        nft["last_purchase"] = {"price": last, "market": {"name": "Rand Gallery"}}
+    if best is not None:
+        nft["max_purchase"] = {"price": best, "market": {"name": "Rand Gallery"}}
+    return {"price": price, "value": price, "amount": 1, "nft": nft}
+
+
+class TestCollectionFloor:
+    """What a marketplace will pay for a collection today.
+
+    The estimate is what the section totals; the floor is the other number, and
+    the gap between them is the only thing about a collection that one figure
+    cannot say.
+    """
+
+    def test_it_sums_the_items_floors(self):
+        collection = {"value": "300", "nfts": [_item("200", floor="25"), _item("100", floor="30")]}
+
+        assert collection_floor(collection) == 55.0
+
+    def test_an_item_nobody_floors_contributes_nothing(self):
+        """A floor of zero and no floor at all are the same amount of money.
+
+        Which of the two it is gets said by a chip beside the name, not by the
+        number -- so the number does not have to carry it.
+        """
+        collection = {"value": "300", "nfts": [_item("200", floor="25"), _item("100")]}
+
+        assert collection_floor(collection) == 25.0
+
+    def test_only_the_first_marketplace_counts(self):
+        """An item can be floored on several, and design 1 reports the first.
+
+        Differing on which floor is "the" floor would be a worse divergence
+        between the two designs than either choice is on its own.
+        """
+        collection = {
+            "value": "300",
+            "nfts": [
+                {
+                    "price": "200",
+                    "nft": {
+                        "floor": [
+                            {"price": "25", "market": {"name": "Asalytic"}},
+                            {"price": "40", "market": {"name": "Rand"}},
+                        ]
+                    },
+                }
+            ],
+        }
+
+        assert collection_floor(collection) == 25.0
+
+    def test_a_collection_with_no_items_floors_at_nothing(self):
+        assert collection_floor({"value": "0", "nfts": []}) == 0.0
+
+    @pytest.mark.parametrize("collection", [None, {}, {"nfts": None}], ids=["None", "empty", "null nfts"])
+    def test_a_collection_the_payload_did_not_describe(self, collection):
+        assert collection_floor(collection) == 0.0
+
+
+class TestCollectionAboveFloor:
+    """The second half of the two-part bar."""
+
+    def test_it_is_what_the_estimate_adds_to_the_floor(self):
+        collection = {"value": "100", "nfts": [_item("100", floor="30")]}
+
+        assert collection_above_floor(collection) == pytest.approx(70.0)
+
+    def test_an_estimate_below_the_floor_does_not_draw_backwards(self):
+        """A negative flex basis would either be ignored or invert the bar.
+
+        The reading a reader would take from an inverted bar -- mostly floor,
+        a sliver of hope -- is the opposite of what it means.
+        """
+        collection = {"value": "10", "nfts": [_item("10", floor="30")]}
+
+        assert collection_above_floor(collection) == 0.001
+
+    def test_an_estimate_exactly_at_the_floor_still_draws(self):
+        """A flex basis of zero collapses the *whole* bar, not one side of it."""
+        collection = {"value": "30", "nfts": [_item("30", floor="30")]}
+
+        assert collection_above_floor(collection) == 0.001
+
+
+class TestClearsFloor:
+    """Whether an item's estimate reaches the floor it is priced against."""
+
+    def test_an_estimate_above_the_floor_clears_it(self):
+        assert clears_floor(_item("215.98", floor="25.00")) is True
+
+    def test_an_estimate_below_the_floor_does_not(self):
+        assert clears_floor(_item("10.00", floor="25.00")) is False
+
+    def test_an_estimate_exactly_at_the_floor_clears_it(self):
+        assert clears_floor(_item("25.00", floor="25.00")) is True
+
+    def test_the_comparison_is_numeric_rather_than_lexical(self):
+        """The reason this is a filter at all.
+
+        Both figures are decimal strings, and `{% if a > b %}` compares those
+        character by character: "215.98" sorts below "25.00", so an item worth
+        eight times its floor would have been reported as not clearing it. Every
+        item on the reference address with a three-figure estimate hits this.
+        """
+        assert "215.98" < "25.00"
+        assert clears_floor(_item("215.98", floor="25.00")) is True
+
+    def test_an_item_with_no_floor_clears_nothing(self):
+        """The template renders a different line for that case."""
+        assert clears_floor(_item("215.98")) is False
+
+    @pytest.mark.parametrize("row", [None, {}, {"nft": None}], ids=["None", "empty", "null nft"])
+    def test_an_item_the_payload_did_not_describe(self, row):
+        assert clears_floor(row) is False
+
+
+class TestBeatsLastPurchase:
+    """Whether the best price paid for an item beats the most recent one."""
+
+    def test_a_higher_best_price_beats_it(self):
+        assert beats_last_purchase(_item("1", last="10", best="99")["nft"]) is True
+
+    def test_the_same_transaction_twice_does_not(self):
+        """Which is what the reference address shows for most items."""
+        assert beats_last_purchase(_item("1", last="210", best="210")["nft"]) is False
+
+    def test_the_comparison_is_numeric_rather_than_lexical(self):
+        assert "9.5" > "210.0"
+        assert beats_last_purchase(_item("1", last="210.0", best="9.5")["nft"]) is False
+
+    def test_an_item_never_bought_has_nothing_to_beat(self):
+        assert beats_last_purchase(_item("1")["nft"]) is False
+
+    def test_a_best_price_with_no_last_purchase_still_beats(self):
+        """The pair usually arrives together; one without the other is news."""
+        assert beats_last_purchase(_item("1", best="10")["nft"]) is True
+
+    @pytest.mark.parametrize("nft", [None, {}], ids=["None", "empty"])
+    def test_an_item_the_payload_did_not_describe(self, nft):
+        assert beats_last_purchase(nft) is False
+
+
+class TestCollectionTile:
+    """The short label on a collection's tile.
+
+    A collection has no logo, so the tile carries initials. Four characters is
+    what fits the 38px tile at the prototype's type size; longer names are cut
+    rather than scaled, because shrinking the type to fit makes some tiles
+    unreadable and the rest inconsistent.
+    """
+
+    def test_a_multi_word_name_gives_its_initials(self):
+        assert collection_tile("Brave New World") == "BNW"
+
+    def test_a_single_word_gives_its_leading_characters(self):
+        assert collection_tile("knitH3Ds") == "KNIT"
+
+    def test_a_long_name_is_cut_rather_than_scaled(self):
+        assert collection_tile("Waking in Costa Rica, part two") == "WICR"
+
+    def test_a_short_name_is_left_alone(self):
+        assert collection_tile("AB") == "AB"
+
+    @pytest.mark.parametrize("name", ["", "   ", None], ids=["empty", "spaces", "None"])
+    def test_a_collection_with_no_name_still_gets_a_tile(self, name):
+        """An empty tile reads as a rendering fault rather than as missing data."""
+        assert collection_tile(name) == "?"
+
+    def test_it_agrees_with_the_real_collections(self, payload):
+        """Every collection on the reference address gets a usable tile."""
+        tiles = [collection_tile(coll["name"]) for coll in payload["nftcollections"]]
+
+        assert len(tiles) > 50
+        assert all(1 <= len(tile) <= 4 for tile in tiles), [
+            tile for tile in tiles if len(tile) > 4
+        ]
+        assert all(tile == tile.upper() for tile in tiles)
+
+
+def test_collection_floor_and_estimate_agree_with_the_payload(payload):
+    """The two halves of the bar add up to the collection's own value.
+
+    Computed separately -- one sums the items' floors, the other subtracts that
+    from the collection's estimate -- so nothing but this stops them drifting
+    into a bar that does not describe the collection it sits under.
+    """
+    checked = 0
+    for collection in payload["nftcollections"]:
+        floor = collection_floor(collection)
+        above = collection_above_floor(collection)
+        estimate = float(collection["value"])
+
+        # The 0.001 floor on the second half shows up on collections whose
+        # estimate does not clear their floor; those are the ones it exists for.
+        if estimate >= floor:
+            assert floor + above == pytest.approx(estimate, abs=0.002), collection["name"]
+        checked += 1
+
+    assert checked > 50

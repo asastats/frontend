@@ -34,6 +34,9 @@ MONEY_TEMPLATES = (
     TEMPLATES / "snippets/money/position.html",
     TEMPLATES / "snippets/money/band.html",
     TEMPLATES / "snippets/money/toolbar.html",
+    TEMPLATES / "snippets/money/nfts.html",
+    TEMPLATES / "snippets/money/collection.html",
+    TEMPLATES / "snippets/money/nft.html",
 )
 
 #: Framework classes these templates use on purpose -- Tailwind utilities and
@@ -81,6 +84,15 @@ SHARED_WITH_DESIGN_ONE = frozenset(
         "tdist",
         "out",
         "num",
+        # The NFT section's own hooks, kept when it was rebuilt in the money
+        # column. `.nftsec` is what `address.js` reopens a remembered collection
+        # inside and what `toolbar.js` hides when the NFT band is switched off;
+        # `.section-list` is what design 1's filter shows and hides; `.epoch` is
+        # filled with "N ago" by `showTimes` when a collection opens, which is
+        # why the element is rendered empty.
+        "nftsec",
+        "section-list",
+        "epoch",
     }
 )
 
