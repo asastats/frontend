@@ -43,6 +43,55 @@ class TestApMainFunctions:
         mocked_fetch.assert_called_once_with(value, value)
         mocked_bundle.assert_not_called()
 
+    def test_api_main_fetch_and_serialize_account_names_every_position(self, mocker):
+        """The engine does not emit ``pid``; this layer adds it.
+
+        It is the website's identifier for a position, and it has to be applied
+        where the *page* gets its payload rather than only in
+        ``AsaItemSerializer``, which runs when we serve ``/api/v2/``. Without
+        it the address page renders every position anonymous, and therefore
+        renders no pin control at all -- silently. See
+        ``integration_tests/test_address_money_integration.py``, which is what
+        caught it against the live backend.
+        """
+        value = API_EXAMPLE_ADDRESS1
+        payload = {
+            "asaitems": [
+                {
+                    "asset": {"id": 31566704},
+                    "programs": [
+                        {"program": {"type": "Balance"}, "value": "1.0"},
+                        {"program": {"type": "Staked", "name": "CompX"}, "value": "2.0"},
+                    ],
+                }
+            ]
+        }
+        mocker.patch("api.main.fetch_serialized_account", return_value=payload)
+
+        returned = fetch_and_serialize_account(value, value)
+
+        programs = returned["asaitems"][0]["programs"]
+        assert all(program["pid"] for program in programs)
+        assert programs[0]["pid"] != programs[1]["pid"]
+        # Always written, never omitted: a flag absent when false forces every
+        # consumer to tell "not ambiguous" from "this build does not report it".
+        assert all(program["pid_ambiguous"] is False for program in programs)
+
+    def test_api_main_fetch_and_serialize_account_survives_a_thin_payload(self, mocker):
+        """An asset with no positions, and a payload with no assets.
+
+        Both are legitimate -- a freshly opted-in address holds nothing -- and
+        neither may turn the busiest page on the site into a 500.
+        """
+        value = API_EXAMPLE_ADDRESS1
+        payload = {"asaitems": [{"asset": {"id": 0}}, {}]}
+        mocker.patch("api.main.fetch_serialized_account", return_value=payload)
+
+        assert fetch_and_serialize_account(value, value) == payload
+
+        mocker.patch("api.main.fetch_serialized_account", return_value={})
+        assert fetch_and_serialize_account(value, value) == {}
+
     # # filtered_asaitem
     def test_api_main_filtered_asaitem_for_usd(self, mocker):
         asset_id = mocker.MagicMock()

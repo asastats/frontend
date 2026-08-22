@@ -27,6 +27,7 @@ while staying inside the read timeout on modest hardware. The heavier
 ``api.data`` fixtures are used only where breadth genuinely needs them.
 """
 
+from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
 
 from api.client import fetch_serialized_account
@@ -63,6 +64,14 @@ class AddressPageDataTest(TestCase):
         # ResolverMatch, which cannot be pickled. Isolation is not needed here:
         # nothing mutates the response.
         super().setUpClass()
+        # The address page is `cache_page`'d, and a *replayed* cached response
+        # carries no `templates` and no `context` -- so every assertion below
+        # fails with "No templates used" and a `NoneType` subscript if anything
+        # rendered this address first. That became real when the money-column
+        # integration tests arrived: they render this same address for a free
+        # reader, which stores an entry under the very same `layout-classic`
+        # prefix. Clearing here forces the miss these tests are written around.
+        cache.clear()
         cls.response = Client().get(f"/{LIGHT_ADDRESS}")
 
     def test_integration_address_page_renders(self):
@@ -134,6 +143,14 @@ class AddressPageRenderTest(TestCase):
     def setUpClass(cls):
         # See AddressPageDataTest.setUpClass for why this is not setUpTestData.
         super().setUpClass()
+        # The address page is `cache_page`'d, and a *replayed* cached response
+        # carries no `templates` and no `context` -- so every assertion below
+        # fails with "No templates used" and a `NoneType` subscript if anything
+        # rendered this address first. That became real when the money-column
+        # integration tests arrived: they render this same address for a free
+        # reader, which stores an entry under the very same `layout-classic`
+        # prefix. Clearing here forces the miss these tests are written around.
+        cache.clear()
         cls.response = Client().get(f"/{LIGHT_ADDRESS}")
 
     def test_integration_every_asset_row_is_rendered(self):
@@ -221,6 +238,8 @@ class BundlePageTest(TestCase):
     # rendering, not latency.
     @override_settings(ASASTATS_API_TIMEOUT=180)
     def test_integration_bundle_page_resolves_and_renders(self):
+        # See AddressPageDataTest.setUpClass: a cached response has no context.
+        cache.clear()
         response = self.client.get(f"/{API_EXAMPLE_BUNDLE1}")
 
         self.assertEqual(response.status_code, 200)

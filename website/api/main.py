@@ -1,6 +1,7 @@
 """Module containing public functions for API v2 package."""
 
 from api.client import fetch_serialized_account
+from api.position_id import annotate_positions
 from api.helpers import (
     convert_account_values_to_usd,
     convert_asaitems_values_to_usd,
@@ -46,15 +47,37 @@ def fetch_and_serialize_account(value, addresses):
     cross-check matches regardless of which historical hash they arrived with. A
     single address is passed through unchanged.
 
+    Every position is given its stable ``pid`` here, which is what makes this
+    the payload the *page* and the *API* agree on rather than two different
+    ones. ``AsaItemSerializer.to_representation`` also annotates, so a request
+    to ``/api/v2/`` gets the same ids either way -- the computation is pure and
+    idempotent, so doing it twice recomputes the same value.
+
+    It has to happen at this layer because the engine does not emit ``pid``: it
+    is the *website's* identifier for a position, built from what the position
+    is (see :mod:`api.position_id`). The address page consumes the engine's
+    payload directly and never touches the serializer, so before this call the
+    page rendered every position without an identity -- no ``data-pid``, and
+    therefore not one position-pin control on the whole page. `pins.js`, the
+    pinned band and the whole position-pinning feature were dead against the
+    real backend while passing every test, because the fixtures annotated
+    themselves. ``integration_tests/test_address_money_integration.py`` is what
+    found it and is what keeps it found.
+
     :param value: single address, or the bundle hash
     :type value: str
     :param addresses: space-joined addresses for a multi-address bundle
     :type addresses: str
+    :var serialized: the engine's payload for ``value``
+    :type serialized: dict
     """
     if " " in addresses:
         value = bundle_from_addresses(addresses)
 
-    return fetch_serialized_account(value, addresses)
+    serialized = fetch_serialized_account(value, addresses)
+    for item in serialized.get("asaitems") or ():
+        annotate_positions((item.get("asset") or {}).get("id"), item.get("programs"))
+    return serialized
 
 
 def filtered_asaitem(asset_id, serialized_data, query_params):
