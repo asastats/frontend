@@ -23,11 +23,13 @@
   
   <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
     <span class="sr-only">Total value:</span>
-    <span class="pricetip tooltip cursor-default"
-        data-price=8.698512 data-pricealgo=0.114962
-        data-total=216.302465 data-totalwnft=1881.509592
-        data-totalnft=1494.992484 data-totalnftfloor=80.0
-        data-tip='216.30 USD (0.11 USD/ALGO)'>1,881.51 ALGO</span>
+    <span class="tooltip" data-tip='216.30 USD (0.11 USD/ALGO)'>
+      <span class="pricetip cursor-default" tabindex="0" aria-describedby="id-total-tip"
+          data-price=8.698512 data-pricealgo=0.114962
+          data-total=216.302465 data-totalwnft=1881.509592
+          data-totalnft=1494.992484 data-totalnftfloor=80.0>1,881.51 ALGO</span>
+    </span>
+    <span id="id-total-tip" class="sr-only">216.30 USD (0.11 USD/ALGO)</span>
   </h1>
 
   
@@ -39,15 +41,16 @@
     </div>
   
 
+  
   <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
     
       
       
         
-        <a class="btn btn-ghost btn-sm" href="/widgets/historic/540A5D8CEC896E073F9170AF0A962503E69147CF" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+        <a class="btn btn-outline btn-sm" href="/widgets/historic/540A5D8CEC896E073F9170AF0A962503E69147CF" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
         
         
-        <a class="btn btn-sm btn-ghost"
+        <a class="btn btn-sm btn-outline"
           href="/export/540A5D8CEC896E073F9170AF0A962503E69147CF/"
           title="Create and download CSV file">
           CSV export</a>
@@ -71,27 +74,27 @@
       <div class="grid grid-cols-2 gap-4 text-center sm:grid-cols-3 xl:grid-cols-6">
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Balance</span>
-          <span class="cons-value val font-medium" data-val="374.515584">374.52 ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="374.515584">374.52 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Staked</span>
-          <span class="cons-value val font-medium" data-val="1.106905">1.11 ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="1.106905">1.11 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Liquidity</span>
-          <span class="cons-value val font-medium" data-val="25.224218">25.22 ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="25.224218">25.22 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">DeFi</span>
-          <span class="cons-value val font-medium" data-val="147.073884">147.07 ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="147.073884">147.07 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT estimated</span>
-          <span class="cons-value val font-medium" data-val="1494.992484">1,494.99 ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="1494.992484">1,494.99 ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT floor</span>
-          <span class="cons-value val font-medium" data-val="80.0">80.00 ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="80.0">80.00 ALGO</span>
         </div>
       </div>
       <p class="cons-expand mt-3 text-center text-xs opacity-50 group-open:hidden">Click totals to show charts</p>

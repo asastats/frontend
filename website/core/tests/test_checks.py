@@ -14,7 +14,12 @@ import pytest
 from django.conf import settings
 from rest_framework_simplejwt.tokens import AccessToken
 
-from core.checks import EXPIRY_WARNING_DAYS, _expiry, check_widgets_api_token
+from core.checks import (
+    EXPIRY_WARNING_DAYS,
+    _expiry,
+    check_export_tier_limits,
+    check_widgets_api_token,
+)
 
 #: Any key that is not this project's. Stands in for the engine's, which is
 #: how the real failure arrived.
@@ -186,3 +191,48 @@ class TestWidgetsApiTokenCheck:
         mocker.patch("core.checks._expiry", return_value=None)
 
         assert check_widgets_api_token(None) == []
+
+
+class TestExportTierLimitsCheck:
+    """Testing class for the EXPORT_TIERS_ADDRESSES_LIMIT system check.
+
+    The setting is read from `os.environ` at import, and `load_dotenv()` finds
+    `website/.env` by searching upward from the *working directory* -- so a
+    server started from elsewhere silently gets the built-in defaults, which
+    allow nobody below Cluster to export a single address. The symptom is one of
+    two adjacent links missing from the address page, which reads like a bug in
+    that link.
+    """
+
+    def test_core_check_passes_when_limits_are_configured(self, settings):
+        """Guard the guard: the good case must be silent."""
+        settings.EXPORT_TIERS_ADDRESSES_LIMIT = {
+            "free": 5, "Intro": 6, "Asastatser": 7, "Professional": 8, "Cluster": 10
+        }
+        assert check_export_tier_limits(None) == []
+
+    def test_core_check_warns_when_the_variable_is_unset(self, settings):
+        """Empty means the defaults, and the defaults hide the export link."""
+        settings.EXPORT_TIERS_ADDRESSES_LIMIT = {}
+        messages = check_export_tier_limits(None)
+
+        assert _ids(messages) == ["asastats.W002"]
+        assert "Cluster" in messages[0].msg
+
+    def test_core_check_names_the_tiers_that_cannot_export(self, settings):
+        """The message has to say who is affected, or it is just noise."""
+        settings.EXPORT_TIERS_ADDRESSES_LIMIT = {}
+        message = check_export_tier_limits(None)[0]
+
+        for tier in ("free", "Intro", "Asastatser", "Professional"):
+            assert tier in message.msg
+
+    def test_core_check_hint_mentions_restarting(self, settings):
+        """The trap that produced this: the value is read once, at import.
+
+        Exporting the variable into a shell does nothing for a server already
+        running, and that is exactly the state that is hard to spot -- the
+        setting looks right everywhere you check it from.
+        """
+        settings.EXPORT_TIERS_ADDRESSES_LIMIT = {}
+        assert "restarted" in check_export_tier_limits(None)[0].hint

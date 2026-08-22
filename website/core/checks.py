@@ -145,3 +145,61 @@ def check_widgets_api_token(app_configs, **kwargs):
         ]
 
     return []
+
+
+@register()
+def check_export_tier_limits(app_configs, **kwargs):
+    """Warn when EXPORT_TIERS_ADDRESSES_LIMIT leaves the CSV export unreachable.
+
+    The same class of failure as the token above: nothing errors, nothing logs,
+    and the only symptom is a link that is not on the page. The address page
+    gates its CSV export on `tier_allows`, which reads these limits, and the
+    fallbacks in `exportpermissions._DEFAULT_LIMITS` give free, Intro,
+    Asastatser and Professional **zero** addresses each. So a deployment that
+    does not set this variable does not get a conservative default -- it gets a
+    site where only a Cluster-tier reader may export anything at all, while the
+    Historic data link beside it keeps working because it is gated by a
+    different mechanism entirely.
+
+    That combination is what makes it hard to diagnose from the page: one of two
+    adjacent links disappears, which reads like a bug in that link rather than a
+    setting nobody set. It cost a full investigation -- the deployment
+    permission, the reader's tier, the shared cache entry and the browser
+    session were all eliminated first.
+
+    A Warning rather than an Error, for the reason the token check gives: a
+    checkout that never exercises CSV export is a normal state in development,
+    and only an unambiguous misconfiguration should block a command.
+
+    :param app_configs: apps being checked, unused -- this is a settings check
+    :type app_configs: list
+    :return: list
+    """
+    from core.exportpermissions import _DEFAULT_LIMITS
+
+    limits = getattr(settings, "EXPORT_TIERS_ADDRESSES_LIMIT", None) or {}
+    if limits:
+        return []
+
+    blocked = sorted(
+        tier for tier, size in _DEFAULT_LIMITS.items() if tier != "Cluster" and size < 1
+    )
+    if not blocked:
+        return []
+
+    return [
+        Warning(
+            "EXPORT_TIERS_ADDRESSES_LIMIT is not set, so the built-in defaults "
+            "apply and these tiers may not export even a single address: "
+            f"{', '.join(blocked)}. The CSV export link is hidden on the "
+            "address page for every reader below Cluster.",
+            hint=(
+                "Set EXPORT_TIERS_ADDRESSES_LIMIT in the environment the server "
+                'runs in, in the form "free:5,Intro:6,Asastatser:7,'
+                'Professional:8,Cluster:10". It is read from os.environ at '
+                "import time, so a server started before the variable was "
+                "exported keeps the old, empty value until it is restarted."
+            ),
+            id=f"{ID_PREFIX}.W002",
+        )
+    ]

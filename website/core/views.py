@@ -60,6 +60,7 @@ from core.permissions import (
     CanAddBundleNameMixin,
     CanUseBundleNamesMixin,
 )
+from core.templatetags.core_extras import export_access, historic_access
 from utils.charts import (
     prepare_base_charts_from_serialized_data,
     prepare_consolidated_charts_from_serialized_data,
@@ -379,10 +380,48 @@ class BaseAddressView(TemplateView):
             check_forbidden_addresses(self.addresses)
 
         self.layout = layout_for_user(getattr(request, "user", None))
-        cached = cache_page(self.cache_timeout, key_prefix=f"layout-{self.layout}")(
-            super().dispatch
-        )
+        cached = cache_page(
+            self.cache_timeout,
+            key_prefix=f"layout-{self.layout}-{self._entitlement_key(request)}",
+        )(super().dispatch)
         return cached(request, *args, **kwargs)
+
+    def _entitlement_key(self, request):
+        """Return a token separating readers whose page differs by entitlement.
+
+        The layout is not the only per-reader thing rendered into this page: the
+        header carries a Historic data link and a CSV export link, each behind
+        its own gate, and neither is part of the path or of any header. Keyed on
+        the layout alone, an anonymous visitor and a subscriber share one entry
+        -- both resolve to ``classic`` -- so whoever asks for an address first
+        decides what everyone else sees until it expires. An anonymous request
+        hides the export link from every signed-in reader; a signed-in one
+        offers it to visitors who cannot use it.
+
+        Folded into the prefix rather than solved with ``Vary``, for the reason
+        given in ``dispatch``: keying on the cookie would give every session its
+        own entry and lose the sharing this cache exists for. Two booleans add
+        at most four entries per address per layout, and readers who see the
+        same page still share one.
+
+        The gates are the template's own filters rather than a reimplementation
+        of them, so the key cannot come to a different conclusion than the
+        markup it is keying.
+
+        The size is the address count, which is fixed for a given URL, so it
+        does not vary within an entry. The deployment-level gate is deliberately
+        absent: it is the same answer for every reader, so it separates nobody.
+
+        :param request: Django request object
+        :type request: :class:`django.http.HttpRequest`
+        :return: str
+        """
+        profile = getattr(getattr(request, "user", None), "profile", None)
+        size = len(self.addresses.split())
+        return "e{}h{}".format(
+            int(bool(export_access(profile, size))),
+            int(bool(historic_access(profile, size))),
+        )
 
     def get_template_names(self):
         """Return the template the reader's layout renders.

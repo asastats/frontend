@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 from django.template.loader import render_to_string
+
 from django.test import RequestFactory
 
 from core.tests.dom import parse
@@ -519,3 +520,77 @@ class TestTheTotalIsReachableWithoutAPointer:
 
         assert "total-sub" in html
         assert "pricetip tooltip" not in html
+
+
+class TestTheExportActionLooksLikeOne:
+    """CSV export and Historic data have to read as controls.
+
+    The user could not find the CSV export on either design. It was there and
+    rendering on both -- as flat, chrome-less text: `btn-ghost` on design 1 and
+    a bare `.btn` on the money designs, whose fill is within a few percent of
+    the page background on a dark theme. The old Materialize version was
+    `btn-flat`, so this is not a regression; the affordance has been weak
+    throughout and the conversion carried it across faithfully.
+
+    `btn-outline` gives the control an edge without making it the loudest thing
+    in the header -- the same hierarchy language the profile pages use, where
+    outline means findable but not the most inviting thing on the page. The
+    filled `btn-primary` stays reserved for the state that has earned it: a
+    report already built and not yet downloaded.
+
+    Asserted on the anchors themselves rather than on the page, because these
+    templates extend `base.html` and its navigation is full of ghost buttons --
+    a page-wide search finds those and says nothing about these.
+    """
+
+    TEMPLATES = ("address.html", "address_money.html")
+
+    def _actions(self, html):
+        """Return the export and historic anchors, by where they point."""
+        page = parse(html)
+        return [
+            node
+            for node in page.select("a")
+            if "/export/" in (node.get("href") or "")
+            or "/historic/" in (node.get("href") or "")
+        ]
+
+    def test_both_designs_give_the_actions_an_edge(self, sample_payload):
+        for template in self.TEMPLATES:
+            for is_bundle in (True, False):
+                html = render_to_string(
+                    template, _build_context(sample_payload, is_bundle=is_bundle)
+                )
+                actions = self._actions(html)
+
+                assert actions, f"{template} renders no export or historic link"
+                for node in actions:
+                    classes = node.classes
+                    assert "btn-outline" in classes, (
+                        f"{template}: {node.text()!r} has no edge, which on a dark "
+                        "theme is indistinguishable from static text"
+                    )
+                    assert "btn-ghost" not in classes, (
+                        f"{template}: {node.text()!r} is transparent -- the exact "
+                        "rendering the reader could not find"
+                    )
+
+    def test_a_waiting_report_is_the_loud_one(self, sample_payload):
+        # The one state that earns a filled button, and the reason the template
+        # keeps a conditional at all.
+        context = _build_context(sample_payload)
+        context["report_available"] = True
+        context["report_downloaded"] = False
+
+        for template in self.TEMPLATES:
+            html = render_to_string(template, context)
+            download = [
+                node
+                for node in self._actions(html)
+                if "/export/" in (node.get("href") or "")
+            ]
+
+            assert download, f"{template} renders no export link"
+            for node in download:
+                assert "btn-primary" in node.classes
+                assert "Download processed CSV" in node.text()

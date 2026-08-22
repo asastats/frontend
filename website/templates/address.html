@@ -107,15 +107,23 @@
     </p>
   {% endif %}
 
+  {% comment %} `btn-outline`, not `btn-ghost`. A ghost button is transparent,
+    and these two are the only way to reach the CSV export and the historic
+    widget from this page -- a reader reported not being able to find the export
+    at all, on this design and on the money ones, and it was rendering perfectly
+    well as text with no edge on either. The old Materialize markup was
+    `btn-flat`, so this is not a regression: the affordance has been weak the
+    whole time and the conversion carried it across faithfully. `btn-primary`
+    still marks the one state that earns it. {% endcomment %}
   <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
     {% if is_bundle %}
       {% with historic=bundle|historic_data %}
       {% if deployment_capabilities.permission|export_capability:historic.1 %}
         {% if user.profile|historic_access:historic.1 %}
-        <a class="btn btn-ghost btn-sm" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+        <a class="btn btn-outline btn-sm" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
         {% endif %}
         {% if user.profile|export_access:historic.1 %}
-        <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-ghost{% endif %}"
+        <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-outline{% endif %}"
           href="{% url 'export_bundle' bundle|bundle_hash %}"
           title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
           {% if report_available %}Download processed CSV files{% else %}CSV export{% endif %}</a>
@@ -125,10 +133,10 @@
     {% else %}
       {% if deployment_capabilities.permission|export_capability:1 %}
         {% if user.profile|historic_access:1 %}
-        <a class="btn btn-ghost btn-sm" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+        <a class="btn btn-outline btn-sm" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
         {% endif %}
         {% if user.profile|export_access:1 %}
-        <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-ghost{% endif %}"
+        <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-outline{% endif %}"
           href="{% url 'export_address' address.0 %}"
           title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
           {% if report_available %}Download processed CSV file{% else %}CSV export{% endif %}</a>
@@ -163,27 +171,27 @@
       <div class="grid grid-cols-2 gap-4 text-center sm:grid-cols-3 xl:grid-cols-6">
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Balance</span>
-          <span class="cons-value val font-medium" data-val="{{ consolidated.balance }}">{{ consolidated.balance|floatformat:"2g" }} ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.balance }}">{{ consolidated.balance|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Staked</span>
-          <span class="cons-value val font-medium" data-val="{{ consolidated.staked }}">{{ consolidated.staked|floatformat:"2g" }} ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.staked }}">{{ consolidated.staked|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Liquidity</span>
-          <span class="cons-value val font-medium" data-val="{{ consolidated.liquidity }}">{{ consolidated.liquidity|floatformat:"2g" }} ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.liquidity }}">{{ consolidated.liquidity|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">DeFi</span>
-          <span class="cons-value val font-medium" data-val="{{ consolidated.defi }}">{{ consolidated.defi|floatformat:"2g" }} ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.defi }}">{{ consolidated.defi|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT estimated</span>
-          <span class="cons-value val font-medium" data-val="{{ total.nft }}">{{ total.nft|floatformat:"2g" }} ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ total.nft }}">{{ total.nft|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT floor</span>
-          <span class="cons-value val font-medium" data-val="{{ consolidated.nftfloor }}">{{ consolidated.nftfloor|floatformat:"2g" }} ALGO</span>
+          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.nftfloor }}">{{ consolidated.nftfloor|floatformat:"2g" }} ALGO</span>
         </div>
       </div>
       <p class="cons-expand mt-3 text-center text-xs opacity-50 group-open:hidden">Click totals to show charts</p>

@@ -1171,6 +1171,12 @@ function setCurrency(code) {
         this.innerHTML = dec6(price) + " ALGO/USD";
       else
         this.innerHTML = cur(this.dataset.val / price) + " USD";
+      // The class as well as the text. `data-tip` has been written to these
+      // spans since before the conversion and only `.pricetip` ever carried the
+      // class that displays it, so every figure computed a tooltip on every
+      // switch that nothing could show. The tip is the same amount in the other
+      // currency, which is worth a hover and is what the code always meant.
+      $(this).addClass("tooltip");
       setTip(this, cur(this.dataset.val) + " ALGO");
     });
     // No `pricealgo` check here, unlike the `.val` loop above: that class is
@@ -1190,6 +1196,7 @@ function setCurrency(code) {
         this.innerHTML = dec6(pricealgo) + " USD/ALGO";
       else
         this.innerHTML = cur(this.dataset.val) + " ALGO";
+      $(this).addClass("tooltip");
       setTip(this, cur(this.dataset.val / price) + " USD");
     });
     $("span.val6").each(function () {

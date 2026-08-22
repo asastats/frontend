@@ -984,10 +984,13 @@ describe("the total's tooltip", function () {
     // What a screen reader actually gets: generated content is not dependably
     // in the accessibility tree, so the visible tip alone reaches nobody who
     // cannot see it.
+    // A id of its own: the captured fixture carries the real page's
+    // `id-total-tip`, so reusing that name would find the page's span rather
+    // than this one and the test would pass without proving anything.
     var head = document.createElement("span");
-    head.setAttribute("aria-describedby", "id-total-tip");
+    head.setAttribute("aria-describedby", "id-probe-tip");
     var note = document.createElement("span");
-    note.id = "id-total-tip";
+    note.id = "id-probe-tip";
     document.body.appendChild(note);
 
     address.setTip(head, "42.00 ALGO (2.00 ALGO/USD)");
@@ -1011,5 +1014,54 @@ describe("the total's tooltip", function () {
     head.setAttribute("aria-describedby", "id-not-here");
 
     expect(function () { address.setTip(head, "x"); }).not.toThrow();
+  });
+});
+
+
+describe("every figure's tooltip", function () {
+  // Against the captured page, not an inline stand-in: `setCurrency` walks the
+  // charts on its way through, so a hand-built body without the json_script
+  // payloads throws before it reaches the figures.
+  function switchTo(code) {
+    window.Chart.getChart.mockReturnValue(chartInstance());
+    ["ratiochart", "ratiochartfloor", "asachart", "nftchart", "nftfloorchart",
+      "distchart"].forEach(function (n) { address.parseJsonScript(n); });
+    address.setCurrency(code);
+  }
+
+  it('gives a figure the class that displays its tip', function () {
+    // `data-tip` has been written to these spans since before the conversion
+    // and only `.pricetip` ever carried the class that shows it, so every
+    // figure computed a tooltip on every switch that nothing could display.
+    switchTo("USD");
+
+    var figures = document.querySelectorAll("span.val");
+    expect(figures.length).toBeGreaterThan(0);
+    Array.prototype.forEach.call(figures, function (figure) {
+      expect(figure.classList.contains("tooltip")).toBe(true);
+      expect(figure.dataset.tip).toMatch(/ALGO$/);
+    });
+  });
+
+  it('gives the other currency when switched back', function () {
+    switchTo("USD");
+
+    switchTo("ALGO");
+
+    var figure = document.querySelector("span.val");
+    expect(figure.dataset.tip).toMatch(/USD$/);
+    expect(figure.classList.contains("tooltip")).toBe(true);
+  });
+
+  it('leaves the total to its wrapper', function () {
+    // `.pricetip` sits inside a `.tooltip` element rather than being one --
+    // DaisyUI reveals on `:has(:focus-visible)`, so the focusable span has to
+    // be the child. Putting the class on the figure as well would give it a
+    // second bubble of its own.
+    switchTo("USD");
+
+    var head = document.querySelector(".pricetip");
+    expect(head.classList.contains("tooltip")).toBe(false);
+    expect(head.closest(".tooltip").dataset.tip).toContain("ALGO/USD");
   });
 });

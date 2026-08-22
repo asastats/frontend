@@ -86,15 +86,22 @@
          whether the deployment offers it at all, and `historic_access` /
          `export_access` whether this reader reaches it. Copied rather than
          reinvented so the two designs cannot come to different conclusions
-         about who may download what. {% endcomment %}
+         about who may download what.
+
+         `btn-outline` for the same reason design 1 uses it: a bare `.btn` here
+         fills with a colour within a few percent of the page background, so on
+         a dark theme these read as static text and a reader reported not being
+         able to find the CSV export at all. The filled `btn-primary` is kept
+         for the state that earns it -- a report built and not yet downloaded.
+      {% endcomment %}
       {% if is_bundle %}
         {% with historic=bundle|historic_data %}
         {% if deployment_capabilities.permission|export_capability:historic.1 %}
           {% if user.profile|historic_access:historic.1 %}
-          <a class="btn" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+          <a class="btn btn-outline btn-sm" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
           {% endif %}
           {% if user.profile|export_access:historic.1 %}
-          <a class="btn{% if report_available and not report_downloaded %} btn-primary{% endif %}"
+          <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-outline{% endif %}"
             href="{% url 'export_bundle' bundle|bundle_hash %}"
             title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
             {% if report_available %}Download processed CSV files{% else %}CSV export{% endif %}</a>
@@ -104,10 +111,10 @@
       {% else %}
         {% if deployment_capabilities.permission|export_capability:1 %}
           {% if user.profile|historic_access:1 %}
-          <a class="btn" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+          <a class="btn btn-outline btn-sm" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
           {% endif %}
           {% if user.profile|export_access:1 %}
-          <a class="btn{% if report_available and not report_downloaded %} btn-primary{% endif %}"
+          <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-outline{% endif %}"
             href="{% url 'export_address' address.0 %}"
             title="{% if report_available %}Download CSV file{% else %}Create and download CSV file{% endif %}">
             {% if report_available %}Download processed CSV file{% else %}CSV export{% endif %}</a>

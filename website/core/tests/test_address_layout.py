@@ -262,15 +262,29 @@ class TestCacheIsKeyedOnTheLayout:
         free_html = _render(free, payload)
 
         assert paid_html != free_html
-        assert free_html == _render(None, payload)
+        # Not compared with the anonymous page any more. It used to be, and that
+        # assertion was the shared-cache bug written down as a requirement: a
+        # signed-in free reader may export and an anonymous visitor may not, so
+        # the two pages differ by the CSV export link and now key differently.
+        # See TestCacheIsKeyedOnEntitlementToo below.
+        assert free_html == _render(
+            _user("layoutkey-4b", permission=0, layout="money-column"), payload
+        )
 
     def test_a_lapsed_subscriber_drops_back_to_the_default_page(self, payload):
-        """Their saved choice survives; the page it resolves to does not."""
+        """Their saved choice survives; the page it resolves to does not.
+
+        Compared against a reader of the same tier with no saved choice, not
+        against the anonymous page. The anonymous page differs by the CSV export
+        link now -- see TestCacheIsKeyedOnEntitlementToo -- and comparing with
+        it would confuse "fell back to design 1" with "was treated as signed
+        out", which are very different failures.
+        """
         cache.clear()
         lapsed = _user("layoutkey-5", permission=INTRO, layout="money-column")
-        html = _render(lapsed, payload)
+        plain = _user("layoutkey-5b", permission=INTRO, layout="")
 
-        assert html == _render(None, payload)
+        assert _render(lapsed, payload) == _render(plain, payload)
         assert lapsed.profile.preferred_layout == "money-column"
 
     def test_the_default_page_is_still_the_untouched_one(self, payload):
@@ -377,3 +391,73 @@ class TestCachedPageIsSharedWithinOneLayout:
         assert (
             "dummy" not in backend.lower()
         ), f"caching is disabled ({backend}); this module cannot detect anything"
+
+
+@pytest.mark.django_db
+class TestCacheIsKeyedOnEntitlementToo:
+    """The layout is not the only per-reader thing this page renders.
+
+    The header carries a Historic data link and a CSV export link, each behind
+    its own gate. Keyed on the layout alone, an anonymous visitor and a
+    signed-in reader shared one entry -- both resolve to `classic` -- so
+    whichever asked first decided what everyone saw until it expired: an
+    anonymous request hid the export link from every signed-in reader, and a
+    signed-in one offered it to visitors who cannot use it.
+
+    The reader who warms the entry goes *first* in each test on purpose. That
+    is the only order in which the bug shows: with the wrong key the second
+    reader inherits the first one's page, and an assertion that rendered them
+    the other way round would pass against it.
+    """
+
+    def test_an_anonymous_page_is_not_served_to_a_signed_in_reader(self, payload):
+        """The reported symptom, in the order that produces it."""
+        cache.clear()
+        anonymous = _render(None, payload)
+        signed_in = _render(_user("entkey-1", permission=0), payload)
+
+        assert "CSV export" not in anonymous
+        assert "CSV export" in signed_in, (
+            "the signed-in reader was served the anonymous page, so the export "
+            "link they are entitled to is missing"
+        )
+
+    def test_a_signed_in_page_is_not_served_to_an_anonymous_visitor(self, payload):
+        """The same leak in the other direction, which is the worse one.
+
+        Offering an export link to somebody who cannot use it sends them to a
+        page that turns them away.
+        """
+        cache.clear()
+        signed_in = _render(_user("entkey-2", permission=0), payload)
+        anonymous = _render(None, payload)
+
+        assert "CSV export" in signed_in
+        assert "CSV export" not in anonymous
+
+    def test_readers_who_see_the_same_page_still_share_an_entry(self, payload):
+        """The key must separate by entitlement, not by reader.
+
+        Two readers with the same answers to both gates get one entry between
+        them -- otherwise this is session-keyed caching with extra steps, which
+        is what folding the gates into the prefix exists to avoid.
+        """
+        cache.clear()
+        first = _user("entkey-3", permission=0)
+        second = _user("entkey-4", permission=0)
+
+        assert _render(first, payload) == _render(second, payload)
+
+    def test_the_historic_gate_separates_entries_as_well(self, payload):
+        """Two gates, both in the key.
+
+        A free reader may export and may not open the widget; a subscriber may
+        do both. They differ by the Historic data link alone, which is enough to
+        need separate entries.
+        """
+        cache.clear()
+        free = _render(_user("entkey-5", permission=0), payload)
+        subscriber = _render(_user("entkey-6", permission=ASASTATSER), payload)
+
+        assert "Historic data" not in free
+        assert "Historic data" in subscriber

@@ -103,6 +103,15 @@ SHARED_WITH_DESIGN_ONE = frozenset(
         # which was landing on it. It is `.collection` instead.
         "nfticon",
         "nft",
+        # DaisyUI's own button variants on the header actions -- CSV export and
+        # Historic data. Shared on purpose and in the one direction the rest of
+        # this list guards against: these are the *framework's* names, not
+        # design 1's, so there is no design-1 rule to leak in. Both designs
+        # rendered these as chrome-less text until a reader reported being
+        # unable to find the export at all, and the fix is worth nothing if the
+        # two designs disagree about what a secondary action looks like.
+        "btn-outline",
+        "btn-sm",
     }
 )
 
