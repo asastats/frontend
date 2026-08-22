@@ -202,6 +202,10 @@ class TestCoreContextProcessors:
             "WEBSITE_URL": settings.WEBSITE_URL,
             "WEBSITE_DOMAIN": settings.WEBSITE_DOMAIN,
             "BASE_CDN_URL": settings.BASE_CDN_URL,
+            # Published so the money-column toolbar re-cuts the load-more rule
+            # against the same floor `utils/cutoff.py` applies, rather than
+            # against a copy of the number that can drift from it.
+            "ADDRESS_SECTION_FLOOR": settings.ADDRESS_SECTION_FLOOR,
             "X_HANDLE": settings.X_HANDLE,
             "SUBREDDIT_NAME": settings.SUBREDDIT_NAME,
             "ANDROID_APP": settings.ANDROID_APP,

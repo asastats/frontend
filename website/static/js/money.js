@@ -254,6 +254,10 @@
     CHARTS.forEach(function (spec) {
       var element = chart(spec.title, slices(payload(spec.id)));
       if (element) {
+        // Which payload a chart was drawn from, so `redrawAllocation` can find
+        // the one it is allowed to replace. Its heading is not the handle: that
+        // is copy, and copy changes.
+        element.setAttribute("data-chart", spec.id);
         grid.appendChild(element);
         drawn += 1;
       }
@@ -263,6 +267,57 @@
     if (note && !drawn) {
       note.textContent = "Nothing to chart for this address yet.";
     }
+  }
+
+  /**
+   * Redraw the allocation donut from the toolbar's filtered totals.
+   *
+   * The bar, the five figures and this chart are three drawings of one set of
+   * numbers, so when the toolbar filters a category out all three have to
+   * follow. The other charts are of the whole address and are deliberately left
+   * alone -- the same rule the headline follows: a reader who hides a category
+   * has not stopped holding it.
+   *
+   * The category colours come from the stylesheet's `--c-*` custom properties
+   * rather than from a table here, so the donut, the bar and the figures cannot
+   * end up painting the same category two different colours.
+   *
+   * @param {object} totals - category key mapped to its filtered value.
+   * @param {number} summed - the magnitudes' sum; nothing is drawn at zero.
+   * @param {string} unit - the currency the values are in, for the legend.
+   */
+  function redrawAllocation(totals, summed, unit) {
+    var grid = document.getElementById("charts-grid");
+    if (!grid) return;
+    var existing = grid.querySelector('[data-chart="ratiochart"]');
+    if (!existing) return;
+
+    var parts = Object.keys(totals)
+      .filter(function (key) {
+        return totals[key];
+      })
+      .map(function (key) {
+        return {
+          label: key.charAt(0).toUpperCase() + key.slice(1),
+          value: totals[key],
+          color: "var(--c-" + key + ")",
+        };
+      });
+
+    var replacement = summed ? chart("Allocation", parts) : null;
+    if (!replacement) {
+      // Everything filtered out. The chart is emptied rather than removed, so
+      // the panel keeps its shape and the chart comes back when the filter
+      // does.
+      existing.textContent = "";
+      var note = document.createElement("h4");
+      note.textContent = "Allocation";
+      existing.appendChild(note);
+      return;
+    }
+    replacement.setAttribute("data-chart", "ratiochart");
+    if (unit) replacement.setAttribute("data-unit", unit);
+    existing.parentNode.replaceChild(replacement, existing);
   }
 
   /**
@@ -351,5 +406,6 @@
     init: init,
     breakdowns: breakdowns,
     toggleBreakdown: toggleBreakdown,
+    redrawAllocation: redrawAllocation,
   };
 })();

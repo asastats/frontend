@@ -7,16 +7,20 @@
    reader who sees the bar and the figures tell different stories has no way to
    know which one lied.
 
-   The segments and figures are **not** controls yet. The prototype makes each
-   one a real `<button>` that filters the whole page, and that is what they will
-   become -- but a button that does nothing when pressed is worse than a figure
-   that never claimed it would, so until the filter is wired they are the static
-   readings they actually are. `data-band` is already here for it to bind to.
+   The segments and the figures **are** controls as of pass 2. Each is a real
+   `<button>` carrying `aria-pressed`, and all of them -- plus the donut slices
+   -- read and write one filter state in `toolbar.js`, so the three drawings can
+   never disagree about what is showing. That state is the reader's and lives in
+   their browser: this page's cache entry is shared by everyone on the layout,
+   so nothing about it may be rendered here.
 
-   When they do become buttons they carry `aria-pressed` and share one filter
-   state with the donut slices, so the three can never disagree. That state is
-   the reader's and lives in their browser: this page's cache entry is shared by
-   everyone on the layout.
+   Rendered *pressed* -- `aria-pressed="true"`, every category on -- because
+   that is the state of an unfiltered page, which is what the server can know.
+   `toolbar.js` corrects it on load from what the reader last chose.
+
+   The bar keeps its `<span>`s inside the buttons rather than styling the
+   buttons themselves: the segment widths are percentages of the bar, and a
+   button is a flex item whose min-width would fight them.
 
    The category colours do **not** follow the theme. All 57 themes recolour the
    chrome around this band, but balance-is-green and NFT-is-red have to mean the
@@ -26,6 +30,11 @@
    The charts panel is a `<details>`: closed, the page costs nothing to draw:
    open, `money.js` renders the donuts as inline SVG from the JSON payload
    blocks. Design 1's Chart.js is not loaded here at all.
+
+   Four of the five categories filter positions. The fifth, NFT, has no
+   positions in the asset list to filter -- collections are their own section --
+   so pressing it shows and hides that section instead. The prototype models it
+   the same way: four entries in `CAT`, and a separate `showNft`.
 
    Required context:
      consolidated  utils.structs.Consolidated totals
@@ -47,23 +56,25 @@
   <div class="allocation-bar" id="allocation-bar">
     {% for band in bands %}
       {% if band.share %}
-      <span class="cat-{{ band.key }}"
+      <button type="button"
+            class="cat-{{ band.key }}"
             style="width: {{ band.share|floatformat:'4' }}%"
             data-band="{{ band.key }}"
+            aria-pressed="true"
             title="{{ band.label }}: {{ band.value|floatformat:'2g' }} ALGO">
         <span class="sr-only">{{ band.label }}: {{ band.value|floatformat:'2g' }} ALGO</span>
-      </span>
+      </button>
       {% endif %}
     {% endfor %}
   </div>
 
   <div class="figs">
     {% for band in bands %}
-    <div class="fig cat-{{ band.key }}" data-band="{{ band.key }}">
+    <button type="button" class="fig cat-{{ band.key }}" data-band="{{ band.key }}" aria-pressed="true">
       <span class="fig-key"><span class="dot"></span>{{ band.label }}</span>
       <span class="fig-val num val{% if band.value|is_negative %} neg{% endif %}" data-val="{{ band.value }}">{{ band.value|floatformat:'2g' }} <span class="unit">ALGO</span></span>
       <span class="fig-share num">{{ band.share|floatformat:'1' }}%</span>
-    </div>
+    </button>
     {% endfor %}
   </div>
   {% endwith %}

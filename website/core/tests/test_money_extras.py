@@ -1,23 +1,53 @@
-"""The two template filters the money-column designs are built on.
+"""The template filters the money-column designs are built on.
 
-:func:`program_groups` stacks an asset's positions under their program,
-and :func:`allocation_bands` computes the five categories that the allocation
-bar, the five figures and the ratio donut all draw from.
+:func:`program_groups` stacks an asset's positions under their program.
+:func:`allocation_bands` computes the five categories that the allocation bar,
+the five figures and the ratio donut all draw from. :func:`position_band` says
+which of those five a single position belongs to, which is what lets the band
+act as a filter rather than only report. :func:`holdings_amount` renders the
+sort key behind the toolbar's Holdings button.
 
-Both are presentation, which is why they are filters rather than view context:
-design 1 renders the same payload ungrouped, and the serialized payload is
-shared with the JSON API, which must not grow a website-shaped key.
+All four are presentation, which is why they are filters rather than view
+context: design 1 renders the same payload ungrouped, and the serialized
+payload is shared with the JSON API, which must not grow a website-shaped key.
+
+Two of them restate something computed elsewhere -- `position_band` the
+category rule from :mod:`utils.charts`, `holdings_amount` the figure
+`amount_repr` displays -- and each has a test here that holds it to the
+original against the real payload. That pairing is the condition on restating
+anything: a copy nothing compares is a copy that has already drifted.
 """
 
+import json
 from collections import namedtuple
+from pathlib import Path
 
 import pytest
 
-from core.templatetags.core_extras import allocation_bands, program_groups
+from core.templatetags.core_extras import (
+    allocation_bands,
+    amount_repr,
+    holdings_amount,
+    position_band,
+    program_groups,
+)
 
 #: Stands in for `utils.structs.Consolidated` without importing the real one,
 #: so these tests fail on a field rename rather than following it silently.
 Totals = namedtuple("Totals", ["balance", "staked", "liquidity", "defi", "nftfloor"])
+
+#: The captured bundle payload: 76 assets, 190 positions, every position type
+#: the engine emits. A hand-built fixture would agree with whatever rule it was
+#: written against, which is the one thing the cross-check below must not do.
+SAMPLE = (
+    Path(__file__).parent.parent.parent / "utils/tests/sample_serialized_540A5.json"
+)
+
+
+@pytest.fixture(scope="module")
+def payload():
+    """The captured serialized account payload."""
+    return json.loads(SAMPLE.read_text())
 
 
 def _program(name, value, url=None, type_="Balance"):
@@ -204,3 +234,201 @@ class TestAllocationBands:
         bands = allocation_bands(Totals(1, 1, 1, 1, 0), {"nft": 1})
 
         assert all(band["label"] for band in bands)
+
+
+class TestPositionBand:
+    """The per-position category the toolbar's filter acts on.
+
+    The band above the list and the list itself have to agree about which
+    category a row belongs to, or pressing "Staked" shows a balance row and the
+    reader learns the band cannot be trusted. The payload carries no per-
+    position category -- ``Consolidated`` arrives already summed -- so
+    :func:`position_band` reproduces the rule, and :class:`TestPositionBandMatchesConsolidated`
+    is what stops the reproduction drifting.
+    """
+
+    def test_a_wallet_balance_is_balance(self):
+        assert position_band(_program("", 1, type_="Balance")) == "balance"
+
+    def test_a_stake_is_staked(self):
+        assert position_band(_program("CompX", 1, type_="Staked")) == "staked"
+
+    def test_a_farm_is_not_a_stake(self):
+        """`"farm" not in name` is the original rule, substring and all.
+
+        A farm is a yield position rather than a plain stake, and the four
+        comprehensions in `utils.charts` sort it into DeFi. Reproduced exactly,
+        including the substring match -- tightening it to a word boundary here
+        would be a *better* rule and a wrong one, because the band would still
+        use the old one.
+        """
+        assert position_band(_program("AlgoRai farm", 1, type_="Staked")) == "defi"
+
+    def test_added_liquidity_is_liquidity(self):
+        assert position_band(_program("Liquidity", 1, type_="Added")) == "liquidity"
+
+    def test_added_something_else_is_defi(self):
+        """`type == "Added"` alone is not enough; the name decides."""
+        assert position_band(_program("Collateral", 1, type_="Added")) == "defi"
+
+    def test_anything_unrecognised_is_defi(self):
+        """The catch-all, matching the original's `if not (...)` shape.
+
+        A position type nobody has seen yet still belongs in the picture, and
+        DeFi is where the original puts it.
+        """
+        assert position_band(_program("Folks", 1, type_="Borrowed")) == "defi"
+
+    def test_a_position_with_no_program_detail_is_defi(self):
+        """Not a crash, and not silently dropped from the band."""
+        assert position_band({}) == "defi"
+        assert position_band(None) == "defi"
+        assert position_band({"program": None}) == "defi"
+
+
+@pytest.mark.parametrize(
+    "band, field",
+    [("balance", "balance"), ("staked", "staked"), ("liquidity", "liquidity"), ("defi", "defi")],
+)
+def test_position_band_agrees_with_consolidated(payload, band, field):
+    """Sum the real payload by category and compare against `Consolidated`.
+
+    This is the test that makes reproducing the rule acceptable. `utils.charts`
+    computes each category as a dict comprehension over the whole payload, with
+    no per-position function to share; :func:`position_band` says the same
+    thing one position at a time. If either side changes, these totals part
+    company and this fails -- which is the only reason the duplication is safe
+    to have.
+    """
+    from utils.charts import _consolidated_data_from_serialized_data
+    from utils.charts import _consolidated_totals_from_consolidated_data
+
+    totals = _consolidated_totals_from_consolidated_data(
+        _consolidated_data_from_serialized_data(payload)
+    )
+
+    summed = sum(
+        float(program.get("value") or 0)
+        for item in payload["asaitems"]
+        for program in (item.get("programs") or [])
+        if position_band(program) == band
+    )
+
+    assert round(summed, 6) == round(float(getattr(totals, field)), 6)
+
+
+class TestHoldingsAmount:
+    """The sort key behind the toolbar's Holdings button.
+
+    A number the browser can read, in the asset's own units. Every case here is
+    a shape the reference payload actually contains -- 6-decimal assets, a
+    0-decimal Lofty share, an asset holding nothing -- plus the two ways the
+    payload can be malformed.
+    """
+
+    def test_it_shifts_the_amount_by_the_decimals(self):
+        assert (
+            holdings_amount({"amount": 169514449, "asset": {"decimals": 6}})
+            == "169.514449"
+        )
+
+    def test_a_zero_decimal_asset_keeps_its_whole_count(self):
+        """Lofty shares are held one at a time and have no decimal places."""
+        assert holdings_amount({"amount": 1, "asset": {"decimals": 0}}) == "1.0"
+
+    def test_the_number_is_never_grouped(self):
+        """The whole reason this exists rather than parsing `amount_repr`.
+
+        That filter renders "123,456,789.012345" for reading, and a browser
+        parsing it back would have to agree with Django's thousands separator
+        forever -- which is locale-dependent, so the agreement is not one this
+        code can make on its own behalf.
+        """
+        rendered = holdings_amount({"amount": 123456789012345, "asset": {"decimals": 6}})
+
+        assert rendered == "123456789.012345"
+        assert "," not in rendered
+
+    def test_raw_amount_is_not_what_is_emitted(self):
+        """Two assets holding "one" must not sort a million places apart.
+
+        `amount` is in the asset's base units, so an asset with 6 decimals
+        holding one unit carries 1000000 and a 0-decimal asset holding one
+        carries 1. Sorting on the raw figure ranks by decimal places.
+        """
+        six = holdings_amount({"amount": 1000000, "asset": {"decimals": 6}})
+        none = holdings_amount({"amount": 1, "asset": {"decimals": 0}})
+
+        assert float(six) == float(none) == 1.0
+
+    def test_an_asset_holding_nothing_is_zero(self):
+        assert float(holdings_amount({"amount": 0, "asset": {"decimals": 6}})) == 0.0
+
+    def test_a_missing_amount_is_zero(self):
+        assert float(holdings_amount({"asset": {"decimals": 6}})) == 0.0
+
+    def test_a_missing_decimals_shifts_by_nothing(self):
+        """Rather than dropping the row out of the sort entirely."""
+        assert holdings_amount({"amount": 42, "asset": {}}) == "42.0"
+
+    def test_a_missing_asset_shifts_by_nothing(self):
+        assert holdings_amount({"amount": 42}) == "42.0"
+
+    def test_decimals_arriving_as_a_string_still_counts(self):
+        """The payload is JSON from another service; it is not ours to trust."""
+        assert holdings_amount({"amount": 500, "asset": {"decimals": "2"}}) == "5.0"
+
+    @pytest.mark.parametrize(
+        "asaitem",
+        [
+            {"amount": "not a number", "asset": {"decimals": 6}},
+            {"amount": 1, "asset": {"decimals": "six"}},
+            "not an asaitem",
+            None,
+            42,
+        ],
+        ids=["bad amount", "bad decimals", "a string", "None", "a number"],
+    )
+    def test_anything_unusable_sorts_as_zero(self, asaitem):
+        """Never an exception.
+
+        This renders into an attribute on every row of the busiest page on the
+        site. A row the payload cannot describe sorts to one end; it does not
+        take the page down with it.
+        """
+        assert holdings_amount(asaitem) == "0"
+
+    def test_a_holding_too_small_for_plain_notation_is_still_a_number(self):
+        """Algorand allows 19 decimal places, and `repr` switches to `1e-19`.
+
+        Left as it is rather than formatted: `parseFloat` reads exponent
+        notation exactly, and forcing plain decimals would mean choosing a
+        precision -- which is how a holding becomes 0 in a sort.
+        """
+        rendered = holdings_amount({"amount": 1, "asset": {"decimals": 19}})
+
+        assert rendered == "1e-19"
+        assert float(rendered) > 0
+
+    def test_it_agrees_with_what_the_row_displays(self, payload):
+        """The sort key and the visible holding are the same number.
+
+        `amount_repr` renders the figure a reader sees and this renders the one
+        the browser sorts on. They are computed separately, so nothing but a
+        test stops them drifting -- and a Holdings sort that disagreed with the
+        column it claims to sort would be silently, unfalsifiably wrong.
+        """
+        checked = 0
+        for item in payload["asaitems"]:
+            decimals = item["asset"].get("decimals") or 0
+            displayed = amount_repr(item.get("amount"), decimals)
+            sorted_on = holdings_amount(item)
+
+            # `amount_repr` rounds to the asset's decimals and groups; compare
+            # as numbers, which is what both are for.
+            assert float(sorted_on) == pytest.approx(
+                float(displayed.replace(",", "")), rel=1e-9
+            ), f"{item['asset'].get('unit')}: shows {displayed}, sorts on {sorted_on}"
+            checked += 1
+
+        assert checked > 50, "too few assets to prove anything"

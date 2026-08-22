@@ -43,7 +43,28 @@
 {% endcomment %}
 {% with program=prog.program dist=prog.distribution %}
 {% with has_breakdown=dist|length %}
+{% comment %} `data-cat` is the allocation category this row belongs to, and it
+   is what makes the band a control rather than a picture: pressing "Staked"
+   hides every row whose category is not that one. See `position_band`, and the
+   test that holds it to the same answer `Consolidated` gives.
+
+   `data-search` is the row's own haystack -- the form, the venue, the code --
+   so filtering reaches a position inside an asset whose name matches nothing.
+   `data-value` repeats the figure unrounded for the subtotals the toolbar
+   recomputes; the visible one is rounded and would drift a few hundredths per
+   venue.
+{% endcomment %}
+{% comment %} `data-owner` is the asset card this row belongs to, and it has to
+   be on the row itself rather than inferred from where the row sits: "Group by
+   venue" moves the whole `.pgroup` out of its asset, so for as long as that is
+   on, a position's ancestors say nothing about which asset it is a holding of.
+   Everything the toolbar totals per asset is attributed through this.
+{% endcomment %}
 <div class="position"
+     data-owner="f{{ asset.id }}"
+     data-cat="{{ prog|position_band }}"
+     data-value="{{ prog.value|default_if_none:0 }}"
+     data-search="{{ program.type|default:'' }} {{ program.name|default:'' }} {{ program.code|default:'' }} {{ asset.unit|default:'' }}"
      {% if prog.pid %}data-pid="{{ prog.pid }}"
      data-amount="{{ prog.amount|default_if_none:'' }}"
      {% if prog.pid_ambiguous %}data-pid-ambiguous="true"{% endif %}{% endif %}>

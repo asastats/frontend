@@ -911,3 +911,29 @@ describe("scroll-to-top control", function () {
     expect(scrollTo).toHaveBeenCalled();
   });
 });
+
+
+describe("setCurrency on the money-column designs", function () {
+  it('leaves that page alone entirely', function () {
+    // Design 1's currency writer writes `innerHTML` -- number *and* unit --
+    // into every `span.val`. On the money column each figure pairs with a
+    // separate unit element, so it left the asset header reading "253.74 ALGO"
+    // beside a sibling still saying "ALGO", and destroyed the nested span in
+    // every venue subtotal. It ran on every load, because `mainAddress` calls
+    // it unconditionally with the stored currency. `toolbar.js` owns currency
+    // there now.
+    var page = document.createElement("div");
+    page.className = "money-page";
+    var value = document.createElement("span");
+    value.className = "val";
+    value.dataset.val = "12.5";
+    value.innerHTML = "12.50";
+    page.appendChild(value);
+    document.body.appendChild(page);
+
+    address.setCurrency('USD');
+
+    expect(value.innerHTML).toBe("12.50");
+    page.remove();
+  });
+});

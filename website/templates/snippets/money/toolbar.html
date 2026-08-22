@@ -1,0 +1,97 @@
+{% comment %} The money-column toolbar: pass 2 of designs 2 and 3.
+
+  Everything here acts on the page already in the browser. Nothing fetches:
+  the whole payload is in the DOM, sort keys and categories rendered onto the
+  rows as data attributes (see `snippets/money/asset.html` and
+  `position.html`), so filtering 190 positions is a class toggle rather than a
+  round trip. That is also why the state is the reader's and lives in their
+  browser -- this page's cache entry is shared by everyone on the layout, so
+  the server cannot know any of it and must not render any of it.
+
+  **Every control ships in its default state**, for the same reason. The reader's
+  actual state is applied by `toolbar.js` on load. A control rendered pressed
+  because *someone* pressed it would be handed to whoever asked next.
+
+  Two things are deliberately not here:
+
+  * **A Rows/Cards toggle.** The prototype has one; here that choice is the
+    layout the reader picked on the settings page -- `money-column` against
+    `money-column-compact` -- which is a server-side preference and part of the
+    cache key. A second, client-side control for the same thing would let the
+    two disagree about which design the reader is looking at.
+  * **Dismissing an asset.** The prototype's fifth header cell is a dismiss
+    control; that feature is not built, so `reset` has nothing to undo for it.
+
+  `role="search"` on the field's form landmark and `aria-pressed` on every
+  segmented button: these are toggles, not links, and a screen reader is told
+  which one is on. The counts beside the sort buttons are filled in by
+  `toolbar.js` -- rendering them would be rendering the reader's filter.
+{% endcomment %}
+{% comment %} `data-floor` carries `ADDRESS_SECTION_FLOOR` to the browser so the
+   two implementations of the load-more rule cannot drift. `utils/cutoff.py`
+   never hides a section down to fewer rows than this -- a threshold alone would
+   leave a wallet holding one large asset and eight small ones showing a single
+   row, which is a fold that costs more than it saves. The toolbar re-cuts the
+   same list against filtered values and has to honour the same floor.
+{% endcomment %}
+<div class="toolbar" id="toolbar" data-floor="{{ ADDRESS_SECTION_FLOOR }}">
+  <div class="tb-wrap">
+    <label class="field" role="search">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <span class="sr-only" id="tb-q-label">Filter assets, venues and positions</span>
+      <input id="tb-q" type="search" autocomplete="off" aria-labelledby="tb-q-label"
+             placeholder="Filter assets, venues, pairs…">
+    </label>
+
+    <span class="tb-label" id="tb-group-label">Group</span>
+    <div class="seg" id="tb-group" role="group" aria-labelledby="tb-group-label">
+      <button type="button" data-group="asset" aria-pressed="true">By asset</button>
+      <button type="button" data-group="venue" aria-pressed="false">By venue</button>
+    </div>
+
+    <span class="tb-label" id="tb-sort-label">Sort</span>
+    <div class="seg" id="tb-sort" role="group" aria-labelledby="tb-sort-label">
+      <button type="button" data-sort="value" aria-pressed="true">Value</button>
+      <button type="button" data-sort="amount" aria-pressed="false">Holdings</button>
+      <button type="button" data-sort="name" aria-pressed="false">Name</button>
+      <button type="button" data-sort="positions" aria-pressed="false">Positions</button>
+    </div>
+    {% comment %} Not a segmented pair: descending and ascending are one
+       reversible choice, and two buttons would imply they are independent of
+       the sort beside them. The label says which way it currently is, because
+       an arrow alone is read as "sort" rather than as a state. {% endcomment %}
+    <button class="ghost" id="tb-dir" type="button" aria-pressed="false"
+            title="Reverse the sort direction">↓ Desc</button>
+
+    {% comment %} No spacer between the two halves. There was one -- the
+       prototype pushes "Show" and the currency to the right edge -- and with
+       thirteen controls the row wraps on any realistic width, so all it
+       achieved was a gap in the middle of the first line and two lonely
+       controls on the second. Packed left, a wrapped row reads as one block.
+    {% endcomment %}
+    <span class="tb-label" id="tb-cut-label">Show</span>
+    {% comment %} The load-more rule, made adjustable. The server folds at
+       `ADDRESS_SECTION_THRESHOLD` (99.5%) and renders the tail `.folded`;
+       these re-cut the same list in the browser against the *filtered* values,
+       which is why the server's own fold cannot simply be left in place.
+    {% endcomment %}
+    <div class="seg" id="tb-cut" role="group" aria-labelledby="tb-cut-label">
+      <button type="button" data-cut="0.95" aria-pressed="false">95%</button>
+      <button type="button" data-cut="0.99" aria-pressed="false">99%</button>
+      <button type="button" data-cut="0.995" aria-pressed="true">99.5%</button>
+      <button type="button" data-cut="1" aria-pressed="false">All</button>
+    </div>
+
+    <div class="seg" id="tb-ccy" role="group" aria-label="Currency">
+      <button type="button" data-ccy="ALGO" aria-pressed="true">ALGO</button>
+      <button type="button" data-ccy="USD" aria-pressed="false">USD</button>
+    </div>
+
+    <button class="ghost" id="tb-reset" type="button" disabled>Reset view</button>
+  </div>
+  {% comment %} One live region for the whole toolbar. Filtering changes what is
+     on the page without moving focus, which a screen reader is otherwise never
+     told about; `polite` so it waits for a pause rather than interrupting the
+     reader mid-word as they type into the field above. {% endcomment %}
+  <p class="tb-status" id="tb-status" role="status" aria-live="polite"></p>
+</div>

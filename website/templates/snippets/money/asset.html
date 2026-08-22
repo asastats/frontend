@@ -23,8 +23,28 @@
      shown     how many rows this section shows before folding
      index     this row's zero-based position in the section
 {% endcomment %}
+{% comment %} The toolbar's keys, rendered rather than derived.
+
+   `toolbar.js` sorts, filters and re-cuts this list in the browser, and every
+   one of those needs a number or a string it can trust. Reading them out of
+   the rendered text would mean parsing "1,234.57" -- Django's thousands
+   separator is locale-dependent, and the visible figure is rounded, so a sort
+   would silently tie rows that differ. `data-val` already exists for the
+   currency switch for exactly this reason; these are the same idea for the
+   other three sorts.
+
+   `data-search` is the haystack. Deliberately *not* the card's `textContent`:
+   that includes the asset id, decimals, total supply and every provider link
+   in the closed body, so typing "6" would match most of the page. What a
+   reader means by filtering is the name and the ticker.
+{% endcomment %}
 {% with asset=asaitem.asset %}
-<details id="f{{ asset.id }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}">
+<details id="f{{ asset.id }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
+         data-sort-value="{{ asaitem.value }}"
+         data-sort-amount="{{ asaitem|holdings_amount }}"
+         data-sort-name="{{ asset.unit|default:''|lower }}"
+         data-sort-positions="{{ asaitem.programs|length }}"
+         data-search="{{ asset.name|default:'' }} {{ asset.unit|default:'' }}">
   <summary class="chead">
     {% comment %} Reorder and pin: rendered at rest for everybody, set by the
        reader's own browser. This page's cache entry is shared between readers
@@ -109,10 +129,30 @@
       {% endcomment %}
       <div class="program-groups">
         {% for group in asaitem.programs|program_groups %}
-        <div class="pgroup" data-positions>
+        {% comment %} `data-venue` is what "Group: by venue" collects on, and
+           `data-asset` is what a group has to say about itself once it has
+           been moved away from the asset that owns it -- in venue mode the
+           heading is the asset, not the venue. Both are rendered here rather
+           than read off the heading text, which carries a count and, for a
+           linked venue, an anchor. {% endcomment %}
+        <div class="pgroup" data-positions
+             data-venue="{{ group.name|default:'Wallet balance' }}"
+             data-asset="{{ asset.unit|default:asset.name }}">
           <div class="pgroup-head">
+            {% comment %} Two headings, one shown. Under its asset a group is
+               named by its venue; moved into a venue card by "Group by venue"
+               it has to be named by its *asset*, or the card is a column of
+               identical "Wallet balance" headings with no way to tell which
+               holding each one is.
+
+               Both are rendered and the stylesheet picks, keyed off the venue
+               card's own class -- so the switch cannot get out of step with
+               where the group actually sits, which a script writing the text
+               would eventually manage.
+            {% endcomment %}
             <span class="pgroup-name">
-              {% if group.url %}<a class="out" href="{% program_url group.url %}" target="_blank" title="Open {{ group.name }}">{{ group.name }}</a>{% else %}{{ group.name|default:"Wallet balance" }}{% endif %}
+              <span class="pgroup-venue">{% if group.url %}<a class="out" href="{% program_url group.url %}" target="_blank" title="Open {{ group.name }}">{{ group.name }}</a>{% else %}{{ group.name|default:"Wallet balance" }}{% endif %}</span>
+              <span class="pgroup-asset">{{ asset.unit|default:asset.name }}</span>
               <span class="n">{{ group.positions|length }}</span>
             </span>
             <span class="pgroup-total num val" data-val="{{ group.total }}">{{ group.total|floatformat:'2g' }} <span class="unit">ALGO</span></span>

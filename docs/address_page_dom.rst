@@ -687,6 +687,97 @@ element the value span sits directly inside is a layout decision, and
 ``.closest(".asar")`` would break on the second click because ``asar`` is half of
 what gets toggled.
 
+The toolbar
+"""""""""""
+
+*Designs 2 and 3 only.* Pass 2, ``snippets/money/toolbar.html`` and
+``static/js/toolbar.js``.
+
+Everything the toolbar does happens in the browser, on a page that is already
+in the reader's hands. That is not an optimisation: this page's cache entry is
+shared by every reader on the layout, so the server cannot know what one reader
+has filtered to and must not render it. The state lives under ``view:<path>`` in
+their own browser, beside the pins and the saved order, and **every control
+ships in its default state** for the same reason --- a control rendered pressed
+because *somebody* pressed it would be handed to whoever asked next.
+
+Load-bearing names:
+
+``#toolbar``
+   The bound container. ``toolbar.js`` binds its click handler here and on
+   ``.band``, not on ``document``, because these controls sit on elements the
+   server renders once. Its ``data-floor`` publishes
+   ``ADDRESS_SECTION_FLOOR`` so the browser re-cuts the load-more rule against
+   the same minimum ``utils/cutoff.py`` applies.
+
+``data-sort-value`` / ``-amount`` / ``-name`` / ``-positions`` on ``.fitem``
+   The sort keys. Rendered rather than read out of the row, because the visible
+   figure is rounded and grouped, and Django's thousands separator is
+   locale-dependent --- a sort parsing it would silently tie rows that differ.
+
+``data-search`` on ``.fitem`` and ``.position``
+   The haystack. Deliberately not the element's ``textContent``, which on a
+   closed card includes the asset id, the decimals, the total supply and every
+   provider link, so typing "6" would match most of the page.
+
+``data-cat`` on ``.position``
+   The allocation category, from ``position_band``. This is what makes the band
+   a control rather than a picture. The filter reproduces a rule that lives in
+   four dict comprehensions in ``utils.charts``; ``test_money_extras.py`` sums
+   the reference payload both ways and asserts the totals agree, which is the
+   only reason the duplication is safe to keep.
+
+``data-owner`` on ``.position``
+   The asset the row belongs to. On the row itself rather than inferred from its
+   ancestors, because "Group by venue" moves the whole ``.pgroup`` out of its
+   asset --- for as long as that is on, a position's ancestors say nothing about
+   which asset it is a holding of.
+
+``#asset-list`` / ``#venue-list``
+   The two lists. Grouping by venue **moves** each ``.pgroup`` into the venue
+   that holds it and moves it back afterwards. Moving, never copying: a copy
+   would put a second element on the page with the same ``data-pid``, and a pin
+   names a position by that id.
+
+Three rules the toolbar is built around, each of which was arrived at the hard
+way:
+
+**The headline never moves.** No filter, search or category toggle may touch
+``.total``. A reader who hides a category has not become poorer; everything
+below the headline is a subtotal and is free to respond.
+
+**A switched-off category keeps its figure and its width.** Zeroing it would
+say "you hold none" when what happened is "you hid it" --- and a bar segment
+shrunk to nothing has no box left to press, so the control would disable
+itself. It dims instead.
+
+**Sorting does not reorder the DOM.** Sorting and pinning both decide what
+order the rows are in, so if both wrote to the DOM whichever ran last would
+undo the other. The toolbar hands ``pins.rebase`` a new baseline and pinning
+still wins on top of it, which is right: a pin is the reader saying "this one,
+whatever else is going on".
+
+.. warning::
+
+   ``snippets/show_more.html`` must stay the **immediately following sibling**
+   of the list it unfolds. ``showmore.js`` finds its container by looking at the
+   control wrapper's previous sibling. ``#venue-list`` was originally inserted
+   between the two, which pointed the control at the empty venue container ---
+   so "Show 38 more assets" revealed nothing and every measurement of a folded
+   row read zero. It degrades to the right answer through a fallback; a fallback
+   is not where this belongs.
+
+.. note::
+
+   ``address.js`` does not touch ``.money-page``. Its ``setCurrency`` writes
+   ``innerHTML`` --- number *and* unit --- into every ``span.val``, which is
+   right for design 1, where the unit is part of the value's text. Here each
+   figure pairs with a separate unit element, so it left asset headers reading
+   "253.74 ALGO ALGO" and destroyed the nested ``<span class="unit">`` in every
+   venue subtotal, on every load. Its ``.tdist`` binding is excluded for the
+   same class of reason: that design hides its breakdown with the ``hidden``
+   *attribute* and this one toggles the ``hidden`` *class*.
+
 --------------------------------------------------------------------------------
 
 Tier 3 --- free to change

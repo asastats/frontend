@@ -145,6 +145,12 @@ def global_constants(request):
         "MEDIUM_NAME": settings.MEDIUM_NAME,
         "DISCORD_INVITE": settings.DISCORD_INVITE,
         "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
+        # The load-more rule's floor. Published because the money-column
+        # toolbar re-cuts the same list in the browser against filtered values,
+        # and two implementations of one rule that read the number from
+        # different places will eventually disagree about it. See
+        # `utils/cutoff.py` and `static/js/toolbar.js`.
+        "ADDRESS_SECTION_FLOOR": settings.ADDRESS_SECTION_FLOOR,
         "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
         "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
         # What the header dropdown starts from. The appearance page uses the

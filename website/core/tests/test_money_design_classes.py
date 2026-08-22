@@ -33,6 +33,7 @@ MONEY_TEMPLATES = (
     TEMPLATES / "snippets/money/asset.html",
     TEMPLATES / "snippets/money/position.html",
     TEMPLATES / "snippets/money/band.html",
+    TEMPLATES / "snippets/money/toolbar.html",
 )
 
 #: Framework classes these templates use on purpose -- Tailwind utilities and

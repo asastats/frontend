@@ -1041,3 +1041,87 @@ describe("pointer dragging edge cases", () => {
     expect(() => pointer(document, "pointerup", 50)).not.toThrow();
   });
 });
+
+describe("re-basing the order the toolbar sorted", () => {
+  /**
+   * Sorting and pinning both decide what order the rows are in, so they cannot
+   * each own the DOM: whichever ran second would undo the first. The toolbar
+   * hands its sorted list here instead, and `layout` treats it as the order the
+   * page arrived in -- pinned rows still float above it, which is right,
+   * because a pin is the reader saying "this one, whatever else is going on".
+   */
+  test("a re-based container lays out in the new order", () => {
+    const pins = mount();
+    pins.apply(document);
+    const parent = document.getElementById(ASSET).parentNode;
+    const reversed = ASSETS.slice().reverse().map((id) => document.getElementById(id));
+
+    expect(pins.rebase(parent, reversed)).toBe(true);
+    pins.apply(document);
+
+    expect(
+      Array.prototype.map.call(parent.children, (el) => el.id)
+    ).toEqual(ASSETS.slice().reverse());
+  });
+
+  test("pins still float above the sorted order", () => {
+    const pins = mount();
+    pins.apply(document);
+    const parent = document.getElementById(ASSET).parentNode;
+    pins.toggle(ASSETS[2], document);
+
+    pins.rebase(parent, ASSETS.slice().reverse().map((id) => document.getElementById(id)));
+    pins.apply(document);
+
+    expect(Array.prototype.map.call(parent.children, (el) => el.id)[0]).toBe(ASSETS[2]);
+  });
+
+  test("re-basing with null restores the order the server sent", () => {
+    const pins = mount();
+    pins.apply(document);
+    const parent = document.getElementById(ASSET).parentNode;
+    pins.rebase(parent, ASSETS.slice().reverse().map((id) => document.getElementById(id)));
+    pins.apply(document);
+
+    expect(pins.rebase(parent, null)).toBe(true);
+    pins.apply(document);
+
+    expect(Array.prototype.map.call(parent.children, (el) => el.id)).toEqual(ASSETS);
+  });
+
+  test("a baseline that dropped a row is refused", () => {
+    // `layout` rebuilds the container from this list, so a caller that filtered
+    // instead of reordering would delete rows from the page. Filtering is a
+    // class on the row; sorting reorders and nothing else.
+    const pins = mount();
+    pins.apply(document);
+    const parent = document.getElementById(ASSET).parentNode;
+
+    expect(pins.rebase(parent, [document.getElementById(ASSET)])).toBe(false);
+    expect(Array.prototype.map.call(parent.children, (el) => el.id)).toEqual(ASSETS);
+  });
+
+  test("a baseline holding a row twice is refused", () => {
+    const pins = mount();
+    pins.apply(document);
+    const parent = document.getElementById(ASSET).parentNode;
+    const one = document.getElementById(ASSET);
+
+    expect(pins.rebase(parent, [one, one, one])).toBe(false);
+  });
+
+  test("a container that was never served is not re-based", () => {
+    const pins = mount();
+    const orphan = document.createElement("div");
+
+    expect(pins.rebase(orphan, [])).toBe(false);
+  });
+
+  test("an un-based container arranges from the served order", () => {
+    const pins = mount();
+    pins.apply(document);
+    const parent = document.getElementById(ASSET).parentNode;
+
+    expect(pins.baseline(parent).map((el) => el.id)).toEqual(ASSETS);
+  });
+});

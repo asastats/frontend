@@ -130,6 +130,8 @@
 
 {% include "snippets/money/band.html" with consolidated=consolidated total=total %}
 
+{% include "snippets/money/toolbar.html" %}
+
 {% comment %} Pinned positions. The band is rendered empty and hidden; the
    reader's own browser fills it from `localStorage`. It cannot be rendered
    server-side at all -- the entry is shared, and one reader's pins are not
@@ -157,14 +159,40 @@
     <span>A plain figure is just the figure.</span>
   </p>
   {% with shown=account.asaitems|visible_count %}
-  <div class="rows{% if compact %} cards{% endif %}" data-folding>
+  <div class="rows{% if compact %} cards{% endif %}" id="asset-list" data-folding>
     {% for asaitem in account.asaitems %}
       {% include "snippets/money/asset.html" with asaitem=asaitem colors=colors shown=shown index=forloop.counter0 %}
     {% endfor %}
   </div>
+  {% comment %} The fold control comes *directly* after the list it unfolds, and
+     that adjacency is a contract: `showmore.js` finds its container by looking
+     at the control wrapper's previous sibling. The venue list below was
+     originally between the two, which quietly pointed the control at the empty
+     venue container -- so pressing "Show 38 more assets" revealed nothing, and
+     every measurement of a folded row read zero. It degrades to the right
+     answer through a fallback, but a fallback is not where this belongs.
+  {% endcomment %}
   {% if account.asaitems|length > shown %}
     {% include "snippets/show_more.html" with hidden=account.asaitems|hidden_count noun="assets" %}
   {% endif %}
+  {% comment %} Where "Group: by venue" builds its list. Empty and hidden: the
+     venue cards are assembled in the browser by *moving* each `.pgroup` out of
+     its asset and into the venue that holds it, and moved back when the reader
+     switches away. Moving rather than copying is the whole design -- a copied
+     position would carry a second element with the same `data-pid`, and a pin
+     would then name two rows. It also means open breakdowns, bound handlers
+     and the position pins survive the switch, because they are the same nodes.
+
+     Rendering the venue grouping server-side as a second list was the
+     alternative and is worse: it doubles a page that already carries 190
+     positions, and the two copies would drift the first time one of them was
+     edited.
+
+     No `data-folding`: the load-more rule ranks assets by what they are worth,
+     and a venue is not an asset. The toolbar hides the control entirely while
+     this list is showing.
+  {% endcomment %}
+  <div class="rows venue-rows" id="venue-list" hidden></div>
   {% endwith %}
 </section>
 
@@ -188,4 +216,8 @@
 <script src="{% static 'js/showmore.js' %}"></script>
 <script src="{% static 'js/pins.js' %}"></script>
 <script src="{% static 'js/money.js' %}"></script>
+{% comment %} Last, and deliberately: `toolbar.js` re-bases the order `pins.js`
+   captured and redraws the band `money.js` charts from, so both have to have
+   run and taken their own snapshot of the served page first. {% endcomment %}
+<script src="{% static 'js/toolbar.js' %}"></script>
 {% endblock %}

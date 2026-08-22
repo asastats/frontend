@@ -645,6 +645,90 @@ def program_groups(programs):
     return list(groups.values())
 
 
+@register.filter
+def holdings_amount(asaitem):
+    """Return an asaitem's holding as a plain number, for sorting on.
+
+    The toolbar sorts by Holdings, and the only holding figure on the page is
+    ``amount_repr``'s output -- "1,234.5678", grouped for reading. Parsing that
+    back in the browser means agreeing with Django's thousands separator
+    forever, and the separator is locale-dependent. This emits the same number
+    ungrouped, into a data attribute nobody reads.
+
+    Raw ``amount`` cannot be used instead: it is in the asset's base units, so
+    an asset with 6 decimals sorts a million places above one with 0 holding
+    the same quantity.
+
+    :param asaitem: one entry from account.asaitems
+    :type asaitem: dict
+    :var decimals: the asset's decimal places
+    :type decimals: int
+    :return: str
+    """
+    try:
+        decimals = int((asaitem.get("asset") or {}).get("decimals") or 0)
+        return repr(int(asaitem.get("amount") or 0) / (10**decimals))
+    except (AttributeError, TypeError, ValueError):
+        return "0"
+
+
+@register.filter
+def position_band(program):
+    """Return the allocation category one position belongs to.
+
+    The band above the list is a decomposition of the same positions the list
+    shows, so the toolbar's category filter has to agree with it exactly: a
+    reader who presses "Staked" and sees a balance row has been told the band
+    was lying. That means the category has to be known *per position*, and the
+    payload does not carry one -- :class:`utils.structs.Consolidated` arrives
+    already summed.
+
+    The rule is therefore reproduced here, and it is reproduced rather than
+    shared because the four originals in :mod:`utils.charts` --
+    ``_balance_totals_from_serialized_data`` and its three siblings -- are
+    dict comprehensions over the whole payload with no per-position function to
+    call. Extracting one would mean editing the module design 1's charts are
+    built from, which is finished and is not to be touched.
+
+    Reproduction invites drift, so it is *tested* rather than commented:
+    ``test_money_extras.py`` sums the reference payload's positions by this
+    filter and asserts the four totals equal ``Consolidated``'s own. If either
+    side ever changes, that fails.
+
+    One deliberate difference, and it is not drift. ``_balance_totals`` uses
+    ``next(...)``, so a second ``Balance`` position on the same asset
+    contributes nothing to the balance total; the ``defi`` comprehension
+    excludes every ``Balance`` position, so that second one lands in no
+    category at all and is missing from the band. Here it is labelled
+    ``balance``, because a row on the page must belong to the category a reader
+    would say it belongs to. The reference payload has no such asset, which is
+    why the two agree; if one appears, the band under-reports and this filter
+    is right.
+
+    :param program: one entry from an asaitem's ``programs``
+    :type program: dict
+    :var detail: the position's ``program`` sub-dict
+    :type detail: dict
+    :var kind: the position's type, e.g. "Balance", "Staked", "Added"
+    :type kind: str
+    :var name: the position's program name, e.g. "Liquidity", "AlgoRai farm"
+    :type name: str
+    :return: one of "balance", "staked", "liquidity", "defi"
+    :rtype: str
+    """
+    detail = (program or {}).get("program") or {}
+    kind = detail.get("type") or ""
+    name = detail.get("name") or ""
+
+    if kind == "Balance":
+        return "balance"
+    if kind == "Staked" and "farm" not in name:
+        return "staked"
+    if kind == "Added" and name == "Liquidity":
+        return "liquidity"
+    return "defi"
+
+
 #: The allocation categories, in the order the band draws them. The keys match
 #: the ``--c-*`` custom properties and the ``.cat-*`` classes in ``input.css``,
 #: and the order matches ``utils.structs.Consolidated`` so the two cannot drift.

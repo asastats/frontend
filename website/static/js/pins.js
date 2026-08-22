@@ -66,6 +66,23 @@
   var SERVED_PROP = "_asastatsServedEntries";
   var BOUND_ATTR = "data-pins-bound";
 
+  /**
+   * The baseline `layout` arranges from, when something has replaced the
+   * served one.
+   *
+   * The toolbar sorts this list. Sorting and pinning are the same operation
+   * applied twice -- both decide what order the rows are in -- so they cannot
+   * each own the DOM independently: whichever ran second would undo the first.
+   * Instead the toolbar hands its sorted order here and `layout` treats it as
+   * the order the page arrived in, floating pinned rows above it exactly as
+   * before.
+   *
+   * Kept apart from `SERVED_PROP` rather than overwriting it, because "what
+   * the server sent" is still needed: `rebase(parent, null)` restores it, which
+   * is what "Reset view" means, and there is no other copy of it anywhere.
+   */
+  var BASELINE_PROP = "_asastatsBaselineEntries";
+
   /** The drag in progress, or null. Reset on every pointerup. */
   var dragging = null;
 
@@ -264,6 +281,51 @@
   }
 
   /**
+   * Return the order `parent` should be arranged from.
+   *
+   * The toolbar's sorted order when there is one, the served order otherwise.
+   *
+   * @param {Element} parent - the container.
+   * @returns {Element[]|undefined} the baseline entries.
+   */
+  function baseline(parent) {
+    return parent[BASELINE_PROP] || parent[SERVED_PROP];
+  }
+
+  /**
+   * Replace the order `parent` is arranged from, or restore the served one.
+   *
+   * Only entries the server actually sent are accepted, and every one of them
+   * has to appear: a caller that dropped a row would delete it from the page
+   * the next time `layout` ran, because `layout` rebuilds from this list. A
+   * sort reorders; it does not filter. Filtering is a class on the row.
+   *
+   * @param {Element} parent - the container to re-base.
+   * @param {Element[]|null} entries - the new order, or null to restore.
+   * @returns {boolean} true if the baseline changed.
+   */
+  function rebase(parent, entries) {
+    if (!entries) {
+      delete parent[BASELINE_PROP];
+      return true;
+    }
+
+    var served = parent[SERVED_PROP];
+    if (!served || entries.length !== served.length) return false;
+    var known = served.slice();
+    var complete = entries.every(function (entry) {
+      var at = known.indexOf(entry);
+      if (at === -1) return false;
+      known.splice(at, 1);
+      return true;
+    });
+    if (!complete) return false;
+
+    parent[BASELINE_PROP] = entries.slice();
+    return true;
+  }
+
+  /**
    * Lay a container out: pinned entries first, then the rest.
    *
    * `appendChild` on an element already in the document moves it, so this is a
@@ -275,7 +337,7 @@
    * @param {object} order - section key to the reader's ordering.
    */
   function layout(parent, pinned, order) {
-    var entries = parent[SERVED_PROP];
+    var entries = baseline(parent);
     if (!entries) return;
 
     var ordered = arrange(entries, order[sectionKey(parent)]);
@@ -953,6 +1015,9 @@
   // through a hundred synthetic pointer gestures.
   window.asastatsPins = {
     apply: apply,
+    baseline: baseline,
+    rebase: rebase,
+    containers: containers,
     toggle: toggle,
     move: move,
     moveToEnd: moveToEnd,

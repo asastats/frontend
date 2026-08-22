@@ -41,6 +41,7 @@ NOT_IN_TEMPLATES = {
     "nftpreview": "built by address.js from the NFT payload",
     "thelink": "built by address.js when it renders a copy control",
     "progress": "added to a wrapper at submit time by index.js and tax.js",
+    "venue-total": "built by toolbar.js on the venue cards it assembles",
 }
 
 

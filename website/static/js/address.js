@@ -1106,6 +1106,18 @@ function dec6(num) {
  *
  */
 function setCurrency(code) {
+  // Design 1 only. This writes `innerHTML` -- number *and* unit -- into every
+  // `span.val`, which is right for design 1, where the unit is part of the
+  // value's own text. The money-column designs pair each figure with a separate
+  // unit element: a sibling `.u.unit` in an asset header, a nested
+  // `<span class="unit">` in a venue subtotal. So this rewrote the header to
+  // "253.74 ALGO" beside a sibling still reading "ALGO", and destroyed the
+  // nested span in every subtotal -- on every load, because it runs
+  // unconditionally with the stored currency. It also cannot reach a breakdown
+  // figure there at all, which is a `<button>` rather than a span.
+  //
+  // `toolbar.js` owns currency on that page and writes only the number.
+  if (document.querySelector(".money-page")) return;
   var price = $(".pricetip")[0].dataset.price;
   var pricealgo = $(".pricetip")[0].dataset.pricealgo;
   var total = $(".pricetip")[0].dataset.total;

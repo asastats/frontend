@@ -535,3 +535,90 @@ describe("the breakdown controls", () => {
     expect(panel.hidden).toBe(false);
   });
 });
+
+describe("redrawing the allocation from a filtered view", () => {
+  /**
+   * The bar, the five figures and this donut are three drawings of one set of
+   * numbers, so when the toolbar filters a category out all three follow. The
+   * other charts are of the whole address and are deliberately left alone --
+   * the same rule the headline follows.
+   */
+  function openPanel() {
+    const { panel, grid } = mountPanel();
+    mountPayload("ratiochart", chartData(["Balance", "Staked"], [60, 40], ["#1", "#2"]));
+    mountPayload("distchart", chartData(["A"], [5], ["#3"]));
+    const money = load();
+    money.init();
+    panel.open = true;
+    panel.dispatchEvent(new window.Event("toggle"));
+    return { grid, money };
+  }
+
+  test("the allocation chart is replaced with the filtered one", () => {
+    const { grid, money } = openPanel();
+
+    money.redrawAllocation({ balance: 10, staked: 90 }, 100, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="ratiochart"]');
+    expect(chart.querySelectorAll("path")).toHaveLength(2);
+    expect(chart.querySelector(".kv").textContent).toBe("10.00");
+  });
+
+  test("the other charts are left alone", () => {
+    const { grid, money } = openPanel();
+    const before = grid.querySelector('[data-chart="distchart"]');
+
+    money.redrawAllocation({ balance: 10 }, 10, "ALGO");
+
+    expect(grid.querySelector('[data-chart="distchart"]')).toBe(before);
+  });
+
+  test("a category filtered to nothing is left out of the ring", () => {
+    const { grid, money } = openPanel();
+
+    money.redrawAllocation({ balance: 10, staked: 0 }, 10, "ALGO");
+
+    expect(grid.querySelector('[data-chart="ratiochart"]').querySelectorAll("path")).toHaveLength(1);
+  });
+
+  test("everything filtered out empties the chart rather than removing it", () => {
+    // The panel keeps its shape, and the chart comes back when the filter does.
+    const { grid, money } = openPanel();
+
+    money.redrawAllocation({ balance: 0, staked: 0 }, 0, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="ratiochart"]');
+    expect(chart).not.toBeNull();
+    expect(chart.querySelectorAll("path")).toHaveLength(0);
+    expect(chart.querySelector("h4").textContent).toBe("Allocation");
+  });
+
+  test("the currency it was drawn in is recorded on the chart", () => {
+    const { grid, money } = openPanel();
+
+    money.redrawAllocation({ balance: 10 }, 10, "USD");
+
+    expect(grid.querySelector('[data-chart="ratiochart"]').getAttribute("data-unit")).toBe("USD");
+  });
+
+  test("no currency leaves the chart unlabelled rather than blank-labelled", () => {
+    const { grid, money } = openPanel();
+
+    money.redrawAllocation({ balance: 10 }, 10, "");
+
+    expect(grid.querySelector('[data-chart="ratiochart"]').hasAttribute("data-unit")).toBe(false);
+  });
+
+  test("a page with no charts grid is left alone", () => {
+    const money = load();
+
+    expect(() => money.redrawAllocation({ balance: 1 }, 1, "ALGO")).not.toThrow();
+  });
+
+  test("a panel that was never drawn has no allocation chart to replace", () => {
+    mountPanel();
+    const money = load();
+
+    expect(() => money.redrawAllocation({ balance: 1 }, 1, "ALGO")).not.toThrow();
+  });
+});
