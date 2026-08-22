@@ -151,15 +151,13 @@ class ToolbarTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_the_headline_never_moves(
+    def test_no_filter_moves_the_headline(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
         """A reader who hides a category has not become poorer.
 
         The headline is what the address is worth, not a readout of the current
-        view. Everything below it is a subtotal and is free to respond -- so
-        this is asserted against a search, a category filter and a currency
-        switch, which are the three things that move every other figure.
+        view. Everything below it is a subtotal and is free to respond.
         """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
@@ -175,11 +173,146 @@ class ToolbarTest(FunctionalTest):
         self.press('.figs .fig[data-band="defi"]')
         self.assertEqual(served, self.headline())
 
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_headline_follows_the_currency(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """A currency is not a filter.
+
+        It is the unit the whole page is denominated in, and a page whose every
+        figure says USD above a total that says ALGO is not showing a total at
+        all. Readers of design 1 have always had the total switch with
+        everything else.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page()
+        self.assertIn("ALGO", self.headline())
+
         self.press('#tb-ccy [data-ccy="USD"]')
+
+        self.wait_until(lambda: "USD" in self.headline())
+        self.assertNotIn("ALGO", self.headline())
+        self.assertEqual(1, self.headline().count("USD"))
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_currency_chosen_anywhere_is_the_currency_here(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The second half of the same complaint.
+
+        The choice was stored per address, while design 1 stores it globally --
+        so a reader who picked USD on design 1 opened this page to a USD
+        headline (written by `address.js` on load) above ALGO figures, and a
+        second tab disagreed with the first. One key, both designs.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.browser.execute_script("window.localStorage.setItem('cur', 'USD');")
+
+        self.open_page()
+
+        self.assertIn("USD", self.headline())
+        self.assertNotIn("ALGO", self.headline())
         self.assertEqual(
-            served,
-            self.headline(),
-            "the currency switch moved the one figure that never moves",
+            "true",
+            self.browser.find_element(
+                By.CSS_SELECTOR, '#tb-ccy [data-ccy="USD"]'
+            ).get_attribute("aria-pressed"),
+        )
+        header = self.browser.find_element(By.CSS_SELECTOR, "#asset-list .chead .cval")
+        self.assertIn("USD", header.text)
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_total_can_leave_the_nfts_out(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Design 1 has this and the money column was missing it.
+
+        A legitimate move of the headline, because it changes *what is being
+        totalled* rather than how it is shown -- and on the reference address
+        the NFTs are 79% of it, so the two readings are different answers to
+        different questions.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page()
+        whole = self._number(self.headline().split()[-2])
+
+        self.press("#tb-nonft")
+
+        self.wait_until(lambda: self._number(self.headline().split()[-2]) < whole)
+        self.assertIn(
+            "except the NFTs",
+            self.browser.find_element(By.CSS_SELECTOR, ".total-note").text,
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_hiding_a_category_says_what_the_rest_comes_to(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The headline holding still leaves a question unanswered.
+
+        A reader who switches DeFi off can see that the total did not move --
+        which is right -- and had no way to see what the remaining categories
+        add up to. That is what the band's readout is for, and it appears only
+        when it differs from the headline.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page()
+        readout = self.browser.find_element(By.ID, "band-readout")
+        self.assertEqual("", readout.text.strip(), "an unfiltered page announced a total")
+
+        self.press('.figs .fig[data-band="defi"]')
+
+        self.wait_until(lambda: readout.text.strip() != "")
+        self.assertRegex(readout.text, r"^Showing [\d,.]+ ALGO of [\d,.]+ ALGO$")
+        shown, whole = [
+            self._number(part) for part in readout.text.replace(",", "").split()[1::3]
+        ]
+        self.assertLess(shown, whole)
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_auto_refresh_is_offered_again(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Design 1 has it; this design was missing it.
+
+        The timer that acts on it is `address.js`'s and is already running on
+        this page, so what was missing was only the control and the key.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page()
+
+        self.press("#tb-refresh")
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return window.localStorage.getItem('refresh');"
+            )
+            == "y"
         )
 
     @mock.patch("core.context_processors.fetch_capabilities")
@@ -444,31 +577,55 @@ class ToolbarTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_the_cutoff_changes_what_is_folded(
+    def test_each_section_shows_a_first_batch_and_offers_the_next(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
-        """The load-more rule, made adjustable, with its label kept honest."""
+        """The load-more rule, replacing the prototype's 95/99/99.5/All.
+
+        That control was a way to *demonstrate* the page with everything on
+        screen before a load-more existed. What a reader wants is a first
+        screen that is a sensible size and a way to ask for more, which is a
+        count -- not a share of the value.
+        """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         self.sign_in()
         self.open_page()
-        served = len(self.shown())
 
-        self.press('#tb-cut [data-cut="1"]')
-        self.wait_until(lambda: len(self.shown()) > served)
-        everything = len(self.shown())
-        control = self.browser.find_element(By.CSS_SELECTOR, ".asasec [data-show-more]")
-        self.assertFalse(
-            control.is_displayed(), "nothing is folded, yet the control still offers more"
+        first = len(self.shown())
+        section = self.browser.find_element(By.CSS_SELECTOR, ".money-page .asasec")
+        batch = int(section.get_attribute("data-initial"))
+        self.assertEqual(batch, first, "the first screen is not the published batch")
+
+        control = self.browser.find_element(
+            By.CSS_SELECTOR, ".money-page .asasec [data-show-more]"
         )
+        self.assertIn(str(batch), control.text)
+        control.click()
 
-        self.press('#tb-cut [data-cut="0.95"]')
+        self.wait_until(lambda: len(self.shown()) > first)
+        self.assertEqual(first + batch, len(self.shown()))
 
-        self.wait_until(lambda: len(self.shown()) < everything)
-        folded = everything - len(self.shown())
-        self.wait_until(lambda: control.is_displayed())
-        self.assertIn(str(folded), control.text)
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_collections_have_their_own_smaller_batch(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Fewer, and taller, so a smaller first screen holds the same page."""
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page()
+
+        assets = self.browser.find_element(By.CSS_SELECTOR, ".money-page .asasec")
+        collections = self.browser.find_element(By.CSS_SELECTOR, ".money-page .nftsec")
+        smaller = int(collections.get_attribute("data-initial"))
+
+        self.assertLess(smaller, int(assets.get_attribute("data-initial")))
+        self.assertEqual(smaller, len(self.shown("#nft-list > .fitem")))
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")

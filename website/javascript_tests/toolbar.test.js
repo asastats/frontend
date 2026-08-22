@@ -202,14 +202,30 @@ function mountPage() {
   const page = document.createElement("div");
   page.className = "money-page";
 
+  const total = document.createElement("h1");
+  total.className = "total";
   const head = document.createElement("span");
   head.className = "pricetip";
   head.setAttribute("data-pricealgo", String(ALGO_PER_USD));
-  page.appendChild(head);
-
+  head.setAttribute("data-totalwnft", "150");
+  head.setAttribute("data-totalnft", "50");
+  total.appendChild(head);
+  page.appendChild(total);
+  const sub = document.createElement("div");
+  sub.className = "total-sub";
+  const subNum = document.createElement("span");
+  subNum.className = "num";
+  sub.appendChild(subNum);
+  page.appendChild(sub);
+  const note = document.createElement("p");
+  note.className = "total-note";
+  page.appendChild(note);
   // -- band ---------------------------------------------------------------
   const band = document.createElement("section");
   band.className = "band";
+  const readout = document.createElement("p");
+  readout.id = "band-readout";
+  band.appendChild(readout);
   const bar = document.createElement("div");
   bar.id = "allocation-bar";
   ["balance", "staked", "liquidity", "defi", "nft"].forEach((key) =>
@@ -221,7 +237,7 @@ function mountPage() {
   figs.appendChild(fig("staked", 30));
   figs.appendChild(fig("liquidity", 20));
   figs.appendChild(fig("defi", 10));
-  figs.appendChild(fig("nft", 0));
+  figs.appendChild(fig("nft", 50));
   band.appendChild(bar);
   band.appendChild(figs);
   page.appendChild(band);
@@ -238,11 +254,16 @@ function mountPage() {
   toolbar.appendChild(
     seg("tb-sort", "data-sort", ["value", "amount", "name", "positions"], "value")
   );
-  toolbar.appendChild(seg("tb-cut", "data-cut", ["0.95", "0.99", "0.995", "1"], "0.995"));
   toolbar.appendChild(seg("tb-ccy", "data-ccy", ["ALGO", "USD"], "ALGO"));
   const direction = document.createElement("button");
   direction.id = "tb-dir";
   toolbar.appendChild(direction);
+  const nonft = document.createElement("button");
+  nonft.id = "tb-nonft";
+  toolbar.appendChild(nonft);
+  const refresh = document.createElement("button");
+  refresh.id = "tb-refresh";
+  toolbar.appendChild(refresh);
   const reset = document.createElement("button");
   reset.id = "tb-reset";
   toolbar.appendChild(reset);
@@ -254,6 +275,9 @@ function mountPage() {
   // -- the list -----------------------------------------------------------
   const section = document.createElement("section");
   section.className = "section asasec";
+  // What the server publishes: the first batch, and the size of every batch
+  // after it.
+  section.setAttribute("data-initial", "2");
   const sectionHead = document.createElement("div");
   sectionHead.className = "section-head";
   const heading = document.createElement("h2");
@@ -359,6 +383,7 @@ function mountPage() {
   // cards in a `.rows` list, so the search reaches them the same way.
   const nft = document.createElement("section");
   nft.className = "section nftsec";
+  nft.setAttribute("data-initial", "1");
   const nftRows = document.createElement("div");
   nftRows.className = "rows";
   nftRows.id = "nft-list";
@@ -373,6 +398,14 @@ function mountPage() {
     nftRows.appendChild(collection);
   });
   nft.appendChild(nftRows);
+  const nftMore = document.createElement("div");
+  const nftButton = document.createElement("button");
+  nftButton.setAttribute("data-show-more", "");
+  const nftLabel = document.createElement("span");
+  nftLabel.className = "show-more-open";
+  nftButton.appendChild(nftLabel);
+  nftMore.appendChild(nftButton);
+  nft.appendChild(nftMore);
   page.appendChild(nft);
 
   document.body.appendChild(page);
@@ -436,13 +469,24 @@ describe("what the toolbar shows on arrival", () => {
   test("a stored view is applied on load", () => {
     window.localStorage.setItem(
       "view:" + window.location.pathname.replace(/^\/+|\/+$/g, ""),
-      JSON.stringify({ ccy: "USD", q: "bbb" })
+      JSON.stringify({ q: "bbb" })
     );
 
     load();
 
     expect(visible()).toEqual(["f2"]);
+  });
+
+  test("the reader's currency comes from its own key, not from this address", () => {
+    // Design 1's key, deliberately. A reader who picks USD means USD, not "USD
+    // on this address" -- and a second tab showing a different currency from
+    // the first is what made this worth changing.
+    window.localStorage.setItem("cur", "USD");
+
+    load();
+
     expect(document.querySelector('#tb-ccy [data-ccy="USD"]').getAttribute("aria-pressed")).toBe("true");
+    expect(document.querySelector("#f1 .cval .val").textContent.trim()).toBe("4.00");
   });
 });
 
@@ -520,9 +564,11 @@ describe("the category filter", () => {
 
     expect(figure.getAttribute("aria-pressed")).toBe("false");
     expect(figure.querySelector(".fig-val").textContent).toContain("30.00");
+    // Its width is its share of all five categories, NFT included -- 30 of
+    // 150 -- and switching it off changes neither.
     expect(
       document.querySelector('#allocation-bar [data-band="staked"]').style.width
-    ).toBe("30%");
+    ).toBe("20%");
   });
 
   test("a bar segment toggles the same state the figure does", () => {
@@ -648,64 +694,6 @@ describe("sorting", () => {
   });
 });
 
-describe("the cutoff", () => {
-  test("All shows every row", () => {
-    load();
-
-    document.querySelector('#tb-cut [data-cut="1"]').click();
-
-    expect(unfolded()).toEqual(["f1", "f2", "f3", "f4"]);
-  });
-
-  test("95% folds the tail that does not reach it", () => {
-    // 40 + 30 + 20 = 90, plus 10 = 100. Ninety-five per cent is not reached
-    // until the fourth row, so nothing folds; at 0.9 the fourth goes.
-    load();
-
-    document.querySelector('#tb-cut [data-cut="0.95"]').click();
-
-    expect(unfolded()).toEqual(["f1", "f2", "f3", "f4"]);
-  });
-
-  test("the load-more label counts what is actually folded", () => {
-    load();
-    const toolbar = window.asastatsToolbar;
-    toolbar.state(Object.assign(toolbar.state(), { cut: 0.9 }));
-    toolbar.render();
-
-    expect(unfolded()).toEqual(["f1", "f2", "f3"]);
-    expect(document.querySelector(".show-more-open").textContent).toBe(
-      "Show 1 more asset"
-    );
-  });
-
-  test("the control disappears when nothing is folded", () => {
-    load();
-
-    document.querySelector('#tb-cut [data-cut="1"]').click();
-
-    expect(document.querySelector("[data-show-more]").parentNode.hidden).toBe(true);
-  });
-
-  test("magnitude decides, so a debt is not free to hide", () => {
-    const toolbar = load();
-
-    expect(toolbar.cutoff([-40, 30, 20, 10])).toBe(4);
-  });
-
-  test("a list of zeroes cuts nothing rather than dividing by nothing", () => {
-    const toolbar = load();
-
-    expect(toolbar.cutoff([0, 0, 0])).toBe(3);
-  });
-
-  test("a cutoff nothing reaches keeps the whole list", () => {
-    const toolbar = load();
-    toolbar.state(Object.assign(toolbar.state(), { cut: 0.999999999 }));
-
-    expect(toolbar.cutoff([1, 1, 1])).toBe(3);
-  });
-});
 
 describe("currency", () => {
   test("switching to USD converts every figure and every unit", () => {
@@ -922,7 +910,21 @@ describe("reset", () => {
     expect(document.getElementById("venue-list").hidden).toBe(true);
     expect(document.getElementById("tb-q").value).toBe("");
     expect(document.getElementById("tb-reset").disabled).toBe(true);
-    expect(document.querySelector("#f1 .cval .val").textContent.trim()).toBe("40.00");
+  });
+
+  test("it leaves the reader's own settings alone", () => {
+    // Currency, auto-refresh and "without NFTs" follow the reader across
+    // addresses and tabs. "Reset view" undoes what they did to *this* page --
+    // resetting their currency because they cleared a filter would be a
+    // control reaching outside what it says it does.
+    load();
+    document.querySelector('#tb-ccy [data-ccy="USD"]').click();
+    document.getElementById("tb-nonft").click();
+
+    document.getElementById("tb-reset").click();
+
+    expect(document.querySelector("#f1 .cval .val").textContent.trim()).toBe("4.00");
+    expect(document.getElementById("tb-nonft").getAttribute("aria-pressed")).toBe("true");
   });
 
   test("it brings the NFT section back", () => {
@@ -961,14 +963,13 @@ describe("the stored view", () => {
   test("a value no longer offered falls back without losing the rest", () => {
     window.localStorage.setItem(
       "view:" + window.location.pathname.replace(/^\/+|\/+$/g, ""),
-      JSON.stringify({ sort: "gone", cut: 0.5, ccy: "USD", dir: 1, group: "venue" })
+      JSON.stringify({ sort: "gone", more: { asa: "x" }, dir: 1, group: "venue" })
     );
 
     const toolbar = load();
 
     expect(toolbar.state().sort).toBe("value");
-    expect(toolbar.state().cut).toBe(0.995);
-    expect(toolbar.state().ccy).toBe("USD");
+    expect(toolbar.state().more.asa).toBe(0);
     expect(toolbar.state().dir).toBe(1);
     expect(toolbar.state().group).toBe("venue");
   });
@@ -1264,7 +1265,7 @@ describe("a page missing the parts it can do without", () => {
   });
 
   test("a toolbar missing a whole segmented group leaves the others alone", () => {
-    document.getElementById("tb-cut").remove();
+    document.getElementById("tb-sort").remove();
     load();
 
     document.querySelector('#tb-ccy [data-ccy="USD"]').click();
@@ -1427,60 +1428,23 @@ describe("values the markup did not supply", () => {
 
 describe("the load-more control", () => {
   test("a section without one still folds its tail", () => {
-    document.querySelector("[data-show-more]").parentNode.remove();
+    document.querySelector(".asasec [data-show-more]").parentNode.remove();
     const toolbar = load();
-    toolbar.state(Object.assign(toolbar.state(), { cut: 0.9 }));
-    toolbar.render();
-
-    expect(unfolded()).toEqual(["f1", "f2", "f3"]);
-  });
-
-  test("a control without a label is left with the label it has", () => {
-    document.querySelector(".show-more-open").remove();
-    const toolbar = load();
-    toolbar.state(Object.assign(toolbar.state(), { cut: 0.9 }));
-
-    expect(() => toolbar.render()).not.toThrow();
-    expect(document.querySelector("[data-show-more]").parentNode.hidden).toBe(false);
-  });
-});
-
-describe("the load-more rule's floor", () => {
-  /**
-   * `utils/cutoff.py` never folds a section below `ADDRESS_SECTION_FLOOR`
-   * rows: a wallet holding one large asset and eight small ones would
-   * otherwise collapse to a single row, which costs the reader more than it
-   * saves them. The number is published by the server rather than repeated
-   * here, so the two implementations of one rule cannot drift.
-   */
-  test("a cut that would fold below the floor stops at it", () => {
-    // AAA alone is 40 of 100, so 40% is reached by the first row -- but the
-    // floor is 2, so two rows stay.
-    const toolbar = load();
-    toolbar.state(Object.assign(toolbar.state(), { cut: 0.4 }));
-    toolbar.render();
 
     expect(unfolded()).toEqual(["f1", "f2"]);
   });
 
-  test("a floor larger than the list keeps the list", () => {
-    document.getElementById("toolbar").setAttribute("data-floor", "99");
+  test("a control without a label is left with the label it has", () => {
+    document.querySelector(".asasec .show-more-open").remove();
     const toolbar = load();
-    toolbar.state(Object.assign(toolbar.state(), { cut: 0.4 }));
-    toolbar.render();
 
-    expect(unfolded()).toEqual(["f1", "f2", "f3", "f4"]);
-  });
-
-  test("a toolbar that publishes no floor folds on the ratio alone", () => {
-    document.getElementById("toolbar").removeAttribute("data-floor");
-    const toolbar = load();
-    toolbar.state(Object.assign(toolbar.state(), { cut: 0.4 }));
-    toolbar.render();
-
-    expect(unfolded()).toEqual(["f1"]);
+    expect(() => toolbar.render()).not.toThrow();
+    expect(
+      document.querySelector(".asasec [data-show-more]").parentNode.hidden
+    ).toBe(false);
   });
 });
+
 
 describe("the search and the NFT section", () => {
   /** Ids of the collections a reader can see. */
@@ -1523,5 +1487,422 @@ describe("the search and the NFT section", () => {
     field.dispatchEvent(new window.Event("input"));
 
     expect(collections()).toEqual(["fn1", "fn2"]);
+  });
+});
+
+describe("the load-more rule", () => {
+  /**
+   * A plain count, not the prototype's 95%/99%/99.5%/All. That control was a
+   * way to *demonstrate* the page with everything on screen before a load-more
+   * existed; "show me the rows carrying 99.5% of the value" is not a sentence a
+   * reader thinks in. The mounted page publishes 2 assets and 1 collection per
+   * batch, which is the four-asset fixture's version of 20 and 10.
+   */
+  test("a section shows its first batch and offers the next", () => {
+    load();
+
+    expect(unfolded()).toEqual(["f1", "f2"]);
+    expect(document.querySelector(".asasec .show-more-open").textContent).toBe(
+      "Show 2 more assets"
+    );
+  });
+
+  test("a press adds one batch, not the whole tail", () => {
+    load();
+
+    document.querySelector(".asasec [data-show-more]").click();
+
+    expect(unfolded()).toEqual(["f1", "f2", "f3", "f4"]);
+  });
+
+  test("the label promises only what the press delivers", () => {
+    // "Show 56 more" over a control that reveals twenty is a lie the reader
+    // finds out about by pressing it.
+    const list = document.getElementById("asset-list");
+    ["f5", "f6", "f7"].forEach((id) =>
+      list.appendChild(
+        card({
+          id,
+          unit: id.toUpperCase(),
+          value: 1,
+          amount: 1,
+          positions: 1,
+          groups: [
+            group({
+              venue: "Wallet balance",
+              asset: id,
+              positions: [position({ owner: id, cat: "balance", value: 1 })],
+            }),
+          ],
+        })
+      )
+    );
+    load();
+
+    expect(document.querySelector(".asasec .show-more-open").textContent).toBe(
+      "Show 2 more assets"
+    );
+  });
+
+  test("the last batch names what is actually left", () => {
+    load();
+    // Four assets, batches of two: one press leaves nothing.
+    document.querySelector(".asasec [data-show-more]").click();
+
+    expect(document.querySelector(".asasec [data-show-more]").parentNode.hidden).toBe(true);
+  });
+
+  test("one row left over is singular", () => {
+    const list = document.getElementById("asset-list");
+    list.appendChild(
+      card({
+        id: "f5",
+        unit: "EEE",
+        value: 1,
+        amount: 1,
+        positions: 1,
+        groups: [
+          group({
+            venue: "Wallet balance",
+            asset: "EEE",
+            positions: [position({ owner: "f5", cat: "balance", value: 1 })],
+          }),
+        ],
+      })
+    );
+    load();
+    document.querySelector(".asasec [data-show-more]").click();
+
+    expect(document.querySelector(".asasec .show-more-open").textContent).toBe(
+      "Show 1 more asset"
+    );
+  });
+
+  test("the collections have their own count and their own control", () => {
+    load();
+
+    expect(
+      Array.prototype.slice
+        .call(document.querySelectorAll("#nft-list > .fitem"))
+        .filter((el) => !el.classList.contains("folded")).length
+    ).toBe(1);
+    expect(document.querySelector(".nftsec .show-more-open").textContent).toBe(
+      "Show 1 more collection"
+    );
+
+    document.querySelector(".nftsec [data-show-more]").click();
+
+    expect(
+      Array.prototype.slice
+        .call(document.querySelectorAll("#nft-list > .fitem"))
+        .filter((el) => !el.classList.contains("folded")).length
+    ).toBe(2);
+  });
+
+  test("the two sections count separately", () => {
+    // One press on the assets must not reveal collections, and the reverse.
+    load();
+
+    document.querySelector(".asasec [data-show-more]").click();
+
+    expect(
+      Array.prototype.slice
+        .call(document.querySelectorAll("#nft-list > .fitem"))
+        .filter((el) => !el.classList.contains("folded")).length
+    ).toBe(1);
+  });
+
+  test("how far a reader had scrolled survives a reload", () => {
+    load();
+    document.querySelector(".asasec [data-show-more]").click();
+
+    mountPage();
+    load();
+
+    expect(unfolded()).toEqual(["f1", "f2", "f3", "f4"]);
+  });
+
+  test("reset folds the sections back", () => {
+    load();
+    document.querySelector(".asasec [data-show-more]").click();
+
+    document.getElementById("tb-reset").click();
+
+    expect(unfolded()).toEqual(["f1", "f2"]);
+  });
+
+  test("a section that publishes no count shows one row rather than none", () => {
+    // A missing attribute is a template that changed; showing one row is
+    // recoverable by pressing, showing none looks like an empty address.
+    document.querySelector(".asasec").removeAttribute("data-initial");
+    load();
+
+    expect(unfolded()).toEqual(["f1"]);
+  });
+});
+
+describe("the headline", () => {
+  /** The `.pricetip` text, which is the total. */
+  function headline() {
+    return document.querySelector(".pricetip").textContent;
+  }
+
+  test("it follows the currency", () => {
+    // The figure no *filter* may move -- but a currency is not a filter, it is
+    // the unit the whole page is denominated in. A page whose every figure says
+    // USD above a total that says ALGO is not showing a total at all.
+    load();
+    expect(headline()).toBe("150.00 ALGO");
+
+    document.querySelector('#tb-ccy [data-ccy="USD"]').click();
+
+    expect(headline()).toBe("15.00 USD");
+  });
+
+  test("no filter moves it", () => {
+    load();
+
+    document.querySelector('.figs [data-band="defi"]').click();
+    const field = document.getElementById("tb-q");
+    field.value = "aaa";
+    field.dispatchEvent(new window.Event("input"));
+
+    expect(headline()).toBe("150.00 ALGO");
+  });
+
+  test("without NFTs takes them out of it", () => {
+    // Which is a change to *what is being totalled*, not to how it is shown.
+    load();
+
+    document.getElementById("tb-nonft").click();
+
+    expect(headline()).toBe("100.00 ALGO");
+    expect(document.querySelector(".total-note").textContent).toContain("except the NFTs");
+  });
+
+  test("the line under it shows the other currency", () => {
+    load();
+
+    expect(document.querySelector(".total-sub .num").textContent).toContain("15.00 USD");
+  });
+
+  test("the tooltip carries the other currency too", () => {
+    load();
+
+    expect(document.querySelector(".pricetip").getAttribute("data-tip")).toBe("15.00 USD");
+  });
+
+  test("a page with no headline renders the rest", () => {
+    document.querySelector(".total").remove();
+    load();
+
+    expect(visible()).toEqual(["f1", "f2", "f3", "f4"]);
+  });
+});
+
+describe("the band readout", () => {
+  /** What the readout says. */
+  function readout() {
+    return document.getElementById("band-readout").textContent;
+  }
+
+  test("an unfiltered page says nothing", () => {
+    // Telling a reader that their total is their total is noise.
+    load();
+
+    expect(readout()).toBe("");
+  });
+
+  test("switching a category off says what the rest comes to", () => {
+    // The headline stays at the whole address, which is right and also leaves
+    // the reader no way to see what they are actually looking at.
+    load();
+
+    document.querySelector('.figs [data-band="defi"]').click();
+
+    expect(readout()).toBe("Showing 140.00 ALGO of 150.00 ALGO");
+  });
+
+  test("hiding the NFTs counts them out of it too", () => {
+    load();
+
+    document.querySelector('.figs [data-band="nft"]').click();
+
+    expect(readout()).toBe("Showing 100.00 ALGO of 150.00 ALGO");
+  });
+
+  test("it is denominated like everything else", () => {
+    load();
+    document.querySelector('.figs [data-band="defi"]').click();
+
+    document.querySelector('#tb-ccy [data-ccy="USD"]').click();
+
+    expect(readout()).toBe("Showing 14.00 USD of 15.00 USD");
+  });
+
+  test("switching the category back on clears it", () => {
+    load();
+    document.querySelector('.figs [data-band="defi"]').click();
+
+    document.querySelector('.figs [data-band="defi"]').click();
+
+    expect(readout()).toBe("");
+  });
+
+  test("a page without one renders the rest", () => {
+    document.getElementById("band-readout").remove();
+    load();
+
+    expect(() => document.querySelector('.figs [data-band="defi"]').click()).not.toThrow();
+  });
+});
+
+describe("the reader's own settings", () => {
+  test("auto-refresh writes the key address.js already watches", () => {
+    // The timer is running there whatever this page does; writing the key is
+    // the whole implementation.
+    load();
+
+    document.getElementById("tb-refresh").click();
+
+    expect(window.localStorage.getItem("refresh")).toBe("y");
+    expect(document.getElementById("tb-refresh").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  test("switching it off leaves the key falsy rather than truthy", () => {
+    // `address.js` reads this key and reloads the page when it says "y", so
+    // "off" has to be something that is not "y" -- the exact value is the
+    // store's business, and jest's mock and a browser disagree about whether an
+    // empty string reads back as "" or null.
+    load();
+    document.getElementById("tb-refresh").click();
+
+    document.getElementById("tb-refresh").click();
+
+    expect(window.localStorage.getItem("refresh") || "").not.toBe("y");
+    expect(document.getElementById("tb-refresh").getAttribute("aria-pressed")).toBe("false");
+  });
+
+  test("they come back on the next page in design 1's keys", () => {
+    load();
+    document.getElementById("tb-nonft").click();
+    document.querySelector('#tb-ccy [data-ccy="USD"]').click();
+
+    expect(window.localStorage.getItem("totalnonft")).toBe("y");
+    expect(window.localStorage.getItem("cur")).toBe("USD");
+  });
+
+  test("they are not written into this address's view", () => {
+    // One setting with two homes is one setting that can disagree with itself.
+    const toolbar = load();
+    document.querySelector('#tb-ccy [data-ccy="USD"]').click();
+
+    const stored = JSON.parse(window.localStorage.getItem(toolbar.viewKey()) || "{}");
+    expect(stored.ccy).toBeUndefined();
+  });
+
+  test("a store that refuses to be written still switches the page", () => {
+    const setItem = window.localStorage.setItem;
+    window.localStorage.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+    load();
+
+    expect(() => document.getElementById("tb-nonft").click()).not.toThrow();
+
+    window.localStorage.setItem = setItem;
+  });
+
+  test("a store that refuses to be read falls back to the defaults", () => {
+    // Both reads have to survive it: the per-address view is parsed inside its
+    // own try, and the reader-level keys are read separately afterwards.
+    const getItem = window.localStorage.getItem;
+    window.localStorage.getItem = () => {
+      throw new Error("SecurityError");
+    };
+
+    const toolbar = load();
+
+    expect(toolbar.state().ccy).toBe("ALGO");
+    expect(toolbar.state().nonft).toBe(false);
+    expect(toolbar.state().refresh).toBe(false);
+    window.localStorage.getItem = getItem;
+  });
+});
+
+describe("a page missing the parts the headline and the fold need", () => {
+  test("a venue view whose asset control is gone still switches", () => {
+    load();
+    document.querySelector(".asasec [data-show-more]").parentNode.remove();
+
+    expect(() =>
+      document.querySelector('#tb-group [data-group="venue"]').click()
+    ).not.toThrow();
+  });
+
+  test("a headline with no sub-line or note still switches currency", () => {
+    document.querySelector(".total-sub").remove();
+    document.querySelector(".total-note").remove();
+    load();
+
+    document.querySelector('#tb-ccy [data-ccy="USD"]').click();
+
+    expect(document.querySelector(".pricetip").textContent).toBe("15.00 USD");
+  });
+
+  test("an address worth nothing divides by nothing rather than by zero", () => {
+    document.querySelectorAll("[data-value]").forEach((el) => el.setAttribute("data-value", "0"));
+    document.querySelectorAll(".fig-val").forEach((el) => el.setAttribute("data-val", "0"));
+    load();
+
+    expect(
+      document.querySelector('#allocation-bar [data-band="balance"]').style.width
+    ).toBe("0%");
+    expect(document.querySelector('.figs [data-band="balance"] .fig-share').textContent).toBe("0.0%");
+  });
+
+  test("a toolbar with no toggles still renders", () => {
+    document.getElementById("tb-nonft").remove();
+    document.getElementById("tb-refresh").remove();
+    load();
+
+    expect(visible()).toEqual(["f1", "f2", "f3", "f4"]);
+  });
+
+  test("a show-more press already handled elsewhere is not counted twice", () => {
+    load();
+    const event = new window.MouseEvent("click", { bubbles: true, cancelable: true });
+    event.preventDefault();
+
+    document.querySelector(".asasec [data-show-more]").dispatchEvent(event);
+
+    expect(unfolded()).toEqual(["f1", "f2"]);
+  });
+});
+
+describe("a page whose sections are not there", () => {
+  test("no asset section leaves the rest working", () => {
+    // `fold` is asked about a section by name; a page that lost one must not
+    // take the collections and the band down with it.
+    document.querySelector(".asasec").remove();
+    load();
+
+    expect(document.querySelector(".pricetip").textContent).toBe("150.00 ALGO");
+  });
+
+  test("a click on a section that is not the control is ignored", () => {
+    load();
+
+    document.querySelector(".asasec").click();
+
+    expect(unfolded()).toEqual(["f1", "f2"]);
+  });
+
+  test("a click whose target cannot be walked up from is ignored there too", () => {
+    load();
+    const event = new window.MouseEvent("click", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "target", { value: {}, configurable: true });
+
+    expect(() => document.querySelector(".asasec").dispatchEvent(event)).not.toThrow();
   });
 });

@@ -258,9 +258,19 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         exercised on the way to everything else here.
         """
         self.open_address()
+        # Pressed until nothing is folded. Each press reveals one batch now --
+        # `ADDRESS_INITIAL_ASSETS` rows -- rather than the whole tail, so one
+        # click leaves most of a 76-asset address still hidden and every
+        # measurement below reading zero.
         self.browser.execute_script(
-            "document.querySelectorAll('[data-show-more]')"
-            ".forEach(function (button) { button.click(); });"
+            "for (var i = 0; i < 40; i += 1) {"
+            "  var buttons = document.querySelectorAll('[data-show-more]');"
+            "  var pressed = false;"
+            "  buttons.forEach(function (button) {"
+            "    if (!button.parentNode.hidden) { button.click(); pressed = true; }"
+            "  });"
+            "  if (!pressed) break;"
+            "}"
         )
         self.wait_until(
             lambda: self.browser.execute_script(
@@ -406,14 +416,15 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_the_fold_hides_the_tail_until_it_is_asked_for(
+    def test_the_fold_reveals_one_batch_at_a_time(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
         """The load-more control, exercised as a reader meets it.
 
-        The rows are all in the document either way -- this only flips which
-        are displayed -- so a test reading the markup sees the whole list
-        whether the fold works or not.
+        A fixed first batch, and one batch more per press. The rows are all in
+        the document either way -- this only flips which are displayed -- so a
+        test reading the markup sees the whole list whether the fold works or
+        not.
         """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
@@ -425,27 +436,35 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         # since it was rebuilt in the money column, and an unscoped selector
         # collects its folded rows as well -- which the asset section's own
         # control does not reveal.
-        folded = self.browser.find_elements(
-            By.CSS_SELECTOR, "#asset-list > .fitem.folded"
-        )
-        if not folded:
-            self.skipTest("the sample address is short enough to need no fold")
-
-        self.assertFalse(
-            any(row.is_displayed() for row in folded),
-            "the folded tail was on screen before anything asked for it",
-        )
+        shown = self._shown()
+        self.assertGreater(shown, 0, "the section showed nothing at all")
 
         control = self.browser.find_element(
             By.CSS_SELECTOR, ".money-page .asasec [data-show-more]"
         )
-        self.assertEqual("false", control.get_attribute("aria-expanded"))
+        # The label promises a number, and the press has to deliver exactly it.
+        promised = int(
+            control.find_element(By.CSS_SELECTOR, ".show-more-open").text.split()[1]
+        )
         control.click()
 
-        self.wait_until(lambda: all(row.is_displayed() for row in folded))
-        # The button owns the state, and the stylesheet reads it for both the
-        # rows and the button's own label -- so the attribute is the assertion.
-        self.assertEqual("true", control.get_attribute("aria-expanded"))
+        self.wait_until(lambda: self._shown() > shown)
+        self.assertEqual(
+            shown + promised,
+            self._shown(),
+            "the control revealed a different number from the one it offered",
+        )
+
+    def _shown(self):
+        return len(
+            [
+                row
+                for row in self.browser.find_elements(
+                    By.CSS_SELECTOR, "#asset-list > .fitem"
+                )
+                if row.is_displayed()
+            ]
+        )
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")

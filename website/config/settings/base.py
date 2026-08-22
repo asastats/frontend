@@ -304,6 +304,22 @@ ADDRESS_SECTION_THRESHOLD = 0.995
 #: which reads as a broken page rather than a tidy one.
 ADDRESS_SECTION_FLOOR = 8
 
+#: How many rows the money-column designs show before offering the rest, and how
+#: many each press of "Show more" adds.
+#:
+#: A plain count, not the magnitude rule above. Design 1 keeps that rule; these
+#: designs were briefly given the prototype's 95%/99%/99.5%/All control, which
+#: was only ever a way to *demonstrate* the page with everything on screen
+#: before a load-more existed. It is not a setting a reader wants: "show me the
+#: rows carrying 99.5% of the value" is a sentence nobody thinks in.
+#:
+#: Assets first because there are usually more of them and they are what the
+#: page is about; collections are fewer and each one is taller, so a smaller
+#: first screen holds the same amount of page. Each press adds the same number
+#: again, so the rule is one sentence: the first N, then N more.
+ADDRESS_INITIAL_ASSETS = 20
+ADDRESS_INITIAL_COLLECTIONS = 10
+
 SITE_ID = 1
 #: The default for locally served sites, which is http. production.py raises it
 #: to https, so this is the base of a per-environment layering rather than a

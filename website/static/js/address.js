@@ -1290,6 +1290,14 @@ function setRefresh(value) {
  *
  */
 function setTotalNoNft(value) {
+  // Design 1 only, for the same reason `setCurrency` is. This writes the
+  // headline's `innerHTML` -- figure *and* unit -- reading the currency from
+  // design 1's own global `cur` key. On the money-column page that meant the
+  // total was written by design 1 on load and by nobody afterwards: a reader
+  // who had ever chosen USD anywhere got a USD headline in a fresh tab, and
+  // pressing USD in that page's own toolbar changed every figure except the
+  // one at the top. `toolbar.js` owns the headline there.
+  if (document.querySelector(".money-page")) return;
   var price = $(".pricetip")[0].dataset.price;
   var pricealgo = $(".pricetip")[0].dataset.pricealgo;
   var totalwnft = $(".pricetip")[0].dataset.totalwnft;
@@ -1356,6 +1364,7 @@ if (typeof exports !== 'undefined') {
     scrollToView,
     showTimes,
     setCurrency,
+    setTotalNoNft,
     toggleCurrency,
     toggleDist,
     togglePrice,

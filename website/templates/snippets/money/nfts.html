@@ -25,12 +25,12 @@
     nftcollections  account.nftcollections
     nft_colors      collection name -> colour slot
 {% endcomment %}
-<section class="section nftsec section-list" id="nft-section">
+<section class="section nftsec section-list" id="nft-section" data-initial="{{ ADDRESS_INITIAL_COLLECTIONS }}">
   <div class="section-head">
     <h2 class="eyebrow">NFT collections</h2>
     <span class="count num">{{ nftcollections|length }}</span>
   </div>
-  {% with shown=nftcollections|visible_count %}
+  {% with shown=ADDRESS_INITIAL_COLLECTIONS %}
   <div class="rows{% if compact %} cards{% endif %}" id="nft-list" data-folding>
     {% for coll in nftcollections %}
       {% include "snippets/money/collection.html" with coll=coll nft_colors=nft_colors shown=shown index=forloop.counter0 %}
@@ -41,7 +41,7 @@
      between the two points it at the wrong element -- which is exactly what
      happened in the asset section. {% endcomment %}
   {% if nftcollections|length > shown %}
-    {% include "snippets/show_more.html" with hidden=nftcollections|hidden_count noun="collections" %}
+    {% include "snippets/show_more.html" with hidden=nftcollections|beyond:shown noun="collections" %}
   {% endif %}
   {% endwith %}
 </section>

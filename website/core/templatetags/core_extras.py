@@ -646,6 +646,30 @@ def program_groups(programs):
 
 
 @register.filter
+def beyond(rows, shown):
+    """Return how many of ``rows`` sit past the first ``shown``.
+
+    The count for the load-more label. Django's ``add`` filter cannot subtract
+    one variable from another, and ``hidden_count`` answers a different
+    question -- it applies design 1's magnitude rule, which the money-column
+    designs deliberately do not use.
+
+    Never negative: a section shorter than its first batch has nothing beyond
+    it, and "Show -3 more assets" is worse than showing no control at all.
+
+    :param rows: the section's rows
+    :type rows: list
+    :param shown: how many are shown before the control
+    :type shown: int
+    :return: int
+    """
+    try:
+        return max(len(rows) - int(shown), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+@register.filter
 def holdings_amount(asaitem):
     """Return an asaitem's holding as a plain number, for sorting on.
 

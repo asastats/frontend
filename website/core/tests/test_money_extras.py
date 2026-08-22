@@ -28,6 +28,7 @@ from core.templatetags.core_extras import (
     allocation_bands,
     amount_repr,
     beats_last_purchase,
+    beyond,
     clears_floor,
     collection_above_floor,
     collection_floor,
@@ -645,3 +646,74 @@ def test_collection_floor_and_estimate_agree_with_the_payload(payload):
         checked += 1
 
     assert checked > 50
+
+
+class TestBeyond:
+    """How many rows sit past the first batch.
+
+    The number the load-more control is rendered with, before any script runs.
+    Django's ``add`` cannot subtract one variable from another, and
+    ``hidden_count`` answers a different question -- it applies design 1's
+    magnitude rule, which these designs deliberately do not use.
+    """
+
+    def test_it_counts_what_is_left(self):
+        assert beyond(list(range(76)), 20) == 56
+
+    def test_a_section_that_fits_has_nothing_beyond_it(self):
+        assert beyond(list(range(20)), 20) == 0
+
+    def test_a_short_section_never_goes_negative(self):
+        """"Show -3 more assets" is worse than showing no control at all."""
+        assert beyond(list(range(3)), 20) == 0
+
+    def test_an_empty_section_has_nothing_beyond_it(self):
+        assert beyond([], 20) == 0
+
+    def test_showing_none_leaves_everything_beyond(self):
+        assert beyond(list(range(5)), 0) == 5
+
+    def test_a_count_arriving_as_a_string_still_counts(self):
+        """`data-initial` round-trips through the template as text."""
+        assert beyond(list(range(76)), "20") == 56
+
+    @pytest.mark.parametrize(
+        "rows, shown",
+        [
+            (None, 20),
+            (42, 20),
+            (list(range(5)), None),
+            (list(range(5)), "twenty"),
+            (list(range(5)), [1]),
+        ],
+        ids=["no rows", "rows not sized", "no count", "count not a number", "count a list"],
+    )
+    def test_anything_unusable_counts_as_nothing(self, rows, shown):
+        """Never an exception, and never a control offering a nonsense number.
+
+        This renders into the busiest page on the site. A section the context
+        could not describe offers nothing rather than taking the page down, and
+        the control it feeds is hidden when the count is zero.
+        """
+        assert beyond(rows, shown) == 0
+
+    def test_it_matches_the_real_payload_and_the_real_setting(self, payload):
+        """The label the server renders is the tail the browser will fold.
+
+        `toolbar.js` folds at `data-initial` and this renders the count beside
+        the control; they are computed separately, so a reader could otherwise
+        be offered "Show 56 more" over a list that folds at a different point.
+        """
+        from django.conf import settings
+
+        assets = payload["asaitems"]
+        collections = payload["nftcollections"]
+
+        assert beyond(assets, settings.ADDRESS_INITIAL_ASSETS) == len(assets) - settings.ADDRESS_INITIAL_ASSETS
+        assert beyond(collections, settings.ADDRESS_INITIAL_COLLECTIONS) == len(
+            collections
+        ) - settings.ADDRESS_INITIAL_COLLECTIONS
+        # The reference address is long enough for both controls to appear,
+        # which is what makes the assertion above worth making.
+        assert beyond(assets, settings.ADDRESS_INITIAL_ASSETS) > 0
+        assert beyond(collections, settings.ADDRESS_INITIAL_COLLECTIONS) > 0

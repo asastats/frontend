@@ -93,6 +93,16 @@ SHARED_WITH_DESIGN_ONE = frozenset(
         "nftsec",
         "section-list",
         "epoch",
+        # `site.js` binds the clipboard control to `.copy` and copies the
+        # element immediately before it.
+        "copy",
+        # `address.js` builds the hover preview from `.nfticon`'s `data-path`
+        # and hides them while filtering; `deferImages` collects `img.nft` and
+        # swaps in `data-src` after load. The *tile* deliberately does not use
+        # `.nft` -- design 1 pairs that name with the colour slot in `.nft.cN`,
+        # which was landing on it. It is `.collection` instead.
+        "nfticon",
+        "nft",
     }
 )
 
@@ -182,3 +192,58 @@ def test_money_design_avoids_the_two_known_daisyui_collisions():
 
         assert "card" not in used, f"{template.name} uses DaisyUI's .card"
         assert "stack" not in used, f"{template.name} uses DaisyUI's .stack"
+
+
+#: Design 1's templates. A class used by both designs is either a deliberate
+#: contract (see `SHARED_WITH_DESIGN_ONE`) or a collision, and the difference
+#: matters: design 1's rules are unscoped, so they reach the money page.
+DESIGN_ONE_TEMPLATES = (
+    TEMPLATES / "address.html",
+    TEMPLATES / "snippets/asas.html",
+    TEMPLATES / "snippets/asas/program.html",
+    TEMPLATES / "snippets/asas/links.html",
+    TEMPLATES / "snippets/asas/meta.html",
+    TEMPLATES / "snippets/nfts.html",
+    TEMPLATES / "snippets/nfts/collection.html",
+    TEMPLATES / "snippets/nfts/item.html",
+    TEMPLATES / "snippets/nonval.html",
+)
+
+
+def test_money_design_shares_no_class_with_design_one_by_accident():
+    """A name both designs use is a contract or a collision, never a coincidence.
+
+    The DaisyUI check above cannot see this one. It asks whether a class is
+    *declared* in `input.css`, and a class design 1 owns is declared -- so a
+    collision with our own stylesheet passes it while the framework check is
+    still green.
+
+    That is not hypothetical. The money-column charts panel was
+    ``<details class="charts">``; design 1 declares an unscoped
+    ``.charts { display: grid }`` that goes two-column at 768px. The panel
+    inherited it, put its ``<summary>`` in the first column and the chart grid
+    in the second, and every donut stacked vertically inside a half-width
+    track. Renamed to ``.chart-panel``.
+
+    Anything genuinely shared belongs in `SHARED_WITH_DESIGN_ONE` with a reason
+    beside it, which is what makes this list a decision rather than a leak.
+    """
+    theirs = set()
+    for template in DESIGN_ONE_TEMPLATES:
+        if template.exists():
+            theirs |= _classes_used(template)
+
+    assert theirs, "found no design 1 classes -- discovery is looking in the wrong place"
+
+    ours = set()
+    for template in MONEY_TEMPLATES:
+        ours |= _classes_used(template)
+
+    collisions = (ours & theirs) - SHARED_WITH_DESIGN_ONE - FRAMEWORK
+
+    assert not collisions, (
+        f"the money designs and design 1 both use {sorted(collisions)}. Design "
+        "1's rules are not scoped to a page, so they apply here too. Rename the "
+        "money-side class, or add it to SHARED_WITH_DESIGN_ONE with the reason "
+        "it is deliberately shared."
+    )

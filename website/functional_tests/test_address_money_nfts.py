@@ -393,14 +393,12 @@ class MoneyColumnNftTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_the_section_folds_its_own_tail(
+    def test_the_section_reveals_its_own_batch(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
-        """Fifty-five collections, and the load-more rule applies here too.
-
-        Its control has to sit directly after the list it unfolds -- the asset
-        section broke exactly this way when something was inserted between the
-        two.
+        """Fifty-five collections, and the load-more rule applies here too --
+        with its own, smaller count, because a collection row is taller than an
+        asset row and the same number of them is a longer page.
         """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
@@ -408,16 +406,27 @@ class MoneyColumnNftTest(FunctionalTest):
         self.sign_in()
         self.open_page(collections=0)
 
-        folded = self.browser.find_elements(By.CSS_SELECTOR, "#nft-list > .fitem.folded")
-        if not folded:
-            self.skipTest("this address holds too few collections to fold")
-        self.assertFalse(any(card.is_displayed() for card in folded))
+        section = self.browser.find_element(By.CSS_SELECTOR, ".money-page .nftsec")
+        batch = int(section.get_attribute("data-initial"))
+        shown = self._shown()
+        self.assertEqual(batch, shown, "the first screen is not the published batch")
 
-        control = self.browser.find_element(
-            By.CSS_SELECTOR, ".money-page .nftsec [data-show-more]"
-        )
+        control = section.find_element(By.CSS_SELECTOR, "[data-show-more]")
         control.click()
 
-        self.wait_until(lambda: all(card.is_displayed() for card in folded))
-        self.assertEqual("true", control.get_attribute("aria-expanded"))
+        # One batch, not the whole tail: fifty-five collections revealed at
+        # once is the screen this rule exists to avoid.
+        self.wait_until(lambda: self._shown() > shown)
+        self.assertEqual(shown + batch, self._shown())
         self.assertEqual([], self.javascript_errors())
+
+    def _shown(self):
+        return len(
+            [
+                card
+                for card in self.browser.find_elements(
+                    By.CSS_SELECTOR, "#nft-list > .fitem"
+                )
+                if card.is_displayed()
+            ]
+        )

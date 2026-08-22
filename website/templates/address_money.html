@@ -145,7 +145,11 @@
   <p class="band-note">Drag to reorder. A pin remembers the position, not the number.</p>
 </section>
 
-<section class="section asasec" id="asa-section">
+{% comment %} `data-initial` is how many rows show before "Show more", and how
+   many each press adds. Published from `ADDRESS_INITIAL_ASSETS` so the fold the
+   template renders and every fold `toolbar.js` renders afterwards are one rule
+   rather than two copies of it. {% endcomment %}
+<section class="section asasec" id="asa-section" data-initial="{{ ADDRESS_INITIAL_ASSETS }}">
   <div class="section-head">
     <h2 class="eyebrow">Assets</h2>
     <span class="count num">{{ account.asaitems|length }}</span>
@@ -158,7 +162,7 @@
     <span><b>A dotted figure</b> opens what it is made of, here on the page.</span>
     <span>A plain figure is just the figure.</span>
   </p>
-  {% with shown=account.asaitems|visible_count %}
+  {% with shown=ADDRESS_INITIAL_ASSETS %}
   <div class="rows{% if compact %} cards{% endif %}" id="asset-list" data-folding>
     {% for asaitem in account.asaitems %}
       {% include "snippets/money/asset.html" with asaitem=asaitem colors=colors shown=shown index=forloop.counter0 %}
@@ -173,7 +177,7 @@
      answer through a fallback, but a fallback is not where this belongs.
   {% endcomment %}
   {% if account.asaitems|length > shown %}
-    {% include "snippets/show_more.html" with hidden=account.asaitems|hidden_count noun="assets" %}
+    {% include "snippets/show_more.html" with hidden=account.asaitems|beyond:shown noun="assets" %}
   {% endif %}
   {% comment %} Where "Group: by venue" builds its list. Empty and hidden: the
      venue cards are assembled in the browser by *moving* each `.pgroup` out of

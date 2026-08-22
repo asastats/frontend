@@ -2506,13 +2506,21 @@ div.socfooter {
 }
 
 /* ---- charts panel --------------------------------------------------------- */
-.money-page .charts {
+/* `.chart-panel`, not `.charts`. Design 1 declares an unscoped
+   `.charts { display: grid }` that goes two-column at 768px, and this panel is
+   a `<details>` -- so it inherited that grid, put its `<summary>` in the first
+   column and the chart grid in the second, and every donut stacked vertically
+   inside a half-width track. Our own class collided with our own stylesheet,
+   which the DaisyUI collision guard could not see because `.charts` *is*
+   declared in `input.css`. `test_money_design_classes.py` now also checks the
+   money templates against design 1's. */
+.money-page .chart-panel {
   margin-top: 1rem;
   border-top: 1px solid var(--color-base-300);
   padding-top: 0.75rem;
 }
 
-.money-page .charts > summary {
+.money-page .chart-panel > summary {
   cursor: pointer;
   list-style: none;
   display: flex;
@@ -2523,11 +2531,11 @@ div.socfooter {
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
 }
 
-.money-page .charts > summary::-webkit-details-marker { display: none; }
+.money-page .chart-panel > summary::-webkit-details-marker { display: none; }
 
-.money-page .charts > summary:hover { color: var(--color-base-content); }
+.money-page .chart-panel > summary:hover { color: var(--color-base-content); }
 
-.money-page .charts[open] > summary .chev { transform: rotate(90deg); }
+.money-page .chart-panel[open] > summary .chev { transform: rotate(90deg); }
 
 .money-page .chev { transition: transform 0.15s ease; }
 
@@ -2663,8 +2671,10 @@ div.socfooter {
    `.chead` and `--col` already apply. What is left is the art beside the facts,
    and the facts themselves, which are the money column one more time. */
 
-/* The collection's initials, where an asset has its icon. */
-.money-page .mono-tile.nft {
+/* The collection's initials, where an asset has its icon. `.collection` rather
+   than the prototype's `.nft`: design 1 owns that name and pairs it with the
+   colour slot (`.nft.cN`), which was matching this tile. */
+.money-page .mono-tile.collection {
   border-radius: 0.375rem;
   font-size: 0.6875rem;
   font-weight: 600;

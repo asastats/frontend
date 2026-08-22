@@ -937,3 +937,30 @@ describe("setCurrency on the money-column designs", function () {
     page.remove();
   });
 });
+
+
+describe("setTotalNoNft on the money-column designs", function () {
+  it('leaves the headline to the toolbar', function () {
+    // It writes `.pricetip` reading design 1's own global `cur` key, so on the
+    // money page the total was written by design 1 on load and by nobody
+    // afterwards: a reader who had ever chosen USD got a USD headline in a
+    // fresh tab, and pressing USD in that page's toolbar changed every figure
+    // except the one at the top.
+    var page = document.createElement("div");
+    page.className = "money-page";
+    var head = document.createElement("span");
+    head.className = "pricetip";
+    head.dataset.price = "0.1";
+    head.dataset.pricealgo = "0.1";
+    head.dataset.totalwnft = "150";
+    head.dataset.totalnft = "50";
+    head.innerHTML = "150.00 ALGO";
+    page.appendChild(head);
+    document.body.appendChild(page);
+
+    address.setTotalNoNft('y');
+
+    expect(head.innerHTML).toBe("150.00 ALGO");
+    page.remove();
+  });
+});

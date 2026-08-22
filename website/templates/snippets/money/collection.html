@@ -9,8 +9,10 @@
   Two cells differ in what they hold, not in where they are:
 
   * the tile is the collection's initials rather than an asset icon, because a
-    collection has no logo of its own -- `.mono-tile.nft` is the prototype's
-    treatment for exactly this;
+    collection has no logo of its own. The modifier is `.collection`, not the
+    prototype's `.nft`: design 1 owns `.nft` and pairs it with the colour slot
+    in `.nft.cN` rules, which were landing on this tile and setting a `--stripe`
+    nothing here consumes. Two meanings, one name, and one of them is not ours;
   * `.cid-meta` carries the floor/estimate split as a two-part bar, which is
     the one fact about a collection that a single figure cannot express. The
     estimate is what the section totals; the floor is what a marketplace will
@@ -51,7 +53,7 @@
        in the same place as an asset's. {% endcomment %}
     <span></span>
 
-    <span class="mono-tile nft{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">{{ coll.name|collection_tile }}</span>
+    <span class="mono-tile collection{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">{{ coll.name|collection_tile }}</span>
 
     <span class="cid">
       <span class="cid-top">

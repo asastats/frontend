@@ -766,9 +766,22 @@ Load-bearing names:
 ``#toolbar``
    The bound container. ``toolbar.js`` binds its click handler here and on
    ``.band``, not on ``document``, because these controls sit on elements the
-   server renders once. Its ``data-floor`` publishes
-   ``ADDRESS_SECTION_FLOOR`` so the browser re-cuts the load-more rule against
-   the same minimum ``utils/cutoff.py`` applies.
+   server renders once.
+
+``data-initial`` on ``.asasec`` / ``.nftsec``
+   How many rows the section shows, and how many each press of "Show more"
+   adds. From ``ADDRESS_INITIAL_ASSETS`` and ``ADDRESS_INITIAL_COLLECTIONS``,
+   published so the fold the template renders and every fold ``toolbar.js``
+   renders afterwards are one rule rather than two copies.
+
+   These designs do **not** use ``utils/cutoff.py``'s magnitude rule; design 1
+   still does. They briefly carried the prototype's 95%/99%/99.5%/All control,
+   which was only ever a way to demonstrate the page with everything on screen
+   before a load-more existed. "Show me the rows carrying 99.5% of the value"
+   is not a sentence a reader thinks in.
+
+   ``showmore.js`` stands down on ``.money-page`` for the same reason: it
+   reveals a whole tail in one press, and these reveal a batch.
 
 ``data-sort-value`` / ``-amount`` / ``-name`` / ``-positions`` on ``.fitem``
    The sort keys. Rendered rather than read out of the row, because the visible
@@ -802,9 +815,27 @@ Load-bearing names:
 Three rules the toolbar is built around, each of which was arrived at the hard
 way:
 
-**The headline never moves.** No filter, search or category toggle may touch
-``.total``. A reader who hides a category has not become poorer; everything
-below the headline is a subtotal and is free to respond.
+**No filter moves the headline** -- but the currency does. A reader who hides a
+category has not become poorer, so no filter, search or category toggle may
+touch ``.total``. A *currency* is not a filter: it is the unit the whole page is
+denominated in, and a page whose every figure says USD above a total saying ALGO
+is not showing a total at all. "Total without NFTs" moves it too, legitimately,
+because it changes what is being totalled rather than how it is shown.
+
+Getting that distinction wrong is what left the money column's headline written
+by ``address.js`` on load and by nobody afterwards -- so a reader who had ever
+chosen USD anywhere met a USD total above ALGO figures.
+
+**Currency, auto-refresh and "without NFTs" are the reader's, not the
+address's.** They live in design 1's own top-level keys (``cur``,
+``refresh``, ``totalnonft``), so both designs and every open tab agree about
+them; only what is filtered, sorted and grouped is stored per address under
+``view:<path>``. "Reset view" restores the view and leaves those alone.
+
+**The band's readout says what the visible categories come to.** The headline
+holding still is right and leaves a reader who switched DeFi off with no way to
+see what the rest adds up to. ``#band-readout`` is that number, and it appears
+only when it differs from the headline.
 
 **A switched-off category keeps its figure and its width.** Zeroing it would
 say "you hold none" when what happened is "you hid it" --- and a bar segment

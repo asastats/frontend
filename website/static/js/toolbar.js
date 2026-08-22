@@ -34,8 +34,10 @@
  *   `pins.js`     owns the *order*. Sorting does not reorder the DOM directly;
  *                 it hands `pins.rebase` a new baseline and lets pinning apply
  *                 on top, so a pinned row stays pinned through a sort.
- *   `showmore.js` owns the fold. The cutoff segments decide which rows carry
- *                 `.folded`; the control that reveals them is still its.
+ *   `showmore.js` owned the fold and no longer does here. It reveals a whole
+ *                 tail in one press, which is design 1's rule; these designs
+ *                 show a fixed first batch and add one batch per press, so it
+ *                 stands down on `.money-page` and this file folds instead.
  *   `money.js`    owns the donuts. The toolbar hands it filtered slice data and
  *                 asks it to redraw.
  *
@@ -60,6 +62,25 @@
   /** Marks the container while the venue grouping is assembled. */
   var VENUE_CLASS = "grouped-by-venue";
 
+  /**
+   * Settings that belong to the *reader*, not to this address.
+   *
+   * Kept in their own top-level keys, and in design 1's keys deliberately, so
+   * both designs and every open tab agree about them. A reader who picks USD
+   * means USD -- not "USD on this address". The page-level view (what is
+   * filtered, sorted and grouped) stays under `view:<path>`, because that
+   * genuinely is about one address.
+   *
+   * `refresh` is design 1's too, and reading it is what makes auto-refresh work
+   * here at no cost: `address.js` already runs the timer and reloads when this
+   * key says to.
+   */
+  var SHARED = {
+    ccy: "cur",
+    nonft: "totalnonft",
+    refresh: "refresh",
+  };
+
   /** The four categories that describe a *position*. NFT is a section. */
   var CATEGORIES = ["balance", "staked", "liquidity", "defi"];
 
@@ -77,11 +98,14 @@
     group: "asset",
     sort: "value",
     dir: -1,
-    ccy: "ALGO",
-    cut: 0.995,
     cats: CATEGORIES.slice(),
     nft: true,
+    // Extra batches of rows revealed, per section. "Show more" adds one.
+    more: { asa: 0, nft: 0 },
   };
+
+  /** Defaults for the reader-level settings, which "Reset view" does not touch. */
+  var SHARED_DEFAULTS = { ccy: "ALGO", nonft: false, refresh: false };
 
   var state = null;
 
@@ -115,10 +139,18 @@
    */
   function readView() {
     var stored = {};
+    var settings = {};
+    // One try for every read. A store that refuses one refuses them all -- a
+    // private window, cleared site data, a browser set to block it -- so a
+    // second catch further down would be a branch nothing can reach.
     try {
       stored = JSON.parse(window.localStorage.getItem(viewKey())) || {};
+      Object.keys(SHARED).forEach(function (name) {
+        settings[name] = window.localStorage.getItem(SHARED[name]) || "";
+      });
     } catch (error) {
       stored = {};
+      settings = {};
     }
     if (!stored || typeof stored !== "object") stored = {};
 
@@ -133,13 +165,42 @@
       group: stored.group === "venue" ? "venue" : "asset",
       sort: SORTS[stored.sort] ? stored.sort : DEFAULTS.sort,
       dir: stored.dir === 1 ? 1 : -1,
-      ccy: stored.ccy === "USD" ? "USD" : "ALGO",
-      cut: [0.95, 0.99, 0.995, 1].indexOf(stored.cut) !== -1 ? stored.cut : DEFAULTS.cut,
       // An empty stored array is a reader who switched every category off, and
       // is not the same as no stored array at all.
       cats: cats ? cats : DEFAULTS.cats.slice(),
       nft: stored.nft === false ? false : true,
+      more: {
+        asa: batches(stored.more && stored.more.asa),
+        nft: batches(stored.more && stored.more.nft),
+      },
+      // Read from their own keys, not from this address's view. See SHARED.
+      ccy: settings.ccy === "USD" ? "USD" : "ALGO",
+      nonft: settings.nonft === "y",
+      refresh: settings.refresh === "y",
     };
+  }
+
+  /**
+   * @param {*} value - a stored batch count.
+   * @returns {number} it as a non-negative whole number, or 0.
+   */
+  function batches(value) {
+    var count = parseInt(value, 10);
+    return isFinite(count) && count > 0 ? count : 0;
+  }
+
+  /**
+   * Persist one reader-level setting to the key both designs read.
+   *
+   * @param {string} name - a key of `SHARED`.
+   * @param {string} value - what to store.
+   */
+  function writeShared(name, value) {
+    try {
+      window.localStorage.setItem(SHARED[name], value);
+    } catch (error) {
+      // See `writeView`: losing persistence costs the next visit, not this one.
+    }
   }
 
   /**
@@ -150,9 +211,21 @@
    * anything" is answerable without comparing objects.
    */
   function writeView() {
+    writeShared("ccy", state.ccy);
+    writeShared("nonft", state.nonft ? "y" : "");
+    writeShared("refresh", state.refresh ? "y" : "");
     try {
       if (isDefault()) window.localStorage.removeItem(viewKey());
-      else window.localStorage.setItem(viewKey(), JSON.stringify(state));
+      else {
+        // The reader-level settings are stored under their own keys above;
+        // writing them here too would give one setting two homes that can
+        // disagree.
+        var view = {};
+        Object.keys(DEFAULTS).forEach(function (key) {
+          view[key] = state[key];
+        });
+        window.localStorage.setItem(viewKey(), JSON.stringify(view));
+      }
     } catch (error) {
       // A full or disabled store costs persistence, not the page. Every
       // control still works for as long as this tab is open.
@@ -168,9 +241,9 @@
       state.group === DEFAULTS.group &&
       state.sort === DEFAULTS.sort &&
       state.dir === DEFAULTS.dir &&
-      state.ccy === DEFAULTS.ccy &&
-      state.cut === DEFAULTS.cut &&
       state.nft === DEFAULTS.nft &&
+      state.more.asa === 0 &&
+      state.more.nft === 0 &&
       state.cats.length === CATEGORIES.length
     );
   }
@@ -354,63 +427,27 @@
   // -- the load-more rule ---------------------------------------------------
 
   /**
-   * Return how many of `values` account for `state.cut` of their own weight.
+   * Return how many rows a section shows.
    *
-   * The same rule `utils/cutoff.py` applies server-side, restated here because
-   * the toolbar re-cuts against *filtered* values: hide two categories and the
-   * remaining rows carry a different share of a different total, so the server's
-   * fold is answering a question the reader has stopped asking.
+   * A plain count: the first `ADDRESS_INITIAL_*` rows, plus one batch of the
+   * same size for every press of "Show more". Not the magnitude rule design 1
+   * uses, and not the prototype's 95%/99%/99.5%/All control -- that was a way
+   * to *demonstrate* the page with everything on screen before a load-more
+   * existed, and "show me the rows carrying 99.5% of the value" is not a
+   * sentence a reader thinks in.
    *
-   * Magnitude, not value: a borrow is a real position and belongs in the count
-   * of what matters, and a negative would otherwise shrink the running total
-   * and push the cutoff further down the list.
+   * The numbers come from the server (`data-initial-*` on the section), so the
+   * first fold the template renders and every fold after it are the same rule
+   * rather than two copies of it.
    *
-   * @param {number[]} values - the live values, already sorted as displayed.
+   * @param {Element} section - the section element.
+   * @param {string} key - "asa" or "nft".
    * @returns {number} how many rows to show.
    */
-  function cutoff(values) {
-    if (state.cut >= 1) return values.length;
-
-    var weights = values.map(Math.abs).sort(function (a, b) {
-      return b - a;
-    });
-    var weight = weights.reduce(function (sum, value) {
-      return sum + value;
-    }, 0);
-    // Every row worth nothing: no row is more worth showing than any other, so
-    // the floor decides rather than the ratio -- which is `utils/cutoff.py`'s
-    // answer too, and 0/0 has no other sensible one.
-    if (!weight) return values.length;
-
-    // Stops one short of the end, and returns the full length instead. The last
-    // row always satisfies the cut -- by then the running total *is* the weight
-    // -- so testing it would be asking a question with one possible answer, and
-    // the line that answered it could never be reached.
-    var run = 0;
-    for (var i = 0; i < weights.length - 1; i += 1) {
-      run += weights[i];
-      // Never below the floor: a wallet holding one large asset and eight small
-      // ones would otherwise fold to a single row, which costs the reader more
-      // than it saves them. `utils/cutoff.py` applies the same minimum.
-      if (run / weight >= state.cut) return Math.max(i + 1, Math.min(floor(), values.length));
-    }
-    return values.length;
-  }
-
-  /**
-   * Return the load-more rule's floor, as the server published it.
-   *
-   * Not guarded on the toolbar existing: this is reachable only from `cutoff`,
-   * which runs only from `render`, which runs only once `init` has found a
-   * toolbar. A guard here would be a check against a state the file has already
-   * refused to be in, and there would be no way to test it.
-   *
-   * @returns {number} the floor, or 0 if the page published none.
-   */
-  function floor() {
-    var published = document.getElementById("toolbar").getAttribute("data-floor");
-    var value = parseInt(published, 10);
-    return isFinite(value) ? value : 0;
+  function limit(section, key) {
+    var initial = parseInt(section.getAttribute("data-initial"), 10);
+    if (!isFinite(initial) || initial < 1) initial = 1;
+    return initial * (1 + state.more[key]);
   }
 
   // -- rendering ------------------------------------------------------------
@@ -484,33 +521,79 @@
       return live[card.id];
     });
 
-    var keep = cutoff(
-      displayed.map(function (card) {
-        return view.values[card.id];
-      })
-    );
-
     assets().forEach(function (card) {
       card.classList.toggle(HIDDEN_CLASS, !live[card.id]);
     });
+
+    var keep = fold(".asasec", "asa", displayed, "asset");
+    // Grouping by venue puts a different list on screen, so the control that
+    // unfolds this one has nothing to say.
+    if (state.group === "venue") {
+      var control = document.querySelector(".money-page .asasec [data-show-more]");
+      if (control) control.parentNode.hidden = true;
+    }
+
+    return { shown: keep, total: view.rows.length };
+  }
+
+  /**
+   * Fold one section's tail and put the count on its control.
+   *
+   * Shared by the two sections because they are the same rule applied to
+   * different lists -- and because a second copy is how the assets and the
+   * collections come to disagree about what "show more" means.
+   *
+   * @param {string} selector - the section's class selector.
+   * @param {string} key - "asa" or "nft".
+   * @param {Element[]} displayed - its rows, filtered, in display order.
+   * @param {string} noun - what one row is, for the label.
+   * @returns {number} how many rows are showing.
+   */
+  function fold(selector, key, displayed, noun) {
+    var section = document.querySelector(".money-page " + selector);
+    if (!section) return displayed.length;
+
+    var keep = Math.min(limit(section, key), displayed.length);
     displayed.forEach(function (card, index) {
       card.classList.toggle("folded", index >= keep);
     });
 
     var hidden = displayed.length - keep;
-    var control = document.querySelector(".money-page .asasec [data-show-more]");
+    var control = section.querySelector("[data-show-more]");
     if (control) {
       var label = control.querySelector(".show-more-open");
       if (label) {
-        label.textContent = "Show " + hidden + " more asset" + (hidden === 1 ? "" : "s");
+        // What the next press reveals, not the whole tail. "Show 20 more" is a
+        // promise the control keeps; "Show 56 more" over a control that reveals
+        // twenty is not.
+        var batch = parseInt(section.getAttribute("data-initial"), 10);
+        var next = Math.min(hidden, isFinite(batch) && batch > 0 ? batch : hidden);
+        label.textContent =
+          "Show " + next + " more " + noun + (next === 1 ? "" : "s");
       }
-      // Nothing folded means nothing to reveal, and grouping by venue means the
-      // list it unfolds is not the one on screen. Left in the document rather
+      // Nothing folded means nothing to reveal. Left in the document rather
       // than removed, because the next keystroke may fold rows again.
-      control.parentNode.hidden = hidden <= 0 || state.group === "venue";
+      control.parentNode.hidden = hidden <= 0;
     }
+    return keep;
+  }
 
-    return { shown: Math.min(keep, displayed.length), total: view.rows.length };
+  /**
+   * Fold the NFT section, which the toolbar owns for the same reason.
+   *
+   * `showmore.js` is design 1's and reveals a section's whole tail in one
+   * press; these designs reveal a batch at a time, so it no longer binds here.
+   */
+  function paintCollections() {
+    var list = document.getElementById("nft-list");
+    if (!list) return;
+
+    var displayed = Array.prototype.slice
+      .call(list.children)
+      .filter(function (card) {
+        return !card.classList.contains(HIDDEN_CLASS);
+      });
+    fold(".nftsec", "nft", displayed, "collection");
   }
 
   /**
@@ -583,6 +666,116 @@
     element.classList.toggle("neg", algo < 0);
     var unit = element.querySelector(".unit");
     if (unit) unit.textContent = state.ccy;
+  }
+
+  /**
+   * Write the headline, and the line under it.
+   *
+   * The one figure no *filter* may move -- a reader who hides a category has
+   * not become poorer -- but the currency is not a filter. It is the unit the
+   * whole page is denominated in, and a page whose every figure says USD above
+   * a total that says ALGO is not showing a total at all. That was the reading
+   * this file got wrong.
+   *
+   * "Total without NFTs" moves it legitimately, because it changes *what is
+   * being totalled* rather than how it is displayed. It is design 1's setting
+   * and design 1's storage key, so the two pages agree.
+   *
+   * `.pricetip`'s own data attributes carry both currencies and both totals, so
+   * nothing here recomputes from rendered text.
+   *
+   * @param {object} view - the result of `evaluate`.
+   */
+  function paintTotal(view) {
+    var head = document.querySelector(".money-page .pricetip");
+    if (!head) return;
+
+    var algo = num(head, "data-totalwnft");
+    if (state.nonft) algo -= num(head, "data-totalnft");
+
+    var usd = algo * rate();
+    var inChosen = state.ccy === "USD" ? usd : algo;
+    var other = state.ccy === "USD" ? algo : usd;
+
+    // The unit goes *inside* this element: it is written wholesale, and a
+    // sibling would survive the write and read "216.30 USD ALGO".
+    head.textContent = plain(inChosen) + " " + state.ccy;
+    head.setAttribute(
+      "data-tip",
+      plain(other) + " " + (state.ccy === "USD" ? "ALGO" : "USD")
+    );
+
+    var sub = document.querySelector(".money-page .total-sub .num");
+    if (sub) {
+      sub.textContent =
+        plain(other) +
+        " " +
+        (state.ccy === "USD" ? "ALGO" : "USD") +
+        " at " +
+        rate().toLocaleString("en-US", {
+          minimumFractionDigits: 6,
+          maximumFractionDigits: 6,
+        }) +
+        " USD/ALGO";
+    }
+
+    var note = document.querySelector(".money-page .total-note");
+    if (note) {
+      note.textContent = state.nonft
+        ? "Everything this address holds, except the NFTs."
+        : "Everything this address holds.";
+    }
+  }
+
+  /**
+   * @param {number} value - a figure already in the chosen currency.
+   * @returns {string} it, grouped, to two places.
+   */
+  function plain(value) {
+    return value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  /**
+   * Say what the visible categories add up to.
+   *
+   * The headline is the whole address and does not move, which is right and
+   * also leaves a reader who has switched DeFi off with no way to see what the
+   * rest comes to. This is that number, and it appears only when it differs
+   * from the headline -- an unfiltered page does not need to be told that its
+   * total is its total.
+   *
+   * @param {object} view - the result of `evaluate`.
+   */
+  function paintReadout(view) {
+    var readout = document.getElementById("band-readout");
+    if (!readout) return;
+
+    var head = document.querySelector(".money-page .pricetip");
+    var whole = head ? num(head, "data-totalwnft") : 0;
+    var shown = CATEGORIES.reduce(function (sum, key) {
+      return sum + (state.cats.indexOf(key) === -1 ? 0 : view.totals[key]);
+    }, 0);
+    if (state.nft && head) shown += num(head, "data-totalnft");
+
+    // Compared in ALGO, and loosely: the categories are summed from the rows
+    // and the headline comes from the payload, so they differ in the last
+    // fraction even when nothing is filtered.
+    if (Math.abs(shown - whole) < 0.01) {
+      readout.textContent = "";
+      return;
+    }
+    readout.textContent =
+      "Showing " +
+      fmt(shown) +
+      " " +
+      state.ccy +
+      " of " +
+      fmt(whole) +
+      " " +
+      state.ccy;
   }
 
   /**
@@ -916,8 +1109,9 @@
   function paintControls(counts) {
     press("#tb-group", "data-group", state.group);
     press("#tb-sort", "data-sort", state.sort);
-    press("#tb-cut", "data-cut", String(state.cut));
     press("#tb-ccy", "data-ccy", state.ccy);
+    toggle("#tb-nonft", state.nonft);
+    toggle("#tb-refresh", state.refresh);
 
     var field = document.getElementById("tb-q");
     if (field && field.value !== state.q) field.value = state.q;
@@ -942,6 +1136,17 @@
         ? ""
         : "Showing " + shown.shown + " of " + shown.total + " " + noun + ".";
     }
+  }
+
+  /**
+   * Set one toggle button's pressed state.
+   *
+   * @param {string} selector - the button's id selector.
+   * @param {boolean} on - whether it is on.
+   */
+  function toggle(selector, on) {
+    var button = document.querySelector(selector);
+    if (button) button.setAttribute("aria-pressed", on ? "true" : "false");
   }
 
   /**
@@ -984,7 +1189,10 @@
     var counts = paintAssets(view);
     paintFigures(view);
     paintUnits();
+    paintTotal(view);
     paintBand(view);
+    paintReadout(view);
+    paintCollections();
     paintVenues();
     paintControls(counts);
     writeView();
@@ -1023,13 +1231,24 @@
     var target = event.target;
     if (!target || !target.closest) return false;
 
-    var control = target.closest("[data-group], [data-sort], [data-cut], [data-ccy], [data-band]");
+    var control = target.closest("[data-group], [data-sort], [data-ccy], [data-band]");
     if (control) {
       if (control.hasAttribute("data-group")) state.group = control.getAttribute("data-group");
       else if (control.hasAttribute("data-sort")) state.sort = control.getAttribute("data-sort");
-      else if (control.hasAttribute("data-cut")) state.cut = parseFloat(control.getAttribute("data-cut"));
       else if (control.hasAttribute("data-ccy")) state.ccy = control.getAttribute("data-ccy");
       else toggleCategory(control.getAttribute("data-band"));
+      render();
+      return true;
+    }
+
+    if (target.closest("#tb-nonft")) {
+      state.nonft = !state.nonft;
+      render();
+      return true;
+    }
+
+    if (target.closest("#tb-refresh")) {
+      state.refresh = !state.refresh;
       render();
       return true;
     }
@@ -1052,16 +1271,16 @@
    * Put the view back to what the server rendered.
    */
   function reset() {
-    state = {
-      q: DEFAULTS.q,
-      group: DEFAULTS.group,
-      sort: DEFAULTS.sort,
-      dir: DEFAULTS.dir,
-      ccy: DEFAULTS.ccy,
-      cut: DEFAULTS.cut,
-      cats: DEFAULTS.cats.slice(),
-      nft: DEFAULTS.nft,
-    };
+    // The view, not the reader's settings. Currency, auto-refresh and
+    // "without NFTs" are preferences that follow them across addresses and
+    // tabs; "Reset view" undoes what they did to *this* page.
+    state.q = DEFAULTS.q;
+    state.group = DEFAULTS.group;
+    state.sort = DEFAULTS.sort;
+    state.dir = DEFAULTS.dir;
+    state.cats = DEFAULTS.cats.slice();
+    state.nft = DEFAULTS.nft;
+    state.more = { asa: 0, nft: 0 };
     render();
   }
 
@@ -1099,6 +1318,25 @@
     var band = document.querySelector(".money-page .band");
     if (band) band.addEventListener("click", press);
 
+    // The load-more controls, one per section. `showmore.js` reveals a whole
+    // tail in one press and is design 1's; these designs reveal a batch, so it
+    // stands down here and this takes over.
+    Array.prototype.forEach.call(
+      document.querySelectorAll(".money-page .asasec, .money-page .nftsec"),
+      function (section) {
+        section.addEventListener("click", function (event) {
+          if (event.defaultPrevented) return;
+          var control = event.target.closest
+            ? event.target.closest("[data-show-more]")
+            : null;
+          if (!control) return;
+          event.preventDefault();
+          state.more[section.classList.contains("nftsec") ? "nft" : "asa"] += 1;
+          render();
+        });
+      }
+    );
+
     var field = document.getElementById("tb-q");
     if (field) {
       var typed = function () {
@@ -1128,8 +1366,11 @@
     writeView: writeView,
     viewKey: viewKey,
     evaluate: evaluate,
-    cutoff: cutoff,
+    limit: limit,
     fmt: fmt,
+    paintTotal: paintTotal,
+    paintReadout: paintReadout,
+    paintCollections: paintCollections,
     write: write,
     toVenues: toVenues,
     regroup: regroup,

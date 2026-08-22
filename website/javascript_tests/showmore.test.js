@@ -256,3 +256,26 @@ describe("wiring", () => {
     ).toBe(false);
   });
 });
+
+
+describe("on the money-column designs", () => {
+  test("it stands down entirely", () => {
+    // Those designs show a fixed first batch and add one batch per press,
+    // which is `toolbar.js`'s rule. Two handlers on one control would both act
+    // -- the whole tail revealed *and* the batch counted -- and the second
+    // press would have nothing left to do.
+    const page = document.createElement("div");
+    page.className = "money-page";
+    document.body.appendChild(page);
+    const section = mountSection();
+
+    load();
+
+    // Asserted on the binding rather than on a press: this file's earlier
+    // tests have already left delegated handlers on `document`, and those keep
+    // acting whatever a later execution decides. The attribute is what a fresh
+    // page would see.
+    expect(document.documentElement.hasAttribute("data-showmore-bound")).toBe(false);
+    page.remove();
+  });
+});

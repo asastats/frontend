@@ -27,14 +27,7 @@
   which one is on. The counts beside the sort buttons are filled in by
   `toolbar.js` -- rendering them would be rendering the reader's filter.
 {% endcomment %}
-{% comment %} `data-floor` carries `ADDRESS_SECTION_FLOOR` to the browser so the
-   two implementations of the load-more rule cannot drift. `utils/cutoff.py`
-   never hides a section down to fewer rows than this -- a threshold alone would
-   leave a wallet holding one large asset and eight small ones showing a single
-   row, which is a fold that costs more than it saves. The toolbar re-cuts the
-   same list against filtered values and has to honour the same floor.
-{% endcomment %}
-<div class="toolbar" id="toolbar" data-floor="{{ ADDRESS_SECTION_FLOOR }}">
+<div class="toolbar" id="toolbar">
   <div class="tb-wrap">
     <label class="field" role="search">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
@@ -64,28 +57,37 @@
             title="Reverse the sort direction">↓ Desc</button>
 
     {% comment %} No spacer between the two halves. There was one -- the
-       prototype pushes "Show" and the currency to the right edge -- and with
-       thirteen controls the row wraps on any realistic width, so all it
-       achieved was a gap in the middle of the first line and two lonely
-       controls on the second. Packed left, a wrapped row reads as one block.
-    {% endcomment %}
-    <span class="tb-label" id="tb-cut-label">Show</span>
-    {% comment %} The load-more rule, made adjustable. The server folds at
-       `ADDRESS_SECTION_THRESHOLD` (99.5%) and renders the tail `.folded`;
-       these re-cut the same list in the browser against the *filtered* values,
-       which is why the server's own fold cannot simply be left in place.
-    {% endcomment %}
-    <div class="seg" id="tb-cut" role="group" aria-labelledby="tb-cut-label">
-      <button type="button" data-cut="0.95" aria-pressed="false">95%</button>
-      <button type="button" data-cut="0.99" aria-pressed="false">99%</button>
-      <button type="button" data-cut="0.995" aria-pressed="true">99.5%</button>
-      <button type="button" data-cut="1" aria-pressed="false">All</button>
-    </div>
+       prototype pushes the right-hand controls to the edge -- and with a dozen
+       of them the row wraps on any realistic width, so all it achieved was a
+       gap in the middle of the first line and two lonely controls on the
+       second. Packed left, a wrapped row reads as one block.
 
+       There is no 95%/99%/99.5%/All control here any more. The prototype has
+       one and it was never a setting: it existed to *demonstrate* the page with
+       everything on screen, before a load-more did. "Show me the rows carrying
+       99.5% of the value" is not a sentence a reader thinks in. Each section
+       now shows a fixed first batch and offers the next -- see
+       `ADDRESS_INITIAL_ASSETS` and `ADDRESS_INITIAL_COLLECTIONS`.
+    {% endcomment %}
     <div class="seg" id="tb-ccy" role="group" aria-label="Currency">
       <button type="button" data-ccy="ALGO" aria-pressed="true">ALGO</button>
       <button type="button" data-ccy="USD" aria-pressed="false">USD</button>
     </div>
+
+    {% comment %} Two settings design 1 has and this design was missing. Both
+       are the reader's rather than this address's, so both are stored under
+       design 1's own keys -- a reader who turns auto-refresh on means on, not
+       "on for this address".
+
+       `refresh` is read by the timer already running in `address.js`, so
+       writing that key is the whole implementation. Toggle buttons rather than
+       checkboxes to match every other control in this row; `aria-pressed`
+       carries the state either way.
+    {% endcomment %}
+    <button class="ghost" id="tb-nonft" type="button" aria-pressed="false"
+            title="Leave NFTs out of the total">Without NFTs</button>
+    <button class="ghost" id="tb-refresh" type="button" aria-pressed="false"
+            title="Reload this page about once a minute while you leave it open">Auto-refresh</button>
 
     <button class="ghost" id="tb-reset" type="button" disabled>Reset view</button>
   </div>
