@@ -30,6 +30,9 @@
   /** Marks the panel bound, so a second execution cannot double-bind. */
   var BOUND_ATTR = "data-money-bound";
 
+  /** The same guard for the delegated breakdown handler, on the root element. */
+  var BREAKDOWN_ATTR = "data-money-breakdowns-bound";
+
   /** Radii of the ring, in the 120x120 user space the viewBox sets up. */
   var INNER = 34;
   var OUTER = 56;
@@ -263,13 +266,61 @@
   }
 
   /**
-   * Bind the charts panel.
+   * Open or close one position's breakdown.
    *
-   * Drawn on first open rather than on load, and only once: the payload does
-   * not change while the page is open, so redrawing on every toggle would
-   * rebuild several hundred nodes to show the same picture.
+   * The third level of the page: what the figure in the money column is made
+   * of. `address.js` has a handler of the same name for design 1 and it does
+   * not work here -- it toggles a `hidden` *class*, while this design hides the
+   * panel with the `hidden` *attribute*, so the class went on and the panel
+   * stayed shut. The control looked exactly right, dotted and inviting, and did
+   * nothing; `functional_tests/test_address_money_page.py` is what caught it.
+   * `address.js` no longer binds to `.money-page .tdist` for that reason.
+   *
+   * The control is a real button carrying `aria-expanded`, so the state is set
+   * here too. Design 1's control is a span and has none, which is the other
+   * half of why the two cannot share a handler.
+   *
+   * @param {Element} control - the pressed `.tdist` button.
+   */
+  function toggleBreakdown(control) {
+    var panel = document.getElementById(control.getAttribute("data-distid"));
+    if (!panel) return;
+
+    panel.hidden = !panel.hidden;
+    control.setAttribute("aria-expanded", panel.hidden ? "false" : "true");
+  }
+
+  /**
+   * Bind the breakdown controls.
+   *
+   * Delegated from the document, so the rows `pins.js` moves -- and any that
+   * arrive with an htmx partial -- need no rebinding. Guarded on the root
+   * element for the same reason `showmore.js` guards there: this file can run
+   * twice, and a second set of handlers would open and immediately close.
+   */
+  function breakdowns() {
+    if (document.documentElement.hasAttribute(BREAKDOWN_ATTR)) return;
+    document.documentElement.setAttribute(BREAKDOWN_ATTR, "true");
+
+    document.addEventListener("click", function (event) {
+      var control = event.target.closest
+        ? event.target.closest(".tdist[data-distid]")
+        : null;
+      if (!control) return;
+      toggleBreakdown(control);
+    });
+  }
+
+  /**
+   * Bind the charts panel and the breakdown controls.
+   *
+   * The charts are drawn on first open rather than on load, and only once: the
+   * payload does not change while the page is open, so redrawing on every
+   * toggle would rebuild several hundred nodes to show the same picture.
    */
   function init() {
+    breakdowns();
+
     var panel = document.getElementById("charts");
     var grid = document.getElementById("charts-grid");
     if (!panel || !grid || panel.hasAttribute(BOUND_ATTR)) return;
@@ -298,5 +349,7 @@
     chart: chart,
     draw: draw,
     init: init,
+    breakdowns: breakdowns,
+    toggleBreakdown: toggleBreakdown,
   };
 })();

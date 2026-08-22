@@ -413,3 +413,125 @@ describe("closing the panel", () => {
     expect(grid.children.length).toBe(1);
   });
 });
+
+describe("the breakdown controls", () => {
+  /**
+   * Mount one position row with a `.tdist` control and its panel.
+   *
+   * The panel is hidden with the `hidden` *attribute*, which is the shape the
+   * money-column template renders and the reason design 1's handler could
+   * never open it -- that one toggles a `hidden` class, so it went on and the
+   * panel stayed shut with the control reporting success.
+   *
+   * @param {string} id - the panel's id.
+   * @returns {{control: Element, panel: Element}}
+   */
+  function mountBreakdown(id) {
+    const control = document.createElement("button");
+    control.type = "button";
+    control.className = "amt tdist val";
+    control.setAttribute("data-distid", id);
+    control.setAttribute("aria-expanded", "false");
+
+    const panel = document.createElement("div");
+    panel.id = id;
+    panel.className = "dist";
+    panel.hidden = true;
+
+    document.body.appendChild(control);
+    document.body.appendChild(panel);
+    return { control, panel };
+  }
+
+  test("pressing the control opens the breakdown and says so", () => {
+    const money = load();
+    money.init();
+    const { control, panel } = mountBreakdown("dist-1-abc");
+
+    control.click();
+
+    expect(panel.hidden).toBe(false);
+    expect(control.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  test("pressing it again closes the breakdown", () => {
+    const money = load();
+    money.init();
+    const { control, panel } = mountBreakdown("dist-1-def");
+
+    control.click();
+    control.click();
+
+    expect(panel.hidden).toBe(true);
+    expect(control.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  test("pressing something inside the control still opens it", () => {
+    // The control carries an icon in the page; a click lands on the child, and
+    // `closest` is what walks back up to the button that owns the state.
+    const money = load();
+    money.init();
+    const { control, panel } = mountBreakdown("dist-1-ghi");
+    const inner = document.createElement("span");
+    control.appendChild(inner);
+
+    inner.click();
+
+    expect(panel.hidden).toBe(false);
+  });
+
+  test("a click on anything else is left alone", () => {
+    const money = load();
+    money.init();
+    const { panel } = mountBreakdown("dist-1-jkl");
+    const elsewhere = document.createElement("div");
+    document.body.appendChild(elsewhere);
+
+    elsewhere.click();
+
+    expect(panel.hidden).toBe(true);
+  });
+
+  test("a click whose target cannot be walked up from is ignored", () => {
+    // `document` is a legitimate event target and has no `closest`. Reached in
+    // a browser by a programmatic dispatch, and it must not throw -- this
+    // handler sits on every click the page receives.
+    const money = load();
+    money.init();
+
+    expect(() =>
+      document.dispatchEvent(new window.Event("click", { bubbles: true })),
+    ).not.toThrow();
+  });
+
+  test("a control pointing at no panel does nothing rather than throwing", () => {
+    // A stale `data-distid` -- a breakdown that stopped being rendered while
+    // the control stayed. Silent is right here: there is nothing to show and
+    // nothing a reader could do about it.
+    const money = load();
+    const orphan = document.createElement("button");
+    orphan.className = "tdist";
+    orphan.setAttribute("data-distid", "dist-nothing-here");
+    orphan.setAttribute("aria-expanded", "false");
+    document.body.appendChild(orphan);
+
+    expect(() => money.toggleBreakdown(orphan)).not.toThrow();
+    expect(orphan.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  test("a second binding does not open and immediately close", () => {
+    // The failure this guards against is silent: two delegated handlers toggle
+    // twice per click and the control simply looks dead. `pins.js` and
+    // `showmore.js` guard the same way and for the same reason -- an htmx
+    // partial on this page can run the file again.
+    const money = load();
+    money.init();
+    money.breakdowns();
+    money.breakdowns();
+    const { control, panel } = mountBreakdown("dist-1-mno");
+
+    control.click();
+
+    expect(panel.hidden).toBe(false);
+  });
+});

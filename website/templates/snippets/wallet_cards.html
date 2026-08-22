@@ -1,7 +1,11 @@
 <p>Prove control of the address by signing a 0&nbsp;ALGO message. Nothing is
   sent to the blockchain and there is no fee.</p>
 
-<div id="app-error" class="rounded-box bg-base-100 p-5 shadow-sm alert alert-error" style="display:none">
+{# `role="alert"` because the bundle reveals this after load, by assigning     #}
+{# `style.display = "block"`. Without the role a reader using a screen reader  #}
+{# is told nothing at all: the element was already on the page, so its         #}
+{# becoming visible is not itself an announcement.                             #}
+<div id="app-error" role="alert" class="rounded-box bg-base-100 p-5 shadow-sm alert alert-error" style="display:none">
   Wallet connector failed to load. Please reload the page or use the manual
   transaction option below.
 </div>

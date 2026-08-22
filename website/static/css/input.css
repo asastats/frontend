@@ -2827,9 +2827,16 @@ div.socfooter {
   grid-template-columns: minmax(0, 1fr) var(--col) 26px;
   gap: 0.75rem;
   align-items: baseline;
-  padding: 0.4375rem 0.5rem 0.4375rem 0;
+  /* The hover background bleeds half a rem past the content on *both* sides,
+     which is what the negative margins are for. Without the right-hand one the
+     padding has nothing to cancel and eats into the grid instead, so the money
+     column here ended 8px to the left of the venue subtotal directly above it
+     -- the two figures a reader is meant to add up, in two different columns.
+     `functional_tests/test_address_money_page.py` measures it. Both margins
+     stay inside `.cbody-inner`, whose own padding is 0.875rem. */
+  padding: 0.4375rem 0.5rem;
   margin-left: -0.5rem;
-  padding-left: 0.5rem;
+  margin-right: -0.5rem;
   border-radius: 0.4375rem;
   transition: background 0.1s ease;
 }

@@ -68,7 +68,13 @@ function mainAddress() {
   $(".totalnonft").find("input[type=checkbox]").on("change", toggleTotalNoNft);
   $(".price").on("click", togglePrice);
   $(".unitprice").on("click", toggleUnitPrice);
-  $(".tdist").on("click", toggleDist);
+  // Design 1's breakdown controls only. The money-column designs use the same
+  // `.tdist` idiom -- dotted at rest, opens in place -- but hide their panel
+  // with the `hidden` *attribute* and carry `aria-expanded` on a real button,
+  // neither of which this handler touches. Bound here as well, the two would
+  // fight: `money.js` clears the attribute while this adds the `hidden` class,
+  // and the panel stays shut with both designs believing it opened.
+  $(".tdist").not(".money-page .tdist").on("click", toggleDist);
   $(window).on("scroll", toggleScrollToTopButton);
   $("#scroll-to-top").on("click", scrollToTop);
   toggleScrollToTopButton();

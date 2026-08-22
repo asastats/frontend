@@ -63,12 +63,17 @@
     </div>
   </section>
 
-  {% comment %} Page-level failure: the wallet list itself could not be
-     fetched, so neither section above can work. `role="alert"` is what makes it
-     interrupt rather than wait to be noticed. {% endcomment %}
-  <div id="app-error" class="alert alert-error" style="display:none" role="alert">
-    Something went wrong initializing wallets.
-  </div>
+  {% comment %} There is no `#app-error` here, and that is deliberate.
+
+     `snippets/wallet_cards.html` -- included by the Algorand section above --
+     already renders one, and `main.ts` reveals it with
+     `document.getElementById("app-error")`, which returns the *first* in
+     document order. A second one here was therefore a duplicate id whose only
+     effect was to be invalid HTML: the bundle never reached it, so a page that
+     could not fetch its wallet list showed the snippet's banner and left this
+     one hidden forever. `functional_tests/test_profile_link_address.py` pins
+     that there is exactly one.
+  {% endcomment %}
 
   <div>
     <a class="btn btn-ghost" href="{% url 'profile_addresses' %}">Back</a>

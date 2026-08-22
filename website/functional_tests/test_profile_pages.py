@@ -182,3 +182,159 @@ class SettingsPageTest(FunctionalTest):
                     ),
                     f"{field_id} has no label",
                 )
+
+
+class LinkedAddressActionsTest(FunctionalTest):
+    """The button hierarchy has to survive an htmx swap.
+
+    Every action on this page was a plain `btn`, so "Remove" -- irreversible,
+    and the one thing here that asks for confirmation -- looked exactly like
+    "Make primary", and "Add address", the reason most people open the page,
+    looked like neither. One primary per view, destructive actions marked, the
+    rest quiet.
+
+    What makes it worth a functional test rather than a template one is the
+    swap: `profile_addresses_action` re-renders `#address_list` server-side
+    after every operation, so the classes are set again by the partial rather
+    than surviving in the DOM. A hierarchy that lives only in the full-page
+    template disappears the first time a reader presses anything.
+
+    The rows are created directly. Linking one through the wallet flow needs a
+    signature from a real wallet, which is not something a functional test can
+    produce, and none of it is what is under test here.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.create_cookie_and_go_to_index_page_tier("rows2@example.com", permission=100)
+        self._add_addresses()
+        self.browser.get(self.server_url + reverse("profile_addresses"))
+
+    def _add_addresses(self):
+        """Give the fixture user a primary and one secondary that can log in."""
+        from django.contrib.auth import get_user_model
+
+        from walletauth.models import LinkedAddress
+
+        profile = get_user_model().objects.get(username="rows2@example.com").profile
+        for address, primary in (
+            ("PRIMARYADDRESS2222222222222222222222222222222222222222AAAA", True),
+            ("SECONDADDRESS33333333333333333333333333333333333333333BBBB", False),
+        ):
+            LinkedAddress.objects.create(
+                profile=profile,
+                address=address,
+                canonical_address=address,
+                chain="algorand",
+                auth_method="algorand_wallet",
+                is_primary=primary,
+                login_enabled=True,
+            )
+
+    def _row(self, index=1):
+        """Return one address row, opened so its controls have geometry."""
+        rows = [
+            row
+            for row in self.browser.find_elements(
+                By.CSS_SELECTOR, ".connected-address-row"
+            )
+            if row.get_attribute("id")
+        ]
+        row = rows[index]
+        self.browser.execute_script(
+            "arguments[0].querySelector('details').open = true;", row
+        )
+        return row
+
+    def _classes(self, row):
+        """Return each action's label mapped to its class list."""
+        return {
+            button.text.strip(): button.get_attribute("class")
+            for button in row.find_elements(By.CSS_SELECTOR, ".address-actions button")
+        }
+
+    def test_the_primary_row_offers_nothing_to_press(self):
+        """It cannot be removed, demoted, or have its login disabled.
+
+        Rendering the controls disabled would be worse: three dead buttons say
+        the operations exist and are being refused.
+        """
+        row = self._row(0)
+
+        self.assertFalse(row.find_elements(By.CSS_SELECTOR, ".address-actions button"))
+        self.assertIn("This is your primary address", row.text)
+
+    def test_remove_is_marked_destructive_and_make_primary_is_not(self):
+        classes = self._classes(self._row())
+
+        self.assertIn("btn-error", classes["Remove"])
+        self.assertNotIn("btn-error", classes["Make primary"])
+        # Outline, not filled: findable without being the most inviting thing
+        # in the row.
+        self.assertIn("btn-outline", classes["Remove"])
+
+    def test_add_address_is_the_only_primary_action_on_the_page(self):
+        """One filled button per view, and it is the reason people came."""
+        filled = [
+            control.text.strip()
+            for control in self.browser.find_elements(By.CSS_SELECTOR, "main .btn-primary")
+        ]
+
+        self.assertEqual(["Add address"], filled)
+
+    def test_the_hierarchy_comes_back_after_an_htmx_swap(self):
+        """The assertion this class exists for.
+
+        "Disable login" is the operation to press: it reduces privilege, so the
+        server needs no step-up signature, and it carries no `hx-confirm` to
+        interrupt. What comes back is a freshly rendered list.
+        """
+        row = self._row()
+        self.assertIn("Disable login", self._classes(row))
+
+        row.find_element(
+            By.XPATH, ".//button[normalize-space()='Disable login']"
+        ).click()
+
+        # Waited for in the DOM, not in the rendered text: the swapped-in rows
+        # arrive as freshly closed `<details>`, so their controls are present
+        # and invisible, and `.text` reports only the summaries. The handle is
+        # re-fetched for the same reason it is waited for -- the element the
+        # click was made on no longer exists.
+        self.wait_until(
+            lambda: self.browser.find_elements(
+                By.XPATH, "//button[normalize-space()='Enable login']"
+            )
+        )
+        classes = self._classes(self._row())
+
+        self.assertIn("btn-error", classes["Remove"])
+        self.assertIn("btn-outline", classes["Make primary"])
+        self.assertNotIn("btn-primary", classes["Enable login"])
+
+    def test_removing_an_address_asks_first(self):
+        """`hx-confirm` is the real guard; the colour is only a warning.
+
+        Dismissing the dialog has to leave the address alone -- a confirmation
+        that fires after the fact is worse than none.
+        """
+        row = self._row()
+        row.find_element(By.XPATH, ".//button[normalize-space()='Remove']").click()
+
+        alert = self.browser.switch_to.alert
+        self.assertIn("Remove this address", alert.text)
+        alert.dismiss()
+
+        self.assertEqual(
+            2,
+            len(
+                [
+                    r
+                    for r in self.browser.find_elements(
+                        By.CSS_SELECTOR, ".connected-address-row"
+                    )
+                    if r.get_attribute("id")
+                ]
+            ),
+            "the address was removed by a dialog the reader dismissed",
+        )
