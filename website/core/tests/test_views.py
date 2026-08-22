@@ -753,12 +753,19 @@ class BundleNameDeletePageTest(TestCase):
         self.assertTemplateUsed(response, "bundlename_delete.html")
 
     def test_bundlename_delete_displays_name_bundlename(self):
+        """The page names the bundle and says the deletion is final.
+
+        The wording changed on 2026-08-22 -- "Are you sure you want to delete
+        this bundle name?" never said *which* one, on a page reached from a list
+        of them. What is asserted now is the name and the finality, which is
+        what the page is for; the sentence carrying them is copy.
+        """
         response = self.client.get(
             reverse("bundlename_delete", args=[self.bundlename.name])
         )
-        self.assertContains(
-            response, "Are you sure you want to delete this bundle name?"
-        )
+
+        self.assertContains(response, self.bundlename.name)
+        self.assertContains(response, "cannot be undone")
 
     def test_bundlename_delete_post_redirects_to_home_page(self):
         response = self.client.post(

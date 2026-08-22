@@ -97,11 +97,28 @@ describe("in SECTION: Panel input events", function () {
       expect($(".cardiv").eq(0).css("display")).not.toBe("none");
       expect($(".cardiv").eq(1).css("display")).not.toBe("none");
     });
-    it('shows only cards matching the title', function () {
+    it('shows only cards matching the name', function () {
       $("#id_filter").val("alpha");
       home.changeFiltering(null);
       expect($(".cardiv").eq(0).css("display")).not.toBe("none");
       expect($(".cardiv").eq(1).css("display")).toBe("none");
+    });
+    it('no longer matches on the link title, which was a constant', function () {
+      // Every row's title attribute was the literal string "Evaluate bundle",
+      // so this query used to reveal the whole list -- and nothing a reader
+      // would actually type ever matched that pass.
+      $("#id_filter").val("evaluate");
+      home.changeFiltering(null);
+      expect($(".cardiv").eq(0).css("display")).toBe("none");
+      expect($(".cardiv").eq(1).css("display")).toBe("none");
+    });
+    it('treats a row missing a key as not matching, rather than throwing', function () {
+      // The sorter reads these too, so a row without one is already broken --
+      // but a filter that throws takes the whole control down with it.
+      $(".cardiv").eq(0).removeAttr("data-addresses");
+      $("#id_filter").val("addr2");
+      expect(function () { home.changeFiltering(null); }).not.toThrow();
+      expect($(".cardiv").eq(1).css("display")).not.toBe("none");
     });
     it('shows cards matching a data attribute', function () {
       $("#id_filter").val("addr2");

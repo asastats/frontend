@@ -1,38 +1,45 @@
 {% extends 'base.html' %}
 {% comment %}
-  Shell for the signed-in pages: home, the profile screens and the bundle-name
-  forms. A page header, a main column, and a narrow left rail carrying
-  breadcrumbs and whatever the page puts beside them.
+  Shell for home and the three bundle-name forms.
 
-  The main column comes first in source and is moved right on wide screens,
-  which is what the old `push-m10`/`pull-m2` pair produced -- so a phone gets
-  the content it came for before the navigation.
+  What this replaces. These pages kept the arrangement the profile section left
+  behind on 2026-08-22: a four-column grid with the content in three of them and
+  a narrow rail in the fourth, carrying right-aligned breadcrumbs and whatever
+  the page had spare. On home that rail held one box printing the reader's email
+  three times, and three-quarters of the column was empty; on the bundle forms it
+  held a list of other bundles, which is real content wedged into a gutter.
 
-  `start_form` / `end_form` exist because some children wrap the whole shell in
-  a <form>; they are opened and closed by the child, not here.
+  The same answer the profile section reached: one centred column, content in
+  cards, actions in the footer of the card they act on. There is no `aside` here
+  now, which also means there is no source-order question to get backwards --
+  the reason the old shell put the main column first was so a phone met the
+  content before the navigation, and a single column does that by construction.
+
+  Blocks:
+    breadcrumbs     the trail, above the heading
+    page_header     the page heading
+    middle_section  the page's cards
+    left_section    a secondary card *below* the main one. It is still called
+                    `left_section` because three templates fill it and renaming
+                    a block is a rename in each; what changed is where it lands.
+    start_form /    some children wrap the whole shell in a <form>; they are
+    end_form        opened and closed by the child, not here.
 {% endcomment %}
 {% block content %}
-<div>
+<div class="mx-auto w-full max-w-3xl">
   {% block start_form %}{% endblock %}
-  <div class="grid gap-x-8 gap-y-4 md:grid-cols-4">
 
-    <div class="md:order-2 md:col-span-3">
-      <div class="pb-2">
-        <h2 class="text-2xl font-semibold"><span>{% block page_header %}{% endblock %}</span></h2>
-      </div>
-      <div class="mt-2 text-center">
-        {% block middle_section %}{% endblock %}
-      </div>
-    </div>
+  <nav class="text-xs text-base-content/60" aria-label="Breadcrumb">
+    {% block breadcrumbs %}{% endblock %}
+  </nav>
 
-    <aside class="md:order-1">
-      <div class="mt-4 text-right">
-        {% block breadcrumbs %}{% endblock %}
-      </div>
-      {% block left_section %}{% endblock %}
-    </aside>
+  <h1 class="mt-2 text-3xl font-semibold tracking-tight">{% block page_header %}{% endblock %}</h1>
 
+  <div class="mt-6 space-y-4">
+    {% block middle_section %}{% endblock %}
+    {% block left_section %}{% endblock %}
   </div>
+
   {% block end_form %}{% endblock %}
 </div>
 {% endblock %}
