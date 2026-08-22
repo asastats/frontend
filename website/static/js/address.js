@@ -1100,6 +1100,46 @@ function dec6(num) {
 
 
 /**
+ * Give an element a tooltip carrying the given text.
+ * @function setTip
+ *
+ * `data-tip` is the attribute DaisyUI's `.tooltip` reads. This code wrote
+ * `data-tooltip`, which is Materialize's and which nothing on this site has
+ * read since the conversion -- so the total's tooltip was correct as the server
+ * rendered it and then never changed again. Switch to USD and it still quoted
+ * the ALGO figure and the old rate.
+ *
+ * `data-position` went the same way: also Materialize's, also dead. DaisyUI
+ * places a tooltip with `tooltip-top`/`tooltip-bottom` classes, and design 1
+ * asks for neither, so the writes are simply gone rather than translated.
+ *
+ * An element that wants its tip *announced* points `aria-describedby` at a
+ * visually hidden span, and this keeps that span in step: a tooltip drawn with
+ * `content: attr(data-tip)` is not dependably in the accessibility tree, so the
+ * hidden text is what a screen reader actually gets.
+ *
+ * @param {Element} element element to give a tooltip to
+ * @param {String} text the tooltip's text
+ *
+ */
+function setTip(element, text) {
+  // The attribute goes on whatever actually draws the tooltip. On the site that
+  // is a `.tooltip` wrapper around the figure -- DaisyUI reveals on
+  // `:has(:focus-visible)`, so the focusable element has to be *inside* it --
+  // and on the historic widget's page it is the figure itself, which carries
+  // the widget's own `.htip`. `closest` covers both without either caller
+  // having to know which page it is on.
+  var host = element.closest(".tooltip") || element;
+  host.dataset.tip = text;
+  var describedBy = element.getAttribute("aria-describedby");
+  if (describedBy) {
+    var note = document.getElementById(describedBy);
+    if (note) note.textContent = text;
+  }
+}
+
+
+/**
  * Calculate and set currency values based on provided currency code
  *
  * @param {String} code
@@ -1123,7 +1163,7 @@ function setCurrency(code) {
   var total = $(".pricetip")[0].dataset.total;
   if (code == 'USD') {
     $(".pricetip").each(function () {
-      this.dataset.tooltip = cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)"
+      setTip(this, cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)");
       this.innerHTML = cur(total) + " USD";
     });
     $("span.val").each(function () {
@@ -1131,11 +1171,7 @@ function setCurrency(code) {
         this.innerHTML = dec6(price) + " ALGO/USD";
       else
         this.innerHTML = cur(this.dataset.val / price) + " USD";
-      this.dataset.tooltip = cur(this.dataset.val) + " ALGO";
-      if ($(this).hasClass("cons-value"))
-        this.dataset.position = 'bottom';
-      else
-        this.dataset.position = 'right';
+      setTip(this, cur(this.dataset.val) + " ALGO");
     });
     // No `pricealgo` check here, unlike the `.val` loop above: that class is
     // rendered on `.val` spans only (snippets/asas/program.html), and the one
@@ -1146,7 +1182,7 @@ function setCurrency(code) {
     });
   } else {
     $(".pricetip").each(function () {
-      this.dataset.tooltip = cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)";
+      setTip(this, cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)");
       this.innerHTML = cur(total * price) + " ALGO";
     });
     $("span.val").each(function () {
@@ -1154,11 +1190,7 @@ function setCurrency(code) {
         this.innerHTML = dec6(pricealgo) + " USD/ALGO";
       else
         this.innerHTML = cur(this.dataset.val) + " ALGO";
-      this.dataset.tooltip = cur(this.dataset.val / price) + " USD";
-      if ($(this).hasClass("cons-value"))
-        this.dataset.position = 'bottom';
-      else
-        this.dataset.position = 'right';
+      setTip(this, cur(this.dataset.val / price) + " USD");
     });
     $("span.val6").each(function () {
       this.innerHTML = parseFloat(this.dataset.val).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " ALGO";
@@ -1310,12 +1342,12 @@ function setTotalNoNft(value) {
 
   if (code == 'USD') {
     $(".pricetip").each(function () {
-      this.dataset.tooltip = cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)"
+      setTip(this, cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)");
       this.innerHTML = cur(total) + " USD";
     });
   } else {
     $(".pricetip").each(function () {
-      this.dataset.tooltip = cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)";
+      setTip(this, cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)");
       this.innerHTML = cur(total * price) + " ALGO";
     });
   }
@@ -1363,6 +1395,7 @@ if (typeof exports !== 'undefined') {
     populatePieCharts,
     scrollToView,
     showTimes,
+    setTip,
     setCurrency,
     setTotalNoNft,
     toggleCurrency,

@@ -479,3 +479,43 @@ class TestAddressTemplateRenders:
         html = render_to_string("address.html", _build_context(sample_payload))
 
         assert "<br" not in html
+
+
+class TestTheTotalIsReachableWithoutAPointer:
+    """The headline figure's tooltip is the one that carries the rate.
+
+    Every other tooltip on this page repeats an amount in the other currency,
+    which the currency switch already gives in one keystroke -- so the rest stay
+    pointer conveniences rather than a tab stop on each of several dozen
+    figures. The total's tip also carries the exchange rate, and that is on the
+    page nowhere else, so it is the one that has to be reachable.
+    """
+
+    def test_the_total_can_take_focus(self, sample_payload):
+        # DaisyUI reveals a tooltip on `:focus-visible` as well as `:hover`, so
+        # a tabindex is the whole of the fix for a sighted keyboard reader.
+        html = render_to_string("address.html", _build_context(sample_payload))
+
+        assert 'class="pricetip cursor-default" tabindex="0"' in html
+        # Inside the `.tooltip`, not on it: DaisyUI reveals on
+        # `:has(:focus-visible)`, so a tabindex on the tooltip element itself
+        # matches nothing and draws nothing.
+        assert '<span class="tooltip" data-tip=' in html
+
+    def test_the_tip_is_also_available_as_text(self, sample_payload):
+        # A tooltip drawn with `content: attr(data-tip)` is not dependably in
+        # the accessibility tree, so the visible tip alone reaches nobody who
+        # cannot see it. `setTip` keeps this span in step on every switch.
+        html = render_to_string("address.html", _build_context(sample_payload))
+
+        assert 'aria-describedby="id-total-tip"' in html
+        assert 'id="id-total-tip" class="sr-only"' in html
+
+    def test_the_money_designs_need_none_of_it(self, sample_payload):
+        # Their `.pricetip` carries no `.tooltip` class at all, and `.total-sub`
+        # prints the same figure and rate permanently, for everyone. A tabindex
+        # there would be a tab stop that reveals nothing.
+        html = render_to_string("address_money.html", _build_context(sample_payload))
+
+        assert "total-sub" in html
+        assert "pricetip tooltip" not in html

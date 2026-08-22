@@ -525,3 +525,51 @@ describe("mainConsolidated", function () {
     expect($._data($("#id-cons")[0], "events").toggle).toBeDefined();
   });
 });
+
+
+describe("the total's tooltip", function () {
+  // `setTip` is a copy of address.js's, and has to be: the historic widget's
+  // page loads this file and not that one, so calling across would be a
+  // ReferenceError on every toggle -- which is exactly how that widget's
+  // currency switch was broken, by a call to a function living only on the site.
+  it('writes the attribute that displays the text', function () {
+    // It wrote `data-tooltip`, which is Materialize's and which nothing has
+    // read since the conversion. `data-tip` is what DaisyUI's `.tooltip` reads
+    // on the site and what the widget's `.htip` reads on the historic page.
+    var head = document.createElement("span");
+
+    consolidated.setTip(head, "100.00 USD (0.50 USD/ALGO)");
+
+    expect(head.dataset.tip).toBe("100.00 USD (0.50 USD/ALGO)");
+    expect(head.dataset.tooltip).toBeUndefined();
+  });
+
+  it('keeps the announced description in step', function () {
+    // A tooltip drawn as `content: attr(data-tip)` is not dependably in the
+    // accessibility tree, so the hidden span is what a screen reader gets. It
+    // going stale would be worse than having none: it would announce a rate no
+    // longer on screen.
+    var head = document.createElement("span");
+    head.setAttribute("aria-describedby", "id-total-tip");
+    var note = document.createElement("span");
+    note.id = "id-total-tip";
+    document.body.appendChild(note);
+
+    consolidated.setTip(head, "42.00 ALGO (2.00 ALGO/USD)");
+
+    expect(note.textContent).toBe("42.00 ALGO (2.00 ALGO/USD)");
+  });
+
+  it('says nothing for a figure that asks for no description', function () {
+    var head = document.createElement("span");
+
+    expect(function () { consolidated.setTip(head, "x"); }).not.toThrow();
+  });
+
+  it('says nothing when the description element has gone', function () {
+    var head = document.createElement("span");
+    head.setAttribute("aria-describedby", "id-not-here");
+
+    expect(function () { consolidated.setTip(head, "x"); }).not.toThrow();
+  });
+});

@@ -52,14 +52,36 @@
     The label is a sibling, and `.pricetip` is now a span the h1 wraps -- the
     data attributes move with it, since address.js reads them off
     `$(".pricetip")[0]`.
+
+    `tabindex` and `aria-describedby`: this is the one figure on the page whose
+    tooltip carries something available nowhere else -- the exchange rate. Every
+    other tip repeats an amount in the other currency, which the currency switch
+    already gives in one keystroke, so those stay pointer conveniences rather
+    than a tab stop on each of several dozen numbers. The hidden span is what a
+    screen reader gets, because a tip drawn as `content: attr(data-tip)` is not
+    dependably announced; `setTip` in address.js keeps the two in step.
+
+    The `.tooltip` is a *wrapper* and the focusable element is the span inside
+    it. That is not decoration: DaisyUI reveals a tooltip on
+    `:has(:focus-visible)` -- a focused **descendant**, not the element itself
+    -- so a tabindex on the `.tooltip` element matches nothing and draws
+    nothing. The wrapper is also the only safe place for it, because
+    `setCurrency` overwrites `.pricetip`'s `innerHTML` wholesale and anything
+    inside that would not survive.
+
+    The money designs need none of this: their `.pricetip` carries no `.tooltip`
+    class, and `.total-sub` prints the same figure and rate permanently, for
+    everyone.
   {% endcomment %}
   <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
     <span class="sr-only">Total value:</span>
-    <span class="pricetip tooltip cursor-default"
-        data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }}
-        data-total={{ total.totalusdc }} data-totalwnft={{ total.total }}
-        data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}
-        data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</span>
+    <span class="tooltip" data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>
+      <span class="pricetip cursor-default" tabindex="0" aria-describedby="id-total-tip"
+          data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }}
+          data-total={{ total.totalusdc }} data-totalwnft={{ total.total }}
+          data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}>{{ total.total|floatformat:"2g" }} ALGO</span>
+    </span>
+    <span id="id-total-tip" class="sr-only">{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)</span>
   </h1>
 
   {% comment %}

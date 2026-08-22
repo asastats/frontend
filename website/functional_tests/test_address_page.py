@@ -566,3 +566,121 @@ class SectionFoldingTest(FunctionalTest):
             any(not row.is_displayed() for row in self._rows("nftsec")),
             "unfolding the assets also unfolded the collections",
         )
+
+
+class TotalTooltipKeyboardTest(FunctionalTest):
+    """The headline figure's tooltip, reached without a pointer.
+
+    It is the only tooltip on this page that carries the exchange rate; every
+    other one repeats an amount in the other currency, which the switch already
+    gives in one keystroke. So this is the one that has to be reachable, and the
+    rest stay pointer conveniences rather than a tab stop per figure.
+
+    Functional rather than markup-only because focusability is a browser fact:
+    the attribute can be present and the element still be unreachable if
+    something above it takes the focus, and the tooltip's own reveal depends on
+    `:focus-visible` matching -- which a rendered-HTML test cannot see.
+    """
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_total_takes_focus_and_shows_its_tip(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+
+        total = self.browser.find_element(By.CSS_SELECTOR, ".pricetip")
+        wrapper = self.browser.find_element(By.CSS_SELECTOR, ".tooltip[data-tip]")
+        hidden = self._tip_opacity(wrapper)
+        # Tabbed to, not focused by script. `:focus-visible` is a heuristic the
+        # browser applies to how the focus arrived, and a programmatic
+        # `.focus()` does not satisfy it -- so a test that called `.focus()`
+        # would report the tooltip hidden even when a real reader tabbing to it
+        # sees it perfectly well. Pressing Tab is also the thing being claimed.
+        self.assertTrue(
+            self._tab_to(total),
+            "the total is not reachable by tabbing, so its tooltip is "
+            "pointer-only",
+        )
+        # The assertion that matters, and the one this test did not make at
+        # first: that focus *reveals* something. DaisyUI keys the reveal on
+        # `:has(:focus-visible)` -- a focused descendant -- so a tabindex on the
+        # `.tooltip` element itself matches and shows nothing at all. Asserting
+        # only that focus landed would have passed against exactly that.
+        self.assertEqual(0.0, hidden, "the tip is visible before anything is focused")
+        # Waited for, not read straight away: DaisyUI fades the bubble in over
+        # 200ms after a 75ms delay, so an immediate read returns the value part
+        # way through the transition -- which is 0, and looks exactly like a
+        # tooltip that never appeared.
+        self.wait_until(lambda: self._tip_opacity(wrapper) == 1.0)
+
+    def _tab_to(self, target, limit=30):
+        """Press Tab until `target` has focus. Return whether it ever does.
+
+        Focus is put on the document body first so tabbing starts at the top of
+        the page. Clicking the body instead lands focus wherever the click did
+        -- below the total, among the toolbar's checkboxes -- and every Tab from
+        there walks further away, past a thousand-odd focusable rows.
+        """
+        self.browser.execute_script(
+            "document.body.setAttribute('tabindex', '-1'); document.body.focus();"
+        )
+        for _ in range(limit):
+            ActionChains(self.browser).send_keys(Keys.TAB).perform()
+            if self.browser.switch_to.active_element == target:
+                return True
+        return False
+
+    def _tip_opacity(self, element):
+        """Return the drawn opacity of the tooltip's own box.
+
+        DaisyUI paints the bubble as a `::before` on the wrapper, so nothing in
+        the DOM reports whether it is showing; the computed style of the
+        pseudo-element is the only place the answer exists.
+        """
+        return float(
+            self.browser.execute_script(
+                "return getComputedStyle(arguments[0], '::before').opacity;",
+                element,
+            )
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_announced_text_follows_the_currency_switch(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The half a screen reader gets, and the bug that made it worth having.
+
+        `setCurrency` wrote `data-tooltip`, which is Materialize's and which
+        nothing has read since the conversion -- so the tip was correct as the
+        server rendered it and never changed again. A description that goes
+        stale is worse than none: it announces a rate no longer on screen.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+
+        total = self.browser.find_element(By.CSS_SELECTOR, ".tooltip[data-tip]")
+        note = self.browser.find_element(By.ID, "id-total-tip")
+        before = note.get_attribute("textContent")
+
+        self.browser.find_element(
+            By.CSS_SELECTOR, ".switch input[type=checkbox]"
+        ).click()
+        self.wait_until(
+            lambda: note.get_attribute("textContent") != before
+        )
+
+        self.assertEqual(
+            total.get_attribute("data-tip"),
+            note.get_attribute("textContent"),
+            "the announced description and the visible tip disagree",
+        )
+        self.assertIn("ALGO/USD", note.get_attribute("textContent"))

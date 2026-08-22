@@ -964,3 +964,52 @@ describe("setTotalNoNft on the money-column designs", function () {
     page.remove();
   });
 });
+
+
+describe("the total's tooltip", function () {
+  it('writes the attribute that displays the text', function () {
+    // `data-tooltip` is Materialize's and nothing has read it since the
+    // conversion, so the total's tooltip was right as the server rendered it
+    // and never changed again: switch to USD and it still quoted the ALGO
+    // figure and the old rate.
+    var head = document.createElement("span");
+
+    address.setTip(head, "100.00 USD (0.50 USD/ALGO)");
+
+    expect(head.dataset.tip).toBe("100.00 USD (0.50 USD/ALGO)");
+    expect(head.dataset.tooltip).toBeUndefined();
+  });
+
+  it('keeps the announced description in step', function () {
+    // What a screen reader actually gets: generated content is not dependably
+    // in the accessibility tree, so the visible tip alone reaches nobody who
+    // cannot see it.
+    var head = document.createElement("span");
+    head.setAttribute("aria-describedby", "id-total-tip");
+    var note = document.createElement("span");
+    note.id = "id-total-tip";
+    document.body.appendChild(note);
+
+    address.setTip(head, "42.00 ALGO (2.00 ALGO/USD)");
+
+    expect(note.textContent).toBe("42.00 ALGO (2.00 ALGO/USD)");
+    note.remove();
+  });
+
+  it('leaves a figure that asks for no description alone', function () {
+    // Only the total is described. Every other tip repeats an amount the
+    // currency switch already gives, so the rest stay pointer conveniences
+    // rather than several dozen new tab stops.
+    var head = document.createElement("span");
+
+    expect(function () { address.setTip(head, "x"); }).not.toThrow();
+    expect(head.hasAttribute("aria-describedby")).toBe(false);
+  });
+
+  it('says nothing when the description element has gone', function () {
+    var head = document.createElement("span");
+    head.setAttribute("aria-describedby", "id-not-here");
+
+    expect(function () { address.setTip(head, "x"); }).not.toThrow();
+  });
+});

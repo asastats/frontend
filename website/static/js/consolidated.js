@@ -317,6 +317,45 @@ function setTotalCharts() {
 
 
 /**
+ * Give an element a tooltip carrying the given text.
+ * @function setTip
+ *
+ * A copy of `address.js`'s, and it has to be a copy: this file is the one the
+ * historic widget's page loads, and that page does not load address.js at all.
+ * Calling across would be a `ReferenceError` on every "without NFTs" toggle --
+ * which is exactly how the widget's own currency switch was broken, by a call
+ * to a `setTotalCharts` that lived only on the site.
+ *
+ * `data-tip` is what displays the text: DaisyUI's `.tooltip` on the site, and
+ * the widget's own `.htip` on the historic page. This wrote `data-tooltip`,
+ * which is Materialize's and which nothing has read since the conversion, so
+ * the total's tooltip never changed once the server had rendered it.
+ *
+ * The `aria-describedby` target is what a screen reader gets, since a tooltip
+ * drawn with `content: attr(data-tip)` is not dependably announced.
+ *
+ * @param {Element} element element to give a tooltip to
+ * @param {String} text the tooltip's text
+ *
+ */
+function setTip(element, text) {
+  // The attribute goes on whatever actually draws the tooltip. On the site that
+  // is a `.tooltip` wrapper around the figure -- DaisyUI reveals on
+  // `:has(:focus-visible)`, so the focusable element has to be *inside* it --
+  // and on the historic widget's page it is the figure itself, which carries
+  // the widget's own `.htip`. `closest` covers both without either caller
+  // having to know which page it is on.
+  var host = element.closest(".tooltip") || element;
+  host.dataset.tip = text;
+  var describedBy = element.getAttribute("aria-describedby");
+  if (describedBy) {
+    var note = document.getElementById(describedBy);
+    if (note) note.textContent = text;
+  }
+}
+
+
+/**
  * Set total value with or without NFTs based on user setting
  *
  * @param {String} value
@@ -339,12 +378,12 @@ function setTotalNoNft(value) {
 
   if (code == 'USD') {
     $(".pricetip").each(function () {
-      this.dataset.tooltip = cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)"
+      setTip(this, cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)");
       this.innerHTML = cur(total) + " USD";
     });
   } else {
     $(".pricetip").each(function () {
-      this.dataset.tooltip = cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)";
+      setTip(this, cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)");
       this.innerHTML = cur(total * price) + " ALGO";
     });
   }
@@ -672,6 +711,7 @@ if (typeof exports !== 'undefined') {
     totalChart,
     totalChartFiltered,
     formatChartTotal,
+    setTip,
     setTotalCharts,
     percentDistAsset,
     percentDistSection,
