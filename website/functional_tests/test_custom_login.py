@@ -135,7 +135,12 @@ class CustomAuthTest(FunctionalTest):
         self.sleep()
 
         # He sees the log in header
-        container = self.find_elem_by_class("modal-content")
+        #
+        # Found through the dialog's own id, which is what the link he just
+        # clicked points at. It used to be `.modal-content`, a class with no
+        # rule in any stylesheet and no script that read it -- it existed only
+        # for this line, so the markup was carrying a hook for its own test.
+        container = self.find_elem_by_id("modalLogin")
         header = container.find_element(By.TAG_NAME, "h3")
         self.assertIn("Log in", header.text)
 

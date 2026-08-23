@@ -219,10 +219,16 @@ class TestAddressTemplateRenders:
         assert f"/export/{bundle}/" not in html
 
     def test_notevals_section_renders(self, sample_payload):
-        # The sample has 1 noteval — the notevalsec block should appear
-        # exactly once and include that asset's id.
+        # The sample has 1 noteval — the block should appear exactly once and
+        # include that asset's id.
+        #
+        # Keyed on `.section-list`, which design 1's filter shows and hides, not
+        # on the `.notevalsec` that used to sit beside it. That name had no rule
+        # in any stylesheet this page loads and no script read it -- its only
+        # rule lives in the historic widget's CSS, which the website never
+        # loads -- so it was a label for nothing and is gone.
         html = render_to_string("address.html", _build_context(sample_payload))
-        assert 'class="notevalsec section-list' in html
+        assert 'class="section-list' in html
         assert "1 not evaluated" in html
 
     def test_provider_icon_paths_use_correct_slug(self, sample_payload):

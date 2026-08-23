@@ -1,4 +1,21 @@
 {% extends 'base.html' %}{% load static %}
+{% comment %}
+  Structure, not styling. This page had its Tailwind wrappers already -- the
+  centred column, `space-y-4`, the muted body colour -- around content that was
+  still written the way Materialize left it: every list was a run of `&#8226;`
+  characters and `<br>` tags inside one `<p>`, and the vertical rhythm was more
+  `<br>` inside a container that already spaces its children.
+
+  So the five facts under Token Overview were one paragraph, not a list of five,
+  and that is what a screen reader announced. `<ul>`/`<li>` is the fix; the
+  spacing `<br>`s go with it, because `space-y-4` was always doing that job.
+
+  The table was unstyled -- a bare `<table>`, browser default, no borders and no
+  padding. It carries DaisyUI's `.table` now, inside the `overflow-x-auto`
+  wrapper any wide table needs so it scrolls itself rather than the page.
+
+  Not a rewrite: every word here is the wording that was here before.
+{% endcomment %}
 {% block title %}ASA Stats - Token metrics page{% endblock %}
 {% block description %}Understanding the Utility, Supply, and Governance Model Behind ASASTATS{% endblock %}
 {% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,ASA,ASASTATS,ASA Stats Token,token,token metrics,tokenomics,DAO,buy,how to buy,staking{% endblock %}
@@ -10,99 +27,96 @@
 <article class="mx-auto max-w-3xl text-left">
 <h2 id="overview">Token Overview</h2>
 <div class="mt-3 space-y-4 text-base-content/80">
-  <p>
-  &#8226; <strong>Token Name</strong>: ASASTATS<br>
-  &#8226; <strong>Asset ID</strong>: 393537671<br>
-  &#8226; <strong>Total Supply</strong>: 1,000,000,000 (fixed, non-mintable)<br>
-  &#8226; <strong>Decimals</strong>: 6<br>
-  &#8226; <strong>Immutable</strong>: No freeze or clawback functions<br>
-  <br>
-  ASASTATS is the utility token that powers the ASA Stats platform. It enables access to premium services, participation in governance, and serves as a mechanism to reward contributors, developers, and liquidity providers.
-  </p>
-  <br>
+  <ul class="list-disc space-y-1 pl-5">
+    <li><strong>Token Name</strong>: ASASTATS</li>
+    <li><strong>Asset ID</strong>: 393537671</li>
+    <li><strong>Total Supply</strong>: 1,000,000,000 (fixed, non-mintable)</li>
+    <li><strong>Decimals</strong>: 6</li>
+    <li><strong>Immutable</strong>: No freeze or clawback functions</li>
+  </ul>
+  <p>ASASTATS is the utility token that powers the ASA Stats platform. It enables access to premium services, participation in governance, and serves as a mechanism to reward contributors, developers, and liquidity providers.</p>
 </div>
 <h2 id="utility">Token Utility</h2>
 <div class="mt-3 space-y-4 text-base-content/80">
-  <p>
-  ASASTATS is used for:<br>
-  <br>
-  &#8226; <strong>Subscription payments</strong> to unlock premium features and tools<br>
-  &#8226; <strong>DAO governance access</strong> (staking-based, now closed)<br>
-  &#8226; <strong>Developer access</strong> to advanced API endpoints and publishing widgets<br>
-  &#8226; <strong>Reward distribution</strong> for bug bounties, feature suggestions, and community initiatives<br>
-  &#8226; <strong>Liquidity incentives</strong> for ASASTATS trading pairs<br>
-  <br>
-  </p>
-  <br>
+  <p>ASASTATS is used for:</p>
+  <ul class="list-disc space-y-1 pl-5">
+    <li><strong>Subscription payments</strong> to unlock premium features and tools</li>
+    <li><strong>DAO governance access</strong> (staking-based, now closed)</li>
+    <li><strong>Developer access</strong> to advanced API endpoints and publishing widgets</li>
+    <li><strong>Reward distribution</strong> for bug bounties, feature suggestions, and community initiatives</li>
+    <li><strong>Liquidity incentives</strong> for ASASTATS trading pairs</li>
+  </ul>
 </div>
 <h2 id="distribution">Supply Distribution</h2>
 <div class="mt-3 space-y-4 text-base-content/80">
-  <p>
-  The token was distributed with transparency and long-term alignment in mind:<br>
-  </p>
-  <br>
-  <table>
-    <thead>
-      <tr>
-          <th>Allocation</th>
-          <th>Amount</th>
-          <th>Purpose</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Development Pool</td>
-        <td>20% (200M)</td>
-        <td>Fund ongoing feature rollouts and infrastructure scaling</td>
-      </tr>
-      <tr>
-        <td>Administration/Legal</td>
-        <td>12% (120M)</td>
-        <td>Pre-DAO entity setup and operational costs</td>
-      </tr>
-      <tr>
-        <td>Team Allocation</td>
-        <td>12% (120M)</td>
-        <td>Fully vested in 24 tranches, now complete</td>
-      </tr>
-      <tr>
-        <td>Community Rewards</td>
-        <td>15% (150M)</td>
-        <td>Reward GitHub contributions, bug reports, and DAO discussion support</td>
-      </tr>
-      <tr>
-        <td>Airdrops</td>
-        <td>8% (80M)</td>
-        <td>Growth campaigns, early user incentives</td>
-      </tr>
-      <tr>
-        <td>Giveaways</td>
-        <td>2% (20M)</td>
-        <td>Developer grants, contests, awareness efforts</td>
-      </tr>
-      <tr>
-        <td>DAO Treasury (residual)</td>
-        <td>TBD</td>
-        <td>Unspent pools flow into the DAO treasury post-launch</td>
-      </tr>
-    </tbody>
-  </table>
-  <br>
+  <p>The token was distributed with transparency and long-term alignment in mind:</p>
+  <div class="overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+            <th>Allocation</th>
+            <th>Amount</th>
+            <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Development Pool</td>
+          <td>20% (200M)</td>
+          <td>Fund ongoing feature rollouts and infrastructure scaling</td>
+        </tr>
+        <tr>
+          <td>Administration/Legal</td>
+          <td>12% (120M)</td>
+          <td>Pre-DAO entity setup and operational costs</td>
+        </tr>
+        <tr>
+          <td>Team Allocation</td>
+          <td>12% (120M)</td>
+          <td>Fully vested in 24 tranches, now complete</td>
+        </tr>
+        <tr>
+          <td>Community Rewards</td>
+          <td>15% (150M)</td>
+          <td>Reward GitHub contributions, bug reports, and DAO discussion support</td>
+        </tr>
+        <tr>
+          <td>Airdrops</td>
+          <td>8% (80M)</td>
+          <td>Growth campaigns, early user incentives</td>
+        </tr>
+        <tr>
+          <td>Giveaways</td>
+          <td>2% (20M)</td>
+          <td>Developer grants, contests, awareness efforts</td>
+        </tr>
+        <tr>
+          <td>DAO Treasury (residual)</td>
+          <td>TBD</td>
+          <td>Unspent pools flow into the DAO treasury post-launch</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
-  <h2 id="reports">ASA Stats Transparency Reports</h2>
-  <div class="mt-3 space-y-4 text-base-content/80">
-    <p>Every transfer in and out of any pool in the pre-DAO phase is conducted by the Team and listed in the Team's monthly financial/transparency reports.<br>
-    <br>
-        Download ASA Stats Transparency Reports:<br>
-        {% for year_group in transparency_reports %}
-            {% for report in year_group.months %}
-                <a href="/transparency-report-{{ report.year }}-{{ report.month }}.pdf" target="_blank" title="Download {{ WEBSITE_NAME }} Transparency Report for {{ report.month_name }} {{ report.year }}">{{ report.month }}/{{ report.short_year }}</a>{% if not forloop.last %} | {% endif %}
-            {% endfor %}
-            <br>
+</div>
+<h2 id="reports">ASA Stats Transparency Reports</h2>
+<div class="mt-3 space-y-4 text-base-content/80">
+  <p>Every transfer in and out of any pool in the pre-DAO phase is conducted by the Team and listed in the Team's monthly financial/transparency reports.</p>
+  <p>Download ASA Stats Transparency Reports:</p>
+  {% comment %} One row per year, which is what the `<br>` after each group was
+     for. A wrapping flex row rather than a paragraph of separators: the pipes
+     were rendered text a screen reader read out between every pair of
+     links. {% endcomment %}
+  <div class="space-y-1">
+    {% for year_group in transparency_reports %}
+      <div class="flex flex-wrap gap-x-3 gap-y-1">
+        {% for report in year_group.months %}
+          <a href="/transparency-report-{{ report.year }}-{{ report.month }}.pdf" target="_blank" title="Download {{ WEBSITE_NAME }} Transparency Report for {{ report.month_name }} {{ report.year }}">{{ report.month }}/{{ report.short_year }}</a>
         {% endfor %}
-    <br>
-    </p>
+      </div>
+    {% endfor %}
   </div>
+</div>
 </article>
 {% endblock %}
 {% block otherfooter %}<script type="application/ld+json">{% include "jsonld/tokenomics.jsonld" %}</script>{% endblock %}

@@ -61,10 +61,10 @@
             {% include "snippets/asas/meta.html" with asaitem=asaitem asset=asset %}
             <div class="asar md:col-span-3 md:text-right">
               {% if url_value %}
-              <div class="swap-asa-entry">
+              <div class="">
                 <div class="asa flex flex-wrap items-start justify-end gap-3">
                   <div class="swap-action-column order-2">
-                    <a class="btn btn-primary btn-sm swap-asa id-swap-swap-toggle"
+                    <a class="btn btn-primary btn-sm id-swap-swap-toggle"
                       href="{% url 'swap_source' url_value asset.id %}"
                       data-from="{{ asset.id }}"
                       data-label-show="Swap" data-label-hide="Hide">

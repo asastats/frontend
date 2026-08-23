@@ -412,6 +412,13 @@ class BaseAddressView(TemplateView):
         does not vary within an entry. The deployment-level gate is deliberately
         absent: it is the same answer for every reader, so it separates nobody.
 
+        Cheap enough to run before every read: the export gate is arithmetic on
+        settings, and the historic one is a lookup in a manifest registry
+        memoised for the life of the process. The one real cost is resolving
+        `.profile`, a single indexed row for a signed-in reader and nothing at
+        all for an anonymous one -- which is the least it can cost to know which
+        entry to read.
+
         :param request: Django request object
         :type request: :class:`django.http.HttpRequest`
         :return: str
