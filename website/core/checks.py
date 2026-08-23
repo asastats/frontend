@@ -200,6 +200,6 @@ def check_export_tier_limits(app_configs, **kwargs):
                 "import time, so a server started before the variable was "
                 "exported keeps the old, empty value until it is restarted."
             ),
-            id=f"{ID_PREFIX}.W002",
+            id=f"{ID_PREFIX}.W003",
         )
     ]

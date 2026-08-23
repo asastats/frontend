@@ -7,58 +7,22 @@
     <meta name="keywords" content="error,server error">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
-    <style>
-        * {
-            line-height: 1.2;
-            margin: 0;
-        }
-
-        html {
-            color: #575757;
-            display: table;
-            font-family: sans-serif;
-            height: 100%;
-            text-align: center;
-            width: 100%;
-        }
-
-        body {
-            display: table-cell;
-            vertical-align: middle;
-            margin: 2em auto;
-        }
-
-        h1 {
-            color: #575757;
-            font-size: 2em;
-            font-weight: 400;
-        }
-
-        p {
-            margin: 0 auto;
-            width: 400px;
-        }
-
-        @media only screen and (max-width: 400px) {
-            body,
-            p {
-                width: 95%;
-            }
-            h1 {
-                font-size: 1.5em;
-                margin: 0 0 0.3em;
-            }
-        }
-    </style>
+    {% include "snippets/error_style.html" %}
 </head>
 
 <body>
-    <a href="/"><img src="/logo400.png" border="0" height="120" width="200" alt="Go to the website's index page"></a>
-    <br>
-    <br>
-    <h1>Server is busy loading cache</h1>
-    <br><p>Sorry for the inconvenience - the requested page will refresh in a minute.</p>
+    <main class="panel">
+        <a class="brand" href="/"><img src="/logo400.png" width="400" height="241" alt="Go to the website's index page"></a>
+        <h1>Server is busy loading cache</h1>
+        {# `role="status"` so a screen reader is told the page is about to      #}
+        {# reload rather than being surprised by it. reload-delayed.js does the #}
+        {# reloading and is the one external file these pages load: this page   #}
+        {# is served while Redis warms, when static files are still being       #}
+        {# served, and without it the reader has to refresh by hand.            #}
+        <p role="status">Sorry for the inconvenience - the requested page will refresh in a minute.</p>
+    </main>
     <script src="/static/js/reload-delayed.js"></script>
 </body>
+
 </html>
 <!-- IE needs 512+ bytes: http://blogs.msdn.com/b/ieinternals/archive/2010/08/19/http-error-pages-in-internet-explorer.aspx -->

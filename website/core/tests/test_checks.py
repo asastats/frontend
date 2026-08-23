@@ -6,8 +6,10 @@ tokens built for the purpose -- an expired one, and one signed with a
 different key, which is the case that reads like expiry and is not.
 """
 
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import jwt
 import pytest
@@ -16,6 +18,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from core.checks import (
     EXPIRY_WARNING_DAYS,
+    ID_PREFIX,
     _expiry,
     check_export_tier_limits,
     check_widgets_api_token,
@@ -216,7 +219,7 @@ class TestExportTierLimitsCheck:
         settings.EXPORT_TIERS_ADDRESSES_LIMIT = {}
         messages = check_export_tier_limits(None)
 
-        assert _ids(messages) == ["asastats.W002"]
+        assert _ids(messages) == ["asastats.W003"]
         assert "Cluster" in messages[0].msg
 
     def test_core_check_names_the_tiers_that_cannot_export(self, settings):
@@ -236,3 +239,111 @@ class TestExportTierLimitsCheck:
         """
         settings.EXPORT_TIERS_ADDRESSES_LIMIT = {}
         assert "restarted" in check_export_tier_limits(None)[0].hint
+
+
+class TestChecksAreWiredUp:
+    """The module as a whole, rather than either check's logic.
+
+    Every other test here calls a check function directly, which is the right
+    way to test what it decides -- and means all of them would still pass if
+    Django never ran the checks at all. `CoreConfig.ready()` registers them by
+    importing this module, and an import that looks unused is exactly the kind
+    of line a tidy-up removes.
+    """
+
+    def test_core_checks_are_registered_by_app_ready(self):
+        """The `noqa: F401` import in `CoreConfig.ready` is load-bearing.
+
+        Asserting that the registry *contains* them would prove nothing here:
+        this module imports `core.checks` at the top to call its functions, so
+        the checks are registered before any test runs and the assertion passes
+        whatever `ready()` does. I wrote that version first and it passed with
+        the import deleted.
+
+        What is testable is the mechanism: drop the module from `sys.modules`,
+        run `ready()`, and see whether it comes back. That fails the moment the
+        import looks unused to somebody tidying up.
+        """
+        import sys
+
+        from django.apps import apps
+
+        config = apps.get_app_config("core")
+        sys.modules.pop("core.checks", None)
+
+        config.ready()
+
+        assert "core.checks" in sys.modules, (
+            "CoreConfig.ready() no longer imports core.checks, so no system "
+            "check in it will ever run"
+        )
+
+    def test_core_checks_ids_are_unique(self):
+        """Two checks shared `asastats.W002`, and that is worse than untidy.
+
+        `SILENCED_SYSTEM_CHECKS` keys on the id, so silencing the token's
+        expiry nag also silenced the export-limits warning -- one deployment
+        quieting a message it had already acted on would lose an unrelated one
+        it had never seen. Found by reading, not by any test, which is why
+        there is now a test.
+        """
+        source = (Path(__file__).resolve().parents[1] / "checks.py").read_text()
+        ids = re.findall(r'id=f"\{ID_PREFIX\}\.(\w+)"', source)
+
+        assert ids, "no check ids found -- has the id format changed?"
+        assert len(ids) == len(set(ids)), (
+            f"duplicate check ids: {sorted({i for i in ids if ids.count(i) > 1})}. "
+            "Ids are how SILENCED_SYSTEM_CHECKS addresses a message, so two "
+            "checks sharing one cannot be silenced independently."
+        )
+
+    def test_core_checks_ids_carry_the_project_prefix(self):
+        """Keeps them out of Django's own `models.W042`-style namespace."""
+        from django.conf import settings
+
+        settings.EXPORT_TIERS_ADDRESSES_LIMIT = {}
+        for message in check_export_tier_limits(None):
+            assert message.id.startswith(f"{ID_PREFIX}.")
+
+
+class TestExportTierLimitsDefaults:
+    """The arm that fires only if the built-in defaults change."""
+
+    def test_core_check_is_silent_when_the_defaults_permit_exporting(
+        self, settings, monkeypatch
+    ):
+        """No warning to give if the fallbacks stopped being restrictive.
+
+        The check exists because `_DEFAULT_LIMITS` allows every tier below
+        Cluster *zero* addresses, so an unset variable silently disables CSV
+        export. Were those defaults ever relaxed, the warning would be telling
+        people about a problem they no longer have -- so it is derived from the
+        defaults rather than assuming them.
+        """
+        settings.EXPORT_TIERS_ADDRESSES_LIMIT = {}
+        monkeypatch.setattr(
+            "core.exportpermissions._DEFAULT_LIMITS",
+            {"free": 5, "Intro": 5, "Asastatser": 5, "Professional": 5, "Cluster": 10},
+        )
+
+        assert check_export_tier_limits(None) == []
+
+    def test_core_check_still_warns_when_one_tier_is_blocked(
+        self, settings, monkeypatch
+    ):
+        """Guard the guard: the silence above must be about the defaults.
+
+        Without this, the test above would also pass if the check had simply
+        stopped working.
+        """
+        settings.EXPORT_TIERS_ADDRESSES_LIMIT = {}
+        monkeypatch.setattr(
+            "core.exportpermissions._DEFAULT_LIMITS",
+            {"free": 5, "Intro": 0, "Asastatser": 5, "Professional": 5, "Cluster": 10},
+        )
+
+        messages = check_export_tier_limits(None)
+
+        assert _ids(messages) == [f"{ID_PREFIX}.W003"]
+        assert "Intro" in messages[0].msg
+        assert "free" not in messages[0].msg

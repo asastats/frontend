@@ -31,6 +31,14 @@ ASASTATS_SLOGANS = (
     "All your Algorand assets on one dashboard",
     "Your entire Algorand portfolio in one place",
     "The maximum value of your assets aggregated using the entire ecosystem liquidity",
+    "Real-time valuations for your ASAs, NFTs, and liquidity pool positions",
+    "Pinpoint the true value of your Algorand holdings across every protocol",
+    "Instantly visualize any Algorand wallet without connecting a thing",
+    "The community-driven portfolio visualizer built for the Algorand ecosystem",
+    "Accurate, live asset pricing powered by Algorand's decentralized exchanges",
+    "Built by the community, for the community—transparent Algorand analytics",
+    "The ultimate command center for monitoring your Algorand wealth",
+    "Seamlessly track and aggregate multiple Algorand accounts simultaneously",
 )
 
 BANNERS = [
