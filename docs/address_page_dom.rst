@@ -37,7 +37,8 @@ the JavaScript has to change in the same commit.
      reference source is the pre-redesign tree at
      ``/home/ipaleka/claude/frontend-before``.
 
-   ``money-column`` / ``money-column-compact`` (designs 2 and 3)
+   ``money-column`` / ``money-column-compact`` (Dynamic / Dynamic compact,
+    designs 2 and 3)
      One template with a compact flag. They carry the position component, the
      entry controls, position pinning, the program grouping and the allocation
      band, and they draw charts as **inline SVG rather than Chart.js**.
@@ -47,10 +48,11 @@ the JavaScript has to change in the same commit.
    ``core/tests/test_money_design_contract.py``, which renders
    ``address_money.html`` against the real payload.
 
-   Designs 2 and 3 are gated at **Asastatser**. Design 1 is ungated at every
-   tier by construction --- its registry entry carries ``tier: None``, and
-   ``normalized_layout`` falls back to it for both an unknown key and an
-   unentitled one, so it is always renderable and always reachable.
+   Design 2 is available from **Intro**, while design 3 is gated at
+   **Asastatser**. Design 1 is ungated at every tier by construction --- its registry
+   entry carries ``tier: None``, and ``normalized_layout`` falls back to it for
+   both an unknown key and an unentitled one, so it is always renderable and
+   always reachable.
 
 --------------------------------------------------------------------------------
 

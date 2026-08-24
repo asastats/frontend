@@ -2622,6 +2622,15 @@ class TestCoreModelsProfilePreferredLayout:
         )
         assert profile.preferred_layout_or_default() == "money-column"
 
+    def test_core_models_profile_preferred_layout_or_default_returns_dynamic_choice_at_intro(
+        self,
+    ):
+        profile = Profile(
+            preferred_layout="money-column",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
+        )
+        assert profile.preferred_layout_or_default() == "money-column"
+
     def test_core_models_profile_preferred_layout_or_default_when_unknown(self):
         profile = Profile(
             preferred_layout="bogus",
@@ -2649,12 +2658,12 @@ class TestCoreModelsProfilePreferredLayout:
         intro = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
         asastatser = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
 
-        assert len(intro.layout_choices()) == 1
+        assert len(intro.layout_choices()) == 2
         assert len(asastatser.layout_choices()) == 3
 
     def test_core_models_profile_locked_layouts_complement_the_choices(self):
         intro = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
-        assert len(intro.locked_layouts()) == 2
+        assert len(intro.locked_layouts()) == 1
 
     def test_core_models_profile_locked_layouts_empty_when_all_unlocked(self):
         asastatser = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
@@ -2679,17 +2688,17 @@ class TestCoreModelsProfilePreferredLayout:
     def test_core_models_profile_layout_setting_gate_is_not_the_layout_gate(self):
         """Reaching the section is not reaching every option in it.
 
-        The coarse gate opens at Intro, but both money-column layouts stay shut
-        until Asastatser -- so an Intro reader sees a working select holding
-        only the default, and the other two named below it with the tier they
-        need. This is the one preference on that page where the two questions
-        have different answers.
+        The coarse gate opens at Intro, and Dynamic is available there while
+        Dynamic compact remains an Asastatser feature. This is the one
+        preference on that page where the two questions have different answers.
         """
         intro = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
 
         assert intro.can_access_layout_setting() is True
-        assert [key for key, _ in intro.layout_choices()] == ["classic"]
+        assert [key for key, _ in intro.layout_choices()] == [
+            "classic",
+            "money-column",
+        ]
         assert [entry["tier"] for entry in intro.locked_layouts()] == [
-            "Asastatser",
             "Asastatser",
         ]

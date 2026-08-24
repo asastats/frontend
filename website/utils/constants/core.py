@@ -245,15 +245,15 @@ ADDRESS_LAYOUTS = {
         "tier": None,
     },
     "money-column": {
-        "name": "Money column",
+        "name": "Dynamic",
         "summary": "Grouped by where the money is, with charts and filters.",
         "template": "address_money.html",
         "compact": False,
-        "tier": "Asastatser",
+        "tier": "Intro",
     },
     "money-column-compact": {
-        "name": "Money column compact",
-        "summary": "The money column as tiles, for narrow screens.",
+        "name": "Dynamic compact",
+        "summary": "The Dynamic layout as tiles, for narrow screens.",
         "template": "address_money.html",
         "compact": True,
         "tier": "Asastatser",
@@ -275,7 +275,7 @@ produce, so they cannot share an entry. See ``core.views.BaseAddressView``.
 ``tier`` is the *minimum* subscription tier for that layout, or ``None`` for one
 available to everybody. This is a per-entry gate rather than a single
 permission check because the tiers cut through the list rather than around it:
-the default layout is always available and the money column arrives with
-Asastatser. Keys are persisted on ``Profile``, so treat them as data: rename one
-and every reader who chose it silently falls back.
+the default layout is always available, Dynamic arrives with Intro, and Dynamic
+compact arrives with Asastatser. Keys are persisted on ``Profile``, so treat
+them as data: rename one and every reader who chose it silently falls back.
 """

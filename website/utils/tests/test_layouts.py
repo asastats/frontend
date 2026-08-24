@@ -108,14 +108,23 @@ class TestUtilsLayoutsCanAccess:
             for permission in (TRIAL, INTRO, ASASTATSER, PROFESSIONAL)
         )
 
-    def test_utils_layouts_can_access_asastatser_layout_at_trial(self):
+    def test_utils_layouts_cannot_access_dynamic_layout_at_trial(self):
         assert can_access_layout("money-column", TRIAL) is False
 
-    def test_utils_layouts_can_access_asastatser_layout_at_intro(self):
-        assert can_access_layout("money-column", INTRO) is False
+    def test_utils_layouts_can_access_dynamic_layout_at_intro(self):
+        assert can_access_layout("money-column", INTRO) is True
+
+    def test_utils_layouts_cannot_access_compact_layout_at_intro(self):
+        assert can_access_layout("money-column-compact", INTRO) is False
+
+    def test_utils_layouts_cannot_access_compact_layout_at_trial(self):
+        assert can_access_layout("money-column-compact", TRIAL) is False
 
     def test_utils_layouts_can_access_asastatser_layout_at_asastatser(self):
         assert can_access_layout("money-column", ASASTATSER) is True
+
+    def test_utils_layouts_can_access_compact_layout_at_asastatser(self):
+        assert can_access_layout("money-column-compact", ASASTATSER) is True
 
     def test_utils_layouts_can_access_gated_layout_above_its_tier(self):
         assert can_access_layout("money-column", PROFESSIONAL) is True
@@ -175,9 +184,12 @@ class TestUtilsLayoutsChoices:
             (DEFAULT_ADDRESS_LAYOUT, ADDRESS_LAYOUTS[DEFAULT_ADDRESS_LAYOUT]["name"])
         ]
 
-    def test_utils_layouts_choices_at_intro_is_default_alone(self):
-        """Intro buys nothing on this page; the money column starts at Asastatser."""
-        assert [key for key, _ in layout_choices(INTRO)] == [DEFAULT_ADDRESS_LAYOUT]
+    def test_utils_layouts_choices_at_intro_includes_dynamic(self):
+        """Intro buys Dynamic, not its compact variant."""
+        assert [key for key, _ in layout_choices(INTRO)] == [
+            DEFAULT_ADDRESS_LAYOUT,
+            "money-column",
+        ]
 
     def test_utils_layouts_choices_at_asastatser_is_every_layout(self):
         assert {key for key, _ in layout_choices(ASASTATSER)} == set(ADDRESS_LAYOUTS)
@@ -207,9 +219,8 @@ class TestUtilsLayoutsLocked:
             if ADDRESS_LAYOUTS[key]["tier"] is not None
         ]
 
-    def test_utils_layouts_locked_at_intro_names_only_the_money_column(self):
+    def test_utils_layouts_locked_at_intro_names_only_the_compact_dynamic_layout(self):
         assert [entry["tier"] for entry in locked_layouts(INTRO)] == [
-            "Asastatser",
             "Asastatser",
         ]
 
@@ -233,14 +244,17 @@ class TestUtilsLayoutsName:
     """Testing class for :func:`layout_name`."""
 
     def test_utils_layouts_name_returns_display_name(self):
-        assert layout_name("money-column") == "Money column"
+        assert layout_name("money-column") == "Dynamic"
+
+    def test_utils_layouts_name_returns_compact_display_name(self):
+        assert layout_name("money-column-compact") == "Dynamic compact"
 
     def test_utils_layouts_name_falls_back_on_unknown(self):
         assert layout_name("nope") == ADDRESS_LAYOUTS[DEFAULT_ADDRESS_LAYOUT]["name"]
 
     def test_utils_layouts_name_takes_no_permission(self):
         """It answers what a layout is called, which is the same for everybody."""
-        assert layout_name("money-column") == "Money column"
+        assert layout_name("money-column") == "Dynamic"
 
 
 class TestUtilsLayoutsTemplate:
@@ -289,8 +303,11 @@ class TestUtilsLayoutsTier:
     def test_utils_layouts_tier_none_for_the_default(self):
         assert layout_tier(DEFAULT_ADDRESS_LAYOUT) is None
 
-    def test_utils_layouts_tier_names_the_gate(self):
-        assert layout_tier("money-column") == "Asastatser"
+    def test_utils_layouts_tier_names_the_dynamic_gate(self):
+        assert layout_tier("money-column") == "Intro"
+
+    def test_utils_layouts_tier_names_the_compact_gate(self):
+        assert layout_tier("money-column-compact") == "Asastatser"
 
     def test_utils_layouts_tier_falls_back_on_unknown(self):
         assert layout_tier("nope") is None

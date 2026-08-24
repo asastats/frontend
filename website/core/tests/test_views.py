@@ -1124,7 +1124,7 @@ class ProfileSettingsPageTest(TestCase):
         """
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
         self.user.profile.save()
-        response = self._post_layout("money-column")
+        response = self._post_layout("money-column-compact")
         self.assertTemplateUsed(response, "profile_settings.html")
         self.user.profile.refresh_from_db()
         assert self.user.profile.preferred_layout == ""
@@ -1160,17 +1160,16 @@ class ProfileSettingsPageTest(TestCase):
         self.assertContains(response, 'id="id-section-layout"')
 
     def test_settings_page_names_the_layouts_the_reader_cannot_have(self):
-        """A select showing two of four options has to say why.
+        """A select with an unavailable option has to say why.
 
-        The section is open at Intro but the money column is not, so the page
-        names what is missing and the tier that unlocks it rather than leaving
-        the reader to wonder whether the rest exist.
+        The section is open at Intro and Dynamic is offered, while Dynamic
+        compact is named with the tier that unlocks it.
         """
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
         self.user.profile.save()
         with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
             response = self.client.get(reverse("profile_settings"))
-        self.assertContains(response, "Money column")
+        self.assertContains(response, "Dynamic")
         self.assertContains(response, "Asastatser")
 
     def test_settings_page_names_nothing_locked_when_all_unlocked(self):

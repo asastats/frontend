@@ -19,8 +19,9 @@ measures that, because it is the one property of this design that cannot be
 checked by reading the markup -- the classes can all be present and correct
 while the column is 8px out.
 
-**Who gets it.** The layout is a subscription benefit gated at Asastatser, and
-the gate is re-checked on read, so a lapsed reader falls back to design 1 with
+**Who gets it.** The full layout is available at Intro, while its compact form
+is a subscription benefit gated at Asastatser. The gate is re-checked on read,
+so a lapsed reader falls back to design 1 with
 their choice remembered. Both halves of that are asserted, because the failure
 mode of the first is paid bytes handed to a free reader, and of the second a
 reader who paid and sees the old page.
@@ -59,7 +60,8 @@ SAMPLE_PATH = os.path.join(
 
 ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 
-#: The tier the money-column layouts are gated at.
+#: The tiers the Dynamic layouts are gated at.
+INTRO = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
 ASASTATSER = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
 
 
@@ -135,25 +137,25 @@ class MoneyPageMixin:
 
 
 class MoneyColumnEntitlementTest(MoneyPageMixin, FunctionalTest):
-    """Design 1 for everybody; designs 2 and 3 for subscribers.
+    """Design 1 for everybody; Dynamic designs for subscribers.
 
-    The layout registry gates both money-column entries at Asastatser and
-    ``Profile.preferred_layout_or_default`` re-checks that on every read, so
-    these two tests are the top and the bottom of the same gate.
+    The layout registry gates the full Dynamic entry at Intro and the compact
+    entry at Asastatser. ``Profile.preferred_layout_or_default`` re-checks
+    those gates on every read.
     """
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_a_subscriber_sees_the_money_column(
+    def test_an_intro_subscriber_sees_the_dynamic_layout(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
 
-        # Sam subscribes at Asastatser and has chosen the money column.
-        self.sign_in("sam-money@example.com", ASASTATSER, "money-column")
+        # Sam subscribes at Intro and has chosen the Dynamic layout.
+        self.sign_in("sam-money@example.com", INTRO, "money-column")
         self.open_address()
 
         # He gets it: the design's own scope class, and asset rows built the
@@ -751,7 +753,7 @@ class MoneyColumnCompactTest(MoneyPageMixin, FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_the_compact_layout_puts_the_rows_side_by_side(
+    def test_an_asastatser_subscriber_can_use_the_compact_layout(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
         mocked_fetch.return_value = _sample_payload()

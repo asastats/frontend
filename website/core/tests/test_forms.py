@@ -805,7 +805,7 @@ class TestProfileLayoutForm:
         )
         assert form.is_valid() is True
 
-    def test_profilelayoutform_rejects_a_layout_above_the_tier(self):
+    def test_profilelayoutform_rejects_compact_layout_below_its_tier(self):
         """The choices are the entitlement -- there is no second check to skip.
 
         A forged POST naming a paid layout fails here rather than in the view,
@@ -813,9 +813,16 @@ class TestProfileLayoutForm:
         """
         profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
         form = ProfileLayoutForm(
-            data={"preferred_layout": "money-column"}, instance=profile
+            data={"preferred_layout": "money-column-compact"}, instance=profile
         )
         assert form.is_valid() is False
+
+    def test_profilelayoutform_accepts_dynamic_layout_at_intro(self):
+        profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
+        form = ProfileLayoutForm(
+            data={"preferred_layout": "money-column"}, instance=profile
+        )
+        assert form.is_valid() is True
 
     def test_profilelayoutform_rejects_unknown_layout(self):
         profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Cluster"])
