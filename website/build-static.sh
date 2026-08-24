@@ -31,7 +31,7 @@ count=0
 for path in "$SRC"/*.js; do
   name="$(basename "$path")"
   case "$name" in
-    *.min*.js|bundle.js|websocketbridge.js) continue ;;
+    *.min*.js|bundle.js) continue ;;
   esac
   npx --yes esbuild@0.25.5 "$path" --minify --target=es2017 \
     --outfile="$OUT/$name" >/dev/null 2>&1
