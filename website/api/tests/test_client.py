@@ -68,6 +68,25 @@ class TestApiClientFunctions:
         with pytest.raises(BackendError):
             _request("GET", "/path/")
 
+    def test_api_client_request_refuses_a_relative_path(self, mocker):
+        """A path without a leading slash is refused before it is sent.
+
+        The URL is built by concatenation, so ``router/quote/`` produced
+        ``http://host:8001router/quote/`` - a host that does not exist and a
+        request that never reached the engine. The asastats widget shipped with
+        exactly that. Refused here rather than left to `requests` to reject,
+        because InvalidURL names neither the caller nor the bad path.
+        """
+        mocked_settings = mocker.patch("api.client.settings")
+        mocked_settings.ASASTATS_API_URL = "https://api.test"
+        mocked_requests = mocker.patch("api.client.requests")
+
+        with pytest.raises(BackendError) as raised:
+            _request("GET", "router/quote/")
+
+        assert "must start with '/'" in str(raised.value)
+        assert not mocked_requests.request.called
+
     # # fetch_price
     def test_api_client_fetch_price_functionality(self, mocker):
         mocked_request = mocker.patch("api.client._request")

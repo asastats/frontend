@@ -615,7 +615,16 @@ CHANNEL_LAYERS = {
 # # WIDGETS
 WIDGETS_API_TOKEN = get_env_variable("WIDGETS_API_TOKEN", "")
 
-INHOUSE_WIDGETS = ["historic", "folks", "haystack", "hogswap", "swapcore"]
+# Keep in step with `widgets/constants.py`: this copy drives the static and
+# template search paths below, that one drives URL and websocket mounting.
+INHOUSE_WIDGETS = [
+    "historic",
+    "folks",
+    "haystack",
+    "hogswap",
+    "asastats",
+    "swapcore",
+]
 THIRDPARTY_WIDGETS = []
 
 STATICFILES_DIRS += [

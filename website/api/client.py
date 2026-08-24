@@ -12,7 +12,19 @@ from django.conf import settings
 
 
 class BackendError(Exception):
-    """Raised when the ASA Stats backend returns a non-success response."""
+    """Raised when the ASA Stats backend returns a non-success response.
+
+    Carries the backend's own status and decoded detail where there is one, so
+    a caller can pass a meaningful refusal through instead of turning it into a
+    500. The engine's router endpoints rely on this: a restricted deployment
+    answers 503 with an explanation of *why* no group can be built, and that
+    sentence is the only thing a reader could act on.
+    """
+
+    def __init__(self, message, status_code=None, detail=None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.detail = detail
 
 
 def _headers():
@@ -20,6 +32,24 @@ def _headers():
 
 
 def _request(method, path, **kwargs):
+    """Call the backend at `path`, which must be absolute from its root.
+
+    The URL is a plain concatenation, so a caller passing a bare relative path
+    silently produces a broken host: ``router/quote/`` became
+    ``http://host:8001router/quote/``, which never reached the engine at all.
+    The asastats widget shipped with exactly that and could not have worked
+    anywhere - nothing caught it because every unit test mocks this function,
+    and the malformed URL only surfaces as an InvalidURL from requests.
+
+    Refusing it here is one line and covers every future caller, which is worth
+    more than having fixed the one that had it wrong.
+    """
+    if not path.startswith("/"):
+        raise BackendError(
+            f"backend path must start with '/', got {path!r} - it is joined to "
+            f"{settings.ASASTATS_API_URL!r} by concatenation"
+        )
+
     resp = requests.request(
         method,
         f"{settings.ASASTATS_API_URL}{path}",
@@ -28,7 +58,15 @@ def _request(method, path, **kwargs):
         **kwargs,
     )
     if resp.status_code >= 400:
-        raise BackendError(f"{resp.status_code}: {resp.text[:200]}")
+        try:
+            detail = resp.json().get("detail")
+        except ValueError:
+            detail = None
+        raise BackendError(
+            f"{resp.status_code}: {resp.text[:200]}",
+            status_code=resp.status_code,
+            detail=detail,
+        )
     return resp
 
 
