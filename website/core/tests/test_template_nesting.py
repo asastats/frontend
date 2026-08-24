@@ -136,9 +136,9 @@ class TestCoreTemplateNesting:
         one whose defect prompted the test. A named list cannot do that
         quietly: growing it is an edit somebody has to justify.
 
-        Raised from two to three on 2026-08-20 for the money-column designs'
+        Raised from two to three on 2026-08-20 for the dynamic designs'
         copy of `program.html`, and **back to two on 2026-08-21** when that copy
-        was replaced. Its successor, `snippets/money/position.html`, is balanced
+        was replaced. Its successor, `snippets/dynamic/position.html`, is balanced
         in every branch and needs no exemption -- which is the outcome to want:
         the list shrank because the markup improved, not because the rule was
         relaxed. A third entry should have to argue for itself again.

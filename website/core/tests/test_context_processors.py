@@ -202,7 +202,7 @@ class TestCoreContextProcessors:
             "WEBSITE_URL": settings.WEBSITE_URL,
             "WEBSITE_DOMAIN": settings.WEBSITE_DOMAIN,
             "BASE_CDN_URL": settings.BASE_CDN_URL,
-            # Published so the money-column designs fold at the same counts the
+            # Published so the dynamic designs fold at the same counts the
             # template and `toolbar.js` both need, rather than at two copies of
             # the numbers that can drift apart.
             "ADDRESS_SECTION_FLOOR": settings.ADDRESS_SECTION_FLOOR,

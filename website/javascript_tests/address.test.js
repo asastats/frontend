@@ -913,7 +913,7 @@ describe("scroll-to-top control", function () {
 });
 
 
-describe("setCurrency on the money-column designs", function () {
+describe("setCurrency on the dynamic designs", function () {
   it('leaves that page alone entirely', function () {
     // Design 1's currency writer writes `innerHTML` -- number *and* unit --
     // into every `span.val`. On the money column each figure pairs with a
@@ -923,7 +923,7 @@ describe("setCurrency on the money-column designs", function () {
     // it unconditionally with the stored currency. `toolbar.js` owns currency
     // there now.
     var page = document.createElement("div");
-    page.className = "money-page";
+    page.className = "dynamic-page";
     var value = document.createElement("span");
     value.className = "val";
     value.dataset.val = "12.5";
@@ -939,7 +939,7 @@ describe("setCurrency on the money-column designs", function () {
 });
 
 
-describe("setTotalNoNft on the money-column designs", function () {
+describe("setTotalNoNft on the dynamic designs", function () {
   it('leaves the headline to the toolbar', function () {
     // It writes `.pricetip` reading design 1's own global `cur` key, so on the
     // money page the total was written by design 1 on load and by nobody
@@ -947,7 +947,7 @@ describe("setTotalNoNft on the money-column designs", function () {
     // fresh tab, and pressing USD in that page's toolbar changed every figure
     // except the one at the top.
     var page = document.createElement("div");
-    page.className = "money-page";
+    page.className = "dynamic-page";
     var head = document.createElement("span");
     head.className = "pricetip";
     head.dataset.price = "0.1";

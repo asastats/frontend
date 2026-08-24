@@ -1,5 +1,5 @@
 /**
- * The money-column toolbar: filtering, sorting, grouping and currency.
+ * The dynamic toolbar: filtering, sorting, grouping and currency.
  *
  * Pass 2 of designs 2 and 3. Everything here acts on the page already in the
  * browser -- the whole payload is in the DOM, with sort keys, categories and
@@ -37,8 +37,8 @@
  *   `showmore.js` owned the fold and no longer does here. It reveals a whole
  *                 tail in one press, which is design 1's rule; these designs
  *                 show a fixed first batch and add one batch per press, so it
- *                 stands down on `.money-page` and this file folds instead.
- *   `money.js`    owns the donuts. The toolbar hands it filtered slice data and
+ *                 stands down on `.dynamic-page` and this file folds instead.
+ *   `dynamic.js`    owns the donuts. The toolbar hands it filtered slice data and
  *                 asks it to redraw.
  *
  * Currency is the exception, and deliberately: `address.js` has `setCurrency`,
@@ -47,7 +47,7 @@
  * inside a venue subtotal and leaves the asset header reading "253.74 ALGO
  * ALGO" -- the value cell has a *sibling* unit element. It also cannot reach a
  * breakdown control, which is a `<button>` rather than a span. `address.js` no
- * longer touches `.money-page`; the writer here does, and it writes the number
+ * longer touches `.dynamic-page`; the writer here does, and it writes the number
  * only, leaving every unit element alone.
  */
 (function () {
@@ -265,7 +265,7 @@
    * @returns {number} USD per ALGO, from the header's own data attributes.
    */
   function rate() {
-    var head = document.querySelector(".money-page .pricetip");
+    var head = document.querySelector(".dynamic-page .pricetip");
     var value = head ? parseFloat(head.getAttribute("data-pricealgo")) : NaN;
     return isFinite(value) ? value : 0;
   }
@@ -328,7 +328,7 @@
    */
   function positions() {
     return Array.prototype.slice.call(
-      document.querySelectorAll(".money-page .position")
+      document.querySelectorAll(".dynamic-page .position")
     );
   }
 
@@ -337,7 +337,7 @@
    */
   function groups() {
     return Array.prototype.slice.call(
-      document.querySelectorAll(".money-page .pgroup")
+      document.querySelectorAll(".dynamic-page .pgroup")
     );
   }
 
@@ -417,7 +417,7 @@
    */
   function filterCollections() {
     Array.prototype.forEach.call(
-      document.querySelectorAll(".money-page .nftsec .rows > .fitem"),
+      document.querySelectorAll(".dynamic-page .nftsec .rows > .fitem"),
       function (card) {
         card.classList.toggle(HIDDEN_CLASS, !matches(card));
       }
@@ -529,7 +529,7 @@
     // Grouping by venue puts a different list on screen, so the control that
     // unfolds this one has nothing to say.
     if (state.group === "venue") {
-      var control = document.querySelector(".money-page .asasec [data-show-more]");
+      var control = document.querySelector(".dynamic-page .asasec [data-show-more]");
       if (control) control.parentNode.hidden = true;
     }
 
@@ -550,7 +550,7 @@
    * @returns {number} how many rows are showing.
    */
   function fold(selector, key, displayed, noun) {
-    var section = document.querySelector(".money-page " + selector);
+    var section = document.querySelector(".dynamic-page " + selector);
     if (!section) return displayed.length;
 
     var keep = Math.min(limit(section, key), displayed.length);
@@ -645,8 +645,8 @@
     // markup, whose figures `address.js` converted.
     Array.prototype.forEach.call(
       document.querySelectorAll(
-        ".money-page .position-val .val, .money-page .dist .val," +
-          " .money-page .nftsec .val"
+        ".dynamic-page .position-val .val, .dynamic-page .dist .val," +
+          " .dynamic-page .nftsec .val"
       ),
       function (element) {
         write(element, num(element, "data-val"));
@@ -697,7 +697,7 @@
    * @param {object} view - the result of `evaluate`.
    */
   function paintTotal(view) {
-    var head = document.querySelector(".money-page .pricetip");
+    var head = document.querySelector(".dynamic-page .pricetip");
     if (!head) return;
 
     var algo = num(head, "data-totalwnft");
@@ -715,7 +715,7 @@
       plain(other) + " " + (state.ccy === "USD" ? "ALGO" : "USD")
     );
 
-    var sub = document.querySelector(".money-page .total-sub .num");
+    var sub = document.querySelector(".dynamic-page .total-sub .num");
     if (sub) {
       sub.textContent =
         plain(other) +
@@ -729,7 +729,7 @@
         " USD/ALGO";
     }
 
-    var note = document.querySelector(".money-page .total-note");
+    var note = document.querySelector(".dynamic-page .total-note");
     if (note) {
       note.textContent = state.nonft
         ? "Everything this address holds, except the NFTs."
@@ -763,7 +763,7 @@
     var readout = document.getElementById("band-readout");
     if (!readout) return;
 
-    var head = document.querySelector(".money-page .pricetip");
+    var head = document.querySelector(".dynamic-page .pricetip");
     var whole = head ? num(head, "data-totalwnft") : 0;
     var shown = CATEGORIES.reduce(function (sum, key) {
       return sum + (state.cats.indexOf(key) === -1 ? 0 : view.totals[key]);
@@ -793,7 +793,7 @@
    */
   function paintUnits() {
     Array.prototype.forEach.call(
-      document.querySelectorAll(".money-page .u.unit, .money-page .fig-val .unit"),
+      document.querySelectorAll(".dynamic-page .u.unit, .dynamic-page .fig-val .unit"),
       function (unit) {
         unit.textContent = state.ccy;
       }
@@ -814,10 +814,10 @@
     // the collections and came back is not handed them again while the figure
     // still reads "off". Every other part of the state is applied on every
     // render; this one was not, and only a reload showed it.
-    var section = document.querySelector(".money-page .nftsec");
+    var section = document.querySelector(".dynamic-page .nftsec");
     if (section) section.hidden = !state.nft;
 
-    var nft = num(document.querySelector('.money-page .fig[data-band="nft"] .fig-val'), "data-val");
+    var nft = num(document.querySelector('.dynamic-page .fig[data-band="nft"] .fig-val'), "data-val");
     var totals = {
       balance: view.totals.balance,
       staked: view.totals.staked,
@@ -830,7 +830,7 @@
     }, 0);
 
     Array.prototype.forEach.call(
-      document.querySelectorAll(".money-page #allocation-bar [data-band]"),
+      document.querySelectorAll(".dynamic-page #allocation-bar [data-band]"),
       function (segment) {
         var key = segment.getAttribute("data-band");
         var share = summed ? (Math.abs(totals[key]) / summed) * 100 : 0;
@@ -841,7 +841,7 @@
     );
 
     Array.prototype.forEach.call(
-      document.querySelectorAll(".money-page .figs .fig"),
+      document.querySelectorAll(".dynamic-page .figs .fig"),
       function (fig) {
         var key = fig.getAttribute("data-band");
         var share = summed ? (Math.abs(totals[key]) / summed) * 100 : 0;
@@ -869,7 +869,7 @@
   }
 
   /**
-   * Hand the filtered allocation to `money.js` and ask it to redraw.
+   * Hand the filtered allocation to `dynamic.js` and ask it to redraw.
    *
    * Only the allocation donut is the toolbar's business -- it is the same five
    * numbers as the bar. The other charts are of the whole address and are left
@@ -879,10 +879,10 @@
    * @param {number} summed - their magnitudes' sum.
    */
   function redrawCharts(totals, summed) {
-    var money = window.asastatsMoney;
+    var dynamic = window.asastatsDynamic;
     var panel = document.getElementById("charts");
-    if (!money || !money.redrawAllocation || !panel || !panel.open) return;
-    money.redrawAllocation(totals, summed, state.ccy);
+    if (!dynamic || !dynamic.redrawAllocation || !panel || !panel.open) return;
+    dynamic.redrawAllocation(totals, summed, state.ccy);
   }
 
   // -- grouping by venue ----------------------------------------------------
@@ -1057,8 +1057,8 @@
     // served text is kept rather than rebuilt, so switching back restores
     // exactly what the template rendered -- including a count that is the
     // server's, not this script's arithmetic.
-    var heading = document.querySelector(".money-page .asasec .section-head h2");
-    var count = document.querySelector(".money-page .asasec .section-head .count");
+    var heading = document.querySelector(".dynamic-page .asasec .section-head h2");
+    var count = document.querySelector(".dynamic-page .asasec .section-head .count");
     if (!heading || !count) return;
     if (heading._asastatsServed === undefined) {
       heading._asastatsServed = heading.textContent;
@@ -1314,7 +1314,7 @@
    * next execution correctly binds the new one.
    */
   function init() {
-    var toolbar = document.querySelector(".money-page #toolbar");
+    var toolbar = document.querySelector(".dynamic-page #toolbar");
     if (!toolbar || toolbar.hasAttribute(BOUND_ATTR)) return;
     toolbar.setAttribute(BOUND_ATTR, "");
 
@@ -1325,14 +1325,14 @@
       if (onClick(event)) event.preventDefault();
     };
     toolbar.addEventListener("click", press);
-    var band = document.querySelector(".money-page .band");
+    var band = document.querySelector(".dynamic-page .band");
     if (band) band.addEventListener("click", press);
 
     // The load-more controls, one per section. `showmore.js` reveals a whole
     // tail in one press and is design 1's; these designs reveal a batch, so it
     // stands down here and this takes over.
     Array.prototype.forEach.call(
-      document.querySelectorAll(".money-page .asasec, .money-page .nftsec"),
+      document.querySelectorAll(".dynamic-page .asasec, .dynamic-page .nftsec"),
       function (section) {
         section.addEventListener("click", function (event) {
           if (event.defaultPrevented) return;

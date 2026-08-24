@@ -1,4 +1,4 @@
-"""Every class the money-column designs use is one we meant to use.
+"""Every class the dynamic designs use is one we meant to use.
 
 The failure this exists to stop is silent. DaisyUI ships a ``.card`` and a
 ``.stack``; the prototype these designs come from also calls things ``card`` and
@@ -26,17 +26,17 @@ import pytest
 TEMPLATES = Path(__file__).parent.parent.parent / "templates"
 INPUT_CSS = Path(__file__).parent.parent.parent / "static/css/input.css"
 
-#: The money-column designs' own templates. Design 1's are deliberately absent:
+#: The dynamic designs' own templates. Design 1's are deliberately absent:
 #: it is the untouched old page and its classes predate all of this.
 MONEY_TEMPLATES = (
-    TEMPLATES / "address_money.html",
-    TEMPLATES / "snippets/money/asset.html",
-    TEMPLATES / "snippets/money/position.html",
-    TEMPLATES / "snippets/money/band.html",
-    TEMPLATES / "snippets/money/toolbar.html",
-    TEMPLATES / "snippets/money/nfts.html",
-    TEMPLATES / "snippets/money/collection.html",
-    TEMPLATES / "snippets/money/nft.html",
+    TEMPLATES / "address_dynamic.html",
+    TEMPLATES / "snippets/dynamic/asset.html",
+    TEMPLATES / "snippets/dynamic/position.html",
+    TEMPLATES / "snippets/dynamic/band.html",
+    TEMPLATES / "snippets/dynamic/toolbar.html",
+    TEMPLATES / "snippets/dynamic/nfts.html",
+    TEMPLATES / "snippets/dynamic/collection.html",
+    TEMPLATES / "snippets/dynamic/nft.html",
 )
 
 #: Framework classes these templates use on purpose -- Tailwind utilities and
@@ -166,7 +166,7 @@ def _classes_used(template):
 
 
 @pytest.mark.parametrize("template", MONEY_TEMPLATES, ids=lambda p: p.name)
-def test_money_design_every_class_is_accounted_for(template):
+def test_dynamic_design_every_class_is_accounted_for(template):
     """No class is a collision, and none styles nothing.
 
     A name that is neither declared in our stylesheet nor deliberately borrowed
@@ -188,7 +188,7 @@ def test_money_design_every_class_is_accounted_for(template):
     )
 
 
-def test_money_design_avoids_the_two_known_daisyui_collisions():
+def test_dynamic_design_avoids_the_two_known_daisyui_collisions():
     """`.card` and `.stack` specifically, because these two already bit.
 
     Named rather than left to the general check above, because the general check
@@ -219,7 +219,7 @@ DESIGN_ONE_TEMPLATES = (
 )
 
 
-def test_money_design_shares_no_class_with_design_one_by_accident():
+def test_dynamic_design_shares_no_class_with_design_one_by_accident():
     """A name both designs use is a contract or a collision, never a coincidence.
 
     The DaisyUI check above cannot see this one. It asks whether a class is
@@ -227,7 +227,7 @@ def test_money_design_shares_no_class_with_design_one_by_accident():
     collision with our own stylesheet passes it while the framework check is
     still green.
 
-    That is not hypothetical. The money-column charts panel was
+    That is not hypothetical. The dynamic charts panel was
     ``<details class="charts">``; design 1 declares an unscoped
     ``.charts { display: grid }`` that goes two-column at 768px. The panel
     inherited it, put its ``<summary>`` in the first column and the chart grid

@@ -1,5 +1,5 @@
 /**
- * @file Charts for the money-column address designs, drawn as inline SVG.
+ * @file Charts for the dynamic address designs, drawn as inline SVG.
  *
  * Design 1 keeps Chart.js. Designs 2 and 3 draw their own, for four reasons:
  *
@@ -28,10 +28,10 @@
   "use strict";
 
   /** Marks the panel bound, so a second execution cannot double-bind. */
-  var BOUND_ATTR = "data-money-bound";
+  var BOUND_ATTR = "data-dynamic-bound";
 
   /** The same guard for the delegated breakdown handler, on the root element. */
-  var BREAKDOWN_ATTR = "data-money-breakdowns-bound";
+  var BREAKDOWN_ATTR = "data-dynamic-breakdowns-bound";
 
   /** Radii of the ring, in the 120x120 user space the viewBox sets up. */
   var INNER = 34;
@@ -328,8 +328,8 @@
    * not work here -- it toggles a `hidden` *class*, while this design hides the
    * panel with the `hidden` *attribute*, so the class went on and the panel
    * stayed shut. The control looked exactly right, dotted and inviting, and did
-   * nothing; `functional_tests/test_address_money_page.py` is what caught it.
-   * `address.js` no longer binds to `.money-page .tdist` for that reason.
+   * nothing; `functional_tests/test_address_dynamic_page.py` is what caught it.
+   * `address.js` no longer binds to `.dynamic-page .tdist` for that reason.
    *
    * The control is a real button carrying `aria-expanded`, so the state is set
    * here too. Design 1's control is a span and has none, which is the other
@@ -348,13 +348,13 @@
   /**
    * Fill every "N ago" span in the NFT section.
    *
-   * `.epoch` is design 1's contract and the money-column section keeps it, but
+   * `.epoch` is design 1's contract and the dynamic section keeps it, but
    * the *filling* could not be kept: `showTimes` is bound to
    * `.nft.item-header` and looks for `.item-body` siblings, and this design has
    * neither -- a collection is a `<details>` with a `.chead` and a `.cbody`. So
    * the section rendered "Last purchase on Rand Gallery" with no indication of
    * when, which reads as a rendering fault rather than as missing data.
-   * `functional_tests/test_address_money_nfts.py` is what noticed.
+   * `functional_tests/test_address_dynamic_nfts.py` is what noticed.
    *
    * Filled once on load rather than when a collection opens. Design 1 defers it
    * because its handler is per-collection; there is no handler here, and
@@ -372,7 +372,7 @@
   function epochs(root) {
     var now = Date.now() / 1000;
     Array.prototype.forEach.call(
-      root.querySelectorAll(".money-page .epoch[data-epoch]"),
+      root.querySelectorAll(".dynamic-page .epoch[data-epoch]"),
       function (element) {
         var at = parseInt(element.getAttribute("data-epoch"), 10);
         if (!isFinite(at)) return;
@@ -438,7 +438,7 @@
   // Exposed for the jest suite, the way showmore.js and pins.js are. A
   // `typeof module !== "undefined"` guard would work too, but its false arm
   // cannot run under the test runner and would sit there uncovered forever.
-  window.asastatsMoney = {
+  window.asastatsDynamic = {
     arc: arc,
     slices: slices,
     chart: chart,

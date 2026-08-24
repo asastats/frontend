@@ -1,6 +1,6 @@
 {% load static %}
 {% load core_extras %}
-{% comment %} One asset, in the money-column designs.
+{% comment %} One asset, in the dynamic designs.
 
    A `<details>` rather than a button and a panel, as design 1 uses: the page
    works with the script disabled, the open state is the browser's to remember,
@@ -170,7 +170,7 @@
             <span></span>
           </div>
           {% for prog in group.positions %}
-            {% include "snippets/money/position.html" with prog=prog asset=asset counter=forloop.counter %}
+            {% include "snippets/dynamic/position.html" with prog=prog asset=asset counter=forloop.counter %}
           {% endfor %}
         </div>
         {% endfor %}

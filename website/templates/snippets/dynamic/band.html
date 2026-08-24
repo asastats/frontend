@@ -28,7 +28,7 @@
    being readable as the same fact.
 
    The charts panel is a `<details>`: closed, the page costs nothing to draw:
-   open, `money.js` renders the donuts as inline SVG from the JSON payload
+   open, `dynamic.js` renders the donuts as inline SVG from the JSON payload
    blocks. Design 1's Chart.js is not loaded here at all.
 
    Four of the five categories filter positions. The fifth, NFT, has no
@@ -85,7 +85,7 @@
       <span>Charts</span>
       <span class="charts-hint">the same numbers, drawn</span>
     </summary>
-    {% comment %} Filled by `money.js` on first open. Empty in the markup on
+    {% comment %} Filled by `dynamic.js` on first open. Empty in the markup on
        purpose: an SVG for six charts is a great deal of bytes to ship to every
        reader who never opens the panel. {% endcomment %}
     <div class="charts-grid" id="charts-grid"></div>

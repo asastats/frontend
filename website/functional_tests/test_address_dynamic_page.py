@@ -1,4 +1,4 @@
-"""Functional tests for the money-column address designs, 2 and 3.
+"""Functional tests for the dynamic address designs, 2 and 3.
 
 These pages had no functional coverage at all when they shipped, and the
 standing rule on this project is that a page we change or add gets functional
@@ -136,7 +136,7 @@ class MoneyPageMixin:
         )
 
 
-class MoneyColumnEntitlementTest(MoneyPageMixin, FunctionalTest):
+class DynamicEntitlementTest(MoneyPageMixin, FunctionalTest):
     """Design 1 for everybody; Dynamic designs for subscribers.
 
     The layout registry gates the full Dynamic entry at Intro and the compact
@@ -155,12 +155,12 @@ class MoneyColumnEntitlementTest(MoneyPageMixin, FunctionalTest):
         mocked_capabilities.return_value = {"permission": ASASTATSER}
 
         # Sam subscribes at Intro and has chosen the Dynamic layout.
-        self.sign_in("sam-money@example.com", INTRO, "money-column")
+        self.sign_in("sam-money@example.com", INTRO, "dynamic")
         self.open_address()
 
         # He gets it: the design's own scope class, and asset rows built the
-        # money-column way rather than design 1's.
-        self.assertTrue(self.browser.find_elements(By.CSS_SELECTOR, ".money-page"))
+        # dynamic way rather than design 1's.
+        self.assertTrue(self.browser.find_elements(By.CSS_SELECTOR, ".dynamic-page"))
         self.assertTrue(self.browser.find_elements(By.CSS_SELECTOR, ".chead"))
 
         # And not design 1, whose consolidated block and chart canvases are
@@ -186,16 +186,16 @@ class MoneyColumnEntitlementTest(MoneyPageMixin, FunctionalTest):
         mocked_capabilities.return_value = {"permission": 0}
 
         # Fay's subscription has lapsed, but her choice is still stored.
-        self.sign_in("fay-free@example.com", 0, "money-column")
+        self.sign_in("fay-free@example.com", 0, "dynamic")
         self.open_address()
 
-        self.assertFalse(self.browser.find_elements(By.CSS_SELECTOR, ".money-page"))
+        self.assertFalse(self.browser.find_elements(By.CSS_SELECTOR, ".dynamic-page"))
         # She gets the page everybody gets, in full.
         self.assertTrue(self.browser.find_elements(By.CSS_SELECTOR, "div.consolidated"))
 
         # The choice is remembered rather than cleared, so a renewal restores it.
         profile = get_user_model().objects.get(username="fay-free@example.com").profile
-        self.assertEqual("money-column", profile.preferred_layout)
+        self.assertEqual("dynamic", profile.preferred_layout)
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
@@ -205,7 +205,7 @@ class MoneyColumnEntitlementTest(MoneyPageMixin, FunctionalTest):
     ):
         """~200 KB a reader of this design never needs.
 
-        The charts here are inline SVG drawn by `money.js`. The saving is only
+        The charts here are inline SVG drawn by `dynamic.js`. The saving is only
         real if the bundle is genuinely absent from the page, which the template
         alone cannot promise -- `base.html` could start including it tomorrow
         and every template test would stay green.
@@ -214,7 +214,7 @@ class MoneyColumnEntitlementTest(MoneyPageMixin, FunctionalTest):
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
 
-        self.sign_in("chart-free@example.com", ASASTATSER, "money-column")
+        self.sign_in("chart-free@example.com", ASASTATSER, "dynamic")
         self.open_address()
 
         sources = [
@@ -225,10 +225,10 @@ class MoneyColumnEntitlementTest(MoneyPageMixin, FunctionalTest):
             [src for src in sources if "chart.min" in src],
             f"the money column pulled in Chart.js: {sources}",
         )
-        self.assertTrue([src for src in sources if src.endswith("money.js")])
+        self.assertTrue([src for src in sources if src.endswith("dynamic.js")])
 
 
-class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
+class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
     """What the page shows, and what a reader can do with it."""
 
     #: Asset rows only. The NFT section is still design 1's `snippets/nfts.html`
@@ -244,7 +244,7 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         performs reaches for the capabilities API on :8001 and logs a
         connection error that has nothing to do with what is being tested.
         """
-        self.sign_in("struct-money@example.com", ASASTATSER, "money-column")
+        self.sign_in("struct-money@example.com", ASASTATSER, "dynamic")
 
     def _open_page(self):
         """Load the page with the folded tail revealed and images settled.
@@ -488,7 +488,7 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         self.assertGreater(shown, 0, "the section showed nothing at all")
 
         control = self.browser.find_element(
-            By.CSS_SELECTOR, ".money-page .asasec [data-show-more]"
+            By.CSS_SELECTOR, ".dynamic-page .asasec [data-show-more]"
         )
         # The label promises a number, and the press has to deliver exactly it.
         promised = int(
@@ -601,7 +601,7 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
     def test_the_charts_panel_draws_its_donuts_on_first_open(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
-        """Empty markup by design, filled by `money.js` when asked.
+        """Empty markup by design, filled by `dynamic.js` when asked.
 
         An SVG for six charts is a great deal of bytes to ship to every reader
         who never opens the panel, so the grid ships empty -- which means a
@@ -624,7 +624,7 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         self.wait_until(lambda: grid.find_elements(By.TAG_NAME, "svg"))
         charts = grid.find_elements(By.TAG_NAME, "svg")
         self.assertGreater(len(charts), 1, "only one chart drew")
-        # A ring, not a filled circle: `money.js` draws each donut as two
+        # A ring, not a filled circle: `dynamic.js` draws each donut as two
         # circles with `fill-rule="evenodd"`, because a full ring cannot be one
         # arc -- SVG collapses a 360 degree arc to nothing.
         self.assertTrue(
@@ -741,7 +741,7 @@ class MoneyColumnStructureTest(MoneyPageMixin, FunctionalTest):
         self.assertEqual("true", opener.get_attribute("aria-expanded"))
 
 
-class MoneyColumnCompactTest(MoneyPageMixin, FunctionalTest):
+class DynamicCompactTest(MoneyPageMixin, FunctionalTest):
     """Design 3: the same template, one class, a different list.
 
     `compact` comes off the layout registry and adds `.rows.cards`, which turns
@@ -760,7 +760,7 @@ class MoneyColumnCompactTest(MoneyPageMixin, FunctionalTest):
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
 
-        self.sign_in("compact@example.com", ASASTATSER, "money-column-compact")
+        self.sign_in("compact@example.com", ASASTATSER, "dynamic-compact")
         self.open_address()
 
         rows = self.browser.find_element(By.CSS_SELECTOR, ".rows")
@@ -794,7 +794,7 @@ class MoneyColumnCompactTest(MoneyPageMixin, FunctionalTest):
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
 
-        self.sign_in("wide@example.com", ASASTATSER, "money-column")
+        self.sign_in("wide@example.com", ASASTATSER, "dynamic")
         self.open_address()
 
         rows = self.browser.find_element(By.CSS_SELECTOR, ".rows")

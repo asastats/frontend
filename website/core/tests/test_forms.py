@@ -801,7 +801,7 @@ class TestProfileLayoutForm:
     def test_profilelayoutform_accepts_an_entitled_layout(self):
         profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
         form = ProfileLayoutForm(
-            data={"preferred_layout": "money-column"}, instance=profile
+            data={"preferred_layout": "dynamic"}, instance=profile
         )
         assert form.is_valid() is True
 
@@ -813,14 +813,14 @@ class TestProfileLayoutForm:
         """
         profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
         form = ProfileLayoutForm(
-            data={"preferred_layout": "money-column-compact"}, instance=profile
+            data={"preferred_layout": "dynamic-compact"}, instance=profile
         )
         assert form.is_valid() is False
 
     def test_profilelayoutform_accepts_dynamic_layout_at_intro(self):
         profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
         form = ProfileLayoutForm(
-            data={"preferred_layout": "money-column"}, instance=profile
+            data={"preferred_layout": "dynamic"}, instance=profile
         )
         assert form.is_valid() is True
 
@@ -837,14 +837,14 @@ class TestProfileLayoutForm:
 
     def test_profilelayoutform_initial_ignores_a_lapsed_choice(self):
         """The select shows what the address page shows, not the stored key."""
-        profile = Profile(preferred_layout="money-column", permission=0)
+        profile = Profile(preferred_layout="dynamic", permission=0)
         form = ProfileLayoutForm(instance=profile)
         assert form.initial["preferred_layout"] == "classic"
 
     def test_profilelayoutform_initial_keeps_an_entitled_choice(self):
         profile = Profile(
-            preferred_layout="money-column",
+            preferred_layout="dynamic",
             permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
         )
         form = ProfileLayoutForm(instance=profile)
-        assert form.initial["preferred_layout"] == "money-column"
+        assert form.initial["preferred_layout"] == "dynamic"

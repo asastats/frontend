@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load core_extras %}
-{% comment %} The money-column address page: designs 2 and 3.
+{% comment %} The dynamic address page: designs 2 and 3.
 
    One template, two layouts. `compact` comes from the view, off the layout
    registry, and adds a single class -- `.rows.cards` -- exactly as the
@@ -35,14 +35,14 @@
 
 {% block content %}
 {% comment %} One scope class for the whole design. Every rule in the
-   money-column block of `input.css` is written under it, so nothing here can
+   dynamic block of `input.css` is written under it, so nothing here can
    reach design 1's markup even by accident -- the two pages share a base
    template and a stylesheet, and design 1 is meant to stay untouched.
 {% endcomment %}
-<div class="money-page">
+<div class="dynamic-page">
 <div id="id-swap-entry-container" hx-get="{% url 'swap_entry' url_value %}" hx-trigger="load" hx-swap="innerHTML"></div>
 {% comment %} The same six payload blocks design 1 emits. The data is identical;
-   only the renderer changes -- `money.js` draws them as SVG. {% endcomment %}
+   only the renderer changes -- `dynamic.js` draws them as SVG. {% endcomment %}
 {{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
 
 {% with total=account.total system=account.system_info account_info=account.account_info %}
@@ -135,9 +135,9 @@
 <p class="band-note" role="status">Your tax report is being processed.</p>
 {% endif %}
 
-{% include "snippets/money/band.html" with consolidated=consolidated total=total %}
+{% include "snippets/dynamic/band.html" with consolidated=consolidated total=total %}
 
-{% include "snippets/money/toolbar.html" %}
+{% include "snippets/dynamic/toolbar.html" %}
 
 {% comment %} Pinned positions. The band is rendered empty and hidden; the
    reader's own browser fills it from `localStorage`. It cannot be rendered
@@ -172,7 +172,7 @@
   {% with shown=ADDRESS_INITIAL_ASSETS %}
   <div class="rows{% if compact %} cards{% endif %}" id="asset-list" data-folding>
     {% for asaitem in account.asaitems %}
-      {% include "snippets/money/asset.html" with asaitem=asaitem colors=colors shown=shown index=forloop.counter0 %}
+      {% include "snippets/dynamic/asset.html" with asaitem=asaitem colors=colors shown=shown index=forloop.counter0 %}
     {% endfor %}
   </div>
   {% comment %} The fold control comes *directly* after the list it unfolds, and
@@ -207,11 +207,11 @@
   {% endwith %}
 </section>
 
-{% comment %} The money-column NFT section, not design 1's. Its collections are
+{% comment %} The dynamic NFT section, not design 1's. Its collections are
    asset cards -- same `.chead`, same `--col` -- so the money column runs to the
    bottom of the page instead of stopping at the assets. {% endcomment %}
 {% if account.nftcollections %}
-{% include "snippets/money/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors compact=compact %}
+{% include "snippets/dynamic/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors compact=compact %}
 {% endif %}
 {% include "snippets/nonval.html" with notevals=account.notevals %}
 
@@ -229,9 +229,9 @@
 <script src="{% static 'js/address.js' %}"></script>
 <script src="{% static 'js/showmore.js' %}"></script>
 <script src="{% static 'js/pins.js' %}"></script>
-<script src="{% static 'js/money.js' %}"></script>
+<script src="{% static 'js/dynamic.js' %}"></script>
 {% comment %} Last, and deliberately: `toolbar.js` re-bases the order `pins.js`
-   captured and redraws the band `money.js` charts from, so both have to have
+   captured and redraws the band `dynamic.js` charts from, so both have to have
    run and taken their own snapshot of the served page first. {% endcomment %}
 <script src="{% static 'js/toolbar.js' %}"></script>
 {% endblock %}

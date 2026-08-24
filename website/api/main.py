@@ -61,7 +61,7 @@ def fetch_and_serialize_account(value, addresses):
     therefore not one position-pin control on the whole page. `pins.js`, the
     pinned band and the whole position-pinning feature were dead against the
     real backend while passing every test, because the fixtures annotated
-    themselves. ``integration_tests/test_address_money_integration.py`` is what
+    themselves. ``integration_tests/test_address_dynamic_integration.py`` is what
     found it and is what keeps it found.
 
     :param value: single address, or the bundle hash

@@ -1098,17 +1098,17 @@ class ProfileSettingsPageTest(TestCase):
     def test_settings_page_layout_post_saves_for_entitled_user(self):
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
         self.user.profile.save()
-        response = self._post_layout("money-column")
+        response = self._post_layout("dynamic")
         self.assertRedirects(response, reverse("profile_settings"))
         self.user.profile.refresh_from_db()
-        assert self.user.profile.preferred_layout == "money-column"
+        assert self.user.profile.preferred_layout == "dynamic"
         tags = [m.extra_tags for m in get_messages(response.wsgi_request)]
         assert tags == ["layout"]
 
     def test_settings_page_layout_post_redirects_unentitled_to_subscriptions(self):
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
         self.user.profile.save()
-        response = self._post_layout("money-column")
+        response = self._post_layout("dynamic")
         self.assertRedirects(response, reverse("subscriptions"))
         self.user.profile.refresh_from_db()
         assert self.user.profile.preferred_layout == ""
@@ -1124,7 +1124,7 @@ class ProfileSettingsPageTest(TestCase):
         """
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
         self.user.profile.save()
-        response = self._post_layout("money-column-compact")
+        response = self._post_layout("dynamic-compact")
         self.assertTemplateUsed(response, "profile_settings.html")
         self.user.profile.refresh_from_db()
         assert self.user.profile.preferred_layout == ""
@@ -1138,10 +1138,10 @@ class ProfileSettingsPageTest(TestCase):
     def test_settings_page_layout_post_saves_a_paid_layout_at_its_tier(self):
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
         self.user.profile.save()
-        response = self._post_layout("money-column")
+        response = self._post_layout("dynamic")
         self.assertRedirects(response, reverse("profile_settings"))
         self.user.profile.refresh_from_db()
-        assert self.user.profile.preferred_layout == "money-column"
+        assert self.user.profile.preferred_layout == "dynamic"
 
     def test_settings_page_offers_the_layout_section_to_entitled_user(self):
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]

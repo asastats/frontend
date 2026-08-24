@@ -142,9 +142,9 @@ class TestLayoutResolution:
 
     @pytest.mark.django_db
     def test_signed_in_reader_gets_their_choice(self):
-        user = _user("layoutctx-1", permission=ASASTATSER, layout="money-column")
+        user = _user("layoutctx-1", permission=ASASTATSER, layout="dynamic")
 
-        assert layout_for_user(user) == "money-column"
+        assert layout_for_user(user) == "dynamic"
 
     @pytest.mark.django_db
     def test_signed_in_reader_without_a_choice_gets_the_default(self):
@@ -178,7 +178,7 @@ class TestLayoutResolution:
     @pytest.mark.django_db
     def test_lapsed_tier_falls_back(self):
         """The gate is re-checked on read, not only when the choice is saved."""
-        user = _user("layoutctx-2", permission=0, layout="money-column")
+        user = _user("layoutctx-2", permission=0, layout="dynamic")
 
         assert layout_for_user(user) == "classic"
 
@@ -207,13 +207,13 @@ class TestCachedViewCarriesOnlyTheLayout:
             return view.get_context_data()
 
     def test_the_context_carries_the_layout(self, payload):
-        assert self._context(payload, "money-column")["layout"] == "money-column"
+        assert self._context(payload, "dynamic")["layout"] == "dynamic"
 
     def test_the_context_carries_the_compact_flag(self, payload):
-        assert self._context(payload, "money-column-compact")["compact"] is True
+        assert self._context(payload, "dynamic-compact")["compact"] is True
 
     def test_the_compact_flag_is_false_for_a_full_layout(self, payload):
-        assert self._context(payload, "money-column")["compact"] is False
+        assert self._context(payload, "dynamic")["compact"] is False
 
     def test_the_context_carries_nothing_else_about_the_reader(self, payload):
         """A `RequestFactory` request has no `.user`, and that must be fine.
@@ -241,7 +241,7 @@ class TestCacheIsKeyedOnTheLayout:
     def test_readers_on_different_layouts_get_different_pages(self, payload):
         """The whole point. If these ever match, the layout stopped mattering."""
         cache.clear()
-        money = _user("layoutkey-1", permission=ASASTATSER, layout="money-column")
+        money = _user("layoutkey-1", permission=ASASTATSER, layout="dynamic")
         classic = _user("layoutkey-2", permission=ASASTATSER, layout="classic")
 
         assert _render(money, payload) != _render(classic, payload)
@@ -250,14 +250,14 @@ class TestCacheIsKeyedOnTheLayout:
         """A warmed paid entry must be unreachable from below the gate.
 
         The subscriber goes first *on purpose*: their render populates the
-        `layout-money-column` entry, and the free reader must miss it rather
+        `layout-dynamic` entry, and the free reader must miss it rather
         than inherit it. This is the shared-cache bug's shape, closed by
         construction -- the key prefix is built from the *normalized* layout, so
         an unentitled reader resolves to `classic` before a key exists.
         """
         cache.clear()
-        subscriber = _user("layoutkey-3", permission=ASASTATSER, layout="money-column")
-        free = _user("layoutkey-4", permission=0, layout="money-column")
+        subscriber = _user("layoutkey-3", permission=ASASTATSER, layout="dynamic")
+        free = _user("layoutkey-4", permission=0, layout="dynamic")
         paid_html = _render(subscriber, payload)
         free_html = _render(free, payload)
 
@@ -268,7 +268,7 @@ class TestCacheIsKeyedOnTheLayout:
         # the two pages differ by the CSV export link and now key differently.
         # See TestCacheIsKeyedOnEntitlementToo below.
         assert free_html == _render(
-            _user("layoutkey-4b", permission=0, layout="money-column"), payload
+            _user("layoutkey-4b", permission=0, layout="dynamic"), payload
         )
 
     def test_a_lapsed_subscriber_drops_back_to_the_default_page(self, payload):
@@ -281,11 +281,11 @@ class TestCacheIsKeyedOnTheLayout:
         out", which are very different failures.
         """
         cache.clear()
-        lapsed = _user("layoutkey-5", permission=INTRO, layout="money-column")
+        lapsed = _user("layoutkey-5", permission=INTRO, layout="dynamic-compact")
         plain = _user("layoutkey-5b", permission=INTRO, layout="")
 
         assert _render(lapsed, payload) == _render(plain, payload)
-        assert lapsed.profile.preferred_layout == "money-column"
+        assert lapsed.profile.preferred_layout == "dynamic-compact"
 
     def test_the_default_page_is_still_the_untouched_one(self, payload):
         """Design 1 is `frontend-before` plus the fold, and nothing else.
@@ -369,7 +369,7 @@ class TestCachedPageIsSharedWithinOneLayout:
         Two identical error pages would satisfy every comparison above.
         Counted on `.fitem` rather than `.position`: design 1 is the untouched
         old page and has no position component -- that belongs to the
-        money-column designs.
+        dynamic designs.
         """
         cache.clear()
         html = _render(None, payload)

@@ -109,25 +109,25 @@ class TestUtilsLayoutsCanAccess:
         )
 
     def test_utils_layouts_cannot_access_dynamic_layout_at_trial(self):
-        assert can_access_layout("money-column", TRIAL) is False
+        assert can_access_layout("dynamic", TRIAL) is False
 
     def test_utils_layouts_can_access_dynamic_layout_at_intro(self):
-        assert can_access_layout("money-column", INTRO) is True
+        assert can_access_layout("dynamic", INTRO) is True
 
     def test_utils_layouts_cannot_access_compact_layout_at_intro(self):
-        assert can_access_layout("money-column-compact", INTRO) is False
+        assert can_access_layout("dynamic-compact", INTRO) is False
 
     def test_utils_layouts_cannot_access_compact_layout_at_trial(self):
-        assert can_access_layout("money-column-compact", TRIAL) is False
+        assert can_access_layout("dynamic-compact", TRIAL) is False
 
     def test_utils_layouts_can_access_asastatser_layout_at_asastatser(self):
-        assert can_access_layout("money-column", ASASTATSER) is True
+        assert can_access_layout("dynamic", ASASTATSER) is True
 
     def test_utils_layouts_can_access_compact_layout_at_asastatser(self):
-        assert can_access_layout("money-column-compact", ASASTATSER) is True
+        assert can_access_layout("dynamic-compact", ASASTATSER) is True
 
     def test_utils_layouts_can_access_gated_layout_above_its_tier(self):
-        assert can_access_layout("money-column", PROFESSIONAL) is True
+        assert can_access_layout("dynamic", PROFESSIONAL) is True
 
     def test_utils_layouts_can_access_rejects_unknown_key(self):
         """An unknown key names nothing to render, at any tier."""
@@ -144,7 +144,7 @@ class TestUtilsLayoutsNormalized:
     """Testing class for :func:`normalized_layout`."""
 
     def test_utils_layouts_normalized_keeps_entitled_key(self):
-        assert normalized_layout("money-column", ASASTATSER) == "money-column"
+        assert normalized_layout("dynamic", ASASTATSER) == "dynamic"
 
     def test_utils_layouts_normalized_falls_back_on_unknown(self):
         assert normalized_layout("nope", ASASTATSER) == DEFAULT_ADDRESS_LAYOUT
@@ -162,11 +162,11 @@ class TestUtilsLayoutsNormalized:
         nothing: a layout is the subscription benefit, so a lapsed reader gets
         the default back while their choice waits for a renewal.
         """
-        assert normalized_layout("money-column", TRIAL) == DEFAULT_ADDRESS_LAYOUT
+        assert normalized_layout("dynamic", TRIAL) == DEFAULT_ADDRESS_LAYOUT
 
     @pytest.mark.parametrize("permission", [TRIAL, INTRO, ASASTATSER, PROFESSIONAL])
     def test_utils_layouts_normalized_result_is_always_entitled(self, permission):
-        result = normalized_layout("money-column-compact", permission)
+        result = normalized_layout("dynamic-compact", permission)
         assert can_access_layout(result, permission) is True
 
 
@@ -188,7 +188,7 @@ class TestUtilsLayoutsChoices:
         """Intro buys Dynamic, not its compact variant."""
         assert [key for key, _ in layout_choices(INTRO)] == [
             DEFAULT_ADDRESS_LAYOUT,
-            "money-column",
+            "dynamic",
         ]
 
     def test_utils_layouts_choices_at_asastatser_is_every_layout(self):
@@ -244,17 +244,17 @@ class TestUtilsLayoutsName:
     """Testing class for :func:`layout_name`."""
 
     def test_utils_layouts_name_returns_display_name(self):
-        assert layout_name("money-column") == "Dynamic"
+        assert layout_name("dynamic") == "Dynamic"
 
     def test_utils_layouts_name_returns_compact_display_name(self):
-        assert layout_name("money-column-compact") == "Dynamic compact"
+        assert layout_name("dynamic-compact") == "Dynamic compact"
 
     def test_utils_layouts_name_falls_back_on_unknown(self):
         assert layout_name("nope") == ADDRESS_LAYOUTS[DEFAULT_ADDRESS_LAYOUT]["name"]
 
     def test_utils_layouts_name_takes_no_permission(self):
         """It answers what a layout is called, which is the same for everybody."""
-        assert layout_name("money-column") == "Dynamic"
+        assert layout_name("dynamic") == "Dynamic"
 
 
 class TestUtilsLayoutsTemplate:
@@ -264,13 +264,13 @@ class TestUtilsLayoutsTemplate:
         assert layout_template(DEFAULT_ADDRESS_LAYOUT) == "address.html"
 
     def test_utils_layouts_template_money_column_has_its_own(self):
-        assert layout_template("money-column") == "address_money.html"
+        assert layout_template("dynamic") == "address_dynamic.html"
 
     def test_utils_layouts_template_is_shared_by_a_layout_and_its_compact_form(self):
         """Designs 2 and 3 are one template with a flag, as the prototype builds
         them -- duplicating the file would duplicate every row and chart to
         change a handful of grid rules."""
-        assert layout_template("money-column-compact") == layout_template("money-column")
+        assert layout_template("dynamic-compact") == layout_template("dynamic")
 
     def test_utils_layouts_template_falls_back_on_unknown(self):
         """A key left behind by a removed layout renders the default page.
@@ -288,10 +288,10 @@ class TestUtilsLayoutsCompact:
         assert layout_compact(DEFAULT_ADDRESS_LAYOUT) is False
 
     def test_utils_layouts_compact_money_column_is_not_compact(self):
-        assert layout_compact("money-column") is False
+        assert layout_compact("dynamic") is False
 
     def test_utils_layouts_compact_money_column_compact_is(self):
-        assert layout_compact("money-column-compact") is True
+        assert layout_compact("dynamic-compact") is True
 
     def test_utils_layouts_compact_falls_back_on_unknown(self):
         assert layout_compact("nope") is layout_compact(DEFAULT_ADDRESS_LAYOUT)
@@ -304,10 +304,10 @@ class TestUtilsLayoutsTier:
         assert layout_tier(DEFAULT_ADDRESS_LAYOUT) is None
 
     def test_utils_layouts_tier_names_the_dynamic_gate(self):
-        assert layout_tier("money-column") == "Intro"
+        assert layout_tier("dynamic") == "Intro"
 
     def test_utils_layouts_tier_names_the_compact_gate(self):
-        assert layout_tier("money-column-compact") == "Asastatser"
+        assert layout_tier("dynamic-compact") == "Asastatser"
 
     def test_utils_layouts_tier_falls_back_on_unknown(self):
         assert layout_tier("nope") is None

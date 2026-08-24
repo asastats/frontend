@@ -1,4 +1,4 @@
-"""The template filters the money-column designs are built on.
+"""The template filters the dynamic designs are built on.
 
 :func:`program_groups` stacks an asset's positions under their program.
 :func:`allocation_bands` computes the five categories that the allocation bar,

@@ -51,7 +51,7 @@ class TestApMainFunctions:
         ``AsaItemSerializer``, which runs when we serve ``/api/v2/``. Without
         it the address page renders every position anonymous, and therefore
         renders no pin control at all -- silently. See
-        ``integration_tests/test_address_money_integration.py``, which is what
+        ``integration_tests/test_address_dynamic_integration.py``, which is what
         caught it against the live backend.
         """
         value = API_EXAMPLE_ADDRESS1

@@ -1,5 +1,5 @@
 {% load core_extras %}
-{% comment %} The NFT section, in the money-column designs.
+{% comment %} The NFT section, in the dynamic designs.
 
   Until now this page included design 1's `snippets/nfts.html` unchanged, which
   made the section a different design bolted to the bottom of this one: its rows
@@ -33,7 +33,7 @@
   {% with shown=ADDRESS_INITIAL_COLLECTIONS %}
   <div class="rows{% if compact %} cards{% endif %}" id="nft-list" data-folding>
     {% for coll in nftcollections %}
-      {% include "snippets/money/collection.html" with coll=coll nft_colors=nft_colors shown=shown index=forloop.counter0 %}
+      {% include "snippets/dynamic/collection.html" with coll=coll nft_colors=nft_colors shown=shown index=forloop.counter0 %}
     {% endfor %}
   </div>
   {% comment %} Directly after the list it unfolds: `showmore.js` finds its

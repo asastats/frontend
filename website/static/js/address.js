@@ -68,13 +68,13 @@ function mainAddress() {
   $(".totalnonft").find("input[type=checkbox]").on("change", toggleTotalNoNft);
   $(".price").on("click", togglePrice);
   $(".unitprice").on("click", toggleUnitPrice);
-  // Design 1's breakdown controls only. The money-column designs use the same
+  // Design 1's breakdown controls only. The dynamic designs use the same
   // `.tdist` idiom -- dotted at rest, opens in place -- but hide their panel
   // with the `hidden` *attribute* and carry `aria-expanded` on a real button,
   // neither of which this handler touches. Bound here as well, the two would
-  // fight: `money.js` clears the attribute while this adds the `hidden` class,
+  // fight: `dynamic.js` clears the attribute while this adds the `hidden` class,
   // and the panel stays shut with both designs believing it opened.
-  $(".tdist").not(".money-page .tdist").on("click", toggleDist);
+  $(".tdist").not(".dynamic-page .tdist").on("click", toggleDist);
   $(window).on("scroll", toggleScrollToTopButton);
   $("#scroll-to-top").on("click", scrollToTop);
   toggleScrollToTopButton();
@@ -1148,7 +1148,7 @@ function setTip(element, text) {
 function setCurrency(code) {
   // Design 1 only. This writes `innerHTML` -- number *and* unit -- into every
   // `span.val`, which is right for design 1, where the unit is part of the
-  // value's own text. The money-column designs pair each figure with a separate
+  // value's own text. The dynamic designs pair each figure with a separate
   // unit element: a sibling `.u.unit` in an asset header, a nested
   // `<span class="unit">` in a venue subtotal. So this rewrote the header to
   // "253.74 ALGO" beside a sibling still reading "ALGO", and destroyed the
@@ -1157,7 +1157,7 @@ function setCurrency(code) {
   // figure there at all, which is a `<button>` rather than a span.
   //
   // `toolbar.js` owns currency on that page and writes only the number.
-  if (document.querySelector(".money-page")) return;
+  if (document.querySelector(".dynamic-page")) return;
   var price = $(".pricetip")[0].dataset.price;
   var pricealgo = $(".pricetip")[0].dataset.pricealgo;
   var total = $(".pricetip")[0].dataset.total;
@@ -1331,12 +1331,12 @@ function setRefresh(value) {
 function setTotalNoNft(value) {
   // Design 1 only, for the same reason `setCurrency` is. This writes the
   // headline's `innerHTML` -- figure *and* unit -- reading the currency from
-  // design 1's own global `cur` key. On the money-column page that meant the
+  // design 1's own global `cur` key. On the dynamic page that meant the
   // total was written by design 1 on load and by nobody afterwards: a reader
   // who had ever chosen USD anywhere got a USD headline in a fresh tab, and
   // pressing USD in that page's own toolbar changed every figure except the
   // one at the top. `toolbar.js` owns the headline there.
-  if (document.querySelector(".money-page")) return;
+  if (document.querySelector(".dynamic-page")) return;
   var price = $(".pricetip")[0].dataset.price;
   var pricealgo = $(".pricetip")[0].dataset.pricealgo;
   var totalwnft = $(".pricetip")[0].dataset.totalwnft;

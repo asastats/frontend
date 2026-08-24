@@ -1,4 +1,4 @@
-"""Functional tests for the money-column NFT section — designs 2 and 3.
+"""Functional tests for the dynamic NFT section — designs 2 and 3.
 
 The section was design 1's markup bolted to the bottom of this page until now,
 and the reason it had to be rebuilt is a measurement: its rows put the value
@@ -52,7 +52,7 @@ def _sample_payload():
     return payload
 
 
-class MoneyColumnNftTest(FunctionalTest):
+class DynamicNftTest(FunctionalTest):
     """The NFT section, rendered as part of this design rather than beside it."""
 
     def setUp(self):
@@ -64,7 +64,7 @@ class MoneyColumnNftTest(FunctionalTest):
             username="nfts@example.com", password="top_secret", permission=ASASTATSER
         )
         profile = get_user_model().objects.get(username="nfts@example.com").profile
-        profile.preferred_layout = "money-column"
+        profile.preferred_layout = "dynamic"
         profile.save()
         self.browser.get(self.server_url + "/404.html")
         self.browser.add_cookie(cookie)
@@ -276,7 +276,7 @@ class MoneyColumnNftTest(FunctionalTest):
         arrangement and is kept. What could not be kept is `showTimes` itself:
         it binds to `.nft.item-header` and looks for `.item-body` siblings, and
         this design has neither -- so the section said "Last purchase on Rand
-        Gallery" with no indication of when. `money.js` fills them now.
+        Gallery" with no indication of when. `dynamic.js` fills them now.
         """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
@@ -383,7 +383,7 @@ class MoneyColumnNftTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         self.sign_in()
         self.open_page(collections=0)
-        section = self.browser.find_element(By.CSS_SELECTOR, ".money-page .nftsec")
+        section = self.browser.find_element(By.CSS_SELECTOR, ".dynamic-page .nftsec")
         self.assertTrue(section.is_displayed())
 
         self.browser.find_element(By.CSS_SELECTOR, '.figs .fig[data-band="nft"]').click()
@@ -406,7 +406,7 @@ class MoneyColumnNftTest(FunctionalTest):
         self.sign_in()
         self.open_page(collections=0)
 
-        section = self.browser.find_element(By.CSS_SELECTOR, ".money-page .nftsec")
+        section = self.browser.find_element(By.CSS_SELECTOR, ".dynamic-page .nftsec")
         batch = int(section.get_attribute("data-initial"))
         shown = self._shown()
         self.assertEqual(batch, shown, "the first screen is not the published batch")

@@ -1,4 +1,4 @@
-"""Functional tests for the money-column toolbar — pass 2 of designs 2 and 3.
+"""Functional tests for the dynamic toolbar — pass 2 of designs 2 and 3.
 
 The toolbar is entirely a browser feature: it filters, sorts, regroups and
 re-denominates a page that is already in the reader's hands, and the server
@@ -51,7 +51,7 @@ ASASTATSER = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
 def _sample_payload():
     """The captured payload, annotated the way the view's own path annotates it.
 
-    See ``test_address_money_page.py``: mocking ``fetch_and_serialize_account``
+    See ``test_address_dynamic_page.py``: mocking ``fetch_and_serialize_account``
     replaces the layer that adds ``pid``, so without this no position carries an
     identity and the pinning half of these tests would pass vacuously.
     """
@@ -77,7 +77,7 @@ class ToolbarTest(FunctionalTest):
             username="toolbar@example.com", password="top_secret", permission=ASASTATSER
         )
         profile = get_user_model().objects.get(username="toolbar@example.com").profile
-        profile.preferred_layout = "money-column"
+        profile.preferred_layout = "dynamic"
         profile.save()
         self.browser.get(self.server_url + "/404.html")
         self.browser.add_cookie(cookie)
@@ -115,7 +115,7 @@ class ToolbarTest(FunctionalTest):
         ]
 
     def headline(self):
-        return self.browser.find_element(By.CSS_SELECTOR, ".money-page h1.total").text
+        return self.browser.find_element(By.CSS_SELECTOR, ".dynamic-page h1.total").text
 
     def open_assets(self):
         self.browser.execute_script(
@@ -626,12 +626,12 @@ class ToolbarTest(FunctionalTest):
         self.open_page()
 
         first = len(self.shown())
-        section = self.browser.find_element(By.CSS_SELECTOR, ".money-page .asasec")
+        section = self.browser.find_element(By.CSS_SELECTOR, ".dynamic-page .asasec")
         batch = int(section.get_attribute("data-initial"))
         self.assertEqual(batch, first, "the first screen is not the published batch")
 
         control = self.browser.find_element(
-            By.CSS_SELECTOR, ".money-page .asasec [data-show-more]"
+            By.CSS_SELECTOR, ".dynamic-page .asasec [data-show-more]"
         )
         self.assertIn(str(batch), control.text)
         control.click()
@@ -652,8 +652,8 @@ class ToolbarTest(FunctionalTest):
         self.sign_in()
         self.open_page()
 
-        assets = self.browser.find_element(By.CSS_SELECTOR, ".money-page .asasec")
-        collections = self.browser.find_element(By.CSS_SELECTOR, ".money-page .nftsec")
+        assets = self.browser.find_element(By.CSS_SELECTOR, ".dynamic-page .asasec")
+        collections = self.browser.find_element(By.CSS_SELECTOR, ".dynamic-page .nftsec")
         smaller = int(collections.get_attribute("data-initial"))
 
         self.assertLess(smaller, int(assets.get_attribute("data-initial")))
@@ -775,7 +775,7 @@ class ToolbarTest(FunctionalTest):
         self.assertTrue(self.browser.find_element(By.ID, "tb-reset").get_attribute("disabled"))
         self.assertEqual("", self.status())
         self.assertTrue(
-            self.browser.find_element(By.CSS_SELECTOR, ".money-page .nftsec").is_displayed()
+            self.browser.find_element(By.CSS_SELECTOR, ".dynamic-page .nftsec").is_displayed()
         )
         self.assertEqual([], self.javascript_errors())
 

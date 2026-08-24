@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  *
- * The money-column designs' charts, drawn as inline SVG.
+ * The dynamic designs' charts, drawn as inline SVG.
  *
  * Design 1 keeps Chart.js and is not touched by any of this. What is worth
  * testing here is the arithmetic and the geometry -- a donut that renders
@@ -10,18 +10,18 @@
  * invisible until an address happens to hold exactly one thing.
  */
 
-/** Load money.js against the current DOM and return what it exposes. */
+/** Load dynamic.js against the current DOM and return what it exposes. */
 function load() {
   jest.resetModules();
-  delete require.cache[require.resolve("../static/js/money.js")];
-  require("../static/js/money.js");
-  return window.asastatsMoney;
+  delete require.cache[require.resolve("../static/js/dynamic.js")];
+  require("../static/js/dynamic.js");
+  return window.asastatsDynamic;
 }
 
 /**
  * Mount a `json_script` payload block.
  *
- * @param {string} id - the element id money.js looks for.
+ * @param {string} id - the element id dynamic.js looks for.
  * @param {object} data - the Chart.js-shaped payload.
  */
 function mountPayload(id, data) {
@@ -419,7 +419,7 @@ describe("the breakdown controls", () => {
    * Mount one position row with a `.tdist` control and its panel.
    *
    * The panel is hidden with the `hidden` *attribute*, which is the shape the
-   * money-column template renders and the reason design 1's handler could
+   * dynamic template renders and the reason design 1's handler could
    * never open it -- that one toggles a `hidden` class, so it went on and the
    * panel stayed shut with the control reporting success.
    *
@@ -625,14 +625,14 @@ describe("redrawing the allocation from a filtered view", () => {
 
 describe("dating the NFT purchases", () => {
   /**
-   * `.epoch` is design 1's contract and the money-column NFT section keeps it,
+   * `.epoch` is design 1's contract and the dynamic NFT section keeps it,
    * but the filling could not be kept: `showTimes` binds to `.nft.item-header`
    * and looks for `.item-body` siblings, and this design has neither. So the
    * section said "Last purchase on Rand Gallery" with no indication of when.
    */
   function mountEpoch(seconds) {
     const page = document.createElement("div");
-    page.className = "money-page";
+    page.className = "dynamic-page";
     const span = document.createElement("span");
     span.className = "epoch";
     span.setAttribute("data-epoch", String(seconds));

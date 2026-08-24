@@ -258,14 +258,14 @@ describe("wiring", () => {
 });
 
 
-describe("on the money-column designs", () => {
+describe("on the dynamic designs", () => {
   test("it stands down entirely", () => {
     // Those designs show a fixed first batch and add one batch per press,
     // which is `toolbar.js`'s rule. Two handlers on one control would both act
     // -- the whole tail revealed *and* the batch counted -- and the second
     // press would have nothing left to do.
     const page = document.createElement("div");
-    page.className = "money-page";
+    page.className = "dynamic-page";
     document.body.appendChild(page);
     const section = mountSection();
 

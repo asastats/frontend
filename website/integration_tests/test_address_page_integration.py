@@ -67,7 +67,7 @@ class AddressPageDataTest(TestCase):
         # The address page is `cache_page`'d, and a *replayed* cached response
         # carries no `templates` and no `context` -- so every assertion below
         # fails with "No templates used" and a `NoneType` subscript if anything
-        # rendered this address first. That became real when the money-column
+        # rendered this address first. That became real when the dynamic
         # integration tests arrived: they render this same address for a free
         # reader, which stores an entry under the very same `layout-classic`
         # prefix. Clearing here forces the miss these tests are written around.
@@ -146,7 +146,7 @@ class AddressPageRenderTest(TestCase):
         # The address page is `cache_page`'d, and a *replayed* cached response
         # carries no `templates` and no `context` -- so every assertion below
         # fails with "No templates used" and a `NoneType` subscript if anything
-        # rendered this address first. That became real when the money-column
+        # rendered this address first. That became real when the dynamic
         # integration tests arrived: they render this same address for a free
         # reader, which stores an entry under the very same `layout-classic`
         # prefix. Clearing here forces the miss these tests are written around.

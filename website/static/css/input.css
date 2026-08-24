@@ -2186,10 +2186,10 @@ div.socfooter {
 /* ============================================================================
    THE MONEY-COLUMN DESIGNS (2 and 3)
    ============================================================================
-   Only `address_money.html` and `templates/snippets/money/*` use any of this.
+   Only `address_dynamic.html` and `templates/snippets/dynamic/*` use any of this.
    Design 1 is the untouched old page and must stay untouched: nothing below
    may select a class design 1 renders. `core/tests/test_selector_contract.py`
-   and `test_money_design_classes.py` between them hold that line.
+   and `test_dynamic_design_classes.py` between them hold that line.
 
    Ported from the prototype, with its private token set replaced by the
    theme's. The prototype was standalone raw CSS with its own `--surface`,
@@ -2218,7 +2218,7 @@ div.socfooter {
    themes or they stop reading as the same picture. They are checked for
    contrast against both light and dark surfaces rather than against any one
    theme's background. */
-.money-page {
+.dynamic-page {
   --col: 8.5rem;
   --c-balance: #0b7a5b;
   --c-staked: #1f7a9c;
@@ -2231,7 +2231,7 @@ div.socfooter {
    chosen to sit on white and go muddy on a dark surface. Keyed off the theme's
    own scheme rather than `prefers-color-scheme`, because a reader on a dark
    theme in a light OS must get the dark set. */
-[data-theme] .money-page {
+[data-theme] .dynamic-page {
   --c-balance: light-dark(#0b7a5b, #3ecf9a);
   --c-staked: light-dark(#1f7a9c, #54c3e8);
   --c-liquidity: light-dark(#3f5bd6, #93a3f7);
@@ -2260,18 +2260,18 @@ div.socfooter {
 /* Tabular figures, so a column of numbers has its digits line up. Without this
    the money column aligns its right edge and nothing else, which is most of the
    benefit thrown away. */
-.money-page .num,
-.money-page .amt,
-.money-page .total {
+.dynamic-page .num,
+.dynamic-page .amt,
+.dynamic-page .total {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
 
-.money-page .neg {
+.dynamic-page .neg {
   color: var(--color-error);
 }
 
-.money-page .eyebrow {
+.dynamic-page .eyebrow {
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -2283,23 +2283,23 @@ div.socfooter {
    *at rest*, not only under the pointer: a reader deciding where to click has
    not pointed at anything yet. `.tdist` is already defined for design 1 and is
    shared deliberately -- same meaning, same treatment, one definition. */
-.money-page .out {
+.dynamic-page .out {
   text-decoration: none;
   text-underline-offset: 3px;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .money-page .out:hover { text-decoration: underline; }
+  .dynamic-page .out:hover { text-decoration: underline; }
 }
 
-.money-page .out:active { text-decoration: underline; }
+.dynamic-page .out:active { text-decoration: underline; }
 
 /* ---- page head ------------------------------------------------------------ */
-.money-page .head {
+.dynamic-page .head {
   padding: 2rem 0 1.5rem;
 }
 
-.money-page .head-grid {
+.dynamic-page .head-grid {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -2307,20 +2307,20 @@ div.socfooter {
   gap: 1.5rem;
 }
 
-.money-page .total-block {
+.dynamic-page .total-block {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
 }
 
-.money-page .total {
+.dynamic-page .total {
   font-weight: 500;
   font-size: clamp(2.4rem, 6.5vw, 3.6rem);
   line-height: 1;
   letter-spacing: -0.04em;
 }
 
-.money-page .total .unit {
+.dynamic-page .total .unit {
   font-size: 0.38em;
   letter-spacing: 0;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
@@ -2328,7 +2328,7 @@ div.socfooter {
   font-weight: 500;
 }
 
-.money-page .total-sub {
+.dynamic-page .total-sub {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem 0.875rem;
@@ -2336,12 +2336,12 @@ div.socfooter {
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
 }
 
-.money-page .total-note {
+.dynamic-page .total-note {
   font-size: 0.6875rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
-.money-page .addr {
+.dynamic-page .addr {
   font-size: 0.75rem;
   background: var(--color-base-100);
   border: 1px solid var(--color-base-300);
@@ -2350,17 +2350,17 @@ div.socfooter {
   text-decoration: none;
 }
 
-.money-page .addr:hover {
+.dynamic-page .addr:hover {
   border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
 }
 
-.money-page .head-actions {
+.dynamic-page .head-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.money-page .state-chip {
+.dynamic-page .state-chip {
   font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -2374,14 +2374,14 @@ div.socfooter {
 /* ---- allocation band ------------------------------------------------------
    "Where the money is": the bar, the five figures, and the charts panel. Three
    drawings of one set of numbers, computed once by `allocation_bands`. */
-.money-page .band {
+.dynamic-page .band {
   background: var(--color-base-100);
   border: 1px solid var(--color-base-300);
   border-radius: var(--radius-box);
   padding: 1.125rem 1.25rem 1rem;
 }
 
-.money-page .band-head {
+.dynamic-page .band-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -2390,14 +2390,14 @@ div.socfooter {
   margin-bottom: 0.875rem;
 }
 
-.money-page .band-note {
+.dynamic-page .band-note {
   font-size: 0.75rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
 /* The bar. `gap` rather than borders between segments, so a 0.4% slice is still
    visibly its own thing instead of a hairline swallowed by its neighbours. */
-.money-page .allocation-bar {
+.dynamic-page .allocation-bar {
   display: flex;
   height: 0.75rem;
   border-radius: 0.1875rem;
@@ -2406,20 +2406,20 @@ div.socfooter {
   background: var(--color-base-200);
 }
 
-.money-page .allocation-bar > * {
+.dynamic-page .allocation-bar > * {
   height: 100%;
   min-width: 3px;
   border-radius: 2px;
 }
 
-.money-page .figs {
+.dynamic-page .figs {
   margin-top: 1rem;
   display: grid;
   gap: 0.5rem;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
-.money-page .fig {
+.dynamic-page .fig {
   display: flex;
   flex-direction: column;
   gap: 0.1875rem;
@@ -2435,27 +2435,27 @@ div.socfooter {
    category is showing; an unpressed one has been filtered out, and says so by
    going quiet rather than by disappearing -- a segment that vanished would
    leave the reader no way to bring it back. */
-.money-page .allocation-bar > [data-band] {
+.dynamic-page .allocation-bar > [data-band] {
   cursor: pointer;
   padding: 0;
   border: 0;
   transition: opacity 0.12s ease;
 }
 
-.money-page .allocation-bar > [aria-pressed="false"] {
+.dynamic-page .allocation-bar > [aria-pressed="false"] {
   opacity: 0.28;
 }
 
-.money-page .fig {
+.dynamic-page .fig {
   cursor: pointer;
   transition: border-color 0.12s ease, opacity 0.12s ease;
 }
 
-.money-page .fig:hover {
+.dynamic-page .fig:hover {
   border-color: color-mix(in oklab, currentColor 45%, transparent);
 }
 
-.money-page .fig[aria-pressed="false"] {
+.dynamic-page .fig[aria-pressed="false"] {
   opacity: 0.45;
 }
 
@@ -2463,11 +2463,11 @@ div.socfooter {
    opacity, for the same reason the fold uses it: a row that is merely
    transparent is still in the tab order and still read aloud, so a reader
    using the keyboard would tab through rows nobody can see. */
-.money-page .tb-hidden {
+.dynamic-page .tb-hidden {
   display: none !important;
 }
 
-.money-page .fig-key {
+.dynamic-page .fig-key {
   display: flex;
   align-items: center;
   gap: 0.375rem;
@@ -2478,7 +2478,7 @@ div.socfooter {
   color: inherit;
 }
 
-.money-page .dot {
+.dynamic-page .dot {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 2px;
@@ -2489,13 +2489,13 @@ div.socfooter {
 /* The figure itself is the theme's ink, not the category colour: the category
    is carried by the dot and the label, and a wall of five coloured numbers is
    harder to read than five black ones with coloured keys. */
-.money-page .fig-val {
+.dynamic-page .fig-val {
   font-size: 1rem;
   font-weight: 500;
   color: var(--color-base-content);
 }
 
-.money-page .fig-share {
+.dynamic-page .fig-share {
   font-size: 0.6875rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
@@ -2507,15 +2507,15 @@ div.socfooter {
    column and the chart grid in the second, and every donut stacked vertically
    inside a half-width track. Our own class collided with our own stylesheet,
    which the DaisyUI collision guard could not see because `.charts` *is*
-   declared in `input.css`. `test_money_design_classes.py` now also checks the
+   declared in `input.css`. `test_dynamic_design_classes.py` now also checks the
    money templates against design 1's. */
-.money-page .chart-panel {
+.dynamic-page .chart-panel {
   margin-top: 1rem;
   border-top: 1px solid var(--color-base-300);
   padding-top: 0.75rem;
 }
 
-.money-page .chart-panel > summary {
+.dynamic-page .chart-panel > summary {
   cursor: pointer;
   list-style: none;
   display: flex;
@@ -2526,30 +2526,30 @@ div.socfooter {
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
 }
 
-.money-page .chart-panel > summary::-webkit-details-marker { display: none; }
+.dynamic-page .chart-panel > summary::-webkit-details-marker { display: none; }
 
-.money-page .chart-panel > summary:hover { color: var(--color-base-content); }
+.dynamic-page .chart-panel > summary:hover { color: var(--color-base-content); }
 
-.money-page .chart-panel[open] > summary .chev { transform: rotate(90deg); }
+.dynamic-page .chart-panel[open] > summary .chev { transform: rotate(90deg); }
 
-.money-page .chev { transition: transform 0.15s ease; }
+.dynamic-page .chev { transition: transform 0.15s ease; }
 
-.money-page .charts-hint {
+.dynamic-page .charts-hint {
   font-weight: 400;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
   font-size: 0.72rem;
 }
 
-.money-page .charts-grid {
+.dynamic-page .charts-grid {
   margin-top: 1rem;
   display: grid;
   gap: 1.25rem;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
-.money-page .chart { min-width: 0; }
+.dynamic-page .chart { min-width: 0; }
 
-.money-page .chart h4 {
+.dynamic-page .chart h4 {
   font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -2558,27 +2558,27 @@ div.socfooter {
   margin-bottom: 0.625rem;
 }
 
-.money-page .chart-row {
+.dynamic-page .chart-row {
   display: grid;
   grid-template-columns: 116px minmax(0, 1fr);
   gap: 0.875rem;
   align-items: center;
 }
 
-.money-page .donut {
+.dynamic-page .donut {
   width: 116px;
   height: 116px;
   overflow: visible;
 }
 
-.money-page .keys {
+.dynamic-page .keys {
   display: flex;
   flex-direction: column;
   gap: 0.1875rem;
   min-width: 0;
 }
 
-.money-page .key {
+.dynamic-page .key {
   display: grid;
   grid-template-columns: 9px minmax(0, 1fr) auto;
   gap: 0.4375rem;
@@ -2587,7 +2587,7 @@ div.socfooter {
   text-align: left;
 }
 
-.money-page .key i {
+.dynamic-page .key i {
   width: 8px;
   height: 8px;
   border-radius: 2px;
@@ -2597,22 +2597,22 @@ div.socfooter {
 /* The name takes the theme's ink while the swatch keeps the slice's colour:
    the legend is read as text and coloured text at this size is the first thing
    to fail a contrast check on a light theme. */
-.money-page .key .kn {
+.dynamic-page .key .kn {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-base-content);
 }
 
-.money-page .key .kv {
+.dynamic-page .key .kv {
   font-size: 0.65rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
 /* ---- sections and the asset row ------------------------------------------- */
-.money-page .section { margin-top: 1.875rem; }
+.dynamic-page .section { margin-top: 1.875rem; }
 
-.money-page .section-head {
+.dynamic-page .section-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -2620,13 +2620,13 @@ div.socfooter {
   margin-bottom: 0.625rem;
 }
 
-.money-page .section-head .count {
+.dynamic-page .section-head .count {
   font-size: 0.6875rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
 /* The two idioms, named above the list that uses them. */
-.money-page .idioms {
+.dynamic-page .idioms {
   display: flex;
   flex-wrap: wrap;
   gap: 0.375rem 1.125rem;
@@ -2635,29 +2635,29 @@ div.socfooter {
   margin-bottom: 0.625rem;
 }
 
-.money-page .idioms b {
+.dynamic-page .idioms b {
   font-weight: 500;
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
 }
 
-.money-page .rows {
+.dynamic-page .rows {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.money-page .mcard {
+.dynamic-page .mcard {
   background: var(--color-base-100);
   border: 1px solid var(--color-base-300);
   border-radius: var(--radius-box);
   overflow: hidden;
 }
 
-.money-page .mcard:hover {
+.dynamic-page .mcard:hover {
   border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
 }
 
-.money-page .mcard[open] {
+.dynamic-page .mcard[open] {
   box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
 }
 
@@ -2669,7 +2669,7 @@ div.socfooter {
 /* The collection's initials, where an asset has its icon. `.collection` rather
    than the prototype's `.nft`: design 1 owns that name and pairs it with the
    colour slot (`.nft.cN`), which was matching this tile. */
-.money-page .mono-tile.collection {
+.dynamic-page .mono-tile.collection {
   border-radius: 0.375rem;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -2680,7 +2680,7 @@ div.socfooter {
 /* Floor against estimate, as one bar. Two flex children rather than a width
    each, so the pair always fills the track: what the reader is being shown is
    the *ratio*, and a bar that stopped short would read as a third quantity. */
-.money-page .mix {
+.dynamic-page .mix {
   display: flex;
   height: 4px;
   width: 7.375rem;
@@ -2690,23 +2690,23 @@ div.socfooter {
   background: var(--color-base-300);
 }
 
-.money-page .mix i {
+.dynamic-page .mix i {
   display: block;
   height: 100%;
   border-radius: 1px;
   min-width: 1px;
 }
 
-.money-page .mix-floor { background: var(--c-nft); }
+.dynamic-page .mix-floor { background: var(--c-nft); }
 
-.money-page .mix-rest {
+.dynamic-page .mix-rest {
   background: color-mix(in oklab, var(--c-nft) 28%, transparent);
 }
 
 /* The thumbnails, at the top of an opened collection. They scroll rather than
    wrap: a collection of sixty would otherwise push its first item three screens
    down, and the strip is for recognising the collection, not for reading it. */
-.money-page .nft-strip {
+.dynamic-page .nft-strip {
   display: flex;
   gap: 0.25rem;
   overflow-x: auto;
@@ -2715,7 +2715,7 @@ div.socfooter {
   margin-bottom: 0.25rem;
 }
 
-.money-page .nft-strip .nfticon {
+.dynamic-page .nft-strip .nfticon {
   width: 2rem;
   height: 2rem;
   flex: none;
@@ -2723,7 +2723,7 @@ div.socfooter {
   object-fit: cover;
 }
 
-.money-page .nft-body {
+.dynamic-page .nft-body {
   display: grid;
   gap: 1rem;
   grid-template-columns: 10.5rem minmax(0, 1fr);
@@ -2731,12 +2731,12 @@ div.socfooter {
   border-top: 1px solid var(--color-base-300);
 }
 
-.money-page .nft-body:first-of-type { border-top: 0; }
+.dynamic-page .nft-body:first-of-type { border-top: 0; }
 
 /* Square, because the art is. The striped ground shows through while the image
    is still deferred and stays visible behind a transparent PNG, so a slow
    connection sees a placeholder that belongs to the design rather than a gap. */
-.money-page .nft-art {
+.dynamic-page .nft-art {
   aspect-ratio: 1;
   border-radius: 0.5rem;
   border: 1px solid var(--color-base-300);
@@ -2750,17 +2750,17 @@ div.socfooter {
     var(--color-base-200);
 }
 
-.money-page .nft-art:hover {
+.dynamic-page .nft-art:hover {
   border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
 }
 
-.money-page .nft-art img {
+.dynamic-page .nft-art img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.money-page .nft-facts {
+.dynamic-page .nft-facts {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
@@ -2775,23 +2775,23 @@ div.socfooter {
    reserves 26px on the right for a pin, so a two-track row puts its figure 38px
    further right -- the reserved cell plus the gap -- and the column breaks at
    exactly the section this was rebuilt to bring into it. Measured, and
-   `functional_tests/test_address_money_nfts.py` keeps it measured. */
-.money-page .nft-line {
+   `functional_tests/test_address_dynamic_nfts.py` keeps it measured. */
+.dynamic-page .nft-line {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--col) 26px;
   gap: 0.75rem;
   align-items: baseline;
 }
 
-.money-page .nft-line .k {
+.dynamic-page .nft-line .k {
   font-size: 0.78rem;
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
   min-width: 0;
 }
 
-.money-page .nft-line .k b { font-weight: 600; }
+.dynamic-page .nft-line .k b { font-weight: 600; }
 
-.money-page .nft-line .k small {
+.dynamic-page .nft-line .k small {
   display: block;
   font-size: 0.6875rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
@@ -2799,23 +2799,23 @@ div.socfooter {
 
 /* What the figure is. "25.00 ALGO" and "25.00 ALGO paid" are different facts,
    and the second word is what makes the column readable without a header. */
-.money-page .qualifier {
+.dynamic-page .qualifier {
   display: block;
   font-size: 0.625rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
-.money-page .amt.none {
+.dynamic-page .amt.none {
   color: color-mix(in oklab, var(--color-base-content) 40%, transparent);
 }
 
-.money-page .traits {
+.dynamic-page .traits {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3125rem;
 }
 
-.money-page .trait {
+.dynamic-page .trait {
   font-size: 0.6875rem;
   border: 1px solid var(--color-base-300);
   border-radius: 0.3125rem;
@@ -2824,7 +2824,7 @@ div.socfooter {
   background: var(--color-base-200);
 }
 
-.money-page .trait b {
+.dynamic-page .trait b {
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
   font-weight: 600;
   text-transform: uppercase;
@@ -2833,23 +2833,23 @@ div.socfooter {
   margin-right: 0.25rem;
 }
 
-.money-page .nft-note {
+.dynamic-page .nft-note {
   font-size: 0.75rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
-.money-page .state-chip.listed { color: var(--c-balance); }
+.dynamic-page .state-chip.listed { color: var(--c-balance); }
 
 /* "No floor" is not good news and not bad news -- it is an absence. The base
    chip is `--color-success`, which is right for "Online" in the header and
    reads as an achievement here. */
-.money-page .state-chip.quiet {
+.dynamic-page .state-chip.quiet {
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
 @media (max-width: 640px) {
-  .money-page .nft-body { grid-template-columns: minmax(0, 1fr); }
-  .money-page .nft-art { max-width: 12rem; }
+  .dynamic-page .nft-body { grid-template-columns: minmax(0, 1fr); }
+  .dynamic-page .nft-art { max-width: 12rem; }
 }
 
 /* ---- the toolbar ----------------------------------------------------------
@@ -2863,7 +2863,7 @@ div.socfooter {
    Every colour here is a theme token, so all 57 themes get a toolbar that
    belongs to them -- unlike the four category colours, which must not follow
    the theme. */
-.money-page .toolbar {
+.dynamic-page .toolbar {
   position: sticky;
   top: 0;
   z-index: 30;
@@ -2874,7 +2874,7 @@ div.socfooter {
   border-bottom: 1px solid var(--color-base-300);
 }
 
-.money-page .tb-wrap {
+.dynamic-page .tb-wrap {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -2882,7 +2882,7 @@ div.socfooter {
   padding-block: 0.625rem;
 }
 
-.money-page .field {
+.dynamic-page .field {
   display: flex;
   align-items: center;
   gap: 0.4375rem;
@@ -2893,7 +2893,7 @@ div.socfooter {
   height: 2.125rem;
 }
 
-.money-page .field input {
+.dynamic-page .field input {
   border: 0;
   background: none;
   outline: none;
@@ -2903,7 +2903,7 @@ div.socfooter {
   width: 9.375rem;
 }
 
-.money-page .field svg {
+.dynamic-page .field svg {
   flex: none;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
@@ -2912,7 +2912,7 @@ div.socfooter {
    follow. One border around the group, dividers between, and the pressed
    member filled with the accent rather than merely darkened -- at a glance the
    reader has to see which one is on, not work it out by comparing. */
-.money-page .seg {
+.dynamic-page .seg {
   display: flex;
   border: 1px solid var(--color-base-300);
   background: var(--color-base-100);
@@ -2921,7 +2921,7 @@ div.socfooter {
   height: 2.125rem;
 }
 
-.money-page .seg button {
+.dynamic-page .seg button {
   padding: 0 0.6875rem;
   font-size: 0.78rem;
   font-weight: 500;
@@ -2931,19 +2931,19 @@ div.socfooter {
   cursor: pointer;
 }
 
-.money-page .seg button:last-child { border-right: 0; }
+.dynamic-page .seg button:last-child { border-right: 0; }
 
-.money-page .seg button:hover {
+.dynamic-page .seg button:hover {
   background: var(--color-base-200);
 }
 
-.money-page .seg button[aria-pressed="true"],
-.money-page .seg button[aria-pressed="true"]:hover {
+.dynamic-page .seg button[aria-pressed="true"],
+.dynamic-page .seg button[aria-pressed="true"]:hover {
   background: color-mix(in oklab, var(--color-primary) 16%, transparent);
   color: var(--color-primary);
 }
 
-.money-page .tb-label {
+.dynamic-page .tb-label {
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -2952,7 +2952,7 @@ div.socfooter {
   margin-right: -0.1875rem;
 }
 
-.money-page .ghost {
+.dynamic-page .ghost {
   font-size: 0.78rem;
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
   padding: 0.375rem 0.5625rem;
@@ -2960,13 +2960,13 @@ div.socfooter {
   cursor: pointer;
 }
 
-.money-page .ghost:hover {
+.dynamic-page .ghost:hover {
   background: var(--color-base-200);
   color: var(--color-base-content);
 }
 
-.money-page .ghost[disabled],
-.money-page .ghost[disabled]:hover {
+.dynamic-page .ghost[disabled],
+.dynamic-page .ghost[disabled]:hover {
   opacity: 0.35;
   cursor: default;
   background: none;
@@ -2974,45 +2974,45 @@ div.socfooter {
 
 /* The live region. Empty on an unfiltered page, so it takes no room until it
    has something to say. */
-.money-page .tb-status {
+.dynamic-page .tb-status {
   font-size: 0.6875rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
-.money-page .tb-status:empty { display: none; }
+.dynamic-page .tb-status:empty { display: none; }
 
 /* A venue card is an asset card with two of its five header cells absent: it
    has no icon and nothing to pin, because a venue is not a holding. The money
    column is the same width, which is the point of grouping this way at all. */
-.money-page .venue-card > .chead {
+.dynamic-page .venue-card > .chead {
   grid-template-columns: minmax(0, 1fr) var(--col);
   grid-template-areas: "id val";
 }
 
-.money-page .venue-rows { margin-top: 0.5rem; }
+.dynamic-page .venue-rows { margin-top: 0.5rem; }
 
 /* Which of a group's two headings shows. Under its asset the group is named by
    its venue; inside a venue card it is named by its asset, because the card has
    already said which venue this is and repeating it down the column tells the
    reader nothing about which holding each row is. */
-.money-page .pgroup-asset { display: none; }
-.money-page .venue-card .pgroup-venue { display: none; }
-.money-page .venue-card .pgroup-asset { display: inline; }
+.dynamic-page .pgroup-asset { display: none; }
+.dynamic-page .venue-card .pgroup-venue { display: none; }
+.dynamic-page .venue-card .pgroup-asset { display: inline; }
 
 /* On a narrow screen the toolbar would take four rows and push the list off
    the first screen entirely, so it stops being sticky -- a control the reader
    has to scroll back to beats one that is permanently in the way. */
 @media (max-width: 620px) {
-  .money-page .toolbar { position: static; }
-  .money-page .field input { width: 100%; }
-  .money-page .field { flex: 1 1 100%; }
+  .dynamic-page .toolbar { position: static; }
+  .dynamic-page .field input { width: 100%; }
+  .dynamic-page .field { flex: 1 1 100%; }
 }
 
 /* ---- the asset header: where the money column starts -----------------------
    Five rigid cells. Named areas rather than bare columns because the narrow
    layout rearranges them, and `order` on a grid would move the tab sequence
    with the boxes -- the value would be read before the name it belongs to. */
-.money-page .chead {
+.dynamic-page .chead {
   display: grid;
   grid-template-columns: 22px 38px minmax(0, 1fr) var(--col) 26px;
   grid-template-areas: "grip tile id val pin";
@@ -3025,17 +3025,17 @@ div.socfooter {
   list-style: none;
 }
 
-.money-page .chead::-webkit-details-marker { display: none; }
+.dynamic-page .chead::-webkit-details-marker { display: none; }
 
-.money-page .chead > .grip { grid-area: grip; }
-.money-page .chead > .mono-tile { grid-area: tile; }
-.money-page .chead > .cid { grid-area: id; }
-.money-page .chead > .cval { grid-area: val; }
-.money-page .chead > .pin { grid-area: pin; }
+.dynamic-page .chead > .grip { grid-area: grip; }
+.dynamic-page .chead > .mono-tile { grid-area: tile; }
+.dynamic-page .chead > .cid { grid-area: id; }
+.dynamic-page .chead > .cval { grid-area: val; }
+.dynamic-page .chead > .pin { grid-area: pin; }
 
 /* The grip is already defined for design 1's rows; here it needs to be a grid
    child and to reveal on the card rather than on an `.item-header`. */
-.money-page .chead > .grip {
+.dynamic-page .chead > .grip {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3043,12 +3043,12 @@ div.socfooter {
   opacity: 0;
 }
 
-.money-page .mcard:hover .grip,
-.money-page .grip:focus-visible {
+.dynamic-page .mcard:hover .grip,
+.dynamic-page .grip:focus-visible {
   opacity: 1;
 }
 
-.money-page .mono-tile {
+.dynamic-page .mono-tile {
   width: 38px;
   height: 38px;
   border-radius: 0.5625rem;
@@ -3060,20 +3060,20 @@ div.socfooter {
   overflow: hidden;
 }
 
-.money-page .mono-tile img {
+.dynamic-page .mono-tile img {
   width: 24px;
   height: 24px;
   object-fit: contain;
 }
 
-.money-page .cid {
+.dynamic-page .cid {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.1875rem;
 }
 
-.money-page .cid-top {
+.dynamic-page .cid-top {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
@@ -3081,7 +3081,7 @@ div.socfooter {
   min-width: 0;
 }
 
-.money-page .cid-name {
+.dynamic-page .cid-name {
   font-weight: 600;
   font-size: 0.9375rem;
   letter-spacing: -0.01em;
@@ -3092,13 +3092,13 @@ div.socfooter {
   max-width: 100%;
 }
 
-.money-page .cid-amt,
-.money-page .cid-meta {
+.dynamic-page .cid-amt,
+.dynamic-page .cid-meta {
   font-size: 0.72rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
-.money-page .cid-meta {
+.dynamic-page .cid-meta {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -3108,31 +3108,31 @@ div.socfooter {
 /* The money column's cell. Right-aligned so the digits line up on one rule --
    that alignment is what lets a reader see the venue subtotals adding up to the
    asset's figure without doing the arithmetic. */
-.money-page .cval {
+.dynamic-page .cval {
   text-align: right;
   display: block;
 }
 
-.money-page .cval .v {
+.dynamic-page .cval .v {
   font-size: 1rem;
   font-weight: 500;
   letter-spacing: -0.02em;
   display: block;
 }
 
-.money-page .cval .u {
+.dynamic-page .cval .u {
   font-size: 0.65rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
-.money-page .cbody {
+.dynamic-page .cbody {
   border-top: 1px solid var(--color-base-300);
   background: var(--color-base-100);
 }
 
-.money-page .cbody-inner { padding: 0.25rem 0.875rem 0.875rem; }
+.dynamic-page .cbody-inner { padding: 0.25rem 0.875rem 0.875rem; }
 
-.money-page .meta {
+.dynamic-page .meta {
   display: grid;
   gap: 0.25rem 1.125rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -3143,16 +3143,16 @@ div.socfooter {
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
-.money-page .meta div {
+.dynamic-page .meta div {
   display: flex;
   gap: 0.5rem;
   align-items: baseline;
   min-width: 0;
 }
 
-.money-page .meta dt { flex: none; }
+.dynamic-page .meta dt { flex: none; }
 
-.money-page .meta dd {
+.dynamic-page .meta dd {
   margin: 0;
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
   font-size: 0.72rem;
@@ -3163,20 +3163,20 @@ div.socfooter {
 }
 
 /* ---- program groups ------------------------------------------------------- */
-.money-page .program-groups {
+.dynamic-page .program-groups {
   display: flex;
   flex-direction: column;
 }
 
-.money-page .pgroup {
+.dynamic-page .pgroup {
   border-top: 1px solid var(--color-base-300);
 }
 
-.money-page .pgroup:first-child { border-top: 0; }
+.dynamic-page .pgroup:first-child { border-top: 0; }
 
 /* The subtotal sits in the money column, same width, same edge -- which is the
    whole reason a reader can see four venue figures adding up to the asset's. */
-.money-page .pgroup-head {
+.dynamic-page .pgroup-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--col) 26px;
   gap: 0.75rem;
@@ -3184,7 +3184,7 @@ div.socfooter {
   padding: 0.6875rem 0 0.3125rem;
 }
 
-.money-page .pgroup-name {
+.dynamic-page .pgroup-name {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -3192,13 +3192,13 @@ div.socfooter {
   font-weight: 600;
 }
 
-.money-page .pgroup-name .n {
+.dynamic-page .pgroup-name .n {
   font-size: 0.65rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
   font-weight: 500;
 }
 
-.money-page .pgroup-total {
+.dynamic-page .pgroup-total {
   text-align: right;
   font-size: 0.78rem;
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
@@ -3208,7 +3208,7 @@ div.socfooter {
    `.position` wraps the row and its breakdown; `.position-row` is the grid.
    The wrapper exists because pinning reorders positions, and a breakdown left
    behind by its row would sit under a different position entirely. */
-.money-page .position-row {
+.dynamic-page .position-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--col) 26px;
   gap: 0.75rem;
@@ -3218,7 +3218,7 @@ div.socfooter {
      padding has nothing to cancel and eats into the grid instead, so the money
      column here ended 8px to the left of the venue subtotal directly above it
      -- the two figures a reader is meant to add up, in two different columns.
-     `functional_tests/test_address_money_page.py` measures it. Both margins
+     `functional_tests/test_address_dynamic_page.py` measures it. Both margins
      stay inside `.cbody-inner`, whose own padding is 0.875rem. */
   padding: 0.4375rem 0.5rem;
   margin-left: -0.5rem;
@@ -3227,18 +3227,18 @@ div.socfooter {
   transition: background 0.1s ease;
 }
 
-.money-page .position-row:hover {
+.dynamic-page .position-row:hover {
   background: var(--color-base-200);
 }
 
-.money-page .position-left {
+.dynamic-page .position-left {
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
 }
 
-.money-page .position-title {
+.dynamic-page .position-title {
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
@@ -3249,7 +3249,7 @@ div.socfooter {
 /* The form of the holding -- Balance, Staked, LP -- as a chip rather than a
    sentence, tinted from its own text colour so it reads as a label at a glance
    without needing a fifth palette. */
-.money-page .form-chip {
+.dynamic-page .form-chip {
   font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -3260,13 +3260,13 @@ div.socfooter {
   background: color-mix(in oklab, currentColor 12%, transparent);
 }
 
-.money-page .position-label {
+.dynamic-page .position-label {
   font-size: 0.84rem;
   color: var(--color-base-content);
   min-width: 0;
 }
 
-.money-page .position-sub {
+.dynamic-page .position-sub {
   font-size: 0.72rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
   display: flex;
@@ -3275,12 +3275,12 @@ div.socfooter {
   align-items: baseline;
 }
 
-.money-page .position-val {
+.dynamic-page .position-val {
   text-align: right;
   white-space: nowrap;
 }
 
-.money-page .amt {
+.dynamic-page .amt {
   font-size: 0.875rem;
   font-weight: 500;
   color: inherit;
@@ -3289,7 +3289,7 @@ div.socfooter {
   padding: 0;
 }
 
-.money-page .position-val .u {
+.dynamic-page .position-val .u {
   font-size: 0.625rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
   display: block;
@@ -3301,7 +3301,7 @@ div.socfooter {
    in the money column -- a side panel would break the alignment the design is
    built on. The rule down its left edge is what says "these belong to the line
    above" without a heading saying so. */
-.money-page .dist {
+.dynamic-page .dist {
   margin: 0 0 0.625rem 0;
   padding: 0.5rem 0 0.25rem 1.125rem;
   border-left: 2px solid color-mix(in oklab, var(--color-base-content) 30%, transparent);
@@ -3310,31 +3310,31 @@ div.socfooter {
   gap: 0.125rem;
 }
 
-.money-page .dist-note {
+.dynamic-page .dist-note {
   font-size: 0.6875rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
   margin-bottom: 0.25rem;
 }
 
-.money-page .dist .position-row {
+.dynamic-page .dist .position-row {
   padding-top: 0.3125rem;
   padding-bottom: 0.3125rem;
 }
 
-.money-page .dist .position-label { font-size: 0.78rem; }
+.dynamic-page .dist .position-label { font-size: 0.78rem; }
 
-.money-page .dist .amt { font-size: 0.78rem; }
+.dynamic-page .dist .amt { font-size: 0.78rem; }
 
 /* ---- pinned band ---------------------------------------------------------- */
-.money-page .pinned { margin-top: 1.625rem; }
+.dynamic-page .pinned { margin-top: 1.625rem; }
 
-.money-page .pin-grid {
+.dynamic-page .pin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
   gap: 0.5rem;
 }
 
-.money-page .pin-card {
+.dynamic-page .pin-card {
   border: 1px solid color-mix(in oklab, var(--color-base-content) 30%, transparent);
   border-radius: 0.5625rem;
   padding: 0.625rem;
@@ -3349,18 +3349,18 @@ div.socfooter {
 /* A pin whose position is not on this page any more. The card stays -- silently
    dropping it would tell the reader nothing about why the thing they pinned
    vanished -- but it stops claiming the number is current. */
-.money-page .pin-card.stale {
+.dynamic-page .pin-card.stale {
   border-style: dashed;
 }
 
-.money-page .pin-card.stale .amt {
+.dynamic-page .pin-card.stale .amt {
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
 /* A pin that resolved by the amount witness rather than outright: the pid names
    more than one row. It landed somewhere, and the reader is told the promise is
    weaker than it looks rather than finding out when it lands on the other one. */
-.money-page .pin-card.ambiguous {
+.dynamic-page .pin-card.ambiguous {
   border-color: var(--color-warning);
 }
 
@@ -3374,7 +3374,7 @@ div.socfooter {
    venue groups, the position rows, the breakdown -- must stay literally the
    same rules. Two copies would drift, and the first sign of it would be a
    reader reporting that one design shows a figure the other does not. */
-.money-page .rows.cards {
+.dynamic-page .rows.cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
   gap: 0.5rem;
@@ -3383,13 +3383,13 @@ div.socfooter {
 /* An opened tile takes the full width. Its contents are the money column, venue
    subtotals and position rows at their normal size -- compact is about the
    closed list, not about cramming the detail. */
-.money-page .rows.cards .mcard[open] {
+.dynamic-page .rows.cards .mcard[open] {
   grid-column: 1 / -1;
 }
 
 /* The header becomes a stack: name and value above, facts below. The five-cell
    grid cannot survive at 158px -- the fixed cells alone leave the name nothing. */
-.money-page .rows.cards .chead {
+.dynamic-page .rows.cards .chead {
   display: flex;
   flex-direction: column;
   gap: 0.4375rem;
@@ -3398,34 +3398,34 @@ div.socfooter {
   position: relative;
 }
 
-.money-page .rows.cards .chead > .grip,
-.money-page .rows.cards .chead > .mono-tile {
+.dynamic-page .rows.cards .chead > .grip,
+.dynamic-page .rows.cards .chead > .mono-tile {
   display: none;
 }
 
 /* The tile's pin goes to the corner: a flex column has no fifth cell for it. */
-.money-page .rows.cards .chead > .pin {
+.dynamic-page .rows.cards .chead > .pin {
   position: absolute;
   top: 0.375rem;
   right: 0.375rem;
 }
 
-.money-page .rows.cards .cid { gap: 0.25rem; min-width: 0; }
+.dynamic-page .rows.cards .cid { gap: 0.25rem; min-width: 0; }
 
 /* In a 158px tile the name and the holding cannot share a line: the holding is
    a long number in a monospace face and wrapping is not available to it, so it
    ran out past the card's edge and over its neighbour. Stacked, and each
    truncated on its own. */
-.money-page .rows.cards .cid-top {
+.dynamic-page .rows.cards .cid-top {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.125rem;
   flex-wrap: nowrap;
 }
 
-.money-page .rows.cards .cid-name,
-.money-page .rows.cards .cid-amt,
-.money-page .rows.cards .cid-meta {
+.dynamic-page .rows.cards .cid-name,
+.dynamic-page .rows.cards .cid-amt,
+.dynamic-page .rows.cards .cid-meta {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3433,18 +3433,18 @@ div.socfooter {
   display: block;
 }
 
-.money-page .rows.cards .cid-name { font-size: 0.8125rem; }
+.dynamic-page .rows.cards .cid-name { font-size: 0.8125rem; }
 
-.money-page .rows.cards .cval { text-align: left; }
+.dynamic-page .rows.cards .cval { text-align: left; }
 
-.money-page .rows.cards .cval .v {
+.dynamic-page .rows.cards .cval .v {
   font-size: 1.0625rem;
   letter-spacing: -0.025em;
 }
 
 /* An opened tile is back to full width, so the header can have its columns
    again -- minus the drag handle, which a grid of tiles has no order to change. */
-.money-page .rows.cards .mcard[open] .chead {
+.dynamic-page .rows.cards .mcard[open] .chead {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) var(--col);
   grid-template-areas: "tile id val";
@@ -3452,9 +3452,9 @@ div.socfooter {
   gap: 0.75rem;
 }
 
-.money-page .rows.cards .mcard[open] .chead > .mono-tile { display: grid; }
+.dynamic-page .rows.cards .mcard[open] .chead > .mono-tile { display: grid; }
 
-.money-page .rows.cards .mcard[open] .cval { text-align: right; }
+.dynamic-page .rows.cards .mcard[open] .cval { text-align: right; }
 
 /* ---- responsive ----------------------------------------------------------
    Two steps, both measured against the money column rather than guessed. */
@@ -3462,7 +3462,7 @@ div.socfooter {
 /* First the column narrows: at this width the name still has room, but 8.5rem
    of value beside it starts pushing longer asset names into ellipsis. */
 @media (max-width: 860px) {
-  .money-page { --col: 7rem; }
+  .dynamic-page { --col: 7rem; }
 }
 
 /* Below this the five rigid cells cannot all fit. The fixed ones alone -- grip,
@@ -3475,11 +3475,11 @@ div.socfooter {
    exactly what there is no longer room for: below this width there is one
    figure per row to read, not a column of them to compare. */
 @media (max-width: 620px) {
-  .money-page { --col: auto; }
+  .dynamic-page { --col: auto; }
 
-  .money-page .mcard { position: relative; }
+  .dynamic-page .mcard { position: relative; }
 
-  .money-page .chead {
+  .dynamic-page .chead {
     grid-template-columns: 38px minmax(0, 1fr);
     grid-template-areas:
       "tile id"
@@ -3489,47 +3489,47 @@ div.socfooter {
     align-items: start;
   }
 
-  .money-page .chead > .grip { display: none; }
-  .money-page .chead > .mono-tile { align-self: center; }
+  .dynamic-page .chead > .grip { display: none; }
+  .dynamic-page .chead > .mono-tile { align-self: center; }
 
   /* Out of the flow, into the corner. The two-row template names no cell for
      it, so left in the grid it lands in an implicit third row and stretches
      every card by its full height -- with the card looking merely, and
      inexplicably, too tall. */
-  .money-page .chead > .pin {
+  .dynamic-page .chead > .pin {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
     opacity: 1;
     grid-area: auto;
   }
-  .money-page .chead > .cval { text-align: left; }
-  .money-page .chead > .cval .v { font-size: 0.9375rem; }
+  .dynamic-page .chead > .cval { text-align: left; }
+  .dynamic-page .chead > .cval .v { font-size: 0.9375rem; }
 
-  .money-page .chead > .cval .u {
+  .dynamic-page .chead > .cval .u {
     display: inline;
     margin-left: 0.25rem;
   }
 
-  .money-page .cid-meta { gap: 0.375rem; }
+  .dynamic-page .cid-meta { gap: 0.375rem; }
 
   /* The position row and the venue head lose their third cell for the same
      reason: with `--col: auto` the value cell sizes to its content, and a
      26px column reserved for a control that is hidden anyway is 26px stolen
      from the name. */
-  .money-page .position-row,
-  .money-page .pgroup-head,
-  .money-page .nft-line {
+  .dynamic-page .position-row,
+  .dynamic-page .pgroup-head,
+  .dynamic-page .nft-line {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .money-page .position-row > .pin-btn { display: none; }
+  .dynamic-page .position-row > .pin-btn { display: none; }
 
-  .money-page .rows.cards {
+  .dynamic-page .rows.cards {
     grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
   }
 
-  .money-page .chart-row {
+  .dynamic-page .chart-row {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
   }

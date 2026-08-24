@@ -1,8 +1,8 @@
-"""Integration tests for the money-column address designs against the backend.
+"""Integration tests for the dynamic address designs against the backend.
 
 ``test_address_page_integration.py`` covers the same page for design 1. It
 cannot cover these, and not by oversight: it uses an anonymous client, and an
-anonymous reader always resolves to ``address.html``. The money-column designs
+anonymous reader always resolves to ``address.html``. The dynamic designs
 are reached only by a signed-in reader at Asastatser with the layout chosen, so
 the most backend-dependent page in the project had a whole second and third
 rendering of the live payload that nothing had ever run.
@@ -48,7 +48,7 @@ LIGHT_ADDRESS = "OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M"
 ASASTATSER = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
 
 
-def _reader(username, permission=ASASTATSER, layout="money-column"):
+def _reader(username, permission=ASASTATSER, layout="dynamic"):
     """Create a signed-in client for a reader on ``layout``.
 
     ``force_login`` rather than ``login``: the ``user_logged_in`` receiver in
@@ -70,8 +70,8 @@ def _reader(username, permission=ASASTATSER, layout="money-column"):
     return client, user
 
 
-class MoneyColumnDataTest(TestCase):
-    """What the backend returned, as the money-column view received it."""
+class DynamicDataTest(TestCase):
+    """What the backend returned, as the dynamic view received it."""
 
     @classmethod
     def setUpClass(cls):
@@ -87,8 +87,8 @@ class MoneyColumnDataTest(TestCase):
     def test_integration_a_subscriber_gets_the_money_column(self):
         """Guard the guard: everything below reads this response."""
         self.assertEqual(self.response.status_code, 200)
-        self.assertTemplateUsed(self.response, "address_money.html")
-        self.assertEqual("money-column", self.response.context["layout"])
+        self.assertTemplateUsed(self.response, "address_dynamic.html")
+        self.assertEqual("dynamic", self.response.context["layout"])
         self.assertFalse(self.response.context["compact"])
 
     def test_integration_the_money_column_carries_a_populated_payload(self):
@@ -181,8 +181,8 @@ class MoneyColumnDataTest(TestCase):
         )
 
 
-class MoneyColumnRenderTest(TestCase):
-    """Payload values reaching the rendered money-column page.
+class DynamicRenderTest(TestCase):
+    """Payload values reaching the rendered dynamic page.
 
     The half a template can break: the data can be perfectly correct in the
     context and never make it onto the page.
@@ -335,7 +335,7 @@ class MoneyColumnRenderTest(TestCase):
         )
 
     def test_integration_the_charts_ship_their_payloads(self):
-        """`money.js` draws from the json_script blocks, not from the markup.
+        """`dynamic.js` draws from the json_script blocks, not from the markup.
 
         Design 1's canvases are absent here, so an empty payload block is not
         visible as a missing chart -- the panel simply says there is nothing to
@@ -348,7 +348,7 @@ class MoneyColumnRenderTest(TestCase):
         self.assertNotIn("chart.min.js", self.html, "the money column shipped Chart.js")
 
 
-class MoneyColumnEntitlementTest(TestCase):
+class DynamicEntitlementTest(TestCase):
     """Who gets which page, and what the shared cache entry may carry.
 
     ``cache_page`` is a *view* decorator, so ``Vary: Cookie`` is appended by
@@ -364,13 +364,13 @@ class MoneyColumnEntitlementTest(TestCase):
 
     def test_integration_a_reader_below_the_tier_gets_design_one(self):
         """The saved choice is kept, and it does not apply."""
-        client, user = _reader("money-lapsed", permission=0, layout="money-column")
+        client, user = _reader("money-lapsed", permission=0, layout="dynamic")
 
         response = client.get(f"/{LIGHT_ADDRESS}")
 
         self.assertTemplateUsed(response, "address.html")
         user.profile.refresh_from_db()
-        self.assertEqual("money-column", user.profile.preferred_layout)
+        self.assertEqual("dynamic", user.profile.preferred_layout)
 
     def test_integration_two_readers_on_two_layouts_get_two_pages(self):
         """The case that discriminates.
@@ -380,34 +380,34 @@ class MoneyColumnEntitlementTest(TestCase):
         of ordering. Two *signed-in* readers on different layouts is the pair
         that fails if the layout is not in the key.
         """
-        paid, _ = _reader("money-paid", layout="money-column")
+        paid, _ = _reader("money-paid", layout="dynamic")
         free, _ = _reader("money-free", permission=0, layout="")
 
         paid_response = paid.get(f"/{LIGHT_ADDRESS}")
         free_response = free.get(f"/{LIGHT_ADDRESS}")
 
-        self.assertTemplateUsed(paid_response, "address_money.html")
+        self.assertTemplateUsed(paid_response, "address_dynamic.html")
         self.assertTemplateUsed(free_response, "address.html")
-        self.assertNotIn(b"money-page", free_response.content)
+        self.assertNotIn(b"dynamic-page", free_response.content)
 
     def test_integration_the_free_reader_first_does_not_poison_the_paid_one(self):
         """The same pair in the other order, because a cache is order-sensitive."""
         free, _ = _reader("money-free-2", permission=0, layout="")
-        paid, _ = _reader("money-paid-2", layout="money-column")
+        paid, _ = _reader("money-paid-2", layout="dynamic")
 
         free_response = free.get(f"/{LIGHT_ADDRESS}")
         paid_response = paid.get(f"/{LIGHT_ADDRESS}")
 
         self.assertTemplateUsed(free_response, "address.html")
-        self.assertTemplateUsed(paid_response, "address_money.html")
+        self.assertTemplateUsed(paid_response, "address_dynamic.html")
 
     def test_integration_the_compact_layout_is_the_same_page_denser(self):
         """One template, two layouts, and the compact flag is the difference."""
-        client, _ = _reader("money-compact", layout="money-column-compact")
+        client, _ = _reader("money-compact", layout="dynamic-compact")
 
         response = client.get(f"/{LIGHT_ADDRESS}")
 
-        self.assertTemplateUsed(response, "address_money.html")
+        self.assertTemplateUsed(response, "address_dynamic.html")
         self.assertTrue(response.context["compact"])
         self.assertIn(b'class="rows cards"', response.content)
 
@@ -419,8 +419,8 @@ class MoneyColumnEntitlementTest(TestCase):
         template rather than the layout would serve one of them the other's
         bytes.
         """
-        wide, _ = _reader("money-wide-3", layout="money-column")
-        compact, _ = _reader("money-compact-3", layout="money-column-compact")
+        wide, _ = _reader("money-wide-3", layout="dynamic")
+        compact, _ = _reader("money-compact-3", layout="dynamic-compact")
 
         wide_response = wide.get(f"/{LIGHT_ADDRESS}")
         compact_response = compact.get(f"/{LIGHT_ADDRESS}")

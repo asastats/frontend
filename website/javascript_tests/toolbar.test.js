@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  *
- * The money-column toolbar: filtering, sorting, grouping, cutoff, currency.
+ * The dynamic toolbar: filtering, sorting, grouping, cutoff, currency.
  *
  * Synthetic DOM rather than the captured page, for the reason `pins.test.js`
  * gives: what these tests are about is the shape the toolbar acts on -- an
@@ -200,7 +200,7 @@ function seg(id, attribute, values, on) {
 function mountPage() {
   document.body.innerHTML = "";
   const page = document.createElement("div");
-  page.className = "money-page";
+  page.className = "dynamic-page";
 
   const total = document.createElement("h1");
   total.className = "total";
@@ -1110,9 +1110,9 @@ describe("the charts panel", () => {
     const panel = document.createElement("details");
     panel.id = "charts";
     panel.open = true;
-    document.querySelector(".money-page").appendChild(panel);
+    document.querySelector(".dynamic-page").appendChild(panel);
     const redraw = jest.fn();
-    window.asastatsMoney = { redrawAllocation: redraw };
+    window.asastatsDynamic = { redrawAllocation: redraw };
     load();
 
     document.querySelector('.figs [data-band="staked"]').click();
@@ -1125,16 +1125,16 @@ describe("the charts panel", () => {
     const panel = document.createElement("details");
     panel.id = "charts";
     panel.open = false;
-    document.querySelector(".money-page").appendChild(panel);
+    document.querySelector(".dynamic-page").appendChild(panel);
     const redraw = jest.fn();
-    window.asastatsMoney = { redrawAllocation: redraw };
+    window.asastatsDynamic = { redrawAllocation: redraw };
     load();
 
     expect(redraw).not.toHaveBeenCalled();
   });
 
-  test("a page without money.js does not try to redraw", () => {
-    delete window.asastatsMoney;
+  test("a page without dynamic.js does not try to redraw", () => {
+    delete window.asastatsDynamic;
     load();
 
     expect(() =>

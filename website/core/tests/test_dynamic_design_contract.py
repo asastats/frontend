@@ -1,12 +1,12 @@
-"""The money-column design's DOM contract — designs 2 and 3.
+"""The dynamic design's DOM contract — designs 2 and 3.
 
 Split out of ``test_selector_contract.py`` on 2026-08-20, when design 1 was
 restored to the untouched old page. Everything here asserts markup that belongs
-to the money-column designs: the position component, its stable identity, the
+to the dynamic designs: the position component, its stable identity, the
 pin and grip controls, and the amount witness that makes an ambiguous position
 pinnable.
 
-**Live again since 2026-08-21**, when ``address_money.html`` was built. They
+**Live again since 2026-08-21**, when ``address_dynamic.html`` was built. They
 were parked, not deleted, because the reasoning in them is the expensive part
 -- the identity design, the witness, the "controls ship unpressed because the
 cache is shared" rule -- and rewriting that against a new template would have
@@ -30,9 +30,9 @@ def page(sample_payload):  # noqa: F811
     they share. :class:`TestCompactIsTheSameMarkup` pins that.
     """
     context = _build_context(sample_payload)
-    context["layout"] = "money-column"
+    context["layout"] = "dynamic"
     context["compact"] = False
-    return parse(render_to_string("address_money.html", context))
+    return parse(render_to_string("address_dynamic.html", context))
 
 
 class TestPositionIdentity:
@@ -320,5 +320,4 @@ class TestPositionPins:
 
         assert lone, "no single-position venue in the payload; this asserts nothing"
         assert all(position.select("[data-pin-position]") for position in lone)
-
 

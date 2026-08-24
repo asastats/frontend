@@ -593,7 +593,7 @@ def hidden_count(rows):
 def program_groups(programs):
     """Group an asset's positions by the program holding them, with subtotals.
 
-    The money-column designs stack positions under their program rather than
+    The dynamic designs stack positions under their program rather than
     listing them flat, because "how much of this asset is locked in CompX" is
     the question a reader with the same asset in nine places is actually asking,
     and a flat list makes them add it up themselves.
@@ -651,7 +651,7 @@ def beyond(rows, shown):
 
     The count for the load-more label. Django's ``add`` filter cannot subtract
     one variable from another, and ``hidden_count`` answers a different
-    question -- it applies design 1's magnitude rule, which the money-column
+    question -- it applies design 1's magnitude rule, which the dynamic
     designs deliberately do not use.
 
     Never negative: a section shorter than its first batch has nothing beyond
@@ -871,7 +871,7 @@ def position_band(program):
     built from, which is finished and is not to be touched.
 
     Reproduction invites drift, so it is *tested* rather than commented:
-    ``test_money_extras.py`` sums the reference payload's positions by this
+    ``test_dynamic_extras.py`` sums the reference payload's positions by this
     filter and asserts the four totals equal ``Consolidated``'s own. If either
     side ever changes, that fails.
 

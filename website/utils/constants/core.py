@@ -244,17 +244,17 @@ ADDRESS_LAYOUTS = {
         "compact": False,
         "tier": None,
     },
-    "money-column": {
+    "dynamic": {
         "name": "Dynamic",
         "summary": "Grouped by where the money is, with charts and filters.",
-        "template": "address_money.html",
+        "template": "address_dynamic.html",
         "compact": False,
         "tier": "Intro",
     },
-    "money-column-compact": {
+    "dynamic-compact": {
         "name": "Dynamic compact",
         "summary": "The Dynamic layout as tiles, for narrow screens.",
-        "template": "address_money.html",
+        "template": "address_dynamic.html",
         "compact": True,
         "tier": "Asastatser",
     },

@@ -1,8 +1,8 @@
-{% comment %} The money-column toolbar: pass 2 of designs 2 and 3.
+{% comment %} The dynamic toolbar: pass 2 of designs 2 and 3.
 
   Everything here acts on the page already in the browser. Nothing fetches:
   the whole payload is in the DOM, sort keys and categories rendered onto the
-  rows as data attributes (see `snippets/money/asset.html` and
+  rows as data attributes (see `snippets/dynamic/asset.html` and
   `position.html`), so filtering 190 positions is a class toggle rather than a
   round trip. That is also why the state is the reader's and lives in their
   browser -- this page's cache entry is shared by everyone on the layout, so
@@ -15,8 +15,8 @@
   Two things are deliberately not here:
 
   * **A Rows/Cards toggle.** The prototype has one; here that choice is the
-    layout the reader picked on the settings page -- `money-column` against
-    `money-column-compact` -- which is a server-side preference and part of the
+    layout the reader picked on the settings page -- `dynamic` against
+    `dynamic-compact` -- which is a server-side preference and part of the
     cache key. A second, client-side control for the same thing would let the
     two disagree about which design the reader is looking at.
   * **Dismissing an asset.** The prototype's fifth header cell is a dismiss

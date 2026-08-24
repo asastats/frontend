@@ -66,11 +66,11 @@
    */
   function init() {
     // Design 1 only. This reveals a section's whole tail in one press; the
-    // money-column designs show a fixed first batch and add one batch per
+    // dynamic designs show a fixed first batch and add one batch per
     // press, which is `toolbar.js`'s job. Two handlers on one control would
     // both act -- the tail revealed *and* the batch counted -- and the second
     // press would then have nothing left to do.
-    if (document.querySelector(".money-page")) return;
+    if (document.querySelector(".dynamic-page")) return;
     if (document.documentElement.hasAttribute(BOUND_ATTR)) return;
     document.documentElement.setAttribute(BOUND_ATTR, "");
 

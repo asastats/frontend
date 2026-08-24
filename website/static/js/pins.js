@@ -582,7 +582,7 @@
   /**
    * Fill the pinned band at the top of the page, if the design has one.
    *
-   * The money-column designs put pinned positions in their own band rather than
+   * The dynamic designs put pinned positions in their own band rather than
    * only floating them within their venue. A position pinned from an asset the
    * reader has to scroll to and open is otherwise pinned somewhere they cannot
    * see, which is most of the value gone -- and in a venue holding one position

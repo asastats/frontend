@@ -37,7 +37,7 @@ the JavaScript has to change in the same commit.
      reference source is the pre-redesign tree at
      ``/home/ipaleka/claude/frontend-before``.
 
-   ``money-column`` / ``money-column-compact`` (Dynamic / Dynamic compact,
+   ``dynamic`` / ``dynamic-compact`` (Dynamic / Dynamic compact,
     designs 2 and 3)
      One template with a compact flag. They carry the position component, the
      entry controls, position pinning, the program grouping and the allocation
@@ -45,8 +45,8 @@ the JavaScript has to change in the same commit.
 
    Sections marked *designs 2/3* describe markup that does **not** appear on the
    classic page. Their tests live in
-   ``core/tests/test_money_design_contract.py``, which renders
-   ``address_money.html`` against the real payload.
+   ``core/tests/test_dynamic_design_contract.py``, which renders
+   ``address_dynamic.html`` against the real payload.
 
    Design 2 is available from **Intro**, while design 3 is gated at
    **Asastatser**. Design 1 is ungated at every tier by construction --- its registry
@@ -170,7 +170,7 @@ to draw on.
 SVG charts --- designs 2 and 3
 """"""""""""""""""""""""""""""
 
-``static/js/money.js`` reads the same payload blocks and builds the donuts with
+``static/js/dynamic.js`` reads the same payload blocks and builds the donuts with
 ``createElement``. Its contract is small:
 
 ``#charts``
@@ -181,7 +181,7 @@ SVG charts --- designs 2 and 3
   immediately, because no ``toggle`` event is coming.
 
 ``#charts-grid``
-  where the charts go. ``money.js`` marks it ``data-money-bound`` so a second
+  where the charts go. ``dynamic.js`` marks it ``data-dynamic-bound`` so a second
   execution cannot draw twice.
 
 ``#charts-note``
@@ -282,7 +282,7 @@ keeps.
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | Selector               | Required                                                           | Why                                                                                |
 +========================+====================================================================+====================================================================================+
-| ``.money-page``        | wraps the whole page body                                          | Every money-column rule in ``input.css`` is written under it, so none of them can  |
+| ``.dynamic-page``        | wraps the whole page body                                          | Every dynamic rule in ``input.css`` is written under it, so none of them can  |
 |                        |                                                                    | reach design 1 — the two pages share a base template and a stylesheet              |
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | ``.mcard``             | the asset entry; also carries ``.fitem`` and an ``f<asset id>`` id | ``.fitem`` and the id are design 1's contract, reused on purpose: ``pins.js``      |
@@ -346,7 +346,7 @@ the bar and the figures tell different stories has no way to know which lied.
    the chrome around this band, but balance-is-green and NFT-is-red must mean
    the same thing in every one of them, or the bar, the figures and the donut
    stop reading as the same fact. They are defined as ``--c-*`` on
-   ``.money-page`` with a light/dark pair, not a per-theme value.
+   ``.dynamic-page`` with a light/dark pair, not a per-theme value.
 
 .. note::
 
@@ -380,7 +380,7 @@ The position component
 
 *Designs 2 and 3 only — the classic page uses ``snippets/asas/program.html``.*
 
-``templates/snippets/money/position.html`` renders one position. Its structure
+``templates/snippets/dynamic/position.html`` renders one position. Its structure
 is a contract in both directions --- the scripts read it, and both designs
 depend on it.
 
@@ -423,8 +423,8 @@ the second. Designs 2 and 3 name the *same* template and differ only in
 
 .. code-block:: css
 
-   .money-page .rows { display: flex; flex-direction: column; }
-   .money-page .rows.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); }
+   .dynamic-page .rows { display: flex; flex-direction: column; }
+   .dynamic-page .rows.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); }
 
 That is the whole difference between design 2 and design 3. Two template files
 would duplicate every asset row, program group and chart in order to change a
@@ -692,7 +692,7 @@ what gets toggled.
 The NFT section
 """""""""""""""
 
-*Designs 2 and 3 only.* ``snippets/money/nfts.html``, ``collection.html`` and
+*Designs 2 and 3 only.* ``snippets/dynamic/nfts.html``, ``collection.html`` and
 ``nft.html``.
 
 This section was design 1's markup included unchanged until pass 3, and the
@@ -705,7 +705,7 @@ So a collection is an asset card: the same ``.fitem.mcard``, the same five-cell
 ``.chead``, the same ``--col``. An NFT's facts are ``.nft-line`` rows, which are
 the same three tracks a position row uses. The page now has five levels that put
 a figure on one edge, and
-``functional_tests/test_address_money_nfts.py`` measures all five together:
+``functional_tests/test_address_dynamic_nfts.py`` measures all five together:
 
 .. code-block:: text
 
@@ -730,7 +730,7 @@ Hooks kept from design 1, because the scripts are shared: ``.nftsec``,
 ``.epoch`` is the one where keeping the hook was not enough. ``showTimes`` binds
 to ``.nft.item-header`` and fills ``span.epoch`` inside ``.item-body`` siblings,
 and this design has neither -- so the section rendered "Last purchase on Rand
-Gallery" with no indication of when. ``money.js`` fills them now, on load rather
+Gallery" with no indication of when. ``dynamic.js`` fills them now, on load rather
 than on open, using ``address.js``'s ``timeEntry`` so both designs word the same
 fact the same way.
 
@@ -752,7 +752,7 @@ shown is a ratio, and a bar that stopped short would read as a third quantity.
 The toolbar
 """""""""""
 
-*Designs 2 and 3 only.* Pass 2, ``snippets/money/toolbar.html`` and
+*Designs 2 and 3 only.* Pass 2, ``snippets/dynamic/toolbar.html`` and
 ``static/js/toolbar.js``.
 
 Everything the toolbar does happens in the browser, on a page that is already
@@ -782,7 +782,7 @@ Load-bearing names:
    before a load-more existed. "Show me the rows carrying 99.5% of the value"
    is not a sentence a reader thinks in.
 
-   ``showmore.js`` stands down on ``.money-page`` for the same reason: it
+   ``showmore.js`` stands down on ``.dynamic-page`` for the same reason: it
    reveals a whole tail in one press, and these reveal a batch.
 
 ``data-sort-value`` / ``-amount`` / ``-name`` / ``-positions`` on ``.fitem``
@@ -798,7 +798,7 @@ Load-bearing names:
 ``data-cat`` on ``.position``
    The allocation category, from ``position_band``. This is what makes the band
    a control rather than a picture. The filter reproduces a rule that lives in
-   four dict comprehensions in ``utils.charts``; ``test_money_extras.py`` sums
+   four dict comprehensions in ``utils.charts``; ``test_dynamic_extras.py`` sums
    the reference payload both ways and asserts the totals agree, which is the
    only reason the duplication is safe to keep.
 
@@ -862,7 +862,7 @@ whatever else is going on".
 
 .. note::
 
-   ``address.js`` does not touch ``.money-page``. Its ``setCurrency`` writes
+   ``address.js`` does not touch ``.dynamic-page``. Its ``setCurrency`` writes
    ``innerHTML`` --- number *and* unit --- into every ``span.val``, which is
    right for design 1, where the unit is part of the value's text. Here each
    figure pairs with a separate unit element, so it left asset headers reading
@@ -934,8 +934,8 @@ How this is enforced
 
 ``core/tests/test_selector_contract.py`` renders ``address.html`` against the real
 sample payload and asserts every Tier 1 name and Tier 2 relationship above.
-``core/tests/test_money_design_contract.py`` does the same for
-``address_money.html`` and the designs 2/3 sections.
+``core/tests/test_dynamic_design_contract.py`` does the same for
+``address_dynamic.html`` and the designs 2/3 sections.
 
 It is deliberately **not** a snapshot test. A snapshot fails on every whitespace
 change and gets regenerated without being read, which is how the jest fixture
@@ -971,7 +971,7 @@ five-segment allocation bar would have rendered as one segment covering the
 other four. The page would simply have shown the wrong thing, and looked
 deliberate doing it.
 
-``core/tests/test_money_design_classes.py`` now checks this automatically: every
+``core/tests/test_dynamic_design_classes.py`` now checks this automatically: every
 class used in the four money-design templates must be either declared in
 ``static/css/input.css`` or named in an explicit allowlist of framework classes
 we chose to inherit. It catches collisions **and** classes that style nothing,

@@ -522,7 +522,7 @@ class TestTheTotalIsReachableWithoutAPointer:
         # Their `.pricetip` carries no `.tooltip` class at all, and `.total-sub`
         # prints the same figure and rate permanently, for everyone. A tabindex
         # there would be a tab stop that reveals nothing.
-        html = render_to_string("address_money.html", _build_context(sample_payload))
+        html = render_to_string("address_dynamic.html", _build_context(sample_payload))
 
         assert "total-sub" in html
         assert "pricetip tooltip" not in html
@@ -549,7 +549,7 @@ class TestTheExportActionLooksLikeOne:
     a page-wide search finds those and says nothing about these.
     """
 
-    TEMPLATES = ("address.html", "address_money.html")
+    TEMPLATES = ("address.html", "address_dynamic.html")
 
     def _actions(self, html):
         """Return the export and historic anchors, by where they point."""

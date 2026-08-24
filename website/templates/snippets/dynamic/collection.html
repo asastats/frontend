@@ -2,7 +2,7 @@
 {% load core_extras %}
 {% comment %} One NFT collection, built as an asset card.
 
-  Deliberately the same shell as `snippets/money/asset.html`: `.fitem.mcard`,
+  Deliberately the same shell as `snippets/dynamic/asset.html`: `.fitem.mcard`,
   a five-cell `.chead`, `--col` for the figure. A collection *is* a holding, and
   giving it its own layout would break the one thing this design promises.
 
@@ -101,7 +101,7 @@
       </div>
 
       {% for row in coll.nfts %}
-        {% include "snippets/money/nft.html" with row=row %}
+        {% include "snippets/dynamic/nft.html" with row=row %}
       {% endfor %}
     </div>
   </div>

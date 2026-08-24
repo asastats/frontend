@@ -20,7 +20,7 @@ What is wrong is that the *build* is behind the templates.
 
 **Why a byte comparison rather than a search for particular classes.** Deciding
 from a class attribute alone which tokens are Tailwind's and which are this
-project's (`.pgroup-total`, `.money-page`, `.fitem`) needs a heuristic, and a
+project's (`.pgroup-total`, `.dynamic-page`, `.fitem`) needs a heuristic, and a
 heuristic here fails in the direction that hurts -- quietly passing the class it
 did not recognise. Rebuilding needs no heuristic: the fresh build is the
 authority on what these templates ask for, the build is deterministic (verified:

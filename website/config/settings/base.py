@@ -304,7 +304,7 @@ ADDRESS_SECTION_THRESHOLD = 0.995
 #: which reads as a broken page rather than a tidy one.
 ADDRESS_SECTION_FLOOR = 8
 
-#: How many rows the money-column designs show before offering the rest, and how
+#: How many rows the dynamic designs show before offering the rest, and how
 #: many each press of "Show more" adds.
 #:
 #: A plain count, not the magnitude rule above. Design 1 keeps that rule; these

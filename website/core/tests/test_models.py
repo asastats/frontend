@@ -2617,19 +2617,19 @@ class TestCoreModelsProfilePreferredLayout:
 
     def test_core_models_profile_preferred_layout_or_default_returns_choice(self):
         profile = Profile(
-            preferred_layout="money-column",
+            preferred_layout="dynamic",
             permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
         )
-        assert profile.preferred_layout_or_default() == "money-column"
+        assert profile.preferred_layout_or_default() == "dynamic"
 
     def test_core_models_profile_preferred_layout_or_default_returns_dynamic_choice_at_intro(
         self,
     ):
         profile = Profile(
-            preferred_layout="money-column",
+            preferred_layout="dynamic",
             permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"],
         )
-        assert profile.preferred_layout_or_default() == "money-column"
+        assert profile.preferred_layout_or_default() == "dynamic"
 
     def test_core_models_profile_preferred_layout_or_default_when_unknown(self):
         profile = Profile(
@@ -2646,10 +2646,10 @@ class TestCoreModelsProfilePreferredLayout:
         keeps applying. Asserted because the two methods sit beside each other
         and reading one as the other would quietly give the feature away.
         """
-        lapsed = Profile(preferred_layout="money-column", permission=0)
+        lapsed = Profile(preferred_layout="dynamic", permission=0)
 
         assert lapsed.preferred_layout_or_default() == "classic"
-        assert lapsed.preferred_layout == "money-column", "the choice is remembered"
+        assert lapsed.preferred_layout == "dynamic", "the choice is remembered"
 
     def test_core_models_profile_layout_choices_at_trial_is_default_alone(self):
         assert Profile(permission=0).layout_choices() == [("classic", "Classic")]
@@ -2697,7 +2697,7 @@ class TestCoreModelsProfilePreferredLayout:
         assert intro.can_access_layout_setting() is True
         assert [key for key, _ in intro.layout_choices()] == [
             "classic",
-            "money-column",
+            "dynamic",
         ]
         assert [entry["tier"] for entry in intro.locked_layouts()] == [
             "Asastatser",

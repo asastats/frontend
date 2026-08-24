@@ -20,7 +20,7 @@ const COLLECTIONS = [COLLECTION, "fbrave-new-world"];
  * Build one section of entries, each with a grip and a pin.
  *
  * Synthetic rather than the captured address page, since 2026-08-20: pinning
- * and reordering belong to the money-column designs, and design 1 -- which is
+ * and reordering belong to the dynamic designs, and design 1 -- which is
  * what `address.html` captures -- deliberately carries neither. Reading the
  * fixture would tie these tests to whichever design happens to ship the
  * controls, which is not what any of them is about.

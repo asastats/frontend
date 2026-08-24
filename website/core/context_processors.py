@@ -147,7 +147,7 @@ def global_constants(request):
         "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
         # The load-more rule's floor, for design 1's magnitude cutoff.
         "ADDRESS_SECTION_FLOOR": settings.ADDRESS_SECTION_FLOOR,
-        # How many rows the money-column designs show before offering the rest.
+        # How many rows the dynamic designs show before offering the rest.
         # Published rather than repeated in the browser, because the template
         # renders the first fold and `toolbar.js` renders every one after it --
         # two implementations of one rule reading the number from two places
