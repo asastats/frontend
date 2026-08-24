@@ -31,11 +31,11 @@
   navigating. The list is a <details>, so it opens without scripting.
 {% endcomment %}
 {% if user.is_authenticated and user.profile.can_access_theme_setting %}
-<details class="dropdown dropdown-end flex-none">
+<details class="dropdown dropdown-end flex-none{% if dropup %} dropdown-top{% endif %}">
   <summary class="btn btn-ghost btn-sm" aria-label="Appearance">
     {% include "snippets/theme_icon.html" %}
   </summary>
-  <ul class="dropdown-content z-10 mt-2 max-h-96 w-56 overflow-y-auto rounded-box bg-base-100 p-2 shadow"
+  <ul class="dropdown-content z-10 {% if dropup %}mb-2{% else %}mt-2{% endif %} max-h-96 w-56 overflow-y-auto rounded-box bg-base-100 p-2 shadow"
       id="id-theme-list" data-recent-shown="{{ RECENT_THEMES_SHOWN }}">
     {% if user.profile.can_access_appearance_page %}
     <li>

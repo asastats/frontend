@@ -111,7 +111,7 @@
     {% for year_group in transparency_reports %}
       <div class="flex flex-wrap gap-x-3 gap-y-1">
         {% for report in year_group.months %}
-          <a href="/transparency-report-{{ report.year }}-{{ report.month }}.pdf" target="_blank" title="Download {{ WEBSITE_NAME }} Transparency Report for {{ report.month_name }} {{ report.year }}">{{ report.month }}/{{ report.short_year }}</a>
+          <a class="link link-hover" href="/transparency-report-{{ report.year }}-{{ report.month }}.pdf" target="_blank" title="Download {{ WEBSITE_NAME }} Transparency Report for {{ report.month_name }} {{ report.year }}">{{ report.month }}/{{ report.short_year }}</a>
         {% endfor %}
       </div>
     {% endfor %}

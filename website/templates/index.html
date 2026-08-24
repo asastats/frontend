@@ -31,7 +31,7 @@
 {% block header %}{% endblock %}
 {% block footer_appearance %}
 <div class="mt-3 flex justify-center">
-  {% include "snippets/theme_picker.html" %}
+  {% include "snippets/theme_picker.html" with dropup=True %}
 </div>
 {% endblock %}
 {% block content %}
@@ -101,7 +101,6 @@
     </form>
     {% if user.is_authenticated %}
     <div class="bundlenames mx-auto mt-10 grid max-w-2xl grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-      <br>
       {% for bundlename in user.profile.bundlenames %}
       <div>
         <div class="rounded-box border border-base-300 bg-base-100 p-3 transition hover:shadow-md">
@@ -109,14 +108,12 @@
             <h5 class="mt-2 text-center text-sm font-medium">{{ bundlename.name }}</h5>
           </a>
         </div>
-        {% if bundlename.can_access_historic_widget %}
-        <div class="text-center">
-          {% if bundlename.public %}<svg class="inline-block h-4 w-4 align-text-bottom opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>{% endif %}
-          <a href="{% url 'historic' bundlename.bundle %}" target="_blank" title="Process and show bundle's historic data">Historic data</a>
-        </div>
-        {% elif bundlename.public %}
-        <div class="text-center">
-          <svg class="inline-block h-4 w-4 align-text-bottom opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>
+        {% if bundlename.public or bundlename.can_access_historic_widget %}
+        <div class="flex items-center justify-center gap-2 text-sm">
+          {% if bundlename.public %}<svg class="h-4 w-4 flex-none opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" role="img" aria-label="Public bundle"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18"/></svg>{% endif %}
+          {% if bundlename.can_access_historic_widget %}
+          <a class="link link-hover" href="{% url 'historic' bundlename.bundle %}" target="_blank" title="Process and show bundle's historic data">Historic data</a>
+          {% endif %}
         </div>
         {% endif %}
       </div>
