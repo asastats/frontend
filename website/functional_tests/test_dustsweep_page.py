@@ -104,13 +104,12 @@ class DustSweepPageTest(FunctionalTest):
         ):
             assert shell.get_attribute(attribute) is None, attribute
 
-    def test_the_owned_address_is_offered_with_a_lazy_panel(self):
-        """One `<details>` per linked address, each naming the address it sweeps.
+    def test_the_owned_address_is_offered_with_its_own_button(self):
+        """One row per linked address, each opening the modal for that address.
 
-        The panel body is empty until the reader opens it - the controller
-        plans on the first `toggle` - so the assertion is that the *seam* is
-        present and addressed, not that a plan is rendered. Planning needs a
-        live engine, which a functional test does not have.
+        A sweep acts on one account at a time - the groups it builds are signed
+        by a single holder - so the address travels on the button rather than
+        being inferred from the page.
         """
         self._link_address()
         self._open_page()
@@ -119,23 +118,84 @@ class DustSweepPageTest(FunctionalTest):
         assert len(rows) == 1
         assert rows[0].get_attribute("data-address") == ADDRESS
 
-        panel = rows[0].find_element(By.CSS_SELECTOR, ".id-dustsweep-panel")
-        assert panel.get_attribute("data-address") == ADDRESS
-        assert panel.text.strip() == ""
+        button = rows[0].find_element(By.CSS_SELECTOR, ".id-dustsweep-open")
+        assert button.get_attribute("data-address") == ADDRESS
 
-    def test_opening_the_address_reveals_the_panel_seam(self):
-        """A reader can actually open the row: `<details>` is not decorative."""
+    def test_the_modal_is_closed_until_the_reader_opens_it(self):
+        """A native `<dialog>`: closed means not rendered, not merely hidden."""
         self._link_address()
         self._open_page()
 
-        selector = "#id-dustsweep-addresses details.dustsweep-address"
-        details = self.find_elem_by_css(selector)
-        assert details.get_attribute("open") is None
+        modal = self.find_elem_by_id("dustsweep-modal")
+        assert modal.get_attribute("open") is None
+        assert not modal.is_displayed()
 
-        details.find_element(By.TAG_NAME, "summary").click()
-        self.wait_until(
-            lambda: self.find_elem_by_css(selector).get_attribute("open") is not None
-        )
+    def test_opening_the_modal_shows_the_sweep_interface(self):
+        """The whole point of this pass: there is an interface to show.
+
+        Asserted through what a reader sees - the modal opens, names the
+        address it will sweep, and offers the controls - rather than on
+        internal state. Planning itself needs a live engine, which a functional
+        test does not have, so the CTA is still in its reading state here.
+        """
+        self._link_address()
+        self._open_page()
+
+        self.find_elem_by_css(".id-dustsweep-open").click()
+        modal = self.find_elem_by_id("dustsweep-modal")
+        self.wait_until(lambda: modal.get_attribute("open") is not None)
+
+        assert modal.is_displayed()
+        assert "Dust Sweep" in self.find_elem_by_css(".dustsweep-title").text
+        # the address is named, shortened, so a reader can tell which one
+        assert ADDRESS[:6] in self.find_elem_by_css(".id-dustsweep-address-tag").text
+        assert self.find_elem_by_css(".id-dustsweep-cta").is_displayed()
+
+    def test_the_modal_closes_again(self):
+        """Escape and the close button both have to work, or it is a trap."""
+        self._link_address()
+        self._open_page()
+
+        self.find_elem_by_css(".id-dustsweep-open").click()
+        modal = self.find_elem_by_id("dustsweep-modal")
+        self.wait_until(lambda: modal.get_attribute("open") is not None)
+
+        self.find_elem_by_css(".id-dustsweep-close").click()
+        self.wait_until(lambda: modal.get_attribute("open") is None)
+
+    def test_the_threshold_control_offers_presets_and_a_custom_field(self):
+        """The only input the reader has, and the engine clamps it anyway.
+
+        Low presets because the unsafe direction is upward: a mistyped
+        threshold must not be able to reach a balance somebody meant to keep.
+        """
+        self._link_address()
+        self._open_page()
+        self.find_elem_by_css(".id-dustsweep-open").click()
+
+        presets = self.find_elems_by_css(".id-dustsweep-threshold-preset")
+        assert [one.get_attribute("data-threshold") for one in presets] == [
+            "0.1",
+            "1",
+            "5",
+        ]
+        assert max(float(one.get_attribute("data-threshold")) for one in presets) <= 10
+
+    def test_the_filter_tabs_default_to_what_will_be_swept(self):
+        """A reader opening a sweep wants to see what is about to happen.
+
+        "Everything" exists so a holding the sweep left alone is still
+        visible - without it there is no way to tell "kept deliberately" from
+        "missed".
+        """
+        self._link_address()
+        self._open_page()
+        self.find_elem_by_css(".id-dustsweep-open").click()
+
+        tabs = self.find_elems_by_css("[data-dustsweep-filter]")
+        selected = [one for one in tabs if one.get_attribute("aria-selected") == "true"]
+        assert len(selected) == 1
+        assert selected[0].get_attribute("data-dustsweep-filter") == "sweeping"
 
     def test_the_page_explains_what_it_recovers_before_anything_is_signed(self):
         """Most of what a sweep returns is minimum balance, not tokens.
@@ -163,8 +223,12 @@ class DustSweepPageTest(FunctionalTest):
         shell = self._open_page()
 
         markup = shell.get_attribute("outerHTML")
-        for framework in ('class="btn', '"card"', '"stack"', '"badge', '"tooltip'):
+        for framework in ('class="btn', '"card"', '"stack"', '"tooltip'):
             assert framework not in markup, framework
+
+        # nor the swap widget's own vocabulary: a sweep is not a swap, and
+        # borrowing `swap-*` would tie it to rules changed for swap reasons
+        assert "swap-" not in markup
 
     def test_the_page_loads_without_javascript_errors(self):
         """`dustsweep.js` runs here with no wallet bridge beside it.
@@ -216,3 +280,85 @@ class DustSweepPageUnlinkedTest(FunctionalTest):
             )
             == []
         )
+
+
+class DustSweepAddressPageEntryTest(FunctionalTest):
+    """The entry point: reaching the sweep from the address page.
+
+    The address page is ``cache_page``'d across users, so this arrives through
+    the same non-cached htmx partial the swap entry uses. That is not an
+    optimisation - rendering "is this address yours?" into the shared page
+    would serve one reader's answer to everyone who came after.
+    """
+
+    def _link_address(self, email="dustsweep-entry@example.com"):
+        session_cookie = self.create_session_cookie(
+            username=email, password="top_secret", permission=100
+        )
+        user = get_user_model().objects.get(username=email)
+        LinkedAddress.objects.create(
+            profile=user.profile,
+            address=ADDRESS,
+            canonical_address=ADDRESS,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=True,
+            login_enabled=True,
+        )
+        user.profile.address = ADDRESS
+        user.profile.preferred_router = "folks"
+        user.profile.save()
+
+        self.browser.get(self.server_url + "/404.html")
+        self.browser.add_cookie(session_cookie)
+        return user
+
+    def test_a_linked_reader_is_offered_the_sweep_on_the_address_page(self):
+        """The whole point of an entry point: it can be found without a URL.
+
+        Waited for rather than asserted immediately, because it arrives by
+        htmx after the page has loaded - the address page is the heaviest on
+        the site and the partial lands last.
+        """
+        self._link_address()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+
+        button = self.find_elem_by_css(".id-dustsweep-open")
+        assert button.is_displayed()
+        assert "Sweep" in button.text
+        assert button.get_attribute("data-address") == ADDRESS
+
+    def test_the_sweep_opens_from_the_address_page(self):
+        """It is wired there too, not merely rendered.
+
+        The controller binds on its own rather than waiting for the wallet
+        bridge, so this works for a reader who has not connected - which is
+        every reader, the first time.
+        """
+        self._link_address()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+
+        self.find_elem_by_css(".id-dustsweep-open").click()
+        modal = self.find_elem_by_id("dustsweep-modal")
+        self.wait_until(lambda: modal.get_attribute("open") is not None)
+        assert modal.is_displayed()
+
+    def test_an_unlinked_reader_is_offered_nothing(self):
+        """The gate is ownership, and it is applied server-side.
+
+        Not hidden with CSS: the markup must not be there at all, because a
+        button that appears for everyone and works for nobody is worse than no
+        button.
+        """
+        session_cookie = self.create_session_cookie(
+            username="dustsweep-nolink@example.com",
+            password="top_secret",
+            permission=100,
+        )
+        self.browser.get(self.server_url + "/404.html")
+        self.browser.add_cookie(session_cookie)
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+
+        # let the htmx partial land before concluding it rendered nothing
+        self.find_elem_by_id("id-swap-entry-container")
+        assert self.browser.find_elements(By.CSS_SELECTOR, ".id-dustsweep-open") == []

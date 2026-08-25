@@ -459,45 +459,41 @@
 .dustsweep-addresses > li + li { margin-top: 0.5rem; }
 
 .dustsweep-address {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
   border: 1px solid var(--color-base-300);
   border-radius: var(--radius-box);
   background: var(--color-base-100);
 }
 
-.dustsweep-address > summary {
-  padding: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  list-style: none;
-}
+.dustsweep-address-name { font-weight: 500; }
 
-.dustsweep-address > summary::-webkit-details-marker { display: none; }
-
-.dustsweep-address[open] > summary {
-  border-bottom: 1px solid var(--color-base-300);
-}
-
-.dustsweep-address .id-dustsweep-panel { padding: 1rem; }
-
-/* The line explaining why this group and not another. It carries the refusal
-   text when a group is rejected, so it has to stay readable at both jobs. */
-.dustsweep-why {
-  margin: 0.5rem 0 1rem;
-  color: var(--color-base-content);
-  opacity: 0.8;
-}
-
-.dustsweep-sign {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--color-base-300);
-  border-radius: var(--radius-field);
+.dustsweep-open {
+  margin-left: auto;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
   background: var(--color-primary);
   color: var(--color-primary-content);
-  font-weight: 500;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.dustsweep-sign[disabled] { opacity: 0.6; cursor: default; }
+.dustsweep-open:hover { filter: brightness(1.06); }
+
+/* On the address page the entry is a page-level action rather than a row: the
+   partial that carries it renders just above the heading, so it sits right and
+   stays out of the way of the figure the page is actually about. */
+.dustsweep-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.5rem;
+}
+
+.dustsweep-toolbar .dustsweep-open { margin-left: 0; }
 
 #id-dustsweep-locked {
   margin: 1.5rem 0 0;
@@ -506,6 +502,406 @@
   border-radius: var(--radius-box);
   background: var(--color-base-200);
 }
+
+/* ---------------------------------------------------------- dust sweep modal
+   The swap modal's anatomy, not its class names: a native <dialog>, a flex
+   shell with a fixed head and foot around one scrolling panel, a segmented
+   control and a single primary action. The swap modal is the design the rest
+   of the site is moving onto, so this follows it rather than inventing a
+   second language for the same job.
+
+   The token block is derived from the theme's own the same way the swap
+   modal's is, so the sweep follows whichever of the themes the reader picked.
+   It is duplicated rather than shared because `--swap-*` is scoped to
+   `.swap-modal`: markup outside that container would silently lose the theme,
+   which is the failure the swap block's own comment warns about. */
+.dustsweep-modal {
+  --sweep-surface: var(--color-base-100);
+  --sweep-raised: var(--color-base-200);
+  --sweep-sunken: var(--color-base-300);
+  --sweep-line: color-mix(in oklch, var(--color-base-content) 15%, transparent);
+  --sweep-ink: var(--color-base-content);
+  --sweep-ink-2: color-mix(in oklch, var(--color-base-content) 70%, transparent);
+  --sweep-ink-3: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+  --sweep-accent: var(--color-primary);
+  --sweep-accent-ink: var(--color-accent);
+  --sweep-accent-wash: color-mix(in oklch, var(--color-primary) 14%, var(--color-base-100));
+  --sweep-accent-on: var(--color-primary-content);
+  --sweep-danger: var(--color-error);
+  --sweep-danger-wash: color-mix(in oklch, var(--color-error) 12%, var(--color-base-100));
+  --sweep-warn: var(--color-warning);
+  --sweep-warn-wash: color-mix(in oklch, var(--color-warning) 14%, var(--color-base-100));
+}
+
+/* Wider than the swap modal's 480px: a sweep lists holdings with a
+   disposition, a reason and a control on each line, where a swap has two
+   amount fields. */
+.dustsweep-modal {
+  width: min(560px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(88vh, 800px);
+  padding: 0;
+  border: 0;
+  border-radius: 18px;
+  background-color: var(--sweep-surface);
+  color: var(--sweep-ink);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+}
+
+.dustsweep-modal::backdrop { background: rgba(12, 18, 16, 0.55); }
+
+.dustsweep-shell {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.dustsweep-modal :focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 200, 150, 0.35);
+}
+
+.dustsweep-micro {
+  font-size: 0.68rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--sweep-ink-3);
+}
+
+.dustsweep-num { font-variant-numeric: tabular-nums; }
+
+/* ---- header ---- */
+.dustsweep-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 12px;
+}
+
+.dustsweep-title {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.dustsweep-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--sweep-accent-wash);
+  color: var(--sweep-accent-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.dustsweep-tag:empty { display: none; }
+
+.dustsweep-head-spacer { flex: 1; }
+
+.dustsweep-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--sweep-line);
+  border-radius: 9px;
+  background: var(--sweep-surface);
+  color: var(--sweep-ink-2);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.dustsweep-iconbtn:hover { border-color: var(--sweep-accent); color: var(--sweep-ink); }
+
+.dustsweep-iconbtn svg { width: 15px; height: 15px; display: block; }
+
+.dustsweep-iconbtn-plain { border-color: transparent; padding: 0 8px; }
+
+.dustsweep-iconbtn-plain:hover { background: var(--sweep-raised); }
+
+/* ---- threshold ---- */
+.dustsweep-threshold { padding: 0 16px 10px; }
+
+.dustsweep-threshold-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.dustsweep-chip {
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--sweep-line);
+  border-radius: 999px;
+  background: var(--sweep-surface);
+  color: var(--sweep-ink-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.dustsweep-chip:hover { border-color: var(--sweep-accent); }
+
+.dustsweep-chip[aria-pressed="true"] {
+  border-color: var(--sweep-accent);
+  background: var(--sweep-accent);
+  color: var(--sweep-accent-on);
+}
+
+.dustsweep-modal input.dustsweep-threshold-custom {
+  width: 84px !important;
+  height: 32px !important;
+  margin: 0 0 0 auto !important;
+  padding: 0 10px !important;
+  border: 1px solid var(--sweep-line) !important;
+  border-radius: 999px;
+  background: var(--sweep-surface);
+  color: var(--sweep-ink);
+  box-shadow: none;
+  font-size: 0.82rem;
+  text-align: right;
+}
+
+/* ---- summary ---- */
+.dustsweep-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  margin: 0 16px 12px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--sweep-sunken);
+}
+
+.dustsweep-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  background: var(--sweep-surface);
+}
+
+.dustsweep-summary dt {
+  margin: 0;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--sweep-ink-3);
+}
+
+.dustsweep-summary dd {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- filter tabs ---- */
+.dustsweep-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  margin: 0 16px 10px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--sweep-sunken);
+}
+
+.dustsweep-modes button {
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--sweep-ink-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dustsweep-modes button[aria-selected="true"] {
+  background: var(--sweep-surface);
+  color: var(--sweep-ink);
+}
+
+/* ---- the list, which is the scroll container ---- */
+.dustsweep-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 16px;
+}
+
+.dustsweep-lines { margin: 0; padding: 0; list-style: none; }
+
+.dustsweep-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--sweep-line);
+}
+
+.dustsweep-line:last-child { border-bottom: 0; }
+
+.dustsweep-line-unit {
+  font-weight: 700;
+  font-size: 0.9rem;
+  max-width: 11ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dustsweep-line-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--sweep-ink-2);
+  text-align: right;
+}
+
+/* The reason spans the full width beneath the line, because it is a sentence
+   rather than a field and truncating it would remove the only explanation of
+   why a holding is about to be given away. */
+.dustsweep-line-reason {
+  grid-column: 1 / -1;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--sweep-ink-3);
+}
+
+.dustsweep-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sweep-sunken);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sweep-ink-2);
+}
+
+/* Disposition is information, not decoration - forfeit and unpriced are the
+   two that move a token somewhere the user cannot undo, so they are the two
+   that are coloured. */
+.dustsweep-badge-close { color: var(--sweep-accent-ink); }
+
+.dustsweep-badge-forfeit {
+  background: var(--sweep-warn-wash);
+  color: var(--sweep-warn);
+}
+
+.dustsweep-badge-unpriced {
+  background: var(--sweep-danger-wash);
+  color: var(--sweep-danger);
+}
+
+.dustsweep-line-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.76rem;
+  color: var(--sweep-ink-3);
+}
+
+.dustsweep-modal input.dustsweep-line-include {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  position: static !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+.dustsweep-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--sweep-ink-3);
+  font-size: 0.86rem;
+}
+
+/* ---- notice, action, foot ---- */
+.dustsweep-notice {
+  margin: 10px 16px 0;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--sweep-sunken);
+  color: var(--sweep-ink-2);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.dustsweep-notice:empty { display: none; }
+
+.dustsweep-notice-error {
+  background: var(--sweep-danger-wash);
+  color: var(--sweep-danger);
+}
+
+.dustsweep-cta-wrap { padding: 12px 16px 4px; }
+
+.dustsweep-modal button.dustsweep-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  height: 46px;
+  border: 0;
+  border-radius: 13px;
+  background: var(--sweep-accent);
+  color: var(--sweep-accent-on);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dustsweep-modal button.dustsweep-cta[disabled] {
+  background: var(--sweep-sunken);
+  color: var(--sweep-ink-3);
+  cursor: default;
+}
+
+.dustsweep-why {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--sweep-ink-3);
+}
+
+.dustsweep-why:empty { display: none; }
+
+.dustsweep-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 14px;
+  font-size: 0.74rem;
+  color: var(--sweep-ink-3);
+}
+
+.dustsweep-foot-note { margin-left: auto; text-align: right; }
 
 /* htmx feedback, outside a Tailwind layer so the opacity rules are not purged
    and do not lose to utilities. Mirrors the rewards suite. */

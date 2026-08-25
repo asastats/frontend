@@ -1212,6 +1212,43 @@ class SwapEntryViewTest(TestCase):
         self.assertContains(response, "/widgets/folks/AAA")
         mocked_url.assert_called_once()
 
+    def test_swap_entry_linked_address_offers_the_dust_sweep(self):
+        """The sweep's entry point, on the same gate and the same partial.
+
+        Both are actions on an address the reader has proved they own, and
+        neither may be rendered into the page itself - it is `cache_page`'d
+        across users, so per-reader state there would be served to whoever
+        warmed the entry.
+        """
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/AAA"):
+            response = self.client.get(self.url)
+        self.assertContains(response, "id-dustsweep-open")
+        self.assertContains(response, "dustsweep-modal")
+        self.assertContains(response, self.address)
+
+    def test_swap_entry_dust_sweep_survives_a_router_that_will_not_resolve(self):
+        """Gated on linkage alone, and deliberately not on `swap_url`.
+
+        A sweep needs an address the reader owns; a swap additionally needs a
+        router that resolves. Hanging the sweep off the swap gate would hide it
+        exactly when the router is misconfigured - which is when its close-out
+        half is still perfectly usable, and carries most of the value anyway.
+        """
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value=""):
+            response = self.client.get(self.url)
+        self.assertNotContains(response, "id-swap-enabled")
+        self.assertContains(response, "id-dustsweep-open")
+
+    def test_swap_entry_anonymous_is_offered_no_sweep(self):
+        response = self.client.get(self.url)
+        self.assertNotContains(response, "id-dustsweep-open")
+
     def test_swap_entry_unlinked_renders_nothing(self):
         self._login()
         with mock.patch(

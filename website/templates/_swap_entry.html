@@ -16,3 +16,20 @@
 <script src="{% static swap_sdk_static %}"></script>
 <script src="{% static 'swap/swap.js' %}"></script>
 {% endif %}
+
+{# Dust sweep. Gated on linkage alone, deliberately not on `swap_url`: a sweep #}
+{# needs an address the reader owns and nothing else, while a swap also needs  #}
+{# a router that resolves. Hanging this off the swap gate would hide the sweep #}
+{# exactly when the router is misconfigured - which is when its close-out half #}
+{# is still perfectly usable, and carries most of the value anyway.            #}
+{% if dustsweep_address %}
+<div id="id-dustsweep" class="dustsweep-toolbar"
+     data-plan-url="{{ dustsweep_plan_url }}">
+  <button type="button" class="dustsweep-open id-dustsweep-open"
+          data-address="{{ dustsweep_address }}">
+    Sweep dust
+  </button>
+</div>
+{% include "dustsweep/_sweep_modal.html" %}
+<script src="{% static 'dustsweep/dustsweep.js' %}"></script>
+{% endif %}

@@ -1499,11 +1499,23 @@ class DeactivateProfileView(FormView):
 
 
 class SwapEntryView(TemplateView):
-    """Non-cached htmx partial rendering the swap entry for the user's router.
+    """Non-cached htmx partial rendering the per-user entries for an address page.
 
     The address page is ``cache_page``'d across users, so this per-user entry is
     loaded separately. It links to the user's preferred router's swap page when
     the user has linked at least one address on the page; otherwise nothing.
+
+    **It carries the dust sweep too**, for the same reason and on the same gate:
+    both are actions on an address the reader has proved they own, and neither
+    may be rendered into the shared page. A second htmx partial would be a
+    second request for the same question - "which of these addresses are
+    yours?" - answered from the same `linked_addresses_for_user` call.
+
+    The two are gated *independently*, though. A sweep needs a linked address
+    and nothing else; a swap additionally needs a router that resolves, and
+    `swap_url` is "" when it does not. Hanging the sweep off `swap_url` would
+    have hidden it whenever the router was misconfigured, which is precisely
+    when the close-out half is still perfectly usable.
 
     :var template_name: relative path to the partial template
     :type template_name: str
@@ -1518,6 +1530,7 @@ class SwapEntryView(TemplateView):
         """
         context = super().get_context_data(*args, **kwargs)
         context["swap_url"] = ""
+        context["dustsweep_address"] = ""
         user = self.request.user
         if not user.is_authenticated:
             return context
@@ -1527,6 +1540,11 @@ class SwapEntryView(TemplateView):
         )
         linked = linked_addresses_for_user(user, addresses)
         if linked:
+            # The sweep acts on one account at a time - its groups are signed by
+            # a single holder - so it takes the first linked address rather than
+            # the bundle, exactly as the swap entry does.
+            context["dustsweep_address"] = sorted(linked)[0]
+            context["dustsweep_plan_url"] = reverse("dustsweep_plan")
             router = user.profile.preferred_router_or_default()
             cfg = swap_client_cfg(router)
             context["swap_url"] = swap_entry_url(router, value)
