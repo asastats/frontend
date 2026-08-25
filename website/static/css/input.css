@@ -426,6 +426,87 @@
   background: var(--color-base-200);
 }
 
+/* ----------------------------------------------------------------- dust sweep
+   The sweep shell mirrors the swap shell's structure, and deliberately does not
+   reuse its class names. It started out emitting `swap-page-title`,
+   `swap-addresses` and `swap-address`, which worked - but tied the appearance of
+   a sweep to rules that will be changed for swap reasons, by someone not
+   thinking about the sweep at all. The one-directional rule above is satisfied
+   either way; this is about which widget owns the vocabulary.
+
+   Duplicated rather than factored into a shared selector list for the same
+   reason: the two are alike today and are free to stop being. */
+.dustsweep-page-title {
+  font-size: 1.875rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.dustsweep-intro {
+  margin: 1rem 0 0;
+  max-width: 60ch;
+  color: var(--color-base-content);
+  opacity: 0.8;
+}
+
+.dustsweep-addresses {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dustsweep-addresses > li + li { margin-top: 0.5rem; }
+
+.dustsweep-address {
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  background: var(--color-base-100);
+}
+
+.dustsweep-address > summary {
+  padding: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+
+.dustsweep-address > summary::-webkit-details-marker { display: none; }
+
+.dustsweep-address[open] > summary {
+  border-bottom: 1px solid var(--color-base-300);
+}
+
+.dustsweep-address .id-dustsweep-panel { padding: 1rem; }
+
+/* The line explaining why this group and not another. It carries the refusal
+   text when a group is rejected, so it has to stay readable at both jobs. */
+.dustsweep-why {
+  margin: 0.5rem 0 1rem;
+  color: var(--color-base-content);
+  opacity: 0.8;
+}
+
+.dustsweep-sign {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-field);
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dustsweep-sign[disabled] { opacity: 0.6; cursor: default; }
+
+#id-dustsweep-locked {
+  margin: 1.5rem 0 0;
+  padding: 1rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-box);
+  background: var(--color-base-200);
+}
+
 /* htmx feedback, outside a Tailwind layer so the opacity rules are not purged
    and do not lose to utilities. Mirrors the rewards suite. */
 [hx-indicator] {
