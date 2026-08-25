@@ -1272,6 +1272,81 @@ class SwapEntryViewTest(TestCase):
         mocked_cba.assert_called_once_with(bundle)
         self.assertContains(response, "/widgets/folks/BBB")
 
+    def test_swap_entry_bundle_offers_a_sweep_for_every_owned_address(self):
+        """The bundle fix, at the entry point.
+
+        A sweep is signed by one holder's key, and a bundle page can show
+        several of the reader's own accounts. Choosing for them is what broke:
+        the wallet is connected to one account, and an entry that silently
+        opened on whichever address sorted first produced a group that account
+        cannot sign.
+        """
+        self._login()
+        second = "C" * 58
+        with mock.patch(
+            "core.views.check_bundle_addresses",
+            return_value=f"{self.address} {second} {'D' * 58}",
+        ), mock.patch(
+            "core.views.linked_addresses_for_user",
+            return_value={self.address, second},
+        ), mock.patch("core.views.swap_entry_url", return_value=""):
+            response = self.client.get(reverse("swap_entry", args=["B" * 40]))
+        rendered = response.content.decode()
+        assert rendered.count('class="dustsweep-open id-dustsweep-open"') == 2
+        self.assertContains(response, self.address)
+        self.assertContains(response, second)
+
+    def test_swap_entry_a_single_owned_address_gets_one_unlabelled_button(self):
+        """The common case must not grow furniture it does not need.
+
+        One button needs no address on it, so the label is not rendered at all
+        rather than rendered and hidden.
+        """
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value=""):
+            response = self.client.get(self.url)
+        assert response.content.decode().count("id-dustsweep-open") == 1
+        self.assertNotContains(response, "dustsweep-open-address")
+
+    def test_swap_entry_opens_on_the_profiles_primary_address(self):
+        """Which account the swap marker and the modal open on.
+
+        The primary is the address the user authorised and the one their
+        permission hangs off, so it is far and away the likeliest to be the
+        one connected in the wallet. Alphabetical order - the previous rule -
+        correlates with nothing.
+        """
+        self._login()
+        first, primary = "A" * 58, "Z" * 58
+        self.user.profile.address = primary
+        self.user.profile.save()
+        with mock.patch(
+            "core.views.check_bundle_addresses", return_value=f"{first} {primary}"
+        ), mock.patch(
+            "core.views.linked_addresses_for_user", return_value={first, primary}
+        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/BBB"):
+            response = self.client.get(reverse("swap_entry", args=["B" * 40]))
+        assert response.context["swap_address"] == primary
+        assert response.context["dustsweep_address"] == primary
+        # and every owned address is still offered a sweep of its own
+        assert response.context["dustsweep_addresses"] == [first, primary]
+
+    def test_swap_entry_falls_back_when_the_primary_is_not_on_the_page(self):
+        """A stable wrong guess beats one that moves between page loads."""
+        self._login()
+        first, second = "A" * 58, "Z" * 58
+        self.user.profile.address = "Q" * 58
+        self.user.profile.save()
+        with mock.patch(
+            "core.views.check_bundle_addresses", return_value=f"{first} {second}"
+        ), mock.patch(
+            "core.views.linked_addresses_for_user", return_value={first, second}
+        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/BBB"):
+            response = self.client.get(reverse("swap_entry", args=["B" * 40]))
+        assert response.context["swap_address"] == first
+
 
 class SwapSourceRedirectViewTest(TestCase):
     """Testing class for :class:`core.views.SwapSourceRedirectView`."""

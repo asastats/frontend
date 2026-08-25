@@ -1498,6 +1498,39 @@ class DeactivateProfileView(FormView):
         return super().form_valid(form)
 
 
+def preferred_linked_address(user, linked):
+    """Return which of `linked` an action should open on.
+
+    **The profile's primary when it is one of them**, because that is the
+    address the user authorised, the one their subscription and permission hang
+    off, and by a long way the one most likely to be connected in the wallet
+    right now. Alphabetical order - the previous rule - correlates with nothing
+    at all, and on a bundle page it silently picked whichever of the reader's
+    accounts happened to sort first.
+
+    Falls back to the sorted first only so the choice is *stable*: an entry that
+    opened on a different account between two page loads would be worse than one
+    that opens on a predictable wrong guess.
+
+    :param user: the requesting user
+    :type user: django.contrib.auth.models.User
+    :param linked: the page's addresses that belong to this user
+    :type linked: collections.abc.Iterable[str]
+    :var primary: the profile's privilege-bearing address
+    :type primary: str
+    :return: str
+    """
+    ordered = sorted(linked)
+    primary = (getattr(getattr(user, "profile", None), "address", "") or "").upper()
+    # matched case-insensitively but returned as the page spelled it, so the
+    # value handed to the template is one the gate will recognise again
+    for one in ordered:
+        if one.upper() == primary:
+            return one
+
+    return ordered[0]
+
+
 class SwapEntryView(TemplateView):
     """Non-cached htmx partial rendering the per-user entries for an address page.
 
@@ -1531,6 +1564,7 @@ class SwapEntryView(TemplateView):
         context = super().get_context_data(*args, **kwargs)
         context["swap_url"] = ""
         context["dustsweep_address"] = ""
+        context["dustsweep_addresses"] = []
         user = self.request.user
         if not user.is_authenticated:
             return context
@@ -1540,10 +1574,18 @@ class SwapEntryView(TemplateView):
         )
         linked = linked_addresses_for_user(user, addresses)
         if linked:
-            # The sweep acts on one account at a time - its groups are signed by
-            # a single holder - so it takes the first linked address rather than
-            # the bundle, exactly as the swap entry does.
-            context["dustsweep_address"] = sorted(linked)[0]
+            # **Both actions are single-address, and a bundle page is where that
+            # stops being invisible.** A swap and a sweep are signed by one
+            # holder's key, so what matters is which of the page's addresses the
+            # reader actually controls - the rest of the bundle is somebody
+            # else's, or at least some other key's, and has to be discarded.
+            #
+            # The sweep offers *every* linked address rather than choosing for
+            # them, because choosing is what breaks: the wallet is connected to
+            # one account, and an entry that silently picked a different one
+            # produced a group that account cannot sign.
+            context["dustsweep_addresses"] = sorted(linked)
+            context["dustsweep_address"] = preferred_linked_address(user, linked)
             context["dustsweep_plan_url"] = reverse("dustsweep_plan")
             router = user.profile.preferred_router_or_default()
             cfg = swap_client_cfg(router)
@@ -1555,7 +1597,12 @@ class SwapEntryView(TemplateView):
             context["swap_fee_bps"] = cfg["fee_bps"]
             context["swap_api_key"] = cfg["api_key"]
             context["swap_holdings_tmpl"] = swap_holdings_tmpl(router)
-            context["swap_address"] = sorted(linked)[0]
+            # The swap carries one address in its marker, so it takes the best
+            # single guess rather than a list. `swap.js` already refuses to
+            # enable the button unless the live wallet is connected to exactly
+            # this account, so a wrong guess costs a reconnect rather than a
+            # failed signature.
+            context["swap_address"] = context["dustsweep_address"]
             # The shared controller is loaded once; the chosen router's SDK bundle
             # is loaded by id, e.g. "haystack/haystack-sdk.bundle.js".
             context["swap_sdk_static"] = f"{router}/{router}-sdk.bundle.js"

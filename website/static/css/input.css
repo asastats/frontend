@@ -489,11 +489,23 @@
    stays out of the way of the figure the page is actually about. */
 .dustsweep-toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 0.5rem;
   margin: 0 0 0.5rem;
 }
 
 .dustsweep-toolbar .dustsweep-open { margin-left: 0; }
+
+/* Shown only when the page carries several of the reader's own addresses, so
+   the buttons are distinguishable. On a single-address page the span is not
+   rendered at all rather than being hidden - one button needs no label. */
+.dustsweep-open-address {
+  margin-left: 0.4rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+  opacity: 0.75;
+}
 
 #id-dustsweep-locked {
   margin: 1.5rem 0 0;
@@ -814,6 +826,18 @@
 .dustsweep-badge-unpriced {
   background: var(--sweep-danger-wash);
   color: var(--sweep-danger);
+}
+
+/* Left alone, and deliberately quiet about it. `committed` is not a warning -
+   the token is fine, it is simply somebody's dApp position or their artwork
+   rather than dust - so it recedes instead of competing with the two rows that
+   need reading. Written out rather than left to inherit the base badge, so the
+   class the controller emits has a rule behind it. */
+.dustsweep-badge-committed,
+.dustsweep-badge-keep {
+  background: var(--sweep-sunken);
+  color: var(--sweep-ink-3);
+  font-weight: 600;
 }
 
 .dustsweep-line-toggle {

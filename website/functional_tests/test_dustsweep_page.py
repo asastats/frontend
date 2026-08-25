@@ -1,9 +1,9 @@
 """Functional tests for the Dust Sweep widget's page.
 
-The sweep has no modal and no entry on the address page: it is a standalone
-tool at ``/widgets/dustsweep/<address>``, reached deliberately rather than
-offered alongside a trade. So this file is the only browser-level coverage the
-widget has.
+Three ways in, all covered here: the standalone tool at
+``/widgets/dustsweep/<address>``, the entry on a single address's page, and the
+entry on a bundle page - which is the one that has to choose between several of
+the reader's own accounts, and the one that got it wrong.
 
 **Nothing here signs anything.** The wallet bridge (``window.asastatsSwap``)
 ships with the wallet bundle and is absent in a bare browser, which is exactly
@@ -18,6 +18,8 @@ appeared in this markup it would be a value a reader could edit into something
 the server then acted on, so the tests below assert their *absence* as firmly
 as they assert the plan URL's presence.
 """
+
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from selenium.webdriver.common.by import By
@@ -362,3 +364,108 @@ class DustSweepAddressPageEntryTest(FunctionalTest):
         # let the htmx partial land before concluding it rendered nothing
         self.find_elem_by_id("id-swap-entry-container")
         assert self.browser.find_elements(By.CSS_SELECTOR, ".id-dustsweep-open") == []
+
+
+class DustSweepBundlePageEntryTest(FunctionalTest):
+    """Reaching the sweep from a *bundle* page, which is where it went wrong.
+
+    A bundle page shows several addresses consolidated, and a sweep is signed
+    by one holder's key. The entry used to pick whichever of the reader's own
+    addresses sorted first and say nothing about it, so a reader whose wallet
+    was connected to the other one got a group that account cannot sign.
+    """
+
+    OTHER = "VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU"
+    THIRD = "OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M"
+    BUNDLE = "540A5D8CEC896E073F9170AF0A962503E69147CF"
+
+    def _link(self, addresses, primary, email="dustsweep-bundle@example.com"):
+        """Connect every address in `addresses`, making `primary` the primary."""
+        session_cookie = self.create_session_cookie(
+            username=email, password="top_secret", permission=100
+        )
+        user = get_user_model().objects.get(username=email)
+        for one in addresses:
+            LinkedAddress.objects.create(
+                profile=user.profile,
+                address=one,
+                canonical_address=one,
+                chain="algorand",
+                auth_method="algorand_wallet",
+                is_primary=one == primary,
+                login_enabled=True,
+            )
+        user.profile.address = primary
+        user.profile.save()
+
+        self.browser.get(self.server_url + "/404.html")
+        self.browser.add_cookie(session_cookie)
+        return user
+
+    def _open_bundle(self, addresses):
+        with mock.patch(
+            "core.views.check_bundle_addresses", return_value=" ".join(addresses)
+        ):
+            self.browser.get(f"{self.server_url}/{self.BUNDLE}")
+            # inside the patch, because the htmx partial is a second request
+            # and it is the one that resolves the bundle
+            self.find_elem_by_id("id-swap-entry-container")
+            return self.wait_until(
+                lambda: self.browser.find_elements(
+                    By.CSS_SELECTOR, ".id-dustsweep-open"
+                )
+            )
+
+    def test_every_owned_address_in_the_bundle_gets_its_own_button(self):
+        """The reader chooses, because only they know what is connected.
+
+        Three addresses on the page, two of them theirs: two buttons, and the
+        third is not offered at all.
+        """
+        self._link([ADDRESS, self.OTHER], primary=ADDRESS)
+        buttons = self._open_bundle([ADDRESS, self.OTHER, self.THIRD])
+
+        offered = sorted(one.get_attribute("data-address") for one in buttons)
+        assert offered == sorted([ADDRESS, self.OTHER])
+
+    def test_each_button_names_the_address_it_will_sweep(self):
+        """Two identical buttons would be a coin toss with somebody's tokens."""
+        self._link([ADDRESS, self.OTHER], primary=ADDRESS)
+        buttons = self._open_bundle([ADDRESS, self.OTHER])
+
+        for button in buttons:
+            address = button.get_attribute("data-address")
+            assert address[:6] in button.text
+            assert address[-4:] in button.text
+
+    def test_the_modal_opens_on_the_address_its_button_named(self):
+        """The bug, asserted end to end.
+
+        Clicking the second button must sweep the second address - not the one
+        the server happened to pick as a default.
+        """
+        self._link([ADDRESS, self.OTHER], primary=ADDRESS)
+        buttons = self._open_bundle([ADDRESS, self.OTHER])
+        chosen = next(
+            one for one in buttons if one.get_attribute("data-address") == self.OTHER
+        )
+        chosen.click()
+
+        modal = self.find_elem_by_id("dustsweep-modal")
+        self.wait_until(lambda: modal.get_attribute("open") is not None)
+        tag = self.find_elem_by_css(".id-dustsweep-address-tag").text
+        assert self.OTHER[:6] in tag
+        assert self.OTHER[-4:] in tag
+
+    def test_a_reader_who_owns_none_of_the_bundle_is_offered_nothing(self):
+        """"If the connected address isn't in the bundle, no action is possible."."""
+        self._link([self.THIRD], primary=self.THIRD)
+        with mock.patch(
+            "core.views.check_bundle_addresses",
+            return_value=f"{ADDRESS} {self.OTHER}",
+        ):
+            self.browser.get(f"{self.server_url}/{self.BUNDLE}")
+            self.find_elem_by_id("id-swap-entry-container")
+            assert (
+                self.browser.find_elements(By.CSS_SELECTOR, ".id-dustsweep-open") == []
+            )

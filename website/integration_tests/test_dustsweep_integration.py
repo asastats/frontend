@@ -144,6 +144,41 @@ class DustsweepPlanViewTest(TestCase):
         for key in ("close", "forfeit", "convert", "keep", "unpriced", "prompts"):
             assert key in plan["summary"], sorted(plan["summary"])
 
+    def test_integration_the_engine_filters_out_dapp_positions(self):
+        """The dApp-position filter, checked against whatever is deployed.
+
+        **Skipped rather than tolerated when the engine predates it.** The
+        previous outage test was written to allow both answers and thereby
+        certified a real bug for a week; the difference here is that a missing
+        field produces a *visible skip naming the fix*, not a green tick.
+
+        The engine this suite talks to is a separate checkout on port 8001, so
+        this failing to find the field means that checkout needs syncing - not
+        that the code in this repository is wrong.
+        """
+        response = self._post()
+        if response.status_code != 200:
+            self.skipTest(f"the engine answered {response.status_code}")
+
+        plan = response.json()
+        if "evaluation_unavailable" not in plan:
+            self.skipTest(
+                "the engine on :8001 predates the dApp-position filter - sync "
+                "the engine checkout and restart it"
+            )
+
+        # Present means the filter ran. Every holding is then either something
+        # the sweep may touch or something it explicitly refused, and
+        # `committed` is the refusal that says "this is a position, not dust".
+        assert "committed" in plan["summary"], sorted(plan["summary"])
+        for holding in plan["holdings"]:
+            if holding["disposition"] == "committed":
+                assert holding["reason"], holding
+                # never offered for signing, whatever the reader asks for
+                assert holding["asset"] not in [
+                    one["asset"] for one in (plan["next"] or {}).get("holdings", [])
+                ]
+
     def test_integration_the_body_address_cannot_be_someone_elses(self):
         """The gated address wins over whatever the body claims.
 
