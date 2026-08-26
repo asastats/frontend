@@ -773,12 +773,31 @@
 
 .dustsweep-line:last-child { border-bottom: 0; }
 
+/* Unit and asset id share the first column, so adding the id does not turn a
+   three-column row into a four-column one. */
+.dustsweep-line-asset {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
 .dustsweep-line-unit {
   font-weight: 700;
   font-size: 0.9rem;
   max-width: 11ch;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The id is the checkable half of the name and a unit name is the readable
+   half, so it is present but quiet - never the thing the eye lands on first. */
+.dustsweep-line-id {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--sweep-ink-3);
   white-space: nowrap;
 }
 

@@ -246,6 +246,117 @@ class DustSweepPageTest(FunctionalTest):
         assert self.javascript_errors() == []
 
 
+class DustSweepPlannedLinesTest(FunctionalTest):
+    """What a reader actually reads: the holding rows a plan renders into.
+
+    The engine is stubbed here rather than reached, because none of what is
+    asserted is an engine question - the plan's shape is settled by
+    ``core.sweep.plan`` and covered by its own tests. What is not covered
+    anywhere else is whether the controller *puts it on the screen*, and that
+    is a browser question: `renderLine` builds every row in JavaScript, so a
+    field the engine sends and the controller drops looks identical in Python.
+    """
+
+    PLAN = {
+        "address": ADDRESS,
+        "threshold_algo": 1.0,
+        "summary": {"close": 1, "forfeit": 0, "convert": 0, "recoverable": 100000,
+                    "prompts": 1, "unpriced": 0},
+        "holdings": [
+            {
+                "asset": 31566704,
+                "unit": "USDC",
+                "amount": "0",
+                "value": 0,
+                "creator": ADDRESS,
+                "disposition": "close",
+                "reason": "is empty, so closing it returns its 0.1 ALGO",
+            },
+            {
+                "asset": 987654321,
+                "unit": None,
+                "amount": "5",
+                "value": None,
+                "creator": ADDRESS,
+                "disposition": "unpriced",
+                "reason": "has no price, so it is left alone unless you say otherwise",
+            },
+        ],
+        "next": None,
+        "refused": [],
+        "conversions_unavailable": None,
+        "evaluation_unavailable": None,
+    }
+
+    _link_address = DustSweepPageTest._link_address
+    _open_page = DustSweepPageTest._open_page
+
+    def _open_planned_modal(self):
+        """Open the modal with the stub engine answering the plan request."""
+        answered = mock.Mock()
+        answered.json.return_value = self.PLAN
+        with mock.patch(
+            "widgets.inhouse.dustsweep.views.engine_request", return_value=answered
+        ):
+            self.find_elem_by_css(".id-dustsweep-open").click()
+            # the plan is fetched after the modal opens, so wait for the rows
+            return self.wait_until(
+                lambda: self.browser.find_elements(By.CSS_SELECTOR, ".dustsweep-line")
+            )
+
+    def test_every_row_names_its_asset_id_beside_the_unit(self):
+        """A unit name is not an identity; the asset id is.
+
+        Anyone can mint a second "USDC", and the reader is about to close a
+        holding out or give it away. The id is the only thing on the row they
+        can check against an explorer first, so it has to be *on* the row -
+        not only in the response the row was built from.
+        """
+        self._link_address()
+        self._open_page()
+        rows = self._open_planned_modal()
+
+        assert len(rows) == 2
+        first = rows[0]
+        assert first.find_element(By.CSS_SELECTOR, ".dustsweep-line-unit").text == "USDC"
+        assert (
+            first.find_element(By.CSS_SELECTOR, ".dustsweep-line-id").text == "#31566704"
+        )
+
+    def test_an_unnamed_asset_is_still_identified(self):
+        """The rows most worth looking up are the ones with no unit at all.
+
+        `_asset_facts` returns no unit for an asset whose parameters could not
+        be read, which used to leave the row labelled with nothing.
+        """
+        self._link_address()
+        self._open_page()
+        rows = self._open_planned_modal()
+
+        second = rows[1]
+        assert second.find_element(By.CSS_SELECTOR, ".dustsweep-line-unit").text
+        assert (
+            second.find_element(By.CSS_SELECTOR, ".dustsweep-line-id").text
+            == "#987654321"
+        )
+
+    def test_the_id_is_visible_rather_than_merely_present(self):
+        """A styled-away id is the same as no id.
+
+        The row is a grid; adding a fourth child to a three-column template is
+        how a new field ends up wrapped off the visible line.
+        """
+        self._link_address()
+        self._open_page()
+        rows = self._open_planned_modal()
+
+        asset_id = rows[0].find_element(By.CSS_SELECTOR, ".dustsweep-line-id")
+        unit = rows[0].find_element(By.CSS_SELECTOR, ".dustsweep-line-unit")
+        assert asset_id.is_displayed()
+        # beside the unit, on the same line, not beneath it
+        assert asset_id.location["y"] < unit.location["y"] + unit.size["height"]
+
+
 class DustSweepPageUnlinkedTest(FunctionalTest):
     """A reader who does not own the address is told, not offered a sweep."""
 
