@@ -19,10 +19,7 @@ class TestFiles:
 
     @pytest.mark.parametrize(
         "version",
-        [
-            f"{settings.WEBSITE_SHORT_NAME}.png",
-            f"{settings.WEBSITE_SHORT_NAME}-dark.png",
-        ],
+        [f"{settings.WEBSITE_SHORT_NAME}.png"],
     )
     def test_files_brand_images_exist(self, version):
         path = os.path.abspath(
@@ -30,9 +27,7 @@ class TestFiles:
         )
         assert os.path.exists(path)
 
-    @pytest.mark.parametrize(
-        "asset", ["logo", "logo400", "icon", "colors", "logo-dark"]
-    )
+    @pytest.mark.parametrize("asset", ["logo", "logo400", "icon"])
     def test_files_assets_png_images_exist(self, asset):
         path = os.path.abspath(
             os.path.join(

@@ -32,8 +32,8 @@ class TestCoreUrls:
     def test_core_urls_assets_files(self):
         url = self._url_from_pattern(
             rf"^(?P<suffix>({settings.WEBSITE_SHORT_NAME}.png|"
-            rf"{settings.WEBSITE_SHORT_NAME}-dark.png|colors.png|icon.png"
-            "|logo.png|logo-dark.png|logo.svg|logo400.png|whitepaper.pdf"
+            rf"{settings.WEBSITE_SHORT_NAME}-icon.png"
+            "|logo.png|logo.svg|logo400.png|whitepaper.pdf"
             "|transparency-report-202[1-6]-(?:1[012]|0?[1-9]).pdf))$",
         )
         assert isinstance(url, URLPattern)

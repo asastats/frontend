@@ -26,8 +26,8 @@ urlpatterns = [
     ),
     re_path(
         rf"^(?P<suffix>({ settings.WEBSITE_SHORT_NAME }.png|"
-        rf"{ settings.WEBSITE_SHORT_NAME }-dark.png|colors.png|icon.png"
-        "|logo.png|logo-dark.png|logo.svg|logo400.png|whitepaper.pdf"
+        rf"{ settings.WEBSITE_SHORT_NAME }-icon.png"
+        "|logo.png|logo.svg|logo400.png|whitepaper.pdf"
         "|transparency-report-202[1-6]-(?:1[012]|0?[1-9]).pdf))$",
         core_views.assets_file,
         name="assets_file",
