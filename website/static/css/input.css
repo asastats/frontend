@@ -105,30 +105,26 @@
   default: true;
   prefersdark: false;
   color-scheme: light;
-
   --color-base-100: #ffffff;   /* --swap-surface */
-  --color-base-200: #f4f8f6;   /* --swap-raised  */
-  --color-base-300: #eaf0ed;   /* --swap-sunken  */
-  --color-base-content: #18211e; /* --swap-ink   */
-
-  --color-primary: #00c896;      /* mylight / --swap-accent */
-  --color-primary-content: #04241c;
-  --color-secondary: #575757;    /* mydark */
+  --color-base-200: #f3f8f9;   /* --swap-raised  */
+  --color-base-300: #e6f0f2;   /* --swap-sunken  */
+  --color-base-content: #111622; /* --swap-ink   */
+  --color-primary: #00d4ff;      /* mylight / --swap-accent */
+  --color-primary-content: #3a1f8c;
+  --color-secondary: #3a1f8c;    /* mydark */
   --color-secondary-content: #ffffff;
-  --color-accent: #007a5c;       /* --swap-accent-ink */
+  --color-accent: #006e85;       /* --swap-accent-ink */
   --color-accent-content: #ffffff;
-  --color-neutral: #2b2b2b;
+  --color-neutral: #252131;
   --color-neutral-content: #eef2f0;
-
-  --color-info: #2f7d8f;
+  --color-info: #2267a0;
   --color-info-content: #ffffff;
-  --color-success: #005a34;      /* mysuccess */
+  --color-success: #13865c;      /* mysuccess */
   --color-success-content: #ffffff;
-  --color-warning: #b4700f;      /* --swap-warn */
+  --color-warning: #a06a0d;      /* --swap-warn */
   --color-warning-content: #ffffff;
-  --color-error: #e01e4c;        /* --swap-danger */
+  --color-error: #da1b3b;        /* --swap-danger */
   --color-error-content: #ffffff;
-
   /* The modal's 18px card, the pill controls, and the 12px fields. */
   --radius-selector: 0.5rem;
   --radius-field: 0.75rem;
@@ -147,30 +143,26 @@
   default: false;
   prefersdark: true;
   color-scheme: dark;
-
-  --color-base-100: #2b2b2b;
-  --color-base-200: #333736;
-  --color-base-300: #3a3f3d;
-  --color-base-content: #eef2f0;
-
-  --color-primary: #00c896;
-  --color-primary-content: #04241c;
-  --color-secondary: #aab4b1;
-  --color-secondary-content: #2b2b2b;
-  --color-accent: #00c896;
-  --color-accent-content: #04241c;
-  --color-neutral: #454b49;
+  --color-base-100: #201d2a;
+  --color-base-200: #282432;
+  --color-base-300: #2f2c3a;
+  --color-base-content: #eef0f2;
+  --color-primary: #00d4ff;
+  --color-primary-content: #04141f;
+  --color-secondary: #9781da;
+  --color-secondary-content: #190e39;
+  --color-accent: #00d4ff;
+  --color-accent-content: #04141f;
+  --color-neutral: #3a3548;
   --color-neutral-content: #eef2f0;
-
-  --color-info: #6fb3c4;
-  --color-info-content: #10262b;
-  --color-success: #00c896;
-  --color-success-content: #04241c;
-  --color-warning: #e8a33d;
-  --color-warning-content: #3a2c14;
-  --color-error: #ff5b83;
-  --color-error-content: #3d1b25;
-
+  --color-info: #5fa4dd;
+  --color-info-content: #0d2733;
+  --color-success: #42d7a0;
+  --color-success-content: #04241a;
+  --color-warning: #f0b042;
+  --color-warning-content: #3a2708;
+  --color-error: #ed6e83;
+  --color-error-content: #3d0f1c;
   --radius-selector: 0.5rem;
   --radius-field: 0.75rem;
   --radius-box: 1.125rem;
