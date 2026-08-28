@@ -9,7 +9,6 @@ from core.exportpermissions import tier_allows
 from utils import explorers as explorer_constants
 from utils.constants.charts import PIE_CHART_MAXIMUM_ITEMS
 from utils.constants.core import DEFAULT_EXPLORER, ELEMENTS_STYLING, USDC_ID
-from utils.cutoff import cutoff
 from utils.helpers import bundle_from_addresses
 
 register = Library()
@@ -549,47 +548,6 @@ def program_url(context, program_url):
 
 
 @register.filter
-def visible_count(rows):
-    """Return how many of ``rows`` to show before offering the rest.
-
-    The load-more rule, applied identically at every level of the address page:
-    assets, NFT collections, and the items inside a collection. See
-    :mod:`utils.cutoff` for the rule itself and for why it measures magnitude
-    rather than value.
-
-    A filter rather than view context because the third level is per-collection
-    -- there is no one number the view could pass down, and computing 55 of them
-    into the context would only be this call with more indirection.
-
-    :param rows: the section's rows, each a dict carrying a ``value``
-    :type rows: list
-    :return: how many rows to show
-    :rtype: int
-    """
-    if not rows:
-        return 0
-    return cutoff([row.get("value") for row in rows])
-
-
-@register.filter
-def hidden_count(rows):
-    """Return how many of ``rows`` the load-more rule folds away.
-
-    The complement of :func:`visible_count`, as its own filter because Django's
-    ``add`` cannot subtract one variable from another -- and "Show 68 more" is
-    worth more to a reader than "Show more".
-
-    :param rows: the section's rows, each a dict carrying a ``value``
-    :type rows: list
-    :return: how many rows are folded
-    :rtype: int
-    """
-    if not rows:
-        return 0
-    return len(rows) - visible_count(rows)
-
-
-@register.filter
 def program_groups(programs):
     """Group an asset's positions by the program holding them, with subtotals.
 
@@ -649,10 +607,8 @@ def program_groups(programs):
 def beyond(rows, shown):
     """Return how many of ``rows`` sit past the first ``shown``.
 
-    The count for the load-more label. Django's ``add`` filter cannot subtract
-    one variable from another, and ``hidden_count`` answers a different
-    question -- it applies design 1's magnitude rule, which the dynamic
-    designs deliberately do not use.
+    Django's ``add`` filter cannot subtract one variable from another, which is
+    the whole reason this exists.
 
     Never negative: a section shorter than its first batch has nothing beyond
     it, and "Show -3 more assets" is worse than showing no control at all.
@@ -665,6 +621,32 @@ def beyond(rows, shown):
     """
     try:
         return max(len(rows) - int(shown), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+@register.filter
+def next_batch(rows, shown):
+    """Return how many rows the *next* press of "Show more" reveals.
+
+    Both designs reveal one batch per press, and a batch is the same size as the
+    first fold -- so this is :func:`beyond` capped at ``shown``.
+
+    Its own filter rather than the tail count, because the tail is what the
+    label used to say and it was wrong: "Show 39 more assets" over a control
+    that reveals twenty is a promise the control does not keep. The scripts
+    already rewrote the label to the batch on the first repaint, so the served
+    page was the one screen where the number was false -- which is the screen
+    every reader sees first.
+
+    :param rows: the section's rows
+    :type rows: list
+    :param shown: the batch size, which is also the first fold
+    :type shown: int
+    :return: int
+    """
+    try:
+        return min(beyond(rows, shown), max(int(shown), 0))
     except (TypeError, ValueError):
         return 0
 

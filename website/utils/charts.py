@@ -1,4 +1,17 @@
-"""Module containing chart creating functions."""
+"""Module containing chart creating functions.
+
+**On the six ``for i, item in enumerate(rows)`` loops below.** Each used to open
+with ``if i == count - 1: break``, and every one of those was a no-op: ``count``
+is the length of the very list being iterated, so the loop ends on that index
+anyway, and the only statement the break skipped -- ``if i < count - 2 and ...``
+-- is already false when ``i == count - 1``.
+
+It was not harmless, though. Because the loop could then never end by
+exhaustion, and the guard above each one (``if not asasum > 0: return {}``)
+makes the list non-empty, the loop's exit arc was unreachable: coverage reported
+six partial branches that no test could ever close, and a real gap in this file
+would have been indistinguishable from them. Do not put the break back.
+"""
 
 from collections import defaultdict
 
@@ -122,9 +135,6 @@ def _base_chart_data(
         colors.append(distinct_colors[i])
         asa_colors[value[1]] = str(i)
         total += value[0]
-        if i == count - 1:
-            break
-
         if i < count - 2 and (total > limit or i > PIE_CHART_MAXIMUM_ITEMS - 2):
             labels.append("others")
             data.append(floatformat(100 * ((asasum - total) / asasum), 8))
@@ -185,9 +195,6 @@ def _base_chart_data_from_assets_data(
         colors.append(distinct_colors[i])
         asa_colors[item.get("header").label] = str(i)
         total += item.get("header").total
-        if i == count - 1:
-            break
-
         if i < count - 2 and (total > limit or i > PIE_CHART_MAXIMUM_ITEMS - 2):
             labels.append("others")
             data.append(floatformat(100 * ((section_total - total) / section_total), 8))
@@ -291,9 +298,6 @@ def _distribution_chart_data(asas, values, consolidated_data):
                 floatformat(getattr(consolidated_data, segment).get(value[1], 0), 8)
             )
         total += value[0]
-        if i == count - 1:
-            break
-
         if i < count - 2 and (total > limit or i > PIE_CHART_MAXIMUM_ITEMS - 2):
             labels.append("others")
             for segment in segments:
@@ -370,9 +374,6 @@ def _distribution_chart_data_from_assets_data(assets_data, consolidated_data):
                 )
             )
         total += item.get("header").total
-        if i == count - 1:
-            break
-
         if i < count - 2 and (total > limit or i > PIE_CHART_MAXIMUM_ITEMS - 2):
             labels.append("others")
             for segment in segments:
@@ -619,9 +620,6 @@ def _base_chart_data_from_serialized_data(
         asa_colors[key] = str(i)
         total += value
 
-        if i == count - 1:
-            break
-
         if i < count - 2 and (total > limit or i > PIE_CHART_MAXIMUM_ITEMS - 2):
             labels.append("others")
             data.append(floatformat(100 * ((asasum - total) / asasum), 8))
@@ -803,9 +801,6 @@ def _distribution_chart_data_from_serialized_data(serialized_data, consolidated_
                 floatformat(getattr(consolidated_data, segment).get(asset_id, 0), 8)
             )
         total += float(item.get("value", 0))
-
-        if i == count - 1:
-            break
 
         if i < count - 2 and (total > limit or i > PIE_CHART_MAXIMUM_ITEMS - 2):
             labels.append("others")

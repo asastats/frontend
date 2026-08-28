@@ -1272,14 +1272,18 @@ class SwapEntryViewTest(TestCase):
         mocked_cba.assert_called_once_with(bundle)
         self.assertContains(response, "/widgets/folks/BBB")
 
-    def test_swap_entry_bundle_offers_a_sweep_for_every_owned_address(self):
-        """The bundle fix, at the entry point.
+    def test_swap_entry_bundle_publishes_every_owned_address_as_a_candidate(self):
+        """One button on a bundle page, and every owned address behind it.
 
-        A sweep is signed by one holder's key, and a bundle page can show
-        several of the reader's own accounts. Choosing for them is what broke:
-        the wallet is connected to one account, and an entry that silently
-        opened on whichever address sorted first produced a group that account
-        cannot sign.
+        A sweep is signed by one holder's key and a wallet has one active
+        account, so at most one of a bundle's addresses is sweepable at any
+        moment. This used to render a button *each*, which offered the reader
+        several actions of which all but one built a group their wallet cannot
+        sign - discovered at the signature prompt.
+
+        Which one is sweepable is a browser fact, not a server one, so the
+        server publishes the candidates and `dustsweep.js` picks. The button is
+        rendered with no address and hidden until it has one.
         """
         self._login()
         second = "C" * 58
@@ -1292,9 +1296,32 @@ class SwapEntryViewTest(TestCase):
         ), mock.patch("core.views.swap_entry_url", return_value=""):
             response = self.client.get(reverse("swap_entry", args=["B" * 40]))
         rendered = response.content.decode()
-        assert rendered.count('class="dustsweep-open id-dustsweep-open"') == 2
-        self.assertContains(response, self.address)
-        self.assertContains(response, second)
+        assert rendered.count('class="dustsweep-open id-dustsweep-open"') == 1
+        assert 'data-address=""' in rendered
+        assert f'data-addresses="{self.address} {second}"' in rendered
+        # Hidden until the browser says which of the two the wallet is on.
+        assert 'class="dustsweep-toolbar" hidden' in rendered
+
+    def test_swap_entry_never_offers_the_address_of_a_third_party(self):
+        """A bundle address the reader does not own is not a candidate.
+
+        The whole point of the candidate list is that it is the intersection of
+        two facts. This is the server's half: only addresses the reader has
+        proved they own reach the browser at all, so a wallet connected to
+        somebody else's address that happens to be in this bundle still gets no
+        button.
+        """
+        self._login()
+        stranger = "D" * 58
+        with mock.patch(
+            "core.views.check_bundle_addresses",
+            return_value=f"{self.address} {stranger}",
+        ), mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value=""):
+            response = self.client.get(reverse("swap_entry", args=["B" * 40]))
+        assert response.context["dustsweep_addresses"] == [self.address]
+        assert f'data-addresses="{self.address}"' in response.content.decode()
 
     def test_swap_entry_a_single_owned_address_gets_one_unlabelled_button(self):
         """The common case must not grow furniture it does not need.

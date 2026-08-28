@@ -47,13 +47,46 @@
          data-sort-positions="{{ coll.nfts|length }}"
          data-search="{{ coll.name|default:'' }}">
   <summary class="chead">
-    {% comment %} No grip and no pin: `pins.js` arranges the containers its
-       controls appear in, and reordering collections is not something this
-       design offers yet. The cells are still named, so the money column lands
-       in the same place as an asset's. {% endcomment %}
-    <span></span>
+    {% comment %} The grip, exactly as an asset's. This cell was empty and the
+       space it reserves was still there, so a collection header had an asset's
+       indent with nothing in it and nothing happened on hover -- the layout
+       promised a control the section did not have.
 
-    <span class="mono-tile collection{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">{{ coll.name|collection_tile }}</span>
+       No pin, though. `pins.js` discovers a container from the controls inside
+       it and arranges what it finds, so a grip is enough to make collections
+       reorderable; the pinned band is about *positions* and a collection is not
+       one. {% endcomment %}
+    <button type="button"
+            class="grip"
+            data-drag="f{{ slug }}"
+            title="Drag to reorder, or use the arrow keys"
+            aria-label="Reorder {{ coll.name }}. Press the up or down arrow to move it.">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M6 3a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm6-10a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm0 5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+      </svg>
+    </button>
+
+    {% comment %} The tile carries the first item in the collection rather than
+       the collection's initials. Initials were a stand-in for "a collection has
+       no logo of its own", and they are a poor one: four grey capitals tell a
+       reader nothing they cannot already read in the name beside them, so the
+       one place on the row reserved for recognition was spending itself on a
+       second copy of the name. The art is what a reader recognises a collection
+       by, and the first item is on the page anyway.
+
+       Not `.nfticon`: that class is design 1's contract and `address.js` both
+       hides it while filtering and builds a full-size hover preview from
+       `data-path`. A preview of the tile would fire on every pass of the
+       pointer down the section.
+
+       Initials remain the fallback for a collection whose first item has no
+       thumbnail -- and `data-fallback` covers the other case, a thumbnail the
+       CDN does not have, which without it renders as a broken-image glyph. {% endcomment %}
+    <span class="mono-tile collection{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
+      {% with first=coll.nfts.0.nft %}
+      {% if first.thumbnail %}<img src="{{ BASE_CDN_URL }}{{ first.thumbnail }}" alt="" class="collicon" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />{% else %}{{ coll.name|collection_tile }}{% endif %}
+      {% endwith %}
+    </span>
 
     <span class="cid">
       <span class="cid-top">

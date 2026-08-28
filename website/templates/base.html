@@ -70,7 +70,18 @@
   through assets -- that is the row they most want back.
 {% endcomment %}
 <header class="border-b border-base-300 bg-base-100">
-  <div class="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4">
+  {% comment %}
+    The bar's height is ours to choose. Nothing in DaisyUI fixes it: the
+    framework's own `navbar` component would impose `min-height: 4rem`, but this
+    header is a plain flex row and does not use it, so `h-14` is a decision
+    rather than an override of one.
+
+    56px with a 40px logo leaves 8px above and below. The wordmark is two lines
+    of type in a 605x256 bitmap with no padding baked in, so every pixel of the
+    bar that is not the logo reads as air around it -- at the previous 64/36 it
+    was 14px a side, nearly a third of the logo's own height.
+  {% endcomment %}
+  <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
     {% block navigation %}
     <a href="/" class="flex-none" aria-label="{{ WEBSITE_NAME }} home">
       {% comment %}
@@ -80,7 +91,7 @@
         which only the `static` tag knows how to look up. A concatenated path
         would 404 in production while working perfectly in development.
       {% endcomment %}
-      <img class="h-9 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
+      <img class="h-10 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
     </a>
 
     {% comment %}

@@ -476,9 +476,15 @@
 
 .dustsweep-open:hover { filter: brightness(1.06); }
 
-/* On the address page the entry is a page-level action rather than a row: the
-   partial that carries it renders just above the heading, so it sits right and
-   stays out of the way of the figure the page is actually about. */
+/* On the address page the entry is a page-level action rather than a row. It
+   used to render in a strip of its own above the heading, which is a whole band
+   of page for one button; it now sits in the row beside Historic data and CSV
+   export, which is where the page's other actions already are.
+
+   It keeps its filled pill rather than taking `btn-outline` from its new
+   neighbours, and that is the point of the distinction: Historic data and CSV
+   export *leave* -- a new tab, a download -- while this opens a modal here, the
+   same as Swap. Two kinds of action, told apart by looking. */
 .dustsweep-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -488,6 +494,13 @@
 }
 
 .dustsweep-toolbar .dustsweep-open { margin-left: 0; }
+
+/* The slot in the address-page action rows. `display: contents` so the toolbar
+   itself becomes the flex item and picks up the row's own gap -- a wrapping
+   span would be the item instead, and the row's spacing would stop at it.
+   The margin the standalone strip needs is wrong inside a row. */
+#id-dustsweep-slot { display: contents; }
+#id-dustsweep-slot > .dustsweep-toolbar { margin: 0; }
 
 /* Shown only when the page carries several of the reader's own addresses, so
    the buttons are distinguishable. On a single-address page the span is not
@@ -2391,9 +2404,8 @@ div.socfooter {
 }
 
 /* ---- folded rows ----------------------------------------------------------
-   The tail of a section: everything past the point where the visible rows
-   account for `ADDRESS_SECTION_THRESHOLD` of its magnitude. See
-   `utils/cutoff.py`.
+   The tail of a section: everything past the first `ADDRESS_INITIAL_*` rows,
+   plus one batch of the same size for every press of "Show more".
 
    `display: none` rather than a height or an opacity: a folded row must be out
    of the accessibility tree and out of tab order, not merely invisible. A
@@ -2402,13 +2414,15 @@ div.socfooter {
 
    The container opts in with `data-folding`, so a section that renders no
    control -- because nothing was folded -- cannot hide rows by accident if the
-   class ever appears in the markup. */
+   class ever appears in the markup.
+
+   One rule, because the state is per row. There used to be a second,
+   `[data-folding].unfolded .fitem.folded { display: revert }`, which revealed a
+   section's whole tail from one class on the container -- the shape design 1's
+   one-shot unfold needed. Both designs reveal a batch at a time now, and a
+   batch is a set of rows, not a state a container can be in. */
 [data-folding] .fitem.folded {
   display: none;
-}
-
-[data-folding].unfolded .fitem.folded {
-  display: revert;
 }
 
 /* One button, two labels, whichever the state calls for. Keeping the text out
@@ -3090,13 +3104,68 @@ div.socfooter {
   min-width: 0;
 }
 
+/* The figure in the hole, and its unit under it. This is what makes crossing a
+   slice out worth doing: the number moves. Filled with `currentColor` so it
+   follows the theme like every other piece of text, unlike the slices, whose
+   colours come from the payload. */
+.dynamic-page .donut-total {
+  fill: var(--color-base-content);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.dynamic-page .donut-unit {
+  fill: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+/* A legend key is a button: pressing it crosses its slice out of the donut and
+   out of the total. It was a `<div>` with no affordance, which is most of why
+   these charts read as pictures of design 1's charts rather than as the same
+   control -- design 1's legend has been clickable since it was Chart.js.
+
+   The button reset is explicit because Preflight leaves a `<button>` with the
+   UA's font and a `cursor: default`; every other property here is the same
+   grid the `<div>` had. */
 .dynamic-page .key {
   display: grid;
   grid-template-columns: 9px minmax(0, 1fr) auto;
   gap: 0.4375rem;
   align-items: baseline;
-  font-size: 0.72rem;
   text-align: left;
+  width: 100%;
+  padding: 0.0625rem 0.125rem;
+  border: 0;
+  border-radius: 0.1875rem;
+  background: transparent;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.dynamic-page .key:hover {
+  background: color-mix(in oklab, var(--color-base-content) 7%, transparent);
+}
+
+.dynamic-page .key:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Crossed out. Struck through *and* faded: the strike is the state and the
+   fade is what makes a legend of twenty scannable once half of them are off.
+   The swatch keeps its colour at low opacity rather than going grey, so the
+   row can still be matched to the slice it will restore. */
+.dynamic-page .key.off {
+  opacity: 0.45;
+}
+
+.dynamic-page .key.off .kn,
+.dynamic-page .key.off .kv {
+  text-decoration: line-through;
 }
 
 .dynamic-page .key i {
@@ -3178,15 +3247,30 @@ div.socfooter {
    `.chead` and `--col` already apply. What is left is the art beside the facts,
    and the facts themselves, which are the money column one more time. */
 
-/* The collection's initials, where an asset has its icon. `.collection` rather
-   than the prototype's `.nft`: design 1 owns that name and pairs it with the
-   colour slot (`.nft.cN`), which was matching this tile. */
+/* The collection's art, where an asset has its icon. `.collection` rather than
+   the prototype's `.nft`: design 1 owns that name and pairs it with the colour
+   slot (`.nft.cN`), which was matching this tile.
+
+   The gradient is the empty state now rather than the normal one: the tile
+   carries the collection's first item, and falls back to initials only when
+   that item has no thumbnail. */
 .dynamic-page .mono-tile.collection {
   border-radius: 0.375rem;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: -0.03em;
   background: linear-gradient(135deg, var(--color-base-300), var(--color-base-200));
+}
+
+/* Full-bleed and cropped, unlike an asset's logo. An asset icon is a mark drawn
+   to sit in a box and `contain` keeps it whole; a piece of NFT art is a picture
+   of arbitrary aspect, and `contain` would letterbox it into a 38px tile with
+   grey bars -- which is the tile the initials were already doing better. */
+.dynamic-page .mono-tile.collection .collicon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* Floor against estimate, as one bar. Two flex children rather than a width

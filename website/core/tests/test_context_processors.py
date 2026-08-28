@@ -202,10 +202,9 @@ class TestCoreContextProcessors:
             "WEBSITE_URL": settings.WEBSITE_URL,
             "WEBSITE_DOMAIN": settings.WEBSITE_DOMAIN,
             "BASE_CDN_URL": settings.BASE_CDN_URL,
-            # Published so the dynamic designs fold at the same counts the
-            # template and `toolbar.js` both need, rather than at two copies of
-            # the numbers that can drift apart.
-            "ADDRESS_SECTION_FLOOR": settings.ADDRESS_SECTION_FLOOR,
+            # Published so both designs fold at the same counts the templates,
+            # `toolbar.js` and `showmore.js` all need, rather than at several
+            # copies of the numbers that can drift apart.
             "ADDRESS_INITIAL_ASSETS": settings.ADDRESS_INITIAL_ASSETS,
             "ADDRESS_INITIAL_COLLECTIONS": settings.ADDRESS_INITIAL_COLLECTIONS,
             "X_HANDLE": settings.X_HANDLE,

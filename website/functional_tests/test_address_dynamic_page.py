@@ -635,6 +635,156 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_donut_carries_its_total_in_money(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The payloads are shares; the legend used to print them bare.
+
+        "46.30882653" in `asachart` means 46.3% of the assets, and the legend
+        rendered it as `46.31` -- the same shape as every other figure on the
+        page, and not money at all. Each donut names what it is a share *of*
+        and scales into it.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self._sign_in()
+        self.open_address()
+        self._open_charts()
+
+        chart = self.browser.find_element(By.CSS_SELECTOR, "#charts-grid .chart")
+        total = chart.find_element(By.CSS_SELECTOR, ".donut-total").text
+        self.assertTrue(total, "the donut drew no total")
+        self.assertEqual("ALGO", chart.find_element(By.CSS_SELECTOR, ".donut-unit").text)
+        # A share chart's total is the whole it is a share of, not "100".
+        self.assertNotIn(total, ("100.00", "0.00"))
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_crossing_a_legend_entry_out_takes_it_off_the_total(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """What made these charts inferior to design 1's.
+
+        Design 1's legend has been clickable since it was Chart.js: pressing an
+        entry strikes it through, drops it from the ring and recomputes the
+        chart's total. These were pictures of that -- the same numbers, no
+        control -- and the legend was a `<div>` with no affordance at all.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self._sign_in()
+        self.open_address()
+        self._open_charts()
+
+        chart = self.browser.find_element(By.CSS_SELECTOR, "#charts-grid .chart")
+        keys = chart.find_elements(By.CSS_SELECTOR, ".key[data-key]")
+        self.assertGreater(len(keys), 1, "a one-slice chart proves nothing here")
+
+        before = chart.find_element(By.CSS_SELECTOR, ".donut-total").text
+        slices = len(chart.find_elements(By.CSS_SELECTOR, "path"))
+        keys[0].click()
+
+        self.wait_until(
+            lambda: chart.find_element(By.CSS_SELECTOR, ".donut-total").text != before
+        )
+        self.assertEqual(
+            slices - 1,
+            len(chart.find_elements(By.CSS_SELECTOR, "path")),
+            "the slice stayed in the ring after being crossed out",
+        )
+
+        crossed = chart.find_elements(By.CSS_SELECTOR, ".key[data-key]")[0]
+        self.assertIn("off", crossed.get_attribute("class"))
+        self.assertEqual("false", crossed.get_attribute("aria-pressed"))
+        # Struck through, and measured rather than read off the class: the
+        # class is the state, the rule is what a reader actually sees.
+        self.assertIn(
+            "line-through",
+            self.browser.execute_script(
+                "return getComputedStyle("
+                "  arguments[0].querySelector('.kn')).textDecorationLine;",
+                crossed,
+            ),
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_crossed_out_entry_can_be_brought_back(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """It has to stay in the legend: it is the only way back."""
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self._sign_in()
+        self.open_address()
+        self._open_charts()
+
+        chart = self.browser.find_element(By.CSS_SELECTOR, "#charts-grid .chart")
+        before = chart.find_element(By.CSS_SELECTOR, ".donut-total").text
+        entries = len(chart.find_elements(By.CSS_SELECTOR, ".key"))
+
+        chart.find_elements(By.CSS_SELECTOR, ".key[data-key]")[0].click()
+        self.wait_until(
+            lambda: chart.find_element(By.CSS_SELECTOR, ".donut-total").text != before
+        )
+        self.assertEqual(
+            entries,
+            len(chart.find_elements(By.CSS_SELECTOR, ".key")),
+            "the crossed entry left the legend, so there is no way back",
+        )
+
+        chart.find_elements(By.CSS_SELECTOR, ".key[data-key]")[0].click()
+        self.wait_until(
+            lambda: chart.find_element(By.CSS_SELECTOR, ".donut-total").text == before
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_one_chart_crossed_out_leaves_the_others_whole(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The state is per chart, and ALGO appears in most of these payloads.
+
+        A crossing map keyed on the label would have the assets chart and the
+        collections chart sharing an entry the moment two of them named the
+        same thing.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self._sign_in()
+        self.open_address()
+        self._open_charts()
+
+        charts = self.browser.find_elements(By.CSS_SELECTOR, "#charts-grid .chart")
+        self.assertGreater(len(charts), 1, "only one chart drew")
+        untouched = charts[1].find_element(By.CSS_SELECTOR, ".donut-total").text
+
+        charts[0].find_elements(By.CSS_SELECTOR, ".key[data-key]")[0].click()
+
+        self.assertEqual(
+            untouched,
+            charts[1].find_element(By.CSS_SELECTOR, ".donut-total").text,
+        )
+
+    def _open_charts(self):
+        """Open the charts panel and wait for `dynamic.js` to fill it."""
+        self.browser.find_element(By.CSS_SELECTOR, "#charts > summary").click()
+        self.wait_until(
+            lambda: self.browser.find_elements(
+                By.CSS_SELECTOR, "#charts-grid .chart .donut-total"
+            )
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_allocation_bar_and_its_figures_tell_the_same_story(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):

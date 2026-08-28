@@ -143,6 +143,14 @@
         {% endif %}
       {% endif %}
     {% endif %}
+    {% comment %} Where the Dust Sweep entry lands. It arrives in the
+      `_swap_entry.html` partial -- it is per-reader, and this page's cache entry
+      is not -- and `dustsweep.js` moves it here, so it sits with the other two
+      actions instead of in a strip of its own above the page. It keeps its own
+      styling: like Swap, it opens a modal rather than going anywhere, and the
+      two should not look like Historic data, which leaves. Empty and unstyled
+      when there is nothing to move into it. {% endcomment %}
+    <span id="id-dustsweep-slot"></span>
     {% if account_info.online %}<span class="badge badge-success badge-outline" title="{% if is_bundle %}One or more addresses are{% else %}Address is{% endif %} participating in Algorand consensus">Online</span>{% endif %}
   </div>
 

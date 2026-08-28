@@ -177,6 +177,27 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_box_by_name.assert_has_calls(calls, any_order=True)
         assert algod_client.application_box_by_name.call_count == 5
 
+    def test_nameservice_nfd_check_boxes_addresses_for_an_empty_caalgo_box(
+        self, mocker
+    ):
+        """A `u.caalgo` box whose value decodes to nothing contributes nothing.
+
+        The single-address branch reads its box's value and decodes it straight
+        to a string, with none of the `AAAAA` filtering the multi-address
+        branch does. An empty box therefore reaches the set as `""`, and a
+        blank entry in the address list is one this name resolves *to* -- so
+        the guard is the only thing between that and an NFD reported as owning
+        an address that is the empty string.
+        """
+        algod_client = mocker.MagicMock()
+        v2_app_id = 88778506
+        algod_client.application_boxes.return_value = {
+            "boxes": [{"name": "dS5jYWFsZ28="}]
+        }
+        algod_client.application_box_by_name.return_value = {"value": ""}
+
+        assert _check_boxes_addresses(v2_app_id, algod_client) == []
+
     # # _app_state_from_box
     @pytest.mark.parametrize("v2_app_id", [0, None, False])
     def test_nameservice_nfd_app_state_from_box_returns_empty_list_for_no_app(
@@ -313,6 +334,36 @@ class TestNameServiceNfdCommonFunctions:
         assert addresses == [
             "RSV2YCHXA7MWGFTX3WYI7TVGAS5W5XH5M7ZQVXPPRQ7DNTNW36OW2TRR6I"
         ]
+
+    def test_nameservice_nfd_append_addresses_from_global_state_for_key_is_a_set(
+        self,
+    ):
+        """An address already collected is not collected twice.
+
+        This function is called once per key and appends into one shared list,
+        so the same address legitimately arrives from more than one state key --
+        an NFD whose owner is also its deposit account, for instance. The list
+        is what a caller resolves the name to, and naming the same address twice
+        would double it in everything downstream that counts.
+        """
+        already = "VMZOK2AOWCQB5VLY34J5TWW32VJLYXHXVLLIGJ4FXSJCSAM6ST2EVWZBXI"
+        addresses = [already]
+        global_state = [
+            {
+                "key": "aS5vd25lci5h",
+                "value": {
+                    "bytes": "qzLlaA6woB7VeN8T2drb1VK8XPeq1oMnhbySKQGelPQ=",
+                    "type": 1,
+                    "uint": 0,
+                },
+            },
+        ]
+
+        _append_addresses_from_global_state_for_key(
+            addresses, global_state, "aS5vd25lci5h"
+        )
+
+        assert addresses == [already]
 
     def test_nameservice_nfd_append_addresses_from_global_state_for_key_functionality(
         self,

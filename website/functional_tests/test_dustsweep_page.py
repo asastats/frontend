@@ -426,35 +426,118 @@ class DustSweepAddressPageEntryTest(FunctionalTest):
         self.browser.add_cookie(session_cookie)
         return user
 
-    def test_a_linked_reader_is_offered_the_sweep_on_the_address_page(self):
-        """The whole point of an entry point: it can be found without a URL.
+    def _connect(self, address):
+        """Publish a wallet bridge connected to `address`, as the bundle does.
 
-        Waited for rather than asserted immediately, because it arrives by
-        htmx after the page has loaded - the address page is the heaviest on
-        the site and the partial lands last.
+        The real bridge ships with the wallet package and needs a wallet
+        extension and a signature to reach this state; what the sweep entry
+        reads off it is one method, so that is what is stood up here. The
+        ready event is dispatched too, because that is the path a reader who
+        connects during page load takes.
+        """
+        self.browser.execute_script(
+            "var address = arguments[0];"
+            "window.asastatsSwap = {"
+            "  activeAddress: function () { return address; }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            address,
+        )
+
+    def test_the_sweep_is_not_offered_until_a_wallet_is_connected(self):
+        """The entry waits for the account it would act on.
+
+        A sweep is signed by one key. Until the browser says which account the
+        wallet holds, there is no address to build a group for - so the button
+        is rendered and hidden rather than pointed at a guess, because a guess
+        is only discovered to be wrong at the signature prompt.
         """
         self._link_address()
         self.browser.get(f"{self.server_url}/{ADDRESS}")
 
-        button = self.find_elem_by_css(".id-dustsweep-open")
-        assert button.is_displayed()
+        # Present, because connecting must not need another round trip...
+        self.find_elem_by_id("id-swap-entry-container")
+        button = self.wait_until(
+            lambda: self.browser.find_elements(By.CSS_SELECTOR, ".id-dustsweep-open")
+        )[0]
+        # ...and hidden, because there is nothing it could sweep yet.
+        assert not button.is_displayed()
+
+    def test_connecting_a_wallet_offers_the_sweep_for_that_account(self):
+        """The whole point of an entry point: it can be found without a URL."""
+        self._link_address()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.find_elem_by_id("id-swap-entry-container")
+        self._connect(ADDRESS)
+
+        button = self.wait_until(
+            lambda: self.find_elem_by_css(".id-dustsweep-open").is_displayed()
+            and self.find_elem_by_css(".id-dustsweep-open")
+        )
         assert "Sweep" in button.text
         assert button.get_attribute("data-address") == ADDRESS
 
-    def test_the_sweep_opens_from_the_address_page(self):
-        """It is wired there too, not merely rendered.
+    def test_the_sweep_sits_with_the_pages_other_actions(self):
+        """Beside Historic data and CSV export, not in a band of its own.
 
-        The controller binds on its own rather than waiting for the wallet
-        bridge, so this works for a reader who has not connected - which is
-        every reader, the first time.
+        It arrives in the htmx partial - the address page's cache entry is
+        shared, so nothing per-reader may be rendered into the page itself -
+        and the controller moves it into the slot the template reserves. The
+        assertion is on where it ended up, because that is what a reader sees.
         """
         self._link_address()
         self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.find_elem_by_id("id-swap-entry-container")
+        self._connect(ADDRESS)
+        self.wait_until(
+            lambda: self.find_elem_by_css(".id-dustsweep-open").is_displayed()
+        )
+
+        assert self.browser.find_elements(
+            By.CSS_SELECTOR, "#id-dustsweep-slot .id-dustsweep-open"
+        )
+
+    def test_the_sweep_opens_from_the_address_page(self):
+        """It is wired there too, not merely rendered."""
+        self._link_address()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.find_elem_by_id("id-swap-entry-container")
+        self._connect(ADDRESS)
+        self.wait_until(
+            lambda: self.find_elem_by_css(".id-dustsweep-open").is_displayed()
+        )
 
         self.find_elem_by_css(".id-dustsweep-open").click()
         modal = self.find_elem_by_id("dustsweep-modal")
         self.wait_until(lambda: modal.get_attribute("open") is not None)
         assert modal.is_displayed()
+
+    def test_switching_account_withdraws_the_offer(self):
+        """Connected is not enough; it has to be connected to *this* page.
+
+        A reader who switches their wallet to an account this page does not
+        show can no longer sign a sweep of it, so the offer goes away again.
+        Asserted by watching it appear first: a button that was never shown
+        would pass the second half on its own and prove nothing.
+
+        This is also what the entry's polling is for. The wallet package
+        publishes one event, at bootstrap, and says nothing when the reader
+        connects or switches afterwards - so an entry that read the bridge once
+        would be stuck on whatever was true when the page happened to load.
+        """
+        self._link_address()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.find_elem_by_id("id-swap-entry-container")
+
+        self._connect(ADDRESS)
+        self.wait_until(
+            lambda: self.find_elem_by_css(".id-dustsweep-open").is_displayed()
+        )
+
+        self._connect("VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU")
+        self.wait_until(
+            lambda: not self.find_elem_by_css(".id-dustsweep-open").is_displayed()
+        )
 
     def test_an_unlinked_reader_is_offered_nothing(self):
         """The gate is ownership, and it is applied server-side.
@@ -481,9 +564,16 @@ class DustSweepBundlePageEntryTest(FunctionalTest):
     """Reaching the sweep from a *bundle* page, which is where it went wrong.
 
     A bundle page shows several addresses consolidated, and a sweep is signed
-    by one holder's key. The entry used to pick whichever of the reader's own
-    addresses sorted first and say nothing about it, so a reader whose wallet
-    was connected to the other one got a group that account cannot sign.
+    by one holder's key. Two wrong answers came before this one. The first
+    picked whichever of the reader's addresses sorted first and said nothing
+    about it, so a reader whose wallet was on the other one got a group that
+    account cannot sign. The second offered a button *each* and let the reader
+    choose - which is the same failure with the blame moved, because the reader
+    cannot sign for an account their wallet is not on either.
+
+    The answer is that only one of them is ever offerable, and the browser is
+    the only place that knows which: the server publishes the candidates and
+    the controller matches them against the live wallet.
     """
 
     OTHER = "VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU"
@@ -513,60 +603,92 @@ class DustSweepBundlePageEntryTest(FunctionalTest):
         self.browser.add_cookie(session_cookie)
         return user
 
-    def _open_bundle(self, addresses):
+    def _connect(self, address):
+        """Publish a wallet bridge connected to `address`. See the entry test."""
+        self.browser.execute_script(
+            "var address = arguments[0];"
+            "window.asastatsSwap = {"
+            "  activeAddress: function () { return address; }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            address,
+        )
+
+    def _open_bundle(self, addresses, connected=None):
+        """Load the bundle page, optionally with a wallet already connected.
+
+        The patch has to cover the htmx partial as well as the page: the
+        partial is a second request, and it is the one that resolves the
+        bundle into addresses.
+        """
         with mock.patch(
             "core.views.check_bundle_addresses", return_value=" ".join(addresses)
         ):
             self.browser.get(f"{self.server_url}/{self.BUNDLE}")
-            # inside the patch, because the htmx partial is a second request
-            # and it is the one that resolves the bundle
             self.find_elem_by_id("id-swap-entry-container")
-            return self.wait_until(
+            buttons = self.wait_until(
                 lambda: self.browser.find_elements(
                     By.CSS_SELECTOR, ".id-dustsweep-open"
                 )
             )
+            if connected:
+                self._connect(connected)
+                self.wait_until(
+                    lambda: self.find_elem_by_css(".id-dustsweep-open").is_displayed()
+                )
+            return buttons
 
-    def test_every_owned_address_in_the_bundle_gets_its_own_button(self):
-        """The reader chooses, because only they know what is connected.
+    def test_only_the_connected_account_is_offered(self):
+        """Three addresses on the page, two of them theirs, one button.
 
-        Three addresses on the page, two of them theirs: two buttons, and the
-        third is not offered at all.
+        The other owned address is a real address the reader really controls -
+        and still not offerable, because the wallet holds one account at a time
+        and a group built for the other one cannot be signed.
         """
         self._link([ADDRESS, self.OTHER], primary=ADDRESS)
-        buttons = self._open_bundle([ADDRESS, self.OTHER, self.THIRD])
+        buttons = self._open_bundle(
+            [ADDRESS, self.OTHER, self.THIRD], connected=self.OTHER
+        )
 
-        offered = sorted(one.get_attribute("data-address") for one in buttons)
-        assert offered == sorted([ADDRESS, self.OTHER])
+        assert len(buttons) == 1
+        assert buttons[0].get_attribute("data-address") == self.OTHER
 
-    def test_each_button_names_the_address_it_will_sweep(self):
-        """Two identical buttons would be a coin toss with somebody's tokens."""
+    def test_the_button_names_the_account_it_will_sweep(self):
+        """On a bundle the reader is owed which of their accounts this is.
+
+        Not on a single-address page: there the label would repeat the address
+        the page is already about, so the span is not rendered at all.
+        """
         self._link([ADDRESS, self.OTHER], primary=ADDRESS)
-        buttons = self._open_bundle([ADDRESS, self.OTHER])
+        buttons = self._open_bundle([ADDRESS, self.OTHER], connected=self.OTHER)
 
-        for button in buttons:
-            address = button.get_attribute("data-address")
-            assert address[:6] in button.text
-            assert address[-4:] in button.text
+        assert self.OTHER[:6] in buttons[0].text
+        assert self.OTHER[-4:] in buttons[0].text
 
-    def test_the_modal_opens_on_the_address_its_button_named(self):
+    def test_the_modal_opens_on_the_connected_account(self):
         """The bug, asserted end to end.
 
-        Clicking the second button must sweep the second address - not the one
-        the server happened to pick as a default.
+        The primary address is ADDRESS and the wallet is on OTHER, so the two
+        disagree - and the sweep has to follow the wallet, which is the half
+        that will be asked for a signature.
         """
         self._link([ADDRESS, self.OTHER], primary=ADDRESS)
-        buttons = self._open_bundle([ADDRESS, self.OTHER])
-        chosen = next(
-            one for one in buttons if one.get_attribute("data-address") == self.OTHER
-        )
-        chosen.click()
+        buttons = self._open_bundle([ADDRESS, self.OTHER], connected=self.OTHER)
+        buttons[0].click()
 
         modal = self.find_elem_by_id("dustsweep-modal")
         self.wait_until(lambda: modal.get_attribute("open") is not None)
         tag = self.find_elem_by_css(".id-dustsweep-address-tag").text
         assert self.OTHER[:6] in tag
         assert self.OTHER[-4:] in tag
+
+    def test_a_wallet_on_none_of_the_bundles_addresses_is_offered_nothing(self):
+        """Owning an address the page does not show is not enough either."""
+        self._link([ADDRESS, self.OTHER], primary=ADDRESS)
+        buttons = self._open_bundle([ADDRESS, self.OTHER])
+        self._connect(self.THIRD)
+
+        assert not buttons[0].is_displayed()
 
     def test_a_reader_who_owns_none_of_the_bundle_is_offered_nothing(self):
         """"If the connected address isn't in the bundle, no action is possible."."""

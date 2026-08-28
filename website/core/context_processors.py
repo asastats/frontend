@@ -145,13 +145,13 @@ def global_constants(request):
         "MEDIUM_NAME": settings.MEDIUM_NAME,
         "DISCORD_INVITE": settings.DISCORD_INVITE,
         "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
-        # The load-more rule's floor, for design 1's magnitude cutoff.
-        "ADDRESS_SECTION_FLOOR": settings.ADDRESS_SECTION_FLOOR,
-        # How many rows the dynamic designs show before offering the rest.
-        # Published rather than repeated in the browser, because the template
-        # renders the first fold and `toolbar.js` renders every one after it --
-        # two implementations of one rule reading the number from two places
-        # will eventually disagree about it.
+        # How many rows an address page section shows before offering the rest,
+        # and how many each press adds. Published rather than repeated in the
+        # browser, because the template renders the first fold and `toolbar.js`
+        # / `showmore.js` render every one after it -- two implementations of
+        # one rule reading the number from two places will eventually disagree
+        # about it. Both designs read these now; design 1's magnitude cutoff and
+        # the `ADDRESS_SECTION_FLOOR` it needed are gone.
         "ADDRESS_INITIAL_ASSETS": settings.ADDRESS_INITIAL_ASSETS,
         "ADDRESS_INITIAL_COLLECTIONS": settings.ADDRESS_INITIAL_COLLECTIONS,
         "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,

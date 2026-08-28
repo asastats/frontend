@@ -288,35 +288,31 @@ CACHES = {
 }
 CACHE_TTL = 60 * 90  # Cache time to live is 90 minutes.
 
-#: Share of a section's total magnitude the visible rows must account for
-#: before the rest are folded behind a "show more" control. See
-#: :mod:`utils.cutoff` for why this is measured on ``abs(value)``.
+#: How many rows an address page section shows before offering the rest, and
+#: how many each press of "Show more" adds. Both designs, since 2026-08-28.
+#:
+#: A plain count. There were two other rules before it, and both were removed
+#: for the same reason -- a reader cannot see the rule, only its result, so a
+#: number they cannot predict reads as arbitrary.
+#:
+#: * The dynamic designs briefly carried the prototype's 95%/99%/99.5%/All
+#:   control, which was only ever a way to *demonstrate* the page with
+#:   everything on screen before a load-more existed. "Show me the rows carrying
+#:   99.5% of the value" is not a sentence anybody thinks in.
+#: * Design 1 kept that as a fixed threshold (``ADDRESS_SECTION_THRESHOLD``,
+#:   with an ``ADDRESS_SECTION_FLOOR`` under it) applied server-side by
+#:   ``utils.cutoff``. It showed 33 rows on one address and 8 on the next, and
+#:   its control then revealed the entire remainder in one press -- so the
+#:   label promised "39 more" and delivered an unfold rather than a batch.
 #:
 #: A project setting rather than a reader preference, deliberately: the address
-#: page's cache entry is shared between readers, so a per-reader threshold could
-#: not be rendered into it. 0.995 keeps the long tail of dust out of the first
-#: screen while still leading with anything that is a twentieth of a percent of
-#: the money.
-ADDRESS_SECTION_THRESHOLD = 0.995
-
-#: Never fold a section down below this many rows. A wallet whose single largest
-#: holding is 99.9% of its value would otherwise show one row and hide the rest,
-#: which reads as a broken page rather than a tidy one.
-ADDRESS_SECTION_FLOOR = 8
-
-#: How many rows the dynamic designs show before offering the rest, and how
-#: many each press of "Show more" adds.
+#: page's cache entry is shared between readers, so a per-reader count could not
+#: be rendered into it.
 #:
-#: A plain count, not the magnitude rule above. Design 1 keeps that rule; these
-#: designs were briefly given the prototype's 95%/99%/99.5%/All control, which
-#: was only ever a way to *demonstrate* the page with everything on screen
-#: before a load-more existed. It is not a setting a reader wants: "show me the
-#: rows carrying 99.5% of the value" is a sentence nobody thinks in.
-#:
-#: Assets first because there are usually more of them and they are what the
-#: page is about; collections are fewer and each one is taller, so a smaller
-#: first screen holds the same amount of page. Each press adds the same number
-#: again, so the rule is one sentence: the first N, then N more.
+#: Assets get the larger number because there are usually more of them and they
+#: are what the page is about; collections are fewer and each one is taller, so
+#: a smaller first screen holds the same amount of page. Each press adds the
+#: same number again, so the rule is one sentence: the first N, then N more.
 ADDRESS_INITIAL_ASSETS = 20
 ADDRESS_INITIAL_COLLECTIONS = 10
 

@@ -121,6 +121,11 @@
           {% endif %}
         {% endif %}
       {% endif %}
+      {% comment %} Where the Dust Sweep entry lands -- see the note on the same
+         slot in `address.html`. It arrives in the `_swap_entry.html` partial,
+         because it is per-reader and this page's cache entry is not, and
+         `dustsweep.js` moves it here. {% endcomment %}
+      <span id="id-dustsweep-slot"></span>
     </div>
   </div>
 </header>
@@ -184,7 +189,7 @@
      answer through a fallback, but a fallback is not where this belongs.
   {% endcomment %}
   {% if account.asaitems|length > shown %}
-    {% include "snippets/show_more.html" with hidden=account.asaitems|beyond:shown noun="assets" %}
+    {% include "snippets/show_more.html" with hidden=account.asaitems|next_batch:shown noun="assets" %}
   {% endif %}
   {% comment %} Where "Group: by venue" builds its list. Empty and hidden: the
      venue cards are assembled in the browser by *moving* each `.pgroup` out of

@@ -41,7 +41,7 @@
      between the two points it at the wrong element -- which is exactly what
      happened in the asset section. {% endcomment %}
   {% if nftcollections|length > shown %}
-    {% include "snippets/show_more.html" with hidden=nftcollections|beyond:shown noun="collections" %}
+    {% include "snippets/show_more.html" with hidden=nftcollections|next_batch:shown noun="collections" %}
   {% endif %}
   {% endwith %}
 </section>

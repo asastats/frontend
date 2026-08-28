@@ -712,6 +712,50 @@ class TestProfileInlineForm:
             "address", INVALID_ADDRESS_TEXT
         )
 
+    def test_core_forms_profileinlineform_clean_for_valid_address(self, mocker):
+        """The other half: an address that checks out passes straight through.
+
+        Only the refusal was pinned, so nothing said what happens when the
+        address is good -- and the two failures that would leave are the ones
+        that matter: a `clean` that raised anyway would make a valid address
+        unsavable, and one that returned something other than `cleaned_data`
+        would hand the formset a different object to save from.
+        """
+        formset = ProfileInlineForm.__new__(ProfileInlineForm)
+        formset.forms = [mocker.MagicMock()]
+        cleaned = [{"address": "A" * 58}]
+        mocker.patch.object(
+            ProfileInlineForm,
+            "cleaned_data",
+            new_callable=mocker.PropertyMock,
+            return_value=cleaned,
+        )
+        mocker.patch("core.forms.check_algorand_address", return_value="A" * 58)
+
+        assert formset.clean() == cleaned
+        assert not formset.forms[0].add_error.called
+
+    def test_core_forms_profileinlineform_clean_for_a_blank_address(self, mocker):
+        """Blank is allowed and is not sent to the validator at all.
+
+        The field is `required=False` -- clearing the subscription address is
+        how a reader detaches it -- so an empty string must not be checked and
+        then refused for not being an address.
+        """
+        formset = ProfileInlineForm.__new__(ProfileInlineForm)
+        formset.forms = [mocker.MagicMock()]
+        cleaned = [{"address": ""}]
+        mocker.patch.object(
+            ProfileInlineForm,
+            "cleaned_data",
+            new_callable=mocker.PropertyMock,
+            return_value=cleaned,
+        )
+        mocked_check = mocker.patch("core.forms.check_algorand_address")
+
+        assert formset.clean() == cleaned
+        assert not mocked_check.called
+
 
 class TestProfileFormSet:
     """Testing class for ProfileFormSet instance."""

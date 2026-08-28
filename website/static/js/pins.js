@@ -226,19 +226,34 @@
    * name means nested entries -- an NFT item inside its collection -- are never
    * candidates, because they carry no controls.
    *
+   * **Either control counts.** It used to be `[data-pin]` alone, which made
+   * pinning the thing that decided whether a list could be *dragged* -- so the
+   * NFT collections, which have a grip and no pin, were discovered by nothing
+   * and every drag on one silently did nothing. The two are separate offers: a
+   * section may reasonably be reorderable without its rows being pinnable to a
+   * band about positions.
+   *
+   * An entry carrying both is collected once: `querySelectorAll` on a comma
+   * list returns each element once, but two controls in one entry are two
+   * elements, so the entry is de-duplicated per container.
+   *
    * @param {Document|Element} root - where to look for controls.
    * @returns {Map<Element, Element[]>} container to its entries, as served.
    */
   function containers(root) {
     var found = new Map();
 
-    Array.prototype.forEach.call(root.querySelectorAll("[data-pin]"), function (control) {
-      var entry = control.closest(".fitem");
-      if (!entry || !entry.parentNode) return;
-      var parent = entry.parentNode;
-      if (!found.has(parent)) found.set(parent, []);
-      found.get(parent).push(entry);
-    });
+    Array.prototype.forEach.call(
+      root.querySelectorAll("[data-pin], [data-drag]"),
+      function (control) {
+        var entry = control.closest(".fitem");
+        if (!entry || !entry.parentNode) return;
+        var parent = entry.parentNode;
+        if (!found.has(parent)) found.set(parent, []);
+        var entries = found.get(parent);
+        if (entries.indexOf(entry) === -1) entries.push(entry);
+      }
+    );
 
     found.forEach(function (entries, parent) {
       if (!parent[SERVED_PROP]) parent[SERVED_PROP] = entries.slice();
@@ -937,10 +952,14 @@
    * an htmx swap -- need no rebinding.
    */
   function init() {
-    // Either control is reason enough to run: an asset list and a position list
-    // are arranged independently, and a page carrying only one of them still
-    // has an arrangement to restore.
-    if (!document.querySelector("[data-pin], [data-pin-position]")) return;
+    // Any of the three is reason enough to run: an asset list, a collection
+    // list and a position list are arranged independently, and a page carrying
+    // only one of them still has an arrangement to restore. `[data-drag]` is
+    // here because a section may be reorderable without being pinnable -- the
+    // NFT collections are.
+    if (!document.querySelector("[data-pin], [data-drag], [data-pin-position]")) {
+      return;
+    }
 
     // Arrange first, so a second execution still picks up entries that arrived
     // since the first -- it just does not bind a second set of handlers.

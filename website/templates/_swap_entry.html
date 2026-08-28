@@ -19,25 +19,36 @@
 
 {# Dust sweep. Gated on linkage alone, deliberately not on `swap_url`: a sweep #}
 {# needs an address the reader owns and nothing else, while a swap also needs  #}
-{# a router that resolves. Hanging this off the swap gate would hide the sweep #}
-{# exactly when the router is misconfigured - which is when its close-out half #}
-{# is still perfectly usable, and carries most of the value anyway.            #}
-{# One button per linked address, because a bundle page can show several of the #}
-{# reader's own accounts and a sweep is signed by exactly one of them. Picking #}
-{# for them is what breaks: the wallet is connected to one account, and an     #}
-{# entry that silently opened on another built a group it cannot sign. On a    #}
-{# single-address page this renders exactly one button, as before.             #}
+{# a router that resolves. Hanging the sweep off the swap gate would hide the  #}
+{# sweep exactly when the router is misconfigured - which is when its          #}
+{# close-out half is still perfectly usable, and carries most of the value.    #}
+{#                                                                             #}
+{# **One button, for the account the wallet is actually connected to.** This   #}
+{# was a button per linked address, and on a bundle page that offered several  #}
+{# - of which every one but the connected account is an offer the reader       #}
+{# cannot take. A sweep is signed by one key and a wallet has one active       #}
+{# account, so pressing any of the others built a group that account cannot    #}
+{# sign, and the reader found that out at the signature prompt.                #}
+{#                                                                             #}
+{# Which account that is cannot be decided here: linkage is a server fact and  #}
+{# connection is a browser one. So the server renders the *candidates* -       #}
+{# `data-addresses`, the reader's own addresses among the ones this page shows #}
+{# - and `dustsweep.js` reveals the button only while the live wallet is on    #}
+{# one of them. Rendered hidden rather than omitted so that connecting a       #}
+{# wallet needs no second request.                                             #}
 {% if dustsweep_address %}
-<div id="id-dustsweep" class="dustsweep-toolbar"
-     data-plan-url="{{ dustsweep_plan_url }}">
-  {% for one in dustsweep_addresses %}
-  <button type="button" class="dustsweep-open id-dustsweep-open"
-          data-address="{{ one }}">
+<div id="id-dustsweep" class="dustsweep-toolbar" hidden
+     data-plan-url="{{ dustsweep_plan_url }}"
+     data-addresses="{{ dustsweep_addresses|join:' ' }}">
+  <button type="button" class="dustsweep-open id-dustsweep-open" data-address="">
     Sweep dust{% if dustsweep_addresses|length > 1 %}
-    <span class="dustsweep-open-address">{{ one|slice:":6" }}…{{ one|slice:"-4:" }}</span>
+    {# Several of the reader's own accounts are on this page, so the button #}
+    {# says which one it will sweep; `dustsweep.js` fills it in from the    #}
+    {# connected account. One address needs no label, and then the span is  #}
+    {# not rendered at all rather than rendered empty.                      #}
+    <span class="dustsweep-open-address"></span>
     {% endif %}
   </button>
-  {% endfor %}
 </div>
 {% include "dustsweep/_sweep_modal.html" %}
 <script src="{% static 'dustsweep/dustsweep.js' %}"></script>

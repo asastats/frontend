@@ -110,6 +110,18 @@ def main():
         context["consolidated"],
     ) = prepare_consolidated_charts_from_serialized_data(trimmed, context["nft_colors"])
 
+    # `render_to_string` without a request runs no context processors, so the
+    # fold sizes the page publishes as `data-initial` would come out empty and
+    # `showmore.js` would fall back to revealing whole sections -- which is not
+    # what any reader sees. Named here rather than left blank because the
+    # fixture is the DOM the jest suites reason about.
+    from django.conf import settings
+
+    context.setdefault("ADDRESS_INITIAL_ASSETS", settings.ADDRESS_INITIAL_ASSETS)
+    context.setdefault(
+        "ADDRESS_INITIAL_COLLECTIONS", settings.ADDRESS_INITIAL_COLLECTIONS
+    )
+
     html = render_to_string("address.html", context)
 
     # Only what the page itself renders. The surrounding `base.html` chrome is

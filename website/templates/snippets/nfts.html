@@ -5,7 +5,7 @@
   remembered collection inside, and `.section-list` is what the filter shows
   and hides -- both are hooks, not styling.
 {% endcomment %}
-<div class="nftsec section-list mt-8">
+<div class="nftsec section-list mt-8" data-initial="{{ ADDRESS_INITIAL_COLLECTIONS }}">
   {% comment %}
     Inside `.section-list` on purpose: the filter hides and shows that whole
     container, so the heading travels with the rows it introduces rather than
@@ -14,16 +14,19 @@
   <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50">
     NFT collections <span class="ml-1 font-normal tabular-nums opacity-70">{{ nftcollections|length }}</span>
   </h2>
-  {% comment %} The same load-more rule the assets use -- see
-     `utils/cutoff.py`, and the note in `snippets/asas.html`. {% endcomment %}
-  {% with shown=nftcollections|visible_count %}
+  {% comment %} The same load-more rule the assets use -- the first
+     `ADDRESS_INITIAL_COLLECTIONS`, then that many more per press. See the note
+     in `snippets/asas.html` for what it replaced and why. Fewer than the assets
+     get because a collection row is taller, so the same amount of page holds
+     fewer of them. {% endcomment %}
+  {% with shown=ADDRESS_INITIAL_COLLECTIONS %}
   <div class="space-y-2" data-folding>
   {% for coll in nftcollections %}
     {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors index=forloop.counter0 shown=shown %}
   {% endfor %}
   </div>
   {% if nftcollections|length > shown %}
-    {% include "snippets/show_more.html" with hidden=nftcollections|hidden_count noun="collections" %}
+    {% include "snippets/show_more.html" with hidden=nftcollections|next_batch:shown noun="collections" %}
   {% endif %}
   {% endwith %}
 </div>

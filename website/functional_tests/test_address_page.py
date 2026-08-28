@@ -27,6 +27,37 @@ def _sample_payload():
         return json.load(sample_file)
 
 
+def _unfold(browser, selector=None):
+    """Press every load-more control until nothing is folded.
+
+    Both designs reveal one batch per press, so a single click is not "unfold
+    this section" any more -- it is "twenty more rows". A test that measures
+    geometry needs every row laid out, and a row that is still folded is
+    `display: none` with no geometry at all: the measurement reads zero and
+    compares it against zero, which passes as often as it fails.
+
+    Bounded rather than looped on the condition. A control that stopped working
+    should fail this as a timeout's worth of presses that changed nothing, not
+    hang the suite.
+
+    :param browser: the webdriver
+    :param selector: a section to unfold, or None for every one on the page
+    """
+    scope = f"{selector} " if selector else ""
+    for _ in range(60):
+        remaining = browser.execute_script(
+            "var folded = document.querySelectorAll("
+            f"  '{scope}[data-folding] > .fitem.folded');"
+            "if (!folded.length) return 0;"
+            f"document.querySelectorAll('{scope}[data-show-more]')"
+            "  .forEach(function (button) { button.click(); });"
+            "return folded.length;"
+        )
+        if not remaining:
+            return
+    raise AssertionError("the load-more controls never revealed the whole tail")
+
+
 class AddressPageTest(FunctionalTest):
     """Render the single-address page from a mocked backend payload."""
 
@@ -91,21 +122,19 @@ class AssetRowLayoutTest(FunctionalTest):
     def _render(self):
         """Load the page with every section unfolded.
 
-        The load-more rule hides the tail of each section past
-        ``ADDRESS_SECTION_THRESHOLD`` of its magnitude, and a hidden row has no
-        geometry -- every measurement in this class would read zero and compare
-        it against zero, which passes as often as it fails. Unfolding restores
-        the premise these tests were written under: that every row rendered is
-        a row laid out.
+        The load-more rule hides each section's tail past the first
+        ``ADDRESS_INITIAL_*`` rows, and a hidden row has no geometry -- every
+        measurement in this class would read zero and compare it against zero,
+        which passes as often as it fails. Unfolding restores the premise these
+        tests were written under: that every row rendered is a row laid out.
 
-        Clicked rather than styled around, so the control itself is exercised on
-        the way to every other assertion here.
+        Pressed until nothing is folded rather than once: a press reveals one
+        batch now, and this payload carries seventy-six assets against a batch
+        of twenty. Clicked rather than styled around, so the control itself is
+        exercised on the way to every other assertion here.
         """
         self.browser.get(f"{self.server_url}/{ADDRESS}")
-        self.browser.execute_script(
-            "document.querySelectorAll('[data-show-more]')"
-            ".forEach(function (button) { button.click(); });"
-        )
+        _unfold(self.browser)
         # Then wait for the images those rows brought with them. `deferImages`
         # assigns every `src` after load, so thumbnails arrive without reserved
         # space and each one that lands pushes the rows below it down. Measuring
@@ -500,9 +529,49 @@ class SectionFoldingTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_the_control_reveals_them_and_puts_them_back(
+    def test_the_control_reveals_one_batch_at_a_time(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
+        """A press adds a batch. It used to reveal the whole tail at once.
+
+        Measured on what is *displayed*, which is the one thing neither the
+        contract tests nor jest can answer: every row is in the markup either
+        way, and the difference lives in a stylesheet rule.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self._load()
+
+        button = self.browser.find_element(
+            By.CSS_SELECTOR, ".asasec [data-show-more]"
+        )
+        batch = int(
+            self.browser.find_element(By.CSS_SELECTOR, ".asasec").get_attribute(
+                "data-initial"
+            )
+        )
+        rows = self._rows("asasec")
+        self.assertGreater(
+            len(rows), batch * 2, "this payload is too short to fold twice"
+        )
+
+        self.assertEqual(len([r for r in rows if r.is_displayed()]), batch)
+
+        self.browser.execute_script("arguments[0].click();", button)
+        self.assertEqual(len([r for r in rows if r.is_displayed()]), batch * 2)
+        self.assertEqual(button.get_attribute("aria-expanded"), "false")
+
+        self.browser.execute_script("arguments[0].click();", button)
+        self.assertEqual(len([r for r in rows if r.is_displayed()]), batch * 3)
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_last_batch_turns_the_control_into_its_opposite(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Once everything shows, the only thing left to offer is putting it back."""
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": 0}
@@ -512,11 +581,11 @@ class SectionFoldingTest(FunctionalTest):
             By.CSS_SELECTOR, ".asasec [data-show-more]"
         )
         rows = self._rows("asasec")
+        _unfold(self.browser, ".asasec")
 
-        self.browser.execute_script("arguments[0].click();", button)
         self.assertTrue(
             all(row.is_displayed() for row in rows),
-            "a row stayed hidden after the section was unfolded",
+            "a row stayed hidden after every batch was revealed",
         )
         self.assertEqual(button.get_attribute("aria-expanded"), "true")
 
@@ -533,7 +602,13 @@ class SectionFoldingTest(FunctionalTest):
     def test_the_control_says_how_many_and_of_what(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
-        """"Show more" tells a reader nothing about whether it is worth a tap."""
+        """"Show more" tells a reader nothing about whether it is worth a tap.
+
+        And the number it names has to be what the press *does*. It used to be
+        the whole tail -- "Show 39 more assets" over a control that revealed
+        thirty-nine, which made the label true and the control an unfold. Now it
+        names the batch, so this asserts the two agree by pressing it.
+        """
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": 0}
@@ -542,10 +617,18 @@ class SectionFoldingTest(FunctionalTest):
         button = self.browser.find_element(
             By.CSS_SELECTOR, ".asasec [data-show-more]"
         )
-        hidden = len([row for row in self._rows("asasec") if not row.is_displayed()])
-
-        self.assertIn(str(hidden), button.text)
+        before = len([row for row in self._rows("asasec") if row.is_displayed()])
+        promised = int(button.text.split()[1])
         self.assertIn("assets", button.text)
+
+        self.browser.execute_script("arguments[0].click();", button)
+        after = len([row for row in self._rows("asasec") if row.is_displayed()])
+
+        self.assertEqual(
+            after - before,
+            promised,
+            f"the control promised {promised} and revealed {after - before}",
+        )
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")

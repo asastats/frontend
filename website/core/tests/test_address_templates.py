@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 import pytest
+from django.conf import settings
 from django.template.loader import render_to_string
 
 from django.test import RequestFactory
@@ -101,6 +102,11 @@ def _build_context(sample_payload, is_bundle=True):
         ),
         "user": _StubUser(),
         "url_value": sample_payload["account_info"]["bundle"],
+        # `render_to_string` runs no context processors, and both designs read
+        # the fold sizes from them. Without these the sections publish
+        # `data-initial=""` and fold at nothing, which is not the page.
+        "ADDRESS_INITIAL_ASSETS": settings.ADDRESS_INITIAL_ASSETS,
+        "ADDRESS_INITIAL_COLLECTIONS": settings.ADDRESS_INITIAL_COLLECTIONS,
     }
 
 
@@ -600,3 +606,108 @@ class TestTheExportActionLooksLikeOne:
             for node in download:
                 assert "btn-primary" in node.classes
                 assert "Download processed CSV" in node.text()
+
+
+class TestTheLoadMoreControlKeepsItsPromise:
+    """What the fold is, and what the button under it says it will do.
+
+    Design 1 used to fold on a magnitude rule -- as many rows as accounted for
+    99.5% of the section's value -- and then reveal *all* of the rest in one
+    press. A reader could see neither half: the first showed 33 rows on one
+    address and 8 on the next with nothing on the page to explain why, and the
+    second made the label untrue, promising "Show 39 more assets" over what was
+    an unfold rather than a load-more.
+
+    Both designs now show the first ``ADDRESS_INITIAL_*`` rows and add that many
+    per press, so these assertions are written against both templates: two
+    designs disagreeing about how much of an address they show is the failure
+    this class exists to catch.
+    """
+
+    TEMPLATES = ("address.html", "address_dynamic.html")
+
+    #: The two batch sizes, as the templates render them.
+    BATCHES = (
+        str(settings.ADDRESS_INITIAL_ASSETS),
+        str(settings.ADDRESS_INITIAL_COLLECTIONS),
+    )
+
+    def _page(self, template, sample_payload):
+        return parse(render_to_string(template, _build_context(sample_payload)))
+
+    def test_both_designs_publish_the_batch_size(self, sample_payload):
+        """The template renders the first fold; the scripts render the rest.
+
+        They have to read the same number from the same place, or the page
+        folds at twenty and unfolds in batches of something else. Both designs
+        put it on the *section* -- `.asasec` / `.nftsec` -- which is where
+        `toolbar.js` and `showmore.js` both look.
+        """
+        for template in self.TEMPLATES:
+            sections = self._page(template, sample_payload).select(
+                ".asasec, .nftsec"
+            )
+
+            assert sections, f"{template} renders no foldable section"
+            for section in sections:
+                published = section.get("data-initial")
+                assert published in self.BATCHES, (
+                    f"{template}: a section publishes {published!r} as its "
+                    "batch size, which is neither of the two settings"
+                )
+
+    def test_the_first_fold_is_the_published_batch(self, sample_payload):
+        """As many rows left unfolded as the section says it shows."""
+        for template in self.TEMPLATES:
+            for section in self._page(template, sample_payload).select(
+                ".asasec, .nftsec"
+            ):
+                batch = int(section.get("data-initial"))
+                container = section.select_one("[data-folding]")
+                assert container, f"{template}: a section folds nothing"
+                rows = [row for row in container.children if "fitem" in row.classes]
+                if len(rows) <= batch:
+                    continue
+                showing = [row for row in rows if "folded" not in row.classes]
+                assert len(showing) == batch, (
+                    f"{template}: a section leaves {len(showing)} rows showing "
+                    f"while publishing a batch of {batch}"
+                )
+
+    def test_the_label_promises_one_batch_and_not_the_whole_tail(
+        self, sample_payload
+    ):
+        """The defect, in one assertion.
+
+        The control names a number and that number is what the next press
+        reveals. Read back off the rendered label rather than off the filter,
+        because the label is the thing the reader is owed.
+        """
+        for template in self.TEMPLATES:
+            controls = self._page(template, sample_payload).select("[data-show-more]")
+
+            assert controls, f"{template} renders no load-more control"
+            for control in controls:
+                promised = control.select_one(".show-more-open").text()
+                count = int(promised.split()[1])
+                assert 0 < count <= settings.ADDRESS_INITIAL_ASSETS, (
+                    f"{template}: {promised!r} does not describe one press"
+                )
+
+    def test_the_control_names_what_the_scripts_will_call_the_rows(
+        self, sample_payload
+    ):
+        """``data-noun`` is how the scripts rewrite the count.
+
+        Without it the plural lives in two JavaScript files, which is how
+        "1 more collections" gets shipped.
+        """
+        for template in self.TEMPLATES:
+            for control in self._page(template, sample_payload).select(
+                "[data-show-more]"
+            ):
+                noun = control.get("data-noun")
+                assert noun in ("assets", "collections"), (
+                    f"{template}: a control carries {noun!r} as its noun"
+                )
+                assert noun in control.select_one(".show-more-open").text()

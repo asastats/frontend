@@ -1125,3 +1125,77 @@ describe("re-basing the order the toolbar sorted", () => {
     expect(pins.baseline(parent).map((el) => el.id)).toEqual(ASSETS);
   });
 });
+
+describe("a section that can be dragged but not pinned", () => {
+  /**
+   * The NFT collections. A collection header carries a grip and no pin --
+   * reordering the section is a reasonable thing to offer while the pinned
+   * band, which is about *positions*, is not.
+   *
+   * Containers used to be discovered from `[data-pin]` alone, so pinning was
+   * what decided whether a list could be dragged: the collections were found by
+   * nothing, `layout` never ran on them, and every drag silently did nothing.
+   */
+  function mountGripOnly(ids) {
+    document.body.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.className = "nftsec section-list";
+    const rows = document.createElement("div");
+    ids.forEach((id) => {
+      const entry = document.createElement("details");
+      entry.className = "fitem";
+      entry.id = id;
+      entry.innerHTML =
+        '<summary class="chead">' +
+        `<button type="button" class="grip" data-drag="${id}"></button>` +
+        "</summary>";
+      rows.appendChild(entry);
+    });
+    wrap.appendChild(rows);
+    document.body.appendChild(wrap);
+
+    jest.resetModules();
+    delete require.cache[require.resolve("../static/js/pins.js")];
+    require("../static/js/pins.js");
+    return { pins: window.asastatsPins, rows };
+  }
+
+  test("its container is discovered from the grip", () => {
+    const { pins, rows } = mountGripOnly(["fa", "fb", "fc"]);
+
+    expect(pins.containers(document).has(rows)).toBe(true);
+  });
+
+  test("an entry is collected once even carrying both controls", () => {
+    // `querySelectorAll` on a comma list returns each *element* once, and two
+    // controls in one entry are two elements.
+    const pins = mount();
+    const entries = pins.containers(document).get(assetContainer());
+
+    expect(new Set(entries).size).toBe(entries.length);
+  });
+
+  test("a keyboard move reorders it", () => {
+    const { pins, rows } = mountGripOnly(["fa", "fb", "fc"]);
+
+    pins.move(document.getElementById("fc"), -1);
+
+    expect(orderOf(rows)).toEqual(["fa", "fc", "fb"]);
+  });
+
+  test("the order it was dragged into survives a reload", () => {
+    const { pins } = mountGripOnly(["fa", "fb", "fc"]);
+    pins.move(document.getElementById("fc"), -2);
+
+    const again = mountGripOnly(["fa", "fb", "fc"]);
+
+    expect(orderOf(again.rows)).toEqual(["fc", "fa", "fb"]);
+  });
+
+  test("it is arranged even on a page with no pinnable section at all", () => {
+    // The gate on `init` is any of the three controls, not the pin alone.
+    const { rows } = mountGripOnly(["fa", "fb"]);
+
+    expect(orderOf(rows)).toEqual(["fa", "fb"]);
+  });
+});

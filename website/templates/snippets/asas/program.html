@@ -32,7 +32,16 @@
      {% endcomment %}
   <div class="space-y-1">
     <div class="flex flex-wrap items-baseline justify-end gap-x-2">
-      <a class="link link-hover" href="{% explorer_base %}{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to {% explorer_name %}"><span class="balance text-success">Balance:</span></a>
+      {% comment %} `text-primary`, not `text-success`. It was green because the
+         Materialize site painted this label in its link colour, and the
+         conversion carried the colour across as the nearest token rather than
+         as a decision -- so the one label on the page that is coloured was
+         claiming "success", which is not what a balance is. Primary is the
+         theme's own accent: every one of the 57 themes defines it, it is
+         already what marks emphasis on this page (`btn-primary`,
+         scroll-to-top), and it says "this is the site's colour" rather than
+         "this went well". {% endcomment %}
+      <a class="link link-hover" href="{% explorer_base %}{% if not is_bundle %}account{{ request.path }}{% endif %}" target="_blank" title="Go to {% explorer_name %}"><span class="balance text-primary">Balance:</span></a>
       <span class="val font-medium" data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span>
     </div>
     {% for ld in prog.linked %}
@@ -102,13 +111,15 @@
             {% endif %}
           {% endfor %}
 
-          {% comment %} The bottom amount-line. For "Balance" programs it gets a
-             green-styled ``balance`` label; for everything else "Type: amount
+          {% comment %} The bottom amount-line. For "Balance" programs it gets an
+             accented ``balance`` label; for everything else "Type: amount
              unit". W7 — negative amounts are parenthesised and red. Followed by
-             the per-row price line in both cases. {% endcomment %}
+             the per-row price line in both cases. See the note on the ALGO
+             balance row above for why this is `text-primary` rather than the
+             `text-success` the Materialize conversion left behind. {% endcomment %}
           {% if asset.id != 0 and prog.amount %}
             {% if program.type == "Balance" %}
-            <div><span class="balance text-success">Balance:</span> {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
+            <div><span class="balance text-primary">Balance:</span> {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
               {% dist_price prog asset.decimals as prog_price %}
               {% if prog_price %}<div><span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ prog_price }}">{{ prog_price|floatformat:'-8g' }} ALGO/{{ asset.unit }}</span></div>{% endif %}
             {% elif prog.amount|is_negative %}

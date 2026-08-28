@@ -16,7 +16,7 @@
   Change the nesting or these names and the page still renders perfectly while
   filtering, sorting and the currency switch quietly stop working.
 {% endcomment %}
-<div class="asasec section-list mt-8">
+<div class="asasec section-list mt-8" data-initial="{{ ADDRESS_INITIAL_ASSETS }}">
   {% comment %}
     Inside `.section-list` on purpose: the filter hides and shows that whole
     container, so the heading travels with the rows it introduces rather than
@@ -25,13 +25,28 @@
   <h2 class="mb-3 text-xs font-semibold uppercase tracking-wide text-base-content/50">
     Assets <span class="ml-1 font-normal tabular-nums opacity-70">{{ asaitems|length }}</span>
   </h2>
-  {% comment %} The load-more rule: show the rows accounting for the first
-     `ADDRESS_SECTION_THRESHOLD` of this section's magnitude, fold the rest.
-     See `utils/cutoff.py`. Every row is rendered either way -- the tail is
-     marked, not withheld -- because the payload is already in hand and a
-     second request to reveal dust would cost more than the markup does.
+  {% comment %} The load-more rule: the first `ADDRESS_INITIAL_ASSETS` rows,
+     then that many more per press. Every row is rendered either way -- the
+     tail is marked, not withheld -- because the payload is already in hand and
+     a second request to reveal dust would cost more than the markup does.
+
+     This was a magnitude rule: show whatever number of rows accounted for
+     99.5% of the section's value, then reveal *all* of the rest in one press.
+     Both halves read as arbitrary from the outside. The first showed 33 rows
+     on one address and 8 on the next with nothing on the page to explain the
+     difference, and the second made the control's own promise wrong -- "Show
+     39 more assets" over a button that then showed thirty-nine, which is not a
+     load-more, it is an unfold. The dynamic designs already used the plain
+     count, so this is the two designs agreeing rather than a new rule.
+
+     `data-initial` is the batch size, published from the same setting the
+     first fold is rendered from, so `showmore.js` and this template cannot
+     come to different conclusions about what one press is worth. It sits on
+     the *section*, `.asasec` above, exactly where the dynamic designs put
+     theirs -- the batch is the section's rule, and one place for it is what
+     stops the two designs drifting apart.
   {% endcomment %}
-  {% with shown=asaitems|visible_count %}
+  {% with shown=ADDRESS_INITIAL_ASSETS %}
   <div class="space-y-2" data-folding>
   {% for asaitem in asaitems %}
     {% with asset=asaitem.asset %}
@@ -96,7 +111,7 @@
   {% endfor %}
   </div>
   {% if asaitems|length > shown %}
-    {% include "snippets/show_more.html" with hidden=asaitems|hidden_count noun="assets" %}
+    {% include "snippets/show_more.html" with hidden=asaitems|next_batch:shown noun="assets" %}
   {% endif %}
   {% endwith %}
 </div>

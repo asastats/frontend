@@ -68,6 +68,76 @@ class TestApiClientFunctions:
         with pytest.raises(BackendError):
             _request("GET", "/path/")
 
+    def test_api_client_request_carries_the_backends_own_explanation(self, mocker):
+        """The refusal a caller can pass on, rather than a 500.
+
+        The engine's router endpoints depend on this: a restricted deployment
+        answers 503 with a sentence explaining *why* no group can be built, and
+        that sentence is the only thing a reader could act on.
+        """
+        mocked_settings = mocker.patch("api.client.settings")
+        mocked_settings.ASASTATS_API_URL = "https://api.test"
+        mocked_settings.ASASTATS_API_TIMEOUT = 30
+        mocker.patch("api.client._headers")
+        mocked_requests = mocker.patch("api.client.requests")
+        response = mocked_requests.request.return_value
+        response.status_code = 503
+        response.text = '{"detail": "this deployment may not build groups"}'
+        response.json.return_value = {"detail": "this deployment may not build groups"}
+
+        with pytest.raises(BackendError) as raised:
+            _request("GET", "/router/quote/")
+
+        assert raised.value.status_code == 503
+        assert raised.value.detail == "this deployment may not build groups"
+
+    def test_api_client_request_survives_an_error_body_that_is_not_json(self, mocker):
+        """An error page, a proxy's plain text, a truncated response.
+
+        The backend is not the only thing that can answer: a gateway between
+        here and it returns HTML, and `resp.json()` then raises. Letting that
+        propagate would replace the backend's status - which the caller can act
+        on - with a ValueError from inside the client, so the status and the
+        response text survive and only the structured detail is dropped.
+        """
+        mocked_settings = mocker.patch("api.client.settings")
+        mocked_settings.ASASTATS_API_URL = "https://api.test"
+        mocked_settings.ASASTATS_API_TIMEOUT = 30
+        mocker.patch("api.client._headers")
+        mocked_requests = mocker.patch("api.client.requests")
+        response = mocked_requests.request.return_value
+        response.status_code = 502
+        response.text = "<html><body>502 Bad Gateway</body></html>"
+        response.json.side_effect = ValueError("not json")
+
+        with pytest.raises(BackendError) as raised:
+            _request("GET", "/path/")
+
+        assert raised.value.status_code == 502
+        assert raised.value.detail is None
+        assert "502 Bad Gateway" in str(raised.value)
+
+    def test_api_client_request_truncates_a_long_error_body(self, mocker):
+        """A gateway's error page can be megabytes; a log line should not be.
+
+        Pinned because the slice is the only thing standing between an
+        exception message and the whole of whatever answered.
+        """
+        mocked_settings = mocker.patch("api.client.settings")
+        mocked_settings.ASASTATS_API_URL = "https://api.test"
+        mocked_settings.ASASTATS_API_TIMEOUT = 30
+        mocker.patch("api.client._headers")
+        mocked_requests = mocker.patch("api.client.requests")
+        response = mocked_requests.request.return_value
+        response.status_code = 500
+        response.text = "x" * 5000
+        response.json.side_effect = ValueError("not json")
+
+        with pytest.raises(BackendError) as raised:
+            _request("GET", "/path/")
+
+        assert len(str(raised.value)) < 300
+
     def test_api_client_request_refuses_a_relative_path(self, mocker):
         """A path without a leading slash is refused before it is sent.
 

@@ -7,6 +7,7 @@ from core.templatetags.core_extras import (
     abs_value,
     amount_repr,
     asa_icon,
+    beyond,
     bundle_hash,
     dict_get,
     dist_height,
@@ -24,6 +25,7 @@ from core.templatetags.core_extras import (
     is_distribution,
     is_negative,
     list_item,
+    next_batch,
     program_url,
     program_url_title,
     provider_icon,
@@ -31,8 +33,6 @@ from core.templatetags.core_extras import (
     short_addresses,
     split_by_space,
     strid,
-    hidden_count,
-    visible_count,
 )
 from utils.tests.fixtures import (
     TEST_ADDRESS,
@@ -630,6 +630,28 @@ class TestCoreExtrasExplorerTags:
     def test_core_extras_explorer_url_no_request_defaults_to_allo(self):
         assert explorer_url({}, "transaction", "TX") == "https://allo.info/tx/TX"
 
+    def test_core_extras_explorer_url_signed_in_without_a_profile(self, mocker):
+        """An authenticated user is not the same thing as a user with a profile.
+
+        A profile is created by a signal, and there are two moments when the
+        two come apart: partway through a social or wallet sign-up, and on the
+        superuser somebody made with ``createsuperuser`` on an older database.
+        Both would reach this tag as ``user.is_authenticated`` with no
+        ``profile`` attribute, and reading the preference off it would raise
+        inside a template tag -- which Django renders as an empty string, so
+        every explorer link on the page would silently become ``https:///``.
+        """
+        user = mocker.Mock(is_authenticated=True)
+        # `Mock` invents any attribute asked of it, so the absence has to be
+        # arranged rather than assumed -- which is the whole reason this test
+        # was not already here.
+        del user.profile
+        context = {"request": mocker.Mock(user=user)}
+
+        assert explorer_url(context, "address", "ADDR") == (
+            "https://allo.info/account/ADDR"
+        )
+
     def test_core_extras_explorer_base_uses_viewer_preference(self, mocker):
         context = {"request": self._request(mocker, authenticated=True)}
         assert explorer_base(context) == "https://lora.algokit.io/mainnet/"
@@ -711,58 +733,51 @@ class TestCoreExtrasExplorerTags:
 
 
 class TestCoreExtrasFoldCounts:
-    """The load-more filters, used by all three designs.
+    """The load-more label's arithmetic, used by both designs.
 
-    :func:`visible_count` and :func:`hidden_count` are thin wrappers over
-    :func:`utils.cutoff.cutoff`, which has its own suite. What is worth pinning
-    here is the wrapping: the empty-section case, and that the two are exact
-    complements. A section whose counts disagree renders a "Show 3 more" button
-    that reveals two rows, or none.
+    Both filters exist because Django's ``add`` cannot subtract one variable
+    from another. What is worth pinning here is that the number the label names
+    is the number the control then reveals: a section whose counts disagree
+    renders "Show 3 more" over a button that reveals twenty, which is how the
+    magnitude rule this replaced ended up lying about itself.
     """
 
-    def _rows(self, *values):
-        """Build section rows carrying only what the filters read."""
-        return [{"value": value} for value in values]
+    def test_core_extras_beyond_counts_the_whole_tail(self):
+        assert beyond(list(range(50)), 20) == 30
 
-    def test_core_extras_visible_count_of_nothing_is_zero(self):
-        """An address with no assets at all -- a fresh or emptied one.
+    def test_core_extras_beyond_of_nothing_is_zero(self):
+        assert beyond([], 20) == 0
 
-        Reached before `cutoff` is called, because summing an empty section
-        would divide by a zero total.
-        """
-        assert visible_count([]) == 0
+    @pytest.mark.parametrize("shown", [None, "", "twenty"])
+    def test_core_extras_beyond_survives_a_missing_batch_size(self, shown):
+        """A template rendered before its context arrived passes a string."""
+        assert beyond(list(range(50)), shown) == 0
 
-    def test_core_extras_hidden_count_of_nothing_is_zero(self):
-        assert hidden_count([]) == 0
+    def test_core_extras_beyond_is_never_negative(self):
+        """"Show -3 more assets" is worse than showing no control at all."""
+        assert beyond(list(range(3)), 20) == 0
 
-    @pytest.mark.parametrize("rows", [None, [], ()])
-    def test_core_extras_fold_counts_survive_an_absent_section(self, rows):
-        """A template may pass a key the payload never set."""
-        assert visible_count(rows) == 0
-        assert hidden_count(rows) == 0
+    def test_core_extras_next_batch_is_capped_at_one_batch(self):
+        """The label names what one press does, not what the section holds."""
+        assert next_batch(list(range(50)), 20) == 20
 
-    def test_core_extras_fold_counts_are_complements(self):
-        """Together they must account for every row, exactly once.
+    def test_core_extras_next_batch_is_the_remainder_when_that_is_smaller(self):
+        """The last press reveals what is left, and says so."""
+        assert next_batch(list(range(28)), 20) == 8
 
-        This is what the "Show N more" label depends on: it names
-        `hidden_count`, and the rows it reveals are the ones past
-        `visible_count`.
-        """
-        rows = self._rows(100, 50, 20, 5, 1, 0.5, 0.2, 0.1, 0.05, 0.01)
+    def test_core_extras_next_batch_of_a_short_section_is_zero(self):
+        """Nothing folded, so no control renders and nothing is promised."""
+        assert next_batch(list(range(12)), 20) == 0
 
-        assert visible_count(rows) + hidden_count(rows) == len(rows)
+    def test_core_extras_next_batch_of_nothing_is_zero(self):
+        assert next_batch([], 20) == 0
 
-    def test_core_extras_a_short_section_hides_nothing(self):
-        """Below the floor there is no tail to fold, so no control renders."""
-        rows = self._rows(5, 4, 3)
+    @pytest.mark.parametrize("shown", [None, "", "twenty"])
+    def test_core_extras_next_batch_survives_a_missing_batch_size(self, shown):
+        assert next_batch(list(range(50)), shown) == 0
 
-        assert hidden_count(rows) == 0
-        assert visible_count(rows) == 3
-
-    def test_core_extras_a_long_tail_of_dust_is_folded(self):
-        """The case the rule exists for: a few holdings worth reading, and a
-        long tail of dust that would otherwise lead the page."""
-        rows = self._rows(1000, *([0.001] * 200))
-
-        assert hidden_count(rows) > 0
-        assert visible_count(rows) < len(rows)
+    def test_core_extras_next_batch_never_exceeds_the_tail(self):
+        """Whatever the batch size, the promise cannot outrun the rows."""
+        for total in range(0, 45):
+            rows = list(range(total))
+            assert next_batch(rows, 20) <= beyond(rows, 20)

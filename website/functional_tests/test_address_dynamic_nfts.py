@@ -430,3 +430,121 @@ class DynamicNftTest(FunctionalTest):
                 if card.is_displayed()
             ]
         )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_tile_shows_the_collection_rather_than_spelling_it(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The one cell reserved for recognition should be worth having.
+
+        It carried four grey capitals cut from the collection's name, which is
+        a second copy of the words printed beside it -- so the row spent its
+        only piece of art on saying the name twice. It carries the first item
+        in the collection now.
+
+        Measured in a browser because `object-fit: cover` on a 38px tile is the
+        half that makes it legible: a letterboxed picture with grey bars either
+        side is the tile the initials were already doing better.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page(collections=0)
+
+        tiles = self.browser.find_elements(
+            By.CSS_SELECTOR, "#nft-list > .fitem .mono-tile.collection"
+        )
+        self.assertTrue(tiles, "the section rendered no collection tiles")
+
+        art = [
+            tile.find_elements(By.CSS_SELECTOR, "img.collicon") for tile in tiles
+        ]
+        self.assertTrue(
+            any(found for found in art),
+            "not one collection tile carries the art of an item in it",
+        )
+
+        picture = next(found[0] for found in art if found)
+        self.assertEqual(
+            "cover",
+            self.browser.execute_script(
+                "return getComputedStyle(arguments[0]).objectFit;", picture
+            ),
+            "the art is letterboxed into the tile rather than filling it",
+        )
+        # Not `.nfticon`: that is design 1's contract, and `address.js` both
+        # hides it while filtering and builds a full-size hover preview from it.
+        # A preview would fire on every pass of the pointer down the section.
+        self.assertNotIn("nfticon", picture.get_attribute("class"))
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_collection_can_be_reordered_like_an_asset(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The cell was there and the control was not.
+
+        A collection header reserved an asset's grip cell and left it empty, so
+        the section carried the indent of a reorderable list, showed nothing on
+        hover, and did nothing when dragged. `pins.js` also discovered its
+        containers from `[data-pin]` alone, so even with a grip the collections
+        would have been found by nothing.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page(collections=0)
+
+        grips = self.browser.find_elements(
+            By.CSS_SELECTOR, "#nft-list > .fitem .grip[data-drag]"
+        )
+        self.assertTrue(grips, "no collection offers a grip")
+
+        before = self._order()
+        self.browser.execute_script(
+            "window.asastatsPins.move("
+            "  document.querySelector('#nft-list > .fitem:nth-child(2)'), -1);"
+        )
+        after = self._order()
+
+        self.assertEqual(
+            [before[1], before[0]] + before[2:],
+            after,
+            "moving a collection up did not move it",
+        )
+        self.assertEqual([], self.javascript_errors())
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_order_a_reader_dragged_survives_a_reload(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Which is the whole point of offering the drag."""
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page(collections=0)
+
+        self.browser.execute_script(
+            "window.asastatsPins.move("
+            "  document.querySelector('#nft-list > .fitem:nth-child(3)'), -2);"
+        )
+        expected = self._order()
+
+        self.open_page(collections=0)
+
+        self.assertEqual(expected, self._order())
+
+    def _order(self):
+        return self.browser.execute_script(
+            "return Array.prototype.map.call("
+            "  document.querySelectorAll('#nft-list > .fitem'),"
+            "  function (card) { return card.id; });"
+        )

@@ -9,17 +9,27 @@
    nothing about whether it is worth the tap: eight more assets and two hundred
    more are different decisions.
 
+   **`hidden` is what the next press reveals, not the whole tail.** A control
+   that says "Show 39 more assets" and reveals twenty has told the reader
+   something untrue about itself; one that says it and reveals thirty-nine is
+   not a load-more at all. Both designs pass a batch here, so both keep the
+   promise the label makes.
+
    Both labels are rendered and the stylesheet shows one, keyed off
    `aria-expanded`. That way the state lives in exactly one place -- the
    attribute a screen reader already reads -- instead of being duplicated as
-   text the script has to keep in step with it.
+   text the script has to keep in step with it. The scripts rewrite the count
+   inside `.show-more-open` as batches are revealed, and read the noun back off
+   `data-noun` to do it -- the alternative is a plural hardcoded in two
+   JavaScript files, which is how "1 more collections" gets shipped.
 
    Required context:
-     hidden  how many rows are folded
+     hidden  how many rows the next press reveals
      noun    what they are, plural, e.g. "assets"
 {% endcomment %}
 <div class="mt-3 text-center">
-  <button type="button" class="btn btn-ghost btn-sm show-more" data-show-more aria-expanded="false">
+  <button type="button" class="btn btn-ghost btn-sm show-more" data-show-more
+          data-noun="{{ noun }}" aria-expanded="false">
     <span class="show-more-open">Show {{ hidden }} more {{ noun }}</span>
     <span class="show-more-close">Show fewer {{ noun }}</span>
   </button>

@@ -212,13 +212,422 @@ describe("building a chart", () => {
     expect(chart("Zero", [{ label: "A", value: 0, color: "#1" }])).toBeNull();
   });
 
-  test("the ring is labelled for a screen reader", () => {
+  test("the ring is labelled for a screen reader, with its total", () => {
+    // The figure in the hole is the point of the legend being clickable, and a
+    // reader who cannot see it is owed it too.
     const { chart, slices } = load();
 
     const el = chart("Allocation", slices(chartData(["A"], [1], ["#1"])));
 
-    expect(el.querySelector("svg").getAttribute("aria-label")).toBe("Allocation");
+    expect(el.querySelector("svg").getAttribute("aria-label")).toBe(
+      "Allocation: 1.00 ALGO",
+    );
     expect(el.querySelector("svg").getAttribute("role")).toBe("img");
+  });
+
+  test("the total is drawn in the hole", () => {
+    const { chart, slices } = load();
+
+    const el = chart("Allocation", slices(chartData(["A", "B"], [3, 4], ["#1", "#2"])));
+
+    expect(el.querySelector(".donut-total").textContent).toBe("7.00");
+    expect(el.querySelector(".donut-unit").textContent).toBe("ALGO");
+  });
+});
+
+describe("what a payload's numbers mean", () => {
+  /**
+   * Four of the five blocks carry *shares*, not amounts: "46.30882653" in
+   * `asachart` means 46.3% of the assets. The legend printed those bare, so a
+   * column of figures shaped exactly like every other figure on the page was
+   * not money at all -- and the donut had no total to show for the same reason.
+   */
+  function mountHeader({ total = 1000, nft = 200, floor = 150, rate = 0.25 } = {}) {
+    const page = document.createElement("div");
+    page.className = "dynamic-page";
+    const head = document.createElement("span");
+    head.className = "pricetip";
+    head.setAttribute("data-totalwnft", String(total));
+    head.setAttribute("data-totalnft", String(nft));
+    head.setAttribute("data-totalnftfloor", String(floor));
+    head.setAttribute("data-pricealgo", String(rate));
+    page.appendChild(head);
+    document.body.appendChild(page);
+    return head;
+  }
+
+  test("the assets chart is of everything that is not an NFT", () => {
+    mountHeader({ total: 1000, nft: 200 });
+    const { whole } = load();
+
+    expect(whole("assets")).toBe(800);
+  });
+
+  test("each chart names its own whole", () => {
+    mountHeader({ total: 1000, nft: 200, floor: 150 });
+    const { whole } = load();
+
+    expect(whole("everything")).toBe(1000);
+    expect(whole("nft")).toBe(200);
+    expect(whole("nftfloor")).toBe(150);
+  });
+
+  test("a page with no header reads zero rather than throwing", () => {
+    const { whole } = load();
+
+    expect(whole("everything")).toBe(0);
+  });
+
+  test("an unknown whole is zero", () => {
+    mountHeader();
+    const { whole } = load();
+
+    expect(whole("something else")).toBe(0);
+  });
+
+  test("a share chart is scaled into ALGO, an amount chart is not", () => {
+    mountHeader({ total: 1000, nft: 200 });
+    const { scaleFor } = load();
+
+    expect(scaleFor({ total: "assets" })).toBe(8);
+    expect(scaleFor({ absolute: true })).toBe(1);
+  });
+
+  test("the legend prints a share as the money it stands for", () => {
+    mountHeader({ total: 1000, nft: 200 });
+    const { chart, slices, scaleFor } = load();
+
+    // 25% of the 800 ALGO of assets is 200 ALGO.
+    const el = chart(
+      "Assets by value",
+      slices(chartData(["A", "B"], [25, 75], ["#1", "#2"])),
+      scaleFor({ total: "assets" }),
+    );
+
+    expect(el.querySelector(".kv").textContent).toBe("200.00");
+    expect(el.querySelector(".donut-total").textContent).toBe("800.00");
+  });
+
+  test("USD is the page's choice, and the charts follow it", () => {
+    mountHeader({ total: 1000, nft: 0, rate: 0.25 });
+    window.localStorage.setItem("cur", "USD");
+    const { chart, slices, scaleFor } = load();
+
+    const el = chart(
+      "Allocation",
+      slices(chartData(["A"], [100], ["#1"])),
+      scaleFor({ total: "everything" }),
+    );
+
+    expect(el.querySelector(".donut-total").textContent).toBe("250.00");
+    expect(el.querySelector(".donut-unit").textContent).toBe("USD");
+    window.localStorage.removeItem("cur");
+  });
+
+  test("a debt keeps six places rather than rounding to nothing owed", () => {
+    const { money } = load();
+
+    expect(money(-0.000004)).toBe("-0.000004");
+    expect(money(0)).toBe("0.00");
+  });
+
+  test("a figure that is not a number reads as zero, not as NaN", () => {
+    // `whole` returns 0 for a page with no header, and a share chart's scale is
+    // then 0 -- but a rate of 0 in USD, or a header carrying a non-numeric
+    // attribute, is what puts an Infinity or a NaN through here. "NaN ALGO" in
+    // the middle of a donut is worse than a zero.
+    mountHeader({ rate: 0 });
+    const { money } = load();
+
+    expect(money(Number.POSITIVE_INFINITY)).toBe("0.00");
+    expect(money(Number.NaN)).toBe("0.00");
+  });
+
+  test("a browser that refuses storage still draws in ALGO", () => {
+    // Private windows and blocked site data make `localStorage` throw on
+    // access rather than return null. Reading the reader's currency preference
+    // is not a reason to draw no charts at all.
+    mountHeader();
+    const spy = jest
+      .spyOn(window.localStorage, "getItem")
+      .mockImplementation(() => {
+        throw new Error("access denied");
+      });
+    const { chart, slices } = load();
+
+    const el = chart("Allocation", slices(chartData(["A"], [7], ["#1"])), 1);
+
+    expect(el.querySelector(".donut-unit").textContent).toBe("ALGO");
+    expect(el.querySelector(".donut-total").textContent).toBe("7.00");
+    spy.mockRestore();
+  });
+});
+
+describe("a stacked payload", () => {
+  /**
+   * `distchart` carries one dataset per allocation category. Reading
+   * `datasets[0]` alone made "Top assets" really "top *wallet balances*": an
+   * asset held entirely in a liquidity pool was drawn as nothing.
+   */
+  const stacked = {
+    labels: ["A", "B"],
+    datasets: [
+      { label: "Balance", data: [10, 0], backgroundColor: "#005a34" },
+      { label: "Liquidity", data: [5, 30], backgroundColor: "#575757" },
+    ],
+  };
+
+  test("every category counts towards the asset's slice", () => {
+    const { slices } = load();
+
+    expect(slices(stacked).map((s) => s.value)).toEqual([15, 30]);
+  });
+
+  test("an asset held only in a pool is not drawn as nothing", () => {
+    const { slices } = load();
+
+    expect(slices(stacked)).toHaveLength(2);
+  });
+
+  test("colours come from the assets chart, matched by name", () => {
+    // Indexing a `backgroundColor` *string* gives characters -- "#005a34"[1]
+    // is "0" -- so the donut used to be painted entirely in invalid fills.
+    const { slices, palette } = load();
+    const colours = palette(chartData(["B", "A"], [1, 1], ["#bbb", "#aaa"]));
+
+    expect(slices(stacked, colours).map((s) => s.color)).toEqual([
+      "#aaa",
+      "#bbb",
+    ]);
+  });
+
+  test("an unmatched label falls back rather than taking a character", () => {
+    const { slices } = load();
+
+    expect(slices(stacked)[0].color).toBe("currentColor");
+  });
+
+  test("one dataset with a single colour paints every slice with it", () => {
+    const { slices } = load();
+    const one = { labels: ["A", "B"], datasets: [{ data: [1, 2], backgroundColor: "#123" }] };
+
+    expect(slices(one).map((s) => s.color)).toEqual(["#123", "#123"]);
+  });
+
+  test("a payload with no per-label colours yields no palette", () => {
+    const { palette } = load();
+
+    expect(palette({ labels: ["A"], datasets: [{ backgroundColor: "#123" }] })).toEqual({});
+    expect(palette(null)).toEqual({});
+  });
+
+  test("a payload whose dataset is missing yields no palette", () => {
+    // A malformed block costs its own chart, not the whole panel -- and a
+    // palette read is the one place a second payload's shape reaches a chart
+    // that is otherwise fine.
+    const { palette } = load();
+
+    expect(palette({ labels: ["A"], datasets: [null] })).toEqual({});
+  });
+
+  test("a hole in the colour array leaves that label out of the palette", () => {
+    // Rather than mapping the label to `undefined`, which would then be
+    // handed to an SVG `fill` -- an attribute that fails silently.
+    const { palette } = load();
+
+    expect(palette(chartData(["A", "B"], [1, 1], ["#aaa", null]))).toEqual({
+      A: "#aaa",
+    });
+  });
+
+  test("a dataset that is missing takes no colour from it", () => {
+    const { slices } = load();
+
+    expect(slices({ labels: ["A"], datasets: [null, { data: [3] }] })).toEqual([
+      { label: "A", value: 3, color: "currentColor" },
+    ]);
+  });
+});
+
+describe("crossing a slice out", () => {
+  /**
+   * Design 1's legend has been clickable since it was Chart.js: pressing an
+   * entry strikes it through, drops it from the ring and takes it off the
+   * chart's total. These charts were pictures of that -- same numbers, no
+   * control -- which is the whole of what made them feel inferior.
+   */
+  function built() {
+    const api = load();
+    const el = api.chart(
+      "Assets",
+      api.slices(chartData(["A", "B", "C"], [50, 30, 20], ["#1", "#2", "#3"])),
+      1,
+    );
+    document.body.appendChild(el);
+    return { api, el };
+  }
+
+  /** Press the legend entry for `label`. */
+  function press(el, label) {
+    [...el.querySelectorAll("[data-key]")]
+      .find((key) => key.getAttribute("data-key") === label)
+      .dispatchEvent(new window.MouseEvent("click", { bubbles: true, cancelable: true }));
+  }
+
+  test("a legend entry is a button, not a decorated div", () => {
+    const { el } = built();
+    const key = el.querySelector(".key");
+
+    expect(key.tagName).toBe("BUTTON");
+    expect(key.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  test("pressing one takes it off the total", () => {
+    const { api, el } = built();
+    expect(el.querySelector(".donut-total").textContent).toBe("100.00");
+
+    api.toggleKey(el.querySelector('[data-key="B"]'));
+
+    expect(el.querySelector(".donut-total").textContent).toBe("70.00");
+  });
+
+  test("the ring loses the slice and the rest fill the gap", () => {
+    // Crossing an asset out asks "what does the rest look like". A ring that
+    // kept a gap where the slice was would answer a different question.
+    const { api, el } = built();
+
+    api.toggleKey(el.querySelector('[data-key="C"]'));
+
+    const shares = [...el.querySelectorAll("title")].map((t) => t.textContent);
+    expect(shares).toEqual(["A — 62.5%", "B — 37.5%"]);
+  });
+
+  test("the crossed entry stays in the legend, marked", () => {
+    // It has to stay: it is the only way back.
+    const { api, el } = built();
+
+    api.toggleKey(el.querySelector('[data-key="B"]'));
+
+    const key = el.querySelector('[data-key="B"]');
+    expect(key.classList.contains("off")).toBe(true);
+    expect(key.getAttribute("aria-pressed")).toBe("false");
+    expect(el.querySelectorAll(".key")).toHaveLength(3);
+  });
+
+  test("pressing it again brings it back", () => {
+    const { api, el } = built();
+
+    api.toggleKey(el.querySelector('[data-key="B"]'));
+    api.toggleKey(el.querySelector('[data-key="B"]'));
+
+    expect(el.querySelector(".donut-total").textContent).toBe("100.00");
+    expect(el.querySelectorAll("path")).toHaveLength(3);
+  });
+
+  test("crossing everything out leaves a chart, not a hole in the panel", () => {
+    const { api, el } = built();
+
+    ["A", "B", "C"].forEach((label) =>
+      api.toggleKey(el.querySelector(`[data-key="${label}"]`)),
+    );
+
+    expect(el.querySelectorAll("path")).toHaveLength(0);
+    expect(el.querySelector(".donut-total").textContent).toBe("0.00");
+    expect(el.querySelectorAll(".key")).toHaveLength(3);
+  });
+
+  test("the label announces what pressing it will do", () => {
+    const { api, el } = built();
+
+    expect(el.querySelector('[data-key="A"]').getAttribute("aria-label")).toBe(
+      "Exclude A",
+    );
+
+    api.toggleKey(el.querySelector('[data-key="A"]'));
+
+    expect(el.querySelector('[data-key="A"]').getAttribute("aria-label")).toBe(
+      "Include A",
+    );
+  });
+
+  test("focus survives the redraw", () => {
+    // The press replaces the button it was on; without this a keyboard reader
+    // is returned to the top of the document after every entry they cross out.
+    const { api, el } = built();
+
+    api.toggleKey(el.querySelector('[data-key="B"]'));
+
+    expect(document.activeElement.getAttribute("data-key")).toBe("B");
+  });
+
+  test("two charts cross out independently", () => {
+    // The state is on the element. A map keyed on the label would have the
+    // assets chart and the collections chart sharing an entry the moment two
+    // of them named the same thing -- and ALGO is in most of these payloads.
+    const api = load();
+    const first = api.chart("One", api.slices(chartData(["ALGO"], [1], ["#1"])), 1);
+    const second = api.chart("Two", api.slices(chartData(["ALGO"], [2], ["#2"])), 1);
+    document.body.appendChild(first);
+    document.body.appendChild(second);
+
+    api.toggleKey(first.querySelector('[data-key="ALGO"]'));
+
+    expect(first.querySelector(".donut-total").textContent).toBe("0.00");
+    expect(second.querySelector(".donut-total").textContent).toBe("2.00");
+  });
+
+  test("the click reaches it through the document", () => {
+    // Delegated: a chart is built on first open and rebuilt on every press, so
+    // there is no moment at which binding to the buttons would hold.
+    const { api, el } = built();
+    api.breakdowns();
+
+    press(el, "A");
+
+    expect(el.querySelector(".donut-total").textContent).toBe("50.00");
+  });
+
+  test("a slice worth nothing is not drawn as a hairline", () => {
+    // `slices` filters zero values, but `chart` is called directly by
+    // `redrawAllocation` with the toolbar's own totals, and a category
+    // filtered to nothing arrives as a real 0. A zero-width arc is a path
+    // command SVG draws as a stray line across the ring.
+    const api = load();
+    const el = api.chart(
+      "Allocation",
+      [
+        { label: "Balance", value: 5, color: "#1" },
+        { label: "Staked", value: 0, color: "#2" },
+      ],
+      1,
+    );
+
+    expect(el.querySelectorAll("path")).toHaveLength(1);
+    expect(el.querySelectorAll(".key")).toHaveLength(2);
+  });
+
+  test("parts that sum to nothing draw no ring and still read zero", () => {
+    // Reached through `paint` rather than `chart`, which refuses to build a
+    // chart with nothing in it -- this is the state an already-built chart
+    // arrives at when every entry has been crossed out.
+    const api = load();
+    const wrap = api.chart("Allocation", [{ label: "A", value: 5, color: "#1" }], 1);
+    document.body.appendChild(wrap);
+
+    api.paint(wrap, "Allocation", [{ label: "A", value: 0, color: "#1" }], 1);
+
+    expect(wrap.querySelectorAll("path")).toHaveLength(0);
+    expect(wrap.querySelector(".donut-total").textContent).toBe("0.00");
+  });
+
+  test("a stray key outside a chart is ignored", () => {
+    const api = load();
+    const orphan = document.createElement("button");
+    orphan.className = "key";
+    orphan.setAttribute("data-key", "A");
+    document.body.appendChild(orphan);
+
+    expect(() => api.toggleKey(orphan)).not.toThrow();
   });
 });
 
