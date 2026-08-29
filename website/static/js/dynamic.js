@@ -226,9 +226,11 @@
   /**
    * Format one ALGO figure in the page's currency, with no unit.
    *
-   * The rule is `toolbar.js`'s, deliberately: two decimals turn a small
-   * borrowing into "0.00", which reads as nothing owed rather than as a debt,
-   * so anything under half a cent widens to six places instead.
+   * The rule is `toolbar.js`'s, deliberately - see `fmt` there for why it is
+   * exactly two decimals and why the previous widening rule was removed. The
+   * two must agree: a chart legend and the asset row it describes are the same
+   * figure, and a reader who sees them disagree has no way to tell which one
+   * is rounded.
    *
    * @param {number} algo - the figure, in ALGO.
    * @returns {string} the formatted number.
@@ -236,10 +238,9 @@
   function money(algo) {
     var value = currency() === "USD" ? algo * headline("pricealgo") : algo;
     if (!isFinite(value)) value = 0;
-    var places = value !== 0 && Math.abs(value) < 0.005 ? 6 : 2;
     return value.toLocaleString("en-US", {
-      minimumFractionDigits: places,
-      maximumFractionDigits: places,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
   }
 

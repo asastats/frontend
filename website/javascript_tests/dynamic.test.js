@@ -324,10 +324,15 @@ describe("what a payload's numbers mean", () => {
     window.localStorage.removeItem("cur");
   });
 
-  test("a debt keeps six places rather than rounding to nothing owed", () => {
+  test("chart figures are two decimals, the same as the rows they describe", () => {
+    // A legend entry and the asset row it came from are one figure shown
+    // twice. This file used to carry `toolbar.js`'s widening rule and has to
+    // keep carrying whatever that rule is - a reader who sees the two disagree
+    // cannot tell which of them is the rounded one.
     const { money } = load();
 
-    expect(money(-0.000004)).toBe("-0.000004");
+    expect(money(-0.000004)).toBe("-0.00");
+    expect(money(0.004574)).toBe("0.00");
     expect(money(0)).toBe("0.00");
   });
 

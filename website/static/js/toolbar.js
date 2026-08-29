@@ -273,22 +273,30 @@
   /**
    * Format one ALGO figure in the current currency.
    *
-   * Two decimals turn a small borrowing into "0.00", which reads as nothing
-   * owed rather than as a debt -- so anything under half a cent widens to six
-   * places instead of rounding away. That rule is the prototype's and it is the
-   * only rounding on this page that changes what a row means.
+   * **Exactly two decimals, always.** A money column has one shape, and every
+   * figure in it has to be readable against the one above without counting
+   * digits first.
+   *
+   * This used to widen anything under half a cent to *six* places, on the
+   * reasoning that "0.00" reads as nothing owed rather than as a small debt.
+   * The cure was worse: it put a six-decimal figure in a column of two-decimal
+   * ones, so a 0.004574 sat under a 1,284.02 and read as the larger number at
+   * a glance - and it did it for ordinary dust holdings, which are most of
+   * what is down there, not only for borrowings. The server has always
+   * rendered these cells with `floatformat:'2g'`, so the widening was also the
+   * one thing on the page that changed a figure between the HTML arriving and
+   * the first repaint.
+   *
+   * A holding worth less than a hundredth of an ALGO *is* "0.00" to a reader
+   * deciding anything, and the row still names the amount and the unit beside
+   * it. If the near-zero cases ever need distinguishing again, the answer is a
+   * "<0.01" treatment, which keeps the column's shape; it is not more digits.
    *
    * @param {number} algo - the figure, in ALGO.
    * @returns {string} the formatted number, with no unit.
    */
   function fmt(algo) {
     var value = state.ccy === "USD" ? algo * rate() : algo;
-    if (value !== 0 && Math.abs(value) < 0.005) {
-      return value.toLocaleString("en-US", {
-        minimumFractionDigits: 6,
-        maximumFractionDigits: 6,
-      });
-    }
     return value.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,

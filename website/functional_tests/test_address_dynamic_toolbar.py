@@ -27,6 +27,7 @@ a pinned row survives a sort.
 
 import json
 import os
+import re
 from unittest import mock
 
 from api.position_id import annotate_positions
@@ -46,6 +47,12 @@ SAMPLE_PATH = os.path.join(
 
 ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 ASASTATSER = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+
+#: A money figure: grouped digits and exactly two decimals. Both ways of
+#: writing a negative are allowed - this design uses parentheses in the
+#: templates and a leading minus once the toolbar has repainted - because what
+#: is under test is the number of decimal places, not the sign convention.
+_TWO_DECIMALS = re.compile(r"^\(?-?[\d,]*\d\.\d{2}\)?$")
 
 
 def _sample_payload():
@@ -378,6 +385,71 @@ class ToolbarTest(FunctionalTest):
         self.assertEqual(1, header.text.count("USD"))
         self.assertNotIn("ALGO", header.text)
         self.assertEqual("USD", subtotal.find_element(By.CSS_SELECTOR, ".unit").text)
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_money_column_is_two_decimals_in_either_currency(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """A money column has one shape, and money has two decimals.
+
+        `fmt` used to widen anything under half a cent to *six* places, so that
+        a small borrowing did not round to "0.00" and read as nothing owed. It
+        did it to every dust holding as well - nine of them on this fixture -
+        and a six-decimal figure sitting in a column of two-decimal ones reads
+        as the larger number until you stop and count digits: 0.004574 under
+        1,284.02.
+
+        Browser-only in both directions. The server renders these cells with
+        `floatformat:'2g'` and always did, so a template test sees two decimals
+        whatever the script does; and the widening only appeared once
+        `paintFigures` had repainted the column, which is after load and again
+        on every filter and currency press.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page()
+        self.open_assets()
+
+        # cAlgo is worth 0.000042 ALGO on this address - one of nine holdings
+        # under half a cent, which is what the old rule widened.
+        dust = self.browser.find_element(
+            By.CSS_SELECTOR, "#f2400334372 .cval .val"
+        )
+        # `textContent`, not `.text`: this row is past the first batch and
+        # therefore folded, and Selenium reads a hidden element as "".
+        self.assertEqual("0.00", dust.get_attribute("textContent").strip())
+
+        for currency in ("ALGO", "USD"):
+            with self.subTest(currency=currency):
+                if currency == "USD":
+                    self.press('#tb-ccy [data-ccy="USD"]')
+                    self.wait_until(
+                        lambda: "USD"
+                        in self.browser.find_element(
+                            By.CSS_SELECTOR, "#asset-list .chead .cval"
+                        ).text
+                    )
+                figures = self.browser.find_elements(
+                    By.CSS_SELECTOR, "#asset-list .cval .val"
+                )
+                self.assertTrue(figures, "no money column to measure")
+                wrong = [
+                    text
+                    for text in (
+                        figure.get_attribute("textContent").strip()
+                        for figure in figures
+                    )
+                    if not _TWO_DECIMALS.match(text)
+                ]
+                self.assertEqual(
+                    [],
+                    wrong,
+                    f"{currency} figures are not written to two decimals: {wrong}",
+                )
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")

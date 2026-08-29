@@ -797,12 +797,20 @@ describe("currency", () => {
     expect(document.querySelector("#f1 .cval .u.unit").textContent).toBe("ALGO");
   });
 
-  test("a figure too small for two decimals widens instead of rounding to nothing", () => {
-    // A borrowing of -0.004055 ALGO is real, and "0.00" reads as nothing owed.
+  test("a money column is exactly two decimals, whatever the figure", () => {
+    // This used to widen anything under half a cent to six places, so that a
+    // small borrowing did not read as nothing owed. It also did it to every
+    // dust holding, which is most of what is down there - and a six-decimal
+    // figure in a two-decimal column reads as the *larger* number until you
+    // count the digits. The server renders these cells with `floatformat:'2g'`
+    // and this now agrees with it.
     const toolbar = load();
 
-    expect(toolbar.fmt(-0.004055)).toBe("-0.004055");
+    expect(toolbar.fmt(-0.004055)).toBe("-0.00");
+    expect(toolbar.fmt(0.004574)).toBe("0.00");
+    expect(toolbar.fmt(0.000006)).toBe("0.00");
     expect(toolbar.fmt(0)).toBe("0.00");
+    expect(toolbar.fmt(1284.0163)).toBe("1,284.02");
   });
 
   test("a page whose header carries no rate leaves figures alone", () => {
