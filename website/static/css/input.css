@@ -106,17 +106,17 @@
   prefersdark: false;
   color-scheme: light;
   --color-base-100: #ffffff;   /* --swap-surface */
-  --color-base-200: #f3f8f9;   /* --swap-raised  */
-  --color-base-300: #e6f0f2;   /* --swap-sunken  */
-  --color-base-content: #111622; /* --swap-ink   */
-  --color-primary: #00d4ff;      /* mylight / --swap-accent */
-  --color-primary-content: #3a1f8c;
-  --color-secondary: #3a1f8c;    /* mydark */
+  --color-base-200: #f4f3f9;   /* --swap-raised  */
+  --color-base-300: #e7e5f1;   /* --swap-sunken  */
+  --color-base-content: #120e1c; /* --swap-ink   */
+  --color-primary: #13D8D8;      /* mylight / --swap-accent */
+  --color-primary-content: #022b2b;
+  --color-secondary: #6E2CF4;    /* mydark */
   --color-secondary-content: #ffffff;
-  --color-accent: #006e85;       /* --swap-accent-ink */
+  --color-accent: #0fbcbc;       /* --swap-accent-ink */
   --color-accent-content: #ffffff;
-  --color-neutral: #252131;
-  --color-neutral-content: #eef2f0;
+  --color-neutral: #272236;
+  --color-neutral-content: #eef0f2;
   --color-info: #2267a0;
   --color-info-content: #ffffff;
   --color-success: #13865c;      /* mysuccess */
@@ -143,22 +143,22 @@
   default: false;
   prefersdark: true;
   color-scheme: dark;
-  --color-base-100: #201d2a;
-  --color-base-200: #282432;
-  --color-base-300: #2f2c3a;
-  --color-base-content: #eef0f2;
-  --color-primary: #00d4ff;
-  --color-primary-content: #04141f;
-  --color-secondary: #9781da;
-  --color-secondary-content: #190e39;
-  --color-accent: #00d4ff;
-  --color-accent-content: #04141f;
-  --color-neutral: #3a3548;
-  --color-neutral-content: #eef2f0;
+  --color-base-100: #1b1724;
+  --color-base-200: #231e2e;
+  --color-base-300: #2a2438;
+  --color-base-content: #ecedf2;
+  --color-primary: #13D8D8;
+  --color-primary-content: #022020;
+  --color-secondary: #9a66f8;   /* Lighter Violet for dark mode */
+  --color-secondary-content: #190540;
+  --color-accent: #13D8D8;
+  --color-accent-content: #022020;
+  --color-neutral: #352c48;
+  --color-neutral-content: #ecedf2;
   --color-info: #5fa4dd;
-  --color-info-content: #0d2733;
+  --color-info-content: #0a1f2e;
   --color-success: #42d7a0;
-  --color-success-content: #04241a;
+  --color-success-content: #032016;
   --color-warning: #f0b042;
   --color-warning-content: #3a2708;
   --color-error: #ed6e83;
