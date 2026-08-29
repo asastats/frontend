@@ -493,7 +493,25 @@
   margin: 0 0 0.5rem;
 }
 
-.dustsweep-toolbar .dustsweep-open { margin-left: 0; }
+/* Sized off the same tokens `btn-sm` uses rather than off its own padding, so
+   it is exactly as tall as Historic data and CSV export beside it. Its own
+   padding is content-driven and came out ~2.3rem against their 2rem, and no
+   fixed pixel height would have held: `--size-field` and `--border` are theme
+   tokens, so the neighbours' height moves per theme and a hard-coded one would
+   only match the themes it was measured in. The font size is `btn-sm`'s too --
+   equal boxes with unequal text still read as two different controls. What is
+   deliberately *not* copied is the pill radius and the filled background: see
+   the note above on why this one does not look like its neighbours. */
+.dustsweep-toolbar .dustsweep-open {
+  margin-left: 0;
+  display: inline-flex;
+  align-items: center;
+  height: calc(var(--size-field, 0.25rem) * 8);
+  padding-block: 0;
+  padding-inline: 0.75rem;
+  border-width: var(--border, 1px);
+  font-size: 0.75rem;
+}
 
 /* The slot in the address-page action rows. `display: contents` so the toolbar
    itself becomes the flex item and picks up the row's own gap -- a wrapping

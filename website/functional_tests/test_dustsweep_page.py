@@ -5,11 +5,17 @@ Three ways in, all covered here: the standalone tool at
 entry on a bundle page - which is the one that has to choose between several of
 the reader's own accounts, and the one that got it wrong.
 
-**Nothing here signs anything.** The wallet bridge (``window.asastatsSwap``)
-ships with the wallet bundle and is absent in a bare browser, which is exactly
-the state a reader is in before connecting - and the state these assertions
-describe. What the page must do without a wallet is render, name its endpoint,
-and refuse to offer a sweep of an address the reader does not own.
+**Almost nothing here signs anything.** The wallet bridge
+(``window.asastatsSwap``) ships with the wallet bundle and is absent in a bare
+browser, which is exactly the state a reader is in before connecting - and the
+state most of these assertions describe. What the page must do without a wallet
+is render, name its endpoint, and refuse to offer a sweep of an address the
+reader does not own.
+
+The exception is :class:`DustSweepSignatureTest`, which stands a recording stub
+in the bridge's place to assert what the controller *hands* it. That is the one
+thing no other test could see: the plan is JSON, the bridge takes bytes, and
+every layer either side of that conversion was right.
 
 **Why the shell carries so little.** Every decision a sweep makes - what is
 dust, what may be forfeited, which group comes next - is made in the engine
@@ -357,6 +363,206 @@ class DustSweepPlannedLinesTest(FunctionalTest):
         assert asset_id.location["y"] < unit.location["y"] + unit.size["height"]
 
 
+class DustSweepSignatureTest(FunctionalTest):
+    """What the controller hands the wallet when the reader presses sign.
+
+    The plan is JSON, so its transactions arrive base64-encoded; the bridge's
+    ``signAndSend`` takes ``Uint8Array[]`` and passes each entry straight to
+    algosdk's ``decodeUnsignedTransaction``. Nothing in between said so, and
+    the controller passed the strings through. algosdk turns an array-like of
+    characters into one byte each, so a 340-character close-out became 340
+    zero bytes and msgpack found a complete object in the first of them::
+
+        RangeError: Extra 339 of 340 byte(s) found at buffer[1]
+
+    Which is a real production failure that named neither base64 nor this
+    widget, and which every existing test agreed with: the unit tests mock the
+    bridge and asserted the call *as it was made*, and Python cannot see a
+    JavaScript argument at all.
+
+    So the bridge is stood up here as a recorder rather than mocked away, and
+    what is asserted is the argument's **type**. Its length and its contents
+    were both plausible; only the type was wrong.
+    """
+
+    _link_address = DustSweepPageTest._link_address
+    _open_page = DustSweepPageTest._open_page
+
+    #: An empty holding of asset 5, which closes to the account itself.
+    HOLDING = {
+        "asset": 5,
+        "unit": "DUST",
+        "amount": "0",
+        "value": 0,
+        "creator": ADDRESS,
+        "disposition": "close",
+        "reason": "already empty, so closing it returns its minimum balance",
+    }
+
+    def _encoded_group(self):
+        """Return the close-out group as the engine encodes it: base64 msgpack.
+
+        Built with algosdk rather than pasted, because the controller decodes
+        it and checks every field against the plan before signing - a fixture
+        that drifted from `close_out_group` would be refused by the whitelist
+        and the signature would never be reached.
+        """
+        from algosdk import encoding, transaction
+
+        params = transaction.SuggestedParams(
+            fee=1000,
+            first=1,
+            last=1001,
+            gh="SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=",
+            gen="mainnet-v1.0",
+            flat_fee=True,
+        )
+        built = transaction.assign_group_id(
+            [
+                transaction.AssetTransferTxn(
+                    sender=ADDRESS,
+                    sp=params,
+                    receiver=ADDRESS,
+                    amt=0,
+                    index=self.HOLDING["asset"],
+                    close_assets_to=ADDRESS,
+                )
+            ]
+        )
+        return [encoding.msgpack_encode(txn) for txn in built]
+
+    def _plan(self):
+        """Return a plan whose next action is one signable close-out group."""
+        return {
+            "address": ADDRESS,
+            "threshold_algo": 1.0,
+            "summary": {
+                "close": 1,
+                "forfeit": 0,
+                "convert": 0,
+                "keep": 0,
+                "unpriced": 0,
+                "recoverable": 99000,
+                "prompts": 1,
+            },
+            "holdings": [self.HOLDING],
+            "next": {
+                "kind": "close",
+                "label": "close 1 holding",
+                "why": "no pending conversion will produce another close-out",
+                "recovers": 99000,
+                "remaining_closes": 0,
+                "remaining_conversions": 0,
+                "holdings": [self.HOLDING],
+                "transactions": self._encoded_group(),
+            },
+            "refused": [],
+            "conversions_unavailable": None,
+            "evaluation_unavailable": None,
+        }
+
+    def _install_recording_bridge(self):
+        """Publish a bridge that records the shape of what it is asked to sign.
+
+        Deliberately not a wallet: it records and resolves. What it records is
+        `instanceof Uint8Array` per entry, because that is the whole question -
+        the real bridge would go on to decode each entry, and it is the decode
+        that failed.
+        """
+        self.browser.execute_script(
+            "var address = arguments[0];"
+            "window.__signed = null;"
+            "window.asastatsSwap = {"
+            "  activeAddress: function () { return address; },"
+            "  signAndSend: function (group) {"
+            "    window.__signed = group.map(function (entry) {"
+            "      return {"
+            "        bytes: entry instanceof Uint8Array,"
+            "        length: entry.length,"
+            "        first: entry[0]"
+            "      };"
+            "    });"
+            "    return Promise.resolve('SWEPT');"
+            "  }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            ADDRESS,
+        )
+
+    def test_the_wallet_is_handed_transaction_bytes(self):
+        """Not the base64 they arrived as, which is what the reader hit."""
+        self._link_address()
+        self._open_page()
+        self._install_recording_bridge()
+
+        from base64 import b64decode
+
+        plan = self._plan()
+        answered = mock.Mock()
+        answered.json.return_value = plan
+        with mock.patch(
+            "widgets.inhouse.dustsweep.views.engine_request", return_value=answered
+        ):
+            self.find_elem_by_css(".id-dustsweep-open").click()
+            cta = self.wait_until(
+                lambda: self.find_elem_by_css(".id-dustsweep-cta").is_enabled()
+                and self.find_elem_by_css(".id-dustsweep-cta")
+            )
+            cta.click()
+            signed = self.wait_until(
+                lambda: self.browser.execute_script("return window.__signed;")
+            )
+
+        encoded = plan["next"]["transactions"][0]
+        assert len(signed) == 1
+        assert signed[0]["bytes"] is True
+        # The decoded size, which is three quarters of the base64 it arrived
+        # as. An undecoded group is exactly as long as the string - which is
+        # where "340 byte(s)" in the reader's error came from.
+        assert signed[0]["length"] == len(b64decode(encoded))
+        assert signed[0]["length"] < len(encoded)
+        # A msgpack fixmap, so a decoder reads a whole transaction out of it
+        # rather than a stray integer followed by bytes it cannot account for.
+        assert 0x80 <= signed[0]["first"] <= 0x8F
+
+    def test_a_signed_group_advances_the_loop_rather_than_reporting_an_error(self):
+        """The signature is only half of it; the loop asks again afterwards.
+
+        Where the failure this class exists for became *visible*: the
+        controller renders whatever the bridge throws into the notice line, so
+        a wrong argument and a declined signature read the same to a reader.
+        This test cannot reproduce it - the stub records rather than decodes,
+        which is why its sibling asserts on the argument's type instead - so
+        what it holds is the other half: that a group the wallet accepted
+        advances the loop and leaves no error behind.
+
+        Asserted on the progress line rather than on the success notice, which
+        `reload` clears as soon as it asks the engine what is next.
+        """
+        self._link_address()
+        self._open_page()
+        self._install_recording_bridge()
+
+        answered = mock.Mock()
+        answered.json.return_value = self._plan()
+        with mock.patch(
+            "widgets.inhouse.dustsweep.views.engine_request", return_value=answered
+        ):
+            self.find_elem_by_css(".id-dustsweep-open").click()
+            cta = self.wait_until(
+                lambda: self.find_elem_by_css(".id-dustsweep-cta").is_enabled()
+                and self.find_elem_by_css(".id-dustsweep-cta")
+            )
+            cta.click()
+            progress = self.wait_until(
+                lambda: self.find_elem_by_css(".id-dustsweep-progress").text
+                == "Signature 2 of 2"
+            )
+
+        assert progress
+        assert self.find_elem_by_css(".id-dustsweep-notice").text == ""
+
+
 class DustSweepPageUnlinkedTest(FunctionalTest):
     """A reader who does not own the address is told, not offered a sweep."""
 
@@ -496,6 +702,35 @@ class DustSweepAddressPageEntryTest(FunctionalTest):
         assert self.browser.find_elements(
             By.CSS_SELECTOR, "#id-dustsweep-slot .id-dustsweep-open"
         )
+
+    def test_the_sweep_is_as_tall_as_the_actions_beside_it(self):
+        """One row of controls, not two controls and an intruder.
+
+        It keeps its filled pill on purpose - it opens a modal where the other
+        two leave the page - but the *box* has to line up, and a button sized
+        by its own padding did not: it stood a third of a line proud of them.
+        Measured in the browser rather than asserted against the rule, because
+        the neighbours' height comes from theme tokens (``--size-field``,
+        ``--border``) and only a measurement notices those moving.
+        """
+        self._link_address()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.find_elem_by_id("id-swap-entry-container")
+        self._connect(ADDRESS)
+        self.wait_until(
+            lambda: self.find_elem_by_css(".id-dustsweep-open").is_displayed()
+        )
+
+        sweep = self.find_elem_by_css("#id-dustsweep-slot .id-dustsweep-open")
+        neighbours = [
+            elem
+            for elem in self.browser.find_elements(By.CSS_SELECTOR, "a.btn-sm")
+            if elem.text.strip() in ("Historic data", "CSV export")
+        ]
+        assert neighbours, "the actions this one is meant to match are not there"
+        for neighbour in neighbours:
+            with self.subTest(action=neighbour.text.strip()):
+                assert sweep.size["height"] == neighbour.size["height"]
 
     def test_the_sweep_opens_from_the_address_page(self):
         """It is wired there too, not merely rendered."""
