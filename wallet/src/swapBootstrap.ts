@@ -40,6 +40,18 @@ export interface SwapBridgeApi {
   /** Opt the active account into `assetId` (pre-flight 0-amount self-transfer). */
   optIn: (assetId: number) => Promise<string>;
   /**
+   * Creator address of `assetId` read from the chain, or null when it cannot
+   * be read.
+   *
+   * Exists for the dust sweep, which gives a holding away by closing it to the
+   * asset's creator. Its browser-side check compared that destination against
+   * an address carried in the same response as the transaction bytes, so a
+   * consistent answer could name anything (audit finding `S2`). This is the
+   * independent source that check needed, and the algod client is already here
+   * for `isOptedIn`.
+   */
+  assetCreator: (assetId: number) => Promise<string | null>;
+  /**
    * Signer for composer-based routers (Haystack) that pass live Transaction
    * objects. Pre-encodes each Transaction to bytes before forwarding to
    * use-wallet's signer, bridging the cross-bundle object/bytes boundary.
@@ -206,6 +218,19 @@ export async function initSwapBridge(doc: Document = document): Promise<void> {
       signAndSendPartial: (group: PartialSignedGroup) =>
         signAndSendPartial(group, deps),
       optIn: (assetId: number) => optIn(assetId, deps),
+      assetCreator: async (assetId: number) => {
+        try {
+          const asset = await manager.algodClient.getAssetByID(assetId).do();
+          // algosdk v3 returns { params: { creator } }; tolerate the older
+          // hyphenated shape the REST API uses directly.
+          const params = (asset as any).params ?? (asset as any)["params"];
+          return params?.creator ?? null;
+        } catch {
+          // Caller fails closed on null: an unverifiable creator refuses the
+          // forfeit rather than allowing it.
+          return null;
+        }
+      },
       haystackSigner,
       // kept for back-compat; Haystack must use haystackSigner instead.
       signer: manager.transactionSigner,

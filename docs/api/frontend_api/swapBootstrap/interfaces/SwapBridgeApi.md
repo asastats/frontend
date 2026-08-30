@@ -26,11 +26,39 @@ Currently active/connected Algorand address, or null.
 
 ***
 
+### assetCreator
+
+> **assetCreator**: (`assetId`) => `Promise`\<`string` \| `null`\>
+
+Defined in: [swapBootstrap.ts:53](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L53)
+
+Creator address of `assetId` read from the chain, or null when it cannot
+be read.
+
+Exists for the dust sweep, which gives a holding away by closing it to the
+asset's creator. Its browser-side check compared that destination against
+an address carried in the same response as the transaction bytes, so a
+consistent answer could name anything (audit finding `S2`). This is the
+independent source that check needed, and the algod client is already here
+for `isOptedIn`.
+
+#### Parameters
+
+##### assetId
+
+`number`
+
+#### Returns
+
+`Promise`\<`string` \| `null`\>
+
+***
+
 ### haystackSigner
 
 > **haystackSigner**: [`HaystackSignerFn`](../type-aliases/HaystackSignerFn.md)
 
-Defined in: [swapBootstrap.ts:47](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L47)
+Defined in: [swapBootstrap.ts:59](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L59)
 
 Signer for composer-based routers (Haystack) that pass live Transaction
 objects. Pre-encodes each Transaction to bytes before forwarding to
@@ -106,7 +134,7 @@ Sign and submit an engine group with a backend-signed quote transaction.
 
 > **signer**: `TransactionSigner`
 
-Defined in: [swapBootstrap.ts:54](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L54)
+Defined in: [swapBootstrap.ts:66](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L66)
 
 #### Deprecated
 
