@@ -96,6 +96,24 @@ SHARED_WITH_DESIGN_ONE = frozenset(
         # `site.js` binds the clipboard control to `.copy` and copies the
         # element immediately before it.
         "copy",
+        # The Swap entry, which the money designs did not have at all: design 1
+        # carries it in `snippets/asas.html`, and that file is included only by
+        # `address.html`.
+        #
+        # Shared rather than renamed because `swap.js` delegates a
+        # document-level click to `.id-swap-swap-toggle` and reads `data-from`
+        # off it. A second spelling here would need a second listener and would
+        # be a second thing to keep in step with the widget, which ships from
+        # its own repository. `.swap-action-column` and `.swap-label` come with
+        # it: the first is what positions the button, the second is what the
+        # (unregistered) inline handler would relabel.
+        #
+        # Design 1's rules for these are not page-scoped, so they apply here
+        # too -- which is the intent. One Swap button should look like the
+        # other.
+        "id-swap-swap-toggle",
+        "swap-action-column",
+        "swap-label",
         # `address.js` builds the hover preview from `.nfticon`'s `data-path`
         # and hides them while filtering; `deferImages` collects `img.nft` and
         # swaps in `data-src` after load. The *tile* deliberately does not use

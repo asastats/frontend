@@ -93,6 +93,7 @@ from utils.userhelpers import check_authorization_transaction
 from walletauth.gating import linked_addresses_for_user
 from widgethost.registry import (
     swap_client_cfg,
+    swap_endpoint_urls,
     swap_entry_url,
     swap_holdings_tmpl,
     swap_routers,
@@ -1597,6 +1598,12 @@ class SwapEntryView(TemplateView):
             context["swap_fee_bps"] = cfg["fee_bps"]
             context["swap_api_key"] = cfg["api_key"]
             context["swap_holdings_tmpl"] = swap_holdings_tmpl(router)
+            # The ASA Stats router quotes in our engine rather than in the
+            # browser, so the modal has to know where to post. Absent for every
+            # other router, and absent here entirely until now -- which is why
+            # selecting ours on an address page answered "this deployment has
+            # no ASA Stats router endpoint".
+            context.update(swap_endpoint_urls(router))
             # The swap carries one address in its marker, so it takes the best
             # single guess rather than a list. `swap.js` already refuses to
             # enable the button unless the live wallet is connected to exactly

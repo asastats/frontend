@@ -119,8 +119,47 @@
         <div><dt>Asset ID</dt><dd><a class="out" href="{% explorer_base %}asset/{{ asset.id }}" target="_blank" title="Open asset {{ asset.id }} in the explorer">{{ asset.id }}</a></dd></div>
         {% if asaitem.price %}<div><dt>Price</dt><dd class="num">{{ asaitem.price|floatformat:'-8g' }} ALGO</dd></div>{% endif %}
         {% if asset.decimals is not None %}<div><dt>Decimals</dt><dd class="num">{{ asset.decimals }}</dd></div>{% endif %}
-        {% if asset.total %}<div><dt>Total supply</dt><dd class="num">{{ asset.total|amount_repr:asset.decimals }}</dd></div>{% endif %}
+        {% comment %} `floatformat` and not `amount_repr`, which is what this
+           read until it was noticed being wrong by orders of magnitude against
+           the same asset in design 1.
+
+           `amount_repr` divides by `10 ** decimals`, and it is right
+           everywhere else in these templates because everywhere else is a
+           *holding* -- `asaitem.amount`, `prog.amount` -- which the chain
+           reports in base units. `total` is not: the serializer has already
+           scaled it, which is why ALGO arrives as 10,000,000,000 rather than
+           10**16. Dividing a second time turned ALGO's ten billion into ten
+           thousand. {% endcomment %}
+        {% if asset.total %}<div><dt>Total supply</dt><dd class="num">{{ asset.total|floatformat:'g' }}</dd></div>{% endif %}
       </dl>
+
+      {% comment %} The Swap entry sits with the asset's own facts rather than
+         at the foot of the row: it acts on the asset, the reader has just read
+         what the asset is, and at the bottom it was below every position and
+         the links -- a scroll away from the thing it operates on.
+
+         The class and `data-from` are what matter: `swap.js` delegates a
+         document-level click to `.id-swap-swap-toggle` and opens the modal on
+         `data-from`. The `href` is the no-JS fallback it prevents.
+
+         **Design 1's inline panel is deliberately not copied.** It carries a
+         `swap-panel-<id>` div for `handleInlineSwapClick`, which reads
+         `data-swap-target` -- an attribute no template sets -- and is not
+         registered as a listener either. Only `handleSwapModalClick` is. The
+         panel is vestigial there and would be dead markup here.
+
+         Gated on `url_value` for the reason design 1 gates on it: a swap needs
+         the address whose holdings it spends, and a bundle page resolving to
+         several has no single one to name. {% endcomment %}
+      {% if url_value %}
+      <div class="swap-action-column">
+        <a class="btn btn-primary btn-sm id-swap-swap-toggle"
+           href="{% url 'swap_source' url_value asset.id %}"
+           data-from="{{ asset.id }}">
+          <span class="swap-label">Swap</span>
+        </a>
+      </div>
+      {% endif %}
 
       {% comment %} Positions, stacked under the venue holding them, each venue
          carrying its own subtotal in the money column. A reader with the same

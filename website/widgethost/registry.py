@@ -155,6 +155,39 @@ def swap_holdings_tmpl(router_id):
     return url.replace(placeholder, "ADDRESS")
 
 
+def swap_endpoint_urls(router_id):
+    """Return the engine-backed quote and group URLs a router needs, or ``{}``.
+
+    **Only the ASA Stats router has these**, and the difference is where the
+    quoting happens: every other router quotes in the browser against a vendor
+    SDK, while ours runs in our own engine, so the browser posts to us. That is
+    why there is nothing to return for the rest rather than an empty pair.
+
+    Resolved by name so a deployment without the widget installed gets ``{}``
+    instead of a crash -- `swap_routers` discovers routers from installed
+    manifests, and the preferred one can in principle name a widget whose URLs
+    are not routed.
+
+    Written because the address-page modal did not carry them at all. The
+    router's own shell page has always rendered `data-quote-url`, so the ASA
+    Stats router worked there and failed everywhere else with "this deployment
+    has no ASA Stats router endpoint" -- a message about configuration for what
+    was a missing two lines of context.
+
+    :param router_id: the router key, e.g. ``"asastats"``
+    :type router_id: str
+    :return: ``{"quote_url", "group_url"}`` or an empty dict
+    :rtype: dict
+    """
+    try:
+        return {
+            "quote_url": reverse(f"{router_id}_quote"),
+            "group_url": reverse(f"{router_id}_group"),
+        }
+    except NoReverseMatch:
+        return {}
+
+
 def swap_client_cfg(router_id):
     """Return a router's public swap-client config for the browser.
 

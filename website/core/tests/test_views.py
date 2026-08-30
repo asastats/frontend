@@ -1212,6 +1212,47 @@ class SwapEntryViewTest(TestCase):
         self.assertContains(response, "/widgets/folks/AAA")
         mocked_url.assert_called_once()
 
+    def test_swap_entry_carries_the_engine_endpoints_for_our_own_router(self):
+        """The ASA Stats router quotes in our engine, so the modal has to know
+        where to post.
+
+        It did not carry these at all: the router's own shell page renders
+        `data-quote-url`, so selecting it there worked, and selecting it on an
+        address page answered "this deployment has no ASA Stats router
+        endpoint" -- a message about configuration for what was two missing
+        lines of context.
+        """
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value="/widgets/asastats/AAA"
+        ), mock.patch(
+            "core.models.Profile.preferred_router_or_default",
+            return_value="asastats",
+        ):
+            response = self.client.get(self.url)
+
+        self.assertContains(response, 'data-quote-url="/widgets/asastats/quote"')
+        self.assertContains(response, 'data-group-url="/widgets/asastats/group"')
+
+    def test_swap_entry_leaves_the_endpoints_empty_for_a_vendor_router(self):
+        """Every other router quotes in the browser against its own SDK, so
+        there is nothing for it to post to us. `markerCfg` reads the empty
+        string and that router's adapter never consults it."""
+        self._login()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value="/widgets/folks/AAA"
+        ), mock.patch(
+            "core.models.Profile.preferred_router_or_default", return_value="folks"
+        ):
+            response = self.client.get(self.url)
+
+        self.assertContains(response, 'data-quote-url=""')
+        self.assertContains(response, 'data-group-url=""')
+
     def test_swap_entry_linked_address_offers_the_dust_sweep(self):
         """The sweep's entry point, on the same gate and the same partial.
 

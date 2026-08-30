@@ -1278,6 +1278,35 @@
 }
 
 
+/* Each leg's caption is two spans, one per mode, and only one is ever true.
+   Nothing hid the other, so both rendered: "You receive (estimated) You
+   receive" and, less noticed, "You pay You pay (estimated)". The markup always
+   intended this -- `.swap-mode-buy` is toggled on the form for exactly the
+   kind of switch the leg ordering above already uses -- and the rules were
+   simply never written. */
+.swap-form .id-swap-from-label-buy,
+.swap-form .id-swap-to-label-buy,
+.swap-form.swap-mode-buy .id-swap-from-label-sell,
+.swap-form.swap-mode-buy .id-swap-to-label-sell {
+  display: none;
+}
+
+/* The USDC helper, in the caption row beside the label rather than under the
+   amount -- below the figure it pushed the leg taller and broke the alignment
+   between the two.
+
+   Inherits `.swap-micro`'s size and colour so it reads as part of the caption,
+   with the letter-spacing dropped: that spacing is for the uppercase label and
+   makes a number look padded. No `min-height`, because an empty span in a flex
+   row takes no space and the leg keeps its height when nothing could price the
+   asset. */
+.swap-value {
+  margin-left: 6px;
+  letter-spacing: normal;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
 .swap-leg-top { display: flex; align-items: center; gap: 8px; min-height: 20px; }
 
 

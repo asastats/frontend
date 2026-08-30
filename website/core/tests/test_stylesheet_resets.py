@@ -201,3 +201,39 @@ class TestCoreStylesheetResets:
 
         assert match, "preflight no longer resets form controls as a group"
         assert "background-color:#0000" in match.group(1).replace(" ", "")
+
+
+class TestCoreStylesheetSwapCaptions:
+    """Each swap leg's caption is two spans, and only one is ever true.
+
+    Nothing hid the other, so both rendered: "You receive (estimated) You
+    receive" and, less noticed, "You pay You pay (estimated)". The markup
+    always intended the switch -- `.swap-mode-buy` is toggled on the form for
+    exactly this, and the leg ordering above it already keys on the same class
+    -- and the rules were simply never written.
+
+    Asserted against the built stylesheet for the reason the rest of this file
+    is: `input.css` having the rule and the build dropping it looks identical
+    to never writing it.
+    """
+
+    @pytest.mark.parametrize(
+        "selector",
+        [
+            ".id-swap-from-label-buy",
+            ".id-swap-to-label-buy",
+            ".swap-mode-buy .id-swap-from-label-sell",
+            ".swap-mode-buy .id-swap-to-label-sell",
+        ],
+    )
+    def test_core_stylesheet_hides_the_caption_for_the_other_mode(
+        self, stylesheet, selector
+    ):
+        assert selector in stylesheet, (
+            f"{selector} is not hidden, so both captions render at once"
+        )
+
+    def test_core_stylesheet_styles_the_usdc_helper(self, stylesheet):
+        """The value under the computed leg. Without a rule it renders inline
+        at body size beside the amount rather than beneath it."""
+        assert ".swap-value" in stylesheet

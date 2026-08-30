@@ -321,3 +321,109 @@ class TestPositionPins:
         assert lone, "no single-position venue in the payload; this asserts nothing"
         assert all(position.select("[data-pin-position]") for position in lone)
 
+
+
+class TestTheSwapEntry:
+    """The Swap button, which this layout did not have at all.
+
+    Design 1 carries it in ``snippets/asas.html``, and that file is included by
+    ``address.html`` alone -- so every asset row in the dynamic designs
+    rendered without one. The feature was absent from the layout rather than
+    broken in it, which is why nothing failed.
+    """
+
+    def test_every_asset_row_offers_a_swap(self, page):
+        toggles = page.select(".id-swap-swap-toggle")
+
+        assert toggles, "the dynamic layout renders no Swap button"
+
+    def test_the_button_names_the_asset_it_would_sell(self, page):
+        """`swap.js` delegates a document-level click and opens the modal on
+        `data-from`; a button without it opens a swap of nothing."""
+        for toggle in page.select(".id-swap-swap-toggle"):
+            assert toggle.get("data-from")
+
+    def test_there_is_one_per_asset_row_and_none_elsewhere(self, page):
+        """Not one for the page, not one per position, and not on an NFT.
+
+        A swap sells a fungible holding, so the control belongs to the asset
+        row. Scoped to `#asset-list` because `details.fitem` is the row class
+        for the NFT section too -- counting those was this test's first
+        mistake.
+        """
+        rows = page.select("#asset-list details.fitem")
+        toggles = page.select("#asset-list .id-swap-swap-toggle")
+
+        assert rows, "the asset list rendered no rows to check"
+        assert len(toggles) == len(rows)
+        assert len(page.select(".id-swap-swap-toggle")) == len(toggles), (
+            "a Swap button rendered outside the asset list"
+        )
+
+    def test_each_button_names_a_different_asset(self, page):
+        """Two rows offering the same `data-from` would open the same swap and
+        give the reader no way to tell which they pressed."""
+        named = [t.get("data-from") for t in page.select(".id-swap-swap-toggle")]
+
+        assert len(set(named)) == len(named)
+
+    def test_it_keeps_a_no_js_fallback(self, page):
+        """The handler calls `preventDefault`, so the href is never followed --
+        but a button that is only a button is invisible to anything that does
+        not run our JavaScript."""
+        for toggle in page.select(".id-swap-swap-toggle"):
+            assert toggle.get("href")
+
+    def test_the_dead_inline_panel_is_not_copied(self, page):
+        """Design 1 carries a `swap-panel-<id>` div for
+        `handleInlineSwapClick`, which reads a `data-swap-target` no template
+        sets and is not registered as a listener either -- only
+        `handleSwapModalClick` is. Vestigial there; dead markup here.
+        """
+        assert not page.select(".id-swap-panel")
+
+
+class TestTheAssetFacts:
+    """The `<dl class="meta">` block: facts about the asset, not the holding."""
+
+    def test_total_supply_matches_design_one(self, page, sample_payload):  # noqa: F811
+        """It read `amount_repr` and was wrong by orders of magnitude.
+
+        `amount_repr` divides by ``10 ** decimals``, which is right for every
+        other figure in these templates because every other figure is a
+        *holding* -- the chain reports those in base units. `total` is not: the
+        serializer has already scaled it, which is why ALGO arrives as
+        10,000,000,000 and not 10**16. Dividing again turned ten billion into
+        ten thousand.
+
+        Asserted against the payload rather than against design 1's markup, so
+        it pins the number rather than pinning one template to the other.
+        """
+        totals = {
+            item["asset"]["id"]: item["asset"].get("total")
+            for item in sample_payload["asaitems"]
+            if item["asset"].get("total")
+        }
+        assert totals, "the sample payload carries no supplies to check"
+
+        rows = page.select("#asset-list details.fitem")
+        checked = 0
+        for row in rows:
+            asset_id = int(row.get("id", "f0")[1:])
+            if asset_id not in totals:
+                continue
+
+            for pair in row.select("dl.meta div"):
+                terms = pair.select("dt")
+                if not terms or terms[0].text() != "Total supply":
+                    continue
+
+                # rendered with `floatformat:'g'`, so thousands separators and
+                # a possible trailing decimal are the only differences
+                shown = pair.select("dd")[0].text().replace(",", "")
+                assert float(shown) == pytest.approx(
+                    float(totals[asset_id]), rel=1e-6
+                ), f"asset {asset_id} shows {shown} for a supply of {totals[asset_id]}"
+                checked += 1
+
+        assert checked, "no Total supply row was compared"

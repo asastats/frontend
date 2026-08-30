@@ -11,6 +11,12 @@
       data-fee-bps="{{ swap_fee_bps }}"
       data-api-key="{{ swap_api_key }}"
       data-holdings-tmpl="{{ swap_holdings_tmpl }}"
+      {# Only the ASA Stats router carries these: it quotes in our engine, so #}
+      {# the browser posts to us instead of to a vendor SDK. Rendered empty   #}
+      {# for the others, which `markerCfg` reads as "" and their adapters     #}
+      {# never consult.                                                       #}
+      data-quote-url="{{ quote_url|default:'' }}"
+      data-group-url="{{ group_url|default:'' }}"
       data-address="{{ swap_address }}"></span>
 {% include "swap/_swap_modal.html" %}
 <script src="{% static swap_sdk_static %}"></script>
