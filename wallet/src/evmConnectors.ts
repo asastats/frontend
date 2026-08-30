@@ -1,4 +1,3 @@
-/* istanbul ignore file -- browser/wallet adapters; not exercisable headless */
 import type {
   Eip1193Provider,
   EvmConnector,
@@ -7,10 +6,16 @@ import type {
 
 /**
  * Browser-only adapters that produce concrete {@link EvmConnector}s and an
- * {@link EvmSigner}. These touch wallet globals, the EIP-6963 event protocol,
- * WalletConnect and viem, none of which run under jsdom, so the file is
- * excluded from coverage. The testable orchestration lives in
- * `EvmWalletComponent.ts`, which depends only on the injected shapes.
+ * {@link EvmSigner}. The orchestration that consumes them lives in
+ * `evmWalletComponent.ts`, which depends only on the injected shapes.
+ *
+ * This file used to be excluded from coverage, on the grounds that it "touches
+ * wallet globals, the EIP-6963 event protocol, WalletConnect and viem, none of
+ * which run under jsdom". Two of those four were true. EIP-6963 is `CustomEvent`
+ * on `window`, which jsdom implements, and WalletConnect and viem arrive through
+ * dynamic `import()`, which jest can mock — so the discovery protocol is now
+ * exercised for real and only the two libraries are faked. See
+ * `evmConnectors.test.ts`.
  */
 
 /** Provider detail announced over the EIP-6963 discovery protocol. */

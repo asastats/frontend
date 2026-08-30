@@ -284,6 +284,51 @@ export interface OptInDeps extends SignAndSendDeps {
   buildOptIn: (assetId: number) => Promise<Uint8Array[]>;
 }
 
+/** The one algod call {@link assetCreator} needs, injected so it can be tested. */
+export interface AssetLookupDeps {
+  /** Fetch an asset's on-chain parameters (algod `getAssetByID`). */
+  getAsset: (assetId: number) => Promise<unknown>;
+}
+
+/**
+ * Return the on-chain creator of `assetId`, or null when it cannot be read.
+ *
+ * **This is a security control's only source of truth, not a convenience.**
+ * The dust sweep gives a holding away by closing it to the asset's creator,
+ * and its browser-side check used to compare that destination against an
+ * address carried in the same response as the transaction bytes — so a
+ * response that agreed with itself could name anything (audit finding `S2`).
+ * This is the second opinion that check needs, and it lives here rather than
+ * in `swapBootstrap` because that module is `istanbul ignore file`d as
+ * untestable glue. Deciding a forfeit is not glue.
+ *
+ * **Null on every failure, deliberately.** The caller refuses a forfeit it
+ * cannot confirm, so a thrown request, an asset that does not exist and a
+ * response missing `params` must all reach it the same way. Returning null
+ * rather than rethrowing keeps that decision in one place.
+ *
+ * @param assetId - The asset whose creator to read.
+ * @param deps    - Injected algod lookup.
+ * @returns The creator address, or null when it could not be determined.
+ */
+export async function assetCreator(
+  assetId: number,
+  deps: AssetLookupDeps,
+): Promise<string | null> {
+  try {
+    const asset = (await deps.getAsset(assetId)) as {
+      params?: { creator?: unknown };
+    } | null;
+    const creator = asset?.params?.creator;
+    // Guard the type as well as the presence: a non-string here would be
+    // compared against a decoded address and silently never match, which
+    // would read as "the engine lied" rather than "we could not tell".
+    return typeof creator === "string" && creator ? creator : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Opt the active account into `assetId` as a standalone pre-flight transaction.
  *

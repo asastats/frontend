@@ -1,4 +1,3 @@
-/* istanbul ignore file -- browser/wallet/algod glue; orchestration is tested in swapBridge.test */
 import { WalletManager, type WalletId } from "@txnlab/use-wallet";
 import {
   encodeUnsignedTransaction,
@@ -8,6 +7,7 @@ import {
   type TransactionSigner,
 } from "algosdk";
 import {
+  assetCreator,
   optIn,
   signAndSend,
   signAndSendPartial,
@@ -218,19 +218,11 @@ export async function initSwapBridge(doc: Document = document): Promise<void> {
       signAndSendPartial: (group: PartialSignedGroup) =>
         signAndSendPartial(group, deps),
       optIn: (assetId: number) => optIn(assetId, deps),
-      assetCreator: async (assetId: number) => {
-        try {
-          const asset = await manager.algodClient.getAssetByID(assetId).do();
-          // algosdk v3 returns { params: { creator } }; tolerate the older
-          // hyphenated shape the REST API uses directly.
-          const params = (asset as any).params ?? (asset as any)["params"];
-          return params?.creator ?? null;
-        } catch {
-          // Caller fails closed on null: an unverifiable creator refuses the
-          // forfeit rather than allowing it.
-          return null;
-        }
-      },
+      // The decision lives in swapBridge, which is covered; this is the wiring.
+      assetCreator: (assetId: number) =>
+        assetCreator(assetId, {
+          getAsset: (id) => manager.algodClient.getAssetByID(id).do(),
+        }),
       haystackSigner,
       // kept for back-compat; Haystack must use haystackSigner instead.
       signer: manager.transactionSigner,

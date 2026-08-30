@@ -1,4 +1,3 @@
-/* istanbul ignore file -- browser/wallet adapters; not exercisable headless */
 import { WalletManager, type WalletId } from "@txnlab/use-wallet";
 import {
   makePaymentTxnWithSuggestedParamsFromObject,

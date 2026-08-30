@@ -1,4 +1,5 @@
 import {
+  assetCreator,
   optIn,
   signAndSend,
   signAndSendPartial,
@@ -534,5 +535,61 @@ describe("optIn", () => {
     });
     await expect(optIn(1, d)).rejects.toThrow("user rejected");
     expect(d.submit).not.toHaveBeenCalled();
+  });
+});
+
+describe("assetCreator", () => {
+  /**
+   * The second opinion behind the dust sweep's forfeit check (`S2`). Every one
+   * of these is a "fails closed" case except the first: the caller refuses a
+   * forfeit whose creator it cannot confirm, so anything short of a real
+   * address must arrive as null rather than as a value that will not match.
+   */
+  it("returns the creator algod reports", async () => {
+    const getAsset = jest.fn().mockResolvedValue({
+      params: { creator: "CREATORADDRESS" },
+    });
+    await expect(assetCreator(31566704, { getAsset })).resolves.toBe(
+      "CREATORADDRESS",
+    );
+    expect(getAsset).toHaveBeenCalledWith(31566704);
+  });
+
+  it("returns null when the request throws", async () => {
+    const getAsset = jest.fn().mockRejectedValue(new Error("404 not found"));
+    await expect(assetCreator(1, { getAsset })).resolves.toBeNull();
+  });
+
+  it("returns null when the response carries no params", async () => {
+    await expect(
+      assetCreator(1, { getAsset: jest.fn().mockResolvedValue({}) }),
+    ).resolves.toBeNull();
+  });
+
+  it("returns null when the response is null", async () => {
+    await expect(
+      assetCreator(1, { getAsset: jest.fn().mockResolvedValue(null) }),
+    ).resolves.toBeNull();
+  });
+
+  it("returns null for an empty creator", async () => {
+    await expect(
+      assetCreator(1, {
+        getAsset: jest.fn().mockResolvedValue({ params: { creator: "" } }),
+      }),
+    ).resolves.toBeNull();
+  });
+
+  it("returns null for a creator that is not a string", async () => {
+    // A decoded address object would be compared against raw bytes and never
+    // match, which reads to the user as "the engine lied" rather than as "we
+    // could not tell". The type guard keeps those two outcomes distinct.
+    await expect(
+      assetCreator(1, {
+        getAsset: jest
+          .fn()
+          .mockResolvedValue({ params: { creator: { publicKey: [1, 2] } } }),
+      }),
+    ).resolves.toBeNull();
   });
 });

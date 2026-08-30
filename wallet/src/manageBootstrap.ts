@@ -1,4 +1,3 @@
-/* istanbul ignore file -- browser/htmx glue; runStepUp is tested in manageBridge.test */
 import { buildStepUpSign } from "./manageAdapters";
 import { notify } from "./notify";
 import { runStepUp } from "./manageBridge";

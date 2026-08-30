@@ -8,7 +8,7 @@
 
 > **initManageAddresses**(`doc?`): `void`
 
-Defined in: [manageBootstrap.ts:36](https://github.com/asastats/frontend/blob/main/wallet/src/manageBootstrap.ts#L36)
+Defined in: [manageBootstrap.ts:35](https://github.com/asastats/frontend/blob/main/wallet/src/manageBootstrap.ts#L35)
 
 Wire the connected-addresses manager when its container is present.
 
