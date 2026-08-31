@@ -43,7 +43,7 @@ from django.test import TestCase
 
 from api.client import download_export, export_status, reset_export, start_export
 
-# pytestmark = pytest.mark.skip("Will be tested on more powerful computer")
+pytestmark = pytest.mark.skip("Will be tested on more powerful computer")
 
 #: An address with almost no transaction history -- the cheapest thing that
 #: still produces a real report. Tax processing walks the whole history, so

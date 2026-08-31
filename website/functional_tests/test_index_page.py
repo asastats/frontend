@@ -8,7 +8,7 @@ from .base import TESTING_ADDRESS, FunctionalTest
 
 
 class IndexPageTest(FunctionalTest):
-    def test_index_page_has_whenmoon_button_that_leads_to_address_page(self):
+    def test_index_page_has_track_button_that_leads_to_address_page(self):
         self.browser.get(self.server_url)
 
         self.assertIn("ASA Stats", self.browser.title)
@@ -17,13 +17,13 @@ class IndexPageTest(FunctionalTest):
         address.clear()
         address.send_keys(TESTING_ADDRESS)
 
-        button = self.find_elem_by_id("whenmoon")
+        button = self.find_elem_by_id("track")
         # Materialize upper-cased button text in CSS; DaisyUI does not, so the
         # rendered casing is now a design choice rather than content.
-        self.assertEqual(button.text.strip().lower(), "when moon")
+        self.assertEqual(button.text.strip().lower(), "track")
 
         with self.wait_for_page_load(timeout=2):
-            self.find_elem_by_id("whenmoon").click()
+            self.find_elem_by_id("track").click()
         self.assertIn(TESTING_ADDRESS, self.browser.current_url)
 
 
@@ -33,8 +33,8 @@ class IndexPageContentTest(FunctionalTest):
     def test_the_search_field_and_button_are_present(self):
         self.browser.get(self.server_url + reverse("index"))
         self.assertTrue(self.find_elem_by_id("id_address").is_displayed())
-        button = self.find_elem_by_id("whenmoon")
-        self.assertEqual(button.text.strip().lower(), "when moon")
+        button = self.find_elem_by_id("track")
+        self.assertEqual(button.text.strip().lower(), "track")
 
     def test_a_logged_in_viewer_sees_their_bundles(self):
         email = "bundles@example.com"

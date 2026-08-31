@@ -11,7 +11,7 @@ const fixture =
   '<a class="ns" id="algo"></a>' +
   '<input type="hidden" id="id_bundle">' +
   '<div class="progress"><div class="indeterminate"></div></div>' +
-  '<button id="whenmoon"></button>' +
+  '<button id="track"></button>' +
   '<ul class="errorlist"><li>err</li></ul>';
 
 beforeEach(() => {
@@ -58,24 +58,24 @@ describe("in SECTION: Helper functions", function () {
 
   // setDefault
   describe("setDefault function", function () {
-    it('removes progress and re-enables the moon button', function () {
-      $('#whenmoon').prop("disabled", true);
+    it('removes progress and re-enables the track button', function () {
+      $('#track').prop("disabled", true);
       index.setDefault(null);
       expect($('.indeterminate').parent().hasClass('progress')).toBe(false);
-      expect($('#whenmoon').prop("disabled")).toBe(false);
+      expect($('#track').prop("disabled")).toBe(false);
       expect(document.body.style.cursor).toBe("default");
     });
   });
 
   // setProgress
   describe("setProgress function", function () {
-    it('adds progress, removes errors and disables the moon button', function () {
+    it('adds progress, removes errors and disables the track button', function () {
       index.setProgress(null);
       expect($('.indeterminate').parent().hasClass('progress')).toBe(true);
       expect(document.body.style.cursor).toBe("progress");
       expect($('.errorlist').length).toBe(0);
       jest.runOnlyPendingTimers();
-      expect($('#whenmoon').attr('disabled')).toBe('disabled');
+      expect($('#track').attr('disabled')).toBe('disabled');
     });
   });
 

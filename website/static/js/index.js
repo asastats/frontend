@@ -25,7 +25,7 @@ function mainIndex() {
   $("#id_address").on('change paste keyup click', removeError);
   $("#id_address").on('keydown', setTextarea);
   $('.prefix').on('click', replaceTextarea);
-  $("#whenmoon").on('click', setProgress);
+  $("#track").on('click', setProgress);
   $(".ns").on('click', addNS);
 }
 
@@ -75,7 +75,7 @@ function removeError(event) {
 function setDefault(event) {
   $("body").css("cursor", "default");
   $('.indeterminate').parent().removeClass('progress');
-  $('#whenmoon').prop("disabled", false); 
+  $('#track').prop("disabled", false); 
 }
 
 
@@ -90,7 +90,7 @@ function setProgress(event) {
   $('.indeterminate').parent().addClass('progress');
   $("body").css("cursor", "progress");
   removeError(null);
-  setTimeout(function () { $('#whenmoon').attr('disabled', 'disabled'); }, 1);
+  setTimeout(function () { $('#track').attr('disabled', 'disabled'); }, 1);
 }
 
 

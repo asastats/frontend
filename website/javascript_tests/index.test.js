@@ -43,10 +43,10 @@ describe("in SECTION: Initialization", function () {
       expect(events).not.toBe(undefined);
       expect(events.change[0].handler.name).toBe("removeError");
     });
-    it('binds click on whenmoon button', function () {
-      $("#whenmoon").off("click");
+    it('binds click on track button', function () {
+      $("#track").off("click");
       index.mainIndex()
-      var events = getEvents($("#whenmoon")[0]);
+      var events = getEvents($("#track")[0]);
       expect(events).not.toBe(undefined);
       expect(events.click[0].handler.name).toBe("setProgress");
     });

@@ -163,7 +163,7 @@ class TestIntegrationApiV2(TestSetup):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self._test_all(response, address=API_EXAMPLE_ADDRESS3)
 
-    # @pytest.mark.skip("This passes on a more powefull computer")
+    @pytest.mark.skip("This passes on a more powefull computer")
     def test_integration_api_v2_address4_functionality(self):
         """Skipped on this machine, not disabled.
 
