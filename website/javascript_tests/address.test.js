@@ -54,7 +54,6 @@ global.M = {
   Collapsible: { getInstance: jest.fn(() => ({ close: jest.fn() })) },
 };
 
-let reloadMock;
 const address = require('../static/js/address.js');
 
 function pie(name) {
@@ -163,9 +162,18 @@ beforeEach(() => {
   window.Chart.getChart.mockReturnValue(chartInstance());
   M.Collapsible.getInstance.mockClear();
   M.Collapsible.getInstance.mockReturnValue({ close: jest.fn() });
-  reloadMock = jest.fn();
-  delete window.location;
-  window.location = { reload: reloadMock };
+  // No location stub here any more. It used to be
+  //
+  //     reloadMock = jest.fn();
+  //     delete window.location;
+  //     window.location = { reload: reloadMock };
+  //
+  // and it never worked: jsdom's `location` is a non-configurable property
+  // whose `reload` is read-only, so the delete is a no-op and the assignment is
+  // discarded -- it only ever logged an error into every run of this file.
+  // Nothing asserted on `reloadMock`, so nothing noticed for as long as it has
+  // been here. The auto-refresh tests assert on the ids `reloadPage` stores
+  // before it navigates, which is a real consequence and needs no stub.
 });
 
 afterEach(() => {
@@ -787,6 +795,80 @@ describe("auto refresh", function () {
     address.mainAddress.call(document);
     $(document).trigger("mousemove");
     $(document).trigger("keypress");
+  });
+
+  // What the auto-refresh toggle actually buys, asserted rather than assumed.
+  //
+  // Everything around this was covered and none of it was the behaviour: the
+  // test above triggers two events and expects nothing, and the functional test
+  // presses `#tb-refresh` and checks only that localStorage says "y". Between
+  // them, a toggle that never reloaded anything would have passed both -- which
+  // is how the dynamic page came to promise "about once a minute while you
+  // leave it open" for a timer that resets on every mouse movement.
+  //
+  // `timerIncrement` is driven directly. Going through the interval would test
+  // jest's clock; the question here is what 61 ticks do.
+  // `reloadPage` records the open accordions and *then* calls
+  // `window.location.reload()`. The record is what these assert on.
+  //
+  // Not by choice: the suite's `reloadMock` cannot work. jsdom's `location` is
+  // a non-configurable property whose `reload` is read-only, so the
+  // `delete window.location` in the global beforeEach is a no-op, the
+  // assignment after it is discarded, and `window.location.reload` is still
+  // jsdom's. Nothing had ever asserted on that mock, so nothing noticed. The
+  // stored id is a real consequence of reaching `reloadPage` and needs no stub
+  // at all.
+  describe('the auto-refresh timer', function () {
+    function ticks(count) {
+      for (var i = 0; i < count; i++) address.timerIncrement();
+    }
+    function reloaded() {
+      return localStorage.setItem.mock.calls.some(function (call) {
+        return call[0] === 'openasa';
+      });
+    }
+    beforeEach(function () {
+      var row = document.querySelector('.asasec .fitem');
+      row.id = 'row-under-test';
+      row.open = true;
+      localStorage.setItem('refresh', 'y');
+      localStorage.setItem.mockClear();
+      address.resetTimer();
+    });
+
+    it('does not reload for the first sixty ticks', function () {
+      ticks(60);
+
+      expect(reloaded()).toBe(false);
+    });
+
+    it('reloads on the sixty-first', function () {
+      ticks(61);
+
+      expect(reloaded()).toBe(true);
+    });
+
+    it('is an idle timer: activity puts the count back to zero', function () {
+      ticks(60);
+      address.resetTimer();
+      ticks(60);
+
+      // 120 ticks and no reload. This is the whole of why the feature reads as
+      // broken to anyone watching the page: `resetTimer` is bound to mousemove
+      // and keypress, so a reader who moves the mouse once a minute never sees
+      // it fire. The dynamic toolbar's title used to promise a reload "about
+      // once a minute while you leave it open", which is not this.
+      expect(reloaded()).toBe(false);
+    });
+
+    it('leaves the page alone when the setting is off', function () {
+      localStorage.setItem('refresh', '');
+      localStorage.setItem.mockClear();
+      address.resetTimer();
+      ticks(61);
+
+      expect(reloaded()).toBe(false);
+    });
   });
 });
 

@@ -123,29 +123,55 @@ describe("in SECTION: Proprietary widgets", function () {
       expect(dialog.showModal).toHaveBeenCalled();
       expect(event.isDefaultPrevented()).toBe(true);
     });
+    // The page's own hidden field, seeded with a value that is not the answer.
+    //
+    // These tests used to append a *second* input with this id. That worked
+    // while the fixture was a stale snapshot with no such field; now that the
+    // fixture is the rendered page, the real one comes first in the document
+    // and `getElementById` returns it, so the appended copy was ignored. The
+    // empty-href case then asserted "" against a field that was already "" and
+    // would have passed with the handler deleted.
+    function seedNext(value) {
+      var field = document.getElementById("id_modal_login_next");
+      field.value = value;
+      return field;
+    }
     it("records the swap URL on the hidden login field", function () {
       ensureDialog();
-      document.body.insertAdjacentHTML(
-        "beforeend",
-        '<input id="id_modal_login_next" name="next" value="" />'
-      );
+      var next = seedNext("stale");
       addToggle();
       $(".id-swap-swap-toggle").trigger($.Event("click"));
-      expect(document.getElementById("id_modal_login_next").value).toBe(
-        "/swap/ADDR/123/"
-      );
+      expect(next.value).toBe("/swap/ADDR/123/");
     });
     it("stages an empty next when the Swap link has no href", function () {
       ensureDialog();
-      document.body.insertAdjacentHTML(
-        "beforeend",
-        '<input id="id_modal_login_next" name="next" value="stale" />'
-      );
+      var next = seedNext("stale");
       document.body.insertAdjacentHTML(
         "beforeend", '<a class="id-swap-swap-toggle">Swap</a>'
       );
       $(".id-swap-swap-toggle").trigger($.Event("click"));
-      expect(document.getElementById("id_modal_login_next").value).toBe("");
+      expect(next.value).toBe("");
+    });
+    it("still opens the dialog when the hidden field is missing", function () {
+      // The `if (nextInput)` guard. `modal_login.html` always renders the
+      // field, so this is defensive -- but the guard exists precisely because
+      // something else could stop rendering it, and an unguarded write would
+      // throw before `showModal()` and swallow the whole login affordance.
+      //
+      // Covered by an explicit removal rather than by the fixture happening to
+      // lack the element, which is how it was covered before and is a reason
+      // for a test to stop testing anything without failing.
+      var dialog = ensureDialog();
+      var field = document.getElementById("id_modal_login_next");
+      field.parentNode.removeChild(field);
+      addToggle();
+      var event = $.Event("click");
+
+      expect(function () {
+        $(".id-swap-swap-toggle").trigger(event);
+      }).not.toThrow();
+      expect(dialog.showModal).toHaveBeenCalled();
+      expect(event.isDefaultPrevented()).toBe(true);
     });
     it("lets the click navigate for an authenticated visitor", function () {
       // No dialog is rendered for a signed-in user, so the link must be left
@@ -182,8 +208,16 @@ describe("in SECTION: Proprietary widgets", function () {
     afterEach(function () {
       window.history.replaceState({}, "", "/");
     });
+    // Scoped to the toast's own class rather than `[role="alert"]` alone.
+    // The page carries a second, permanent alert -- `#evm-app-error`, hidden
+    // until the wallet list needs it -- and it comes first in the document, so
+    // the looser selector returned that one and never the toast: the "removes
+    // the notice" and "does nothing without swap_error" cases both passed by
+    // finding an element the function had not touched. The old fixture
+    // predated that div, which is why this only surfaced once the fixture was
+    // rendered from the real page.
     function notice() {
-      return document.querySelector('[role="alert"]');
+      return document.querySelector('.alert-error[role="alert"]');
     }
     it("renders a notice and strips the param when swap_error is present", function () {
       window.history.replaceState({}, "", "/ADDR/?swap_error=unlinked");

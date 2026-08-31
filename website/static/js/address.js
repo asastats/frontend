@@ -1397,6 +1397,8 @@ function toggleRefresh() {
 if (typeof exports !== 'undefined') {
   module.exports = {
     mainAddress,
+    timerIncrement,
+    resetTimer,
     isNotVisible,
     parseJsonScript,
     populatePieCharts,

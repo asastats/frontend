@@ -86,8 +86,22 @@
     {% endcomment %}
     <button class="ghost" id="tb-nonft" type="button" aria-pressed="false"
             title="Leave NFTs out of the total">Without NFTs</button>
+    {% comment %}
+      The title says *inactivity*, because that is what the timer does.
+
+      It read "Reload this page about once a minute while you leave it open",
+      which promises a periodic reload. `address.js` runs an idle timer instead:
+      `resetTimer` is bound to `mousemove` and `keypress` on the document, so
+      any movement puts the count back to zero and the reload only happens after
+      60 uninterrupted seconds. Both designs share that one timer, and design
+      1's own label has always said so.
+
+      The wording matters more than a tooltip usually does: a reader who moves
+      the mouse never sees this fire, and the old text gave them no way to tell
+      that from a broken button.
+    {% endcomment %}
     <button class="ghost" id="tb-refresh" type="button" aria-pressed="false"
-            title="Reload this page about once a minute while you leave it open">Auto-refresh</button>
+            title="Reload this page after 60 seconds of inactivity">Auto-refresh</button>
 
     <button class="ghost" id="tb-reset" type="button" disabled>Reset view</button>
   </div>

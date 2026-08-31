@@ -50,11 +50,26 @@
       that you've discovered throughout your analysis, to inform us about the problems you've encountered 
       while importing the report file(s) into the tax software, to suggest solutions to the issues 
       you have with the report, as well as to provide general feedback.</p>
-      <div class="text-center socfooter">
-        <a class="scbtn githbtn" href="https://github.com/asastats/channel/issues/new/choose" target="_blank" rel="noopener" title="Create an issue in ASA Stats Channel on GitHub"></a>
-        <a class="scbtn twitbtn" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on X platform"></a>
-        <a class="scbtn dscrbtn" href="https://discord.com/channels/906917846754418770/1209176713485881384" target="_blank" rel="noopener" title="Add a comment in the #tax-report channel in our Discord server"></a>
-        <a class="scbtn rdtbtn" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on Reddit"></a>
+      {% comment %}
+        Text links, not the old sprite buttons.
+
+        Those were four empty `<a>` elements: the label was pushed off-screen
+        with `text-indent: -99999px` and the icon came from a shared sprite
+        sheet, `img/social/social-c.png`, which is no longer in the tree. With
+        the image gone they rendered as four blank 32x32 boxes -- a paragraph
+        asking the reader to get in touch, followed by nothing to click.
+
+        The same move base.html made when the footer was rebuilt, and for the
+        same reason: a link should say where it goes. The destinations here are
+        specific -- an issue form and one Discord channel, not the project's
+        front doors -- so the labels say which, and the `title` attributes are
+        kept for the longer version.
+      {% endcomment %}
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+        <a class="link link-hover" href="https://github.com/asastats/channel/issues/new/choose" target="_blank" rel="noopener" title="Create an issue in ASA Stats Channel on GitHub">Open a GitHub issue</a>
+        <a class="link link-hover" href="https://discord.com/channels/906917846754418770/1209176713485881384" target="_blank" rel="noopener" title="Add a comment in the #tax-report channel in our Discord server">#tax-report on Discord</a>
+        <a class="link link-hover" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on X platform">X</a>
+        <a class="link link-hover" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on Reddit">Reddit</a>
       </div>
 </div>
   
