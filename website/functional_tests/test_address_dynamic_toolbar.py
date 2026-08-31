@@ -33,6 +33,7 @@ from unittest import mock
 from api.position_id import annotate_positions
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
@@ -321,6 +322,86 @@ class ToolbarTest(FunctionalTest):
             )
             == "y"
         )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_pressed_toggle_looks_pressed(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """A reader can see which of the on/off controls are on.
+
+        `toolbar.js` has always set `aria-pressed` on these two, and for a while
+        that was the whole of the feedback: `.ghost` had rules for rest, hover
+        and disabled and none for the pressed state, so a screen reader was told
+        which was on and everybody else was told nothing.
+
+        Auto-refresh is where it hurt. It reloads only after 60 seconds of
+        inactivity, so with no visible state there is nothing to distinguish
+        "on, and waiting for you to stop moving the mouse" from a dead button --
+        which is exactly how it was reported.
+
+        Asserted through the *computed* style rather than the class list,
+        because a class that no rule matches is the failure being guarded
+        against. `aria-pressed` is checked too: the two have to move together or
+        the announcement and the appearance disagree.
+
+        **The pointer is moved off the button before the second reading.** The
+        first version of this test did not do that and passed with the pressed
+        rule deleted: clicking leaves the cursor on the control, `.ghost:hover`
+        also changes the background, and the before/after comparison was
+        measuring the hover. It is compared against a sibling ghost that was
+        never pressed for the same reason -- two readings of one element can
+        differ for reasons that have nothing to do with state.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page()
+
+        def unhovered_style(selector):
+            """Return the button's colours with the pointer parked elsewhere."""
+            ActionChains(self.browser).move_to_element(
+                self.browser.find_element(By.CSS_SELECTOR, "#tb-q")
+            ).perform()
+            button = self.browser.find_element(By.CSS_SELECTOR, selector)
+            return (
+                button.value_of_css_property("background-color"),
+                button.value_of_css_property("color"),
+            )
+
+        for selector in ("#tb-refresh", "#tb-nonft"):
+            with self.subTest(control=selector):
+                self.assertEqual(
+                    self.browser.find_element(
+                        By.CSS_SELECTOR, selector
+                    ).get_attribute("aria-pressed"),
+                    "false",
+                )
+                resting = unhovered_style(selector)
+
+                self.press(selector)
+                self.wait_until(
+                    lambda: self.browser.find_element(
+                        By.CSS_SELECTOR, selector
+                    ).get_attribute("aria-pressed")
+                    == "true"
+                )
+                pressed = unhovered_style(selector)
+
+                self.assertNotEqual(
+                    resting,
+                    pressed,
+                    f"{selector} looks identical pressed and unpressed, so "
+                    "nothing on screen says it is on",
+                )
+                self.assertNotEqual(
+                    pressed,
+                    unhovered_style("#tb-dir"),
+                    f"{selector} pressed looks like an unpressed ghost beside "
+                    "it, so the tint is not doing any work",
+                )
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")

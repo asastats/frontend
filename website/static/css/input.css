@@ -3410,6 +3410,28 @@
   background: none;
 }
 
+/* The on state of the two on/off ghosts -- Without NFTs and Auto-refresh.
+   ----------------------------------------------------------------------
+   `toolbar.js` has always set `aria-pressed` on them and nothing painted it:
+   `.ghost` had rest, hover and disabled and no pressed rule, so a screen
+   reader knew which was on and a sighted reader could not tell. Auto-refresh
+   was the one that showed: it fires only after 60 seconds of inactivity, so
+   with no visible state there was nothing to distinguish "on, and waiting for
+   you to stop moving the mouse" from a button that did nothing.
+
+   Deliberately the same tint as `.seg button[aria-pressed="true"]`, because it
+   means the same thing and this row already teaches it half a dozen times.
+
+   `.tb-toggle` rather than every `.ghost`: `#tb-dir` is also a ghost carrying
+   `aria-pressed`, but there it means *ascending* rather than *on*, and it
+   rewrites its own label to say which. Tinting it would claim a state it does
+   not have. */
+.dynamic-page .ghost.tb-toggle[aria-pressed="true"],
+.dynamic-page .ghost.tb-toggle[aria-pressed="true"]:hover {
+  background: color-mix(in oklab, var(--color-primary) 16%, transparent);
+  color: var(--color-primary);
+}
+
 /* The live region. Empty on an unfiltered page, so it takes no room until it
    has something to say. */
 .dynamic-page .tb-status {

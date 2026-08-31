@@ -78,6 +78,23 @@ ADDRESSES = (
 PROVENANCE = re.compile(r"\A\s*<!--.*?-->\s*", re.S)
 
 
+#: An `id` attribute, and not the tail of a longer attribute name.
+#:
+#: This was `\bid="`, which is not the same thing: `-` is a non-word character,
+#: so there is a word boundary between the dash and the `i` of
+#: `data-wc-project-id="…"` and the pattern captured its value as though it were
+#: an element id. That value comes from settings, so the guard compared one
+#: deployment's WalletConnect project id against another's and failed on every
+#: checkout but the one that generated the fixture -- which is the same shape of
+#: fault as the manifests this repository stopped ignoring: a check that only
+#: holds where it was written.
+#:
+#: The lookbehind rejects any preceding name character, so `data-user-id=`,
+#: `data-pool-id=` and every other `*-id=` attribute are left alone while a bare
+#: `id=` still matches.
+ELEMENT_ID = re.compile(r'(?<![-\w])id="([^"]+)"')
+
+
 def _names(html):
     """Return the class names and the element ids `html` contains.
 
@@ -90,7 +107,7 @@ def _names(html):
     for value in re.findall(r'class="([^"]*)"', html):
         classes.update(value.split())
 
-    return classes, set(re.findall(r'\bid="([^"]+)"', html))
+    return classes, set(ELEMENT_ID.findall(html))
 
 
 def _compare(fixture_path, rendered):

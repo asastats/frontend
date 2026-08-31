@@ -81,10 +81,18 @@
 
        `refresh` is read by the timer already running in `address.js`, so
        writing that key is the whole implementation. Toggle buttons rather than
-       checkboxes to match every other control in this row; `aria-pressed`
-       carries the state either way.
+       checkboxes to match every other control in this row.
+
+       **`aria-pressed` alone was not enough, and for a while it was all there
+       was.** A screen reader was told which of these was on and a sighted
+       reader was told nothing: `.ghost` had rules for rest, hover and disabled
+       and none for the pressed state, so both buttons looked identical either
+       way. `tb-toggle` is what the stylesheet paints. It marks these two
+       specifically rather than every `.ghost`, because `#tb-dir` carries
+       `aria-pressed` too and there it means *ascending*, not *on* -- it says so
+       in its own label, and tinting it would assert something untrue.
     {% endcomment %}
-    <button class="ghost" id="tb-nonft" type="button" aria-pressed="false"
+    <button class="ghost tb-toggle" id="tb-nonft" type="button" aria-pressed="false"
             title="Leave NFTs out of the total">Without NFTs</button>
     {% comment %}
       The title says *inactivity*, because that is what the timer does.
@@ -100,7 +108,7 @@
       the mouse never sees this fire, and the old text gave them no way to tell
       that from a broken button.
     {% endcomment %}
-    <button class="ghost" id="tb-refresh" type="button" aria-pressed="false"
+    <button class="ghost tb-toggle" id="tb-refresh" type="button" aria-pressed="false"
             title="Reload this page after 60 seconds of inactivity">Auto-refresh</button>
 
     <button class="ghost" id="tb-reset" type="button" disabled>Reset view</button>
