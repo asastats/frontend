@@ -842,6 +842,21 @@
   color: var(--sweep-ink-3);
 }
 
+/* Where the tokens go, on the one disposition that sends them anywhere else.
+   Full width beneath the reason for the same cause: it is the fact a reader
+   checks against the wallet prompt, and a truncated address cannot be checked.
+   The audit's `S2` recommendation 2 - the control is the chain lookup in
+   `forfeitTargetProblems`, and this is the disclosure that lets a reader do
+   their own comparing. */
+.dustsweep-line-destination {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--sweep-ink-3);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
 .dustsweep-badge {
   display: inline-flex;
   align-items: center;
