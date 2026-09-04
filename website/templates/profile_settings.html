@@ -31,6 +31,11 @@
       <div class="mt-4">
         <button type="submit" class="btn btn-primary" id="id_save_router">Save</button>
       </div>
+      {% comment %} Inside the htmx-swapped section on purpose: the form
+         carries `hx-select="#id-section-…"`, so the toast container in
+         base.html is discarded from the response and the confirmation
+         would be consumed unseen. {% endcomment %}
+      {% include "snippets/messages_section.html" with section="router" %}
     </form>
     </div>
   </section>
@@ -59,6 +64,11 @@
       <div class="mt-4">
         <button type="submit" class="btn btn-primary" id="id_save_explorer">Save</button>
       </div>
+      {% comment %} Inside the htmx-swapped section on purpose: the form
+         carries `hx-select="#id-section-…"`, so the toast container in
+         base.html is discarded from the response and the confirmation
+         would be consumed unseen. {% endcomment %}
+      {% include "snippets/messages_section.html" with section="explorer" %}
     </form>
     {% else %}
     <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Intro tier — open subscriptions">
@@ -97,6 +107,11 @@
       <div class="mt-4">
         <button type="submit" class="btn btn-primary" id="id_save_layout">Save</button>
       </div>
+      {% comment %} Inside the htmx-swapped section on purpose: the form
+         carries `hx-select="#id-section-…"`, so the toast container in
+         base.html is discarded from the response and the confirmation
+         would be consumed unseen. {% endcomment %}
+      {% include "snippets/messages_section.html" with section="layout" %}
     </form>
     {% comment %} Name what the reader cannot pick, and the tier that unlocks
        it. A select showing two of four options otherwise leaves them to guess

@@ -1,0 +1,33 @@
+{% comment %} Toasts for one htmx-swapped section.
+
+  `base.html` renders every message once, which is right for a full page load
+  and wrong for these three. The settings forms post with htmx and carry
+  `hx-select="#id-section-<name>"`, so htmx keeps that fragment of the response
+  and discards everything else -- including the toast container in `base.html`.
+  The message is created, rendered into a part of the response nobody keeps,
+  and consumed. It is never seen.
+
+  That is why these confirmations were rendered inside their own sections
+  before, filtered on `extra_tags`, and why centralising them silently broke
+  the settings page. Restored here, as toast markup rather than the inline
+  alert they used to be, so a reader gets the same thing whichever form they
+  submit.
+
+  `snippets/messages.html` skips these same three tags, so a full page load
+  renders them here and not twice.
+
+  Required context:
+    section  the `extra_tags` value this section owns -- router, explorer, layout
+{% endcomment %}
+{% if messages %}
+<div class="toast toast-center toast-bottom z-50" data-message-toasts>
+  {% for message in messages %}{% if message.extra_tags == section %}
+  <div class="alert {% if "error" in message.tags %}alert-error{% elif "success" in message.tags %}alert-success{% else %}alert-info{% endif %} shadow-lg"
+       role="status" data-message-toast>
+    <span>{{ message }}</span>
+    <button type="button" class="btn btn-ghost btn-xs btn-circle"
+            data-dismiss-toast aria-label="Dismiss this message">&#10005;</button>
+  </div>
+  {% endif %}{% endfor %}
+</div>
+{% endif %}

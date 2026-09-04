@@ -100,11 +100,11 @@ class TestTheSplit(SimpleTestCase):
         """
         html = _rendered(
             (messages.error, "Bundle name not found", ""),
-            (messages.success, "Layout preference saved.", "layout"),
+            (messages.success, "Address enqueued", ""),
         )
 
         self.assertIn("Bundle name not found", html)
-        self.assertIn("Layout preference saved.", _toast_half(html))
+        self.assertIn("Address enqueued", _toast_half(html))
 
     def test_a_dismiss_button_says_what_it_does(self):
         """The button is an unlabelled glyph, so it needs an accessible name."""
@@ -118,6 +118,53 @@ class TestTheSplit(SimpleTestCase):
 
         self.assertNotIn("data-message-toasts", html)
         self.assertEqual("", html.strip())
+
+
+class TestTheSectionsHtmxSwapsIn(SimpleTestCase):
+    """Three confirmations cannot be rendered centrally, and why.
+
+    The settings forms post with htmx carrying
+    ``hx-select="#id-section-<name>"``. htmx keeps that fragment of the
+    response and discards the rest -- including `base.html`'s toast container.
+    A confirmation rendered only there is created, consumed and never seen,
+    which is what centralising them did to the settings page until a browser
+    test caught it.
+
+    So `snippets/messages_section.html` renders them inside the fragment, and
+    the central snippet skips the same three tags rather than showing them
+    twice on a full page load.
+    """
+
+    def test_a_section_tagged_message_is_not_rendered_centrally(self):
+        html = _rendered((messages.success, "Smart router preference saved.", "router"))
+
+        self.assertNotIn("Smart router preference saved.", html)
+
+    def test_the_section_renders_its_own_and_only_its_own(self):
+        request = RequestFactory().get("/")
+        request.session = SessionStore()
+        request._messages = FallbackStorage(request)
+        messages.success(request, "Smart router preference saved.", extra_tags="router")
+        messages.success(request, "Layout preference saved.", extra_tags="layout")
+
+        html = render_to_string(
+            "snippets/messages_section.html",
+            {"messages": messages.get_messages(request), "section": "router"},
+        )
+
+        self.assertIn("Smart router preference saved.", html)
+        self.assertNotIn("Layout preference saved.", html)
+        self.assertIn("data-dismiss-toast", html)
+
+    def test_an_untagged_message_still_reaches_the_central_snippet(self):
+        """The trap in the filter: `"" in "router explorer layout"` is True.
+
+        Without the `extra_tags and` guard, every ordinary message would be
+        read as belonging to a section and would disappear from the site.
+        """
+        html = _rendered((messages.success, "Address enqueued", ""))
+
+        self.assertIn("Address enqueued", _toast_half(html))
 
 
 class TestItIsRenderedInOnePlace(SimpleTestCase):
@@ -160,7 +207,7 @@ class TestItIsRenderedInOnePlace(SimpleTestCase):
         offenders = [
             path.name
             for path in self._templates()
-            if path.name != "messages.html"
+            if path.name not in ("messages.html", "messages_section.html")
             and "for message in messages" in path.read_text()
         ]
 

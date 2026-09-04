@@ -932,6 +932,51 @@ class DynamicCompactTest(MoneyPageMixin, FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_closed_tile_shows_the_asset_icon(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The icon was hidden here, with the drag handle, and is not any more.
+
+        It was hidden on the reasoning that the five-cell grid cannot survive
+        at 158px, which is true of the 38px tile in a row of cells and not of a
+        22px one taken out of flow. It sits in the corner opposite the pin,
+        sharing the unit line, so it costs the name no width -- which is what
+        the second assertion is for: `.cid-name` has to keep the card's full
+        content width, not lose a slice of it to the icon.
+
+        The image was being fetched the whole time it was hidden, since
+        `display: none` does not stop an `<img>` loading, so nothing here is
+        newly downloaded.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+
+        self.sign_in("compacticon@example.com", ASASTATSER, "dynamic-compact")
+        self.open_address()
+
+        card = [
+            one
+            for one in self.browser.find_elements(By.CSS_SELECTOR, ".rows.cards .mcard")
+            if one.is_displayed()
+        ][0]
+        tile = card.find_element(By.CSS_SELECTOR, ".mono-tile")
+
+        self.assertTrue(tile.is_displayed(), "the asset icon is hidden on a closed tile")
+        self.assertEqual("absolute", self.computed(tile, "position"))
+        self.assertEqual(22, round(tile.size["width"]), "the 38px tile would crowd the name")
+
+        # It costs the name nothing: the identity block still spans the card.
+        name = card.find_element(By.CSS_SELECTOR, ".cid-name")
+        self.assertEqual(
+            round(tile.location["x"]),
+            round(name.location["x"]),
+            "the icon pushed the name in rather than sitting under it",
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_wide_layout_gives_each_asset_its_own_line(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):

@@ -471,13 +471,16 @@ class BundleNameFormTest(FunctionalTest):
 class MessageToastTest(FunctionalTest):
     """Confirmations float and can be dismissed; failures stay put.
 
-    **Never run in the environment these were written in**, where the database
-    is unreachable, so this is the one part of the messages change that has not
-    been executed. The jest suite covers the timer and the close button in
-    jsdom and the rendering split is covered in `core/tests/`; what only a
-    browser can answer is whether the toast is actually visible and clickable
-    where the template puts it -- `position: fixed` under a `z-50` that some
-    other layer might beat.
+    Both flows were guessed wrong the first time these were written, which is
+    what an unrun test buys. Adding a bundle does not emit a message on the
+    page it lands on, and the bundle-name route is top level -- `^([\.\w\s-]
+    {1,50})$` -- not under `/profile/`, so the URL used returned a 404 and
+    nothing was rendered at all.
+
+    What does work: the router preference is the one settings form with no tier
+    gate, so any signed-in reader can save it and get "Smart router preference
+    saved."; and any unknown top-level name redirects to home carrying
+    `BUNDLE_NAME_NOT_FOUND_ERROR`.
     """
 
     def setUp(self):
@@ -487,15 +490,15 @@ class MessageToastTest(FunctionalTest):
         )
 
     def test_a_confirmation_arrives_as_a_toast_that_can_be_dismissed(self):
-        """Adding a bundle calls `messages.success`, so it must float."""
-        self.browser.get(self.server_url + "/profile/add-bundle")
+        self.browser.get(self.server_url + reverse("profile_settings"))
         self.sleep()
-        self.submit_bundlename_name("Toast test", TEST_ADDRESS)
+        self.browser.find_element(By.ID, "id_save_router").click()
         self.sleep()
 
         toast = self.browser.find_element(By.CSS_SELECTOR, "[data-message-toast]")
         self.assertTrue(toast.is_displayed(), "the confirmation is not visible")
         self.assertEqual("status", toast.get_attribute("role"))
+        self.assertIn("saved", toast.text.lower())
 
         # clickable where it sits, not merely present in the document
         toast.find_element(By.CSS_SELECTOR, "[data-dismiss-toast]").click()
@@ -508,18 +511,18 @@ class MessageToastTest(FunctionalTest):
         )
 
     def test_a_failure_stays_on_the_page(self):
-        """An error is the reason a submit failed; nothing may hide it.
-
-        Reached through a bundle name that does not exist, which is what
-        `BUNDLE_NAME_NOT_FOUND_ERROR` is for.
-        """
-        self.browser.get(self.server_url + "/profile/edit-bundle/no-such-bundle")
+        """An error is the reason something did not work; nothing may hide it."""
+        self.browser.get(self.server_url + "/no-such-bundle")
         self.sleep()
 
-        errors = self.browser.find_elements(By.CSS_SELECTOR, '[role="alert"]')
+        errors = [
+            element
+            for element in self.browser.find_elements(By.CSS_SELECTOR, '[role="alert"]')
+            if "Bundle name not found" in element.text
+        ]
         self.assertTrue(errors, "the failure was not shown at all")
-        self.assertNotIn(
-            "data-message-toast",
-            self.browser.page_source.split("data-message-toasts")[0],
+        self.assertEqual(
+            [],
+            self.browser.find_elements(By.CSS_SELECTOR, "[data-message-toast]"),
             "an error was rendered as a toast and will expire",
         )

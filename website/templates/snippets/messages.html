@@ -20,15 +20,28 @@
   The toast markup is rendered server-side rather than built in JavaScript, so
   a message is still readable with scripting off -- only dismissal and the
   auto-hide need `site.js`.
+
+  **Three tags are not rendered here.** The settings page posts with htmx and
+  `hx-select="#id-section-<name>"`, so htmx keeps that fragment of the response
+  and drops the rest -- this container with it. A confirmation rendered here
+  would be created, consumed and never seen. Those sections render their own,
+  from `snippets/messages_section.html`; this skips them so a full page load
+  does not show them twice.
 {% endcomment %}
+{% comment %} Kept as a variable so the two templates cannot drift apart on a
+   value one of them spells differently. {% endcomment %}
+{% with section_tags="router explorer layout" %}
 {% if messages %}
 
-{% for message in messages %}{% if "error" in message.tags %}
+{% comment %} `extra_tags and` first: an empty string is a substring of every
+   string, so without it every untagged message would be treated as belonging
+   to a section and vanish from the page entirely. {% endcomment %}
+{% for message in messages %}{% if "error" in message.tags and not message.extra_tags or "error" in message.tags and message.extra_tags not in section_tags %}
 <div class="alert alert-error mb-4" role="alert">{{ message }}</div>
 {% endif %}{% endfor %}
 
 <div class="toast toast-center toast-bottom z-50" data-message-toasts>
-  {% for message in messages %}{% if "error" not in message.tags %}
+  {% for message in messages %}{% if "error" not in message.tags and not message.extra_tags or "error" not in message.tags and message.extra_tags not in section_tags %}
   {% comment %}
     `role="status"` rather than `alert`: these are confirmations, and a polite
     live region does not interrupt a screen reader mid-sentence. The errors
@@ -44,3 +57,4 @@
 </div>
 
 {% endif %}
+{% endwith %}

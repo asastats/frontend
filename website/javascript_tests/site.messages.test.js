@@ -145,6 +145,32 @@ describe("initMessageToasts", function () {
     expect(document.querySelectorAll("[data-message-toast]")).toHaveLength(1);
   });
 
+  test("wiring twice does not give a toast two timers", function () {
+    // htmx swaps run this again, and an untouched toast would otherwise
+    // collect a second set of listeners and a second timer. Two timers means
+    // the hover reprieve stops working: only one of them is ever cleared, so
+    // the toast vanishes from under a reader who is holding it open.
+    site.initMessageToasts();
+    site.initMessageToasts();
+    const element = document.querySelector("[data-message-toast]");
+
+    element.dispatchEvent(new Event("mouseenter"));
+    jest.advanceTimersByTime(site.MESSAGE_TOAST_MILLISECONDS * 3);
+
+    expect(document.querySelectorAll("[data-message-toast]")).toHaveLength(1);
+  });
+
+  test("a toast swapped in later gets wired too", function () {
+    site.initMessageToasts();
+    document.body.insertAdjacentHTML("beforeend", toast("Explorer preference saved."));
+    site.initMessageToasts();
+
+    expect(document.querySelectorAll("[data-message-toast]")).toHaveLength(2);
+    jest.advanceTimersByTime(site.MESSAGE_TOAST_MILLISECONDS);
+
+    expect(document.querySelectorAll("[data-message-toast]")).toHaveLength(0);
+  });
+
   test("a page with no toasts is not an error", function () {
     document.body.innerHTML = "<p>nothing to announce</p>";
     expect(() => site.initMessageToasts()).not.toThrow();

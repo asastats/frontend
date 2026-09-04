@@ -39,6 +39,10 @@ function mainSite() {
     .on("click.swapgate", ".id-swap-swap-toggle", swapLoginGate);
   showSwapErrorToast();
   initMessageToasts();
+  // The settings forms post with htmx, so their confirmations arrive in a
+  // swapped fragment rather than on a page load and `mainSite` never runs for
+  // them. Without this the toast appears and neither dismisses nor hides.
+  document.body.addEventListener('htmx:afterSwap', initMessageToasts);
 }
 
 
@@ -168,6 +172,14 @@ function showSwapErrorToast() {
 function initMessageToasts() {
   var toasts = document.querySelectorAll('[data-message-toast]');
   Array.prototype.forEach.call(toasts, function (toast) {
+    // htmx swaps bring new toasts in and leave the old ones alone, and this
+    // runs again on every swap. Without a mark, an untouched toast collects a
+    // second set of listeners and a second timer on each swap -- and two
+    // timers means the hover reprieve stops working, because only one of them
+    // is ever cleared.
+    if (toast.hasAttribute('data-toast-wired')) return;
+    toast.setAttribute('data-toast-wired', '');
+
     var timer = null;
     var remove = function () {
       if (timer) window.clearTimeout(timer);
