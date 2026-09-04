@@ -49,13 +49,6 @@
 {% endblock %}
 
 {% block account_middle %}
-{% if messages %}
-<div class="mt-6 space-y-2">
-    {% for message in messages %}
-    <div class="alert" role="status">{{ message }}</div>
-    {% endfor %}
-</div>
-{% endif %}
 <div class="divider my-6"></div>
 <form class="add_email" id="add_email" method="POST" action="{% url 'account_email' %}">
     <div class="space-y-4">

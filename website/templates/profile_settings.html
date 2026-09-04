@@ -32,15 +32,6 @@
         <button type="submit" class="btn btn-primary" id="id_save_router">Save</button>
       </div>
     </form>
-    {% if messages %}
-    <div class="space-y-2">
-        {% for message in messages %}
-        {% if message.extra_tags == 'router' %}
-        <div class="alert" role="status">{{ message }}</div>
-        {% endif %}
-        {% endfor %}
-    </div>
-    {% endif %}  
     </div>
   </section>
 
@@ -69,15 +60,6 @@
         <button type="submit" class="btn btn-primary" id="id_save_explorer">Save</button>
       </div>
     </form>
-    {% if messages %}
-    <div class="space-y-2">
-        {% for message in messages %}
-        {% if message.extra_tags == 'explorer' %}
-        <div class="alert" role="status">{{ message }}</div>
-        {% endif %}
-        {% endfor %}
-    </div>
-    {% endif %}
     {% else %}
     <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Intro tier — open subscriptions">
       <div>
@@ -130,15 +112,6 @@
     </ul>
     {% endif %}
     {% endwith %}
-    {% if messages %}
-    <div class="space-y-2">
-        {% for message in messages %}
-        {% if message.extra_tags == 'layout' %}
-        <div class="alert" role="status">{{ message }}</div>
-        {% endif %}
-        {% endfor %}
-    </div>
-    {% endif %}
     {% else %}
     <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Intro tier — open subscriptions">
       <div>

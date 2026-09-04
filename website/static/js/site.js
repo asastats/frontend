@@ -9,6 +9,13 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * *
 */
 
+/** How long a non-error message toast stays before hiding itself.
+ *
+ * Longer than the six seconds `showSwapErrorToast` uses, because that one
+ * carries a single short sentence and these can carry a bundle name.
+ */
+var MESSAGE_TOAST_MILLISECONDS = 8000;
+
 /**
  * Call main function upon finished document loading
  *
@@ -31,6 +38,7 @@ function mainSite() {
     .off("click.swapgate")
     .on("click.swapgate", ".id-swap-swap-toggle", swapLoginGate);
   showSwapErrorToast();
+  initMessageToasts();
 }
 
 
@@ -139,6 +147,57 @@ function showSwapErrorToast() {
 }
 
 
+/**
+ * Wire the Django message toasts rendered by `snippets/messages.html`.
+ *
+ * The toasts are already in the document -- server-rendered, so a message is
+ * readable with scripting off. This adds only what needs a script: the close
+ * button, and an auto-hide so a stack of confirmations does not sit over the
+ * page forever.
+ *
+ * **The timer is cancelled by hovering or focusing.** An eight second timer is
+ * a guess about reading speed, and it is wrong for anyone who reads slowly, is
+ * using a screen reader, or looked away. Someone whose pointer is on the toast
+ * is reading it, and the toast waits.
+ *
+ * Errors are not here. They render inline and stay until the next page load,
+ * because the reason a submit failed should not expire.
+ * @function initMessageToasts
+ *
+ */
+function initMessageToasts() {
+  var toasts = document.querySelectorAll('[data-message-toast]');
+  Array.prototype.forEach.call(toasts, function (toast) {
+    var timer = null;
+    var remove = function () {
+      if (timer) window.clearTimeout(timer);
+      toast.remove();
+    };
+    var start = function () {
+      timer = window.setTimeout(remove, MESSAGE_TOAST_MILLISECONDS);
+    };
+
+    var button = toast.querySelector('[data-dismiss-toast]');
+    if (button) button.addEventListener('click', remove);
+
+    toast.addEventListener('mouseenter', function () {
+      if (timer) window.clearTimeout(timer);
+      timer = null;
+    });
+    toast.addEventListener('mouseleave', start);
+    // focusin/focusout rather than focus: the close button is the focusable
+    // child, and focus does not bubble.
+    toast.addEventListener('focusin', function () {
+      if (timer) window.clearTimeout(timer);
+      timer = null;
+    });
+    toast.addEventListener('focusout', start);
+
+    start();
+  });
+}
+
+
 /*
  * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * SECTION: exports needed by jest testing framework
@@ -150,6 +209,8 @@ if (typeof exports !== 'undefined') {
   module.exports = {
     mainSite,
     swapLoginGate,
-    showSwapErrorToast
+    showSwapErrorToast,
+    initMessageToasts,
+    MESSAGE_TOAST_MILLISECONDS
   };
 }

@@ -1,0 +1,46 @@
+{% comment %}
+  Every Django message, rendered once for the whole site.
+
+  Before this, nine templates each rendered `messages` themselves and no two
+  agreed. Six of them used a bare `alert` with no tag branch at all, so a
+  failure and a success were the same neutral box; `export.html` put Django's
+  tag straight into `class` -- `class="success"`, which is not a DaisyUI class
+  -- and rendered plain unstyled list items. `base.html` rendered none, which
+  is why each page had to.
+
+  **Errors stay on the page. Everything else is a dismissable toast.**
+  An error is usually long, sometimes carries `mark_safe` markup, and is the
+  reason the submit did not work -- it has to stay put and be re-readable. A
+  "saved!" does not.
+
+  `warning` and `debug` are not used anywhere in the project today; both fall
+  to the toast branch. If a warning is ever added and it means "this did not
+  fully work", move it up to the inline branch with the errors.
+
+  The toast markup is rendered server-side rather than built in JavaScript, so
+  a message is still readable with scripting off -- only dismissal and the
+  auto-hide need `site.js`.
+{% endcomment %}
+{% if messages %}
+
+{% for message in messages %}{% if "error" in message.tags %}
+<div class="alert alert-error mb-4" role="alert">{{ message }}</div>
+{% endif %}{% endfor %}
+
+<div class="toast toast-center toast-bottom z-50" data-message-toasts>
+  {% for message in messages %}{% if "error" not in message.tags %}
+  {% comment %}
+    `role="status"` rather than `alert`: these are confirmations, and a polite
+    live region does not interrupt a screen reader mid-sentence. The errors
+    above use `role="alert"` for the opposite reason.
+  {% endcomment %}
+  <div class="alert {% if "success" in message.tags %}alert-success{% elif "warning" in message.tags %}alert-warning{% else %}alert-info{% endif %} shadow-lg"
+       role="status" data-message-toast>
+    <span>{{ message }}</span>
+    <button type="button" class="btn btn-ghost btn-xs btn-circle"
+            data-dismiss-toast aria-label="Dismiss this message">&#10005;</button>
+  </div>
+  {% endif %}{% endfor %}
+</div>
+
+{% endif %}

@@ -26,13 +26,6 @@
       {% include "snippets/taxprepare.html" %}
     {% endif %}
     <div class="mx-auto max-w-2xl text-center">
-      {% if messages %}
-      <ul class="mt-4 space-y-2">
-        {% for message in messages %}
-        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-        {% endfor %}
-      </ul>
-      {% endif %}
     </div>
   </div>
 </div>

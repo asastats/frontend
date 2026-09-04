@@ -143,6 +143,12 @@
 {% block banner %}{% endblock %}
 <main class="flex-1">
   <div class="mx-auto w-full max-w-6xl px-4 py-8">
+    {% comment %}
+      Rendered here, once, rather than by each page: inline errors line up with
+      the content they refer to, and the toasts are `position: fixed` so where
+      they sit in the document does not matter.
+    {% endcomment %}
+    {% include "snippets/messages.html" %}
     {% block content %}{% endblock %}
   </div>
 </main>

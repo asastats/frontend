@@ -37,13 +37,6 @@
 <div class="socialaccount_providers mt-5">
     {% include "socialaccount/snippets/provider_list.html" with process="connect" %}
 </div>
-{% if messages %}
-<div class="mt-6 space-y-2">
-    {% for message in messages %}
-    <div class="alert" role="status">{{ message }}</div>
-    {% endfor %}
-</div>
-{% endif %}
 {% include "socialaccount/snippets/login_extra.html" %}
 {% include "account/snippets/bottom_buttons.html" with where='back' %}
 {% endblock %}

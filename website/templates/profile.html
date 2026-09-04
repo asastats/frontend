@@ -119,14 +119,6 @@
   </section>
   {% endif %}
 
-  {% if messages %}
-  <div class="space-y-2">
-    {% for message in messages %}
-    <div class="alert" role="status">{{ message }}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
   {% comment %}
     One primary action. Update is what this page is for; the rest lead
     elsewhere and are links, not buttons competing with it.

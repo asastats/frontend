@@ -466,3 +466,60 @@ class BundleNameFormTest(FunctionalTest):
             "btn-error",
             self.browser.find_element(By.ID, "id_submit").get_attribute("class"),
         )
+
+
+class MessageToastTest(FunctionalTest):
+    """Confirmations float and can be dismissed; failures stay put.
+
+    **Never run in the environment these were written in**, where the database
+    is unreachable, so this is the one part of the messages change that has not
+    been executed. The jest suite covers the timer and the close button in
+    jsdom and the rendering split is covered in `core/tests/`; what only a
+    browser can answer is whether the toast is actually visible and clickable
+    where the template puts it -- `position: fixed` under a `z-50` that some
+    other layer might beat.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.create_cookie_and_go_to_bundlename_add_page(
+            "toasts@example.com", permission=PROFESSIONAL
+        )
+
+    def test_a_confirmation_arrives_as_a_toast_that_can_be_dismissed(self):
+        """Adding a bundle calls `messages.success`, so it must float."""
+        self.browser.get(self.server_url + "/profile/add-bundle")
+        self.sleep()
+        self.submit_bundlename_name("Toast test", TEST_ADDRESS)
+        self.sleep()
+
+        toast = self.browser.find_element(By.CSS_SELECTOR, "[data-message-toast]")
+        self.assertTrue(toast.is_displayed(), "the confirmation is not visible")
+        self.assertEqual("status", toast.get_attribute("role"))
+
+        # clickable where it sits, not merely present in the document
+        toast.find_element(By.CSS_SELECTOR, "[data-dismiss-toast]").click()
+        self.sleep()
+
+        self.assertEqual(
+            [],
+            self.browser.find_elements(By.CSS_SELECTOR, "[data-message-toast]"),
+            "the toast survived its own close button",
+        )
+
+    def test_a_failure_stays_on_the_page(self):
+        """An error is the reason a submit failed; nothing may hide it.
+
+        Reached through a bundle name that does not exist, which is what
+        `BUNDLE_NAME_NOT_FOUND_ERROR` is for.
+        """
+        self.browser.get(self.server_url + "/profile/edit-bundle/no-such-bundle")
+        self.sleep()
+
+        errors = self.browser.find_elements(By.CSS_SELECTOR, '[role="alert"]')
+        self.assertTrue(errors, "the failure was not shown at all")
+        self.assertNotIn(
+            "data-message-toast",
+            self.browser.page_source.split("data-message-toasts")[0],
+            "an error was rendered as a toast and will expire",
+        )

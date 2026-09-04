@@ -57,23 +57,6 @@
   </a>
 </p>
 
-{% if messages %}
-<div class="space-y-2">
-  {% for message in messages %}
-    {% comment %} Alerts with a live-region role. This was a badge carrying
-       four colour classes at once -- `badge-outline bg-neutral
-       text-neutral-content text-base-content/60` -- so which won depended on
-       source order, and a message appearing after load was announced to
-       nobody. The same fix the authorize page got. {% endcomment %}
-    {% if "error" in message.tags %}
-    <div class="alert alert-error" role="alert">{{ message }}</div>
-    {% else %}
-    <div class="alert" role="status">{{ message }}</div>
-    {% endif %}
-  {% endfor %}
-</div>
-{% endif %}
-
 {% if user.profile.address == "" %}
 <div class="alert alert-warning" role="status">
   <span>To use the rest of the site, add and authorise your subscription address on the
