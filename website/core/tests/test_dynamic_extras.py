@@ -25,6 +25,7 @@ from pathlib import Path
 import pytest
 
 from core.templatetags.core_extras import (
+    MAX_AMOUNT_DECIMALS,
     allocation_bands,
     amount_repr,
     beats_last_purchase,
@@ -423,6 +424,13 @@ class TestHoldingsAmount:
         the browser sorts on. They are computed separately, so nothing but a
         test stops them drifting -- and a Holdings sort that disagreed with the
         column it claims to sort would be silently, unfalsifiably wrong.
+
+        **They are no longer equal, and must not be.** The display caps at
+        `MAX_AMOUNT_DECIMALS` while the sort key keeps the asset's full
+        precision, which is deliberate: sorting on a rounded figure would tie
+        holdings that differ. So the property is that the displayed figure is
+        the sort key rounded to the places actually shown -- half a unit in the
+        last of them, which is the most rounding can move it.
         """
         checked = 0
         for item in payload["asaitems"]:
@@ -430,11 +438,17 @@ class TestHoldingsAmount:
             displayed = amount_repr(item.get("amount"), decimals)
             sorted_on = holdings_amount(item)
 
-            # `amount_repr` rounds to the asset's decimals and groups; compare
-            # as numbers, which is what both are for.
-            assert float(sorted_on) == pytest.approx(
-                float(displayed.replace(",", "")), rel=1e-9
-            ), f"{item['asset'].get('unit')}: shows {displayed}, sorts on {sorted_on}"
+            places = min(decimals, MAX_AMOUNT_DECIMALS)
+            # a tolerance rather than `round()`: Python rounds half to even and
+            # `floatformat` does not, so an exact `.5` would fail on a
+            # disagreement about tie-breaking rather than about the number
+            tolerance = 0.5 * 10 ** -places
+            assert abs(
+                float(sorted_on) - float(displayed.replace(",", ""))
+            ) <= tolerance, (
+                f"{item['asset'].get('unit')}: shows {displayed}, "
+                f"sorts on {sorted_on}"
+            )
             checked += 1
 
         assert checked > 50, "too few assets to prove anything"

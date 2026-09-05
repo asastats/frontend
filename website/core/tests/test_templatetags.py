@@ -210,13 +210,17 @@ class TestFilters:
         assert list_item([1, 2, 3], 3) == ""
 
     # # amount_repr
+    #
+    # Four decimal places at most, which is what the Materialize design showed
+    # and what the rebuild keeps. Indexes 0, 2 and 3 are the ones that used to
+    # print the asset's full precision -- six, five and ten places.
     @pytest.mark.parametrize(
         "index,result",
         [
-            (0, "26,872.283825"),
+            (0, "26,872.2838"),
             (1, "355,029"),
-            (2, "10,000.00100"),
-            (3, "3.0000000010"),
+            (2, "10,000.0010"),
+            (3, "3.0000"),
             (4, "5,140"),
             (5, "300"),
             (6, "625"),
@@ -234,6 +238,50 @@ class TestFilters:
     def test_filters_amount_repr_returns_zero_for_valueerror(self):
         returned = amount_repr(5, ())
         assert returned == "0"
+
+    @pytest.mark.parametrize(
+        "amount,decimals,result",
+        [
+            # an asset declaring fewer than the cap keeps its own precision
+            (12345, 2, "123.45"),
+            (700000, 3, "700"),
+            # and one declaring more is cut to the cap, not to its own
+            (26872283825, 6, "26,872.2838"),
+            (30000000010, 10, "3.0000"),
+            # exactly at the cap, unchanged
+            (1234567, 4, "123.4567"),
+            # no decimals at all is an integer, not "1.0000"
+            (355029, 0, "355,029"),
+        ],
+    )
+    def test_filters_amount_repr_shows_at_most_four_decimals(
+        self, amount, decimals, result
+    ):
+        """The cap is on display only; the division keeps the real decimals.
+
+        `10,000.0010` rather than `10,000.001` is Django's `-N`, which means
+        "N places unless the value is whole" rather than "strip trailing
+        zeros". Pinned because it looks like a bug and is not.
+        """
+        assert amount_repr(amount, decimals) == result
+
+    def test_filters_amount_repr_divides_by_the_assets_decimals_not_the_cap(self):
+        """The one way this could be wrong and still look plausible.
+
+        Capping the divisor instead of the display would turn 26,872.283825
+        into 2,687,228.3825 -- a holding a hundred times too large, rendered
+        with a confident four decimal places.
+        """
+        assert amount_repr(26872283825, 6).startswith("26,872")
+
+    def test_filters_amount_repr_survives_a_negative_decimals(self):
+        """`max(..., 0)` guards a format string that would otherwise be "--3g".
+
+        `floatformat` returns the value untouched for an unparsable argument
+        rather than raising, so without the guard this is a silently wrong
+        number instead of the "0" every other bad input gets.
+        """
+        assert amount_repr(250, -1) == "2,500"
 
     # # is_distribution
     def test_filters_is_distribution_returns_true(self):
@@ -459,8 +507,11 @@ class TestFiltersAbsValue:
         # -> amount_repr -> displayed string. Verify the chain works end
         # to end for the Folks borrow example.
         result = amount_repr(abs_value(-10092956), 6)
-        # 10092956 / 1e6 = 10.092956
-        assert "10.092956" in result
+        # 10092956 / 1e6 = 10.092956, shown to the four-place cap. What this
+        # test is really for is the sign: the magnitude survives abs_value and
+        # the parentheses in the template carry the "borrowed" meaning.
+        assert result == "10.0930"
+        assert "-" not in result
 
 
 class TestFiltersDistPrice:

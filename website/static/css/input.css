@@ -3535,9 +3535,14 @@
   overflow: hidden;
 }
 
+/* 30px in a 38px tile, not 24. `contain` already keeps a non-square mark
+   whole, so the tile's own padding was doing that job a second time and
+   leaving 7px of dead space on every side -- the icons read as small in a box
+   rather than as icons. 3px of breathing room each side is enough to keep the
+   1px border from touching the artwork. */
 .dynamic-page .mono-tile img {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
 }
 
@@ -3906,8 +3911,10 @@
 }
 
 .dynamic-page .rows.cards .chead > .mono-tile img {
-  width: 15px;
-  height: 15px;
+  /* the same fill as the full-size tile: 17 of 22 is 30 of 38, and this tile
+     carries no border, so nothing needs clearing */
+  width: 17px;
+  height: 17px;
 }
 
 /* The tile's pin goes to the corner: a flex column has no fifth cell for it. */
@@ -3984,8 +3991,8 @@
 }
 
 .dynamic-page .rows.cards .mcard[open] .chead > .mono-tile img {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
 }
 
 .dynamic-page .rows.cards .mcard[open] .cval { text-align: right; }

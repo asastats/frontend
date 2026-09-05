@@ -891,6 +891,79 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
         self.assertEqual("true", opener.get_attribute("aria-expanded"))
 
 
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_asset_icon_fills_its_tile(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The icon is 30px in a 38px tile, not 24.
+
+        `object-fit: contain` already keeps a non-square mark whole, so the
+        tile's own padding was doing that a second time -- roughly 7px of dead
+        space on every side, which made the icons read as small-in-a-box rather
+        than as icons. Measured rather than asserted from the stylesheet,
+        because the number that matters is what the browser lays out.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+
+        self._sign_in()
+        self._open_page()
+
+        row = self.browser.find_elements(By.CSS_SELECTOR, self.ASSETS)[0]
+        tile = row.find_element(By.CSS_SELECTOR, ".mono-tile")
+        icon = tile.find_element(By.CSS_SELECTOR, "img")
+
+        self.assertEqual(38, round(tile.size["width"]))
+        self.assertEqual(30, round(icon.size["width"]), "the icon is adrift in its tile")
+        self.assertGreater(
+            icon.size["width"] / tile.size["width"],
+            0.7,
+            "more than a quarter of the tile is padding",
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_no_amount_shows_more_than_four_decimals(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The Materialize design capped this and the rebuild has to keep it.
+
+        A six-decimal ASA printed all six -- `6,416.429397` -- which pushes the
+        unit name out of the row and reports a precision nobody reads. The cap
+        is on display only: `amount_repr` still divides by the asset's own
+        decimals, so the quantity is unchanged and only its tail is.
+
+        Swept across every rendered row rather than one, because the fault was
+        per-asset: whichever asset declared the most decimals was the one that
+        looked wrong.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+
+        self._sign_in()
+        self._open_page()
+
+        amounts = [
+            element.text
+            for element in self.browser.find_elements(By.CSS_SELECTOR, ".cid-amt")
+            if element.text.strip()
+        ]
+        self.assertGreater(len(amounts), 10, "no amounts rendered; the sweep proves nothing")
+
+        offenders = []
+        for text in amounts:
+            figure = text.split()[0].replace(",", "")
+            if "." in figure and len(figure.split(".")[1]) > 4:
+                offenders.append(text)
+
+        self.assertEqual([], offenders, "these amounts show more than four decimals")
+
+
 class DynamicCompactTest(MoneyPageMixin, FunctionalTest):
     """Design 3: the same template, one class, a different list.
 
@@ -972,6 +1045,18 @@ class DynamicCompactTest(MoneyPageMixin, FunctionalTest):
             round(tile.location["x"]),
             round(name.location["x"]),
             "the icon pushed the name in rather than sitting under it",
+        )
+
+        # The artwork fills the tile rather than floating in it. `contain`
+        # already keeps a non-square mark whole, so tile padding was doing that
+        # job twice and the icons read as small-in-a-box; 17 of 22 is the same
+        # fill the full-size tile gets from 30 of 38.
+        icon = tile.find_element(By.CSS_SELECTOR, "img")
+        self.assertEqual(17, round(icon.size["width"]), "the icon is adrift in its tile")
+        self.assertGreater(
+            icon.size["width"] / tile.size["width"],
+            0.7,
+            "more than a quarter of the tile is padding",
         )
 
     @mock.patch("core.context_processors.fetch_capabilities")

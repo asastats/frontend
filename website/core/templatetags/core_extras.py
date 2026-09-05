@@ -197,18 +197,41 @@ def list_item(collection, index):
     return collection[index] if index < len(collection) else ""
 
 
+#: The most decimal places an amount is ever *shown* with.
+#:
+#: An ASA may declare up to 19, and printing them all makes a holdings list
+#: unreadable: the figure that matters is the size of the holding, and six
+#: places of a token worth a fraction of a cent is noise that pushes the unit
+#: name out of the row. Four is what the Materialize design showed and what the
+#: rebuild is expected to keep.
+#:
+#: This caps the *display* only. The division below still uses the asset's own
+#: decimals, because that is what turns base units into a quantity - capping it
+#: there would report the wrong number rather than a shorter one.
+MAX_AMOUNT_DECIMALS = 4
+
+
 @register.filter
 def amount_repr(amount, decimals):
     """Return amount divided with ten on provided decimals.
+
+    Shown with at most :data:`MAX_AMOUNT_DECIMALS` places, and with fewer when
+    the asset declares fewer: a two-decimal asset is still shown with two.
 
     :param amount: asset amount
     :type amount: int
     :param decimals: number of decimal places
     :type decimals: int
+    :var places: decimal places to display, the asset's own or the cap
+    :type places: int
     :return: string
     """
     try:
-        return floatformat(int(amount) / (10 ** int(decimals)), f"-{decimals}g")
+        # `max(..., 0)` because a negative would reach `floatformat` as the
+        # string "--3g", which formats nothing and returns the value untouched
+        # rather than raising - a silent wrong answer instead of the "0" below.
+        places = min(max(int(decimals), 0), MAX_AMOUNT_DECIMALS)
+        return floatformat(int(amount) / (10 ** int(decimals)), f"-{places}g")
     except (ValueError, TypeError):
         return "0"
 
