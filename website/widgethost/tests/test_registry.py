@@ -8,6 +8,7 @@ from widgethost.registry import (
     swap_entry_url,
     swap_holdings_tmpl,
     swap_routers,
+    swap_sdk_static,
 )
 
 
@@ -160,3 +161,48 @@ class TestWidgethostRegistrySwapClientCfg:
             "fee_bps": 0,
             "api_key": "",
         }
+
+
+class TestWidgethostRegistrySwapSdkStatic:
+    """Testing class for :py:func:`widgethost.registry.swap_sdk_static`."""
+
+    def test_swap_sdk_static_returns_the_path_for_a_router_that_ships_one(self):
+        assert swap_sdk_static("folks") == "folks/folks-sdk.bundle.js"
+
+    def test_swap_sdk_static_is_empty_for_the_asastats_router(self):
+        """Ours quotes in the engine, so its adapter is inside `swap/swap.js`.
+
+        There is no vendor bundle to load and there never was; the template
+        used to name one anyway.
+        """
+        assert swap_sdk_static("asastats") == ""
+
+    def test_swap_sdk_static_is_empty_for_no_router(self):
+        assert swap_sdk_static("") == ""
+
+    def test_swap_sdk_static_is_empty_for_a_router_that_is_not_installed(self):
+        assert swap_sdk_static("nosuchrouter") == ""
+
+    def test_every_router_either_ships_a_bundle_or_reports_none(self):
+        """The regression, swept rather than sampled.
+
+        `{% static %}` **raises** under production's
+        `ManifestStaticFilesStorage` for a path with no manifest entry, and
+        development's storage does not -- so naming a bundle that does not
+        exist is a 500 that only production ever sees. It took out the whole
+        per-user partial: the marker, the swap modal, `swap.js` and the Dust
+        Sweep with it, leaving the Swap button to fall through to its no-JS
+        href and navigate.
+
+        Swept across every discovered router because the fault was per-router
+        and the broken one was the default. Picking a router to test would have
+        picked a working one three times in four.
+        """
+        from django.contrib.staticfiles import finders
+
+        for router_id, _ in swap_routers():
+            path = swap_sdk_static(router_id)
+            assert path == "" or finders.find(path), (
+                f"{router_id} names {path!r}, which is not a static file that "
+                "exists -- production's static storage raises for it"
+            )

@@ -9,6 +9,7 @@ lists with manifest discovery: the presence of a ``widget.toml`` registers a wid
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.urls import NoReverseMatch, reverse
 
 import widgets
@@ -186,6 +187,43 @@ def swap_endpoint_urls(router_id):
         }
     except NoReverseMatch:
         return {}
+
+
+def swap_sdk_static(router_id):
+    """Return the router's SDK bundle static path, or "" when it ships none.
+
+    **Not every router has one.** The vendor routers quote in the browser
+    against their own SDK and ship it as ``<id>/<id>-sdk.bundle.js``; the ASA
+    Stats router quotes in our engine, so its adapter lives in ``swap/swap.js``
+    with the rest of the controller and there is no bundle to load. Same shape
+    as :func:`swap_endpoint_urls`, which returns ``{}`` for the routers that do
+    not need engine endpoints.
+
+    **The template must not name a static file that does not exist.** Under
+    ``ManifestStaticFilesStorage`` -- production, and only production --
+    ``{% static %}`` *raises* for a path missing from ``staticfiles.json``, so
+    a router with no bundle turned the whole per-user partial into a 500: no
+    marker, no modal, no ``swap.js``, and a Swap button that fell through to
+    its no-JS ``href`` and navigated. Development uses a storage that returns
+    the URL and lets the browser 404 it, which is why nothing caught it.
+
+    Resolved by asking whether the file is actually there rather than by
+    listing the routers that have one, because a list is what goes stale the
+    next time a router is added.
+
+    :param router_id: chosen swap-router widget id
+    :type router_id: str
+    :return: the static path, or ""
+    :rtype: str
+    """
+    if not router_id:
+        return ""
+
+    path = f"{router_id}/{router_id}-sdk.bundle.js"
+    # Deliberately not memoised: the answer is fixed for a deployment, but a
+    # cache keyed on the id alone outlives the `STATICFILES_DIRS` a test
+    # overrides, and this costs one `os.path.exists` per configured directory.
+    return path if finders.find(path) else ""
 
 
 def swap_client_cfg(router_id):

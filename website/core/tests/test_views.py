@@ -1443,6 +1443,45 @@ class SwapEntryViewTest(TestCase):
         # the guess stays, as the no-wallet fallback
         assert f'data-address="{primary}"' in marker
 
+    def test_the_asastats_router_names_no_sdk_bundle(self):
+        """The production 500, from the console log of a real session.
+
+        Every vendor router ships `<id>/<id>-sdk.bundle.js`; ours quotes in the
+        engine, so its adapter is inside `swap/swap.js` and there is no bundle.
+        The view built the path unconditionally and the template emitted
+        `{% static %}` for it -- which *raises* under production's
+        `ManifestStaticFilesStorage` and merely 404s under development's. So
+        `/swap-entry/<address>/` answered 500 in production only, taking the
+        marker, the modal, `swap.js` and the Dust Sweep with it, and the Swap
+        button fell through to its no-JS href and reloaded the page.
+        """
+        self._login()
+        self.user.profile.preferred_router = "asastats"
+        self.user.profile.save()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/asastats/AAA"):
+            response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        assert response.context["swap_sdk_static"] == ""
+        # and the tag is skipped rather than rendered empty, which would be a
+        # request for the page's own URL
+        assert "-sdk.bundle.js" not in response.content.decode()
+
+    def test_a_router_that_ships_a_bundle_still_loads_it(self):
+        """The other half: skipping must not skip the routers that need one."""
+        self._login()
+        self.user.profile.preferred_router = "folks"
+        self.user.profile.save()
+        with mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/AAA"):
+            response = self.client.get(self.url)
+
+        assert response.context["swap_sdk_static"] == "folks/folks-sdk.bundle.js"
+        assert "folks-sdk.bundle.js" in response.content.decode()
+
     def test_swap_marker_never_offers_an_address_the_reader_does_not_own(self):
         """The server's half of the gate, on the swap side this time.
 

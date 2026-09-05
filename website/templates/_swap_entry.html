@@ -26,7 +26,11 @@
       data-address="{{ swap_address }}"
       data-addresses="{{ swap_addresses|join:' ' }}"></span>
 {% include "swap/_swap_modal.html" %}
-<script src="{% static swap_sdk_static %}"></script>
+{# Only for a router that ships one. `{% static %}` RAISES under production's #}
+{# ManifestStaticFilesStorage for a path with no manifest entry, so naming a  #}
+{# bundle that does not exist 500s this whole partial -- and with it the      #}
+{# marker, the modal, swap.js and the Dust Sweep below.                       #}
+{% if swap_sdk_static %}<script src="{% static swap_sdk_static %}"></script>{% endif %}
 <script src="{% static 'swap/swap.js' %}"></script>
 {% endif %}
 

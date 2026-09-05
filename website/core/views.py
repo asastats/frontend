@@ -97,6 +97,7 @@ from widgethost.registry import (
     swap_entry_url,
     swap_holdings_tmpl,
     swap_routers,
+    swap_sdk_static,
 )
 
 from .forms import AddressForm, ExportDownloadForm, ExportForm
@@ -1620,9 +1621,11 @@ class SwapEntryView(TemplateView):
             # buttons were all somebody else's.
             context["swap_addresses"] = context["dustsweep_addresses"]
             context["swap_address"] = context["dustsweep_address"]
-            # The shared controller is loaded once; the chosen router's SDK bundle
-            # is loaded by id, e.g. "haystack/haystack-sdk.bundle.js".
-            context["swap_sdk_static"] = f"{router}/{router}-sdk.bundle.js"
+            # The shared controller is loaded once; the chosen router's SDK
+            # bundle is loaded by id, e.g. "haystack/haystack-sdk.bundle.js" --
+            # and is "" for a router that ships none, which the template then
+            # skips rather than naming a static file that does not exist.
+            context["swap_sdk_static"] = swap_sdk_static(router)
         return context
 
 
