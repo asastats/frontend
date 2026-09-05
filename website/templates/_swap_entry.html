@@ -17,7 +17,14 @@
       {# never consult.                                                       #}
       data-quote-url="{{ quote_url|default:'' }}"
       data-group-url="{{ group_url|default:'' }}"
-      data-address="{{ swap_address }}"></span>
+      {# Both halves of "which account does this swap spend from". `data-address` #}
+      {# is the server's guess - the profile's primary when it is on this page - #}
+      {# and `data-addresses` is every address here the reader owns. `swap.js`   #}
+      {# opens on the connected one when it is among them, because on a bundle   #}
+      {# page the guess is wrong exactly as often as the reader is connected to  #}
+      {# the other address.                                                      #}
+      data-address="{{ swap_address }}"
+      data-addresses="{{ swap_addresses|join:' ' }}"></span>
 {% include "swap/_swap_modal.html" %}
 <script src="{% static swap_sdk_static %}"></script>
 <script src="{% static 'swap/swap.js' %}"></script>

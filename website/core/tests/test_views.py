@@ -1415,6 +1415,54 @@ class SwapEntryViewTest(TestCase):
             response = self.client.get(reverse("swap_entry", args=["B" * 40]))
         assert response.context["swap_address"] == first
 
+    def test_swap_marker_carries_every_address_the_reader_owns(self):
+        """The guess is not enough on a bundle, so the candidates ride along.
+
+        The marker used to carry the chosen address alone, and `swap.js` opened
+        the panel on it whatever the wallet was connected to -- so a reader on
+        the bundle's other address read the primary's holdings and balances.
+        The browser can only correct that if it is told what the alternatives
+        are, which is what `data-addresses` is for. Same shape, and the same
+        reasoning, as the sweep's candidate list.
+        """
+        self._login()
+        first, primary = "A" * 58, "Z" * 58
+        self.user.profile.address = primary
+        self.user.profile.save()
+        with mock.patch(
+            "core.views.check_bundle_addresses", return_value=f"{first} {primary}"
+        ), mock.patch(
+            "core.views.linked_addresses_for_user", return_value={first, primary}
+        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/BBB"):
+            response = self.client.get(reverse("swap_entry", args=["B" * 40]))
+
+        assert response.context["swap_addresses"] == [first, primary]
+        rendered = response.content.decode()
+        marker = rendered.split('id="id-swap-enabled"', 1)[1].split("</span>", 1)[0]
+        assert f'data-addresses="{first} {primary}"' in marker
+        # the guess stays, as the no-wallet fallback
+        assert f'data-address="{primary}"' in marker
+
+    def test_swap_marker_never_offers_an_address_the_reader_does_not_own(self):
+        """The server's half of the gate, on the swap side this time.
+
+        `swap.js` opens on the connected account only when it is one of these,
+        so a stranger's address in the bundle must not reach the marker even
+        though the page displays it.
+        """
+        self._login()
+        stranger = "D" * 58
+        with mock.patch(
+            "core.views.check_bundle_addresses",
+            return_value=f"{self.address} {stranger}",
+        ), mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/BBB"):
+            response = self.client.get(reverse("swap_entry", args=["B" * 40]))
+
+        assert response.context["swap_addresses"] == [self.address]
+        assert stranger not in response.content.decode()
+
 
 class SwapSourceRedirectViewTest(TestCase):
     """Testing class for :class:`core.views.SwapSourceRedirectView`."""

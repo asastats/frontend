@@ -1604,11 +1604,21 @@ class SwapEntryView(TemplateView):
             # selecting ours on an address page answered "this deployment has
             # no ASA Stats router endpoint".
             context.update(swap_endpoint_urls(router))
-            # The swap carries one address in its marker, so it takes the best
-            # single guess rather than a list. `swap.js` already refuses to
-            # enable the button unless the live wallet is connected to exactly
-            # this account, so a wrong guess costs a reconnect rather than a
-            # failed signature.
+            # **The candidates, and a fallback among them.** The swap opens on
+            # one address, and which one cannot be decided here for the same
+            # reason the sweep's cannot: linkage is a server fact and connection
+            # is a browser one. So the marker carries both - every address on
+            # this page the reader owns, and the best guess to use when the
+            # wallet is on none of them - and `swap.js` prefers the connected
+            # account.
+            #
+            # The guess alone was wrong on a bundle: it opened on the profile's
+            # primary, so a reader connected to the bundle's *other* address was
+            # shown that other account's holdings. Nothing was unsafe about it -
+            # the Swap button stays disabled unless the wallet owns the
+            # from-address - but the holdings, the balances and the percentage
+            # buttons were all somebody else's.
+            context["swap_addresses"] = context["dustsweep_addresses"]
             context["swap_address"] = context["dustsweep_address"]
             # The shared controller is loaded once; the chosen router's SDK bundle
             # is loaded by id, e.g. "haystack/haystack-sdk.bundle.js".
