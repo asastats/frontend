@@ -10,6 +10,8 @@
 
   vars:
     env_files:
+      # first, so a real env file below overrides anything it also defines
+      - "{{ playbook_dir }}/.env.molecule"
       - "{{ playbook_dir }}/../../.env.testing"
       - "{{ playbook_dir }}/../../../website/.env.testing"
 

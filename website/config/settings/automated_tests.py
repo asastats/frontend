@@ -45,3 +45,34 @@ CACHES = {
         "LOCATION": "asastats-automated-tests",
     }
 }
+
+
+# --- Values the suite must not inherit from whoever's .env ---
+#
+# `load_dotenv()` in base.py reads `website/.env`, which exists on a developer's
+# machine and does not exist in CI. Two settings that default to empty then
+# behave differently in the two places, and the suite was green locally while
+# failing 16 tests on GitHub:
+#
+# * an empty `SIMPLE_JWT_KEY` makes `jwt` refuse to sign at all
+#   (`InvalidKeyError: HMAC key must not be empty`) and turns
+#   `core.checks.widgets_api_token` into `asastats.E001`, so every test that
+#   asserts a *different* code fails on the first one instead;
+# * empty export limits hide the CSV export link for every tier below Cluster,
+#   which is what `TestCacheIsKeyedOnEntitlementToo` renders and asserts on.
+#
+# Pinned here rather than exported in the workflow so the suite is
+# deterministic in both places, and so a developer whose `.env` is unusual
+# gets the same result as CI.
+from utils.helpers import parse_export_limits  # noqa: E402
+
+#: Obviously not a secret, and never used against a real token: the suite both
+#: mints and verifies with it.
+SIMPLE_JWT_KEY = "automated-tests-signing-key-not-a-secret"
+SIMPLE_JWT = {**SIMPLE_JWT, "SIGNING_KEY": SIMPLE_JWT_KEY}  # noqa: F405
+
+#: The example from `core.checks`' own hint. `free` has to be present or a
+#: permission-0 reader sees no CSV export link.
+EXPORT_TIERS_ADDRESSES_LIMIT = parse_export_limits(
+    "free:5,Intro:6,Asastatser:7,Professional:8,Cluster:10"
+)

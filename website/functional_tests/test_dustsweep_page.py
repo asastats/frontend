@@ -25,6 +25,8 @@ the server then acted on, so the tests below assert their *absence* as firmly
 as they assert the plan URL's presence.
 """
 
+import json
+import os
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -33,6 +35,16 @@ from selenium.webdriver.common.by import By
 from walletauth.models import LinkedAddress
 
 from .base import FunctionalTest
+
+#: The serialized account the address page renders from, as
+#: `test_swap_widget.py` uses it. These tests care about the sweep entry rather
+#: than the figures, so any real payload does.
+SAMPLE_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "utils",
+    "tests",
+    "sample_serialized_540A5.json",
+)
 
 ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 
@@ -601,7 +613,37 @@ class DustSweepPageUnlinkedTest(FunctionalTest):
         )
 
 
-class DustSweepAddressPageEntryTest(FunctionalTest):
+class AddressPageEngineMixin:
+    """Mock every engine call the address page makes, for the whole test.
+
+    The two entry-point classes below load the real address page, which asks
+    the engine for the account, the export status and the deployment's
+    capabilities. Nothing else in this module does -- the sweep's own page does
+    not -- which is why only these two failed on CI while the rest passed.
+
+    Unmocked, the page 500s: on CI there is no engine to answer and locally the
+    deployment credential is rejected. Either way `#id-swap-entry-container`
+    never renders and every test here times out waiting for it, which reads as
+    twelve broken sweep tests rather than one missing mock.
+    """
+
+    def setUp(self):
+        super().setUp()
+        patches = [
+            mock.patch("core.context_processors.fetch_capabilities"),
+            mock.patch("core.views.check_export_status"),
+            mock.patch("core.views.fetch_and_serialize_account"),
+        ]
+        capabilities, status, account = [patch.start() for patch in patches]
+        for patch in patches:
+            self.addCleanup(patch.stop)
+        capabilities.return_value = {"permission": 100}
+        status.return_value = {}
+        with open(SAMPLE_PATH) as sample_file:
+            account.return_value = json.load(sample_file)
+
+
+class DustSweepAddressPageEntryTest(AddressPageEngineMixin, FunctionalTest):
     """The entry point: reaching the sweep from the address page.
 
     The address page is ``cache_page``'d across users, so this arrives through
@@ -795,7 +837,7 @@ class DustSweepAddressPageEntryTest(FunctionalTest):
         assert self.browser.find_elements(By.CSS_SELECTOR, ".id-dustsweep-open") == []
 
 
-class DustSweepBundlePageEntryTest(FunctionalTest):
+class DustSweepBundlePageEntryTest(AddressPageEngineMixin, FunctionalTest):
     """Reaching the sweep from a *bundle* page, which is where it went wrong.
 
     A bundle page shows several addresses consolidated, and a sweep is signed

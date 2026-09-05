@@ -3,5 +3,10 @@
   import_playbook: "../shared/converge.yml"
   vars:
     env_files:
+      # first, so a real env file below overrides anything it also defines
+      - "{{ playbook_dir }}/../shared/.env.molecule"
       - "{{ playbook_dir }}/../../.env-example"
-      - "{{ playbook_dir }}/../../../website/.env-example"
+      # `.env.example`, not `.env-example`: the deploy/ side uses a hyphen and
+      # the website/ side a dot, and this entry named a file that has never
+      # existed -- so no scenario has ever loaded the app's own variables
+      - "{{ playbook_dir }}/../../../website/.env.example"
