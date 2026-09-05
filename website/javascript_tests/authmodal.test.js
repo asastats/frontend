@@ -200,12 +200,21 @@ describe("authmodal.js", () => {
  * picker is gone.
  */
 describe("wallet handoff", () => {
-  /** Adds a wallet card with a connect button inside the dialog. */
+  /** Adds a wallet card inside the dialog, as snippets/wallet_signing.html does.
+   *
+   * The hidden controls are part of the shape, not decoration: `frontend/wallet`
+   * reveals them from its own subscription to the wallet state, and that reveal
+   * is one of the two cues the handoff watches.
+   */
   function mountWalletTab(dialog) {
     document.getElementById("modal-tab-wallet").innerHTML = `
       <div id="wallet-connect">
         <div id="wallet-pera">
           <button id="connect-button-pera" type="button">Connect</button>
+          <button id="set-active-button-pera" type="button" style="display:none">Set active</button>
+          <button id="disconnect-button-pera" type="button" style="display:none">Disconnect</button>
+          <select id="account-select-pera"></select>
+          <button id="auth-button-pera" type="button" style="display:none">Sign in</button>
         </div>
       </div>`;
     return document.getElementById("connect-button-pera");
@@ -364,6 +373,157 @@ describe("wallet handoff", () => {
     connect.click();
 
     expect(dialog.close).not.toHaveBeenCalled();
+  });
+
+  /**
+   * The reconnect path, which the picker cue alone could not serve.
+   *
+   * A reader arrives with a wallet session restored from a previous visit --
+   * the card shows Disconnect, not Connect -- disconnects, and connects again.
+   * The SDK is warm by then, so its container is already on the body and lands
+   * in the "this is the page" snapshot: nothing is ever recorded as injected,
+   * nothing is ever seen to leave, and the dialog stayed shut. The reader had
+   * to open it a second time to reach Sign in and sign the 0 ALGO message.
+   */
+  describe("when the SDK is already warm", () => {
+    /** Put the SDK's container on the body before the handoff is armed. */
+    function warmSdk() {
+      const container = document.createElement("div");
+      container.id = "pera-wallet-modal";
+      document.body.appendChild(container);
+      return container;
+    }
+
+    /** What `frontend/wallet` does to a control when the state changes. */
+    function show(id) {
+      document.getElementById(id).style.display = "block";
+    }
+
+    it("reopens when the connection lands, picker or no picker", async () => {
+      const dialog = mountModal();
+      const connect = mountWalletTab(dialog);
+      warmSdk();
+      A.wireAuthModal(document);
+      A.openAuthModal(document);
+      connect.click();
+      await settle();
+      expect(dialog.open).toBe(false);
+
+      show("auth-button-pera");
+      await settle();
+
+      expect(dialog.open).toBe(true);
+      expect(visiblePanel()).toBe("modal-tab-wallet");
+    });
+
+    it("reopens for a connection that still needs Set active", async () => {
+      // Connected, but another wallet is the active one. Still a next step,
+      // and still one the reader can only take inside the dialog.
+      const dialog = mountModal();
+      const connect = mountWalletTab(dialog);
+      warmSdk();
+      A.wireAuthModal(document);
+      A.openAuthModal(document);
+      connect.click();
+
+      show("set-active-button-pera");
+      await settle();
+
+      expect(dialog.open).toBe(true);
+    });
+
+    it("stays closed while the picker is up and nothing has connected", async () => {
+      // The cue is a control appearing, not the card being touched at all.
+      const dialog = mountModal();
+      const connect = mountWalletTab(dialog);
+      warmSdk();
+      A.wireAuthModal(document);
+      A.openAuthModal(document);
+      connect.click();
+
+      document.getElementById("account-select-pera").style.display = "block";
+      await settle();
+
+      expect(dialog.open).toBe(false);
+    });
+
+    it("does not read a disconnect as a connection", async () => {
+      // The same property, written the other way: `frontend/wallet` sets
+      // display:none on these controls when the wallet disconnects, and that
+      // must not bring the dialog back over the picker.
+      const dialog = mountModal();
+      const connect = mountWalletTab(dialog);
+      warmSdk();
+      A.wireAuthModal(document);
+      A.openAuthModal(document);
+      connect.click();
+
+      document.getElementById("auth-button-pera").style.display = "none";
+      await settle();
+
+      expect(dialog.open).toBe(false);
+    });
+
+    it("does not reopen on a card that has simply never rendered", async () => {
+      // The trap in reading the buttons directly rather than reacting to a
+      // change: a control that was never given a display carries "", which is
+      // not "none" -- so a naive check reopens the dialog the instant it closes.
+      const dialog = mountModal();
+      const connect = mountWalletTab(dialog);
+      document.getElementById("auth-button-pera").removeAttribute("style");
+      warmSdk();
+      A.wireAuthModal(document);
+      A.openAuthModal(document);
+
+      connect.click();
+      await settle();
+
+      expect(dialog.open).toBe(false);
+    });
+
+    it("leaves the tabs alone when the reader reopened it themselves", async () => {
+      // A reader who gave up waiting and clicked Log in may be typing a
+      // password. Arriving late and moving them to the wallet tab would be the
+      // second surprise in a row.
+      const dialog = mountModal();
+      const connect = mountWalletTab(dialog);
+      warmSdk();
+      A.wireAuthModal(document);
+      A.openAuthModal(document);
+      connect.click();
+      A.openAuthModal(document);
+      A.showTab(document, "modal-tab-login");
+
+      show("auth-button-pera");
+      await settle();
+
+      expect(dialog.open).toBe(true);
+      expect(visiblePanel()).toBe("modal-tab-login");
+    });
+
+    it("stops watching once it has reopened", async () => {
+      // Both cues can fire for one connection -- the SDK removes its picker
+      // and the card reveals Sign in. The second must not act on a dialog the
+      // reader has since closed again.
+      const dialog = mountModal();
+      const connect = mountWalletTab(dialog);
+      A.wireAuthModal(document);
+      A.openAuthModal(document);
+      connect.click();
+
+      const picker = document.createElement("div");
+      document.body.appendChild(picker);
+      await settle();
+      picker.remove();
+      await settle();
+      expect(dialog.open).toBe(true);
+
+      A.closeAuthModal(document);
+      show("auth-button-pera");
+      await settle();
+
+      expect(dialog.open).toBe(false);
+    });
   });
 
   it("reports when there is no MutationObserver to arm", () => {

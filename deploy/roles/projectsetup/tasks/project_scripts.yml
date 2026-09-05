@@ -29,9 +29,35 @@
 
 # Minify our own JavaScript before collectstatic runs. static/build is placed
 # first in STATICFILES_DIRS in production, so collectstatic prefers the
-# minified copy over the readable source of the same name. Skipped without
-# error where the script is absent -- the site then ships readable sources,
-# which is larger but correct.
+# minified copy over the readable source of the same name.
+#
+# **That preference is why a failed build is worse than no build.** static/build
+# is gitignored and survives between deploys, so a build that does not run
+# leaves the PREVIOUS release's JavaScript in place and collectstatic keeps
+# choosing it, over the source that was just pulled. The site then serves last
+# release's scripts and nothing anywhere reports a problem.
+#
+# This used to carry `failed_when: false`, which made exactly that outcome
+# invisible: no node, or no route to the npm registry for `npx esbuild`, and the
+# task reported ok while the deploy went green on stale code.
+- name: Check whether the static build script is present
+  ansible.builtin.stat:
+    path: "{{ site_path }}/source/{{ app_name }}/build-static.sh"
+  register: projectsetup_build_static_script
+  tags: [project-setup, run-project-scripts, update-project-code]
+
+# The honest form of "ships readable sources, which is larger but correct":
+# that is only true once the stale build output is gone. Left in place it is
+# not a fallback, it is the bug above.
+- name: Drop stale minified assets when there is no script to rebuild them
+  ansible.builtin.file:
+    path: "{{ site_path }}/source/{{ app_name }}/static/build"
+    state: absent
+  become: true
+  become_user: "{{ webapp_user }}"
+  when: not projectsetup_build_static_script.stat.exists
+  tags: [project-setup, run-project-scripts, update-project-code]
+
 - name: Build minified static assets
   ansible.builtin.shell: |
     set -o pipefail
@@ -43,7 +69,14 @@
   become_user: "{{ webapp_user }}"
   register: projectsetup_build_static
   changed_when: "'minified' in projectsetup_build_static.stdout"
-  failed_when: false
+  # Both halves are needed. `rc` alone passes a script that exits 0 having
+  # minified nothing; the stdout check alone would not notice a crash, and
+  # naming `failed_when` at all replaces the default rc check rather than
+  # adding to it.
+  failed_when: >-
+    projectsetup_build_static.rc != 0
+    or 'minified' not in projectsetup_build_static.stdout
+  when: projectsetup_build_static_script.stat.exists
   tags: [project-setup, run-project-scripts, update-project-code]
 
 # collectstatic must precede the gunicorn restart, not follow it: under

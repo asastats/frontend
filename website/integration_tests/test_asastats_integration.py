@@ -13,12 +13,27 @@ widgets have no server-side swap code to integrate. Ours has: the routing runs
 in the engine, and these views proxy to it under the scopes the manifest
 declares. Every failure below is therefore a failure of *our* stack.
 
-**On the group endpoint.** The mainnet deployment is `restricted`, so
-``engine/core/router.py:_deployment()`` raises ``RouterUnavailable`` and the
-engine answers 503 for every caller. That is the current, deliberate state and
-the tests below record it rather than skipping past it -- when the unrestricted
+**On the group endpoint.** This used to say the mainnet deployment was
+`restricted`, so the engine answered 503 for every caller, and the test below
+pinned that 503 while predicting its own obsolescence: *"when the unrestricted
 deployment lands, the test that pins the 503 is the one that should fail and
-tell you to update it.
+tell you to update it."*
+
+Both halves of that came true, on 2026-08-30 and 2026-09-02. Mainnet is
+`restricted=False` and `RESTRICT_TO_ADMIN` can no longer appear in any answer.
+A 503 is still reachable, but for an entirely different reason: since audit
+finding `S8` the engine does not hold the quote-signing key. It posts to the
+standalone signer at ``ROUTER_QUOTE_SIGNER_URL`` and **refuses rather than
+signing locally** when that service cannot be reached, which is the property
+`S8` exists to create. On a development machine with no signer running, that
+refusal is the expected answer and not a failure of anything.
+
+So the group tests below distinguish three outcomes rather than tolerating two:
+a group (the happy path), a refusal that names the signer (skip, with the fix
+in the message), and any other refusal (fail). The old form asserted
+``status_code in (200, 503)`` and could not tell a dev box with no signer from
+a regression that reintroduced local signing -- which is exactly the trap
+``test_dustsweep_integration`` records having fallen into for a week.
 """
 
 import json
@@ -220,8 +235,14 @@ class AsastatsQuoteViewTest(TestCase):
         assert "no-store" in response.headers.get("Cache-Control", "")
 
 
+#: What the engine says when it cannot reach the standalone quote signer.
+#: `engine/core/quote_signer.py:184` raises `QuoteSignerUnavailable` with this
+#: prefix, and `group()` turns it into the view's 503.
+SIGNER_UNREACHABLE = "quote signer service is unreachable"
+
+
 class AsastatsGroupViewTest(TestCase):
-    """The group endpoint. Gating is live; building is blocked by design."""
+    """The group endpoint. Gating is live, and so is building."""
 
     def setUp(self):
         self.user = _make_linked_user(email="asastats-group@example.com")
@@ -235,34 +256,69 @@ class AsastatsGroupViewTest(TestCase):
             content_type="application/json",
         )
 
-    def test_integration_group_building_is_refused_while_mainnet_is_restricted(self):
-        """Records the deployment's current state, and is meant to fail later.
-
-        `engine/core/router.py:_deployment()` raises `RouterUnavailable` when
-        `deployment.restricted`, so the engine answers 503 for every caller -
-        which is why no browser has ever built a group through this router.
-        When the unrestricted deployment lands, this test should start failing;
-        replace it with one that asserts a group comes back.
-        """
+    def _quoted_group(self):
+        """Quote, then ask for the group. Returns the group response."""
         quote_url = reverse("asastats_quote")
         quoted = self.client.post(
             f"{quote_url}?address={LINKED_ADDRESS}",
             data=json.dumps(_quote_body()),
             content_type="application/json",
         ).json()
+        return self._post({"quote": quoted})
 
-        response = self._post({"quote": quoted})
-        assert response.status_code in (200, 503), response.content[:400]
+    def test_integration_a_group_comes_back_now_that_mainnet_is_unrestricted(self):
+        """The successor the old test asked for, and it asks for a group.
+
+        The predecessor allowed 200 *or* 503 and asserted `RESTRICT_TO_ADMIN`
+        in the refusal. Mainnet has been `restricted=False` since 2026-08-30,
+        so that sentence can no longer be produced by anything.
+
+        A refusal naming the signer is skipped rather than failed: it means no
+        signer is running here, which is the ordinary state of a development
+        machine and says nothing about this repository. **Any other refusal
+        fails**, because that is the shape a real regression would take and the
+        old test would have swallowed it.
+        """
+        response = self._quoted_group()
 
         if response.status_code == 503:
-            # The refusal reaches the browser intact rather than as a 500: the
-            # engine explains that the deployment is compiled with
-            # RESTRICT_TO_ADMIN, and that sentence is the only thing a reader
-            # could act on.
-            assert "RESTRICT_TO_ADMIN" in response.json()["error"]
-        else:
-            body = response.json()
-            assert "transactions" in body or "detail" in body, sorted(body)
+            error = response.json().get("error", "")
+            if SIGNER_UNREACHABLE in error:
+                self.skipTest(
+                    "no quote signer is answering ROUTER_QUOTE_SIGNER_URL - "
+                    "start `python -m router.signer` on the engine's host, or "
+                    "unset the URL to sign locally in development"
+                )
+            raise AssertionError(f"the engine refused for another reason: {error}")
+
+        assert response.status_code == 200, response.content[:400]
+        body = response.json()
+        assert "transactions" in body or "detail" in body, sorted(body)
+
+    def test_integration_an_unreachable_signer_refuses_instead_of_signing_here(self):
+        """`S8`'s property, asserted from the far end of the stack.
+
+        The engine used to hold the signing key in its own process, which is
+        the finding: anything able to run code in the engine could authorise a
+        group carrying an extra transfer. The key now lives in a separate
+        service, and **there is deliberately no fallback** - signing locally
+        when the service cannot be reached would hand the property back to
+        anyone able to stop it answering, which is a strictly easier attack
+        than the one being prevented.
+
+        So when the signer is down the only acceptable answer is a refusal. A
+        200 here would mean the fallback came back.
+        """
+        response = self._quoted_group()
+
+        if SIGNER_UNREACHABLE not in response.content.decode(errors="replace"):
+            self.skipTest("a signer is answering, so there is no fallback to catch")
+
+        assert response.status_code == 503, response.status_code
+        assert "transactions" not in response.json(), (
+            "the engine returned a signed group with no reachable signer, so "
+            "something restored the local-signing fallback that S8 removed"
+        )
 
     def test_integration_an_unlinked_address_is_refused_before_the_engine(self):
         """The group spends the address' assets, so ownership is the hard gate."""

@@ -59,6 +59,17 @@
   }
 
   /**
+   * The controls the wallet card reveals once a connection has landed.
+   *
+   * `frontend/wallet` toggles these with `style.display` from its own
+   * subscription to the wallet state: `auth-button-<id>` when the wallet is
+   * connected and active (sign the 0 ALGO message), `set-active-button-<id>`
+   * when it is connected but some other wallet is active. Either one appearing
+   * means the reader has a next step, and the next step is inside the dialog.
+   */
+  var NEXT_STEP = '[id^="auth-button-"],[id^="set-active-button-"]';
+
+  /**
    * Step out of the way of a wallet's own picker, then come back.
    *
    * `showModal()` puts the login dialog in the browser's *top layer*, which
@@ -75,8 +86,24 @@
    * a completed connection and an abandoned one alike: either way the SDK
    * removes what it added.
    *
-   * If an SDK leaves its container behind, the dialog simply stays closed and
-   * the reader opens it again -- exactly the position they are in today.
+   * **Two cues, because the first one is only as good as the SDK's habits.**
+   * Watching the picker leave assumes the SDK appends its container *after*
+   * this snapshot is taken. That holds for a first connect and fails for a
+   * reconnect: a reader who arrives with a wallet session restored from a
+   * previous visit, disconnects, and connects again meets an SDK whose
+   * container is already on the body, so nothing is ever recorded as injected
+   * and the dialog never came back. They had to open it a second time to reach
+   * the Sign in button.
+   *
+   * So the connection itself is watched as well -- `NEXT_STEP` appearing inside
+   * the dialog -- which needs no assumption about anyone's DOM. It is the more
+   * reliable of the two and covers every wallet, but only when the reader
+   * completes the connection; the picker cue stays for the reader who abandons
+   * it, where there is no new control to wait for.
+   *
+   * If an SDK leaves its container behind *and* the reader abandons the
+   * connection, the dialog stays closed and the reader opens it again --
+   * exactly the position they are in today.
    *
    * @param {Document} host - document holding the dialog
    * @param {Element} dialog - the login dialog, already open
@@ -91,7 +118,19 @@
     /** What the SDK has appended since. Its removal is our cue to come back. */
     var injected = [];
 
-    var observer = new MutationObserver(function (records) {
+    var reopen = function () {
+      picker.disconnect();
+      connection.disconnect();
+      // Whether the reader has already reopened the dialog themselves, which
+      // they do when a cue is slow. Taking them to the wallet tab is the whole
+      // point when we reopen it; doing it to a dialog they opened and are
+      // typing into would be the second surprise in a row.
+      var closed = !dialog.open;
+      openAuthModal(host);
+      if (closed) showTab(host, "modal-tab-wallet");
+    };
+
+    var picker = new MutationObserver(function (records) {
       Array.prototype.forEach.call(records, function (record) {
         Array.prototype.forEach.call(record.addedNodes, function (node) {
           if (node.nodeType !== 1) return;
@@ -108,12 +147,31 @@
       });
       if (stillThere) return;
 
-      observer.disconnect();
-      openAuthModal(host);
-      showTab(host, "modal-tab-wallet");
+      reopen();
     });
 
-    observer.observe(host.body, { childList: true });
+    var connection = new MutationObserver(function (records) {
+      // Only a control that *changed* counts. Reading the buttons directly
+      // would answer for a card that has never rendered, whose `style` carries
+      // no display at all, and reopen the dialog the instant it was closed.
+      var landed = Array.prototype.some.call(records, function (record) {
+        var node = record.target;
+        return (
+          node.nodeType === 1 &&
+          node.matches &&
+          node.matches(NEXT_STEP) &&
+          node.style.display !== "none"
+        );
+      });
+      if (landed) reopen();
+    });
+
+    picker.observe(host.body, { childList: true });
+    connection.observe(dialog, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ["style"],
+    });
     closeAuthModal(host);
     return true;
   }

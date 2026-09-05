@@ -187,3 +187,114 @@ class CustomAuthTest(FunctionalTest):
         # There's cancel button
         elem = self.find_elem_by_id("id_cancel")
         self.assertLabel(elem, "Cancel")
+
+
+class WalletHandoffTest(FunctionalTest):
+    """The login dialog steps aside for a wallet picker, and comes back.
+
+    ``showModal()`` puts the dialog in the browser's top layer, above every
+    element in the normal layer whatever its z-index. Wallet SDKs append their
+    picker to ``<body>`` as ordinary DOM, so from inside the dialog it was
+    painted underneath and could not be reached. The dialog therefore closes as
+    the picker opens and reopens when the reader is wanted back.
+
+    **Reopening had one cue and needed two.** Watching the picker leave assumes
+    the SDK appends its container after the handoff was armed. That holds for a
+    first connect and fails for a reconnect -- a reader whose wallet session was
+    restored from a previous visit, who disconnects and connects again, meets an
+    SDK whose container is already on the body. Nothing is recorded as injected,
+    nothing is seen to leave, and the dialog stayed shut: they had to click Log
+    in a second time to reach Sign in and sign the 0 ALGO message.
+
+    So the connection is watched as well, through the controls the wallet card
+    reveals. That is what these drive, in a real browser against the real
+    snippet. The jest suite covers the same logic against a hand-built fixture,
+    which cannot tell whether ``wallet_signing.html`` still renders the ids the
+    selector names -- and those ids are the whole contract.
+    """
+
+    def _open_wallet_tab(self):
+        """Open the login dialog on the wallet tab, as a reader does."""
+        self.browser.get(self.server_url)
+        self.browser.find_element(By.XPATH, '//a[@href="#modalLogin"]').click()
+        self.browser.find_element(
+            By.XPATH, '//a[@href="#modal-tab-wallet"]'
+        ).click()
+        return self.wait_until(
+            lambda: self.find_elem_by_id("modalLogin").get_attribute("open")
+            is not None
+        )
+
+    def _warm_the_sdk(self):
+        """Put a wallet SDK's container on the body before the handoff arms.
+
+        This is the state a reconnect starts from, and the reason the picker cue
+        alone was not enough: the container is already there to be snapshotted
+        as "the page", so its later reuse is invisible.
+        """
+        self.browser.execute_script(
+            "var el = document.createElement('div');"
+            "el.id = 'pera-wallet-modal';"
+            "document.body.appendChild(el);"
+        )
+
+    def _connection_lands(self):
+        """Reveal Sign in, which is what `frontend/wallet` does on connect.
+
+        The wallet package itself needs a wallet extension and a real signature,
+        so what it *does to the page* is what stands in for it -- one property
+        on one button, which is exactly what the handoff reads.
+        """
+        self.browser.execute_script(
+            "document.getElementById('auth-button-pera').style.display = 'block';"
+        )
+
+    def _dialog_open(self):
+        return (
+            self.find_elem_by_id("modalLogin").get_attribute("open") is not None
+        )
+
+    def test_the_dialog_steps_aside_when_a_connect_starts(self):
+        self._open_wallet_tab()
+
+        self.browser.find_element(By.ID, "connect-button-pera").click()
+
+        self.wait_until(lambda: not self._dialog_open(), timeout=10)
+
+    def test_it_comes_back_when_the_connection_lands(self):
+        """The bug, in the state that produced it: a warm SDK.
+
+        Nothing is appended to the body here and nothing is removed from it, so
+        the picker cue has nothing to say. The reader still has to be brought
+        back, because Sign in is inside the dialog they cannot see.
+        """
+        self._open_wallet_tab()
+        self._warm_the_sdk()
+        self.browser.find_element(By.ID, "connect-button-pera").click()
+        self.wait_until(lambda: not self._dialog_open(), timeout=10)
+
+        self._connection_lands()
+
+        self.wait_until(self._dialog_open, timeout=10)
+        # ...and on the wallet tab, where Sign in is.
+        self.assertTrue(self.find_elem_by_id("modal-tab-wallet").is_displayed())
+        self.assertTrue(self.find_elem_by_id("auth-button-pera").is_displayed())
+
+    def test_it_stays_away_while_nothing_has_connected(self):
+        """The cue is a connection, not any activity on the card at all.
+
+        Without this the dialog would come back over the picker on the first
+        thing the SDK touched, which is the failure the handoff exists to
+        prevent.
+        """
+        self._open_wallet_tab()
+        self._warm_the_sdk()
+        self.browser.find_element(By.ID, "connect-button-pera").click()
+        self.wait_until(lambda: not self._dialog_open(), timeout=10)
+
+        self.browser.execute_script(
+            "document.getElementById('account-select-pera').style.display = 'block';"
+        )
+        self.sleep()
+
+        self.assertFalse(self._dialog_open())
