@@ -65,6 +65,57 @@ https://stackoverflow.com/a/49817720/11703358
   }
 
 
+Static files
+------------
+
+A page 500s in production and nowhere else
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: text
+
+  ValueError: Missing staticfiles manifest entry for 'foo/bar.js'
+
+Production serves static files through ``ManifestStaticFilesStorage``, where
+``{% static %}`` **raises** for a path with no entry in ``staticfiles.json``.
+Development's storage returns the URL and lets the browser 404 it, so a
+template naming a file that is not there is a 500 in production and a silent
+nothing everywhere else --- including in the test suite.
+
+Two causes, in this order of likelihood:
+
+* the deploy restarted gunicorn before running ``collectstatic``, so workers
+  are serving new code against the old manifest. The role runs them in the
+  right order for exactly this reason; a hand-run deploy has to as well.
+* the template really does name a file nothing ships. ``{% static %}`` is not
+  the place to find out: ``core/tests/test_static_manifest.py`` collects into a
+  throwaway directory under the production storage and renders the pages, so
+  this fails in the suite instead.
+
+Note that a *missing* entry raises while a **stale** one does not: without
+``--clear``, ``collectstatic`` leaves old hashed files in place on purpose, so
+a reader holding a page from the previous release can still fetch its assets.
+
+A router or widget cannot reach its own API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: text
+
+  Refused to connect because it violates the document's Content Security Policy
+
+Not an error the page can catch and explain --- the fetch never happens, so the
+feature simply does nothing. The host is missing from ``connect-src`` in
+``deploy/roles/nginx/templates/ssl.conf``.
+
+Every widget already declares the hosts it calls, in its ``widget.toml``
+``hosts`` list, and the CSP is a second copy of that list maintained by hand.
+``widgethost/tests/test_csp_hosts.py`` sweeps the manifests against the
+template so the two cannot drift again; a wildcard source counts, so a host
+under ``https://*.nodely.dev`` needs no line of its own.
+
+Remember the header ships with nginx, not with the code: until the snippet on
+the host is updated and openresty reloaded, a correct repository does not fix
+a live page.
+
 Linux server errors
 -------------------
 
@@ -96,8 +147,9 @@ tab shows nothing, the socket was never created client-side — confirm htmx loa
 once (a second htmx core on the page silently drops ``ws-connect``) and that the
 ``ws-connect`` URL carries a real bundle. If instead the WS request shows a ``404``, the
 route is not registered — check the widget's ``routing.py`` is included and that
-``runserver`` is serving ASGI/Daphne (``daphne`` listed above
-``django.contrib.staticfiles`` in ``INSTALLED_APPS``).
+``runserver`` is serving ASGI/Daphne (``daphne`` listed above the staticfiles
+app in ``INSTALLED_APPS`` --- which this project registers as
+``core.staticfiles.AsastatsStaticFilesConfig``, not by its Django name).
 
 
 Handshake succeeds but the widget stays busy

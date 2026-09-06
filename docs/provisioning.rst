@@ -134,6 +134,27 @@ For debugging purpose, add `-vv` or `-vvvv` for more verbose output:
   ansible-playbook -vv --limit=testing site_playbook.yml
 
 
+Environment files
+^^^^^^^^^^^^^^^^^
+
+The playbook reads two ``.env`` files per environment and merges them, the
+infrastructure one from ``deploy/`` and the application one from ``website/``:
+
+.. code-block:: text
+
+  deploy/.env.testing      website/.env.testing
+  deploy/.env.production   website/.env.production
+
+``deploy/.env-example`` and ``website/.env.example`` are the templates. Copy
+rather than edit them --- both are committed, and both are deliberately blank
+where a secret belongs.
+
+A key left blank does **not** override a key another file gave a value, so the
+example files can be loaded alongside a real one without wiping it; a key blank
+in every file is still written to the app's ``.env``, blank, because
+``get_env_variable`` raises for an absent key where it returns ``""`` for an
+empty one.
+
 Upgrade system and project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -152,3 +173,33 @@ After code has changed, issue the following command to apply those changes:
 .. code-block:: bash
 
   ansible-playbook --limit=production --tags=update-project-code site_playbook.yml
+
+
+Verifying the roles with Molecule
+---------------------------------
+
+The roles are exercised against a throwaway container rather than against a
+server. This is what CI runs, and it is the fastest way to find out that a
+role assumed something the host does not have:
+
+.. code-block:: bash
+
+  cd deploy
+  pip install molecule ansible ansible-compat "molecule-plugins[docker]"
+  molecule test --scenario-name ci
+
+Four scenarios share one converge playbook: ``ci`` (the committed example env
+files, which is what GitHub runs), ``default`` and ``production`` (your real
+``.env.testing`` / ``.env.production``), and ``shared`` holding the playbooks
+themselves.
+
+Every scenario loads ``molecule/shared/.env.molecule`` first. That file exists
+because ``manage.py`` refuses to run at all when a Django system check of level
+ERROR fires --- an empty ``SIMPLE_JWT_KEY`` is one --- and the committed
+example leaves that blank on purpose. Nothing in it is a secret and nothing in
+it should reach a real host.
+
+``molecule test`` also runs the sequence twice and fails if the second run
+reports a change. Two things that make a task look changed when nothing was:
+a script that rewrites identical files with new mtimes, and a ``changed_when``
+that reads a message the command always prints.

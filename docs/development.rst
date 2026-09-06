@@ -8,7 +8,13 @@ The requirements necessary to use this project on a development machine are:
 
 .. code-block:: bash
 
-  sudo apt-get install git python3 python3-venv postgresql postgresql-contrib
+  sudo apt-get install git python3 python3-venv postgresql postgresql-contrib nodejs npm
+
+``nodejs`` and ``npm`` are needed for three separate things --- the wallet
+package's Vite build, the jest suites, and ``build-static.sh``, which minifies
+our own JavaScript through ``npx esbuild``. The stylesheet needs neither: it is
+built by a standalone binary that ``website/fetch-tailwind.sh`` downloads, with
+no ``node_modules`` involved. See :doc:`howto` for both builds.
 
 
 Python environment
@@ -224,36 +230,32 @@ Invoke the following to show the related coverage report in terminal:
 Typescript
 ^^^^^^^^^^
 
-Install dependencies:
+The TypeScript application is ``wallet/`` at the repository root; see
+:doc:`frontend`.
 
 .. code-block:: bash
 
-  cd /home/username/dev/frontend/frontend
-  npm install
+  cd /home/username/dev/frontend/wallet
+  npm install          # npm ci in CI
   npm run build
-
-
-Run tests:
-
-.. code-block:: bash
-
-  cd /home/username/dev/frontend/website
-  npm run test  #  npm run test:coverage
+  npm run test         # npm run test:coverage
 
 
 Javascript
 ^^^^^^^^^^
 
-Install dependencies:
-
-.. code-block:: bash
-
-  npm install
-
-
-Run tests:
+The site's own scripts, and the in-house widgets', are run by ``website``'s
+jest:
 
 .. code-block:: bash
 
   cd /home/username/dev/frontend/website
-  npm run test  #  npm run test:coverage
+  npm install
+  npm run test         # npm run test:coverage
+
+That single invocation collects **every** ``*.test.js`` under ``website`` ---
+its own suites plus the ones inside ``widgets/inhouse/*/tests/javascript/``,
+because they sit under the same rootDir. So a package a widget suite requires
+has to be declared in ``website/package.json``, whatever the widget's own
+``package.json`` says: that is the file ``npm install`` reads here and in CI.
+``core/tests/test_jest_dependencies.py`` checks the two cannot drift.

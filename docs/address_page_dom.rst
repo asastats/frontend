@@ -34,8 +34,9 @@ the JavaScript has to change in the same commit.
    ``classic`` (design 1)
      The original page, deliberately unchanged, plus the load-more fold. It has
      no pin, no grip, no position component, and it keeps Chart.js. Its
-     reference source is the pre-redesign tree at
-     ``/home/ipaleka/claude/frontend-before``.
+     reference is the repository's own history --- the last commit before the
+     redesign branch --- rather than a checkout kept beside this one, which is
+     what the pre-redesign tree was and is no longer there.
 
    ``dynamic`` / ``dynamic-compact`` (Dynamic / Dynamic compact,
     designs 2 and 3)
@@ -642,10 +643,23 @@ Folded rows
 page kept, because it is a fix rather than a redesign: it stops the page leading
 with seventy-six rows.
 
-A section shows the rows accounting for the first
-``settings.ADDRESS_SECTION_THRESHOLD`` of its magnitude and folds the rest behind
-a control. ``utils/cutoff.py`` is the rule; ``static/js/showmore.js`` reveals
-them.
+A section shows its first ``settings.ADDRESS_INITIAL_ASSETS`` rows ---
+``ADDRESS_INITIAL_COLLECTIONS`` for collections --- and folds the rest behind a
+control that reveals the same number again on each press.
+``static/js/showmore.js`` reveals them on design 1; ``toolbar.js`` does it for
+designs 2 and 3, which fold from the toolbar because it also filters and sorts.
+
+.. note::
+
+   **A plain count, for all three designs, since 2026-08-28.** It replaced a
+   magnitude rule --- ``ADDRESS_SECTION_THRESHOLD`` with an
+   ``ADDRESS_SECTION_FLOOR`` under it, applied by a ``utils.cutoff`` module
+   that no longer exists --- which showed 33 rows on one address and 8 on the
+   next, and whose control then revealed the entire remainder in one press, so
+   a label reading "39 more" delivered an unfold rather than a batch. A reader
+   cannot see a rule, only its result, and a number they cannot predict reads
+   as arbitrary. ``config/settings/base.py`` carries the full reasoning beside
+   the two settings.
 
 +--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | Selector                 | Required                                                           | Why                                                                                |
@@ -776,11 +790,12 @@ Load-bearing names:
    published so the fold the template renders and every fold ``toolbar.js``
    renders afterwards are one rule rather than two copies.
 
-   These designs do **not** use ``utils/cutoff.py``'s magnitude rule; design 1
-   still does. They briefly carried the prototype's 95%/99%/99.5%/All control,
-   which was only ever a way to demonstrate the page with everything on screen
-   before a load-more existed. "Show me the rows carrying 99.5% of the value"
-   is not a sentence a reader thinks in.
+   All three designs use this count now. These two briefly carried the
+   prototype's 95%/99%/99.5%/All control, which was only ever a way to
+   demonstrate the page with everything on screen before a load-more existed
+   --- "show me the rows carrying 99.5% of the value" is not a sentence a
+   reader thinks in --- and design 1 briefly kept the magnitude rule described
+   above. Neither survives.
 
    ``showmore.js`` stands down on ``.dynamic-page`` for the same reason: it
    reveals a whole tail in one press, and these reveal a batch.
@@ -907,6 +922,10 @@ an already-open asset collapses it.
 
 Replace with an explicit hook (``[data-unit]`` on the entry, or resolve the id
 from the chart payload) and read ``details.open`` instead of ``.active``.
+
+Still live, in ``static/js/address.js`` and in ``static/js/consolidated.js``,
+which carries the same test twice. Design 1 is the only page that reaches it:
+designs 2 and 3 draw their charts as SVG and bind their own click handling.
 
 ``setNftFloor`` waits 300 ms for an animation that no longer exists
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
