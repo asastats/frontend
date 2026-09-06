@@ -29,6 +29,7 @@ module would be a decorative 500-test that cannot fail.
 
 import shutil
 import tempfile
+from pathlib import Path
 from unittest import mock
 
 from django.contrib.auth import get_user_model
@@ -37,6 +38,7 @@ from django.template import Context, Template
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
+from core.staticfiles import BUILD_INPUTS
 from walletauth.models import LinkedAddress
 from widgethost.registry import swap_routers
 
@@ -65,7 +67,22 @@ class TestPagesUnderTheProductionStaticStorage(TestCase):
         # inside setUpClass so the class-level override is already enabled:
         # collectstatic has to write the manifest through the same storage the
         # renders below will read it back through
-        call_command("collectstatic", interactive=False, verbosity=0)
+        try:
+            call_command("collectstatic", interactive=False, verbosity=0)
+        except Exception:
+            # `TestCase.setUpClass` opened a class-wide atomic block above, and
+            # `tearDownClass` -- the only thing that closes it -- does not run
+            # when `setUpClass` raises. Left open it takes the connection down
+            # with it, and every DB-touching test AFTER this class fails with
+            # "the connection is closed": one collectstatic failure here cost
+            # 584 failures and 228 errors in a CI run, none of them related.
+            # Django does exactly this around its own `setUpTestData`.
+            #
+            # `cls_atomics` is absent only on a backend without transactions,
+            # where there is nothing open to roll back.
+            if getattr(cls, "cls_atomics", None):
+                cls._rollback_atomics(cls.cls_atomics)
+            raise
 
     @classmethod
     def tearDownClass(cls):
@@ -159,3 +176,29 @@ class TestPagesUnderTheProductionStaticStorage(TestCase):
 
     def test_the_home_page_renders(self):
         assert self.client.get("/").status_code == 200
+
+    def test_the_tailwind_build_inputs_are_not_collected(self):
+        """They are not servable, and one of them is 110 MB of executable.
+
+        `input.css` opens with `@import "tailwindcss"`, a package name that
+        post-processing tries to resolve as a path -- so collecting it either
+        aborts the whole collectstatic (CI, where the toolchain is absent) or
+        succeeds by publishing the standalone Tailwind binary that happens to
+        sit at that path (every developer machine, and the server).
+
+        Asserted against the collected tree rather than the manifest: a file
+        can be copied without being post-processed, and copying it is already
+        the problem.
+        """
+        collected = Path(STATIC_ROOT)
+
+        for name in BUILD_INPUTS:
+            with self.subTest(name=name):
+                assert not (collected / name).exists(), (
+                    f"{name} is a Tailwind build input, and collectstatic put "
+                    "it in STATIC_ROOT; see core/staticfiles.py"
+                )
+
+        # the anchor for the four above: the build's *output* is still there,
+        # so this is not passing because collectstatic skipped css/ entirely
+        assert (collected / "css" / "style.tw.css").exists()

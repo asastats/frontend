@@ -139,6 +139,17 @@ class PermissionDappProvider(PermissionProvider):
         :type subscriptions: object
         :return: render-ready collection, or None
         """
+        # **An unreachable node is deliberately allowed to 500 this page.**
+        # `fetch_subscriptions_for_address` tolerates a node that answers with
+        # an error -- it catches AlgodHTTPError per tier and moves on -- but a
+        # connection failure, or a misconfigured address, propagates and takes
+        # /profile/ down for every authorized reader.
+        #
+        # That is the choice, made 2026-09-06: rendering the page with the
+        # subscriptions block silently missing would tell a paying subscriber
+        # that they have no subscription, which is worse than an error page,
+        # and an error page is the version somebody notices. Do not "harden"
+        # this into a swallowed exception.
         subscriptions = fetch_subscriptions_for_address(
             _mainnet_algod_client(), address
         )

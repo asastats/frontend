@@ -58,7 +58,9 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    "django.contrib.staticfiles",
+    # django.contrib.staticfiles, with the Tailwind build's inputs -- including
+    # a 110 MB binary -- excluded from collectstatic. See core/staticfiles.py.
+    "core.staticfiles.AsastatsStaticFilesConfig",
     "django.contrib.sitemaps",
     "django.contrib.sites",
     "rest_framework",

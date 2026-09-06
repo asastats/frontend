@@ -22,6 +22,35 @@
       loop: "{{ env_files }}"
       register: env_file_check
 
+    - name: Note which env files are present
+      ansible.builtin.set_fact:
+        env_files_present: >-
+          {{ env_file_check.results | selectattr('stat.exists')
+             | map(attribute='item') | list }}
+
+    # A host's real `.env.testing` / `.env.production` is legitimately absent
+    # here -- that is why the slurp above skips what is not there. But the
+    # shared defaults file is what makes provisioning possible at all, and a
+    # silent skip of THAT one surfaces 77 tasks later, as `migrate.sh` dying on
+    # a Django system check about SIMPLE_JWT_KEY being empty. Say it here, with
+    # the list of what did load, so the next reader is not diagnosing a Django
+    # error message to find a missing file.
+    - name: Every scenario needs the shared defaults file
+      ansible.builtin.assert:
+        that: env_files_present | select('search', '\.env\.molecule$') | list | length > 0
+        fail_msg: >-
+          The shared .env.molecule was not found. Looked for: {{ env_files }}.
+          Found: {{ env_files_present | default([]) }}. It is committed at
+          deploy/molecule/shared/.env.molecule, so if it is missing here this
+          checkout is incomplete rather than misconfigured -- provisioning
+          cannot finish without the settings manage.py refuses to run without.
+
+    # `assert`'s success_msg only shows under -v, and which env files a run
+    # loaded is the first thing anyone reading a provisioning failure wants.
+    - name: Env files this run loaded
+      ansible.builtin.debug:
+        msg: "{{ env_files_present }}"
+
     - name: Slurp existing env files
       ansible.builtin.slurp:
         path: "{{ item.item }}"
@@ -29,21 +58,59 @@
       loop: "{{ env_file_check.results }}"
       register: env_slurped
 
+    # A dotenv file is not YAML, and two of the differences broke provisioning.
+    #
+    # **An inline comment is not part of the value.** `website/.env.example`
+    # writes
+    #
+    #     SIMPLE_JWT_KEY=                     # ROTATED -- never reuse ...
+    #
+    # and parsed as `key: rest-of-line` that hands Django a signing key made of
+    # comment text.
+    #
+    # **An empty value means "not supplied", not "supplied as empty".** The
+    # example file leaves every secret blank on purpose and is loaded last, so
+    # with `combine()` taking the last definition of a key, its blanks won
+    # against `.env-example`'s real DATABASE_USER and against the values
+    # `.env.molecule` exists to provide. That is how the ci scenario came to run
+    #
+    #     psql -c "CREATE USER  WITH PASSWORD '' CREATEDB;"
+    #
+    # So a blank fills a key nothing has defined yet, but never overrides one
+    # that is already set -- which is what makes the "first, so a real env file
+    # below overrides it" ordering above actually hold. Keys blank in every
+    # file are still defined, blank: `projectsetup`'s environment_file writes
+    # `KEY=` for them, and `get_env_variable` raises for an ABSENT key where it
+    # returns "" for an empty one.
     - name: Convert dotenv to dict
       ansible.builtin.set_fact:
-        env_vars: "{{ env_vars | default({}) | combine(parsed_one, recursive=True) }}"
+        env_vars: >-
+          {{ (blanks | combine(env_vars | default({}))) | combine(values) }}
       loop: "{{ env_slurped.results }}"
       when: item.skipped is not defined
       vars:
         decoded: "{{ item.content | b64decode }}"
         yaml_style: |
           {% for line in decoded.splitlines() %}
-          {%   if line.strip() and not line.startswith('#') %}
-          {%     set parts = line.split('=', 1) %}
-          {{ parts[0] }}: {{ parts[1] | to_json }}
+          {%   set stripped = line.strip() %}
+          {%   if stripped and not stripped.startswith('#') and '=' in stripped %}
+          {%     set key = stripped.split('=', 1)[0] | trim %}
+          {%     set rest = stripped.split('=', 1)[1] %}
+          {#     Stripped BEFORE trimming: the example writes the comment on a #}
+          {#     line whose value is blank, so trimming first would leave the  #}
+          {#     '#' at the start with no whitespace in front of it to match.  #}
+          {#     A quoted value keeps everything inside the quotes, '#' too.   #}
+          {%     set value = (rest | trim) if (rest | trim)[:1] in ['"', "'"]
+                             else rest | regex_replace('(^|[ \t])#.*$', '') | trim %}
+          {%     if key %}
+          {{ key }}: {{ value | to_json }}
+          {%     endif %}
           {%   endif %}
           {% endfor %}
-        parsed_one: "{{ yaml_style | from_yaml }}"
+        parsed_one: "{{ yaml_style | from_yaml | default({}, true) }}"
+        entries: "{{ parsed_one | dict2items }}"
+        values: "{{ entries | rejectattr('value', 'eq', '') | list | items2dict }}"
+        blanks: "{{ entries | selectattr('value', 'eq', '') | list | items2dict }}"
 
     - name: Export env_vars to localhost
       ansible.builtin.add_host:

@@ -17,10 +17,21 @@ test_profile_authorize, test_profile_account, test_home_page -- most of which
 predate this one.
 """
 
+from datetime import UTC, datetime, timedelta
+from unittest import mock
+
 from django.urls import reverse
 from selenium.webdriver.common.by import By
 
 from .base import FunctionalTest
+
+#: What the chain would answer for a reader holding one tier. A real tier name,
+#: because `_format_tier_name_as_link` looks the name up in
+#: SUBSCRIPTION_PERMISSIONS and raises for one that is not there, and a future
+#: expiry so the page renders "expires in N days" rather than "EXPIRED".
+SUBSCRIPTION_FROM_CHAIN = {
+    "Asastatser": int((datetime.now(UTC) + timedelta(days=30)).timestamp())
+}
 
 #: Every page a signed-in viewer can reach without a tier, whichever shell it
 #: uses. profile_api is absent on purpose: CanAccessApiMixin gates it on the
@@ -44,6 +55,30 @@ class SignedInShellTest(FunctionalTest):
 
     def setUp(self):
         super().setUp()
+        # `/profile/` reads the reader's subscriptions off mainnet: for an
+        # authorized profile, ProfileView.get_context_data asks the permission
+        # provider, which asks a node once per subscription tier. Live network,
+        # inside a page render, in a browser test.
+        #
+        # It went unnoticed because the node address comes from the
+        # permission-dApp's own environment, which a developer machine has and
+        # CI does not -- so here it built a client with address None and the
+        # page became a 500, and locally it "passed" by calling Algonode four
+        # times per visit. Same shape as the `.env` values pinned in
+        # config/settings/automated_tests.py, and the same fix: decide the
+        # answer here rather than inherit it.
+        #
+        # The provider and its formatters still run; only the node call is
+        # replaced. The live-server thread shares this process, so the patch
+        # reaches the view.
+        chain = mock.patch(
+            "core.permission_providers.permissiondapp."
+            "fetch_subscriptions_for_address",
+            return_value=SUBSCRIPTION_FROM_CHAIN,
+        )
+        chain.start()
+        self.addCleanup(chain.stop)
+
         self.create_cookie_and_go_to_index_page_tier(
             "shell@example.com", permission=100
         )
