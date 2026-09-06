@@ -1264,7 +1264,16 @@
 
 
 /* ---- the two legs -------------------------------------------------------- */
-.swap-legs { position: relative; padding: 0 16px; }
+/* A column, so the flip control below can sit ON the seam between the legs
+   rather than at the container's midpoint. Those are the same place only while
+   the two legs are the same height, and the pay leg is taller whenever the
+   percentage chips wrap onto a row of their own -- which is every phone. */
+.swap-legs {
+  position: relative;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+}
 
 
 .swap-leg {
@@ -1416,7 +1425,18 @@
 }
 
 
-.swap-leg-foot { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+/* The chips row is the last thing in the pay leg, and the flip control reaches
+   17px up over the seam below it -- more than the leg's 14px of bottom
+   padding, so the two met over "25%" and "50%". The extra 8px is the clearance
+   the control needs; it is on the row rather than on the leg because the
+   receive leg has no foot and should not grow with it. */
+.swap-leg-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding-bottom: 8px;
+}
 
 .swap-pcts { margin-left: auto; display: flex; gap: 5px; }
 
@@ -1429,10 +1449,14 @@
 
 /* ---- the flip control, straddling the two legs --------------------------- */
 .swap-flip {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  /* In flow, between the two legs, where the markup already puts it. The
+     negative margins are half its height each: it contributes nothing to the
+     column and straddles the seam, which is what `top: 50%` was approximating
+     back when it was absolutely positioned. `position: relative` is only here
+     so `z-index` applies -- it has to paint over both legs' borders. */
+  position: relative;
+  align-self: center;
+  margin: -17px 0;
   z-index: 2;
   width: 34px;
   height: 34px;
@@ -1454,7 +1478,7 @@
 .swap-flip:hover:not(:disabled) {
   background: var(--swap-accent);
   color: var(--swap-accent-on);
-  transform: translate(-50%, -50%) rotate(180deg);
+  transform: rotate(180deg);
 }
 
 
@@ -1462,7 +1486,7 @@
 
 
 @media (prefers-reduced-motion: reduce) {
-  .swap-flip:hover:not(:disabled) { transform: translate(-50%, -50%); }
+  .swap-flip:hover:not(:disabled) { transform: none; }
 }
 
 

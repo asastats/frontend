@@ -387,6 +387,55 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         )
         self.assertTrue(icon.endswith("/icons/empty.png"), icon)
 
+    def test_the_flip_control_never_covers_the_percentage_chips(self):
+        """The control straddles the seam; the chips have to be clear of it.
+
+        `.swap-flip` was absolutely positioned at `top: 50%` of the legs
+        container, which is the seam only while the two legs are the same
+        height -- and the pay leg is always taller, because it carries the
+        percentage chips. So the control floated up into them and covered
+        "25%" and "50%", worst on a phone where the leg is tallest.
+
+        In flow at the seam it still reached 17px up, over a leg with 14px of
+        bottom padding, so it clipped the chips by 2px at every width. The row
+        carries the missing clearance now.
+
+        Both widths, because that 2px was never about the viewport: it was the
+        control's overhang against the leg's padding, and both are constants.
+        Measured rather than eyeballed -- the boxes either intersect or they
+        do not.
+        """
+        # No cleanup restoring the size: `FunctionalTest.setUp` sets 1280x1024
+        # for every test, and an addCleanup would run after tearDown has
+        # already quit the browser -- a connection-refused on window/rect,
+        # failing a test whose assertions all passed.
+        self._open_modal()
+
+        for width in (390, 1280):
+            self.browser.set_window_size(width, 900)
+            flip = self.find_elem_by_css(".id-swap-flip")
+            chips = self.browser.find_elements(By.CSS_SELECTOR, ".id-swap-pct-btn")
+            self.assertEqual(len(chips), 4, "the chips row is not what it was")
+
+            for chip in chips:
+                with self.subTest(width=width, chip=chip.text):
+                    self.assertFalse(
+                        self._overlaps(flip, chip),
+                        f"at {width}px the flip control covers "
+                        f"the {chip.text} chip",
+                    )
+
+    def _overlaps(self, one, other):
+        """Return whether two elements' boxes intersect at all."""
+        return self.browser.execute_script(
+            "var a = arguments[0].getBoundingClientRect();"
+            "var b = arguments[1].getBoundingClientRect();"
+            "return !(a.right <= b.left || b.right <= a.left"
+            "         || a.bottom <= b.top || b.bottom <= a.top);",
+            one,
+            other,
+        )
+
     def test_switching_mode_takes_the_whole_previous_quote_with_it(self):
         """Nothing a quote drew survives the tab, wherever it was drawn.
 
