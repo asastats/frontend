@@ -68,7 +68,11 @@
   become: true
   become_user: "{{ webapp_user }}"
   register: projectsetup_build_static
-  changed_when: "'minified' in projectsetup_build_static.stdout"
+  # The script prints how many outputs it actually replaced, and reports zero
+  # when the bytes were already right -- so a second deploy that builds the
+  # same JavaScript says `ok`, not `changed`. `'minified' in stdout` said
+  # changed on every run, which is what failed Molecule's idempotence check.
+  changed_when: "'BUILD_UPDATED=0' not in projectsetup_build_static.stdout"
   # Both halves are needed. `rc` alone passes a script that exits 0 having
   # minified nothing; the stdout check alone would not notice a crash, and
   # naming `failed_when` at all replaces the default rc check rather than
@@ -86,6 +90,12 @@
 #
 # Deliberately no `--clear`: old hashed files should accumulate, so a reader
 # holding a page rendered by the previous release can still fetch its assets.
+#
+# This reported `changed` on every run too, and it was not its own fault:
+# collectstatic copies whatever is newer than its target, and the build above
+# used to rewrite all 17 minified files with fresh mtimes even when their
+# content was identical. Fixing the build to leave unchanged files alone is
+# what makes this task idempotent as well.
 - name: Run collectstatic management command
   ansible.builtin.shell: |
     set -o pipefail
