@@ -387,6 +387,54 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         )
         self.assertTrue(icon.endswith("/icons/empty.png"), icon)
 
+    def test_switching_mode_takes_the_whole_previous_quote_with_it(self):
+        """Nothing a quote drew survives the tab, wherever it was drawn.
+
+        The mode flips what the amount field means, so every figure on screen
+        was answering a question the reader has just stopped asking. The tab
+        handler used to clear the ones it happened to know about -- the quote
+        line and the output field -- and the rest sat there beside empty
+        inputs: the legs' USD values and the venue count, both of which live
+        outside `.id-swap-quote`.
+
+        Seeded rather than quoted, because a real quote needs a router this
+        suite cannot answer for, and what is under test is the clearing.
+        """
+        self._open_modal()
+        self.browser.execute_script(
+            "document.querySelector('.swap-leg-pay .id-swap-leg-value')"
+            "  .textContent = '$11.56';"
+            "document.querySelector('.swap-leg-get .id-swap-leg-value')"
+            "  .textContent = '$11.55';"
+            "document.querySelector('.id-swap-venues')"
+            "  .textContent = 'Best route across 3 venues';"
+            "document.querySelector('.id-swap-out').value = '728599.55';"
+        )
+
+        self._click('[data-swap-mode="buy"]')
+        # The handler does all of this in one click, but the click itself is
+        # what has to land first.
+        self.wait_until(
+            lambda: "swap-mode-buy"
+            in self.find_elem_by_css(".id-swap-form").get_attribute("class")
+            or None
+        )
+
+        for selector in (
+            ".swap-leg-pay .id-swap-leg-value",
+            ".swap-leg-get .id-swap-leg-value",
+            ".id-swap-venues",
+        ):
+            with self.subTest(selector=selector):
+                self.assertEqual(
+                    self.find_elem_by_css(selector).text,
+                    "",
+                    f"{selector} still shows the previous mode's quote",
+                )
+        self.assertEqual(
+            self.find_elem_by_css(".id-swap-out").get_attribute("value"), ""
+        )
+
     def test_the_amount_field_moves_to_the_leg_it_belongs_to(self):
         """Sell fixes what you pay; Buy fixes what you receive."""
         self._open_modal()
