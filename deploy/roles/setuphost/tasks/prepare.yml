@@ -31,6 +31,27 @@
   become: true
   tags: [setup-host, repository]
 
+# `projectsetup` runs `build-static.sh`, which minifies this project's own
+# JavaScript through `npx --yes esbuild`. So the deploy needs npx, and npx
+# comes from npm.
+#
+# It was never installed. The live server has node because somebody put it
+# there by hand, and the task that needs it carried `failed_when: false` until
+# 31d1538 -- so on a host without node the build did nothing and the deploy
+# went green on whatever static/build already held. A freshly provisioned host
+# could not have built these assets at all, and molecule never said so.
+#
+# Ubuntu's `nodejs` is old (18.x on 24.04) and that is fine: nothing here runs
+# node itself, it only needs npx to fetch and run a pinned esbuild.
+- name: Ensure Node.js and npm are installed (build-static.sh needs npx)
+  ansible.builtin.apt:
+    name:
+      - nodejs
+      - npm
+    state: present
+  become: true
+  tags: [setup-host, nodejs-install]
+
 - name: Ensure cron package is installed
   ansible.builtin.package:
     name: cron

@@ -30,6 +30,7 @@
     "jest-environment-jsdom": "^30.4.1",
     "canvas": "^3.2.3",
     "jest": "^30.4.2",
-    "mock-socket": "^9.3.1"
+    "mock-socket": "^9.3.1",
+    "fast-check": "^4.9.0"
   }
 }
