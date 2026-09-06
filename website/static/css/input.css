@@ -1112,22 +1112,33 @@
 }
 
 
+/* Which router quoted this, in the footer beside the link that changes it.
+   `inline-flex` would make the name an anonymous flex item, where
+   `text-overflow` has nothing to act on -- so the dot is a positioned
+   ::before on a block instead, and the name can ellipsis. */
 .swap-routertag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
+  position: relative;
+  display: inline-block;
+  min-width: 0;
+  flex: 0 1 auto;
+  padding: 3px 9px 3px 20px;
   border-radius: 999px;
   background: var(--swap-accent-wash);
   color: var(--swap-accent-ink);
   font-size: 0.7rem;
   font-weight: 700;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 
 .swap-routertag::before {
   content: "";
+  position: absolute;
+  top: 50%;
+  left: 9px;
+  margin-top: -2.5px;
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -1706,7 +1717,24 @@
 }
 
 
-.swap-foot a { margin-left: auto; color: var(--swap-accent-ink); }
+/* The link keeps its whole text at any width; everything to its left gives
+   way first. Without `min-width: 0` a flex item refuses to shrink below its
+   content and the link is the thing pushed out of the modal. */
+.swap-foot a {
+  margin-left: auto;
+  flex: none;
+  white-space: nowrap;
+  color: var(--swap-accent-ink);
+}
+
+
+.swap-foot .id-swap-venues {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 
 /* ---- the picker sheet ------------------------------------------------------ */
@@ -1850,7 +1878,6 @@
 @media (max-width: 600px) {
   .swap-modal { width: calc(100vw - 16px); }
   .swap-modal input.swap-amt { font-size: 1.6rem; }
-  .swap-routertag { display: none; }
   .swap-modes button { font-size: 0.78rem; }
 }
 

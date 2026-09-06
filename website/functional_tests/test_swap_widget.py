@@ -387,6 +387,72 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         )
         self.assertTrue(icon.endswith("/icons/empty.png"), icon)
 
+    def test_the_router_name_sits_with_the_link_that_changes_it(self):
+        """In the footer, at every width, and it truncates before the link.
+
+        It used to be in the header and `display: none` under 600px, because
+        that row already holds the title, the slippage control and the close
+        button. So the one place naming the active router was invisible on a
+        phone -- while "Change default router" stayed right there at the
+        bottom of the same modal, offering to change something the reader
+        could not see.
+
+        The rule in the footer is that the link is what must survive: it stops
+        being usable when it is clipped, and a router name does not.
+        """
+        self._open_modal()
+
+        tag = self.find_elem_by_css(".swap-foot .swap-routertag")
+        self.assertEqual(tag.text, "Folks Smart Router")
+
+        for width in (390, 1280):
+            with self.subTest(width=width):
+                self.browser.set_window_size(width, 900)
+                self.assertTrue(
+                    self.find_elem_by_css(".swap-foot .swap-routertag").is_displayed(),
+                    "the router name is hidden again",
+                )
+
+    def test_a_long_router_name_truncates_rather_than_pushing_the_link_out(self):
+        """The name gives way; the link keeps every character.
+
+        Driven by rewriting the name rather than by a fixture, because what is
+        under test is what CSS does with a name too long for the row -- and no
+        router we ship has one.
+        """
+        # Opened first, then narrowed: at 390px the Swap button that opens the
+        # modal needs scrolling to, and that is not what this is testing.
+        self._open_modal()
+        self.browser.set_window_size(390, 900)
+
+        link = self.find_elem_by_css(".swap-foot a")
+        before = link.size["width"]
+        self.browser.execute_script(
+            "document.querySelector('.swap-foot .swap-routertag').textContent ="
+            "  'A Router With An Unreasonably Long Name Indeed';"
+        )
+
+        tag = self.find_elem_by_css(".swap-foot .swap-routertag")
+        clipped = self.browser.execute_script(
+            "return arguments[0].scrollWidth > arguments[0].clientWidth;", tag
+        )
+        self.assertTrue(clipped, "the name did not truncate")
+        self.assertEqual(
+            link.size["width"],
+            before,
+            "the link gave up width to the router name",
+        )
+        self.assertLessEqual(
+            self.browser.execute_script(
+                "return arguments[0].getBoundingClientRect().right;", link
+            ),
+            self.browser.execute_script(
+                "return document.querySelector('.swap-modal')"
+                "  .getBoundingClientRect().right;"
+            ),
+            "the link was pushed outside the modal",
+        )
+
     def test_the_flip_control_never_covers_the_percentage_chips(self):
         """The control straddles the seam; the chips have to be clear of it.
 

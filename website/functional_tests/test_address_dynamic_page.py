@@ -446,6 +446,32 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
+    def test_every_asset_header_puts_its_figure_in_the_same_column(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Down the closed list, the same edge on every row.
+
+        Separate from the test above because it is a different grid -- the
+        asset header is five cells and the position row is three -- and they
+        can drift apart independently.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self._sign_in()
+        self._open_page()
+
+        # Laid out only: a row the fold or the filter left with no geometry
+        # reads as a right edge of 0 and would show up here as a second
+        # column. `laid_out` still insists on more than one row, so this
+        # cannot pass by having nothing to compare.
+        values = self.laid_out(".chead > .cval")
+
+        edges = {round(self.right_edge(cell)) for cell in values}
+        self.assertEqual(
+            1, len(edges), f"asset figures wandered: right edges {sorted(edges)}"
+        )
+
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
