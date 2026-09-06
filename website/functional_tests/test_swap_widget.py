@@ -268,13 +268,35 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         # "Available", not "Balance": for ALGO the engine sends
         # `amount - min-balance`, so this is smaller than the balance the rest
         # of the page shows for the same account, on purpose.
-        self.assertEqual(self.find_elem_by_css(".id-swap-from-max").text, "5 ALGO")
+        #
+        # And the amount alone, no unit: the pill above already says ALGO, and
+        # the room it took is where the leg's USD figure goes.
+        self.assertEqual(self.find_elem_by_css(".id-swap-from-max").text, "5")
         self.assertEqual(
             self.find_elem_by_css(".swap-leg-pay .swap-leg-bal").text,
-            "Available 5 ALGO",
+            "Available 5",
         )
         # Nothing chosen to receive yet.
         self.assertEqual(self.find_elem_by_css(".id-swap-to-unit").text, "Select token")
+
+    def test_both_legs_have_a_slot_for_their_value_in_usd(self):
+        """Each leg's caption holds its own figure -- pay as well as receive.
+
+        The figures themselves arrive with a quote, which needs a router this
+        test has no way to answer for; `renderQuote` is pinned in the widget's
+        jest suite instead. What is worth checking in a real browser is the
+        part a rename can silently break: that both slots are in the page,
+        under the class `setLegValues` looks for, and empty until there is
+        something to say.
+        """
+        self._open_modal()
+
+        for leg in ("pay", "get"):
+            with self.subTest(leg=leg):
+                slot = self.find_elem_by_css(
+                    f".swap-leg-{leg} .id-swap-leg-value"
+                )
+                self.assertEqual(slot.text, "")
 
     def test_without_a_wallet_the_button_says_what_is_missing(self):
         self._open_modal()
@@ -333,7 +355,7 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         unit, icon = self._pill("from")
         self.assertEqual(unit, "USDC")
         self.assertTrue(icon.endswith("/icons/31566704t.png"), icon)
-        self.assertEqual(self.find_elem_by_css(".id-swap-from-max").text, "2.5 USDC")
+        self.assertEqual(self.find_elem_by_css(".id-swap-from-max").text, "2.5")
         # The source list is rendered from the <select> already on the page.
         self.assertEqual(self._mocked_assets.call_count, calls_before)
 
@@ -473,7 +495,7 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         self.wait_until(lambda: self._pill("from")[0] == "USDC")
         self.assertEqual(self._pill("to")[0], "ALGO")
         self.assertTrue(self._pill("to")[1].endswith("/icons/0t.png"))
-        self.assertEqual(self.find_elem_by_css(".id-swap-from-max").text, "2.5 USDC")
+        self.assertEqual(self.find_elem_by_css(".id-swap-from-max").text, "2.5")
 
     def test_the_picker_closes_without_choosing(self):
         self._open_modal()

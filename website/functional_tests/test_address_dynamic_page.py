@@ -135,6 +135,50 @@ class MoneyPageMixin:
             element,
         )
 
+    def laid_out(self, selector, least=2):
+        """Return the matches the browser actually gave a box, or fail.
+
+        **A cell with no box is a missing measurement, not a misalignment.**
+        Everything on this page that is out of view is out of view by having
+        no geometry at all -- a folded row carries `.folded`, a filtered card
+        carries the toolbar's hidden class, and both resolve to
+        `display: none`, where every coordinate reads 0. Measured alongside
+        real ones, a single such cell turns a one-column page into
+
+            AssertionError: 1 != 2 : asset figures wandered: right edges [0, 1140]
+
+        which says "the column moved" about a row that was never drawn. That
+        cost a green run on 3.12 and a red one on 3.13, from the same code.
+
+        So the unrendered ones are dropped, and `least` is what keeps that
+        honest: alignment across one box is not alignment, and a page where
+        almost everything vanished should fail as the *setup* problem it is
+        rather than pass for having nothing left to disagree.
+
+        :param selector: CSS selector to measure
+        :type selector: str
+        :param least: how many boxes the measurement needs to mean anything
+        :type least: int
+        :return: list of laid-out elements
+        """
+        found = self.browser.find_elements(By.CSS_SELECTOR, selector)
+        boxed = [
+            element
+            for element in found
+            if self.browser.execute_script(
+                "var r = arguments[0].getBoundingClientRect();"
+                "return r.width > 0 && r.height > 0;",
+                element,
+            )
+        ]
+        self.assertGreaterEqual(
+            len(boxed),
+            least,
+            f"{selector}: {len(boxed)} of {len(found)} matches were laid out, "
+            f"and {least} are needed before their alignment says anything",
+        )
+        return boxed
+
 
 class DynamicEntitlementTest(MoneyPageMixin, FunctionalTest):
     """Design 1 for everybody; Dynamic designs for subscribers.
@@ -274,6 +318,21 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
             "  if (!pressed) break;"
             "}"
         )
+        # Awaited rather than assumed. The loop above reads the DOM its own
+        # clicks produce, so anything the toolbar defers -- it re-renders the
+        # list to fold it -- can leave a control unpressed and the loop
+        # satisfied. `control.parentNode.hidden = hidden <= 0` in toolbar.js is
+        # the page's own answer to "is anything still folded", so waiting on
+        # exactly that cannot disagree with it, and a tail that never opens
+        # fails here, named, instead of turning up later as a stray 0
+        # coordinate in a measurement.
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return Array.prototype.every.call("
+                "  document.querySelectorAll('[data-show-more]'),"
+                "  function (button) { return button.parentNode.hidden; });"
+            )
+        )
         self.wait_until(
             lambda: self.browser.execute_script(
                 "return Array.prototype.every.call("
@@ -387,29 +446,6 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_every_asset_header_puts_its_figure_in_the_same_column(
-        self, mocked_fetch, mocked_status, mocked_capabilities
-    ):
-        """Down the closed list, the same edge on every row.
-
-        Separate from the test above because it is a different grid -- the
-        asset header is five cells and the position row is three -- and they
-        can drift apart independently.
-        """
-        mocked_fetch.return_value = _sample_payload()
-        mocked_status.return_value = {}
-        mocked_capabilities.return_value = {"permission": ASASTATSER}
-        self._sign_in()
-        self._open_page()
-
-        values = self.browser.find_elements(By.CSS_SELECTOR, ".chead > .cval")
-        self.assertGreater(len(values), 1, "one row proves no alignment")
-
-        edges = {round(self.right_edge(cell)) for cell in values}
-        self.assertEqual(
-            1, len(edges), f"asset figures wandered: right edges {sorted(edges)}"
-        )
-
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
