@@ -21,6 +21,9 @@ from walletauth.models import LinkedAddress
 
 logger = logging.getLogger(__name__)
 
+#: Length of an Algorand base32 address, which an EVM ``0x…`` value is not.
+ALGORAND_ADDRESS_LEN = 58
+
 
 def _normalized(address):
     """Return the address in comparison form (EVM is case-folded)."""
@@ -65,6 +68,42 @@ def linked_addresses_for_user(user, addresses):
             matched |= originals
 
     return matched
+
+
+def algorand_addresses_for_user(user):
+    """Return every Algorand address connected to ``user``.
+
+    Unlike :func:`linked_addresses_for_user` this takes no candidate list: the
+    caller is not asking "is this one mine" but "what do I hold, everywhere",
+    which is the question the router's fee tier is judged on -- the published
+    scale counts ASASTATS summed across every linked address, not the address
+    being swapped from.
+
+    **Canonical values, deliberately.** ``canonical_address`` is the Algorand
+    address in both cases: itself for a native connection, the lsig counterpart
+    for an EVM one. So an EVM wallet contributes the account that actually holds
+    assets on Algorand, and the caller never has to know which kind of
+    connection produced a row.
+
+    Anonymous users hold nothing here: an empty set, and the caller's tier is
+    zero. That is correct rather than merely safe -- a discount is a property of
+    a profile, and there is no profile.
+
+    :param user: the requesting user (anonymous yields an empty result)
+    :type user: django.contrib.auth.models.User
+    :return: the user's connected Algorand addresses
+    :rtype: set[str]
+    """
+    if not getattr(user, "is_authenticated", False):
+        return set()
+
+    return {
+        canonical
+        for canonical in LinkedAddress.objects.filter(
+            profile__user=user
+        ).values_list("canonical_address", flat=True)
+        if canonical and len(canonical) == ALGORAND_ADDRESS_LEN
+    }
 
 
 def is_linked_to_user(user, address):

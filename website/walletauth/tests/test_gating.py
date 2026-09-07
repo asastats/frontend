@@ -4,7 +4,11 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 
-from walletauth.gating import is_linked_to_user, linked_addresses_for_user
+from walletauth.gating import (
+    algorand_addresses_for_user,
+    is_linked_to_user,
+    linked_addresses_for_user,
+)
 from walletauth.models import LinkedAddress
 
 user_model = get_user_model()
@@ -12,6 +16,7 @@ user_model = get_user_model()
 ALGO = "TIIHS4257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7PR34"
 EVM = "0x52908400098527886e0f7030069857d2e4169ee7"
 LSIG = "LSIGCOUNTERPART57NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63"
+OTHER = "SECONDARY257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7P"
 
 
 def make_user(username="owner"):
@@ -103,3 +108,54 @@ class TestLinkedAddressesForUser:
     @pytest.mark.django_db
     def test_anonymous_returns_empty(self):
         assert linked_addresses_for_user(AnonymousUser(), [ALGO]) == set()
+
+
+class TestAlgorandAddressesForUser:
+    """Testing class for :func:`algorand_addresses_for_user`.
+
+    What the router's fee tier is summed over. The published scale counts
+    ASASTATS across *every* linked address, so this asks a different question
+    from :func:`linked_addresses_for_user`: not "is this one mine" but "which
+    are mine", with no candidate list to filter against.
+    """
+
+    @pytest.mark.django_db
+    def test_returns_every_connected_algorand_address(self):
+        user = make_user()
+        link(user.profile, ALGO, ALGO)
+        link(user.profile, EVM, LSIG, primary=False, login=False)
+        # the EVM row contributes its lsig counterpart: that is the account
+        # that holds anything on Algorand, and the 0x form holds nothing
+        assert algorand_addresses_for_user(user) == {ALGO, LSIG}
+
+    @pytest.mark.django_db
+    def test_excludes_the_evm_display_form(self):
+        """A ``0x…`` value is not an account the engine can read a holding for."""
+        user = make_user()
+        link(user.profile, EVM, LSIG, primary=False, login=False)
+        assert EVM not in algorand_addresses_for_user(user)
+
+    @pytest.mark.django_db
+    def test_counts_secondaries_not_only_the_primary(self):
+        """The tier is the profile's, and a secondary's holding is the user's."""
+        user = make_user()
+        link(user.profile, ALGO, ALGO)
+        link(user.profile, OTHER, OTHER, primary=False, login=False)
+        assert algorand_addresses_for_user(user) == {ALGO, OTHER}
+
+    @pytest.mark.django_db
+    def test_is_scoped_to_the_requesting_user(self):
+        """Never an oracle for somebody else's addresses, and never their tier."""
+        user = make_user()
+        stranger = make_user("stranger")
+        link(user.profile, ALGO, ALGO)
+        link(stranger.profile, OTHER, OTHER)
+        assert algorand_addresses_for_user(user) == {ALGO}
+
+    @pytest.mark.django_db
+    def test_returns_empty_for_a_user_with_no_links(self):
+        assert algorand_addresses_for_user(make_user()) == set()
+
+    @pytest.mark.django_db
+    def test_anonymous_returns_empty(self):
+        assert algorand_addresses_for_user(AnonymousUser()) == set()

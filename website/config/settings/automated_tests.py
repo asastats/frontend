@@ -64,12 +64,42 @@ CACHES = {
 # Pinned here rather than exported in the workflow so the suite is
 # deterministic in both places, and so a developer whose `.env` is unusual
 # gets the same result as CI.
+import uuid  # noqa: E402
+from datetime import datetime, timezone  # noqa: E402
+
+import jwt  # noqa: E402
+
 from utils.helpers import parse_export_limits  # noqa: E402
 
 #: Obviously not a secret, and never used against a real token: the suite both
 #: mints and verifies with it.
 SIMPLE_JWT_KEY = "automated-tests-signing-key-not-a-secret"
 SIMPLE_JWT = {**SIMPLE_JWT, "SIGNING_KEY": SIMPLE_JWT_KEY}  # noqa: F405
+
+#: Minted here, with the key above, and for the same reason the key is pinned.
+#:
+#: `WIDGETS_API_TOKEN` comes from `website/.env`, where a developer's copy is a
+#: real token signed with the *real* `SIMPLE_JWT_KEY`. Pinning the key without
+#: also minting the token left the two halves of one credential disagreeing:
+#: the token verified everywhere except under the settings the suite runs with,
+#: so every test that authenticates as the widget host got a 401 that no check
+#: reported -- `manage.py check` passes, because it validates against the real
+#: key. On CI, where the variable is absent entirely, it was a 401 too.
+#:
+#: Signed with PyJWT rather than `AccessToken` because minting through simplejwt
+#: imports the user model, and a settings module is not allowed to.
+_TOKEN_MINTED_AT = datetime.now(tz=timezone.utc)
+WIDGETS_API_TOKEN = jwt.encode(
+    {
+        "token_type": "access",
+        "exp": _TOKEN_MINTED_AT + SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+        "iat": _TOKEN_MINTED_AT,
+        "jti": uuid.uuid4().hex,
+        "user_id": "1",
+    },
+    SIMPLE_JWT_KEY,
+    algorithm="HS256",
+)
 
 #: The example from `core.checks`' own hint. `free` has to be present or a
 #: permission-0 reader sees no CSV export link.
