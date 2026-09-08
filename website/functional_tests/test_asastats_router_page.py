@@ -174,3 +174,280 @@ class AsastatsRouterPageUnlinkedTest(FunctionalTest):
         # `find_elements` returns an empty list immediately, which is the only
         # way to assert a thing is missing.
         assert self.browser.find_elements(By.CSS_SELECTOR, "#id-swap-addresses") == []
+
+
+class AsastatsRouterSwapOptInTest(FunctionalTest):
+    """The opt-in the quote-signed path has to send *before* its group.
+
+    A quote-signed group is signed by the backend over exact indices and its
+    note records them, so `signAndSendPartial` refuses to prepend anything -
+    correctly. The controller's partial branch returned before reaching the
+    opt-in handling the array branch has, so nothing opted the caller in at
+    all: four routed swaps in a row were refused on chain with `must optin,
+    asset ... missing from <caller>` while three earlier ones, into assets
+    already held, went through.
+
+    Jest covers the ordering in isolation. What it cannot cover is that the
+    real page reaches this code with a real quote in hand, which is what the
+    two browser-only failures behind it were made of - so this drives the
+    shipped page end to end and asserts on the order the bridge is called in.
+
+    Nothing signs: the bridge is a recorder.
+    """
+
+    FROM_ASSET = 31566704  # USDC, held
+    TO_ASSET = 393537671   # not held, so the swap has to opt in first
+
+    def setUp(self):
+        """Silence the capabilities call the shell's context processor makes.
+
+        It reaches the engine on :8001, which is not running for a test - and
+        the failure lands in a context processor, so the page renders as an
+        error and every wait here times out. That reads as a broken swap panel
+        rather than as one missing mock.
+        """
+        super().setUp()
+        from unittest import mock
+
+        patched = mock.patch("core.context_processors.fetch_capabilities")
+        capabilities = patched.start()
+        self.addCleanup(patched.stop)
+        capabilities.return_value = {"permission": 100}
+
+    def _link_address(self, email="asastats-optin@example.com"):
+        session_cookie = self.create_session_cookie(
+            username=email, password="top_secret", permission=100
+        )
+        user = get_user_model().objects.get(username=email)
+        LinkedAddress.objects.create(
+            profile=user.profile,
+            address=ADDRESS,
+            canonical_address=ADDRESS,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=True,
+            login_enabled=True,
+        )
+        user.profile.preferred_router = "asastats"
+        user.profile.save()
+
+        self.browser.get(self.server_url + "/404.html")
+        self.browser.add_cookie(session_cookie)
+        # The adapter POSTs same-origin and sends `csrftoken` as a header for
+        # Django to compare against the cookie. A browser that has never
+        # submitted a form carries neither, and the quote is then refused
+        # before it reaches the view - which reads exactly like a broken
+        # adapter. Any value does: Django compares the two, not their contents.
+        self.browser.add_cookie({"name": "csrftoken", "value": "x" * 64})
+        return user
+
+    def _holdings(self):
+        """What the address holds: the input asset, and never the target."""
+        return {
+            "0": {"name": "Algorand", "unit": "ALGO", "decimals": 6, "amount": 5_000_000},
+            str(self.FROM_ASSET): {
+                "name": "USDC",
+                "unit": "USDC",
+                "decimals": 6,
+                "amount": 10_000_000,
+            },
+        }
+
+    def _quote(self):
+        """A sell quote in the shape `AsastatsAdapter.getQuote` reads."""
+        return {
+            "amount_in": "1000000",
+            "amount_out": "2500000",
+            "minimum_received": "2487500",
+            "maximum_sent": "1000000",
+            "price_impact_pct": 0.12,
+            "value_usdc": 1.0,
+            "route_label": "Tinyman",
+            "fees_total": 3000,
+            "mode": "sell",
+            "asset_in": self.FROM_ASSET,
+            "asset_out": self.TO_ASSET,
+        }
+
+    def _built_group(self):
+        """A routed group: the partial shape, which is the one that cannot prepend."""
+        from base64 import b64encode
+
+        return {
+            "transactions": [b64encode(bytes([0x80 + n])).decode() for n in range(3)],
+            "signed_transactions": {"2": b64encode(bytes([0x8A])).decode()},
+            "quote_signer_index": 2,
+        }
+
+    def _install_recording_bridge(self):
+        """A bridge that records the order it is called in and resolves.
+
+        The order is the entire assertion. Opting in *after* submitting fails
+        exactly as not opting in at all does, so a recorder that only counted
+        calls would pass on the bug this exists for.
+        """
+        self.browser.execute_script(
+            "var address = arguments[0];"
+            "window.__calls = [];"
+            "window.asastatsSwap = {"
+            "  activeAddress: function () { return address; },"
+            "  optIn: function (assetId) {"
+            "    window.__calls.push({ call: 'optIn', asset: assetId });"
+            "    return Promise.resolve('OPTED');"
+            "  },"
+            "  signAndSendPartial: function (group) {"
+            "    window.__calls.push({"
+            "      call: 'signAndSendPartial',"
+            "      transactions: group.transactions.length,"
+            "      signerIndex: group.quoteSignerIndex"
+            "    });"
+            "    return Promise.resolve('TXID');"
+            "  },"
+            "  signAndSend: function () {"
+            "    window.__calls.push({ call: 'signAndSend' });"
+            "    return Promise.resolve('TXID');"
+            "  }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            ADDRESS,
+        )
+
+    def _panel_state(self):
+        """Everything `executeSwap`'s first line depends on, read from the DOM.
+
+        `readQuoteParams` returns null when any of from, to or amount is
+        empty, and `executeSwap` then returns without touching the status or
+        the button - a silent stop that looks identical to a click that never
+        landed. Reading the three fields is what tells those apart.
+        """
+        return self.browser.execute_script(
+            "var p = document.querySelector('.id-swap-panel');"
+            "if (!p) return null;"
+            "var from = p.querySelector('.id-swap-from');"
+            "var to = p.querySelector('.id-swap-to');"
+            "var amount = p.querySelector('.id-swap-amount');"
+            "var btn = p.querySelector('.id-swap-swap-btn');"
+            "var status = p.querySelector('.id-swap-status');"
+            "return {"
+            "  from: from && from.value,"
+            "  to: to && to.value,"
+            "  optedIn: to && to.dataset.optedIn,"
+            "  amount: amount && amount.value,"
+            "  out: (p.querySelector('.id-swap-out') || {}).value,"
+            "  label: btn && btn.textContent.trim(),"
+            "  disabled: btn && btn.disabled,"
+            "  status: status && status.textContent.trim(),"
+            "  calls: window.__calls"
+            "};"
+        )
+
+    def _open_and_quote(self):
+        """Drive the page to a standing quote, and return the CTA."""
+        self.browser.get(f"{self.server_url}/widgets/asastats/{ADDRESS}")
+        self._install_recording_bridge()
+
+        # **The panel does not exist until the row is opened.** Each linked
+        # address is a `<details>` whose body `swap.js` fetches on the first
+        # `toggle`, so before this click there is no source select, no target
+        # input and no amount field - and `readQuoteParams` returns null on
+        # all three. `executeSwap` then returns without touching the status or
+        # the button, which is indistinguishable from a click that never
+        # landed and is the trap this test spent seven runs in.
+        self.find_elem_by_css(
+            "#id-swap-addresses details.swap-address summary"
+        ).click()
+
+        # The holdings panel is lazy, so the source select is empty until it
+        # arrives - and an empty source is one of the three things that makes
+        # `readQuoteParams` return null.
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var s = document.querySelector('.id-swap-from');"
+                "return !!(s && s.value);"
+            )
+        )
+
+        # The picker lives in a sheet and its input is not interactable until
+        # the pill opens it.
+        self.find_elem_by_css('[data-swap-pick="to"]').click()
+        search = self.wait_until(
+            lambda: self.find_elem_by_css(".id-swap-to-search").is_displayed()
+            and self.find_elem_by_css(".id-swap-to-search")
+        )
+        search.send_keys("gold")
+        option = self.wait_until(
+            lambda: self.browser.find_elements(
+                By.CSS_SELECTOR, ".id-swap-asset-option"
+            )
+            and self.find_elem_by_css(".id-swap-asset-option")
+        )
+        option.click()
+
+        self.find_elem_by_css(".id-swap-amount").send_keys("1")
+
+        # The quote is debounced, so the wait is on the rendered result rather
+        # than on the request having been made.
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var o = document.querySelector('.id-swap-out');"
+                "return !!(o && o.value);"
+            ),
+            timeout=10,
+        )
+        return self.find_elem_by_css(".id-swap-swap-btn")
+
+    def test_a_quote_signed_swap_opts_in_before_it_submits(self):
+        """The order is the bug: opting in after submitting fails identically.
+
+        Asserted on the bridge's own call log rather than on the panel text,
+        because the panel says "Check your wallet" for both signatures and
+        cannot distinguish them.
+        """
+        from unittest import mock
+
+        self._link_address()
+        answered = mock.Mock()
+        answered.json.side_effect = [self._quote(), self._built_group()]
+        with mock.patch(
+            "widgets.inhouse.swapcore.views.fetch_account_holdings",
+            return_value=self._holdings(),
+        ), mock.patch(
+            "widgets.inhouse.swapcore.views.fetch_asset_matches",
+            return_value=[
+                {
+                    "id": self.TO_ASSET,
+                    "unit": "GOLD$",
+                    "name": "Meld Gold",
+                    "decimals": 5,
+                    "usdc_price": 0.9,
+                    "verified": True,
+                }
+            ],
+        ), mock.patch(
+            "widgets.inhouse.asastats.views.engine_request", return_value=answered
+        ):
+            cta = self._open_and_quote()
+            assert cta.is_enabled(), self._panel_state()
+            cta.click()
+            # Waiting on the panel reaching its terminal state rather than on
+            # a call count: a missing opt-in still submits, so counting calls
+            # would time out and report nothing about what actually happened.
+            self.wait_until(
+                lambda: self.browser.execute_script(
+                    "var b = document.querySelector('.id-swap-swap-btn');"
+                    "return b && /submitted|Try again/.test(b.textContent);"
+                ),
+                timeout=10,
+            )
+            calls = self.browser.execute_script("return window.__calls;")
+
+        # The order is the assertion. Opting in after the group is submitted
+        # fails on chain exactly as never opting in does, so a set comparison
+        # would pass on the bug.
+        assert [one["call"] for one in calls] == [
+            "optIn",
+            "signAndSendPartial",
+        ], self._panel_state()
+        assert calls[0]["asset"] == self.TO_ASSET
+        assert calls[1]["transactions"] == 3
+        assert calls[1]["signerIndex"] == 2
