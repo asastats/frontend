@@ -17,20 +17,27 @@
  */
 
 const walletManagerCtor = jest.fn();
-jest.mock("@txnlab/use-wallet", () => ({
-  WalletId: { PERA: "pera" },
-  WalletManager: function (this: any, ...args: unknown[]) {
-    return walletManagerCtor(...args);
-  },
-}));
+jest.mock("@txnlab/use-wallet", () => {
+  const actual = jest.requireActual("@txnlab/use-wallet");
+  return {
+    ...actual,
+    WalletManager: function (this: any, ...args: unknown[]) {
+      return walletManagerCtor(...args);
+    },
+  };
+});
 
-jest.mock("algosdk", () => ({
-  makePaymentTxnWithSuggestedParamsFromObject: jest.fn((fields) => ({
-    ...fields,
-    __txn: true,
-  })),
-  encodeUnsignedTransaction: jest.fn(() => Uint8Array.from([1, 2, 3])),
-}));
+jest.mock("algosdk", () => {
+  const actual = jest.requireActual("algosdk");
+  return {
+    ...actual,
+    makePaymentTxnWithSuggestedParamsFromObject: jest.fn((fields) => ({
+      ...fields,
+      __txn: true,
+    })),
+    encodeUnsignedTransaction: jest.fn(() => Uint8Array.from([1, 2, 3])),
+  };
+});
 
 const getDefaultConnectors = jest.fn();
 const defaultEvmSigner = jest.fn();

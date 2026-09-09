@@ -11,20 +11,23 @@ permission/portfolio model applies unchanged either way.
 import base64
 import logging
 
-import msgpack
-from algosdk.transaction import SignedTransaction
+from algosdk.encoding import address_from_pq_sig, msgpack_decode
+from algosdk.transaction import PQSignedTransaction, SignedTransaction
 
 from utils.clients import algod_instance
 from utils.constants.core import MAINNET_GENESIS_HASH, MAINNET_GENESIS_ID
-from walletauth.crypto import verify_signed_transaction
+from walletauth.crypto import (
+    verify_pq_signed_transaction,
+    verify_signed_transaction,
+)
 
 logger = logging.getLogger(__name__)
 
 #: Upper bound on the base64 signed-transaction payload. A signed 0-ALGO
-#: self-payment carrying the nonce is a few hundred bytes; this generous cap
-#: rejects oversized payloads before base64/msgpack decoding (defense in depth;
-#: Django's DATA_UPLOAD_MAX_MEMORY_SIZE already bounds the request body).
-MAX_SIGNED_TXN_B64_LENGTH = 2048
+#: self-payment carrying the nonce is a few hundred bytes for Ed25519, and up to
+#: ~4-5 KiB for Falcon-1024 post-quantum keys and signatures. A 16 KiB ceiling
+#: comfortably covers current and future post-quantum transaction envelopes.
+MAX_SIGNED_TXN_B64_LENGTH = 16384
 
 #: An EIP-191 personal_sign signature is 65 bytes (0x + 130 hex = 132 chars).
 #: Cap with slack to bound work and reject junk before recovery.
@@ -115,6 +118,10 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
     def recover(self, *, nonce, prefix, payload):
         """Validate the Algorand proof and return the signer's address.
 
+        Supports both standard Ed25519 signed transactions and Post-Quantum
+        Falcon-1024 (``pqsig``) signed transactions, with support for rekeyed
+        accounts on either scheme.
+
         :param nonce: server-issued single-use challenge
         :type nonce: str
         :param prefix: domain-scoped nonce prefix
@@ -123,10 +130,8 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
         :type payload: dict
         :var signed_b64: base64-encoded signed transaction from the payload
         :type signed_b64: str
-        :var raw: msgpack bytes decoded from ``signed_b64``
-        :type raw: bytes
-        :var stxn: reconstructed signed transaction
-        :type stxn: :class:`algosdk.transaction.SignedTransaction`
+        :var stxn: reconstructed signed transaction (SignedTransaction or PQSignedTransaction)
+        :type stxn: :class:`algosdk.transaction.SignedTransaction` | :class:`algosdk.transaction.PQSignedTransaction`
         :var txn: the inner (unsigned) transaction being inspected
         :type txn: :class:`algosdk.transaction.Transaction`
         :var sender: the self-payment sender, returned as the proven address
@@ -142,17 +147,27 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
             logger.warning("walletauth: oversized signedTransaction payload rejected")
             return None
 
+        raw_txn_msgpack = None
         try:
-            raw = base64.b64decode(signed_b64)
-            stxn = SignedTransaction.undictify(msgpack.unpackb(raw))
+            stxn = msgpack_decode(signed_b64)
+            try:
+                import msgpack as _mp
+                raw_bytes = base64.b64decode(signed_b64)
+                unpacked = _mp.unpackb(raw_bytes, raw=False)
+                raw_txn = unpacked.get("txn") or unpacked.get(b"txn")
+                if raw_txn:
+                    from algosdk.encoding import _sort_dict
+                    raw_txn_msgpack = _mp.packb(_sort_dict(raw_txn), use_bin_type=True)
+            except Exception:
+                raw_txn_msgpack = None
         except Exception:  # noqa: BLE001 - any decode failure is a rejected proof
             logger.warning("walletauth: undecodable signed transaction")
             return None
 
-        txn = stxn.transaction
-
-        if not self._shape_ok(txn):
+        txn = getattr(stxn, "transaction", None)
+        if txn is None or not self._shape_ok(txn):
             return None
+
         sender = txn.sender
         if not self._note_ok(txn, prefix, nonce):
             logger.warning("walletauth: note mismatch for %s", _short(sender))
@@ -160,8 +175,17 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
         if not self._network_ok(txn):
             logger.warning("walletauth: genesis mismatch for %s", _short(sender))
             return None
-        if not self._signature_ok(stxn):
-            logger.warning("walletauth: signature rejected for %s", _short(sender))
+
+        if isinstance(stxn, SignedTransaction):
+            if not self._signature_ok(stxn):
+                logger.warning("walletauth: Ed25519 signature rejected for %s", _short(sender))
+                return None
+        elif isinstance(stxn, PQSignedTransaction):
+            if not self._pq_signature_ok(stxn, raw_txn_msgpack=raw_txn_msgpack):
+                logger.warning("walletauth: PQ signature rejected for %s", _short(sender))
+                return None
+        else:
+            logger.warning("walletauth: unsupported signed transaction class %s", type(stxn).__name__)
             return None
 
         return sender
@@ -243,6 +267,60 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
                 )
                 return False
         return verify_signed_transaction(stxn)
+
+    def _pq_signature_ok(self, stxn, raw_txn_msgpack=None):
+        """Verify the post-quantum signature, confirming any claimed rekey on-chain first.
+
+        :param stxn: post-quantum signed transaction to check
+        :type stxn: :class:`algosdk.transaction.PQSignedTransaction`
+        :param raw_txn_msgpack: optional raw canonical msgpack bytes of the transaction map
+        :type raw_txn_msgpack: bytes | None
+        :var auth: authorizing (rekey) address claimed by the transaction, if any
+        :type auth: str | None
+        :var sender: transaction sender address
+        :type sender: str
+        :var derived_address: Algorand address derived from the ``pqsig`` envelope
+        :type derived_address: str
+        :return: Boolean
+        """
+        try:
+            derived_address = address_from_pq_sig(stxn.pqsig)
+        except Exception:
+            logger.warning("walletauth: failed to derive address from pqsig")
+            return False
+
+        auth = getattr(stxn, "authorizing_address", None)
+        sender = stxn.transaction.sender
+
+        if auth is not None and auth != sender:
+            if derived_address != auth:
+                logger.warning(
+                    "walletauth: derived PQ address %s does not match claimed auth %s",
+                    _short(derived_address),
+                    _short(auth),
+                )
+                return False
+            if not self._rekey_confirmed(sender, auth):
+                logger.warning(
+                    "walletauth: unconfirmed rekey claim, sender=%s", _short(sender)
+                )
+                return False
+        else:
+            if derived_address != sender:
+                logger.warning(
+                    "walletauth: derived PQ address %s does not match sender %s",
+                    _short(derived_address),
+                    _short(sender),
+                )
+                return False
+
+        valid = verify_pq_signed_transaction(stxn, raw_txn_msgpack=raw_txn_msgpack)
+        if not valid:
+            logger.warning(
+                "walletauth: Falcon1024 signature verification failed for %s",
+                _short(sender),
+            )
+        return valid
 
     def _rekey_confirmed(self, address, auth_address):
         """Return True only if ``address`` is on-chain rekeyed to ``auth_address``.

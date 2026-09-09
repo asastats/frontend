@@ -1,4 +1,5 @@
-import { WalletManager, type WalletId } from "@txnlab/use-wallet";
+import { WalletManager } from "@txnlab/use-wallet";
+import { createWalletManager, uint8ArrayToBase64 } from "./walletAdapters";
 import {
   makePaymentTxnWithSuggestedParamsFromObject,
   encodeUnsignedTransaction,
@@ -62,10 +63,7 @@ async function algorandManager(apiBase: string): Promise<WalletManager> {
     throw new Error("Failed to load supported wallets");
   }
   const wallets = await response.json();
-  const manager = new WalletManager({
-    wallets: wallets.map((w: { id: WalletId }) => w.id),
-    defaultNetwork: "mainnet",
-  });
+  const manager = createWalletManager(wallets);
   await manager.resumeSessions();
   cachedManager = manager;
   return manager;
@@ -100,7 +98,7 @@ async function algorandStepUp(
   if (!signed[0]) {
     throw new Error("No signed transaction returned");
   }
-  return { signedTransaction: btoa(String.fromCharCode(...signed[0])) };
+  return { signedTransaction: uint8ArrayToBase64(signed[0]) };
 }
 
 /**

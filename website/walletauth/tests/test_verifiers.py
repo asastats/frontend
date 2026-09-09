@@ -4,7 +4,14 @@ import base64
 
 import pytest
 from algosdk import account, encoding
-from algosdk.transaction import PaymentTxn, SignedTransaction, SuggestedParams
+from algosdk.transaction import (
+    PaymentTxn,
+    PQSig,
+    PQSignedTransaction,
+    SignedTransaction,
+    SuggestedParams,
+)
+from falcon_python import Falcon1024
 
 from utils.constants.core import (
     MAINNET_GENESIS_HASH,
@@ -38,6 +45,35 @@ def make_self_payment(address, note):
     return PaymentTxn(
         sender=address, sp=make_params(), receiver=address, amt=0, note=note
     )
+
+
+def make_pq_stxn(
+    pk=None,
+    sk=None,
+    sender=None,
+    authorizing_address=None,
+    scheme=b"f1",
+    salt=None,
+    note=None,
+    tamper_sig=False,
+):
+    if pk is None or sk is None:
+        pk, sk = Falcon1024.generate_keypair()
+    derived_addr, canonical_salt = encoding.address_from_pq_key(
+        scheme if isinstance(scheme, bytes) else scheme.encode(), pk
+    )
+    if salt is None:
+        salt = canonical_salt
+    actual_sender = sender or derived_addr
+    txn = make_self_payment(actual_sender, note or make_note())
+    to_sign = txn.bytes_to_sign()
+    sig = Falcon1024.detached_sign(sk, to_sign)
+    if tamper_sig:
+        sig = bytearray(sig)
+        sig[50] ^= 0xFF
+        sig = bytes(sig)
+    pqsig = PQSig(scheme, salt, pk, sig)
+    return PQSignedTransaction(txn, pqsig, authorizing_address=authorizing_address)
 
 
 def make_payload(stxn):
@@ -130,6 +166,114 @@ class TestAlgorandSignedTxnVerifier:
         secret, address = account.generate_account()
         stxn = make_self_payment(address, b"asastats-auth:not-the-nonce").sign(secret)
         assert verify(stxn, address) is None
+
+    # # verify - post-quantum
+    def test_algorand_verifier_valid_native_pq_returns_address(self):
+        pk, sk = Falcon1024.generate_keypair()
+        derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
+        stxn = make_pq_stxn(pk=pk, sk=sk)
+        assert verify(stxn, derived_addr) == derived_addr
+
+    def test_algorand_verifier_tampered_pq_sig_returns_none(self):
+        pk, sk = Falcon1024.generate_keypair()
+        derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
+        stxn = make_pq_stxn(pk=pk, sk=sk, tamper_sig=True)
+        assert verify(stxn, derived_addr) is None
+
+    def test_algorand_verifier_mismatched_native_pq_sender_returns_none(self):
+        pk, sk = Falcon1024.generate_keypair()
+        _, other_addr = account.generate_account()
+        # Sender is other_addr, but pk derives derived_addr, with no authorizing_address
+        stxn = make_pq_stxn(pk=pk, sk=sk, sender=other_addr)
+        assert verify(stxn, other_addr) is None
+
+    def test_algorand_verifier_confirmed_pq_rekey_returns_legacy_sender(self):
+        _, legacy_sender = account.generate_account()
+        pk, sk = Falcon1024.generate_keypair()
+        auth_addr, _ = encoding.address_from_pq_key(b"f1", pk)
+        stxn = make_pq_stxn(
+            pk=pk, sk=sk, sender=legacy_sender, authorizing_address=auth_addr
+        )
+        assert (
+            verify(
+                stxn,
+                legacy_sender,
+                algod_factory=fake_algod(auth_addr=auth_addr),
+            )
+            == legacy_sender
+        )
+
+    def test_algorand_verifier_unconfirmed_pq_rekey_returns_none(self):
+        _, legacy_sender = account.generate_account()
+        pk, sk = Falcon1024.generate_keypair()
+        auth_addr, _ = encoding.address_from_pq_key(b"f1", pk)
+        stxn = make_pq_stxn(
+            pk=pk, sk=sk, sender=legacy_sender, authorizing_address=auth_addr
+        )
+        assert (
+            verify(
+                stxn,
+                legacy_sender,
+                algod_factory=fake_algod(auth_addr=None),
+            )
+            is None
+        )
+
+    def test_algorand_verifier_mismatched_pq_authorizing_address_returns_none(self):
+        _, legacy_sender = account.generate_account()
+        _, fake_auth_addr = account.generate_account()
+        pk, sk = Falcon1024.generate_keypair()
+        # The key derives derived_addr, but authorizing_address is fake_auth_addr
+        stxn = make_pq_stxn(
+            pk=pk, sk=sk, sender=legacy_sender, authorizing_address=fake_auth_addr
+        )
+        assert (
+            verify(
+                stxn,
+                legacy_sender,
+                algod_factory=fake_algod(auth_addr=fake_auth_addr),
+            )
+            is None
+        )
+
+    def test_algorand_verifier_pq_payload_larger_than_2kb_succeeds(self):
+        pk, sk = Falcon1024.generate_keypair()
+        derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
+        stxn = make_pq_stxn(pk=pk, sk=sk)
+        payload = make_payload(stxn)
+        # Verify base64 string length is indeed > 2048 chars (the old limit)
+        assert len(payload["signedTransaction"]) > 2048
+        assert len(payload["signedTransaction"]) <= MAX_SIGNED_TXN_B64_LENGTH
+        assert verify(stxn, derived_addr) == derived_addr
+
+    def test_algorand_verifier_recover_returns_native_pq_sender(self):
+        pk, sk = Falcon1024.generate_keypair()
+        derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
+        stxn = make_pq_stxn(pk=pk, sk=sk)
+        verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
+        proven = verifier.recover(
+            nonce=NONCE,
+            prefix=WALLET_CONNECT_NONCE_PREFIX,
+            payload=make_payload(stxn),
+        )
+        assert proven == derived_addr
+
+    def test_algorand_verifier_recover_returns_rekeyed_pq_legacy_sender(self):
+        _, legacy_sender = account.generate_account()
+        pk, sk = Falcon1024.generate_keypair()
+        auth_addr, _ = encoding.address_from_pq_key(b"f1", pk)
+        stxn = make_pq_stxn(
+            pk=pk, sk=sk, sender=legacy_sender, authorizing_address=auth_addr
+        )
+        verifier = AlgorandSignedTxnVerifier(
+            algod_factory=fake_algod(auth_addr=auth_addr)
+        )
+        proven = verifier.recover(
+            nonce=NONCE,
+            prefix=WALLET_CONNECT_NONCE_PREFIX,
+            payload=make_payload(stxn),
+        )
+        assert proven == legacy_sender
 
     # # verify - network
     def test_algorand_verifier_wrong_network_returns_none(self):

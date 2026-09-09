@@ -18,24 +18,31 @@
  */
 
 const walletManagerCtor = jest.fn();
-jest.mock("@txnlab/use-wallet", () => ({
-  WalletId: { PERA: "pera" },
-  WalletManager: function (this: any, ...args: unknown[]) {
-    return walletManagerCtor(...args);
-  },
-}));
+jest.mock("@txnlab/use-wallet", () => {
+  const actual = jest.requireActual("@txnlab/use-wallet");
+  return {
+    ...actual,
+    WalletManager: function (this: any, ...args: unknown[]) {
+      return walletManagerCtor(...args);
+    },
+  };
+});
 
 const encodeUnsignedTransaction = jest.fn((t: unknown) => ({ encoded: t }));
 const algoWaitForConfirmation = jest.fn().mockResolvedValue(undefined);
 const makeAssetTransferTxn = jest.fn(() => ({
   toByte: () => Uint8Array.from([1, 1]),
 }));
-jest.mock("algosdk", () => ({
-  encodeUnsignedTransaction: (...a: unknown[]) => encodeUnsignedTransaction(...a),
-  waitForConfirmation: (...a: unknown[]) => algoWaitForConfirmation(...a),
-  makeAssetTransferTxnWithSuggestedParamsFromObject: (...a: unknown[]) =>
-    makeAssetTransferTxn(...a),
-}));
+jest.mock("algosdk", () => {
+  const actual = jest.requireActual("algosdk");
+  return {
+    ...actual,
+    encodeUnsignedTransaction: (...a: unknown[]) => encodeUnsignedTransaction(...a),
+    waitForConfirmation: (...a: unknown[]) => algoWaitForConfirmation(...a),
+    makeAssetTransferTxnWithSuggestedParamsFromObject: (...a: unknown[]) =>
+      makeAssetTransferTxn(...a),
+  };
+});
 
 const signAndSend = jest.fn().mockResolvedValue("SENT");
 const signAndSendPartial = jest.fn().mockResolvedValue("PARTIAL");

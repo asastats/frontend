@@ -1,4 +1,5 @@
 import { notify } from "./notify";
+import { uint8ArrayToBase64 } from "./walletAdapters";
 import { BaseWallet, WalletManager } from "@txnlab/use-wallet";
 import {
   makePaymentTxnWithSuggestedParamsFromObject,
@@ -266,7 +267,7 @@ export class WalletComponent {
       }
 
       /** Base64 of the signed transaction bytes, as the backend expects. */
-      const signedTxBase64 = btoa(String.fromCharCode(...signedTxs[0]));
+      const signedTxBase64 = uint8ArrayToBase64(signedTxs[0]);
 
       /** Post-login destination for a wallet sign-in started from a Swap click
        *  (the modal's hidden login field), or the login page's ?next. Validated

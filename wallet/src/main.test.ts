@@ -10,13 +10,16 @@ import { App } from "./main";
 const resumeSessionsMock = jest.fn().mockResolvedValue(undefined);
 const getWalletMock = jest.fn();
 
-jest.mock("@txnlab/use-wallet", () => ({
-  WalletId: { PERA: "pera", DEFLY: "defly" },
-  WalletManager: jest.fn().mockImplementation(() => ({
-    getWallet: getWalletMock,
-    resumeSessions: resumeSessionsMock,
-  })),
-}));
+jest.mock("@txnlab/use-wallet", () => {
+  const actual = jest.requireActual("@txnlab/use-wallet");
+  return {
+    ...actual,
+    WalletManager: jest.fn().mockImplementation(() => ({
+      getWallet: getWalletMock,
+      resumeSessions: resumeSessionsMock,
+    })),
+  };
+});
 
 const bindMock = jest.fn();
 const destroyMock = jest.fn();
@@ -79,10 +82,11 @@ describe("App wallet wiring", () => {
     );
     const app = new App();
     await app.init();
-    expect(WalletManager).toHaveBeenCalledWith({
-      wallets: ["pera"],
-      defaultNetwork: "mainnet",
-    });
+    expect(WalletManager).toHaveBeenCalledWith(
+      expect.objectContaining({
+        defaultNetwork: "mainnet",
+      })
+    );
   });
 
   it("binds a WalletComponent for each rendered wallet card", async () => {

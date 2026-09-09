@@ -1,4 +1,5 @@
-import { WalletManager, type WalletId } from "@txnlab/use-wallet";
+import { WalletManager } from "@txnlab/use-wallet";
+import { createWalletManager } from "./walletAdapters";
 import {
   encodeUnsignedTransaction,
   makeAssetTransferTxnWithSuggestedParamsFromObject,
@@ -88,10 +89,7 @@ async function swapManager(apiBase: string): Promise<WalletManager> {
     throw new Error("Failed to load supported wallets");
   }
   const wallets = await response.json();
-  const manager = new WalletManager({
-    wallets: wallets.map((w: { id: WalletId }) => w.id),
-    defaultNetwork: "mainnet",
-  });
+  const manager = createWalletManager(wallets);
   await manager.resumeSessions();
   cachedManager = manager;
   return manager;

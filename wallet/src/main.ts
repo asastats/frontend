@@ -1,4 +1,5 @@
-import { WalletManager, WalletId } from "@txnlab/use-wallet";
+import { WalletManager } from "@txnlab/use-wallet";
+import { createWalletManager } from "./walletAdapters";
 import { WalletComponent } from "./walletComponent";
 import { install as installTestHarness } from "./walletTestHarness";
 import { initEvm } from "./evmBootstrap";
@@ -53,13 +54,8 @@ export class App {
       }
       /** Backend wallet descriptors: `[{ id, name }, ...]`. */
       const walletsData = await walletsResponse.json();
-      /** Wallet ids handed to use-wallet. */
-      const walletIds = walletsData.map((w: any) => w.id as WalletId);
 
-      this.walletManager = new WalletManager({
-        wallets: walletIds,
-        defaultNetwork: "mainnet",
-      });
+      this.walletManager = createWalletManager(walletsData);
 
       walletsData.forEach((walletData: any) => {
         /** The use-wallet wallet instance for this id. */

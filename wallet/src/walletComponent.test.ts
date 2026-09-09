@@ -26,11 +26,15 @@ function captureNotices(): { texts: string[]; stop: () => void } {
 // ─────────────────────────────────────────────────────────────
 // algosdk mock (only the symbols WalletComponent imports)
 // ─────────────────────────────────────────────────────────────
-jest.mock("algosdk", () => ({
-  makePaymentTxnWithSuggestedParamsFromObject: jest.fn(() => ({ txn: true })),
-  encodeUnsignedTransaction: jest.fn(() => new Uint8Array([1, 2, 3])),
-  isValidAddress: jest.fn(() => true),
-}));
+jest.mock("algosdk", () => {
+  const actual = jest.requireActual("algosdk");
+  return {
+    ...actual,
+    makePaymentTxnWithSuggestedParamsFromObject: jest.fn(() => ({ txn: true })),
+    encodeUnsignedTransaction: jest.fn(() => new Uint8Array([1, 2, 3])),
+    isValidAddress: jest.fn(() => true),
+  };
+});
 
 let unsubscribeMock = jest.fn();
 
