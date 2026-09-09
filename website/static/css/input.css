@@ -376,6 +376,62 @@
    the widget may not name anything the host defines. Adding `rounded-box` or
    `btn` to a widget template would couple the submodule to DaisyUI and break
    it for any other host. */
+/* ==========================================================================
+   The index slogan.
+
+   Eleven slogans of 41 to 80 characters share one `<h1>`, and it carried
+   Tailwind's `truncate` - so the longest ones lost their ending to an
+   ellipsis, on a desktop as well as a phone. A proportional face averages
+   about half its font size per character, which puts the arithmetic beyond
+   argument:
+
+     80 characters in the 672px container  ->  needs 16.8px or less
+     80 characters on a 375px phone        ->  needs 8.6px or less
+
+   `text-lg` is 18px, which is why the long ones were cut on a wide screen.
+   And no font size holds eighty characters on one phone line and stays
+   readable - 8.6px is not a size, it is a rumour. So one line is not
+   achievable everywhere, and pretending otherwise is what produced the
+   ellipsis in the first place.
+
+   What this does instead, in order of preference: scale the size so a slogan
+   stays on one line wherever it legibly can, and wrap - never truncate - when
+   it cannot.
+
+   The ceiling is 1rem rather than the 1.125rem it was, and that is the whole
+   fix for wide screens: the container stops growing at 672px, so above that
+   the only thing that decides whether eighty characters fit is the font size,
+   and 18px does not fit while 16px does with room to spare. Below 672px the
+   viewport term takes over and shrinks it further, down to a 0.9375rem floor
+   - past which a slogan wraps to two lines, which on a phone it must, and
+   `text-wrap: balance` splits those evenly so the second line reads as
+   deliberate rather than as a stray word.
+
+   The half-em-per-character figure above is an estimate and the typeface
+   decides the truth; what pins it is the observed truncation, which puts the
+   real average above 0.467em for this face. 16px clears it either way.
+
+   Never `truncate`, whatever else changes here. A slogan is the one sentence
+   on the page, and half of it is worse than a smaller whole one.
+
+   Unlayered, unlike `.tdist` below, and for the opposite reason. `.tdist` sits
+   in `@layer components` so a template can opt out of it with a utility; this
+   one must not be opted out of, because a utility is exactly what broke it -
+   the `<h1>` carried `truncate text-lg`, and both had to go. Unlayered rules
+   out-rank layered utilities, so a stray `text-lg` added here later loses
+   rather than silently restoring the ellipsis. The functional test that
+   catches a re-added `truncate` is the one asserting `text-overflow` is not
+   `ellipsis`; the width check alone does not, because this rule keeps the
+   font small enough to fit even when `truncate` is present.
+   ========================================================================== */
+.index-slogan {
+  font-size: clamp(0.9375rem, 2.4vw, 1rem);
+  line-height: 1.35;
+  font-weight: 500;
+  text-align: center;
+  text-wrap: balance;
+}
+
 .swap-page-title {
   font-size: 1.875rem;
   line-height: 1.2;
