@@ -147,19 +147,8 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
             logger.warning("walletauth: oversized signedTransaction payload rejected")
             return None
 
-        raw_txn_msgpack = None
         try:
             stxn = msgpack_decode(signed_b64)
-            try:
-                import msgpack as _mp
-                raw_bytes = base64.b64decode(signed_b64)
-                unpacked = _mp.unpackb(raw_bytes, raw=False)
-                raw_txn = unpacked.get("txn") or unpacked.get(b"txn")
-                if raw_txn:
-                    from algosdk.encoding import _sort_dict
-                    raw_txn_msgpack = _mp.packb(_sort_dict(raw_txn), use_bin_type=True)
-            except Exception:
-                raw_txn_msgpack = None
         except Exception:  # noqa: BLE001 - any decode failure is a rejected proof
             logger.warning("walletauth: undecodable signed transaction")
             return None
@@ -178,14 +167,21 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
 
         if isinstance(stxn, SignedTransaction):
             if not self._signature_ok(stxn):
-                logger.warning("walletauth: Ed25519 signature rejected for %s", _short(sender))
+                logger.warning(
+                    "walletauth: Ed25519 signature rejected for %s", _short(sender)
+                )
                 return None
         elif isinstance(stxn, PQSignedTransaction):
-            if not self._pq_signature_ok(stxn, raw_txn_msgpack=raw_txn_msgpack):
-                logger.warning("walletauth: PQ signature rejected for %s", _short(sender))
+            if not self._pq_signature_ok(stxn, signed_b64=signed_b64):
+                logger.warning(
+                    "walletauth: PQ signature rejected for %s", _short(sender)
+                )
                 return None
         else:
-            logger.warning("walletauth: unsupported signed transaction class %s", type(stxn).__name__)
+            logger.warning(
+                "walletauth: unsupported signed transaction class %s",
+                type(stxn).__name__,
+            )
             return None
 
         return sender
@@ -268,13 +264,14 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
                 return False
         return verify_signed_transaction(stxn)
 
-    def _pq_signature_ok(self, stxn, raw_txn_msgpack=None):
+    def _pq_signature_ok(self, stxn, signed_b64=None):
         """Verify the post-quantum signature, confirming any claimed rekey on-chain first.
 
         :param stxn: post-quantum signed transaction to check
         :type stxn: :class:`algosdk.transaction.PQSignedTransaction`
-        :param raw_txn_msgpack: optional raw canonical msgpack bytes of the transaction map
-        :type raw_txn_msgpack: bytes | None
+        :param signed_b64: the base64 the transaction was decoded from, passed
+            through only so a re-encoding mismatch can be reported distinctly
+        :type signed_b64: str | None
         :var auth: authorizing (rekey) address claimed by the transaction, if any
         :type auth: str | None
         :var sender: transaction sender address
@@ -314,7 +311,9 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
                 )
                 return False
 
-        valid = verify_pq_signed_transaction(stxn, raw_txn_msgpack=raw_txn_msgpack)
+        valid = verify_pq_signed_transaction(
+            stxn, self.algod_factory(), signed_b64=signed_b64
+        )
         if not valid:
             logger.warning(
                 "walletauth: Falcon1024 signature verification failed for %s",

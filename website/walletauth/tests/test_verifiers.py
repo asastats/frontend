@@ -3,6 +3,9 @@
 import base64
 
 import pytest
+import os
+
+from algosdk.error import AlgodHTTPError
 from algosdk import account, encoding
 from algosdk.transaction import (
     PaymentTxn,
@@ -11,7 +14,6 @@ from algosdk.transaction import (
     SignedTransaction,
     SuggestedParams,
 )
-from falcon_python import Falcon1024
 
 from utils.constants.core import (
     MAINNET_GENESIS_HASH,
@@ -49,30 +51,29 @@ def make_self_payment(address, note):
 
 def make_pq_stxn(
     pk=None,
-    sk=None,
     sender=None,
     authorizing_address=None,
     scheme=b"f1",
     salt=None,
     note=None,
-    tamper_sig=False,
 ):
-    if pk is None or sk is None:
-        pk, sk = Falcon1024.generate_keypair()
-    derived_addr, canonical_salt = encoding.address_from_pq_key(
-        scheme if isinstance(scheme, bytes) else scheme.encode(), pk
-    )
+    """Build a `pqsig` transaction with correctly shaped, meaningless material.
+
+    These used to sign with `falcon_python.Falcon1024` - standard, randomized
+    Falcon. Algorand uses a deterministic variant, so those signatures were
+    never the thing production receives, and the tests passed on every one of
+    them while every real login failed. What decides validity now is the node,
+    which `fake_algod` stands in for.
+    """
+    if pk is None:
+        pk = os.urandom(1793)
+    scheme_bytes = scheme if isinstance(scheme, bytes) else scheme.encode()
+    derived_addr, canonical_salt = encoding.address_from_pq_key(scheme_bytes, pk)
     if salt is None:
         salt = canonical_salt
     actual_sender = sender or derived_addr
     txn = make_self_payment(actual_sender, note or make_note())
-    to_sign = txn.bytes_to_sign()
-    sig = Falcon1024.detached_sign(sk, to_sign)
-    if tamper_sig:
-        sig = bytearray(sig)
-        sig[50] ^= 0xFF
-        sig = bytes(sig)
-    pqsig = PQSig(scheme, salt, pk, sig)
+    pqsig = PQSig(scheme_bytes, salt, pk, os.urandom(1230))
     return PQSignedTransaction(txn, pqsig, authorizing_address=authorizing_address)
 
 
@@ -84,10 +85,22 @@ def make_note(nonce=NONCE):
     return f"{WALLET_CONNECT_NONCE_PREFIX}{nonce}".encode()
 
 
-def fake_algod(auth_addr=None):
+def fake_algod(auth_addr=None, pq_valid=True):
+    """A node that answers the rekey lookup and judges signatures.
+
+    `pq_valid=False` reproduces what a real node says about a bad signature:
+    an HTTP error. Acceptance is silence - a 200 - which is what makes a
+    transaction that would not *execute* still count as verified.
+    """
+
     class _Client:
         def account_info(self, address):
             return {"auth-addr": auth_addr} if auth_addr else {}
+
+        def simulate_raw_transactions(self, txns):
+            if not pq_valid:
+                raise AlgodHTTPError("At least one signature didn't pass verification")
+            return {"txn-groups": [{"txn-results": []}]}
 
     return lambda: _Client()
 
@@ -169,31 +182,32 @@ class TestAlgorandSignedTxnVerifier:
 
     # # verify - post-quantum
     def test_algorand_verifier_valid_native_pq_returns_address(self):
-        pk, sk = Falcon1024.generate_keypair()
+        pk = os.urandom(1793)
         derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
-        stxn = make_pq_stxn(pk=pk, sk=sk)
+        stxn = make_pq_stxn(pk=pk)
         assert verify(stxn, derived_addr) == derived_addr
 
-    def test_algorand_verifier_tampered_pq_sig_returns_none(self):
-        pk, sk = Falcon1024.generate_keypair()
+    def test_algorand_verifier_pq_sig_the_node_refuses_returns_none(self):
+        """The node is what decides, so this is where a bad signature dies."""
+        pk = os.urandom(1793)
         derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
-        stxn = make_pq_stxn(pk=pk, sk=sk, tamper_sig=True)
-        assert verify(stxn, derived_addr) is None
+        stxn = make_pq_stxn(pk=pk)
+        assert (
+            verify(stxn, derived_addr, algod_factory=fake_algod(pq_valid=False)) is None
+        )
 
     def test_algorand_verifier_mismatched_native_pq_sender_returns_none(self):
-        pk, sk = Falcon1024.generate_keypair()
+        pk = os.urandom(1793)
         _, other_addr = account.generate_account()
         # Sender is other_addr, but pk derives derived_addr, with no authorizing_address
-        stxn = make_pq_stxn(pk=pk, sk=sk, sender=other_addr)
+        stxn = make_pq_stxn(pk=pk, sender=other_addr)
         assert verify(stxn, other_addr) is None
 
     def test_algorand_verifier_confirmed_pq_rekey_returns_legacy_sender(self):
         _, legacy_sender = account.generate_account()
-        pk, sk = Falcon1024.generate_keypair()
+        pk = os.urandom(1793)
         auth_addr, _ = encoding.address_from_pq_key(b"f1", pk)
-        stxn = make_pq_stxn(
-            pk=pk, sk=sk, sender=legacy_sender, authorizing_address=auth_addr
-        )
+        stxn = make_pq_stxn(pk=pk, sender=legacy_sender, authorizing_address=auth_addr)
         assert (
             verify(
                 stxn,
@@ -205,11 +219,9 @@ class TestAlgorandSignedTxnVerifier:
 
     def test_algorand_verifier_unconfirmed_pq_rekey_returns_none(self):
         _, legacy_sender = account.generate_account()
-        pk, sk = Falcon1024.generate_keypair()
+        pk = os.urandom(1793)
         auth_addr, _ = encoding.address_from_pq_key(b"f1", pk)
-        stxn = make_pq_stxn(
-            pk=pk, sk=sk, sender=legacy_sender, authorizing_address=auth_addr
-        )
+        stxn = make_pq_stxn(pk=pk, sender=legacy_sender, authorizing_address=auth_addr)
         assert (
             verify(
                 stxn,
@@ -222,10 +234,10 @@ class TestAlgorandSignedTxnVerifier:
     def test_algorand_verifier_mismatched_pq_authorizing_address_returns_none(self):
         _, legacy_sender = account.generate_account()
         _, fake_auth_addr = account.generate_account()
-        pk, sk = Falcon1024.generate_keypair()
+        pk = os.urandom(1793)
         # The key derives derived_addr, but authorizing_address is fake_auth_addr
         stxn = make_pq_stxn(
-            pk=pk, sk=sk, sender=legacy_sender, authorizing_address=fake_auth_addr
+            pk=pk, sender=legacy_sender, authorizing_address=fake_auth_addr
         )
         assert (
             verify(
@@ -237,9 +249,9 @@ class TestAlgorandSignedTxnVerifier:
         )
 
     def test_algorand_verifier_pq_payload_larger_than_2kb_succeeds(self):
-        pk, sk = Falcon1024.generate_keypair()
+        pk = os.urandom(1793)
         derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
-        stxn = make_pq_stxn(pk=pk, sk=sk)
+        stxn = make_pq_stxn(pk=pk)
         payload = make_payload(stxn)
         # Verify base64 string length is indeed > 2048 chars (the old limit)
         assert len(payload["signedTransaction"]) > 2048
@@ -247,9 +259,9 @@ class TestAlgorandSignedTxnVerifier:
         assert verify(stxn, derived_addr) == derived_addr
 
     def test_algorand_verifier_recover_returns_native_pq_sender(self):
-        pk, sk = Falcon1024.generate_keypair()
+        pk = os.urandom(1793)
         derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
-        stxn = make_pq_stxn(pk=pk, sk=sk)
+        stxn = make_pq_stxn(pk=pk)
         verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
         proven = verifier.recover(
             nonce=NONCE,
@@ -260,11 +272,9 @@ class TestAlgorandSignedTxnVerifier:
 
     def test_algorand_verifier_recover_returns_rekeyed_pq_legacy_sender(self):
         _, legacy_sender = account.generate_account()
-        pk, sk = Falcon1024.generate_keypair()
+        pk = os.urandom(1793)
         auth_addr, _ = encoding.address_from_pq_key(b"f1", pk)
-        stxn = make_pq_stxn(
-            pk=pk, sk=sk, sender=legacy_sender, authorizing_address=auth_addr
-        )
+        stxn = make_pq_stxn(pk=pk, sender=legacy_sender, authorizing_address=auth_addr)
         verifier = AlgorandSignedTxnVerifier(
             algod_factory=fake_algod(auth_addr=auth_addr)
         )

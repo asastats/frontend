@@ -13,8 +13,11 @@ Deliberate differences from the reference:
 2. Broadens the caught exceptions so a malformed signature or address yields
    ``False`` instead of propagating, since this helper is called directly by the
    verifier rather than from inside a blanket ``try/except`` in a view.
-3. Adds :func:`verify_pq_signed_transaction` to verify Falcon-1024 signatures
-   using :class:`falcon_python.Falcon1024` with pre-flight length gating.
+3. Adds :func:`verify_pq_signed_transaction`, which verifies Falcon-1024
+   (``pqsig``) signatures **through a node** rather than locally. Algorand uses
+   a deterministic Falcon variant that is wire-incompatible with the standard
+   scheme every Python binding implements, and no local check can bridge that;
+   the node has the only correct implementation. Its docstring has the detail.
 
 This module honors ``authorizing_address`` (rekeyed accounts). On its own that
 is unsafe for an authorization gate: a client can fabricate a rekey claim. The
@@ -23,12 +26,17 @@ for confirming any claimed rekey against on-chain state before trusting it.
 """
 
 import base64
-import hashlib
 import logging
 
 from algosdk import constants, encoding
+from algosdk.error import AlgodHTTPError
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
+
+#: Ceiling on a deterministic Falcon-1024 signature, from Algorand's
+#: `deterministic.h`: FALCON_SIG_COMPRESSED_MAXSIZE(10) - 40 + 1, where the
+#: subtraction is the 40-byte nonce the deterministic variant does not carry.
+FALCON_DET1024_SIG_MAXSIZE = 1423
 
 logger = logging.getLogger(__name__)
 
@@ -70,26 +78,56 @@ def verify_signed_transaction(stxn):
         return False
 
 
-def verify_pq_signed_transaction(stxn, raw_txn_msgpack=None):
-    """Verify the Falcon-1024 post-quantum signature of an Algorand signed transaction.
+def verify_pq_signed_transaction(stxn, algod_client, signed_b64=None):
+    """Verify a post-quantum (``pqsig``) signed transaction, by asking a node.
 
-    Verifies the ``pqsig`` envelope against the transaction signing preimage
-    (``b"TX" + canonical_msgpack(txn)``) using the Falcon-1024 public key
-    carried in ``pqsig``.
+    **Not verified locally, and that is the whole point.** The previous
+    implementation used :class:`falcon_python.Falcon1024`, which is *standard,
+    randomized* Falcon-1024. Algorand's post-quantum accounts use a
+    **deterministic** Falcon variant, and Algorand's own `deterministic.h` says
+    the two are wire-incompatible: the deterministic signature drops the
+    40-byte nonce, adds a salt-version byte, and changes the header from
+    ``0x3A`` to ``0xBA``. No message preimage and no header fix-up can bridge
+    that - the verifier is running a different algorithm on an encoding that
+    omits a field it requires. See ``~/claude/post-quantum/FINDING-falcon-mismatch.md``.
+
+    There is no Python binding for the deterministic variant. There is,
+    however, a correct implementation in every algod node, and simulate runs
+    it. Measured against mainnet:
+
+    - a signature replaced with random bytes is refused with
+      *"At least one signature didn't pass verification"*, an **HTTP error**;
+    - a transaction that would not execute - an overspend, say - returns
+      **HTTP 200** with a ``failure-message`` in the body;
+    - ``allow-empty-signatures`` permits an *absent* signature, never an
+      invalid one.
+
+    So **HTTP 200 means the signatures verified**, whatever the body says about
+    execution, and that separation is what makes this usable for a login: a
+    reader whose account cannot afford the fee must still be able to prove they
+    hold the key. Anything else - a refusal, a network failure, a malformed
+    response - is treated as unverified, so the gate fails closed.
+
+    It also outlives this scheme. The ``pqsig`` envelope is built to carry
+    others (``f5``, Falcon-512, is defined and reserved), and a node-side check
+    supports each one the day the network does, with no new binding to build.
 
     :param stxn: post-quantum signed transaction to verify
     :type stxn: :class:`algosdk.transaction.PQSignedTransaction`
-    :param raw_txn_msgpack: optional raw msgpack bytes of the transaction map
-        extracted directly from the wire envelope before reconstruction
-    :type raw_txn_msgpack: bytes | None
-    :return: True if the Falcon signature is valid, else False
+    :param algod_client: node to verify through
+    :type algod_client: :class:`algosdk.v2client.algod.AlgodClient`
+    :param signed_b64: the base64 the transaction was decoded from, used only
+        to report a re-encoding mismatch rather than to verify
+    :type signed_b64: str or None
+    :return: True when the node accepted every signature, else False
     :rtype: bool
     """
     pqsig = getattr(stxn, "pqsig", None)
     if pqsig is None:
         return False
 
-    # Pre-flight length and scheme bounds (defense against CPU exhaustion)
+    # Pre-flight bounds, kept from the local implementation: they cost nothing
+    # and they stop an obviously malformed payload becoming a node round trip.
     scheme = getattr(pqsig, "scheme", b"")
     if isinstance(scheme, str):
         scheme = scheme.encode("ascii")
@@ -105,84 +143,43 @@ def verify_pq_signed_transaction(stxn, raw_txn_msgpack=None):
         return False
 
     signature = getattr(pqsig, "signature", None)
-    if (
-        not isinstance(signature, (bytes, bytearray))
-        or not (64 <= len(signature) <= 2048)
+    if not isinstance(signature, (bytes, bytearray)) or not (
+        64 <= len(signature) <= FALCON_DET1024_SIG_MAXSIZE
     ):
         return False
 
-    txn = getattr(stxn, "transaction", None)
-    if txn is None:
+    if getattr(stxn, "transaction", None) is None:
         return False
 
-    try:
-        from falcon_python import Falcon1024
-
-        sig_bytes = bytes(signature)
-        pk_bytes = bytes(public_key)
-        to_sign = txn.bytes_to_sign()
-
-        logger.info(
-            "walletauth: Falcon verify attempt pk[0]=%d pk_len=%d, sig[0]=%d sig_len=%d, to_sign_len=%d, to_sign_prefix=%s",
-            pk_bytes[0] if pk_bytes else -1,
-            len(pk_bytes),
-            sig_bytes[0] if sig_bytes else -1,
-            len(sig_bytes),
-            len(to_sign),
-            to_sign[:10].hex() if to_sign else "",
-        )
-        sig_candidates = [sig_bytes]
-        # In PQClean/Falcon, detached signature byte 0 is header (0x3a for Falcon-1024 compressed).
-        # If an external wallet or SDK stripped the header byte, restore it.
-        if sig_bytes and sig_bytes[0] not in (0x3A, 0x2A, 0x5A):
-            sig_candidates.append(bytes([0x3A]) + sig_bytes)
-
-        # Build candidate signing preimages safely
-        msg_candidates = [
-            ("to_sign", to_sign),
-            ("sha512_256_to_sign", hashlib.new("sha512_256", to_sign).digest()),
-            ("sha256_to_sign", hashlib.sha256(to_sign).digest()),
-            ("sha512_to_sign", hashlib.sha512(to_sign).digest()),
-        ]
+    # **Diagnostic only.** The node verifies the bytes the SDK re-encodes from
+    # this object, not the bytes the wallet sent. Those should be identical -
+    # the object was decoded from them - and if they are not, the signature
+    # fails and this gate closes, which is correct but would be logged as a
+    # rejected signature. Saying so here means the next person debugging starts
+    # from the encoding rather than from the cryptography, which is exactly the
+    # detour this module has already made once.
+    if signed_b64:
         try:
-            txid_str = txn.get_txid()
-            if txid_str:
-                pad = "=" * ((8 - len(txid_str) % 8) % 8)
-                msg_candidates.append(("txid", base64.b32decode(txid_str + pad)))
-        except Exception:
+            if encoding.msgpack_encode(stxn) != signed_b64:
+                logger.warning(
+                    "walletauth: PQ transaction does not re-encode to the bytes "
+                    "it arrived as; a rejection below is an encoding mismatch, "
+                    "not a bad signature"
+                )
+        except Exception:  # noqa: BLE001 - a diagnostic must not decide anything
             pass
 
-        if raw_txn_msgpack:
-            raw_to_sign = constants.txid_prefix + raw_txn_msgpack
-            msg_candidates.append(("raw_to_sign", raw_to_sign))
-            msg_candidates.append(
-                (
-                    "sha512_256_raw_to_sign",
-                    hashlib.new("sha512_256", raw_to_sign).digest(),
-                )
-            )
-
-        for s_candidate in sig_candidates:
-            for name, msg in msg_candidates:
-                try:
-                    if Falcon1024.verify_detached_sign(s_candidate, msg, pk_bytes):
-                        if name != "to_sign" or s_candidate != sig_bytes:
-                            logger.info(
-                                "walletauth: Falcon verified with variant mode=%s, sig_len=%d",
-                                name,
-                                len(s_candidate),
-                            )
-                        return True
-                except Exception:
-                    continue
-
+    try:
+        algod_client.simulate_raw_transactions([stxn])
+    except AlgodHTTPError as error:
         logger.warning(
-            "walletauth: Falcon verification failed (pk_len=%d, sig_len=%d, to_sign_len=%d)",
-            len(pk_bytes),
-            len(sig_bytes),
-            len(to_sign),
+            "walletauth: node refused the PQ signature: %s", str(error)[:200]
         )
         return False
-    except Exception as exc:  # noqa: BLE001 - any crypto failure yields False
-        logger.warning("walletauth: Falcon verification exception: %s", exc)
+    except Exception as exc:  # noqa: BLE001 - unreachable node is not a pass
+        logger.warning(
+            "walletauth: could not reach a node to verify the PQ signature: %s", exc
+        )
         return False
+
+    return True
