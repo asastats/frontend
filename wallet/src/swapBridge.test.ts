@@ -34,9 +34,14 @@ jest.mock("algosdk", () => {
   const decodeUnsignedTransaction = jest.fn((b: Uint8Array) => ({
     _raw: b,
     group: new Uint8Array([99]),
+    fee: 1000,
   }));
+  // A signed transaction carries the whole transaction, group and fee
+  // included - so a double that omits them cannot model the failure this
+  // module exists to catch, where a wallet hands back something *different*
+  // from what it was given. Tests that need that override this.
   const decodeSignedTransaction = jest.fn((b: Uint8Array) => ({
-    txn: { _raw: b.slice(0, 3) },
+    txn: { _raw: b.slice(0, 3), group: new Uint8Array([99]), fee: 1000 },
     sig: b.slice(3),
   }));
   const encodeUnsignedTransaction = jest.fn((txn: any) =>
@@ -83,8 +88,13 @@ jest.mock("@folks-router/js-sdk", () => ({
 
 const TXN_A = new Uint8Array([1, 2, 3]);
 const TXN_B = new Uint8Array([4, 5, 6]);
-const SIG_A = new Uint8Array([10]);
-const SIG_B = new Uint8Array([20]);
+// A signed transaction carries the transaction it signed, so these are the
+// unsigned bytes with a signature byte appended - which is what the algosdk
+// mock's `decodeSignedTransaction` splits back apart. Opaque one-byte blobs
+// modelled a wallet returning something that re-encodes to neither what it
+// was given nor anything else, and the consistency check rightly rejected it.
+const SIG_A = new Uint8Array([...TXN_A, 10]);
+const SIG_B = new Uint8Array([...TXN_B, 20]);
 
 const DEFAULT_SP = { fee: 1000, firstValid: 1, lastValid: 1001 };
 
@@ -219,6 +229,90 @@ describe("signAndSendPartial", () => {
     expect(d.signTransactions).toHaveBeenCalledWith([TXN_A, TXN_B], [0]);
     expect(calls.submitted).toEqual([SIG_A, new Uint8Array([4, 5, 6, 20])]);
     expect(txid).toBe("TXID123");
+  });
+
+  /**
+   * Make the wallet's returned transaction differ from the one it was handed.
+   *
+   * Keyed on the blob rather than on call order: `decodeSignedTransaction`
+   * runs once while the backend signature is validated and again for every
+   * transaction in the consistency check, so a `mockImplementationOnce` lands
+   * on whichever happens to be first and moves if that order ever changes.
+   */
+  async function withWalletReturning(
+    changes: { group?: Uint8Array; fee?: number },
+    run: () => Promise<unknown>,
+  ) {
+    const algosdk = require("algosdk");
+    const original = algosdk.decodeSignedTransaction.getMockImplementation();
+    algosdk.decodeSignedTransaction.mockImplementation((b: Uint8Array) => {
+      const isWalletBlob = b.length === SIG_A.length && b[3] === SIG_A[3];
+      return {
+        txn: {
+          _raw: b.slice(0, 3),
+          group: (isWalletBlob && changes.group) || new Uint8Array([99]),
+          fee: (isWalletBlob && changes.fee) || 1000,
+        },
+        sig: b.slice(3),
+      };
+    });
+    try {
+      await run();
+    } finally {
+      algosdk.decodeSignedTransaction.mockImplementation(original);
+    }
+  }
+
+  it("names the transaction when the wallet re-groups it", async () => {
+    // The failure a post-quantum swap actually produced. algod says
+    // `inconsistent group values: A != B` and names neither the transaction
+    // nor the field, which cost a debugging session on its own.
+    const { d } = deps();
+
+    await withWalletReturning({ group: new Uint8Array([77]) }, () =>
+      expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+        "[0] re-grouped",
+      ),
+    );
+  });
+
+  it("names the fee when the wallet corrects it", async () => {
+    // A Falcon signature costs three minimum fees, so a wallet raising an
+    // underpaid one is behaving reasonably and invalidating the backend's
+    // signature over the group at the same time.
+    const { d } = deps();
+
+    await withWalletReturning({ fee: 3000 }, () =>
+      expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+        "[0] fee 1000 -> 3000",
+      ),
+    );
+  });
+
+  it("reports a fee change and a re-group together, not one of them", async () => {
+    // The reason this reports every divergence rather than the first: a wallet
+    // that raises a fee must re-group to keep the group hash valid, so
+    // "re-grouped" is the symptom you see and the fee change is the cause you
+    // need. Post-quantum makes that the likely case - a Falcon signature costs
+    // three minimum fees where this group pays one.
+    const { d } = deps();
+
+    await withWalletReturning(
+      { group: new Uint8Array([77]), fee: 3000 },
+      () =>
+        expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+          "[0] re-grouped, fee 1000 -> 3000",
+        ),
+    );
+  });
+
+  it("does not submit a group it could not verify", async () => {
+    const { d } = deps();
+
+    await withWalletReturning({ group: new Uint8Array([77]) }, async () => {
+      await expect(signAndSendPartial(partial(), d)).rejects.toThrow();
+      expect(d.submit).not.toHaveBeenCalled();
+    });
   });
 
   it("rejects a missing or misplaced quote authorization before signing", async () => {

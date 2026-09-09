@@ -207,6 +207,13 @@ export async function signAndSend(
  * reassign the group: doing any of those would invalidate the quote-signer's
  * signature and the signed floor note.
  */
+/** Compare two optional byte arrays, treating absent as empty. */
+function sameBytes(left?: Uint8Array | null, right?: Uint8Array | null): boolean {
+  const a = left ?? new Uint8Array();
+  const b = right ?? new Uint8Array();
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
 export async function signAndSendPartial(
   group: PartialSignedGroup,
   deps: SignAndSendDeps,
@@ -271,6 +278,74 @@ export async function signAndSendPartial(
     if (!wallet) throw new Error("Wallet did not sign a required transaction");
     return wallet;
   });
+
+  // **What comes back must be the group that went out.**
+  //
+  // A quote-signed group carries a backend signature over exact group members,
+  // so a wallet that rebuilds a transaction - correcting a fee it considers
+  // too low, re-encoding, re-grouping - invalidates it. algod reports the
+  // symptom rather than the cause: `inconsistent group values: A != B`, two
+  // base32 hashes naming neither the transaction that changed nor what changed
+  // in it. Decoding here costs one pass and turns that into a sentence.
+  //
+  // Post-quantum accounts make this concrete rather than theoretical. A Falcon
+  // signature costs three minimum fees where Ed25519 costs one, so a wallet
+  // that corrects an underpaid fee on the caller's behalf is behaving
+  // reasonably and breaking a group signed over the original at the same time.
+  const expected = decoded[0].group;
+  const divergences: string[] = [];
+  signed.forEach((blob, index) => {
+    let returned: any;
+    try {
+      returned = decodeSignedTransaction(blob) as any;
+    } catch {
+      divergences.push(`[${index}] came back undecodable`);
+      return;
+    }
+    const txn = returned?.txn;
+    if (!txn) {
+      divergences.push(`[${index}] came back without a transaction body`);
+      return;
+    }
+
+    const before = decoded[index];
+    const differences: string[] = [];
+    if (!sameBytes(txn.group, expected)) differences.push("re-grouped");
+    if (Number(txn.fee ?? 0) !== Number(before.fee ?? 0)) {
+      differences.push(`fee ${before.fee} -> ${txn.fee}`);
+    }
+    // Anything else at all: re-encoding the returned transaction and comparing
+    // it to the one sent catches a changed field this does not name, which
+    // matters because the named ones are guesses about what a wallet might do
+    // and the byte comparison is not.
+    if (!differences.length) {
+      try {
+        const again = encodeUnsignedTransaction(txn);
+        if (!sameBytes(again, group.transactions[index])) {
+          differences.push("changed in some other field");
+        }
+      } catch {
+        differences.push("could not be re-encoded to compare");
+      }
+    }
+    if (differences.length) {
+      divergences.push(`[${index}] ${differences.join(", ")}`);
+    }
+  });
+
+  // **Every divergence, not the first.** Reporting one at a time hides the
+  // cause behind the symptom: a wallet that raises a fee must re-group to keep
+  // the group hash valid, so "re-grouped" is what you see and the fee change
+  // is what you needed to know. Post-quantum accounts make that the likely
+  // case, since a Falcon signature costs three minimum fees where this group
+  // pays one.
+  if (divergences.length) {
+    throw new Error(
+      `The wallet returned ${divergences.length} transaction(s) different ` +
+        `from the ones it was given, so the backend's quote signature no ` +
+        `longer covers this group: ${divergences.join("; ")}`,
+    );
+  }
 
   const txid = await deps.submit(signed);
   await deps.waitForConfirmation(txid);
