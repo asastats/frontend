@@ -8,7 +8,7 @@
 
 > **createWalletManager**(`descriptors?`): `WalletManager`
 
-Defined in: walletAdapters.ts:50
+Defined in: [walletAdapters.ts:50](https://github.com/asastats/frontend/blob/main/wallet/src/walletAdapters.ts#L50)
 
 Creates a mainnet WalletManager instance configured with adapters matching the given IDs.
 

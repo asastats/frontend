@@ -263,6 +263,147 @@ describe("signAndSendPartial", () => {
     }
   }
 
+
+  /**
+   * Replace what the *wallet's* blob decodes to, leaving the backend's alone.
+   *
+   * `withWalletReturning` covers the field-level divergences; this covers the
+   * shapes that are not a transaction at all - a decoder that throws, a result
+   * with no body - which the consistency check has to survive rather than
+   * propagate, because a wallet returning rubbish must be reported as rubbish
+   * and not as a stack trace.
+   */
+  async function withWalletDecodingTo(
+    decode: (blob: Uint8Array) => unknown,
+    run: () => Promise<unknown>,
+    encode?: (txn: unknown) => Uint8Array,
+  ) {
+    const algosdk = require("algosdk");
+    const original = algosdk.decodeSignedTransaction.getMockImplementation();
+    const originalEncode = algosdk.encodeUnsignedTransaction.getMockImplementation();
+    algosdk.decodeSignedTransaction.mockImplementation((b: Uint8Array) => {
+      const isWalletBlob = b.length === SIG_A.length && b[3] === SIG_A[3];
+      if (isWalletBlob) return decode(b);
+      return {
+        txn: { _raw: b.slice(0, 3), group: new Uint8Array([99]), fee: 1000 },
+        sig: b.slice(3),
+      };
+    });
+    if (encode) algosdk.encodeUnsignedTransaction.mockImplementation(encode);
+    try {
+      await run();
+    } finally {
+      algosdk.decodeSignedTransaction.mockImplementation(original);
+      algosdk.encodeUnsignedTransaction.mockImplementation(originalEncode);
+    }
+  }
+
+  it("reports an undecodable transaction rather than throwing from the decoder", async () => {
+    const { d } = deps();
+
+    await withWalletDecodingTo(
+      () => {
+        throw new Error("not msgpack");
+      },
+      () =>
+        expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+          "[0] came back undecodable",
+        ),
+    );
+  });
+
+  it("reports a result carrying no transaction body", async () => {
+    // `decodeSignedTransaction` resolving to something without `txn` is not a
+    // shape any wallet should produce, which is exactly why it must not reach
+    // `txn.group` and read off undefined.
+    const { d } = deps();
+
+    await withWalletDecodingTo(
+      () => ({ sig: new Uint8Array([1]) }),
+      () =>
+        expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+          "[0] came back without a transaction body",
+        ),
+    );
+  });
+
+  it("reports a transaction it cannot re-encode to compare", async () => {
+    // The byte comparison is the catch-all for a field this does not name, so
+    // its own failure has to be reported rather than swallowed - otherwise a
+    // transaction that cannot be compared reads as one that matched.
+    const { d } = deps();
+
+    await withWalletDecodingTo(
+      (b: Uint8Array) => ({
+        txn: { _raw: b.slice(0, 3), group: new Uint8Array([99]), fee: 1000 },
+        sig: b.slice(3),
+      }),
+      () =>
+        expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+          "[0] could not be re-encoded to compare",
+        ),
+      // only for the wallet's transaction: the backend signature is validated
+      // by re-encoding too, outside any try, so throwing for everything fails
+      // there first and tests nothing here
+      (txn: any) => {
+        if (txn?._raw?.[0] === TXN_A[0]) throw new Error("cannot encode");
+        return txn?._raw ?? new Uint8Array([0]);
+      },
+    );
+  });
+
+  it("catches a change in a field it does not name", async () => {
+    // Group and fee are guesses about what a wallet might do. This is the
+    // assertion that does not depend on having guessed right.
+    const { d } = deps();
+
+    await withWalletDecodingTo(
+      (b: Uint8Array) => ({
+        txn: {
+          _raw: new Uint8Array([9, 9, 9]),
+          group: new Uint8Array([99]),
+          fee: 1000,
+        },
+        sig: b.slice(3),
+      }),
+      () =>
+        expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+          "[0] changed in some other field",
+        ),
+    );
+  });
+
+  it("treats an absent group as a divergence, not as a match", async () => {
+    // `sameBytes` defaults an absent side to empty, so a returned transaction
+    // carrying no group at all must still be caught - it is the shape a
+    // rebuilt-from-scratch transaction has before anyone re-groups it.
+    const { d } = deps();
+
+    await withWalletDecodingTo(
+      (b: Uint8Array) => ({
+        txn: { _raw: b.slice(0, 3), group: undefined, fee: 1000 },
+        sig: b.slice(3),
+      }),
+      () =>
+        expect(signAndSendPartial(partial(), d)).rejects.toThrow("[0] re-grouped"),
+    );
+  });
+
+  it("treats an absent fee as zero when comparing", async () => {
+    const { d } = deps();
+
+    await withWalletDecodingTo(
+      (b: Uint8Array) => ({
+        txn: { _raw: b.slice(0, 3), group: new Uint8Array([99]), fee: undefined },
+        sig: b.slice(3),
+      }),
+      () =>
+        expect(signAndSendPartial(partial(), d)).rejects.toThrow(
+          "fee 1000 -> undefined",
+        ),
+    );
+  });
+
   it("names the transaction when the wallet re-groups it", async () => {
     // The failure a post-quantum swap actually produced. algod says
     // `inconsistent group values: A != B` and names neither the transaction

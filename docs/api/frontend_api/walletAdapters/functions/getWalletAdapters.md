@@ -8,7 +8,7 @@
 
 > **getWalletAdapters**(`descriptors?`): `WalletAdapterConfig`[]
 
-Defined in: walletAdapters.ts:26
+Defined in: [walletAdapters.ts:26](https://github.com/asastats/frontend/blob/main/wallet/src/walletAdapters.ts#L26)
 
 Maps an array of backend wallet descriptors or IDs to use-wallet v5 adapter objects.
 Unrecognized IDs (e.g. deprecated wallets like Exodus) are safely filtered out.

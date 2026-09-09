@@ -207,11 +207,18 @@ export async function signAndSend(
  * reassign the group: doing any of those would invalidate the quote-signer's
  * signature and the signed floor note.
  */
-/** Compare two optional byte arrays, treating absent as empty. */
-function sameBytes(left?: Uint8Array | null, right?: Uint8Array | null): boolean {
+/**
+ * Compare a possibly-absent byte array against one that is always present.
+ *
+ * `left` is optional because a transaction handed back by a wallet may carry
+ * no group at all - that is a divergence, and treating absent as empty is what
+ * reports it rather than reading off undefined. `right` is not optional: both
+ * call sites pass something the caller has already established exists, and an
+ * `?? new Uint8Array()` there was a branch no input could reach.
+ */
+function sameBytes(left: Uint8Array | null | undefined, right: Uint8Array): boolean {
   const a = left ?? new Uint8Array();
-  const b = right ?? new Uint8Array();
-  return a.length === b.length && a.every((value, index) => value === b[index]);
+  return a.length === right.length && a.every((v, i) => v === right[i]);
 }
 
 export async function signAndSendPartial(
@@ -292,7 +299,9 @@ export async function signAndSendPartial(
   // signature costs three minimum fees where Ed25519 costs one, so a wallet
   // that corrects an underpaid fee on the caller's behalf is behaving
   // reasonably and breaking a group signed over the original at the same time.
-  const expected = decoded[0].group;
+  // non-null because the guard above rejected the group unless every
+  // transaction carries one; `some` is not a narrowing TypeScript can follow
+  const expected = decoded[0].group as Uint8Array;
   const divergences: string[] = [];
   signed.forEach((blob, index) => {
     let returned: any;
@@ -311,7 +320,11 @@ export async function signAndSendPartial(
     const before = decoded[index];
     const differences: string[] = [];
     if (!sameBytes(txn.group, expected)) differences.push("re-grouped");
-    if (Number(txn.fee ?? 0) !== Number(before.fee ?? 0)) {
+    // `txn.fee` is defaulted because the wallet's answer is not trusted to
+    // have one; `before.fee` is not, because it came from a transaction this
+    // module decoded and algosdk always sets it - a default there was a branch
+    // no input could reach.
+    if (Number(txn.fee ?? 0) !== Number(before.fee)) {
       differences.push(`fee ${before.fee} -> ${txn.fee}`);
     }
     // Anything else at all: re-encoding the returned transaction and comparing

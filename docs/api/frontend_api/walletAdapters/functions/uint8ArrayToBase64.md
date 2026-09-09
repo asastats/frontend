@@ -8,7 +8,7 @@
 
 > **uint8ArrayToBase64**(`bytes`): `string`
 
-Defined in: walletAdapters.ts:66
+Defined in: [walletAdapters.ts:66](https://github.com/asastats/frontend/blob/main/wallet/src/walletAdapters.ts#L66)
 
 Safely converts a Uint8Array of arbitrary size to a Base64 string
 without exceeding JavaScript engine call-stack argument limits.
