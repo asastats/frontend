@@ -71,11 +71,11 @@ class AsastatsRouterPageTest(FunctionalTest):
         assert "Swap" in self.find_elem_by_class("swap-page-title").text
         assert "ASA Stats Smart Router" in self.browser.title
 
-    def test_the_shell_carries_the_two_endpoint_urls_the_controller_needs(self):
+    def test_the_shell_carries_the_endpoint_urls_the_controller_needs(self):
         """`swap.js`'s adapter reads these off the shell; empty means no quote.
 
         This is the difference between our router and Folks or Haystack: there
-        is no SDK bundle and no vendor configuration, so these two attributes
+        is no SDK bundle and no vendor configuration, so these attributes
         *are* the configuration, and a template that stopped emitting one would
         leave the panel looking fine and unable to quote.
         """
@@ -85,6 +85,12 @@ class AsastatsRouterPageTest(FunctionalTest):
         assert shell.get_attribute("data-router") == "asastats"
         assert shell.get_attribute("data-quote-url").endswith("/quote")
         assert shell.get_attribute("data-group-url").endswith("/group")
+        # The third endpoint, for the wallets that rewrite what they sign. Its
+        # absence is not a broken panel - the adapter simply reports the
+        # divergence instead of fixing it - which is exactly why a template
+        # that stopped emitting it would go unnoticed until a post-quantum
+        # caller tried to swap.
+        assert shell.get_attribute("data-reauthorize-url").endswith("/reauthorize")
 
     def test_no_vendor_configuration_reaches_the_browser(self):
         """Ours quotes in the engine, so there is nothing here worth tampering

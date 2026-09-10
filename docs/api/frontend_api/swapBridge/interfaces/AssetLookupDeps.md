@@ -6,7 +6,7 @@
 
 # Interface: AssetLookupDeps
 
-Defined in: [swapBridge.ts:376](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L376)
+Defined in: [swapBridge.ts:616](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L616)
 
 The one algod call [assetCreator](../functions/assetCreator.md) needs, injected so it can be tested.
 
@@ -16,7 +16,7 @@ The one algod call [assetCreator](../functions/assetCreator.md) needs, injected 
 
 > **getAsset**: (`assetId`) => `Promise`\<`unknown`\>
 
-Defined in: [swapBridge.ts:378](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L378)
+Defined in: [swapBridge.ts:618](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L618)
 
 Fetch an asset's on-chain parameters (algod `getAssetByID`).
 

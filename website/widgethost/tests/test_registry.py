@@ -5,6 +5,7 @@ from widgethost.registry import (
     discover_manifests,
     discover_widgets,
     manifest_for,
+    swap_endpoint_urls,
     swap_entry_url,
     swap_holdings_tmpl,
     swap_routers,
@@ -206,3 +207,54 @@ class TestWidgethostRegistrySwapSdkStatic:
                 f"{router_id} names {path!r}, which is not a static file that "
                 "exists -- production's static storage raises for it"
             )
+
+
+class TestWidgethostRegistrySwapEndpointUrls:
+    """Testing class for :py:func:`widgethost.registry.swap_endpoint_urls`.
+
+    The router's endpoints live in the widgets repository and this function
+    lives in this one, so the two ship separately and there is always a window
+    where this one is ahead. What that window may not do is take the router
+    down.
+    """
+
+    def test_widgethost_registry_swap_endpoint_urls_resolves_all_three(self):
+        urls = swap_endpoint_urls("asastats")
+
+        assert urls["quote_url"].endswith("/quote")
+        assert urls["group_url"].endswith("/group")
+        assert urls["reauthorize_url"].endswith("/reauthorize")
+
+    def test_widgethost_registry_swap_endpoint_urls_survives_an_older_widget(
+        self, mocker
+    ):
+        """The production failure of 2026-09-10, in one test.
+
+        `reauthorize` was resolved inside the same `try` as the other two, so a
+        deployment whose widgets were a release behind raised `NoReverseMatch`
+        and the `except` discarded the quote and group URLs with it. The swap
+        panel rendered with no endpoints and refused every quote with "this
+        deployment has no ASA Stats router endpoint" - one optional feature
+        taking the whole router down, for a URL nothing needs until a wallet
+        rewrites a group.
+        """
+        from django.urls import NoReverseMatch, reverse as real_reverse
+
+        def missing_reauthorize(name, *args, **kwargs):
+            if name.endswith("_reauthorize"):
+                raise NoReverseMatch(name)
+            return real_reverse(name, *args, **kwargs)
+
+        mocker.patch.object(registry, "reverse", side_effect=missing_reauthorize)
+
+        urls = swap_endpoint_urls("asastats")
+
+        assert urls["quote_url"].endswith("/quote")
+        assert urls["group_url"].endswith("/group")
+        # empty, which the adapter reads as "report the divergence rather than
+        # fix it" - the behaviour every caller had before the endpoint existed
+        assert urls["reauthorize_url"] == ""
+
+    def test_widgethost_registry_swap_endpoint_urls_empty_for_a_vendor_router(self):
+        """A router with no quote endpoint has nothing to offer, so ``{}``."""
+        assert swap_endpoint_urls("folks") == {}

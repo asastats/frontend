@@ -8,7 +8,7 @@
 
 > **signAndSendPartial**(`group`, `deps`): `Promise`\<`string`\>
 
-Defined in: [swapBridge.ts:224](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L224)
+Defined in: [swapBridge.ts:416](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L416)
 
 ## Parameters
 

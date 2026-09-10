@@ -76,6 +76,22 @@ export interface PartialSignedGroup {
   signedTransactions: Record<string, Uint8Array>;
   /** The quote-signer transaction index, required to be the final index. */
   quoteSignerIndex: number;
+  /**
+   * Ask the backend to authorise the group the wallet handed back.
+   *
+   * Supplied by the widget rather than by the wallet deps because the endpoint
+   * is the widget's: the same place that fetched this group knows where to ask
+   * about it. Omit it and a rewritten group is reported rather than rescued,
+   * which is what every caller did before this existed.
+   *
+   * Takes the wallet's signed transactions in group order without the
+   * authorisation, plus the authorisation blob the backend issued, and resolves
+   * with a replacement authorisation signed over the wallet's group.
+   */
+  reauthorize?: (
+    transactions: Uint8Array[],
+    authorization: Uint8Array,
+  ) => Promise<Uint8Array>;
 }
 
 /**
@@ -259,16 +275,29 @@ const PQ_FEE_PREMIUM = 2000;
  * @returns One sentence naming the authorisation that would fit, or saying
  *          none does.
  */
-export function rescueDiagnosis(
+const RESCUE_ATTEMPTS: Array<[string, number]> = [
+  ["exactly as the backend built it", 0],
+  ["with the post-quantum premium added to its fee", PQ_FEE_PREMIUM],
+];
+
+/**
+ * Return the fee the authorisation needs for the wallet's group to fit it.
+ *
+ * Zero when the wallet hashed the authorisation exactly as the backend built
+ * it, {@link PQ_FEE_PREMIUM} when it raised that fee too, and null when neither
+ * fits and the wallet therefore changed something this does not model.
+ *
+ * Separate from the sentence {@link rescueDiagnosis} renders because the retry
+ * has to act on the answer, and a caller that had to parse English to decide
+ * whether to re-authorise would be one string edit away from silently never
+ * retrying again.
+ */
+function rescueExtra(
   bodies: any[],
   quoteIndex: number,
   target: Uint8Array,
-): string {
-  const attempts: Array<[string, number]> = [
-    ["exactly as the backend built it", 0],
-    ["with the post-quantum premium added to its fee", PQ_FEE_PREMIUM],
-  ];
-  for (const [label, extra] of attempts) {
+): number | null {
+  for (const [, extra] of RESCUE_ATTEMPTS) {
     let candidates: any[];
     try {
       candidates = bodies.map((body, index) => {
@@ -292,15 +321,96 @@ export function rescueDiagnosis(
     } catch {
       continue;
     }
-    if (sameBytes(candidates[0]?.group, target)) {
-      return `signing the authorisation last would rescue it: the wallet's group covers the authorisation ${label}`;
-    }
+    if (sameBytes(candidates[0]?.group, target)) return extra;
   }
-  return (
-    "signing the authorisation last would not rescue it: the wallet's group " +
-    "covers neither the authorisation as built nor one carrying the premium, " +
-    "so it changed something else as well"
+  return null;
+}
+
+/** Render {@link rescueExtra}'s answer as the sentence a reader sees. */
+function rescueSentence(extra: number | null): string {
+  if (extra === null) {
+    return (
+      "signing the authorisation last would not rescue it: the wallet's group " +
+      "covers neither the authorisation as built nor one carrying the premium, " +
+      "so it changed something else as well"
+    );
+  }
+  const label = RESCUE_ATTEMPTS.find(([, value]) => value === extra)?.[0];
+  return `signing the authorisation last would rescue it: the wallet's group covers the authorisation ${label}`;
+}
+
+export function rescueDiagnosis(
+  bodies: any[],
+  quoteIndex: number,
+  target: Uint8Array,
+): string {
+  return rescueSentence(rescueExtra(bodies, quoteIndex, target));
+}
+
+/**
+ * Replace the stale authorisation with one the backend signed over this group.
+ *
+ * **The answer is checked, not trusted.** This is the one place a swap sends
+ * the wallet's own signed transactions somewhere and puts the reply into the
+ * group it is about to submit, so the reply gets the same scrutiny the wallet's
+ * did: it must be a signed transaction, it must carry the group id the wallet
+ * left, and it must be the transaction the backend already built rather than a
+ * different one. Anything else and the swap fails here, before it costs a fee,
+ * rather than on chain.
+ *
+ * @param group     - The group as the backend built it.
+ * @param signed    - The reassembled blobs, authorisation last and stale.
+ * @param regrouped - The group id the wallet stamped on what it returned.
+ * @param deps      - Injected wallet/algod collaborators.
+ * @returns The confirmed transaction id.
+ */
+async function submitReauthorized(
+  group: PartialSignedGroup,
+  signed: Uint8Array[],
+  regrouped: Uint8Array,
+  deps: SignAndSendDeps,
+): Promise<string> {
+  const quoteIndex = group.quoteSignerIndex;
+  const fresh = await group.reauthorize!(
+    signed.slice(0, quoteIndex),
+    signed[quoteIndex],
   );
+  if (!(fresh instanceof Uint8Array) || fresh.length === 0) {
+    throw new Error("The backend returned no replacement quote authorization");
+  }
+
+  let returned: any;
+  try {
+    returned = decodeSignedTransaction(fresh) as any;
+  } catch {
+    throw new Error("The backend's replacement quote authorization is undecodable");
+  }
+  if (!returned?.sig || returned.sig.length === 0) {
+    throw new Error("The backend's replacement quote authorization is not signed");
+  }
+  const txn = returned?.txn;
+  if (!txn || !sameBytes(txn.group, regrouped)) {
+    throw new Error(
+      "The backend re-authorized a different group from the one the wallet returned",
+    );
+  }
+  // The body, group aside, must be the transaction the backend already built.
+  // Its fee is paid by the quote signer's own account and its note carries the
+  // floor this trade was quoted at, so a replacement differing in either is one
+  // to refuse rather than to submit.
+  const before: any = decodeUnsignedTransaction(group.transactions[quoteIndex]);
+  before.group = txn.group;
+  if (!sameBytes(encodeUnsignedTransaction(txn), encodeUnsignedTransaction(before))) {
+    throw new Error(
+      "The backend's replacement quote authorization differs from the one it built",
+    );
+  }
+
+  const rescued = signed.slice();
+  rescued[quoteIndex] = fresh;
+  const txid = await deps.submit(rescued);
+  await deps.waitForConfirmation(txid);
+  return txid;
 }
 
 export async function signAndSendPartial(
@@ -445,15 +555,44 @@ export async function signAndSendPartial(
   // case, since a Falcon signature costs three minimum fees where this group
   // pays one.
   if (divergences.length) {
-    // **And say whether it is recoverable.** The report above names what the
+    const usable = Boolean(regrouped) && bodies.every(Boolean);
+    // **Sign the authorisation last, rather than give up.**
+    //
+    // Pera's post-quantum path rewrites every transaction it signs and
+    // re-groups them, so no backend signature taken *before* it signs can
+    // survive - measured, not assumed, and paying the fee it wants up front
+    // does not help because it adds the premium either way. What does work is
+    // asking the backend to authorise the group that came out.
+    //
+    // Only when the wallet hashed the authorisation exactly as the backend
+    // built it. The other fitting case - the wallet raising the authorisation's
+    // fee too - would need the backend to accept a fee for its own transaction
+    // from this request, and that transaction is paid for by the quote signer's
+    // account. No wallet has been seen doing it, and until one is, refusing is
+    // cheaper than a way to drain that account.
+    const extra = usable
+      ? rescueExtra(bodies, group.quoteSignerIndex, regrouped!)
+      : null;
+    if (extra === 0 && group.reauthorize) {
+      return await submitReauthorized(group, signed, regrouped!, deps);
+    }
+    // **And when it is not rescued, say why.** The report names what the
     // wallet changed; on its own that has cost two sessions of guessing at
     // what to do about it. The probe answers that in the same breath, from the
-    // bytes already decoded, so a failed swap carries its own verdict on the
-    // fix rather than requiring another one to test it.
-    const verdict =
-      regrouped && bodies.every(Boolean)
-        ? ` - ${rescueDiagnosis(bodies, group.quoteSignerIndex, regrouped)}`
-        : "";
+    // bytes already decoded, so a failed swap carries its own verdict.
+    let verdict = usable ? ` - ${rescueSentence(extra)}` : "";
+    if (extra === 0) {
+      // **The case this sentence exists for.** "Would rescue it" reads as a
+      // proposal when the code to do it is right here, and the first time that
+      // happened it cost a deploy's worth of guessing at which half was
+      // missing. The answer is always the same: the page is older than this
+      // bundle, because the widget that renders `data-reauthorize-url` and the
+      // wallet bundle that uses it live in different repositories and ship
+      // separately.
+      verdict +=
+        ", but this page offers no re-authorisation endpoint - its widget " +
+        "markup is older than this wallet bundle";
+    }
     throw new Error(
       `The wallet returned ${divergences.length} transaction(s) different ` +
         `from the ones it was given, so the backend's quote signature no ` +

@@ -8,7 +8,7 @@
 
 > **assetCreator**(`assetId`, `deps`): `Promise`\<`string` \| `null`\>
 
-Defined in: [swapBridge.ts:402](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L402)
+Defined in: [swapBridge.ts:642](https://github.com/asastats/frontend/blob/main/wallet/src/swapBridge.ts#L642)
 
 Return the on-chain creator of `assetId`, or null when it cannot be read.
 

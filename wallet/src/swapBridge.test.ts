@@ -662,6 +662,234 @@ describe("signAndSendPartial", () => {
 // rescueDiagnosis — can the backend still authorise what came back?
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// signAndSendPartial — signing the authorisation last
+// ---------------------------------------------------------------------------
+
+describe("signAndSendPartial — re-authorisation", () => {
+  // A transaction here is [tag, tag, tag, groupByte], so a group id survives
+  // the encode/decode round trip these doubles perform. The module-level
+  // doubles drop it, which would make the step that aligns the built
+  // authorisation's group with the wallet's invisible: omit that step and the
+  // happy path below fails, which is the point of paying for the extra byte.
+  const OLD = 99;
+  const NEW = 77;
+  const TX0 = new Uint8Array([1, 2, 3, OLD]);
+  const TX1 = new Uint8Array([4, 5, 6, OLD]);
+  /** The backend's authorisation: the unsigned bytes with a signature byte. */
+  const BACKEND = new Uint8Array([...TX1, 20]);
+  /** What the wallet hands back for index 0: re-grouped, and signed. */
+  const WALLET = new Uint8Array([1, 2, 3, NEW, 10]);
+  /** The replacement authorisation, signed over the wallet's group. */
+  const FRESH = new Uint8Array([4, 5, 6, NEW, 40]);
+
+  function withGroupAwareAlgosdk(run: () => Promise<unknown>) {
+    const algosdk = require("algosdk");
+    const saved = {
+      decodeSigned: algosdk.decodeSignedTransaction.getMockImplementation(),
+      decode: algosdk.decodeUnsignedTransaction.getMockImplementation(),
+      encode: algosdk.encodeUnsignedTransaction.getMockImplementation(),
+      assign: algosdk.assignGroupID.getMockImplementation(),
+    };
+    algosdk.decodeUnsignedTransaction.mockImplementation((b: Uint8Array) => ({
+      _raw: b.slice(0, 3),
+      group: new Uint8Array([b[3]]),
+      fee: 1000,
+    }));
+    algosdk.encodeUnsignedTransaction.mockImplementation((t: any) =>
+      new Uint8Array([...(t._raw ?? [0]), t.group?.[0] ?? 0]),
+    );
+    algosdk.decodeSignedTransaction.mockImplementation((b: Uint8Array) => ({
+      txn: { _raw: b.slice(0, 3), group: new Uint8Array([b[3]]), fee: 1000 },
+      sig: b.slice(4),
+    }));
+    // The wallet's group is what a recomputation arrives at, which is the case
+    // the retry is for. `rescueDiagnosis`'s own suite covers the arithmetic.
+    algosdk.assignGroupID.mockImplementation((txns: any[]) => {
+      txns.forEach((t) => (t.group = new Uint8Array([NEW])));
+      return txns;
+    });
+    return run().finally(() => {
+      algosdk.decodeSignedTransaction.mockImplementation(saved.decodeSigned);
+      algosdk.decodeUnsignedTransaction.mockImplementation(saved.decode);
+      algosdk.encodeUnsignedTransaction.mockImplementation(saved.encode);
+      algosdk.assignGroupID.mockImplementation(saved.assign);
+    });
+  }
+
+  function rescuable(
+    reauthorize?: PartialSignedGroup["reauthorize"],
+  ): PartialSignedGroup {
+    return {
+      transactions: [TX0, TX1],
+      signedTransactions: { "1": BACKEND },
+      quoteSignerIndex: 1,
+      reauthorize,
+    };
+  }
+
+  function walletDeps(overrides: Partial<SignAndSendDeps> = {}) {
+    const { d, calls } = deps({
+      signTransactions: jest.fn(async (txns: Uint8Array[]) =>
+        txns.map((_: unknown, i: number) => (i === 0 ? WALLET : null)),
+      ),
+      ...overrides,
+    });
+    return { d, calls };
+  }
+
+  it("re-authorises a re-grouped group and submits it", async () => {
+    // The whole point. Pera rewrote and re-grouped what it signed, so the
+    // backend's authorization is stale; asking it to sign the group that came
+    // out is what turns a failed swap into a swap.
+    const reauthorize = jest.fn(async () => FRESH);
+    const { d, calls } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      const txid = await signAndSendPartial(rescuable(reauthorize), d);
+
+      expect(txid).toBe("TXID123");
+      // it sends the wallet's transactions without the authorization, and the
+      // authorization separately - the shape the engine endpoint takes
+      expect(reauthorize).toHaveBeenCalledWith([WALLET], BACKEND);
+      expect(calls.submitted).toEqual([WALLET, FRESH]);
+    });
+  });
+
+  it("says the page is older than the bundle when it cannot ask", async () => {
+    // **The message this test exists for.** "Would rescue it" reads as a
+    // proposal when the code to do it is right here, and the first time a
+    // reader saw that it cost a deploy's worth of guessing at which half was
+    // missing. The widget markup and this bundle are different repositories
+    // and ship separately, so the page being behind is the whole answer.
+    const { d } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      const error = await signAndSendPartial(rescuable(), d).catch(
+        (e: Error) => e,
+      );
+
+      expect(String(error)).toContain("[0] re-grouped");
+      expect(String(error)).toContain("would rescue it");
+      expect(String(error)).toContain("offers no re-authorisation endpoint");
+      expect(d.submit).not.toHaveBeenCalled();
+    });
+  });
+
+  it("refuses a replacement signed over a different group", async () => {
+    // The answer comes from the network and goes straight into a group about
+    // to be submitted, so it is checked exactly as the wallet's answer is.
+    const reauthorize = jest.fn(async () => new Uint8Array([4, 5, 6, 55, 40]));
+    const { d } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      await expect(signAndSendPartial(rescuable(reauthorize), d)).rejects.toThrow(
+        "re-authorized a different group",
+      );
+      expect(d.submit).not.toHaveBeenCalled();
+    });
+  });
+
+  it("refuses a replacement that is not the authorization it built", async () => {
+    // The authorization's fee is paid by the quote signer's own account and
+    // its note carries the floor this trade was quoted at. A replacement
+    // differing in either is one to refuse, not to submit.
+    const reauthorize = jest.fn(async () => new Uint8Array([9, 9, 9, NEW, 40]));
+    const { d } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      await expect(signAndSendPartial(rescuable(reauthorize), d)).rejects.toThrow(
+        "differs from the one it built",
+      );
+    });
+  });
+
+  it("refuses an unsigned replacement", async () => {
+    const reauthorize = jest.fn(async () => new Uint8Array([4, 5, 6, NEW]));
+    const { d } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      await expect(signAndSendPartial(rescuable(reauthorize), d)).rejects.toThrow(
+        "is not signed",
+      );
+    });
+  });
+
+  it("refuses an undecodable replacement", async () => {
+    const reauthorize = jest.fn(async () => FRESH);
+    const { d } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      const algosdk = require("algosdk");
+      const decode = algosdk.decodeSignedTransaction.getMockImplementation();
+      algosdk.decodeSignedTransaction.mockImplementation((b: Uint8Array) => {
+        if (b.length === FRESH.length && b[4] === 40) throw new Error("not msgpack");
+        return decode(b);
+      });
+
+      await expect(signAndSendPartial(rescuable(reauthorize), d)).rejects.toThrow(
+        "is undecodable",
+      );
+    });
+  });
+
+  it.each([
+    ["nothing", undefined],
+    ["an empty blob", new Uint8Array()],
+  ])("refuses when the backend returns %s", async (_label, answer) => {
+    const reauthorize = jest.fn(async () => answer as any);
+    const { d } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      await expect(signAndSendPartial(rescuable(reauthorize), d)).rejects.toThrow(
+        "no replacement quote authorization",
+      );
+    });
+  });
+
+  it("does not ask when the wallet raised the authorization's fee too", async () => {
+    // Then the backend would have to take a fee for its own transaction from
+    // this request, and that transaction is paid for by the quote signer's
+    // account. No wallet has been seen doing it; until one is, refusing beats
+    // a way to drain that account a microALGO at a time.
+    const reauthorize = jest.fn(async () => FRESH);
+    const { d } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      const algosdk = require("algosdk");
+      // the recomputation only agrees once the authorisation's fee has moved
+      algosdk.assignGroupID.mockImplementation((txns: any[]) => {
+        const raised = txns.some((t) => Number(t.fee) > 1000);
+        txns.forEach((t) => (t.group = new Uint8Array([raised ? NEW : 1])));
+        return txns;
+      });
+
+      await expect(signAndSendPartial(rescuable(reauthorize), d)).rejects.toThrow(
+        "with the post-quantum premium added to its fee",
+      );
+      expect(reauthorize).not.toHaveBeenCalled();
+    });
+  });
+
+  it("does not ask when nothing the backend could sign would fit", async () => {
+    const reauthorize = jest.fn(async () => FRESH);
+    const { d } = walletDeps();
+
+    await withGroupAwareAlgosdk(async () => {
+      const algosdk = require("algosdk");
+      algosdk.assignGroupID.mockImplementation((txns: any[]) => {
+        txns.forEach((t) => (t.group = new Uint8Array([1])));
+        return txns;
+      });
+
+      await expect(signAndSendPartial(rescuable(reauthorize), d)).rejects.toThrow(
+        "would not rescue it",
+      );
+      expect(reauthorize).not.toHaveBeenCalled();
+    });
+  });
+});
+
 describe("rescueDiagnosis", () => {
   /**
    * A group id that actually depends on the group's contents.

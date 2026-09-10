@@ -18,5 +18,6 @@
 
 - [assetCreator](functions/assetCreator.md)
 - [optIn](functions/optIn.md)
+- [rescueDiagnosis](functions/rescueDiagnosis.md)
 - [signAndSend](functions/signAndSend.md)
 - [signAndSendPartial](functions/signAndSendPartial.md)

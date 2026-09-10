@@ -175,18 +175,44 @@ def swap_endpoint_urls(router_id):
     has no ASA Stats router endpoint" -- a message about configuration for what
     was a missing two lines of context.
 
+    **The two required URLs are resolved apart from the optional one**, and
+    that separation is not cosmetic. `reauthorize` was added to this dict inside
+    the same `try`, and on a deployment whose widgets are a release behind -
+    which is every deployment for as long as it takes the second repository to
+    ship - resolving it raised `NoReverseMatch` and the `except` discarded
+    `quote_url` and `group_url` with it. The swap panel then rendered with no
+    endpoints at all and refused every quote with "this deployment has no ASA
+    Stats router endpoint": one optional feature taking the whole router down,
+    in production, for a URL nothing needs until a wallet rewrites a group.
+
+    So an absent `reauthorize` is ``""``, which is what the adapter already
+    reads as "report the divergence rather than fix it". Quote and group keep
+    the all-or-nothing behaviour, because a router missing those genuinely has
+    nothing to offer.
+
     :param router_id: the router key, e.g. ``"asastats"``
     :type router_id: str
-    :return: ``{"quote_url", "group_url"}`` or an empty dict
+    :var optional: URLs whose absence must not disable the router
+    :type optional: dict
+    :return: ``{"quote_url", "group_url", "reauthorize_url"}`` or an empty
+        dict
     :rtype: dict
     """
     try:
-        return {
+        required = {
             "quote_url": reverse(f"{router_id}_quote"),
             "group_url": reverse(f"{router_id}_group"),
         }
     except NoReverseMatch:
         return {}
+
+    optional = {}
+    try:
+        optional["reauthorize_url"] = reverse(f"{router_id}_reauthorize")
+    except NoReverseMatch:
+        optional["reauthorize_url"] = ""
+
+    return {**required, **optional}
 
 
 def swap_sdk_static(router_id):
