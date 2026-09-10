@@ -221,6 +221,88 @@ function sameBytes(left: Uint8Array | null | undefined, right: Uint8Array): bool
   return a.length === right.length && a.every((v, i) => v === right[i]);
 }
 
+/**
+ * What a Falcon-1024 signature costs above an Ed25519 one, in microALGO.
+ *
+ * Two minimum fees, mirroring `router.contract.PQ_FEE_PREMIUM`. Duplicated
+ * rather than fetched because this is a diagnostic: it must work on the run
+ * that fails, without a round trip that may be the thing that is broken.
+ */
+const PQ_FEE_PREMIUM = 2000;
+
+/**
+ * Say whether the backend could still authorise the group the wallet returned.
+ *
+ * **The one fact the sign-last design turns on.** A wallet that rewrites the
+ * transactions it signs re-groups them, and the backend's authorisation - the
+ * last transaction, which the wallet does not sign - keeps the old group id.
+ * That is the `inconsistent group values` failure. The proposed fix is to sign
+ * that authorisation *after* the wallet has had its way: take the re-grouped
+ * transactions back, re-check the note against them, and re-sign over the
+ * group id the wallet left.
+ *
+ * That only works if the wallet's group id covers an authorisation the backend
+ * can reproduce. It computed that id over its own view of all the members
+ * including the one it did not sign, and it may or may not have raised that
+ * one's fee along the way. Nothing in the failure says which - but it is
+ * decidable here, offline, from bytes already in hand: recompute the group id
+ * over the returned transactions plus each candidate authorisation and see
+ * which the wallet agreed with.
+ *
+ * The alternative is asking the user for another failed swap per guess.
+ *
+ * @param bodies     - Decoded transaction bodies, index-aligned with the group;
+ *                     every entry but `quoteIndex` as the wallet returned it,
+ *                     and `quoteIndex` as the backend built it.
+ * @param quoteIndex - Index of the backend's authorisation.
+ * @param target     - The group id the wallet stamped on what it returned.
+ * @returns One sentence naming the authorisation that would fit, or saying
+ *          none does.
+ */
+export function rescueDiagnosis(
+  bodies: any[],
+  quoteIndex: number,
+  target: Uint8Array,
+): string {
+  const attempts: Array<[string, number]> = [
+    ["exactly as the backend built it", 0],
+    ["with the post-quantum premium added to its fee", PQ_FEE_PREMIUM],
+  ];
+  for (const [label, extra] of attempts) {
+    let candidates: any[];
+    try {
+      candidates = bodies.map((body, index) => {
+        const fresh: any = decodeUnsignedTransaction(
+          encodeUnsignedTransaction(body),
+        );
+        // not defaulted: `fresh` came out of `decodeUnsignedTransaction`, which
+        // always sets a fee - the same reason the consistency check above
+        // defaults the wallet's answer and not its own
+        if (index === quoteIndex && extra) {
+          fresh.fee = BigInt(fresh.fee) + BigInt(extra);
+        }
+        // **Clearing is not optional.** `assignGroupID` hashes the fields it
+        // is given and does not blank an existing group first, so recomputing
+        // over already-grouped transactions yields an id that matches nothing
+        // - verified against algosdk 3.7.0 rather than assumed.
+        fresh.group = undefined;
+        return fresh;
+      });
+      assignGroupID(candidates);
+    } catch {
+      continue;
+    }
+    if (sameBytes(candidates[0]?.group, target)) {
+      return `signing the authorisation last would rescue it: the wallet's group covers the authorisation ${label}`;
+    }
+  }
+  return (
+    "signing the authorisation last would not rescue it: the wallet's group " +
+    "covers neither the authorisation as built nor one carrying the premium, " +
+    "so it changed something else as well"
+  );
+}
+
 export async function signAndSendPartial(
   group: PartialSignedGroup,
   deps: SignAndSendDeps,
@@ -303,6 +385,12 @@ export async function signAndSendPartial(
   // transaction carries one; `some` is not a narrowing TypeScript can follow
   const expected = decoded[0].group as Uint8Array;
   const divergences: string[] = [];
+  // Kept index-aligned so a failure can be diagnosed rather than only
+  // reported, and filled rather than left sparse: `every` skips holes, so an
+  // array with a gap where an undecodable transaction should be would report
+  // itself complete and the probe would run on nothing.
+  const bodies: any[] = signed.map(() => undefined);
+  let regrouped: Uint8Array | undefined;
   signed.forEach((blob, index) => {
     let returned: any;
     try {
@@ -316,10 +404,14 @@ export async function signAndSendPartial(
       divergences.push(`[${index}] came back without a transaction body`);
       return;
     }
+    bodies[index] = txn;
 
     const before = decoded[index];
     const differences: string[] = [];
-    if (!sameBytes(txn.group, expected)) differences.push("re-grouped");
+    if (!sameBytes(txn.group, expected)) {
+      differences.push("re-grouped");
+      if (!regrouped && txn.group) regrouped = txn.group;
+    }
     // `txn.fee` is defaulted because the wallet's answer is not trusted to
     // have one; `before.fee` is not, because it came from a transaction this
     // module decoded and algosdk always sets it - a default there was a branch
@@ -353,10 +445,19 @@ export async function signAndSendPartial(
   // case, since a Falcon signature costs three minimum fees where this group
   // pays one.
   if (divergences.length) {
+    // **And say whether it is recoverable.** The report above names what the
+    // wallet changed; on its own that has cost two sessions of guessing at
+    // what to do about it. The probe answers that in the same breath, from the
+    // bytes already decoded, so a failed swap carries its own verdict on the
+    // fix rather than requiring another one to test it.
+    const verdict =
+      regrouped && bodies.every(Boolean)
+        ? ` - ${rescueDiagnosis(bodies, group.quoteSignerIndex, regrouped)}`
+        : "";
     throw new Error(
       `The wallet returned ${divergences.length} transaction(s) different ` +
         `from the ones it was given, so the backend's quote signature no ` +
-        `longer covers this group: ${divergences.join("; ")}`,
+        `longer covers this group: ${divergences.join("; ")}${verdict}`,
     );
   }
 

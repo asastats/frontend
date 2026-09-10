@@ -1,6 +1,7 @@
 import {
   assetCreator,
   optIn,
+  rescueDiagnosis,
   signAndSend,
   signAndSendPartial,
   type OptInDeps,
@@ -93,8 +94,11 @@ const TXN_B = new Uint8Array([4, 5, 6]);
 // mock's `decodeSignedTransaction` splits back apart. Opaque one-byte blobs
 // modelled a wallet returning something that re-encodes to neither what it
 // was given nor anything else, and the consistency check rightly rejected it.
+const TXN_C = new Uint8Array([7, 8, 9]);
 const SIG_A = new Uint8Array([...TXN_A, 10]);
 const SIG_B = new Uint8Array([...TXN_B, 20]);
+// a third signature byte, so a decoder double can tell the three apart
+const SIG_C = new Uint8Array([...TXN_C, 30]);
 
 const DEFAULT_SP = { fee: 1000, firstValid: 1, lastValid: 1001 };
 
@@ -572,6 +576,222 @@ describe("signAndSendPartial", () => {
       "Wallet did not sign a required transaction",
     );
     expect(d.submit).not.toHaveBeenCalled();
+  });
+
+  /**
+   * A three-transaction group: two the wallet signs, one the backend signed.
+   *
+   * The two-transaction group above cannot express "one transaction diverged
+   * and another was rubbish", which is the case that decides whether the
+   * rescue probe is safe to run.
+   */
+  function partialOfThree(): PartialSignedGroup {
+    return {
+      transactions: [TXN_A, TXN_B, TXN_C],
+      signedTransactions: { "2": SIG_C },
+      quoteSignerIndex: 2,
+    };
+  }
+
+  /** Decode each blob by its trailing signature byte rather than by call order. */
+  function withDecodingByBlob(
+    perBlob: Record<number, (b: Uint8Array) => unknown>,
+    run: () => Promise<unknown>,
+  ) {
+    const algosdk = require("algosdk");
+    const original = algosdk.decodeSignedTransaction.getMockImplementation();
+    algosdk.decodeSignedTransaction.mockImplementation((b: Uint8Array) => {
+      const decode = perBlob[b[b.length - 1]];
+      if (decode) return decode(b);
+      return {
+        txn: { _raw: b.slice(0, 3), group: new Uint8Array([99]), fee: 1000 },
+        sig: b.slice(3),
+      };
+    });
+    return run().finally(() =>
+      algosdk.decodeSignedTransaction.mockImplementation(original),
+    );
+  }
+
+  it("asks whether the group could still be rescued, and says so", async () => {
+    // The report names what changed; on its own that has cost two sessions of
+    // guessing at what to do about it. Both wallet transactions carry the same
+    // new group, which is also the case where only the first one may be taken
+    // as the group to aim at - the second must not overwrite it.
+    const { d } = deps();
+    const regrouped = (b: Uint8Array) => ({
+      txn: { _raw: b.slice(0, 3), group: new Uint8Array([77]), fee: 1000 },
+      sig: b.slice(3),
+    });
+
+    await withDecodingByBlob({ 10: regrouped, 20: regrouped }, () =>
+      expect(signAndSendPartial(partialOfThree(), d)).rejects.toThrow(
+        /\[0\] re-grouped; \[1\] re-grouped - signing the authorisation last would/,
+      ),
+    );
+  });
+
+  it("does not guess at a rescue when a transaction did not decode", async () => {
+    // The probe recomputes a group id over every member. One missing body
+    // means the answer would be computed over something that is not the group
+    // the wallet returned, and a confident wrong verdict is worse than none.
+    const { d } = deps();
+
+    await withDecodingByBlob(
+      {
+        10: (b: Uint8Array) => ({
+          txn: { _raw: b.slice(0, 3), group: new Uint8Array([77]), fee: 1000 },
+          sig: b.slice(3),
+        }),
+        20: () => {
+          throw new Error("not msgpack");
+        },
+      },
+      async () => {
+        const error = await signAndSendPartial(partialOfThree(), d).catch(
+          (e: Error) => e,
+        );
+        expect(String(error)).toContain("[1] came back undecodable");
+        expect(String(error)).not.toContain("signing the authorisation last");
+      },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// rescueDiagnosis — can the backend still authorise what came back?
+// ---------------------------------------------------------------------------
+
+describe("rescueDiagnosis", () => {
+  /**
+   * A group id that actually depends on the group's contents.
+   *
+   * The module-level `assignGroupID` double stamps a constant, which is enough
+   * for tests that only need transactions to come out grouped and useless
+   * here: every question this function answers is "which set of bodies did the
+   * wallet hash?", and a constant answers all of them the same way.
+   *
+   * Two properties are modelled because the real algosdk has them, and both
+   * have already been wrong in this file's history. A body's fee changes the
+   * id - otherwise the premium attempt is indistinguishable from the first.
+   * And an existing group changes it too, because `assignGroupID` hashes the
+   * fields it is handed and does **not** blank a group first; verified against
+   * algosdk 3.7.0. That is what makes "forgot to clear the group" a failing
+   * test rather than an invisible one.
+   */
+  const idOf = (bodies: Array<{ tag: number; fee: number; group?: number }>) =>
+    bodies.reduce((sum, b) => sum + b.tag + b.fee + 7 * (b.group ?? 0), 0) & 0xff;
+
+  function withHashingAlgosdk(run: () => void) {
+    const algosdk = require("algosdk");
+    const saved = {
+      encode: algosdk.encodeUnsignedTransaction.getMockImplementation(),
+      decode: algosdk.decodeUnsignedTransaction.getMockImplementation(),
+      assign: algosdk.assignGroupID.getMockImplementation(),
+    };
+    // Four bytes, so the round trip the probe performs through encode/decode
+    // preserves everything the id is computed over.
+    algosdk.encodeUnsignedTransaction.mockImplementation((t: any) => {
+      if (t.unencodable) throw new Error("cannot encode");
+      const fee = Number(t.fee ?? 0);
+      return new Uint8Array([t.tag, fee & 0xff, (fee >> 8) & 0xff, t.group?.[0] ?? 0]);
+    });
+    algosdk.decodeUnsignedTransaction.mockImplementation((b: Uint8Array) => ({
+      tag: b[0],
+      fee: b[1] | (b[2] << 8),
+      group: b[3] ? new Uint8Array([b[3]]) : undefined,
+    }));
+    algosdk.assignGroupID.mockImplementation((txns: any[]) => {
+      const id = idOf(
+        txns.map((t) => ({
+          tag: t.tag,
+          fee: Number(t.fee ?? 0),
+          group: t.group?.[0],
+        })),
+      );
+      txns.forEach((t) => (t.group = new Uint8Array([id])));
+      return txns;
+    });
+    try {
+      run();
+    } finally {
+      algosdk.encodeUnsignedTransaction.mockImplementation(saved.encode);
+      algosdk.decodeUnsignedTransaction.mockImplementation(saved.decode);
+      algosdk.assignGroupID.mockImplementation(saved.assign);
+    }
+  }
+
+  /** Two transactions as the wallet returned them, plus the authorisation. */
+  const bodies = (quoteFee = 1000) => [
+    { tag: 1, fee: 3000, group: new Uint8Array([77]) },
+    { tag: 2, fee: 3000, group: new Uint8Array([77]) },
+    { tag: 3, fee: quoteFee, group: new Uint8Array([99]) },
+  ];
+
+  it("finds the authorisation as built when that is what the wallet hashed", () => {
+    // The good case for signing last: the wallet raised the fees on what it
+    // signed, left the backend's transaction alone, and hashed it unchanged -
+    // so the backend has only to stamp the new group id and sign again.
+    withHashingAlgosdk(() => {
+      const target = new Uint8Array([
+        idOf([
+          { tag: 1, fee: 3000 },
+          { tag: 2, fee: 3000 },
+          { tag: 3, fee: 1000 },
+        ]),
+      ]);
+
+      expect(rescueDiagnosis(bodies(), 2, target)).toBe(
+        "signing the authorisation last would rescue it: the wallet's group " +
+          "covers the authorisation exactly as the backend built it",
+      );
+    });
+  });
+
+  it("finds it carrying the premium when the wallet raised that fee too", () => {
+    // The other good case, and the reason there are two attempts: the wallet
+    // does not sign the authorisation but does hash it, and it may have added
+    // the premium to it in passing. The backend can match that - it just has
+    // to know to.
+    withHashingAlgosdk(() => {
+      const target = new Uint8Array([
+        idOf([
+          { tag: 1, fee: 3000 },
+          { tag: 2, fee: 3000 },
+          { tag: 3, fee: 3000 },
+        ]),
+      ]);
+
+      expect(rescueDiagnosis(bodies(), 2, target)).toBe(
+        "signing the authorisation last would rescue it: the wallet's group " +
+          "covers the authorisation with the post-quantum premium added to its fee",
+      );
+    });
+  });
+
+  it("says so when neither candidate fits", () => {
+    // Then the wallet changed something else as well, sign-last is not enough
+    // on its own, and the next step is to find out what - rather than to build
+    // a second round trip that would have failed anyway.
+    withHashingAlgosdk(() => {
+      expect(rescueDiagnosis(bodies(), 2, new Uint8Array([3]))).toContain(
+        "would not rescue it",
+      );
+    });
+  });
+
+  it("reports no rescue rather than throwing when a body cannot be encoded", () => {
+    // This runs while an error is already being assembled. A diagnostic that
+    // throws replaces the report it was meant to enrich, and the failure the
+    // user sees becomes one about the diagnostic.
+    withHashingAlgosdk(() => {
+      const broken: any[] = bodies();
+      broken[1] = { ...broken[1], unencodable: true };
+
+      expect(rescueDiagnosis(broken, 2, new Uint8Array([3]))).toContain(
+        "would not rescue it",
+      );
+    });
   });
 });
 
