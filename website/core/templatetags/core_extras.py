@@ -9,7 +9,7 @@ from core.exportpermissions import tier_allows
 from utils import explorers as explorer_constants
 from utils.constants.charts import PIE_CHART_MAXIMUM_ITEMS
 from utils.constants.core import DEFAULT_EXPLORER, ELEMENTS_STYLING, USDC_ID
-from utils.helpers import bundle_from_addresses
+from utils.helpers import bundle_from_addresses, nft_floor_price
 
 register = Library()
 
@@ -728,15 +728,15 @@ def _collection_totals(collection):
     :type floor: float
     :return: tuple of two floats
     """
-    floor = 0.0
-    for row in (collection or {}).get("nfts") or ():
-        prices = ((row or {}).get("nft") or {}).get("floor") or ()
-        # A list, because an item can be floored on several marketplaces. The
-        # first is the one design 1 reports, so it is the one used here too --
-        # differing on which floor is "the" floor would be a worse divergence
-        # than either choice.
-        if prices:
-            floor += _number(prices[0].get("price"))
+    # Through `nft_floor_price`, so this reads the full payload's `floor`
+    # listings and the light payload's `floor_price` alike. Deliberately *not*
+    # multiplied by the item's amount, which is what the floor chart does -- a
+    # divergence that predates the light payload and is preserved rather than
+    # quietly settled here.
+    floor = sum(
+        nft_floor_price((row or {}).get("nft"))
+        for row in (collection or {}).get("nfts") or ()
+    )
     return _number((collection or {}).get("value")), floor
 
 
@@ -781,6 +781,27 @@ def collection_above_floor(collection):
 
 
 @register.filter
+def floor_price(nft):
+    """Return an NFT's floor price, from either payload shape.
+
+    A filter over :func:`utils.helpers.nft_floor_price` so a template can ask
+    once instead of branching on which shape it was handed.
+
+    It exists because the obvious template spelling is a trap:
+    ``{{ floor.price|default:nft.floor_price }}`` *raises* when `floor_price` is
+    absent, because a filter argument that does not resolve propagates
+    `VariableDoesNotExist` rather than falling back. That would have broken
+    rendering the full records the expand fetch returns - the one payload the
+    page still gets with listings on it.
+
+    :param nft: one ``row.nft`` from a collection's items
+    :type nft: dict
+    :return: float
+    """
+    return nft_floor_price(nft)
+
+
+@register.filter
 def clears_floor(row):
     """Return True if an NFT's estimate reaches the floor it is priced against.
 
@@ -792,16 +813,23 @@ def clears_floor(row):
     An item with no floor clears nothing, and the template renders a different
     line for that case rather than asking this.
 
+    Reads the floor through :func:`utils.helpers.nft_floor_price`, so it answers
+    the same on the light payload - which carries `floor_price` instead of the
+    listings. It has to: the template renders "the estimate sits above it" or
+    "the estimate does not clear it" from this, and a False that only means
+    "this payload does not carry listings" would state the second about every
+    floored NFT on the page.
+
     :param row: one entry from a collection's ``nfts``
     :type row: dict
-    :var floors: the item's floor prices, one per marketplace
-    :type floors: list
+    :var floor: the item's floor price, from either payload shape
+    :type floor: float
     :return: bool
     """
-    floors = ((row or {}).get("nft") or {}).get("floor") or ()
-    if not floors:
+    floor = nft_floor_price((row or {}).get("nft"))
+    if not floor:
         return False
-    return _number((row or {}).get("price")) >= _number(floors[0].get("price"))
+    return _number((row or {}).get("price")) >= floor
 
 
 @register.filter

@@ -65,20 +65,29 @@
       </div>
     </div>
 
-    {% comment %} The floor, and what it says about the estimate. Both branches
-       render a line: "no marketplace reports one" is a fact about the holding
+    {% comment %} The floor, and what it says about the estimate. Every branch
+       renders a line: "no marketplace reports one" is a fact about the holding
        and leaving the row out would make its absence look like an oversight.
+
+       The page's payload carries the floor *price* without the listing around
+       it -- the marketplace and its link only arrive when a collection is
+       opened - so the first branch covers both, naming the marketplace only
+       when it knows one. Testing `floor` alone would have told a reader no
+       marketplace floors an NFT that one does, which is worse than saying less
+       about it.
     {% endcomment %}
-    {% if floor %}
+    {% if floor or nft.floor_price %}
     <div class="nft-line">
       <div class="k">
-        <a class="out" href="{{ floor.link }}" target="_blank" title="Go to {{ floor.market.name }}">Floor on {{ floor.market.name }}</a>
+        {% if floor %}<a class="out" href="{{ floor.link }}" target="_blank" title="Go to {{ floor.market.name }}">Floor on {{ floor.market.name }}</a>{% else %}Floor{% endif %}
         <small>{% if row|clears_floor %}the estimate sits above it{% else %}the estimate does not clear it{% endif %}</small>
       </div>
+      {% with shown=nft|floor_price %}
       <div class="position-val">
-        <span class="amt val" data-val="{{ floor.price }}">{{ floor.price|floatformat:'2g' }}</span>
+        <span class="amt val" data-val="{{ shown }}">{{ shown|floatformat:'2g' }}</span>
         <span class="u unit">ALGO</span>
       </div>
+      {% endwith %}
     </div>
     {% else %}
     <div class="nft-line">

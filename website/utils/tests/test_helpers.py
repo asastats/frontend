@@ -27,6 +27,7 @@ from utils.helpers import (
     get_env_variable,
     load_transparency_reports,
     message_for_app_code_in_values,
+    nft_floor_price,
     parse_export_limits,
     pause,
     random_slogan,
@@ -572,3 +573,59 @@ class TestUtilsHelpersGeneralPublicFunctions:
     def test_utils_helpers_weighted_randomized_banner_empty_list(self):
         returned = weighted_randomized_banner([])
         assert returned == {}
+
+
+class TestUtilsHelpersNftFloorPrice:
+    """Testing class for :py:func:`utils.helpers.nft_floor_price`.
+
+    Two payload shapes carry the same figure differently: the shared endpoint
+    sends the whole `floor` listing, the address page's endpoint sends
+    `floor_price` alone. The floor chart, the ratio and distribution charts and
+    a collection's floor bar all read it, so one rule here is what stops them
+    disagreeing about a number that appears on the same page.
+    """
+
+    def test_utils_helpers_nft_floor_price_from_the_light_payload(self):
+        assert nft_floor_price({"floor_price": "12.345678"}) == 12.345678
+
+    def test_utils_helpers_nft_floor_price_from_the_full_payload(self):
+        assert nft_floor_price({"floor": [{"price": "12.345678"}]}) == 12.345678
+
+    def test_utils_helpers_nft_floor_price_agrees_between_shapes(self):
+        """**The property the whole split rests on.** A reader switching between
+        the two endpoints must not see the floor move."""
+        assert nft_floor_price({"floor_price": "8.5"}) == nft_floor_price(
+            {"floor": [{"price": "8.5"}]}
+        )
+
+    def test_utils_helpers_nft_floor_price_takes_the_first_listing(self):
+        """An item can be floored on several marketplaces; the first is the one
+        every consumer reports."""
+        assert nft_floor_price(
+            {"floor": [{"price": "1.0"}, {"price": "99.0"}]}
+        ) == 1.0
+
+    def test_utils_helpers_nft_floor_price_prefers_the_light_field(self):
+        """A payload carrying both is not a shape either endpoint emits, but if
+        one ever did, the scalar is the one the light page renders."""
+        assert nft_floor_price(
+            {"floor_price": "5.0", "floor": [{"price": "9.0"}]}
+        ) == 5.0
+
+    @pytest.mark.parametrize(
+        "nft",
+        (
+            None,
+            {},
+            {"floor": []},
+            {"floor": None},
+            {"floor_price": None},
+            {"floor_price": ""},
+            {"floor_price": "not a number"},
+            {"floor": [{}]},
+        ),
+    )
+    def test_utils_helpers_nft_floor_price_is_zero_for_no_floor(self, nft):
+        """Most NFTs are floored nowhere, and a chart summing `None` would take
+        the whole page down."""
+        assert nft_floor_price(nft) == 0.0

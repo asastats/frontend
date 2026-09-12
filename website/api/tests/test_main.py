@@ -32,7 +32,9 @@ class TestApMainFunctions:
         mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
         returned = fetch_and_serialize_account(value, addresses)
         assert returned == mocked_fetch.return_value
-        mocked_fetch.assert_called_once_with(mocked_bundle.return_value, addresses)
+        mocked_fetch.assert_called_once_with(
+            mocked_bundle.return_value, addresses, light=False
+        )
 
     def test_api_main_fetch_and_serialize_account_for_single_address(self, mocker):
         value = API_EXAMPLE_ADDRESS1
@@ -40,8 +42,34 @@ class TestApMainFunctions:
         mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
         returned = fetch_and_serialize_account(value, value)
         assert returned == mocked_fetch.return_value
-        mocked_fetch.assert_called_once_with(value, value)
+        mocked_fetch.assert_called_once_with(value, value, light=False)
         mocked_bundle.assert_not_called()
+
+    def test_api_main_fetch_and_serialize_account_asks_for_light_records(
+        self, mocker
+    ):
+        """The address page asks for the thinner NFT records; nothing else does.
+
+        `light` has to reach the client rather than being decided there, because
+        this app's own JSON API calls the same function and what it serves is
+        the shared contract.
+        """
+        mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
+
+        fetch_and_serialize_account(API_EXAMPLE_ADDRESS1, API_EXAMPLE_ADDRESS1, True)
+
+        assert mocked_fetch.call_args.kwargs["light"] is True
+
+    def test_api_main_fetch_and_serialize_account_defaults_to_the_full_payload(
+        self, mocker
+    ):
+        """A caller that says nothing gets the shared shape - which is what the
+        JSON API and every existing caller rely on."""
+        mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
+
+        fetch_and_serialize_account(API_EXAMPLE_ADDRESS1, API_EXAMPLE_ADDRESS1)
+
+        assert mocked_fetch.call_args.kwargs["light"] is False
 
     def test_api_main_fetch_and_serialize_account_names_every_position(self, mocker):
         """The engine does not emit ``pid``; this layer adds it.

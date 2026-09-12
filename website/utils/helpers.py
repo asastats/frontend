@@ -360,3 +360,56 @@ def weighted_randomized_banner(banners=BANNERS):
 
     # random.choices returns a list of k elements, so we grab the first one [0]
     return random.choices(banners, weights=weights, k=1)[0]
+
+
+def nft_floor_price(nft):
+    """Return an NFT's floor price, from either payload shape.
+
+    **Two shapes exist on purpose.** `internal/accounts/<value>/` carries the
+    full `floor` listings, because the mobile app and third parties read it and
+    the expanded item shows the marketplace behind the price;
+    `internal/accounts/<value>/batched` carries `floor_price` alone, because the
+    closed page only ever needed the number and the listing around it was a
+    quarter of an NFT record's serialization cost.
+
+    Reading both here rather than at each call site: the floor total feeds the
+    floor chart, the ratio and distribution charts, and a collection's floor
+    bar, and those disagreeing about where a price lives is precisely the class
+    of fault that shows up as two figures on one page that do not add up.
+
+    This returns the *price*; whether to multiply it by the item's amount is the
+    caller's business and the two callers differ - see
+    `utils.charts._nftfloor_totals_from_serialized_data`, which does, and
+    `core.templatetags.core_extras._collection_totals`, which does not. That
+    divergence predates the light payload and is not this function's to settle.
+
+    :param nft: one ``row.nft`` from a collection's items
+    :type nft: dict
+    :var listings: the item's floor listings, one per marketplace
+    :type listings: list
+    :return: float
+    """
+    nft = nft or {}
+    if "floor_price" in nft:
+        return _floor_number(nft.get("floor_price"))
+
+    listings = nft.get("floor") or ()
+    # A list, because an item can be floored on several marketplaces. The first
+    # is the one every consumer reports, and differing on which floor is "the"
+    # floor would be a worse divergence than either choice.
+    return _floor_number(listings[0].get("price")) if listings else 0.0
+
+
+def _floor_number(value):
+    """Return `value` as a float, or 0.0 when it is not one.
+
+    Floor prices arrive as decimal *strings* from either payload, and an item
+    nobody floors carries nothing at all.
+
+    :param value: a price in whatever form the payload carries it
+    :return: float
+    """
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0

@@ -13,6 +13,7 @@ from api.client import (
     fetch_asset_matches,
     fetch_capabilities,
     fetch_price,
+    fetch_collection_items,
     fetch_serialized_account,
     reset_export,
     start_export,
@@ -186,6 +187,84 @@ class TestApiClientFunctions:
             f"/api/v2/internal/accounts/{value}/",
             params={"addresses": addresses},
         )
+
+    def test_api_client_fetch_serialized_account_light_uses_the_batched_path(
+        self, mocker
+    ):
+        """**The one thing that makes the address page cheaper.** A light
+        request that silently hit the shared endpoint would be correct and
+        useless, and nothing else in the app would notice."""
+        value = API_EXAMPLE_ADDRESS1
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_serialized_account(value, light=True)
+
+        mocked_request.assert_called_once_with(
+            "GET", f"/api/v2/internal/accounts/{value}/batched", params=None
+        )
+
+    def test_api_client_fetch_serialized_account_light_keeps_the_addresses(
+        self, mocker
+    ):
+        """A bundle hash is meaningless to the engine without them."""
+        value, addresses = API_EXAMPLE_BUNDLE1, "FOO BAR"
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_serialized_account(value, addresses, light=True)
+
+        mocked_request.assert_called_once_with(
+            "GET",
+            f"/api/v2/internal/accounts/{value}/batched",
+            params={"addresses": addresses},
+        )
+
+    def test_api_client_fetch_serialized_account_defaults_to_the_shared_endpoint(
+        self, mocker
+    ):
+        """The mobile app and third parties read that one, and every caller that
+        does not ask for light must keep reaching it."""
+        value = API_EXAMPLE_ADDRESS1
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_serialized_account(value)
+
+        assert mocked_request.call_args[0][1].endswith(f"{value}/")
+
+    # # fetch_collection_items
+    def test_api_client_fetch_collection_items_asks_by_name(self, mocker):
+        value = API_EXAMPLE_ADDRESS1
+        mocked_request = mocker.patch("api.client._request")
+
+        returned = fetch_collection_items(value, "Goannas")
+
+        assert returned == mocked_request.return_value.json.return_value
+        mocked_request.assert_called_once_with(
+            "GET",
+            f"/api/v2/internal/accounts/{value}/collection",
+            params={"name": "Goannas"},
+        )
+
+    def test_api_client_fetch_collection_items_carries_bundle_addresses(self, mocker):
+        value, addresses = API_EXAMPLE_BUNDLE1, "FOO BAR"
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_collection_items(value, "Goannas", addresses)
+
+        mocked_request.assert_called_once_with(
+            "GET",
+            f"/api/v2/internal/accounts/{value}/collection",
+            params={"name": "Goannas", "addresses": addresses},
+        )
+
+    def test_api_client_fetch_collection_items_sends_an_empty_name(self, mocker):
+        """The NFTs belonging to no collection are a collection the page renders
+        like any other, and the engine distinguishes an absent `name` from an
+        empty one - so this must send the parameter rather than drop it."""
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_collection_items(API_EXAMPLE_ADDRESS1, "")
+
+        assert mocked_request.call_args.kwargs["params"] == {"name": ""}
 
     # # fetch_account_holdings
     def test_api_client_fetch_account_holdings_functionality(self, mocker):

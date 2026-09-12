@@ -38,7 +38,7 @@ def account_entities(serialized_data):
     return extract_account_entities(serialized_data)
 
 
-def fetch_and_serialize_account(value, addresses):
+def fetch_and_serialize_account(value, addresses, light=False):
     """Fetch and serialize an account for a single address or a bundle.
 
     ``value`` is the URL path segment as the visitor supplied it — a single
@@ -68,13 +68,17 @@ def fetch_and_serialize_account(value, addresses):
     :type value: str
     :param addresses: space-joined addresses for a multi-address bundle
     :type addresses: str
+    :param light: ask for thinner NFT records; see
+        :func:`api.client.fetch_serialized_account`. The address page does; this
+        app's own JSON API does not, because that is the shared contract.
+    :type light: bool
     :var serialized: the engine's payload for ``value``
     :type serialized: dict
     """
     if " " in addresses:
         value = bundle_from_addresses(addresses)
 
-    serialized = fetch_serialized_account(value, addresses)
+    serialized = fetch_serialized_account(value, addresses, light=light)
     for item in serialized.get("asaitems") or ():
         annotate_positions((item.get("asset") or {}).get("id"), item.get("programs"))
     return serialized

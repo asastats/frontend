@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 
 from utils.charts import (
+    _nftfloor_totals_from_serialized_data,
     _asa_chart,
     _asa_chart_from_assets_data,
     _assign_nftfloor_colors,
@@ -985,3 +986,58 @@ class TestSerializedChartsAgainstSamplePayload:
         # collections aren't single assets.
         assert all(isinstance(k, str) for k in nft_colors)
         assert len(nft_colors) > 0
+
+
+class TestUtilsChartsFloorTotalsAcrossPayloads:
+    """The floor totals must not move when the address page changes endpoint.
+
+    `_nftfloor_totals_from_serialized_data` feeds the floor chart and, through
+    `consolidated.nftfloor`, the distribution and ratio charts as well. The page
+    now reads a payload carrying `floor_price` where the shared endpoint carries
+    the whole `floor` listing, so the two shapes have to total identically -
+    otherwise a reader sees three charts change for no reason a market could
+    explain.
+    """
+
+    def _account(self, light):
+        def item(amount, price):
+            nft = (
+                {"floor_price": price}
+                if light
+                else {"floor": [{"price": price, "market": {"name": "x"}}]}
+            )
+            return {"amount": amount, "nft": nft}
+
+        return {
+            "nftcollections": [
+                {"name": "Alpha", "nfts": [item(1, "10.0"), item(3, "2.5")]},
+                {"name": "Beta", "nfts": [item(2, "1.25")]},
+                {"name": "Unfloored", "nfts": [{"amount": 5, "nft": {}}]},
+            ]
+        }
+
+    def test_utils_charts_floor_totals_match_between_payload_shapes(self):
+        assert _nftfloor_totals_from_serialized_data(
+            self._account(light=True)
+        ) == _nftfloor_totals_from_serialized_data(self._account(light=False))
+
+    def test_utils_charts_floor_totals_still_multiply_by_the_amount(self):
+        """Three of an NFT floored at 2.5 is 7.5, not 2.5. The collection's
+        floor *bar* deliberately does not do this; the chart always has."""
+        totals = dict(
+            (name, value)
+            for value, name in _nftfloor_totals_from_serialized_data(
+                self._account(light=True)
+            )
+        )
+        assert totals["Alpha"] == 1 * 10.0 + 3 * 2.5
+        assert totals["Beta"] == 2 * 1.25
+
+    def test_utils_charts_floor_totals_count_an_unfloored_collection_as_zero(self):
+        totals = dict(
+            (name, value)
+            for value, name in _nftfloor_totals_from_serialized_data(
+                self._account(light=True)
+            )
+        )
+        assert totals["Unfloored"] == 0

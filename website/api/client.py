@@ -117,14 +117,52 @@ def fetch_price():
     return _request("GET", "/api/v2/price/").json().get("price")
 
 
-def fetch_serialized_account(value, addresses=""):
+def fetch_serialized_account(value, addresses="", light=False):
     """Return serialized_data for a single address or a bundle.
+
+    **Two endpoints, one shape apart.** `light=True` asks
+    `internal/accounts/<value>/batched`, whose NFT records drop the listings and
+    purchase history that only an opened collection shows and carry a
+    `floor_price` scalar in place of the floor listings. Everything else - the
+    totals, the asset rows, every collection and every item - is identical, so
+    only the parts of this app that render an opened NFT care which one they
+    got.
+
+    The address page asks for the light one; this app's own JSON API does not,
+    because what it serves is the shared contract.
 
     :param value: single address, or the bundle hash (this app's local id)
     :param addresses: space-joined addresses for multi-address bundles
+    :param light: ask for the thinner NFT records
+    :type light: bool
     """
     params = {"addresses": addresses} if addresses else None
-    return _request("GET", f"/api/v2/internal/accounts/{value}/", params=params).json()
+    path = f"/api/v2/internal/accounts/{value}/"
+    if light:
+        path = f"/api/v2/internal/accounts/{value}/batched"
+    return _request("GET", path, params=params).json()
+
+
+def fetch_collection_items(value, name, addresses=""):
+    """Return one NFT collection whole, items and all.
+
+    What the light payload leaves out - an item's listings and its purchase
+    history - for the one collection a reader opened. The engine slices it out
+    of the full payload, so these are the same records the shared endpoint
+    sends rather than a second construction of them.
+
+    :param value: single address, or the bundle hash (this app's local id)
+    :param name: the collection's name, as the payload reports it
+    :type name: str
+    :param addresses: space-joined addresses for multi-address bundles
+    :return: dict
+    """
+    params = {"name": name}
+    if addresses:
+        params["addresses"] = addresses
+    return _request(
+        "GET", f"/api/v2/internal/accounts/{value}/collection", params=params
+    ).json()
 
 
 def fetch_capabilities():

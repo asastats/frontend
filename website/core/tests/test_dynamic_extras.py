@@ -23,6 +23,7 @@ from collections import namedtuple
 from pathlib import Path
 
 import pytest
+from django.template.loader import render_to_string
 
 from core.templatetags.core_extras import (
     MAX_AMOUNT_DECIMALS,
@@ -33,6 +34,7 @@ from core.templatetags.core_extras import (
     clears_floor,
     collection_above_floor,
     collection_floor,
+    floor_price,
     collection_tile,
     holdings_amount,
     position_band,
@@ -454,16 +456,79 @@ class TestHoldingsAmount:
         assert checked > 50, "too few assets to prove anything"
 
 
-def _item(price, floor=None, last=None, best=None):
-    """Build one entry of a collection's ``nfts`` list."""
+def _item(price, floor=None, last=None, best=None, light=False):
+    """Build one entry of a collection's ``nfts`` list.
+
+    `light=True` builds it as the address page's endpoint sends it: a
+    `floor_price` scalar instead of the floor listings, because the marketplace
+    and its link only arrive when a collection is opened. Every figure derived
+    from a floor has to come out the same from either, which is what the
+    `AcrossPayloads` classes below check.
+    """
     nft = {}
-    if floor is not None:
+    if floor is not None and light:
+        nft["floor_price"] = floor
+    elif floor is not None:
         nft["floor"] = [{"price": floor, "market": {"name": "Asalytic"}}]
     if last is not None:
         nft["last_purchase"] = {"price": last, "market": {"name": "Rand Gallery"}}
     if best is not None:
         nft["max_purchase"] = {"price": best, "market": {"name": "Rand Gallery"}}
     return {"price": price, "value": price, "amount": 1, "nft": nft}
+
+
+class TestFloorFiguresAcrossPayloads:
+    """Every floor figure must be the same from either payload shape.
+
+    The page reads `floor_price`; this app's JSON API reads the `floor`
+    listings. A collection's floor bar, the share above it, and an item's
+    "clears the floor" line are all rendered from these, so a difference here is
+    a difference a reader sees between two views of one holding.
+    """
+
+    def _collection(self, light):
+        return {
+            "value": "300",
+            "nfts": [
+                _item("200", floor="25", light=light),
+                _item("100", floor="30", light=light),
+                _item("50", light=light),
+            ],
+        }
+
+    def test_collection_floor_matches_between_payloads(self):
+        assert collection_floor(self._collection(light=True)) == collection_floor(
+            self._collection(light=False)
+        )
+
+    def test_collection_floor_sums_the_light_payload(self):
+        """Not multiplied by the item's amount - the floor *chart* does that and
+        this deliberately does not. Pinned so the two are not "unified"."""
+        assert collection_floor(self._collection(light=True)) == 55.0
+
+    def test_collection_above_floor_matches_between_payloads(self):
+        assert collection_above_floor(
+            self._collection(light=True)
+        ) == collection_above_floor(self._collection(light=False))
+
+    @pytest.mark.parametrize(
+        "price,floor,expected",
+        (("215.98", "25.00", True), ("10.00", "25.00", False), ("25.00", "25.00", True)),
+    )
+    def test_clears_floor_matches_between_payloads(self, price, floor, expected):
+        """**The one that would have been silently wrong.**
+
+        Reading the listings directly, this returned False for every NFT on a
+        light payload - so the dynamic item would have told a reader "the
+        estimate does not clear it" about an item worth eight times its floor.
+        """
+        assert clears_floor(_item(price, floor=floor, light=True)) is expected
+        assert clears_floor(_item(price, floor=floor, light=False)) is expected
+
+    def test_clears_floor_is_false_without_any_floor(self):
+        """An item nobody floors clears nothing, and the template renders a
+        different line for that rather than asking this."""
+        assert clears_floor(_item("215.98", light=True)) is False
 
 
 class TestCollectionFloor:
@@ -731,3 +796,81 @@ class TestBeyond:
         # which is what makes the assertion above worth making.
         assert beyond(assets, settings.ADDRESS_INITIAL_ASSETS) > 0
         assert beyond(collections, settings.ADDRESS_INITIAL_COLLECTIONS) > 0
+
+
+class TestDynamicNftFloorLine:
+    """What the dynamic item's floor line says, on either payload.
+
+    Three states, and the middle one is why this exists: an NFT that *is*
+    floored, on a payload that carries the price without the marketplace. Before
+    the light payload there was no such state, and the template's `{% else %}`
+    said "no marketplace reports one" - which would have been a false statement
+    about every floored NFT on the page.
+    """
+
+    def _render(self, row):
+        return render_to_string("snippets/dynamic/nft.html", {"row": row})
+
+    def test_full_payload_names_the_marketplace(self):
+        html = self._render(_item("215.98", floor="25.00"))
+        assert "Floor on Asalytic" in html
+        assert "no marketplace reports one" not in html
+        assert "25.00" in html
+
+    def test_light_payload_reports_the_floor_without_a_marketplace(self):
+        html = self._render(_item("215.98", floor="25.00", light=True))
+        assert "no marketplace reports one" not in html
+        assert "25.00" in html
+        assert "Floor on" not in html
+
+    def test_light_payload_still_says_when_nothing_floors_it(self):
+        """The absence is a fact about the holding, and the row is rendered for
+        it rather than left out."""
+        html = self._render(_item("215.98", light=True))
+        assert "no marketplace reports one" in html
+
+    def test_light_payload_judges_the_estimate_against_the_floor(self):
+        """Reading the listings directly, this said "does not clear it" about
+        every floored NFT once the listings stopped arriving."""
+        assert "the estimate sits above it" in self._render(
+            _item("215.98", floor="25.00", light=True)
+        )
+        assert "the estimate does not clear it" in self._render(
+            _item("10.00", floor="25.00", light=True)
+        )
+
+    def test_both_payloads_agree_on_the_verdict(self):
+        for price in ("215.98", "10.00"):
+            light = self._render(_item(price, floor="25.00", light=True))
+            full = self._render(_item(price, floor="25.00"))
+            assert ("sits above it" in light) == ("sits above it" in full)
+
+
+class TestFloorPriceFilter:
+    """Testing class for the ``floor_price`` template filter.
+
+    It exists because the obvious template spelling is a trap:
+    ``{{ floor.price|default:nft.floor_price }}`` *raises* when `floor_price` is
+    absent, since a filter argument that does not resolve propagates
+    `VariableDoesNotExist` rather than falling back. A render test caught it,
+    and only on the full payload - the one the expand fetch returns.
+    """
+
+    def test_it_reads_the_light_payload(self):
+        assert floor_price({"floor_price": "25.00"}) == 25.0
+
+    def test_it_reads_the_full_payload(self):
+        assert floor_price({"floor": [{"price": "25.00"}]}) == 25.0
+
+    def test_it_is_zero_without_a_floor(self):
+        assert floor_price({}) == 0.0
+
+    def test_it_survives_a_missing_nft(self):
+        assert floor_price(None) == 0.0
+
+    def test_the_template_renders_a_full_record_without_raising(self):
+        """The regression this filter was introduced for."""
+        html = render_to_string(
+            "snippets/dynamic/nft.html", {"row": _item("215.98", floor="25.00")}
+        )
+        assert "25.00" in html

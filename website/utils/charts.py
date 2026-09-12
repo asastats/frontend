@@ -27,6 +27,7 @@ from utils.constants.charts import (
     PIE_CHART_MAXIMUM_ITEMS,
 )
 from utils.constants.core import ALGO_ID
+from utils.helpers import nft_floor_price
 from utils.structs import Consolidated, Total
 
 
@@ -893,6 +894,14 @@ def _nft_chart_from_serialized_data(serialized_data, nft_colors, label="NFT data
 def _nftfloor_totals_from_serialized_data(serialized_data):
     """Calculate and return array of NFT collection floor totals and names.
 
+    Reads the price through :func:`utils.helpers.nft_floor_price`, so this works
+    on the full payload and on the light one the address page now asks for -
+    which carries `floor_price` in place of the `floor` listings.
+
+    Note the multiplication by `amount`, which a collection's floor *bar* does
+    not do. That divergence predates the light payload; both are preserved
+    exactly as they were.
+
     :param serialized_data: serialized account's data
     :type serialized_data: dict
     :var nft_values: collection of floor total values and NFT collection names
@@ -902,10 +911,8 @@ def _nftfloor_totals_from_serialized_data(serialized_data):
     nft_values = [
         (
             sum(
-                nft.get("amount", 0)
-                * float(nft.get("nft").get("floor")[0].get("price", 0))
+                nft.get("amount", 0) * nft_floor_price(nft.get("nft"))
                 for nft in collection.get("nfts", [])
-                if nft.get("nft", {}).get("floor")
             ),
             collection.get("name", ""),
         )

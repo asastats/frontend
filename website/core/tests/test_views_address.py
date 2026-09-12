@@ -246,7 +246,23 @@ class TestBaseAddressViewGetContextData:
 
         view.get_context_data()
 
-        mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS)
+        mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS, light=True)
+
+    def test_asks_the_engine_for_light_nft_records(self, mocker):
+        """**What makes the page cheaper.**
+
+        Every collection and every item is still present; what each NFT record
+        drops is the listings and purchase history only an opened collection
+        shows. Falling back to the full payload here would be correct and
+        invisible - the page would render identically and cost what it used to.
+        """
+        mocks = self._patch_collaborators(mocker)
+        view = _build_view(args=(ADDRESS,))
+        view.addresses = ADDRESS
+
+        view.get_context_data()
+
+        assert mocks["fetch"].call_args.kwargs["light"] is True
 
     def test_set_processing_tax_when_currently_processing(self, mocker):
         # check_export_status returns {"finished_tax": False} while a tax export
@@ -330,7 +346,7 @@ class TestBaseAddressViewGetContextData:
 
         context = view.get_context_data()
 
-        mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS)
+        mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS, light=True)
         assert context["account"] is sentinel
 
     def test_single_address_writes_address_key_not_bundle(self, mocker):

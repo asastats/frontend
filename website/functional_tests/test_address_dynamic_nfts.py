@@ -548,3 +548,185 @@ class DynamicNftTest(FunctionalTest):
             "  document.querySelectorAll('#nft-list > .fitem'),"
             "  function (card) { return card.id; });"
         )
+
+
+def _light_payload():
+    """The captured payload as `internal/accounts/<value>/batched` sends it.
+
+    The engine builds this shape; this reproduces it so the page can be driven
+    through a browser without one. Every collection and every item stays - the
+    thinning is per record, which is the whole point - and `floor_price`
+    replaces the floor listings.
+    """
+    payload = _sample_payload()
+    for collection in payload.get("nftcollections", []):
+        for row in collection.get("nfts", []):
+            nft = row.get("nft") or {}
+            listings = nft.pop("floor", None)
+            if listings:
+                nft["floor_price"] = listings[0].get("price")
+            nft.pop("listings", None)
+            nft.pop("last_purchase", None)
+            nft.pop("max_purchase", None)
+    return payload
+
+
+class DynamicNftLightPayloadTest(FunctionalTest):
+    """The page, driven from the payload it actually asks the engine for.
+
+    Every other test in this module mocks the fetch with the *full* payload, so
+    none of them would notice the page losing a figure that only the light one
+    omits. These drive the shape the address view requests.
+
+    Four things broke when the first attempt at this withheld whole
+    collections' items instead of thinning each record, and all four are visible
+    with the collections closed - which is why they are checked here rather than
+    left to an expand.
+    """
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
+    def sign_in(self):
+        cookie = self.create_session_cookie(
+            username="light@example.com", password="top_secret", permission=ASASTATSER
+        )
+        profile = get_user_model().objects.get(username="light@example.com").profile
+        profile.preferred_layout = "dynamic"
+        profile.save()
+        self.browser.get(self.server_url + "/404.html")
+        self.browser.add_cookie(cookie)
+
+    def open_page(self):
+        self.record_javascript_errors()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!(window.asastatsToolbar && window.asastatsToolbar.state());"
+            )
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_every_collection_and_item_still_reaches_the_page(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Not a fold. The filter, the thumbnails and the position sort all read
+        the items out of the DOM, so every one has to be there."""
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        payload = _light_payload()
+        mocked_fetch.return_value = payload
+        self.sign_in()
+        self.open_page()
+
+        expected_rows = len(payload["nftcollections"])
+        expected_items = sum(
+            len(collection["nfts"]) for collection in payload["nftcollections"]
+        )
+        assert (
+            self.browser.execute_script(
+                "return document.querySelectorAll('#nft-list > .fitem').length;"
+            )
+            == expected_rows
+        )
+        assert (
+            self.browser.execute_script(
+                "return document.querySelectorAll('#nft-list .nft-body').length;"
+            )
+            == expected_items
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_floor_bar_still_rests_on_a_real_figure(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """`collection_floor` reads the floor out of every item. Reading only
+        the listings, it would total zero on this payload and every collection
+        would draw as though nothing floors it."""
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        payload = _light_payload()
+        mocked_fetch.return_value = payload
+        self.sign_in()
+        self.open_page()
+
+        drawn = self.browser.execute_script(
+            "return Array.prototype.map.call("
+            "  document.querySelectorAll('#nft-list .mix-floor'),"
+            "  function (el) { return parseFloat(el.style.flex) || 0; });"
+        )
+        expected = [
+            sum(
+                float(row["nft"]["floor_price"])
+                for row in collection["nfts"]
+                if row.get("nft", {}).get("floor_price")
+            )
+            for collection in payload["nftcollections"]
+        ]
+        assert any(value > 0 for value in expected), (
+            "the fixture floors nothing, so this test could not fail"
+        )
+        # Compared against the figure the payload holds, not merely "more than
+        # zero": the template draws `{{ floor|default:0.001 }}`, so a collection
+        # whose floor totalled nothing still renders a positive flex. Asserting
+        # positivity passed even with the light field ignored entirely, which is
+        # exactly the regression this is here to catch.
+        assert [round(value, 4) for value in drawn] == [
+            round(value or 0.001, 4) for value in expected
+        ]
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_an_nft_can_still_be_found_by_name(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The filter matches text nodes inside `.fitem`, and an NFT's name is
+        one. Withholding items would have made them unsearchable."""
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        payload = _light_payload()
+        mocked_fetch.return_value = payload
+        wanted = payload["nftcollections"][0]["nfts"][0]["nft"]["name"]
+        self.sign_in()
+        self.open_page()
+
+        found = self.browser.execute_script(
+            "var wanted = arguments[0].toLowerCase();"
+            "return Array.prototype.some.call("
+            "  document.querySelectorAll('#nft-list .nft-body'),"
+            "  function (el) {"
+            "    return el.textContent.toLowerCase().indexOf(wanted) > -1;"
+            "  });",
+            wanted,
+        )
+        assert found, f"{wanted!r} is not anywhere in the rendered items"
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_collections_still_carry_their_position_count(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """`data-sort-positions` is `coll.nfts|length`, so a payload without
+        items would sort every collection as though it held none."""
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        payload = _light_payload()
+        mocked_fetch.return_value = payload
+        self.sign_in()
+        self.open_page()
+
+        counts = self.browser.execute_script(
+            "return Array.prototype.map.call("
+            "  document.querySelectorAll('#nft-list > .fitem'),"
+            "  function (el) { return parseInt(el.dataset.sortPositions, 10); });"
+        )
+        assert counts == [
+            len(collection["nfts"]) for collection in payload["nftcollections"]
+        ]
