@@ -498,3 +498,73 @@ class TestEvmXChainVerifier:
             payload={"signature": signature},
         )
         assert result == address.lower()
+
+
+class TestAlgorandVerifierRemainingBranches:
+    """Two refusals nothing exercised, both of which must fail closed.
+
+    A gate with no test is one that could be opened without anybody noticing,
+    and these are the outer edges of the login path: an envelope whose class
+    nothing understands, and a key the derivation cannot read.
+    """
+
+    def test_algorand_verifier_an_unsupported_envelope_class_is_refused(
+        self, caplog, mocker
+    ):
+        """**Neither Ed25519 nor post-quantum.**
+
+        `_signature_ok` and `_pq_signature_ok` each answer for the class they
+        know. Anything else reaching this point has had no signature check at
+        all, so the only safe answer is no - falling through to `return sender`
+        would authenticate an envelope nobody verified.
+
+        The decode is mocked because this cannot be reached by sending
+        anything: `msgpack_decode` returns one of the SDK's own classes or
+        raises. The branch exists for a future SDK class, which is exactly when
+        an untested one would quietly authenticate.
+        """
+
+        class SomeOtherEnvelope:
+            """A decoded object of a class this path has no check for."""
+
+            def __init__(self, txn):
+                self.transaction = txn
+                self.authorizing_address = None
+
+        _secret, address = account.generate_account()
+        envelope = SomeOtherEnvelope(make_self_payment(address, make_note()))
+        mocker.patch(
+            "walletauth.verifiers.msgpack_decode", return_value=envelope
+        )
+        verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
+
+        with caplog.at_level("WARNING"):
+            returned = verifier.verify(
+                address=address,
+                nonce=NONCE,
+                prefix=WALLET_CONNECT_NONCE_PREFIX,
+                payload={"signedTransaction": "irrelevant-the-decode-is-mocked"},
+            )
+
+        assert returned is None
+        assert "unsupported signed transaction class" in caplog.text
+        assert "SomeOtherEnvelope" in caplog.text
+
+    def test_algorand_verifier_an_underivable_pq_key_is_refused(self, caplog, mocker):
+        """The address is derived *from the envelope* and compared with the
+        sender, which is what stops one holder's signature authenticating
+        another's address. A derivation that raises therefore proves nothing,
+        and the gate has to close rather than skip the comparison.
+        """
+        pk = os.urandom(1793)
+        derived_addr, _ = encoding.address_from_pq_key(b"f1", pk)
+        stxn = make_pq_stxn(pk=pk)
+        mocker.patch(
+            "walletauth.verifiers.address_from_pq_sig",
+            side_effect=ValueError("malformed public key"),
+        )
+
+        with caplog.at_level("WARNING"):
+            assert verify(stxn, derived_addr) is None
+
+        assert "failed to derive address from pqsig" in caplog.text

@@ -77,7 +77,10 @@ class AddressPageTest(FunctionalTest):
         self.assertIn(ADDRESS, self.browser.page_source)
         self.assertTrue(self.find_elems_by_class("consolidated"))
         # Single address: the value is forwarded as-is (no separate address list).
-        mocked_fetch.assert_called_once_with(ADDRESS, ADDRESS)
+        # `light=True` is the address page asking for the thinner NFT records;
+        # this app's own JSON API calls the same function without it, because
+        # what that serves is the shared contract.
+        mocked_fetch.assert_called_once_with(ADDRESS, ADDRESS, light=True)
 
 
 class BundlePageTest(FunctionalTest):
@@ -108,7 +111,7 @@ class BundlePageTest(FunctionalTest):
         # Validates the core/views.py fix: the resolved address list — not just
         # the opaque hash — is forwarded to the backend client, so a multi-address
         # bundle resolves server-side.
-        mocked_fetch.assert_called_once_with(BUNDLE, addresses)
+        mocked_fetch.assert_called_once_with(BUNDLE, addresses, light=True)
 
 
 class AssetRowLayoutTest(FunctionalTest):

@@ -24,6 +24,7 @@ import json
 import os
 from unittest import mock
 
+from api.client import BackendError
 from api.position_id import annotate_positions
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -730,3 +731,119 @@ class DynamicNftLightPayloadTest(FunctionalTest):
         assert counts == [
             len(collection["nfts"]) for collection in payload["nftcollections"]
         ]
+
+
+class DynamicNftExpandFetchTest(FunctionalTest):
+    """Opening a collection fetches the detail the light payload leaves out.
+
+    The page renders every item from the light payload, so a closed card is
+    already complete. What an opened one gains - the listings and the purchase
+    history - arrives once, for that collection, and replaces the items in
+    place. Only a browser can show that it happens at all.
+    """
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
+    def sign_in(self):
+        cookie = self.create_session_cookie(
+            username="expand@example.com", password="top_secret", permission=ASASTATSER
+        )
+        profile = get_user_model().objects.get(username="expand@example.com").profile
+        profile.preferred_layout = "dynamic"
+        profile.save()
+        self.browser.get(self.server_url + "/404.html")
+        self.browser.add_cookie(cookie)
+
+    def open_page(self):
+        self.record_javascript_errors()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!(window.asastatsToolbar && window.asastatsToolbar.state());"
+            )
+        )
+
+    def expand_first(self):
+        self.browser.execute_script(
+            "document.querySelector('#nft-list > .fitem').open = true;"
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_collection_items")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_opening_a_collection_fills_in_its_purchase_history(
+        self, mocked_fetch, mocked_items, mocked_status, mocked_capabilities
+    ):
+        """**The whole point of the endpoint.** The page cannot show this
+        before the fetch, because the payload it rendered does not carry it."""
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        payload = _light_payload()
+        mocked_fetch.return_value = payload
+        collection = payload["nftcollections"][0]
+        enriched = json.loads(json.dumps(collection))
+        for row in enriched["nfts"]:
+            row["nft"]["last_purchase"] = {
+                "price": "4.0",
+                "epoch": 1725000000,
+                "market": {"name": "MarketplaceFromTheFetch"},
+                "link": "https://example.com/tx",
+            }
+        mocked_items.return_value = enriched
+
+        self.sign_in()
+        self.open_page()
+        assert "MarketplaceFromTheFetch" not in self.browser.page_source
+
+        self.expand_first()
+        self.wait_until(
+            lambda: "MarketplaceFromTheFetch" in self.browser.page_source
+        )
+        mocked_items.assert_called_once()
+        assert mocked_items.call_args[0][1] == collection["name"]
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_collection_items")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_only_the_opened_collection_is_fetched(
+        self, mocked_fetch, mocked_items, mocked_status, mocked_capabilities
+    ):
+        """A page holding hundreds of collections must not fetch them all - the
+        saving is spending nothing on the ones nobody opens."""
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        payload = _light_payload()
+        mocked_fetch.return_value = payload
+        mocked_items.return_value = payload["nftcollections"][0]
+
+        self.sign_in()
+        self.open_page()
+        self.expand_first()
+        self.wait_until(lambda: mocked_items.call_count == 1)
+
+        assert mocked_items.call_count == 1
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_collection_items")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_failed_fetch_says_so_rather_than_emptying_the_card(
+        self, mocked_fetch, mocked_items, mocked_status, mocked_capabilities
+    ):
+        """An empty body reads as a collection holding nothing, which is a
+        different and wrong statement about the reader's holdings."""
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_fetch.return_value = _light_payload()
+        mocked_items.side_effect = BackendError("502: upstream")
+
+        self.sign_in()
+        self.open_page()
+        self.expand_first()
+        self.wait_until(
+            lambda: "could not be loaded" in self.browser.page_source
+        )

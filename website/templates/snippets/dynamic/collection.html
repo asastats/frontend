@@ -133,9 +133,29 @@
         {% endfor %}
       </div>
 
+      {% comment %} **Filled in on first open.** The payload carries every item
+         already, but without the listings and purchase history that only an
+         opened collection shows - fetched once, for the collection the reader
+         actually expanded, replacing what is here. The thumbnail strip above is
+         deliberately outside: its thumbnails are in the payload already.
+
+         `toggle once` rather than a click handler: `<details>` fires `toggle`
+         when it opens, including when `address.js` reopens a remembered card by
+         setting `open`, so a restored card fills itself with no extra wiring.
+         Once per element, so closing and reopening costs nothing - and a failed
+         fetch is retried by doing exactly that. {% endcomment %}
+      {% comment %} No class: it styles nothing, and `.cbody-inner` lays nothing
+         out, so an unstyled wrapper is invisible. A class here would have to be
+         declared in `input.css` or listed as intentional in
+         `test_dynamic_design_classes`, and inventing one to satisfy that is how
+         a stylesheet fills up with rules that exist only for a test. {% endcomment %}
+      <div hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}"
+           hx-trigger="toggle once from:closest details"
+           hx-swap="innerHTML">
       {% for row in coll.nfts %}
         {% include "snippets/dynamic/nft.html" with row=row %}
       {% endfor %}
+      </div>
     </div>
   </div>
 </details>

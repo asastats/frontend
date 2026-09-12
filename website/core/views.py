@@ -32,7 +32,12 @@ from django.views.generic.edit import DeleteView, FormView
 from redis import BusyLoadingError
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from api.client import BackendError, download_export, fetch_price
+from api.client import (
+    BackendError,
+    download_export,
+    fetch_collection_items,
+    fetch_price,
+)
 from api.main import fetch_and_serialize_account
 from core.context_processors import load_typefaces
 from core.forms import (
@@ -1538,6 +1543,87 @@ def preferred_linked_address(user, linked):
             return one
 
     return ordered[0]
+
+
+#: Which item template each address-page layout renders an opened NFT with.
+#:
+#: Keyed on the layout rather than on its template, because the two dynamic
+#: layouts share `address_dynamic.html` and differ only by a compact flag - so
+#: keying on the page would have made the table look like it had a hole in it.
+NFT_ITEM_TEMPLATES = {
+    "classic": "snippets/nfts/item.html",
+    "dynamic": "snippets/dynamic/nft.html",
+    "dynamic-compact": "snippets/dynamic/nft.html",
+}
+
+
+class NftCollectionItemsView(TemplateView):
+    """One NFT collection's items, in full, for a reader who opened it.
+
+    **The other half of the light payload.** The address page's records drop an
+    NFT's listings and purchase history because a page showing 7,002 of them
+    opens almost none, and this restores them for the one collection a reader
+    actually expanded. The engine slices the collection out of the full payload,
+    so these are the same records the shared endpoint sends rather than a second
+    construction of them.
+
+    Rendered here rather than returned as JSON: the item markup is two templates
+    with real logic in them - a floor line with three outcomes, a purchase
+    history that hides when the best price is the last one - and rebuilding that
+    in the browser would be a second definition of an NFT that drifts from the
+    first.
+
+    **Not per-reader, so it may be cached like the page.** Everything it renders
+    comes from the account payload, which is the same for everyone; the two
+    things on an address page that are *not* - the swap entry and the dust sweep
+    - are a different partial for exactly that reason. See
+    `address-page-cache-is-shared`.
+
+    :var template_name: relative path to the partial template
+    :type template_name: str
+    """
+
+    template_name = "_nft_collection_items.html"
+
+    def get_context_data(self, *args, **kwargs):
+        """Fetch one collection and hand it to the layout's item template.
+
+        :var url_value: address or bundle value from the URL
+        :type url_value: str
+        :var name: the collection asked for, as the payload names it
+        :type name: str
+        :return: dict
+        """
+        context = super().get_context_data(*args, **kwargs)
+        url_value = self.args[0].upper()
+        check_forbidden_addresses(url_value)
+        addresses = (
+            url_value if len(url_value) > 50 else check_bundle_addresses(url_value)
+        )
+
+        # `None` and `""` are different questions: the NFTs belonging to no
+        # collection are a collection the page renders like any other, and the
+        # engine distinguishes them too.
+        name = self.request.GET.get("name")
+        if name is None:
+            raise Http404("no collection named")
+
+        # The item template is decided here rather than branched on in the
+        # partial: the two designs' items are different documents, not variants,
+        # and a flat loop is the only shape the nesting check can verify.
+        context["item_template"] = NFT_ITEM_TEMPLATES[
+            layout_for_user(getattr(self.request, "user", None))
+        ]
+        try:
+            context["coll"] = fetch_collection_items(url_value, name, addresses)
+        except BackendError as error:
+            # A reader who opened a collection and got nothing should see that
+            # rather than an empty box that looks like an empty collection.
+            logger.warning(
+                "collection items unavailable for %s/%s: %s", url_value, name, error
+            )
+            context["coll"] = None
+        return context
 
 
 class SwapEntryView(TemplateView):

@@ -114,8 +114,24 @@ class MoneyPageMixin:
         self.browser.add_cookie(cookie)
 
     def open_address(self):
-        """Load the address page for whoever is signed in."""
+        """Load the address page for whoever is signed in, and wait for it.
+
+        **`browser.get` does not reliably return a parsed document.** On a
+        contended machine it has been seen to come back with
+        ``document.readyState`` still ``"loading"`` and an empty body, which
+        every caller here assumes it cannot be. Most of them survive it by
+        accident: `find_elements` pays the implicit wait and so retries until
+        the page arrives. The ones that reach for `execute_script` do not
+        retry, and one of those was the intermittent CI failure of
+        2026-09-13 -- the presses in `_open_page` landed before the controls
+        existed, and were discarded in silence.
+        """
         self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.wait_until(
+            lambda: self.browser.execute_script("return document.readyState")
+            == "complete",
+            timeout=30,
+        )
 
     def computed(self, element, prop):
         return self.browser.execute_script(
@@ -304,6 +320,19 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
         exercised on the way to everything else here.
         """
         self.open_address()
+        # `open_address` has already waited for a parsed document; this waits
+        # for the listener these clicks need. `data-toolbar-bound` is the page's
+        # own statement that `toolbar.js` bound it, which is the same kind of
+        # answer the fold wait below reads -- and a press that lands before it
+        # is discarded in silence rather than failing, which is what made the
+        # 2026-09-13 CI failure so quiet.
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var bar = document.querySelector('.dynamic-page #toolbar');"
+                "return !!bar && bar.hasAttribute('data-toolbar-bound');"
+            ),
+            timeout=30,
+        )
         # Pressed until nothing is folded. Each press reveals one batch now --
         # `ADDRESS_INITIAL_ASSETS` rows -- rather than the whole tail, so one
         # click leaves most of a 76-asset address still hidden and every

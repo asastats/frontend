@@ -270,5 +270,10 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.BundleNameView"
         assert url.name == "bundle_name"
 
+    def test_core_urls_nft_collection_items(self):
+        url = self._url_from_pattern(r"^nft-collection/(\w{40}|\w{58})/$")
+        assert url.lookup_str == "core.views.NftCollectionItemsView"
+        assert url.name == "nft_collection_items"
+
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 40
+        assert len(urls.urlpatterns) == 41

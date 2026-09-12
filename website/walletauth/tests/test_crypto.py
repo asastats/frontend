@@ -214,3 +214,102 @@ class TestVerifyPQSignedTransaction:
         stxn.pqsig.signature = os.urandom(FALCON_DET1024_SIG_MAXSIZE)
 
         assert verify_pq_signed_transaction(stxn, FakeAlgod()) is True
+
+
+class TestVerifyPQSignedTransactionRemainingBranches:
+    """The four pre-flight paths nothing exercised.
+
+    Each is a gate that fails closed or a diagnostic that must not decide
+    anything, and an untested gate is one nobody would notice opening.
+    """
+
+    def test_walletauth_crypto_pq_a_string_scheme_is_encoded_not_rejected(self):
+        """**A decoder that hands back `str` must not fail a valid signature.**
+
+        The SDK returns `scheme` as bytes, but the field travels as msgpack and
+        a decoder configured with `raw=False` yields `str`. Comparing that to
+        `b"f1"` is False for a perfectly good envelope, so it is encoded first -
+        and without this test the encode could be deleted and only a wallet
+        using that decoder would notice.
+        """
+        stxn = make_pq_signed()
+        stxn.pqsig.scheme = "f1"
+        node = FakeAlgod()
+
+        assert verify_pq_signed_transaction(stxn, node) is True
+        assert node.calls == 1
+
+    def test_walletauth_crypto_pq_a_string_scheme_that_is_wrong_still_fails(self):
+        """The encode must not become a way past the check."""
+        stxn = make_pq_signed()
+        stxn.pqsig.scheme = "f5"
+        node = FakeAlgod()
+
+        assert verify_pq_signed_transaction(stxn, node) is False
+        assert node.calls == 0
+
+    def test_walletauth_crypto_pq_no_transaction_is_refused_before_the_node(self):
+        """An envelope with signature material and nothing signed. The node
+        would refuse it too, but only after a round trip - and `simulate` on a
+        `None` transaction is an exception rather than an answer."""
+        stxn = make_pq_signed()
+        stxn.transaction = None
+        node = FakeAlgod()
+
+        assert verify_pq_signed_transaction(stxn, node) is False
+        assert node.calls == 0
+
+    def test_walletauth_crypto_pq_a_re_encoding_mismatch_warns_and_continues(
+        self, caplog
+    ):
+        """**Diagnostic only.** The node verifies the bytes the SDK re-encodes,
+        not the bytes the wallet sent. If they differ the signature fails and
+        the gate closes correctly - but it would read as a rejected signature,
+        and the next person would start from the cryptography instead of the
+        encoding. It must warn and it must not decide."""
+        stxn = make_pq_signed()
+        node = FakeAlgod()
+
+        with caplog.at_level("WARNING"):
+            assert (
+                verify_pq_signed_transaction(
+                    stxn, node, signed_b64="not-what-this-re-encodes-to"
+                )
+                is True
+            )
+
+        assert "does not re-encode" in caplog.text
+        assert node.calls == 1
+
+    def test_walletauth_crypto_pq_a_matching_re_encoding_says_nothing(self, caplog):
+        """The usual case, and it must be silent - a warning on every login
+        would train the reader to ignore the one that matters."""
+        stxn = make_pq_signed()
+
+        with caplog.at_level("WARNING"):
+            assert (
+                verify_pq_signed_transaction(
+                    stxn, FakeAlgod(), signed_b64=encoding.msgpack_encode(stxn)
+                )
+                is True
+            )
+
+        assert "does not re-encode" not in caplog.text
+
+    def test_walletauth_crypto_pq_an_unencodable_transaction_still_verifies(self):
+        """The diagnostic is wrapped because it must not decide anything, and
+        `msgpack_encode` on a half-decoded object can raise. A verified
+        signature has to survive a diagnostic that could not run."""
+        stxn = make_pq_signed()
+        node = FakeAlgod()
+
+        class Unencodable:
+            """Raises from inside `msgpack_encode`, as a partial decode would."""
+
+            def __getattr__(self, name):
+                raise ValueError("cannot encode")
+
+        stxn.transaction.note = Unencodable()
+
+        assert verify_pq_signed_transaction(stxn, node, signed_b64="anything") is True
+        assert node.calls == 1

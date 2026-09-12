@@ -44,7 +44,20 @@
     </div>
   </summary>
   <div class="item-body border-t border-base-300 p-3">
-    <div class="space-y-3">
+    {% comment %} **Filled in on first open.** The page's payload carries every item
+     already, but without the listings and purchase history that only an opened
+     collection shows - those are fetched once, for the collection the reader
+     actually expanded, and replace what is here.
+
+     `toggle once` rather than a click handler: `<details>` fires `toggle` when
+     it opens, including when `address.js` reopens a remembered collection by
+     setting `open`, so a restored card fills itself with no extra wiring. Once
+     per element, so closing and reopening costs nothing - and a failed fetch
+     can be retried by doing exactly that.
+
+     The name is a query parameter because it is arbitrary text a creator chose,
+     and an empty one is a real collection: the NFTs belonging to none. {% endcomment %}
+     <div class="space-y-3" hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}" hx-trigger="toggle once from:closest details" hx-swap="innerHTML">
       {% for row in coll.nfts %}
         {% include "snippets/nfts/item.html" with row=row %}
       {% endfor %}
