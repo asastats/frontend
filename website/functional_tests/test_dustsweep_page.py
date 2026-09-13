@@ -6,7 +6,8 @@ entry on a bundle page - which is the one that has to choose between several of
 the reader's own accounts, and the one that got it wrong.
 
 **Almost nothing here signs anything.** The wallet bridge
-(``window.asastatsSwap``) ships with the wallet bundle and is absent in a bare
+(``window.asastatsWallet`` for connection state, ``window.asastatsSwap`` for
+signing) ships with the wallet bundle and is absent in a bare
 browser, which is exactly the state a reader is in before connecting - and the
 state most of these assertions describe. What the page must do without a wallet
 is render, name its endpoint, and refuse to offer a sweep of an address the
@@ -497,7 +498,11 @@ class DustSweepSignatureTest(FunctionalTest):
             "    return Promise.resolve('SWEPT');"
             "  }"
             "};"
-            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            "window.asastatsWallet = {"
+            "  activeAddress: function () { return address; }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));"
+            "window.dispatchEvent(new CustomEvent('asastats:wallet-ready'));",
             ADDRESS,
         )
 
@@ -682,13 +687,26 @@ class DustSweepAddressPageEntryTest(AddressPageEngineMixin, FunctionalTest):
         reads off it is one method, so that is what is stood up here. The
         ready event is dispatched too, because that is the path a reader who
         connects during page load takes.
+
+        **Both halves, because the bundle publishes both.** Connection state
+        moved to `window.asastatsWallet` so the sweep would stop depending on
+        the swap; `dustsweep.js` reads that first and falls back to
+        `asastatsSwap` only for a bundle older than the change. Standing up
+        only the old global left the *real* `asastatsWallet` in place -
+        answering null, because no wallet is really connected - and it masked
+        this stub entirely. Eight tests failed and none of them was a bug in
+        the page.
         """
         self.browser.execute_script(
             "var address = arguments[0];"
             "window.asastatsSwap = {"
             "  activeAddress: function () { return address; }"
             "};"
-            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            "window.asastatsWallet = {"
+            "  activeAddress: function () { return address; }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));"
+            "window.dispatchEvent(new CustomEvent('asastats:wallet-ready'));",
             address,
         )
 
@@ -887,7 +905,11 @@ class DustSweepBundlePageEntryTest(AddressPageEngineMixin, FunctionalTest):
             "window.asastatsSwap = {"
             "  activeAddress: function () { return address; }"
             "};"
-            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            "window.asastatsWallet = {"
+            "  activeAddress: function () { return address; }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));"
+            "window.dispatchEvent(new CustomEvent('asastats:wallet-ready'));",
             address,
         )
 

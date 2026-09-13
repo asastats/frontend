@@ -31,6 +31,14 @@ SCREEN_DUMP_LOCATION = os.path.join(
 
 # Seconds to sleep in sleep method
 DEFAULT_SLEEP = 0.25
+#: Seconds a page is given to finish loading before `get` gives up.
+#:
+#: Must stay below selenium's own 120 s HTTP timeout to chromedriver; see the
+#: note in `Setup.setUp`. Generous enough that a slow page on a contended
+#: machine still passes - the whole address-page suite loads in well under this
+#: - and short enough that a stalled resource fails in under a minute instead
+#: of taking the session down two minutes later.
+PAGE_LOAD_TIMEOUT = 45
 
 # # Change browser driver here
 BROWSER_DRIVER = "Chrome"
@@ -102,6 +110,30 @@ class Setup(StaticLiveServerTestCase):
         self.setup_headless()
 
         self.run_driver()
+
+        # **Below selenium's own HTTP timeout, and that is the whole point.**
+        #
+        # chromedriver defaults to waiting 300 s for a page to fire `load`,
+        # while selenium waits 120 s for chromedriver to answer the command. So
+        # any page that stalls between those two numbers - one image from a
+        # host that accepts the connection and never replies is enough - blows
+        # the *selenium* clock first, and surfaces as
+        #
+        #     urllib3.exceptions.ReadTimeoutError: HTTPConnectionPool(
+        #         host='localhost', port=41749): Read timed out.
+        #
+        # which names chromedriver's port and reads as though the driver died.
+        # It did not: it was waiting, as instructed, for 300 s. Reproduced
+        # exactly by pointing a navigation at a socket that accepts and never
+        # answers.
+        #
+        # Worse than the confusion, the timeout leaves the session mid-command,
+        # so every later call in that test fails too and one stalled resource
+        # takes the whole test with it.
+        #
+        # With a limit under 120 s the same stall raises `TimeoutException`
+        # naming the page, in seconds.
+        self.browser.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
 
         if self.headless_driver == "xvfbwrapper":
             self.addCleanup(self.browser.quit)
