@@ -246,7 +246,40 @@ class TestBaseAddressViewGetContextData:
 
         view.get_context_data()
 
-        mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS, light=True)
+        mocks["fetch"].assert_called_once_with(
+            ADDRESS, ADDRESS, light=True, permission=0
+        )
+
+    def test_states_the_signed_in_readers_class_to_the_engine(self, mocker):
+        """**The class signal, and this is the layer that knows it.**
+
+        The engine sizes admission by class rather than by a per-minute limit
+        that punishes a lone reader on an idle box, and it can only do that if
+        the page states who is asking. Nothing else here would notice a class
+        that was always zero: the page renders identically either way, which is
+        exactly why this needs pinning.
+        """
+        mocks = self._patch_collaborators(mocker)
+        view = _build_view(args=(ADDRESS,))
+        view.addresses = ADDRESS
+        view.request.user = mocker.MagicMock(
+            profile=mocker.MagicMock(permission=258_885_438_200)
+        )
+
+        view.get_context_data()
+
+        assert mocks["fetch"].call_args.kwargs["permission"] == 258_885_438_200
+
+    def test_states_no_class_for_an_anonymous_reader(self, mocker):
+        """A visitor has no profile, and `AnonymousUser` has no attribute to
+        read - so this must not raise on the commonest request the site takes."""
+        mocks = self._patch_collaborators(mocker)
+        view = _build_view(args=(ADDRESS,))
+        view.addresses = ADDRESS
+
+        view.get_context_data()
+
+        assert mocks["fetch"].call_args.kwargs["permission"] == 0
 
     def test_asks_the_engine_for_light_nft_records(self, mocker):
         """**What makes the page cheaper.**
@@ -346,7 +379,9 @@ class TestBaseAddressViewGetContextData:
 
         context = view.get_context_data()
 
-        mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS, light=True)
+        mocks["fetch"].assert_called_once_with(
+            ADDRESS, ADDRESS, light=True, permission=0
+        )
         assert context["account"] is sentinel
 
     def test_single_address_writes_address_key_not_bundle(self, mocker):
@@ -440,7 +475,7 @@ class TestBaseAddressViewGetContextData:
             "information",
         }
         assert legacy_keys.isdisjoint(context.keys()), (
-            "Legacy context keys leaked back in: " f"{legacy_keys & context.keys()}"
+            f"Legacy context keys leaked back in: {legacy_keys & context.keys()}"
         )
 
     def test_full_context_shape(self, mocker):

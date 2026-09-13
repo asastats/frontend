@@ -188,6 +188,48 @@ class TestApiClientFunctions:
             params={"addresses": addresses},
         )
 
+    def test_api_client_fetch_serialized_account_states_the_readers_class(
+        self, mocker
+    ):
+        """**The class signal, and it is stated here rather than accepted.**
+
+        This layer holds the deployment credential and is the only party that
+        knows who the reader is, which is the trust `linked_addresses` already
+        travels on. The engine sizes admission by class instead of by a
+        per-minute limit that punishes a lone reader on an idle box.
+        """
+        value = API_EXAMPLE_ADDRESS1
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_serialized_account(value, permission=258_885_438_200)
+
+        assert mocked_request.call_args.kwargs["params"] == {
+            "permission": 258_885_438_200
+        }
+
+    def test_api_client_fetch_serialized_account_sends_class_beside_addresses(
+        self, mocker
+    ):
+        value = API_EXAMPLE_BUNDLE1
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_serialized_account(value, "FOO BAR", permission=100)
+
+        assert mocked_request.call_args.kwargs["params"] == {
+            "addresses": "FOO BAR",
+            "permission": 100,
+        }
+
+    def test_api_client_fetch_serialized_account_omits_an_absent_class(self, mocker):
+        """An anonymous reader has none, and `params=None` is the shape every
+        other caller of this already produces - sending `permission=0` would
+        make the engine parse a value that says nothing."""
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_serialized_account(API_EXAMPLE_ADDRESS1, permission=0)
+
+        assert mocked_request.call_args.kwargs["params"] is None
+
     def test_api_client_fetch_serialized_account_light_uses_the_batched_path(
         self, mocker
     ):

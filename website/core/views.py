@@ -493,8 +493,17 @@ class BaseAddressView(TemplateView):
         # an opened collection shows, which `nfts.js` fetches per collection on
         # expand. Measured on a 7,002-NFT account, that is NFT serialization
         # from 0.499 s to about 0.126 s.
+        # The reader's class, stated by this layer because it is the only one
+        # that knows it. `_entitlement_key` has already resolved the profile to
+        # pick a cache entry, so this costs nothing further; the engine sizes
+        # admission by it rather than by a per-minute limit that punishes a lone
+        # reader on an idle box. See `core.views.reader_permission` there.
+        profile = getattr(getattr(self.request, "user", None), "profile", None)
         context["account"] = fetch_and_serialize_account(
-            url_value, self.addresses, light=True
+            url_value,
+            self.addresses,
+            light=True,
+            permission=getattr(profile, "permission", 0) or 0,
         )
 
         # Address list for template URL helpers. We keep the legacy key

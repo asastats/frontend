@@ -33,7 +33,7 @@ class TestApMainFunctions:
         returned = fetch_and_serialize_account(value, addresses)
         assert returned == mocked_fetch.return_value
         mocked_fetch.assert_called_once_with(
-            mocked_bundle.return_value, addresses, light=False
+            mocked_bundle.return_value, addresses, light=False, permission=0
         )
 
     def test_api_main_fetch_and_serialize_account_for_single_address(self, mocker):
@@ -42,12 +42,10 @@ class TestApMainFunctions:
         mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
         returned = fetch_and_serialize_account(value, value)
         assert returned == mocked_fetch.return_value
-        mocked_fetch.assert_called_once_with(value, value, light=False)
+        mocked_fetch.assert_called_once_with(value, value, light=False, permission=0)
         mocked_bundle.assert_not_called()
 
-    def test_api_main_fetch_and_serialize_account_asks_for_light_records(
-        self, mocker
-    ):
+    def test_api_main_fetch_and_serialize_account_asks_for_light_records(self, mocker):
         """The address page asks for the thinner NFT records; nothing else does.
 
         `light` has to reach the client rather than being decided there, because
@@ -89,7 +87,10 @@ class TestApMainFunctions:
                     "asset": {"id": 31566704},
                     "programs": [
                         {"program": {"type": "Balance"}, "value": "1.0"},
-                        {"program": {"type": "Staked", "name": "CompX"}, "value": "2.0"},
+                        {
+                            "program": {"type": "Staked", "name": "CompX"},
+                            "value": "2.0",
+                        },
                     ],
                 }
             ]
@@ -514,3 +515,29 @@ class TestApMainFunctions:
             ],
             pricealgo,
         )
+
+
+class TestApiMainClassSignal:
+    """The reader's class reaching the engine through this layer.
+
+    `fetch_and_serialize_account` is the only path the address page takes to
+    the engine, so a class that stops here reaches nothing.
+    """
+
+    def test_api_main_fetch_and_serialize_account_passes_the_class_on(self, mocker):
+        mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
+        value = API_EXAMPLE_ADDRESS1
+
+        fetch_and_serialize_account(value, value, permission=258_885_438_200)
+
+        assert mocked_fetch.call_args.kwargs["permission"] == 258_885_438_200
+
+    def test_api_main_fetch_and_serialize_account_defaults_to_anonymous(self, mocker):
+        """Every caller that has no reader - this app's own JSON API among
+        them - states no class rather than a wrong one."""
+        mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
+        value = API_EXAMPLE_ADDRESS1
+
+        fetch_and_serialize_account(value, value)
+
+        assert mocked_fetch.call_args.kwargs["permission"] == 0

@@ -38,7 +38,7 @@ def account_entities(serialized_data):
     return extract_account_entities(serialized_data)
 
 
-def fetch_and_serialize_account(value, addresses, light=False):
+def fetch_and_serialize_account(value, addresses, light=False, permission=0):
     """Fetch and serialize an account for a single address or a bundle.
 
     ``value`` is the URL path segment as the visitor supplied it — a single
@@ -78,7 +78,9 @@ def fetch_and_serialize_account(value, addresses, light=False):
     if " " in addresses:
         value = bundle_from_addresses(addresses)
 
-    serialized = fetch_serialized_account(value, addresses, light=light)
+    serialized = fetch_serialized_account(
+        value, addresses, light=light, permission=permission
+    )
     for item in serialized.get("asaitems") or ():
         annotate_positions((item.get("asset") or {}).get("id"), item.get("programs"))
     return serialized

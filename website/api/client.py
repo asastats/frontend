@@ -117,7 +117,7 @@ def fetch_price():
     return _request("GET", "/api/v2/price/").json().get("price")
 
 
-def fetch_serialized_account(value, addresses="", light=False):
+def fetch_serialized_account(value, addresses="", light=False, permission=0):
     """Return serialized_data for a single address or a bundle.
 
     **Two endpoints, one shape apart.** `light=True` asks
@@ -135,8 +135,17 @@ def fetch_serialized_account(value, addresses="", light=False):
     :param addresses: space-joined addresses for multi-address bundles
     :param light: ask for the thinner NFT records
     :type light: bool
+    :param permission: the reader's class, for the engine to size admission by
+    :type permission: int
     """
-    params = {"addresses": addresses} if addresses else None
+    # **Set here, never taken from the browser.** This layer holds the
+    # deployment credential and is the only party that knows who the reader is,
+    # which is exactly the trust `linked_addresses` already travels on. A value
+    # the page could edit would decide nothing, so it is not offered one.
+    params = {"addresses": addresses} if addresses else {}
+    if permission:
+        params["permission"] = permission
+    params = params or None
     path = f"/api/v2/internal/accounts/{value}/"
     if light:
         path = f"/api/v2/internal/accounts/{value}/batched"
