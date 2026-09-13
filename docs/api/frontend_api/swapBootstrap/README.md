@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [SwapBridgeApi](interfaces/SwapBridgeApi.md)
+- [WalletConnectionApi](interfaces/WalletConnectionApi.md)
 
 ## Type Aliases
 

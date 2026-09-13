@@ -87,7 +87,12 @@ async function boot({
   signer = "SIGNER_FN" as unknown,
 }: {
   wallets?: unknown[];
-  client?: ReturnType<typeof algod>;
+  /**
+   * The algod client, or a function installed as a *getter* for it --
+   * use-wallet publishes `algodClient` as one, so it is a place the swap half
+   * can throw while the wallet half has already succeeded.
+   */
+  client?: ReturnType<typeof algod> | (() => unknown);
   ok?: boolean;
   markup?: string;
   /**
@@ -113,6 +118,12 @@ async function boot({
   } else {
     (manager as Record<string, unknown>).transactionSigner = signer;
   }
+  if (typeof client === "function") {
+    Object.defineProperty(manager, "algodClient", {
+      get: client as () => unknown,
+      configurable: true,
+    });
+  }
   walletManagerCtor.mockReturnValue(manager);
   (global.fetch as jest.Mock).mockResolvedValue({
     ok,
@@ -124,19 +135,26 @@ async function boot({
     ({ initSwapBridge: init } = await import("./swapBootstrap"));
   });
   await init(document);
-  return { manager, bridge: (window as any).asastatsSwap };
+  return {
+    manager,
+    bridge: (window as any).asastatsSwap,
+    wallet: (window as any).asastatsWallet,
+    init,
+  };
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
   delete (window as any).asastatsSwap;
+  delete (window as any).asastatsWallet;
   (global.fetch as jest.Mock).mockReset();
 });
 
 describe("mounting", () => {
-  it("no-ops without a swap entry point", async () => {
-    const { bridge } = await boot({ markup: "<div></div>" });
+  it("no-ops without any entry point", async () => {
+    const { bridge, wallet } = await boot({ markup: "<div></div>" });
     expect(bridge).toBeUndefined();
+    expect(wallet).toBeUndefined();
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
@@ -172,14 +190,170 @@ describe("mounting", () => {
     window.removeEventListener("asastats:swap-ready", heard);
   });
 
+  it("publishes the wallet alongside the swap", async () => {
+    const { wallet } = await boot();
+    expect(wallet.activeAddress()).toBe(ADDRESS);
+  });
+
+  describe("a page carrying only the dust sweep", () => {
+    /**
+     * `_swap_entry.html` gates the sweep (`{% if dustsweep_address %}`) and the
+     * swap (`{% if swap_url %}`) separately, so a reader can qualify for the
+     * sweep on a page with no swap on it -- no router resolved, for instance.
+     *
+     * Mounting only for the swap's entries meant no wallet state was published
+     * at all for that reader, and `dustsweep.js` hid its button forever with
+     * nothing in the console to say why. The sweep needs a connected wallet;
+     * it needs nothing else this module builds.
+     */
+    const SWEEP = '<div id="id-dustsweep"></div>';
+
+    it("publishes wallet state", async () => {
+      const { wallet } = await boot({ markup: SWEEP });
+      expect(wallet.activeAddress()).toBe(ADDRESS);
+    });
+
+    it("announces the wallet", async () => {
+      document.body.innerHTML = SWEEP;
+      const heard = jest.fn();
+      window.addEventListener("asastats:wallet-ready", heard);
+      await boot({ markup: SWEEP });
+      window.removeEventListener("asastats:wallet-ready", heard);
+      expect(heard).toHaveBeenCalled();
+    });
+
+    it("builds the signing bridge too, because the sweep signs", async () => {
+      /**
+       * The sweep is a first-class caller of this bridge: `signAndSend`,
+       * `signAndSendPartial` and `assetCreator` are all its. Publishing wallet
+       * state without it would reveal the button and then tell a reader who
+       * *has* connected to "Connect your wallet to sign this group", which is
+       * `dustsweep.js`'s message when `window.asastatsSwap` is missing.
+       */
+      const { bridge } = await boot({ markup: SWEEP });
+      expect(bridge).toBeDefined();
+      expect(typeof bridge.signAndSend).toBe("function");
+      expect(typeof bridge.assetCreator).toBe("function");
+    });
+  });
+
+  describe("retrying after the swap half failed", () => {
+    /**
+     * The recovery the reported bug never got. A reader with no wallet
+     * connected published wallet state and no bridge; the next htmx settle
+     * calls this again, and it must finish the job rather than start over or
+     * give up.
+     *
+     * This is also the only caller that reaches the memoised branch of
+     * `swapManager` now: a page whose needs are already met returns before
+     * asking for a manager at all.
+     */
+    function lateSigner() {
+      const state = { active: false };
+      return {
+        state,
+        get: () => {
+          if (!state.active) throw new Error("No active wallet found!");
+          return "SIGNER_FN";
+        },
+      };
+    }
+
+    it("reuses the manager and publishes the bridge once it can", async () => {
+      const logged = jest.spyOn(console, "error").mockImplementation(() => {});
+      const late = lateSigner();
+      const { init, manager, wallet } = await boot({
+        wallets: [],
+        client: () => {
+          throw new Error("no algod yet");
+        },
+      });
+
+      expect(wallet).toBeDefined();
+      expect((window as any).asastatsSwap).toBeUndefined();
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+
+      // the wallet connects, and the page settles again
+      (manager as any).wallets = [connected()];
+      Object.defineProperty(manager, "algodClient", {
+        value: algod(),
+        configurable: true,
+      });
+      Object.defineProperty(manager, "transactionSigner", {
+        get: late.get,
+        configurable: true,
+      });
+      late.state.active = true;
+      await init(document);
+      logged.mockRestore();
+
+      expect((window as any).asastatsSwap).toBeDefined();
+      expect((window as any).asastatsWallet.activeAddress()).toBe(ADDRESS);
+      // memoised: the wallets list is fetched once, the sessions resumed again
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(manager.resumeSessions).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("when the swap half fails", () => {
+    it("logs against the swap and leaves the wallet up", async () => {
+      /**
+       * `buildDeps` reads `manager.algodClient`, which use-wallet publishes as
+       * a getter. Anything that throws between the wallet being published and
+       * the bridge being finished belongs to the swap, and must be reported as
+       * the swap's -- without taking connection state down with it.
+       */
+      const logged = jest.spyOn(console, "error").mockImplementation(() => {});
+      const { bridge, wallet } = await boot({
+        client: () => {
+          throw new Error("algod unavailable");
+        },
+      });
+
+      expect(bridge).toBeUndefined();
+      expect(wallet.activeAddress()).toBe(ADDRESS);
+      expect(logged).toHaveBeenCalledWith(
+        "Error initializing swap bridge:",
+        expect.any(Error)
+      );
+      logged.mockRestore();
+    });
+
+    /**
+     * The reason this split exists. A swap that cannot start must not take
+     * wallet state with it -- that is what removed the Dust Sweep button for
+     * readers with no wallet connected, and it would happen again for any
+     * future breakage inside the swap's own construction.
+     */
+    it("leaves the wallet published", async () => {
+      const logged = jest.spyOn(console, "error").mockImplementation(() => {});
+      const { wallet, bridge } = await boot({
+        wallets: [],
+        signer: () => {
+          throw new Error("No active wallet found!");
+        },
+      });
+      logged.mockRestore();
+
+      // The getter keeps the bridge up too; this asserts the independence
+      // rather than that one fix, so it holds whatever breaks next.
+      expect(wallet).toBeDefined();
+      expect(wallet.activeAddress()).toBeNull();
+      expect(bridge).toBeDefined();
+    });
+  });
+
   it("logs and publishes nothing when the wallets list fails", async () => {
-    // A swap page that cannot reach the API must not leave a half-built
-    // bridge behind for a widget to call into.
+    // A page that cannot reach the API must not leave a half-built bridge
+    // behind for a widget to call into. Reported against the wallet rather
+    // than the swap: without a manager neither half can be published, and a
+    // page carrying only the sweep has no swap to blame.
     const logged = jest.spyOn(console, "error").mockImplementation(() => {});
-    const { bridge } = await boot({ ok: false });
+    const { bridge, wallet } = await boot({ ok: false });
     expect(bridge).toBeUndefined();
+    expect(wallet).toBeUndefined();
     expect(logged).toHaveBeenCalledWith(
-      "Error initializing swap bridge:",
+      "Error connecting the wallet:",
       expect.any(Error)
     );
     logged.mockRestore();
@@ -205,8 +379,13 @@ describe("mounting", () => {
       await initSwapBridge(document);
     });
 
+    // The second call finds this page's needs already met and returns before
+    // touching the wallet at all. `main.ts` now calls this on *every* htmx
+    // settle -- it can no longer ask "is the swap up?" itself, because a page
+    // carrying only the sweep never publishes a swap -- so the cost of
+    // re-entry is paid here.
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(manager.resumeSessions).toHaveBeenCalledTimes(2);
+    expect(manager.resumeSessions).toHaveBeenCalledTimes(1);
   });
 
   it("defaults to the global document", async () => {

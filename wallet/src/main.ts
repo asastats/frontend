@@ -124,8 +124,8 @@ new App();
 
 /* istanbul ignore next -- bootstrap glue; orchestration is tested in swapBridge.test */
 {
-  // Mount the swap bridge when a swap entry point is present. No-ops on pages
-  // without `#id-swap-swap` (shell) or `#id-swap-enabled` (modal marker).
+  // Mount wallet connection state when anything on the page needs it, and the
+  // swap bridge when a swap entry is present. No-ops on pages with neither.
   const bootstrapSwap = () => {
     void initSwapBridge();
   };
@@ -136,12 +136,15 @@ new App();
   }
   // The #id-swap-enabled marker is a non-cached htmx partial (hx-trigger="load"
   // in address.html), so it arrives after DOMContentLoaded. Re-attempt whenever
-  // htmx settles new content, until the bridge is up. initSwapBridge no-ops if
-  // the marker still isn't present, and the guard below stops work once it is.
+  // htmx settles new content, until this page's needs are met.
+  //
+  // The guard that used to live here -- `if (!window.asastatsSwap)` -- cannot
+  // ask the question any more: a page carrying only the dust sweep publishes
+  // wallet state and no swap bridge, so that condition would be true forever
+  // and re-resume the wallet on every settle. `initSwapBridge` owns the
+  // decision now, because it is the half that knows what this page asked for.
   document.body.addEventListener("htmx:afterSettle", () => {
-    if (!window.asastatsSwap) {
-      void initSwapBridge();
-    }
+    void initSwapBridge();
   });
 }
 

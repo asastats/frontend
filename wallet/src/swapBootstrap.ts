@@ -20,6 +20,23 @@ import {
 const DEFAULT_API_BASE = "/api/v2/wallet";
 /** Rounds to wait for a swap group to confirm before timing out. */
 const CONFIRM_ROUNDS = 6;
+/**
+ * Every entry point that needs a wallet: the swap's shell accordion, its
+ * per-ASA modal marker, and the dust sweep's toolbar.
+ *
+ * **The sweep belongs on this list even though it is not a swap.** It signs
+ * through the same bridge -- `signAndSend`, `signAndSendPartial` and
+ * `assetCreator` are all its callers too -- so what this module publishes is
+ * the wallet's signing bridge, whatever its name says.
+ *
+ * `_swap_entry.html` renders the sweep under its own condition
+ * (`{% if dustsweep_address %}`), independent of the swap's
+ * (`{% if swap_url %}`). Mounting only for the swap's entries left a reader who
+ * qualified for the sweep but whose page had no router with nothing published
+ * at all, so the sweep button stayed hidden with nothing in the console to say
+ * why.
+ */
+const WALLET_ENTRIES = ["#id-swap-swap", "#id-swap-enabled", "#id-dustsweep"];
 
 /**
  * Signer type Haystack's composer calls: Transaction objects + indexes to sign.
@@ -67,9 +84,25 @@ export interface SwapBridgeApi {
   signer: TransactionSigner;
 }
 
+/**
+ * Which Algorand account this browser has connected -- and nothing else.
+ *
+ * **Published separately from {@link SwapBridgeApi} on purpose.** Connection
+ * state is a fact about the browser that several features need and none of them
+ * owns. It used to be readable only off `window.asastatsSwap`, so the dust
+ * sweep -- which needs a connected wallet and no part of the swap -- could only
+ * learn it by asking the swap. Any swap-side failure then removed a feature
+ * that does not depend on the swap, and one did: see the note on `signer`.
+ */
+export interface WalletConnectionApi {
+  /** Currently active/connected Algorand address, or null. */
+  activeAddress: () => string | null;
+}
+
 declare global {
   interface Window {
     asastatsSwap?: SwapBridgeApi;
+    asastatsWallet?: WalletConnectionApi;
   }
 }
 
@@ -103,6 +136,18 @@ function connectedWallet(manager: WalletManager) {
 }
 
 /**
+ * Return the active account's address, or null.
+ *
+ * Named rather than inlined because it is asked in two places for two reasons:
+ * the swap's deps need it to build transactions, and {@link WalletConnectionApi}
+ * publishes it as a fact in its own right. One expression so the two answers
+ * cannot drift.
+ */
+function activeAddressOf(manager: WalletManager): string | null {
+  return connectedWallet(manager)?.activeAccount?.address ?? null;
+}
+
+/**
  * Assemble the injected collaborators the pure {@link signAndSend} needs from a
  * resumed WalletManager: active address, wallet signing, algod submit, algod
  * account queries, and confirmation polling.
@@ -110,7 +155,7 @@ function connectedWallet(manager: WalletManager) {
 function buildDeps(manager: WalletManager): OptInDeps {
   const algod = manager.algodClient;
   return {
-    activeAddress: () => connectedWallet(manager)?.activeAccount?.address ?? null,
+    activeAddress: () => activeAddressOf(manager),
     signTransactions: (txns, indexesToSign) => {
       const wallet = connectedWallet(manager);
       if (!wallet) {
@@ -170,24 +215,57 @@ function buildDeps(manager: WalletManager): OptInDeps {
 }
 
 /**
- * Wire the swap bridge when a swap widget is present on the page.
+ * Publish wallet connection state, and the swap bridge when a swap is present.
  *
- * No-ops unless a swap entry point is present: the shell accordion container
- * (`#id-swap-swap`) OR the per-ASA modal marker (`#id-swap-enabled`).
- * On a swap page it resumes the wallet manager, publishes `window.asastatsSwap`,
- * then dispatches `asastats:swap-ready` so a widget controller that ran before
- * the wallet bundle can re-run its render gate.
+ * **Two halves, deliberately, and the smaller one comes first.**
+ *
+ * `window.asastatsWallet` is which account this browser has connected. It is
+ * published **first, and outside the `try`** below, so that a signing bridge
+ * which cannot be built cannot take it away. `asastats:wallet-ready` announces
+ * it.
+ *
+ * `window.asastatsSwap` is the signing bridge, published for every entry in
+ * `WALLET_ENTRIES` -- the sweep signs through it too.
+ *
+ * **Why the first half exists at all.** Deciding whether to *offer* a feature
+ * is not the same question as being able to *sign*, and only the sweep asks the
+ * first one: it reveals its button for a connected account. Reading that off
+ * the signing bridge meant the button vanished whenever the bridge did -- once
+ * because building it threw (see the note on `signer`), once because the page
+ * had no entry to mount it at all. Connection state is a fact about the browser
+ * that no feature owns, so it is published as one.
+ *
+ * Safe to call repeatedly: htmx delivers `#id-swap-enabled` after
+ * DOMContentLoaded, so `main.ts` retries on every settle, and this returns at
+ * once once both are up.
  */
 export async function initSwapBridge(doc: Document = document): Promise<void> {
-  const container =
-    doc.querySelector<HTMLElement>("#id-swap-swap") ||
-    doc.querySelector<HTMLElement>("#id-swap-enabled");
+  const container = WALLET_ENTRIES.reduce<HTMLElement | null>(
+    (found, selector) => found || doc.querySelector<HTMLElement>(selector),
+    null,
+  );
   if (!container) {
     return;
   }
+  // Already up. The retry on every htmx settle lands here.
+  if (window.asastatsWallet && window.asastatsSwap) {
+    return;
+  }
   const apiBase = container.dataset.apiBase || DEFAULT_API_BASE;
+
+  let manager: WalletManager;
   try {
-    const manager = await swapManager(apiBase);
+    manager = await swapManager(apiBase);
+  } catch (error) {
+    // Nothing can be published without it, including the sweep's half.
+    console.error("Error connecting the wallet:", error);
+    return;
+  }
+
+  window.asastatsWallet = { activeAddress: () => activeAddressOf(manager) };
+  window.dispatchEvent(new CustomEvent("asastats:wallet-ready"));
+
+  try {
     const deps = buildDeps(manager);
     /**
      * Adapter for Haystack's composer: it calls signer(Transaction[], indexes)

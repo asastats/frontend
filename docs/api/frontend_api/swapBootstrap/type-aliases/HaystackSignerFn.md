@@ -8,7 +8,7 @@
 
 > **HaystackSignerFn** = (`txnGroup`, `indexesToSign`) => `Promise`\<(`Uint8Array` \| `null`)[]\>
 
-Defined in: [swapBootstrap.ts:28](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L28)
+Defined in: [swapBootstrap.ts:45](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L45)
 
 Signer type Haystack's composer calls: Transaction objects + indexes to sign.
 Distinct from use-wallet's TransactionSigner which takes encoded Uint8Array[].

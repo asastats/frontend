@@ -6,7 +6,7 @@
 
 # Interface: SwapBridgeApi
 
-Defined in: [swapBootstrap.ts:34](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L34)
+Defined in: [swapBootstrap.ts:51](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L51)
 
 The narrow surface the swap widget (widgets repo) calls via the global.
 
@@ -16,7 +16,7 @@ The narrow surface the swap widget (widgets repo) calls via the global.
 
 > **activeAddress**: () => `string` \| `null`
 
-Defined in: [swapBootstrap.ts:36](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L36)
+Defined in: [swapBootstrap.ts:53](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L53)
 
 Currently active/connected Algorand address, or null.
 
@@ -30,7 +30,7 @@ Currently active/connected Algorand address, or null.
 
 > **assetCreator**: (`assetId`) => `Promise`\<`string` \| `null`\>
 
-Defined in: [swapBootstrap.ts:54](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L54)
+Defined in: [swapBootstrap.ts:71](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L71)
 
 Creator address of `assetId` read from the chain, or null when it cannot
 be read.
@@ -58,7 +58,7 @@ for `isOptedIn`.
 
 > **haystackSigner**: [`HaystackSignerFn`](../type-aliases/HaystackSignerFn.md)
 
-Defined in: [swapBootstrap.ts:60](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L60)
+Defined in: [swapBootstrap.ts:77](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L77)
 
 Signer for composer-based routers (Haystack) that pass live Transaction
 objects. Pre-encodes each Transaction to bytes before forwarding to
@@ -70,7 +70,7 @@ use-wallet's signer, bridging the cross-bundle object/bytes boundary.
 
 > **optIn**: (`assetId`) => `Promise`\<`string`\>
 
-Defined in: [swapBootstrap.ts:42](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L42)
+Defined in: [swapBootstrap.ts:59](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L59)
 
 Opt the active account into `assetId` (pre-flight 0-amount self-transfer).
 
@@ -90,7 +90,7 @@ Opt the active account into `assetId` (pre-flight 0-amount self-transfer).
 
 > **signAndSend**: (`group`, `opts`) => `Promise`\<`string`\>
 
-Defined in: [swapBootstrap.ts:38](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L38)
+Defined in: [swapBootstrap.ts:55](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L55)
 
 Sign + submit + confirm a prepared, grouped, unsigned txn group.
 
@@ -114,7 +114,7 @@ Sign + submit + confirm a prepared, grouped, unsigned txn group.
 
 > **signAndSendPartial**: (`group`) => `Promise`\<`string`\>
 
-Defined in: [swapBootstrap.ts:40](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L40)
+Defined in: [swapBootstrap.ts:57](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L57)
 
 Sign and submit an engine group with a backend-signed quote transaction.
 
@@ -134,7 +134,7 @@ Sign and submit an engine group with a backend-signed quote transaction.
 
 > **signer**: `TransactionSigner`
 
-Defined in: [swapBootstrap.ts:67](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L67)
+Defined in: [swapBootstrap.ts:84](https://github.com/asastats/frontend/blob/main/wallet/src/swapBootstrap.ts#L84)
 
 #### Deprecated
 
