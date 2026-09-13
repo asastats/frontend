@@ -23,7 +23,7 @@ from django.template import loader
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
-from django.views.decorators.cache import cache_page
+from django.views.decorators.cache import cache_page, never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic import CreateView, DetailView, UpdateView
 from django.views.generic.base import RedirectView, TemplateView
@@ -1626,8 +1626,24 @@ class NftCollectionItemsView(TemplateView):
         return context
 
 
+@method_decorator(never_cache, name="dispatch")
 class SwapEntryView(TemplateView):
     """Non-cached htmx partial rendering the per-user entries for an address page.
+
+    **"Non-cached" was only ever true of the server.** Django sends no cache
+    headers of its own here, which leaves a browser free to cache the response
+    *heuristically* - and this partial is the one per-reader thing on a page
+    whose own entry is shared, so a stale copy is a reader looking at somebody
+    else's answer to "which of these addresses are yours?".
+
+    Content-hashed static names do not help: the hash protects the asset, and
+    what goes stale here is the HTML naming it. An old copy of this partial
+    holds old hashed URLs and keeps loading the old scripts indefinitely, which
+    is exactly the shape of the 2026-09-13 report where the Dust Sweep button
+    was missing in a normal window and present in a private one.
+
+    The decorator is the same one the widgets' own router endpoints carry, for
+    the same reason.
 
     The address page is ``cache_page``'d across users, so this per-user entry is
     loaded separately. It links to the user's preferred router's swap page when

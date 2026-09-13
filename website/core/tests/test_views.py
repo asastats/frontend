@@ -1201,6 +1201,23 @@ class SwapEntryViewTest(TestCase):
         response = self.client.get(self.url)
         self.assertNotContains(response, "id-swap-enabled")
 
+    def test_swap_entry_forbids_caching(self):
+        """The one per-reader thing on a page whose own entry is shared.
+
+        Django sends no cache headers of its own, which leaves a browser free
+        to cache this *heuristically* -- and a stale copy is a reader looking
+        at somebody else's answer to "which of these addresses are yours?".
+
+        Content hashing does not cover it: the hash protects the asset, and
+        what goes stale here is the HTML naming it, which then keeps loading
+        the scripts it was built against. Asserted on the response rather than
+        by reading the decorator, because the header is what a browser obeys.
+        """
+        self._login()
+        with mock.patch("core.views.linked_addresses_for_user", return_value=set()):
+            response = self.client.get(self.url)
+        self.assertIn("no-store", response.headers.get("Cache-Control", ""))
+
     def test_swap_entry_linked_address_renders_swap_link(self):
         self._login()
         with mock.patch(
