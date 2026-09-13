@@ -84,19 +84,35 @@ async function boot({
   client = algod(),
   ok = true,
   markup = '<div id="id-swap-swap"></div>',
+  signer = "SIGNER_FN" as unknown,
 }: {
   wallets?: unknown[];
   client?: ReturnType<typeof algod>;
   ok?: boolean;
   markup?: string;
+  /**
+   * What `manager.transactionSigner` yields. A function is installed as a
+   * *getter*, which is what use-wallet actually publishes -- and it throws
+   * `No active wallet found!` when nothing is active. Reading it eagerly
+   * therefore takes the whole bridge down, which no test could see while this
+   * was a plain string that cannot throw.
+   */
+  signer?: unknown;
 } = {}) {
   document.body.innerHTML = markup;
   const manager = {
     wallets,
     algodClient: client,
-    transactionSigner: "SIGNER_FN",
     resumeSessions: jest.fn().mockResolvedValue(undefined),
   };
+  if (typeof signer === "function") {
+    Object.defineProperty(manager, "transactionSigner", {
+      get: signer as () => unknown,
+      configurable: true,
+    });
+  } else {
+    (manager as Record<string, unknown>).transactionSigner = signer;
+  }
   walletManagerCtor.mockReturnValue(manager);
   (global.fetch as jest.Mock).mockResolvedValue({
     ok,
@@ -223,6 +239,68 @@ describe("the published surface", () => {
     await expect(bridge.signAndSendPartial({})).resolves.toBe("PARTIAL");
     await expect(bridge.optIn(7)).resolves.toBe("OPTED");
     expect(bridge.signer).toBe("SIGNER_FN");
+  });
+
+  describe("when use-wallet has no active wallet", () => {
+    /**
+     * `manager.transactionSigner` is a *getter* in use-wallet, and it throws
+     * `No active wallet found!` rather than returning null. Reading it while
+     * building the published object therefore threw before the assignment, so
+     * `window.asastatsSwap` was never created and the catch below turned a
+     * dead bridge into a single console line.
+     *
+     * It cost a live feature: `dustsweep.js` reads `activeAddress()` off this
+     * object to decide whether to show its button, and its polling recovery
+     * cannot help because it polls a bridge that was never built. Users
+     * reported the Dust Sweep button had vanished and not come back.
+     *
+     * The old harness set `transactionSigner` to a plain string, which cannot
+     * throw -- so every test passed against a mock that supplied what
+     * production could not.
+     */
+    const throwing = () => {
+      throw new Error("No active wallet found!");
+    };
+
+    it("still publishes the bridge", async () => {
+      const { bridge } = await boot({ wallets: [], signer: throwing });
+      expect(bridge).toBeDefined();
+      expect((window as any).asastatsSwap).toBe(bridge);
+    });
+
+    it("still answers activeAddress, which needs no active wallet", async () => {
+      const { bridge } = await boot({ wallets: [], signer: throwing });
+      expect(bridge.activeAddress()).toBeNull();
+    });
+
+    it("still dispatches swap-ready", async () => {
+      const heard = jest.fn();
+      window.addEventListener("asastats:swap-ready", heard);
+      await boot({ wallets: [], signer: throwing });
+      window.removeEventListener("asastats:swap-ready", heard);
+      expect(heard).toHaveBeenCalled();
+    });
+
+    it("raises the wallet's own error only when signer is read", async () => {
+      /** Deferred, not swallowed: a caller still gets the real reason. */
+      const { bridge } = await boot({ wallets: [], signer: throwing });
+      expect(() => bridge.signer).toThrow("No active wallet found!");
+    });
+
+    it("reads the signer afresh, so connecting a wallet later works", async () => {
+      let active = false;
+      const { bridge } = await boot({
+        wallets: [],
+        signer: () => {
+          if (!active) throw new Error("No active wallet found!");
+          return "SIGNER_FN";
+        },
+      });
+
+      expect(() => bridge.signer).toThrow("No active wallet found!");
+      active = true;
+      expect(bridge.signer).toBe("SIGNER_FN");
+    });
   });
 
   it("reads an asset creator through algod, for the sweep's forfeit check", async () => {

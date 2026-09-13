@@ -222,8 +222,31 @@ export async function initSwapBridge(doc: Document = document): Promise<void> {
           getAsset: (id) => manager.algodClient.getAssetByID(id).do(),
         }),
       haystackSigner,
-      // kept for back-compat; Haystack must use haystackSigner instead.
-      signer: manager.transactionSigner,
+      /*
+       * Kept for back-compat; Haystack must use haystackSigner instead.
+       *
+       * **A getter, and it has to be.** `manager.transactionSigner` is a getter
+       * in use-wallet that *throws* `No active wallet found!` when no wallet is
+       * active. Read eagerly here, it threw while this object literal was being
+       * built -- so `window.asastatsSwap` was never assigned at all, the
+       * `asastats:swap-ready` event never fired, and the whole bridge was lost
+       * for every reader who simply had no wallet connected. The catch below
+       * turned that into one console line and no other symptom.
+       *
+       * It cost a live feature. `dustsweep.js` reads `activeAddress()` off this
+       * object to decide whether to reveal its button; with the object missing
+       * it stayed hidden, and its `setInterval` could not recover because it
+       * polls a bridge that was never built. Users reported the Dust Sweep
+       * button had vanished and not come back.
+       *
+       * Deferring the read costs nothing: by the contract above nothing should
+       * be reading `signer` any more, and a caller that does gets the same
+       * error it would have got before -- at the point it asks, rather than
+       * taking every other method down with it.
+       */
+      get signer(): TransactionSigner {
+        return manager.transactionSigner;
+      },
     };
     window.dispatchEvent(new CustomEvent("asastats:swap-ready"));
   } catch (error) {
