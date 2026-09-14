@@ -367,6 +367,20 @@ class ProfileExplorerForm(ModelForm):
         )
 
 
+class ProfileLiveRefreshForm(ModelForm):
+    """Form for the address page's per-block refresh.
+
+    One checkbox, and the entitlement is not in it. Unlike the layout form,
+    whose choices *are* the entitlement, a boolean has no choices to narrow - so
+    the view checks `can_access_live_refresh` before saving, the way the
+    explorer section does.
+    """
+
+    class Meta:
+        model = Profile
+        fields = ("live_refresh",)
+
+
 class ProfileLayoutForm(ModelForm):
     """Form for choosing the profile's preferred address-page layout.
 

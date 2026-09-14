@@ -46,6 +46,7 @@ from core.forms import (
     ProfileExplorerForm,
     ProfileFormSet,
     ProfileLayoutForm,
+    ProfileLiveRefreshForm,
     ProfileRouterForm,
     UpdateUserForm,
 )
@@ -1219,6 +1220,8 @@ class ProfileSettingsView(View):
             "form": ProfileRouterForm(instance=profile),
             "explorer_form": ProfileExplorerForm(instance=profile),
             "layout_form": ProfileLayoutForm(instance=profile),
+            "liverefresh_form": ProfileLiveRefreshForm(instance=profile),
+            "can_access_liverefresh": profile.can_access_live_refresh(),
             "can_access_explorer": profile.can_access_explorer_setting(),
             "can_access_layout": profile.can_access_layout_setting(),
         }
@@ -1257,6 +1260,22 @@ class ProfileSettingsView(View):
                 return redirect("profile_settings")
             context = self._context(request)
             context["layout_form"] = form
+            return render(request, self.template_name, context)
+
+        if section == "liverefresh":
+            if not profile.can_access_live_refresh():
+                return redirect("subscriptions")
+            form = ProfileLiveRefreshForm(data=request.POST, instance=profile)
+            if form.is_valid():
+                form.save()
+                messages.success(
+                    request,
+                    "Real-time refresh preference saved.",
+                    extra_tags="liverefresh",
+                )
+                return redirect("profile_settings")
+            context = self._context(request)
+            context["liverefresh_form"] = form
             return render(request, self.template_name, context)
 
         if section == "explorer":

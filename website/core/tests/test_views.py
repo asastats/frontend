@@ -1046,6 +1046,74 @@ class ProfileSettingsPageTest(TestCase):
             )
         self.assertTemplateUsed(response, "profile_settings.html")
 
+    def test_settings_page_liverefresh_post_saves_for_entitled_user(self):
+        """**Opt-in, and off by default even for a reader who may have it.**
+
+        A page that updates itself is not what everyone wants; the tier buys
+        the choice rather than the behaviour.
+        """
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.save()
+        assert self.user.profile.live_refresh is False
+
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_settings"),
+                data={"section": "liverefresh", "live_refresh": "on"},
+            )
+
+        self.assertRedirects(response, reverse("profile_settings"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.live_refresh is True
+        tags = [m.extra_tags for m in get_messages(response.wsgi_request)]
+        assert tags == ["liverefresh"]
+
+    def test_settings_page_liverefresh_post_can_be_turned_off_again(self):
+        """A checkbox that cannot be cleared is a trap: an unchecked box sends
+        no value at all, so the form has to read absence as False."""
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.live_refresh = True
+        self.user.profile.save()
+
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            self.client.post(
+                reverse("profile_settings"), data={"section": "liverefresh"}
+            )
+
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.live_refresh is False
+
+    def test_settings_page_liverefresh_post_redirects_unentitled(self):
+        """Below the band the control is a link to subscriptions, but the POST
+        has to refuse as well - the page is not the enforcement."""
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.user.profile.save()
+
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_settings"),
+                data={"section": "liverefresh", "live_refresh": "on"},
+            )
+
+        self.assertRedirects(response, reverse("subscriptions"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.live_refresh is False
+
+    def test_settings_page_liverefresh_locked_names_the_tier_and_links_out(self):
+        """The house pattern for a setting somebody cannot have: show the
+        control disabled so they can see what it is, name the tier, and take a
+        tap to the page where they can act - as the explorer preference does."""
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.user.profile.save()
+
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+
+        content = response.content.decode()
+        assert "Real-time refresh is available from the" in content
+        assert "Asastatser" in content
+        assert reverse("subscriptions") in content
+
     def test_settings_page_explorer_post_saves_for_entitled_user(self):
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
         self.user.profile.save()

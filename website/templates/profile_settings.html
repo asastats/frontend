@@ -83,6 +83,49 @@
     </div>
   </section>
 
+  <section class="rounded-box border border-base-300 bg-base-100" id="id-section-liverefresh">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">Real-time refresh</h2>
+    </div>
+    <div class="space-y-4 px-5 py-5">
+      <p class="max-w-prose text-sm text-base-content/70">
+        Update an address page as each block arrives, instead of reloading it every minute.
+        The page stays where it is &mdash; only the figures that moved are redrawn.
+      </p>
+    {% if can_access_liverefresh %}
+    <form method="post" action="{% url 'profile_settings' %}"
+      hx-post="{% url 'profile_settings' %}"
+      hx-target="#id-section-liverefresh"
+      hx-select="#id-section-liverefresh"
+      hx-swap="outerHTML">
+      {% csrf_token %}
+      <input type="hidden" name="section" value="liverefresh">
+      <label class="flex cursor-pointer items-center gap-3">
+        {{ liverefresh_form.live_refresh }}
+        <span class="text-sm">Refresh on every block</span>
+      </label>
+      {% comment %} Off by default even for a reader entitled to it: the tier
+         buys the choice, not the behaviour. With it off, "refresh data" on the
+         address page keeps the sixty-second reload. {% endcomment %}
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary" id="id_save_liverefresh">Save</button>
+      </div>
+      {% include "snippets/messages_section.html" with section="liverefresh" %}
+    </form>
+    {% else %}
+    <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Asastatser tier — open subscriptions">
+      <div>
+        <label class="flex items-center gap-3">
+          <input type="checkbox" class="checkbox" disabled aria-disabled="true">
+          <span class="text-sm text-base-content/60">Refresh on every block</span>
+        </label>
+        <span class="mt-1 block text-xs text-base-content/60">Real-time refresh is available from the <span class="text-primary">Asastatser</span> tier. Tap to upgrade.</span>
+      </div>
+    </a>
+    {% endif %}
+    </div>
+  </section>
+
   <section class="rounded-box border border-base-300 bg-base-100" id="id-section-layout">
     <div class="border-b border-base-300 px-5 py-4">
       <h2 class="text-base font-medium">Address page layout</h2>

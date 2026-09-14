@@ -23,6 +23,8 @@ from unittest import mock
 from django.urls import reverse
 from selenium.webdriver.common.by import By
 
+from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+
 from .base import FunctionalTest
 
 #: What the chain would answer for a reader holding one tier. A real tier name,
@@ -207,6 +209,79 @@ class SettingsPageTest(FunctionalTest):
                     ),
                     f"{field_id} has no label",
                 )
+
+
+class LiveRefreshSettingTest(FunctionalTest):
+    """The real-time refresh opt-in, both sides of its gate.
+
+    A browser test because both sides are markup decisions: whether the reader
+    gets a control they can use, or one they can see and a way to buy it. A unit
+    test on the view cannot tell those apart.
+    """
+
+    def _open(self, permission, who="reader"):
+        """Open the settings page as a reader of `permission`.
+
+        **A reader per test**, because one of these saves the preference and a
+        shared account would carry it into the next test - which is how the
+        "off until asked for" test came to fail only when the class ran
+        together, and pass on its own.
+        """
+        self.create_cookie_and_go_to_index_page_tier(
+            f"liverefresh-{who}@example.com", permission=permission
+        )
+        self.browser.get(self.server_url + reverse("profile_settings"))
+
+    def test_a_subscriber_gets_a_checkbox_they_can_use(self):
+        self._open(SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], "enabled")
+
+        section = self.browser.find_element(By.ID, "id-section-liverefresh")
+        checkbox = section.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
+
+        assert checkbox.is_enabled()
+        assert section.find_elements(By.ID, "id_save_liverefresh")
+
+    def test_it_is_off_until_the_subscriber_asks_for_it(self):
+        """The tier buys the choice, not the behaviour: a page that updates
+        itself is not what everyone wants."""
+        self._open(SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], "default")
+
+        section = self.browser.find_element(By.ID, "id-section-liverefresh")
+        checkbox = section.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
+
+        assert not checkbox.is_selected()
+
+    def test_below_the_tier_it_names_the_tier_and_links_to_subscriptions(self):
+        """The house pattern for a setting somebody cannot have: show it
+        disabled so they can see what it is, say what it costs, and take a tap
+        to where they can act - rather than a control that does nothing."""
+        self._open(SUBSCRIPTION_TIER_PERMISSIONS["Intro"], "locked")
+
+        section = self.browser.find_element(By.ID, "id-section-liverefresh")
+        checkbox = section.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
+        link = section.find_element(By.TAG_NAME, "a")
+
+        assert not checkbox.is_enabled()
+        assert "Asastatser" in section.text
+        assert reverse("subscriptions") in link.get_attribute("href")
+
+    def test_the_saved_preference_comes_back_checked(self):
+        """A setting that does not survive a reload is a setting nobody trusts."""
+        self._open(SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], "saver")
+        section = self.browser.find_element(By.ID, "id-section-liverefresh")
+        section.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]').click()
+        section.find_element(By.ID, "id_save_liverefresh").click()
+
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.CSS_SELECTOR, "#id-section-liverefresh input[type='checkbox']"
+            ).is_selected()
+        )
+
+        self.browser.get(self.server_url + reverse("profile_settings"))
+        assert self.browser.find_element(
+            By.CSS_SELECTOR, "#id-section-liverefresh input[type='checkbox']"
+        ).is_selected()
 
 
 class LinkedAddressActionsTest(FunctionalTest):

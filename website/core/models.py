@@ -63,6 +63,13 @@ class Profile(models.Model):
     preferred_router = models.CharField(max_length=32, blank=True, default="")
     preferred_explorer = models.CharField(max_length=32, blank=True, default="")
     preferred_layout = models.CharField(max_length=32, blank=True, default="")
+    #: Whether the address page refreshes on every block rather than reloading.
+    #:
+    #: Opt-in, and off by default even for a reader entitled to it: a page that
+    #: updates itself is not what everyone wants, and the tier buys the choice
+    #: rather than the behaviour. When it is off - or the reader cannot have it -
+    #: the "refresh data" control falls back to the sixty-second reload.
+    live_refresh = models.BooleanField(default=False)
 
     def __str__(self):
         """Return string representation of the profile instance
@@ -146,6 +153,24 @@ class Profile(models.Model):
         :return: list
         """
         return locked_layouts(self.permission)
+
+    def can_access_live_refresh(self, size=1):
+        """Return True if the user may have the address page refresh per block.
+
+        The gate is the `liverefresh` widget's manifest, not a tier written in
+        here: it is something a reader selects and a subscriber pays for, and a
+        fork of this site should be able to host it for its own users on its own
+        bands. See `widgets/inhouse/liverefresh/widget.toml`.
+
+        `size` defaults to one because the settings page asks "may this reader
+        have it at all", before any page is in view. The address page asks with
+        its own address count, which is what the bands are graded on.
+
+        :param size: number of Algorand addresses
+        :type size: int
+        :return: Boolean
+        """
+        return can_access_widget("liverefresh", self, size)
 
     def can_access_layout_setting(self):
         """Return True if the user may choose an address-page layout.
