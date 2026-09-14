@@ -30,7 +30,20 @@ webapp_group: "{{ hostvars['localhost'].env_vars.WEBAPP_GROUP | default('webapps
 projects_path: /var/www/
 site_path: "{{ projects_path }}{{ site_name }}"
 
-gunicorn_workers: 5  # cpu_count() * 2 + 1 is the suggestion
+# Measured on the liveserver 2026-09-14, not derived from cpu_count(). A warm
+# website worker is ~605 MB RSS (largest 643), so 13 costs ~7.9 GB of the 44 GB
+# free; load was 4.62 on 20 cores, so CPU is not the limit either. The limit is
+# that sync workers block: at 5, the whole site serves five concurrent requests,
+# and an address page holds one for ~2.2 s while it waits on the engine API.
+#
+# NOT cpu_count() * 2 + 1 (= 41 here). That rule assumes CPU-bound workers;
+# these wait on HTTP and Redis. 41 x 605 MB is ~25 GB for throughput the load
+# average says is not wanted. Re-measure with live/tools/inspect_liveserver.py
+# before moving it again.
+#
+# The api (deploy/group_vars/api/vars.yml) must rise with this or the queue only
+# moves: a website request that calls the engine holds a worker at both ends.
+gunicorn_workers: 13
 
 log_level: debug
 
