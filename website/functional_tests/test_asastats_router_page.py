@@ -23,7 +23,7 @@ from selenium.webdriver.common.by import By
 
 from walletauth.models import LinkedAddress
 
-from .base import FunctionalTest
+from .base import COOKIE_SEED_URL, FunctionalTest
 
 ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 
@@ -49,7 +49,7 @@ class AsastatsRouterPageTest(FunctionalTest):
         user.profile.preferred_router = "asastats"
         user.profile.save()
 
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         return user
 
@@ -166,7 +166,7 @@ class AsastatsRouterPageUnlinkedTest(FunctionalTest):
             password="top_secret",
             permission=100,
         )
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         self.browser.get(f"{self.server_url}/widgets/asastats/{ADDRESS}")
 
@@ -237,7 +237,7 @@ class AsastatsRouterSwapOptInTest(FunctionalTest):
         user.profile.preferred_router = "asastats"
         user.profile.save()
 
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         # The adapter POSTs same-origin and sends `csrftoken` as a header for
         # Django to compare against the cookie. A browser that has never
@@ -291,8 +291,22 @@ class AsastatsRouterSwapOptInTest(FunctionalTest):
         The order is the entire assertion. Opting in *after* submitting fails
         exactly as not opting in at all does, so a recorder that only counted
         calls would pass on the bug this exists for.
+
+        **Both halves, or neither survives.** `initSwapBridge` returns early
+        only when `window.asastatsWallet` *and* `window.asastatsSwap` are both
+        up. Publishing the swap half alone fails that test, so the real bridge
+        builds itself on the next `htmx:afterSettle` - which the lazy holdings
+        panel guarantees - and overwrites this stub with one whose
+        `activeAddress()` is null because no wallet is connected. `walletOwns`
+        is then false, `applyOwnership` disables the CTA and labels it "Connect
+        wallet to swap", and the failure reads as a broken quote.
+
+        `window.__calls` survives that overwrite, so a probe asking whether the
+        stub is installed answers yes while the bridge being called is the real
+        one. The question to ask is whether `activeAddress()` still returns the
+        address. This is the same trap as the sweep's `_connect` in `b8fea0e`.
         """
-        self.browser.execute_script(
+        self.publish_wallet_bridge(
             "var address = arguments[0];"
             "window.__calls = [];"
             "window.asastatsSwap = {"
@@ -314,7 +328,11 @@ class AsastatsRouterSwapOptInTest(FunctionalTest):
             "    return Promise.resolve('TXID');"
             "  }"
             "};"
-            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            "window.asastatsWallet = {"
+            "  activeAddress: function () { return address; }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));"
+            "window.dispatchEvent(new CustomEvent('asastats:wallet-ready'));",
             ADDRESS,
         )
 

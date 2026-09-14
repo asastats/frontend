@@ -96,3 +96,88 @@ def test_export_taxfinished_external_links_are_safe(rendered):
     ]
 
     assert not unsafe, f"external links missing target/rel: {unsafe}"
+
+
+#: Tailwind's preflight resets headings to inherit their size and weight, so a
+#: heading here is only a heading if it says so. These are the classes that make
+#: the difference between a section title and a line of body text.
+SIZING = ("text-xs", "text-sm", "text-base", "text-lg", "text-xl", "text-2xl")
+
+
+def test_export_taxfinished_headings_are_styled_as_headings(rendered):
+    """**A bare `<h4>` is body text on this site, not a heading.**
+
+    Under Tailwind's preflight every heading is reset to inherit, so the two
+    headings in this snippet rendered at body size and body weight and the page
+    arrived as one undifferentiated column - which is what a reader reported.
+    Nothing caught it because every other test here asks about links.
+
+    Asserted on the class attribute rather than on computed style, because the
+    stylesheet is not available to a template render. That is the weaker check,
+    but it is the one that fails when someone writes `<h5>Something</h5>` again.
+    """
+    unstyled = [
+        f"<{element.tag}> {element.text().strip()[:40]!r}"
+        for element in parse(rendered).select("h1, h2, h3, h4, h5, h6")
+        if not any(size in element.attrs.get("class", "") for size in SIZING)
+    ]
+
+    assert not unstyled, f"headings with no size class: {unstyled}"
+
+
+def test_export_taxfinished_actions_sit_in_one_row(rendered):
+    """Download, Refresh and Back are a button row, not a stack.
+
+    Each was wrapped in its own `<div class="w-1/3">` with no flex parent, so
+    they stacked vertically at a third of the width apiece. `w-1/3` on an action
+    wrapper is the fingerprint of that layout and must not come back.
+    """
+    dom = parse(rendered)
+    actions = [
+        element
+        for element in dom.select("#download, #refresh, #back")
+        if element.attrs.get("id")
+    ]
+    assert len(actions) == 3, "expected download, refresh and back"
+
+    thirds = [
+        element.attrs.get("class", "")
+        for element in dom.select("div")
+        if "w-1/3" in element.attrs.get("class", "")
+    ]
+    assert not thirds, f"actions are still wrapped in thirds: {thirds}"
+
+
+def test_export_taxfinished_agree_checkbox_is_styled(rendered):
+    """The consent checkbox is the site's checkbox, not the browser's default.
+
+    It carried no class at all, so it rendered as a raw native control in the
+    middle of a DaisyUI page. The name is what the view reads, so both halves
+    matter: it has to stay `agree`, and it has to look like the rest.
+    """
+    boxes = [
+        element
+        for element in parse(rendered).select("input")
+        if element.attrs.get("type") == "checkbox"
+    ]
+
+    assert len(boxes) == 1, "expected exactly one consent checkbox"
+    assert boxes[0].attrs.get("name") == "agree"
+    assert "checkbox" in boxes[0].attrs.get("class", ""), (
+        "the consent checkbox has no DaisyUI class"
+    )
+
+
+def test_export_taxfinished_agreement_is_a_list(rendered):
+    """The three terms are an ordered list, not hand-numbered `<br><br>`.
+
+    They were written as `1)`, `2)`, `3)` inside one paragraph, which is why
+    they neither wrapped nor indented like a list. A reader skimming for the
+    liability clause had no structure to skim.
+    """
+    items = parse(rendered).select("ol li")
+
+    assert len(items) == 3, f"expected three agreement terms, got {len(items)}"
+    assert not any(
+        item.text().strip().startswith(("1)", "2)", "3)")) for item in items
+    ), "the terms are still numbered by hand inside the list"

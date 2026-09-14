@@ -54,7 +54,16 @@ class TestAsastatsUrls:
         assert "core.urls" in str(url.urlconf_name)
 
     def test_config_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 8
+        """Nine since the root assets joined: the count is a guard, not a fact.
+
+        It exists so a route added without thought about *order* is noticed,
+        this urlconf ending in a catch-all that swallows anything a pattern
+        above it did not claim. `ROOT_ASSETS` is exactly that case - the
+        favicons and the manifest had been resolving as bundle names - so the
+        number moves with a reason recorded, rather than being edited to make a
+        red test green.
+        """
+        assert len(urls.urlpatterns) == 9
 
     def test_config_urls_defines_custom_handler500(self):
         assert getattr(urls, "handler500") == "core.views.custom_server_error"

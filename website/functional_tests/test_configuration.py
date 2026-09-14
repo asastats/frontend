@@ -1,6 +1,6 @@
 from utils.helpers import load_transparency_reports
 
-from .base import FunctionalTest
+from .base import COOKIE_SEED_URL, FunctionalTest
 
 SITEMAP_URLS = (
     "about",
@@ -126,4 +126,4 @@ class PageLoadTimeoutTest(FunctionalTest):
         )
         # The session survives, which it does not when selenium's clock expires
         # mid-command: every later call in that test fails too.
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)

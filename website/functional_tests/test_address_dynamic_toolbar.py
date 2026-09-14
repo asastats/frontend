@@ -37,7 +37,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
-from .base import FunctionalTest
+from .base import COOKIE_SEED_URL, FunctionalTest
 
 SAMPLE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -87,7 +87,7 @@ class ToolbarTest(FunctionalTest):
         profile = get_user_model().objects.get(username="toolbar@example.com").profile
         profile.preferred_layout = "dynamic"
         profile.save()
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(cookie)
 
     def open_page(self):

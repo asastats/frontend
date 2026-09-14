@@ -9,7 +9,14 @@
 * * * * * * * * * * * * * * * * * * * * * * * * * * *
 */
 
-var refreshInterval = 0;
+/** How long after the last refresh the next one is due, in ms. */
+var REFRESH_AFTER_MS = 60000;
+/** How still the reader has to be before a due refresh actually fires, in ms. */
+var SETTLE_MS = 2000;
+/** When the page last reloaded itself, as a timestamp. */
+var lastRefreshAt = 0;
+/** When the reader last did anything, as a timestamp. */
+var lastActivityAt = 0;
 var chartDatasets = {};
 
 
@@ -33,7 +40,7 @@ $(mainAddress);
  */
 function initAddress() {
   deferImages(document.getElementsByClassName('nft'));
-  refreshInterval = 0;
+  lastRefreshAt = Date.now();
   checkOpened("asa");
   checkOpened("nft");
 }
@@ -97,8 +104,13 @@ function mainAddress() {
   $(".nfticon").on("mouseleave", nftHideTooltip);
   $(".nfticon").on("click", nftHideTooltip);
   setInterval(timerIncrement, 1000);
-  $(this).mousemove(resetTimer);
-  $(this).keypress(resetTimer);
+  $(this).mousemove(noteActivity);
+  $(this).keypress(noteActivity);
+  // Scrolling is the interaction the guard exists for, and it is the one
+  // mousemove does not report: a wheel or a touch drag moves the page without
+  // moving the pointer.
+  $(this).on('scroll wheel touchmove', noteActivity);
+  document.addEventListener('visibilitychange', refreshOnReturn);
 }
 
 
@@ -1303,11 +1315,16 @@ function reloadPage() {
 
 
 /**
- * Reset timer used to check for inactivity
+ * Record that the reader just did something.
  *
+ * **This no longer resets the refresh clock**, which is the whole change.
+ * Bound to mousemove and keypress, restarting the count meant a reader who
+ * twitched once a minute was never refreshed at all - the reported "120 second
+ * delay", which was really "no refresh, ever, while you are at the keyboard".
+ * The due time is now fixed and only the *firing* waits for a quiet moment.
  */
-function resetTimer() {
-  refreshInterval = 0;
+function noteActivity() {
+  lastActivityAt = Date.now();
 }
 
 
@@ -1365,14 +1382,63 @@ function setTotalNoNft(value) {
 
 
 /**
- * Increase timer by one
+ * Reload the page if one is due and the reader is not in the middle of
+ * something.
  *
+ * **Elapsed time, not a count of ticks.** The old version added one per second
+ * and compared against 60, which a browser breaks in two ways: it throttles a
+ * background tab's interval to roughly once a minute, so the counter advanced
+ * sixty times too slowly and a tab left open came back an hour stale; and it
+ * cannot notice time the machine spent asleep at all. A timestamp is immune to
+ * both, and it is what lets `refreshOnReturn` ask one question instead of
+ * keeping its own clock.
+ *
+ * **Due, but busy, defers rather than cancels.** A reader who is scrolling
+ * gets left alone - a reload mid-scroll throws the page out from under them -
+ * but the due time does not move, so the refresh happens the moment they
+ * settle rather than being pushed another minute away.
  */
 function timerIncrement() {
-  refreshInterval += 1;
-  if (refreshInterval > 60 && (localStorage.getItem('refresh') || '') == 'y') {
-    refreshInterval = 0;
-    reloadPage();
+  var now = Date.now();
+  if (lastRefreshAt > now || lastActivityAt > now) {
+    // **The clock moved backwards** - an NTP correction, a laptop waking with
+    // a corrected time, or the reader setting it by hand. Left alone, a stamp
+    // in the future makes `now - then` negative, which reads as "just now"
+    // forever: the refresh would defer for as long as the jump was, which can
+    // be hours. Start the minute again instead, with the reader counted as
+    // idle so a due refresh is not held back by an interaction that now
+    // appears not to have happened yet.
+    lastRefreshAt = now;
+    lastActivityAt = 0;
+  }
+  if ((localStorage.getItem('refresh') || '') != 'y') {
+    // Disarmed: keep the clock with the reader, so ticking the box does not
+    // immediately fire a refresh left over from however long it has been off.
+    lastRefreshAt = now;
+    return;
+  }
+  if (now - lastRefreshAt < REFRESH_AFTER_MS) {
+    return;
+  }
+  if (now - lastActivityAt < SETTLE_MS) {
+    return;
+  }
+  lastRefreshAt = now;
+  reloadPage();
+}
+
+
+/**
+ * Catch up when a hidden tab is shown again.
+ *
+ * Asked as "how long since the last refresh", not "how long was it hidden":
+ * the two agree in the ordinary case and differ in the one that matters - a
+ * tab hidden for thirty seconds when the clock already stood at forty-five has
+ * been stale for over a minute, and only the first question notices.
+ */
+function refreshOnReturn() {
+  if (document.visibilityState === 'visible') {
+    timerIncrement();
   }
 }
 
@@ -1398,7 +1464,10 @@ if (typeof exports !== 'undefined') {
   module.exports = {
     mainAddress,
     timerIncrement,
-    resetTimer,
+    noteActivity,
+    refreshOnReturn,
+    // Exported so the tests cannot drift from the value they assert around.
+    SETTLE_MS,
     isNotVisible,
     parseJsonScript,
     populatePieCharts,

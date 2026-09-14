@@ -266,15 +266,21 @@
 [data-wallet-connect]:hover { border-color: var(--color-primary); }
 [data-wallet-icon] { width: 1.25rem; height: 1.25rem; border-radius: 0.25rem; }
 
+/* The success tokens, not the primary ones: this badge says "connected and in
+   use", which is the same thing the "Successfully signed in as" toast says, and
+   two greens a few degrees apart read as a mistake rather than a distinction.
+   `alert-success` resolves to these, so the badge now matches it in every
+   theme - which a hex cannot do across 57 of them. */
 [data-badge="active"] {
   display: inline-block;
   margin-left: 0.5rem;
   padding: 0.0625rem 0.5625rem;
   border-radius: 999px;
-  background: var(--color-primary);
-  color: var(--color-primary-content);
+  background: var(--color-success);
+  color: var(--color-success-content);
   font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
   vertical-align: middle;
 }
 
@@ -2296,18 +2302,16 @@
 [data-wallet-icon] { width: 20px; height: 20px; border-radius: 4px; }
 
 
-[data-badge="active"] {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 1px 9px;
-  border-radius: 999px;
-  background: #00c896;
-  color: #2b2b2b;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  vertical-align: middle;
-}
+/* The second copy of this rule lived here and won on source order, so the
+   token-based one above never rendered: the badge was a hardcoded #00c896 on
+   #2b2b2b in every theme. Its measurements were the same values in px that the
+   surviving rule writes in rem (8px = 0.5rem, 1px/9px = 0.0625rem/0.5625rem),
+   so removing it changes only the colour - which is the point - and the
+   letter-spacing it added has moved up there.
+
+   The `[data-wallet-connect]` duplicates in this block are the same story and
+   still hardcode #00c896 for their hover and focus ring. Left alone here
+   because that is a wider change than the badge that was reported. */
 
 
 /* Only shown when no host claims the message -- see wallet/src/notify.ts. */

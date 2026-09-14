@@ -19,6 +19,7 @@ from core.forms import (
     DeactivateProfileForm,
     ProfileBundleNameForm,
     ProfileFormSet,
+    ProfileLiveRefreshForm,
     UpdateUserForm,
 )
 from core.models import BundleName, Profile
@@ -1096,6 +1097,42 @@ class ProfileSettingsPageTest(TestCase):
             )
 
         self.assertRedirects(response, reverse("subscriptions"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.live_refresh is False
+
+    def test_settings_page_liverefresh_post_invalid_rerenders_bound_form(self):
+        """**`is_valid` is mocked because nothing else can make it false.**
+
+        The explorer section's equivalent test submits `"bogus"` and the
+        `ChoiceField` rejects it. There is no such value here: Django gives a
+        non-null model `BooleanField` a form field with `required=False`, which
+        accepts an absent value, `"on"`, `""` and outright garbage alike, and
+        `Profile` has neither a `clean()` nor a validator to fail instead. So
+        this branch is unreachable through any request the site can receive.
+
+        It is tested rather than deleted because what it pins is the *view's*
+        contract, not the form's: an invalid form re-renders bound, so the
+        reader sees the errors, instead of `form.save()` raising `ValueError`
+        into a 500. Add a validator to `ProfileLiveRefreshForm` tomorrow and
+        that promise still holds - which is the whole point of keeping the
+        branch, and the reason it was worth a mock.
+        """
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.save()
+
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            with mock.patch.object(
+                ProfileLiveRefreshForm, "is_valid", return_value=False
+            ):
+                response = self.client.post(
+                    reverse("profile_settings"),
+                    data={"section": "liverefresh", "live_refresh": "on"},
+                )
+
+        self.assertTemplateUsed(response, "profile_settings.html")
+        assert response.status_code == 200
+        # Bound, not a fresh form: the reader's submission comes back with it.
+        assert response.context["liverefresh_form"].is_bound
         self.user.profile.refresh_from_db()
         assert self.user.profile.live_refresh is False
 

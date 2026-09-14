@@ -789,38 +789,39 @@ describe("auto refresh", function () {
     $(box).trigger("change");
     expect(localStorage.setItem).toHaveBeenCalledWith("refresh", "");
   });
-  it('resetTimer is wired to document activity', function () {
+  it('noteActivity is wired to document activity, scrolling included', function () {
     jest.useFakeTimers();
     window.Chart.getChart.mockReturnValue(chartInstance());
     address.mainAddress.call(document);
     $(document).trigger("mousemove");
     $(document).trigger("keypress");
+    // Scrolling is what the guard is for and what mousemove misses.
+    $(document).trigger("scroll");
+    $(document).trigger("wheel");
+    $(document).trigger("touchmove");
   });
 
   // What the auto-refresh toggle actually buys, asserted rather than assumed.
   //
   // Everything around this was covered and none of it was the behaviour: the
-  // test above triggers two events and expects nothing, and the functional test
+  // test above triggers events and expects nothing, and the functional test
   // presses `#tb-refresh` and checks only that localStorage says "y". Between
-  // them, a toggle that never reloaded anything would have passed both -- which
-  // is how the dynamic page came to promise "about once a minute while you
-  // leave it open" for a timer that resets on every mouse movement.
+  // them, a toggle that never reloaded anything would have passed both.
   //
-  // `timerIncrement` is driven directly. Going through the interval would test
-  // jest's clock; the question here is what 61 ticks do.
+  // **These now measure elapsed time rather than counting ticks**, because the
+  // code does. Driving `timerIncrement` 61 times no longer means anything: a
+  // background tab's interval is throttled to about once a minute, so ticks
+  // and seconds are not the same quantity and treating them as one is the bug
+  // that let a hidden tab go an hour stale.
+  //
   // `reloadPage` records the open accordions and *then* calls
-  // `window.location.reload()`. The record is what these assert on.
-  //
-  // Not by choice: the suite's `reloadMock` cannot work. jsdom's `location` is
-  // a non-configurable property whose `reload` is read-only, so the
-  // `delete window.location` in the global beforeEach is a no-op, the
-  // assignment after it is discarded, and `window.location.reload` is still
-  // jsdom's. Nothing had ever asserted on that mock, so nothing noticed. The
-  // stored id is a real consequence of reaching `reloadPage` and needs no stub
-  // at all.
+  // `window.location.reload()`. The record is what these assert on -- not by
+  // choice: jsdom's `location.reload` is read-only, so the suite's `reloadMock`
+  // is a no-op and nothing had ever noticed. The stored id is a real
+  // consequence of reaching `reloadPage` and needs no stub at all.
   describe('the auto-refresh timer', function () {
-    function ticks(count) {
-      for (var i = 0; i < count; i++) address.timerIncrement();
+    function elapse(ms) {
+      jest.advanceTimersByTime(ms);
     }
     function reloaded() {
       return localStorage.setItem.mock.calls.some(function (call) {
@@ -828,44 +829,116 @@ describe("auto refresh", function () {
       });
     }
     beforeEach(function () {
+      jest.useFakeTimers();
       var row = document.querySelector('.asasec .fitem');
       row.id = 'row-under-test';
       row.open = true;
       localStorage.setItem('refresh', 'y');
       localStorage.setItem.mockClear();
-      address.resetTimer();
+      // Arms the clock from "now", as initAddress does on a real page.
+      address.timerIncrement();
+      localStorage.setItem.mockClear();
     });
 
-    it('does not reload for the first sixty ticks', function () {
-      ticks(60);
+    it('does not reload before a minute has passed', function () {
+      elapse(59000);
+      address.timerIncrement();
 
       expect(reloaded()).toBe(false);
     });
 
-    it('reloads on the sixty-first', function () {
-      ticks(61);
+    it('reloads once the minute is up', function () {
+      elapse(61000);
+      address.timerIncrement();
 
       expect(reloaded()).toBe(true);
     });
 
-    it('is an idle timer: activity puts the count back to zero', function () {
-      ticks(60);
-      address.resetTimer();
-      ticks(60);
+    it('defers while the reader is busy, and fires when they settle', function () {
+      elapse(61000);
+      address.noteActivity();
+      address.timerIncrement();
+      // Due, but somebody is scrolling: left alone.
+      expect(reloaded()).toBe(false);
 
-      // 120 ticks and no reload. This is the whole of why the feature reads as
-      // broken to anyone watching the page: `resetTimer` is bound to mousemove
-      // and keypress, so a reader who moves the mouse once a minute never sees
-      // it fire. The dynamic toolbar's title used to promise a reload "about
-      // once a minute while you leave it open", which is not this.
+      // They stop. The refresh happens now -- it is not pushed another minute
+      // away, which is the whole difference from the old idle timer.
+      elapse(address.SETTLE_MS);
+      address.timerIncrement();
+
+      expect(reloaded()).toBe(true);
+    });
+
+    it('still refreshes a reader who keeps touching the page', function () {
+      // The reported "120 second delay". Activity every 30s used to put the
+      // count back to zero, so this reader was never refreshed at all.
+      for (var minute = 0; minute < 4; minute++) {
+        elapse(30000);
+        address.noteActivity();
+        address.timerIncrement();
+      }
+      elapse(address.SETTLE_MS);
+      address.timerIncrement();
+
+      expect(reloaded()).toBe(true);
+    });
+
+    it('catches up a tab that was hidden past its due time', function () {
+      elapse(61000);
+
+      address.refreshOnReturn();
+
+      expect(reloaded()).toBe(true);
+    });
+
+    it('does nothing while the tab is still hidden', function () {
+      // `visibilitychange` fires on the way out as well as the way in, and a
+      // refresh on the way out would reload a page nobody is looking at -
+      // which is also the one moment the reader cannot see it go wrong.
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: function () { return 'hidden'; },
+      });
+      elapse(61000);
+
+      address.refreshOnReturn();
+
+      expect(reloaded()).toBe(false);
+      delete document.visibilityState;
+    });
+
+    it('recovers when the clock moves backwards', function () {
+      // An NTP correction or a laptop waking with a corrected time leaves a
+      // stamp in the future, and `now - then` then reads as "just now" for as
+      // long as the jump was. Without the guard a refresh could be held off
+      // for hours by an interaction that has not happened yet.
+      elapse(61000);
+      address.noteActivity();
+      var future = Date.now() + 3600000;
+      jest.setSystemTime(future - 3600000 - 120000);
+
+      address.timerIncrement();  // notices the jump, restarts the minute
+      elapse(61000);
+      address.timerIncrement();
+
+      expect(reloaded()).toBe(true);
+    });
+
+    it('lets a briefly hidden tab finish its own minute', function () {
+      elapse(20000);
+
+      address.refreshOnReturn();
+
+      // Not due yet, so returning to the tab changes nothing -- the clock is
+      // measured from the last refresh, not from when the tab was hidden.
       expect(reloaded()).toBe(false);
     });
 
     it('leaves the page alone when the setting is off', function () {
       localStorage.setItem('refresh', '');
       localStorage.setItem.mockClear();
-      address.resetTimer();
-      ticks(61);
+      elapse(61000);
+      address.timerIncrement();
 
       expect(reloaded()).toBe(false);
     });

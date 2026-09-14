@@ -455,8 +455,23 @@ class BundleNameFormTest(FunctionalTest):
         self.browser.find_element(By.ID, "id_delete").click()
         self.sleep()
 
-        alert = self.browser.find_element(By.CSS_SELECTOR, '[role="alert"]')
-        self.assertIn("cannot be undone", alert.text)
+        # Every alert, not the first one. `role="alert"` is also what an inline
+        # error message uses, and those render above the page content -- so
+        # `find_element` returns the confirmation only while nothing has gone
+        # wrong. That is how a stray "Bundle name not found!", queued by the
+        # browser's own /site.webmanifest request before `ROOT_ASSETS` existed,
+        # made this fail intermittently while the confirmation was right there
+        # in second place.
+        alerts = [
+            element.text
+            for element in self.browser.find_elements(
+                By.CSS_SELECTOR, '[role="alert"]'
+            )
+        ]
+        self.assertTrue(
+            any("cannot be undone" in text for text in alerts),
+            f"no confirmation among the alerts on the page: {alerts}",
+        )
         # What is actually lost, rather than only that something is.
         self.assertIn(
             "addresses stay on the chain",
@@ -469,7 +484,7 @@ class BundleNameFormTest(FunctionalTest):
 
 
 class MessageToastTest(FunctionalTest):
-    """Confirmations float and can be dismissed; failures stay put.
+    r"""Confirmations float and can be dismissed; failures stay put.
 
     Both flows were guessed wrong the first time these were written, which is
     what an unrun test buys. Adding a bundle does not emit a message on the

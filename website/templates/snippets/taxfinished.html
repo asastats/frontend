@@ -1,75 +1,96 @@
 {% load core_extras %}
-<div class="mx-auto max-w-2xl text-center">
-    <h4>Your CSV report is ready for download</h4>
+{% comment %}
+  The end of the CSV export flow: what the engine found, the agreement, and the
+  download.
+
+  This snippet was still shaped for Materialize. Under Tailwind's preflight a
+  bare `<h4>` or `<h5>` has no size and no weight, so both headings here read as
+  body text and the page arrived as one undifferentiated column -- which is what
+  a reader reported. Every heading carries its own classes now, the way the
+  redesigned `taxprepare.html` beside it already did.
+
+  The three buttons were each wrapped in `<div class="w-1/3">` with no flex
+  parent, so they stacked vertically at a third of the width apiece instead of
+  sitting in a row. They are one flex row now.
+
+  The agreement was four paragraphs separated by `<br><br>` and numbered by
+  hand. It is an `<ol>`, which is what it always was.
+
+  `#download_form`, `#download`, `#refresh`, `#back` and `.errorlist` are
+  `tax.js` hooks -- keep the names.
+{% endcomment %}
+<div class="mx-auto max-w-2xl">
+  <h4 class="text-center text-xl font-semibold tracking-tight">Your CSV report is ready for download</h4>
+
+  <div class="mt-4 space-y-1 text-center text-sm">
     {% if analysis_tax %}
-    {% if analysis_tax.non_eligible %}<p class="text-error">{{ analysis_tax.non_eligible|length }} of the specified addresses {{ analysis_tax.non_eligible|length|pluralize:"is,are" }} not eligible for processing in our engine.</p>{% endif %}
-    {% if analysis_tax.locked %}<p class="text-error">{{ analysis_tax.locked|length }} of the specified addresses {{ analysis_tax.locked|length|pluralize:"is,are" }} currently locked by another process.</p>{% endif %}
-    {% if analysis_tax.errors or analysis_tax.unprocessed %}
-       <p class="text-error">The engine has {% if analysis_tax.errors %}thrown {{ analysis_tax.errors }} error{{ analysis_tax.errors|pluralize:"s" }}{% endif %}{% if analysis_tax.unprocessed %}{% if analysis_tax.errors %} and {% endif %}failed to process {{ analysis_tax.unprocessed }} transaction{{ analysis_tax.unprocessed|pluralize:"s" }}.{% else %}.{% endif %}</p>
+      {% if analysis_tax.non_eligible %}<p class="text-error">{{ analysis_tax.non_eligible|length }} of the specified addresses {{ analysis_tax.non_eligible|length|pluralize:"is,are" }} not eligible for processing in our engine.</p>{% endif %}
+      {% if analysis_tax.locked %}<p class="text-error">{{ analysis_tax.locked|length }} of the specified addresses {{ analysis_tax.locked|length|pluralize:"is,are" }} currently locked by another process.</p>{% endif %}
+      {% if analysis_tax.errors or analysis_tax.unprocessed %}
+        <p class="text-error">The engine has {% if analysis_tax.errors %}thrown {{ analysis_tax.errors }} error{{ analysis_tax.errors|pluralize:"s" }}{% endif %}{% if analysis_tax.unprocessed %}{% if analysis_tax.errors %} and {% endif %}failed to process {{ analysis_tax.unprocessed }} transaction{{ analysis_tax.unprocessed|pluralize:"s" }}.{% else %}.{% endif %}</p>
       {% endif %}
       {% if analysis_tax.file_error %}<p class="text-error">{{ analysis_tax.file_error|length }} of the specified addresses resulted with the file error.</p>{% endif %}
       {% if analysis_tax.errors or analysis_tax.unprocessed or file_error %}<p class="text-success">Our team is looking into the issue(s).</p>{% endif %}
     {% else %}
-    <p class="text-center text-success">No issues encountered during the process!<br></p>
+      <p class="text-success">No issues encountered during the process!</p>
     {% endif %}
-    <h5>Agreement statement</h5>
-    <p>By using the CSV export functionality of our portfolio tracker, you acknowledge and accept the following terms:<br><br>
-      1) We strongly recommend that you consult with a tax advisor or other qualified professional prior to making any decisions or taking any actions based on the information provided in this report.<br><br>
-      2) ASA Stats shall not be held liable for any loss, damages, or expenses incurred as a result of using the information in this report. This includes but is not limited to losses resulting from negligence, system errors, or other unforeseen circumstances.<br><br>
-      3) In the event that the data in this report does not align with the actual state due to errors within our engine or an error in the Algorand Indexer instance ASA Stats uses to fetch data, ASA Stats shall not be responsible for any inaccuracies or the resulting consequences.<br><br>
-      By continuing to use ASA Stats CSV export functionality, you confirm that you have read, understood, and accepted these terms and conditions.</p>
-    <form method="POST" action="." id="download_form">
-      {% csrf_token %}
-      <div class="mt-4">
-        <div>
-        <div>
-          <label title="Please agree before downloading the file">
-          <input type="checkbox" name="agree" />
-          <span>I agree</span>
-          </label>
-        </div>
-        </div>
-      </div>
-      {% if form.agree.errors %}<div><span class="text-error errorlist">You must agree before downloading the file!</span></div>{% endif %}
-      <div class="w-1/3">
-        <button class="btn btn-primary" id="download" name="download" value="1" type="submit">Download</button>
-      </div>
-      <div class="w-1/3">
-        <button class="btn btn-primary" id="refresh" name="refresh" value="1" type="submit">Refresh</button>
-      </div>
-      <div class="w-1/3">
-        {% if bundle %}
-        <a class="btn btn-primary" id="back" href="{% url 'bundle' url_value %}" title="Evaluate bundle">Back</a>
-        {% else %}
-        <a class="btn btn-primary" id="back" href="{% url 'address' url_value %}" title="Evaluate address">Back</a>
-        {% endif %}
-      </div>
-    </form>
-    <div><br></div>
-    <br><p>Please use our official channel on GitHub or our community channels to report any errors 
-      that you've discovered throughout your analysis, to inform us about the problems you've encountered 
-      while importing the report file(s) into the tax software, to suggest solutions to the issues 
-      you have with the report, as well as to provide general feedback.</p>
-      {% comment %}
-        Text links, not the old sprite buttons.
+  </div>
 
-        Those were four empty `<a>` elements: the label was pushed off-screen
-        with `text-indent: -99999px` and the icon came from a shared sprite
-        sheet, `img/social/social-c.png`, which is no longer in the tree. With
-        the image gone they rendered as four blank 32x32 boxes -- a paragraph
-        asking the reader to get in touch, followed by nothing to click.
+  <div class="mt-8 rounded-box border border-base-300 p-4 text-left">
+    <h5 class="text-lg font-semibold">Agreement statement</h5>
+    <p class="mt-2 text-sm text-base-content/70">By using the CSV export functionality of our portfolio tracker, you acknowledge and accept the following terms:</p>
+    <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-base-content/70">
+      <li>We strongly recommend that you consult with a tax advisor or other qualified professional prior to making any decisions or taking any actions based on the information provided in this report.</li>
+      <li>ASA Stats shall not be held liable for any loss, damages, or expenses incurred as a result of using the information in this report. This includes but is not limited to losses resulting from negligence, system errors, or other unforeseen circumstances.</li>
+      <li>In the event that the data in this report does not align with the actual state due to errors within our engine or an error in the Algorand Indexer instance ASA Stats uses to fetch data, ASA Stats shall not be responsible for any inaccuracies or the resulting consequences.</li>
+    </ol>
+    <p class="mt-3 text-sm text-base-content/70">By continuing to use ASA Stats CSV export functionality, you confirm that you have read, understood, and accepted these terms and conditions.</p>
+  </div>
 
-        The same move base.html made when the footer was rebuilt, and for the
-        same reason: a link should say where it goes. The destinations here are
-        specific -- an issue form and one Discord channel, not the project's
-        front doors -- so the labels say which, and the `title` attributes are
-        kept for the longer version.
-      {% endcomment %}
-      <div class="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
-        <a class="link link-hover" href="https://github.com/asastats/channel/issues/new/choose" target="_blank" rel="noopener" title="Create an issue in ASA Stats Channel on GitHub">Open a GitHub issue</a>
-        <a class="link link-hover" href="https://discord.com/channels/906917846754418770/1209176713485881384" target="_blank" rel="noopener" title="Add a comment in the #tax-report channel in our Discord server">#tax-report on Discord</a>
-        <a class="link link-hover" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on X platform">X</a>
-        <a class="link link-hover" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on Reddit">Reddit</a>
-      </div>
+  <form method="POST" action="." id="download_form" class="mt-6">
+    {% csrf_token %}
+    <label class="flex cursor-pointer items-center justify-center gap-2 text-sm" title="Please agree before downloading the file">
+      <input type="checkbox" name="agree" class="checkbox checkbox-sm" />
+      <span>I agree</span>
+    </label>
+    {% if form.agree.errors %}
+    <p class="mt-2 text-center text-sm text-error errorlist">You must agree before downloading the file!</p>
+    {% endif %}
+
+    <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+      <button class="btn btn-primary" id="download" name="download" value="1" type="submit">Download</button>
+      <button class="btn btn-outline" id="refresh" name="refresh" value="1" type="submit">Refresh</button>
+      {% if bundle %}
+      <a class="btn btn-ghost" id="back" href="{% url 'bundle' url_value %}" title="Evaluate bundle">Back</a>
+      {% else %}
+      <a class="btn btn-ghost" id="back" href="{% url 'address' url_value %}" title="Evaluate address">Back</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <p class="mt-10 text-center text-sm text-base-content/70">Please use our official channel on GitHub or our community channels to report any errors
+    that you've discovered throughout your analysis, to inform us about the problems you've encountered
+    while importing the report file(s) into the tax software, to suggest solutions to the issues
+    you have with the report, as well as to provide general feedback.</p>
+  {% comment %}
+    Text links, not the old sprite buttons.
+
+    Those were four empty `<a>` elements: the label was pushed off-screen
+    with `text-indent: -99999px` and the icon came from a shared sprite
+    sheet, `img/social/social-c.png`, which is no longer in the tree. With
+    the image gone they rendered as four blank 32x32 boxes -- a paragraph
+    asking the reader to get in touch, followed by nothing to click.
+
+    The same move base.html made when the footer was rebuilt, and for the
+    same reason: a link should say where it goes. The destinations here are
+    specific -- an issue form and one Discord channel, not the project's
+    front doors -- so the labels say which, and the `title` attributes are
+    kept for the longer version.
+  {% endcomment %}
+  <div class="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+    <a class="link link-hover" href="https://github.com/asastats/channel/issues/new/choose" target="_blank" rel="noopener" title="Create an issue in ASA Stats Channel on GitHub">Open a GitHub issue</a>
+    <a class="link link-hover" href="https://discord.com/channels/906917846754418770/1209176713485881384" target="_blank" rel="noopener" title="Add a comment in the #tax-report channel in our Discord server">#tax-report on Discord</a>
+    <a class="link link-hover" href="https://x.com/{{ X_HANDLE }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on X platform">X</a>
+    <a class="link link-hover" href="https://www.reddit.com/r/{{ SUBREDDIT_NAME }}" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} on Reddit">Reddit</a>
+  </div>
 </div>
-  

@@ -55,6 +55,39 @@ HEADLESS_DRIVER = "browser"
 HEADLESS_BACKEND = "xvfb"
 # HEADLESS_BACKEND = 'xephyr'
 
+#: The document the session cookie is attached to, before the reader is logged
+#: in. `add_cookie` needs some loaded page on the right origin.
+#:
+#: **It is not a 404, and that turns out to be why it works.** `404.html` is one
+#: path segment of `[-a-zA-Z0-9_\.]`, which the bundle-name catch-all at the end
+#: of `core.urls` matches, so it resolves to "is there a bundle called
+#: 404.html?" - login-gated, so it redirects to the login page. That is a full
+#: application render, and the comment beside it used to claim "404 pages load
+#: the quickest".
+#:
+#: I replaced it with a 263-byte static file on exactly that reasoning, and
+#: measured the seed in isolation: 20 fresh browsers took 68s through the login
+#: page against 16s through the static file. **The measurement was of the wrong
+#: thing.** The seed's own cost is not what the suite pays; what it pays is the
+#: first *application* page after it, and rendering the login page warms the
+#: HTTP cache for `bundle.js` and the stylesheet, so everything afterwards is
+#: cheap. Seeding on a static file leaves that cold:
+#:
+#:     test_dustsweep_page.py, seeded on /404.html          30 passed in 55.8s
+#:     test_dustsweep_page.py, seeded on the static file     5 failed in 81.3s
+#:
+#: The five failures were JS-dependent interactions timing out against a bundle
+#: that had not arrived yet. So the seed stays an application page, deliberately.
+#:
+#: The `refresh()` that used to follow it is still gone. That was a *second*
+#: render - it landed on `/subscriptions/` - and one is all the cache warming
+#: needs. The navigation after this one carries the cookie without it.
+#:
+#: Kept as a constant rather than the literal it replaced, because twenty-odd
+#: call sites spelling out a URL whose behaviour is this surprising is how the
+#: "loads the quickest" comment survived as long as it did.
+COOKIE_SEED_URL = "/404.html"
+
 TESTING_ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 
 
@@ -135,8 +168,24 @@ class Setup(StaticLiveServerTestCase):
         # naming the page, in seconds.
         self.browser.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
 
-        if self.headless_driver == "xvfbwrapper":
-            self.addCleanup(self.browser.quit)
+        # **Registered here, unconditionally, because `tearDown` is not always
+        # reached.** unittest runs `tearDown` only when `setUp` returned; a
+        # `setUp` that raises skips it and goes straight to the cleanups. Every
+        # navigation below this line is in `setUp` for most of these tests, and
+        # a chromedriver timeout on one of them is exactly the failure this
+        # suite keeps seeing - so the case where the browser leaks is precisely
+        # the case where it was already going wrong.
+        #
+        # The leak then outlives the test: a headless Chrome is ~12 processes,
+        # and one abandoned per failed `setUp` stays for the rest of the pytest
+        # process. Watching `pgrep -c chrome` through a file run shows the
+        # count sitting at two browsers' worth after the first failure instead
+        # of returning to one.
+        #
+        # This used to be registered only for `xvfbwrapper`, which is not the
+        # configured driver (`HEADLESS_DRIVER = "browser"`), so in the mode the
+        # suite actually runs in nothing cleaned up after a failed `setUp`.
+        self.addCleanup(self.browser.quit)
 
         # staging_server = os.environ.get('STAGING_SERVER')
         # if staging_server:
@@ -144,7 +193,10 @@ class Setup(StaticLiveServerTestCase):
         self.server_url = self.live_server_url
 
     def tearDown(self):
-        if self.headless_driver not in (None, "browser"):
+        # `hasattr`, because this runs only when `setUp` completed -- but a
+        # `setUp` that failed *after* the display was started would otherwise
+        # leave it running with nothing to stop it.
+        if self.headless_driver not in (None, "browser") and hasattr(self, "display"):
             self.display.stop()
 
         if self._test_has_failed():
@@ -157,7 +209,9 @@ class Setup(StaticLiveServerTestCase):
                 self.take_screenshot()
                 self.dump_html()
 
-        self.browser.quit()
+        # Not quit here: the `addCleanup` in `setUp` owns it, and cleanups run
+        # after `tearDown`, so the screenshot block above still has a live
+        # browser. Quitting in both places would close the session twice.
         super().tearDown()
 
     def setup_platform(self):
@@ -165,6 +219,13 @@ class Setup(StaticLiveServerTestCase):
             self.browser_class = webdriver.Chrome
             self.browser_options = ChromeOptions()
             self.browser_options.add_argument("--disable-extensions")
+            # Chrome puts renderer shared memory in /dev/shm and does not fall
+            # back when it fills. The GitHub runner gives it 64 MB, and the
+            # symptom when it runs out is not an out-of-memory message but
+            # `timeout: Timed out receiving message from renderer` -- the error
+            # this suite fails CI with. This host has 32 GB there, which is why
+            # the local reproduction rate is so much lower than CI's.
+            self.browser_options.add_argument("--disable-dev-shm-usage")
             self.browser_options.add_argument("--no-sandbox")
             self.browser_options.add_argument("--no-default-browser-check")
             self.browser_options.add_argument("--no-first-run")
@@ -320,6 +381,66 @@ class FunctionalTest(Setup):
         settling, a JS-driven re-render -- where polling beats a fixed sleep.
         """
         return WebDriverWait(self.browser, timeout).until(lambda _: predicate())
+
+    #: Release the pin so the next assignment lands. The property is defined
+    #: `configurable`, so `delete` restores an ordinary writable global.
+    _UNPIN_BRIDGE = (
+        "['asastatsSwap', 'asastatsWallet'].forEach(function (name) {"
+        "  try { delete window[name]; } catch (error) {}"
+        "});"
+    )
+
+    def publish_wallet_bridge(self, script, *args):
+        """Run a bridge-installing `script`, and make what it published stick.
+
+        Use this rather than `execute_script` for anything that assigns
+        `window.asastatsSwap` or `window.asastatsWallet`. It unpins first, so a
+        test that connects a *second* account still replaces the first - which
+        a bare pin silently swallows, and which is how pinning first broke
+        `test_switching_account_withdraws_the_offer` while fixing three others.
+
+        :param script: JavaScript that assigns the bridge globals
+        :type script: str
+        :param args: arguments forwarded to the script
+        """
+        self.browser.execute_script(self._UNPIN_BRIDGE)
+        self.browser.execute_script(script, *args)
+        self.pin_wallet_bridge()
+
+    def pin_wallet_bridge(self):
+        """Make the stub bridges on `window` survive the real one publishing.
+
+        **Standing up both halves is not enough, because the clobber is a
+        race.** `initSwapBridge` checks whether both globals are already up,
+        then `await`s a `WalletManager` before assigning them. A stub installed
+        during that await passes no guard - the guard was read before it
+        existed - so the real bridge lands afterwards and replaces it with one
+        whose `activeAddress()` is null, no wallet being connected.
+
+        What that looks like downstream is not a missing bridge. `walletOwns`
+        goes false, `applyOwnership` disables the CTA and labels it "Connect
+        wallet to swap", and the test reports a quote that would not execute.
+        Worse, `window.__calls` and any other marker the stub set survive the
+        overwrite, so asking "is my stub installed?" answers yes while the
+        object being called is the real one. Ask `activeAddress()` instead.
+
+        Waiting for the real bridge before installing would also work, but it
+        hangs on any page where `initSwapBridge` finds no wallet entry and
+        returns without publishing. Redefining the property has no such edge:
+        the setter swallows the assignment, so whoever assigns later - now or
+        on any future `htmx:afterSettle` - simply has no effect.
+        """
+        self.browser.execute_script(
+            "['asastatsSwap', 'asastatsWallet'].forEach(function (name) {"
+            "  var pinned = window[name];"
+            "  if (!pinned) return;"
+            "  Object.defineProperty(window, name, {"
+            "    configurable: true,"
+            "    get: function () { return pinned; },"
+            "    set: function () {}"   # the real bridge writes into the void
+            "  });"
+            "});"
+        )
 
     def page_state(self):
         """Return {ready, sheets, title, text} for the current page in one call.
@@ -478,15 +599,14 @@ class FunctionalTest(Setup):
             username=email, password="top_secret", permission=permission
         )
 
-        # visit some url in your domain to setup Selenium.
-        # (404 pages load the quickest)
-        self.browser.get(self.server_url + "/404.html")
+        # A document to hang the cookie on -- see COOKIE_SEED_URL.
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
 
         # add the newly created session cookie to selenium webdriver.
         self.browser.add_cookie(session_cookie)
 
-        # refresh to exchange cookies with the server.
-        self.browser.refresh()
+        # No refresh: the seed page is a static file with no session to
+        # exchange, and the navigation below carries the cookie anyway.
 
         # This time user should present as logged in.
         self.browser.get(self.server_url)
@@ -499,15 +619,14 @@ class FunctionalTest(Setup):
             username=email, password="top_secret", permission=permission
         )
 
-        # visit some url in your domain to setup Selenium.
-        # (404 pages load the quickest)
-        self.browser.get(self.server_url + "/404.html")
+        # A document to hang the cookie on -- see COOKIE_SEED_URL.
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
 
         # add the newly created session cookie to selenium webdriver.
         self.browser.add_cookie(session_cookie)
 
-        # refresh to exchange cookies with the server.
-        self.browser.refresh()
+        # No refresh: the seed page is a static file with no session to
+        # exchange, and the navigation below carries the cookie anyway.
 
         # This time user should present as logged in.
         self.browser.get(self.server_url + "/profile/add-bundle")
@@ -523,15 +642,14 @@ class FunctionalTest(Setup):
         user.profile.address = address
         user.profile.save()
 
-        # visit some url in your domain to setup Selenium.
-        # (404 pages load the quickest)
-        self.browser.get(self.server_url + "/404.html")
+        # A document to hang the cookie on -- see COOKIE_SEED_URL.
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
 
         # add the newly created session cookie to selenium webdriver.
         self.browser.add_cookie(session_cookie)
 
-        # refresh to exchange cookies with the server.
-        self.browser.refresh()
+        # No refresh: the seed page is a static file with no session to
+        # exchange, and the navigation below carries the cookie anyway.
 
         # This time user should present as logged in, on the authorize page.
         self.browser.get(self.server_url + "/profile/authorize/")

@@ -20,7 +20,7 @@ from selenium.webdriver.common.by import By
 
 from walletauth.models import LinkedAddress
 
-from .base import FunctionalTest
+from .base import COOKIE_SEED_URL, FunctionalTest
 
 SAMPLE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -159,7 +159,7 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         user.profile.preferred_router = "folks"
         user.profile.save()
 
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         return user
 
@@ -730,7 +730,7 @@ class SwapModalBundlePageTest(SwapPageMixin, FunctionalTest):
         user.profile.preferred_router = "folks"
         user.profile.save()
 
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         return user
 
@@ -741,12 +741,16 @@ class SwapModalBundlePageTest(SwapPageMixin, FunctionalTest):
         and a signature to reach this state; the swap controller reads one
         method off it, so that is what is stood up here.
         """
-        self.browser.execute_script(
+        self.publish_wallet_bridge(
             "var address = arguments[0];"
             "window.asastatsSwap = {"
             "  activeAddress: function () { return address; }"
             "};"
-            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));",
+            "window.asastatsWallet = {"
+            "  activeAddress: function () { return address; }"
+            "};"
+            "window.dispatchEvent(new CustomEvent('asastats:swap-ready'));"
+            "window.dispatchEvent(new CustomEvent('asastats:wallet-ready'));",
             address,
         )
 

@@ -49,7 +49,7 @@ from django.core.cache import cache
 from selenium.webdriver.common.by import By
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
-from .base import FunctionalTest
+from .base import COOKIE_SEED_URL, FunctionalTest
 
 SAMPLE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -110,7 +110,7 @@ class MoneyPageMixin:
 
         # A 404 loads quickest, and a page has to be open before a cookie can
         # be set for the domain.
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(cookie)
 
     def open_address(self):

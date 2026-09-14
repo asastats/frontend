@@ -1,8 +1,11 @@
 """Testing module for core app synchronous url dispatcher module."""
 
 from django.conf import settings
-from django.urls import URLPattern
+from django.contrib.messages import get_messages
+from django.test import TestCase
+from django.urls import URLPattern, resolve
 
+from config.urls import ROOT_ASSETS, root_asset
 from core import urls
 from utils.constants.users import BUNDLENAME_REGEX
 
@@ -277,3 +280,43 @@ class TestCoreUrls:
 
     def test_core_urls_patterns_count(self):
         assert len(urls.urlpatterns) == 41
+
+
+class RootAssetUrlTest(TestCase):
+    """The browser's own root-level requests must not look like bundle names.
+
+    `core.urls` ends in a catch-all whose regex matches `site.webmanifest` as
+    readily as `Cold-storage`, and the view behind it does not merely 404: it
+    queues `messages.error("Bundle name not found!")`, which waits in the
+    session and lands on whatever page the reader opens next. So a browser
+    fetching the manifest in the background put an error banner on a page the
+    reader had done nothing wrong on.
+
+    nginx hides this in production by aliasing the same names first
+    (`deploy/roles/nginx/templates/favicon.conf`), which is why it survived:
+    the only place it showed was the browser tests, as a race.
+    """
+
+    def test_root_assets_resolve_to_the_asset_view(self):
+        """Each name is answered rather than read as a bundle name."""
+        for asset in ROOT_ASSETS:
+            with self.subTest(asset=asset):
+                match = resolve(f"/{asset}")
+                assert match.func is root_asset
+                assert match.kwargs == {"asset": asset}
+
+    def test_a_root_asset_redirects_into_static_and_says_nothing(self):
+        """It redirects to the file, and queues no message on the way.
+
+        The message is the half that mattered: a 404 would have been harmless.
+        """
+        response = self.client.get("/site.webmanifest")
+
+        assert response.status_code == 302
+        assert "site.webmanifest" in response["Location"]
+        assert response["Location"] != "/site.webmanifest"
+        assert list(get_messages(response.wsgi_request)) == []
+
+    def test_a_real_bundle_name_still_reaches_the_catch_all(self):
+        """The new pattern is anchored, so it must not shadow ordinary names."""
+        assert resolve("/Cold-storage").func is not root_asset

@@ -35,7 +35,7 @@ from selenium.webdriver.common.by import By
 
 from walletauth.models import LinkedAddress
 
-from .base import FunctionalTest
+from .base import COOKIE_SEED_URL, FunctionalTest
 
 #: The serialized account the address page renders from, as
 #: `test_swap_widget.py` uses it. These tests care about the sweep entry rather
@@ -71,7 +71,7 @@ class DustSweepPageTest(FunctionalTest):
         user.profile.address = ADDRESS
         user.profile.save()
 
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         return user
 
@@ -482,7 +482,7 @@ class DustSweepSignatureTest(FunctionalTest):
         the real bridge would go on to decode each entry, and it is the decode
         that failed.
         """
-        self.browser.execute_script(
+        self.publish_wallet_bridge(
             "var address = arguments[0];"
             "window.__signed = null;"
             "window.asastatsSwap = {"
@@ -597,7 +597,7 @@ class DustSweepPageUnlinkedTest(FunctionalTest):
             password="top_secret",
             permission=100,
         )
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         self.browser.get(f"{self.server_url}/widgets/dustsweep/{ADDRESS}")
 
@@ -675,7 +675,7 @@ class DustSweepAddressPageEntryTest(AddressPageEngineMixin, FunctionalTest):
         user.profile.preferred_router = "folks"
         user.profile.save()
 
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         return user
 
@@ -697,7 +697,7 @@ class DustSweepAddressPageEntryTest(AddressPageEngineMixin, FunctionalTest):
         this stub entirely. Eight tests failed and none of them was a bug in
         the page.
         """
-        self.browser.execute_script(
+        self.publish_wallet_bridge(
             "var address = arguments[0];"
             "window.asastatsSwap = {"
             "  activeAddress: function () { return address; }"
@@ -846,7 +846,7 @@ class DustSweepAddressPageEntryTest(AddressPageEngineMixin, FunctionalTest):
             password="top_secret",
             permission=100,
         )
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         self.browser.get(f"{self.server_url}/{ADDRESS}")
 
@@ -894,13 +894,13 @@ class DustSweepBundlePageEntryTest(AddressPageEngineMixin, FunctionalTest):
         user.profile.address = primary
         user.profile.save()
 
-        self.browser.get(self.server_url + "/404.html")
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(session_cookie)
         return user
 
     def _connect(self, address):
         """Publish a wallet bridge connected to `address`. See the entry test."""
-        self.browser.execute_script(
+        self.publish_wallet_bridge(
             "var address = arguments[0];"
             "window.asastatsSwap = {"
             "  activeAddress: function () { return address; }"
