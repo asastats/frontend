@@ -441,12 +441,19 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_a_reader_below_the_band_polls_nothing(
+    def test_a_reader_below_the_band_now_gets_the_free_taste(
         self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
     ):
-        """Opted in and then the tier lapsed. The setting outlives the
-        entitlement, so the gate has to be re-asked on every render rather than
-        trusted from the profile."""
+        """**This asserted the opposite until the allowance existed.**
+
+        Below Asastatser the marker was withheld entirely, so an Intro reader
+        polled nothing. They now get a daily allowance, and a reader with no
+        marker could never spend it - so the marker is rendered and the limit is
+        enforced per poll instead.
+
+        The entitlement is still re-asked on every render rather than trusted
+        from the profile; what changed is the answer, not where it comes from.
+        """
         mocked_fetch.return_value = self.sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": INTRO}
@@ -455,7 +462,42 @@ class LiveRefreshTest(FunctionalTest):
         self.sign_in(live_refresh=True, permission=INTRO)
         self.open_page()
 
-        assert self.browser.find_elements(By.ID, "id-liverefresh") == []
+        assert self.browser.find_elements(By.ID, "id-liverefresh") != []
+
+    @mock.patch("widgets.inhouse.liverefresh.views.remaining")
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_spent_reader_is_handed_back_to_the_free_reload(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis,
+        mocked_remaining,
+    ):
+        """**The handover, which is the whole reason this is not a 204.**
+
+        A page that simply stopped would leave them with neither the live
+        updates nor the sixty-second reload a non-subscriber gets - worse than
+        never having had it, and indistinguishable from a broken feature.
+        `address.js` stands its own timer down whenever the marker is present
+        and asks every tick, so taking the marker off *is* the handover.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": INTRO}
+        mocked_redis.return_value = self._redis()
+        mocked_remaining.return_value = -1.0
+
+        self.sign_in(live_refresh=True, permission=INTRO)
+        self.open_page()
+        self.arm()
+
+        self.wait_until(
+            lambda: self.browser.find_elements(By.ID, "id-liverefresh") == [],
+            timeout=15,
+        )
+
+        notice = self.browser.find_element(By.ID, "id-liverefresh-spent")
+        assert notice.is_displayed()
 
 
 class LiveRefreshClassicTest(LiveRefreshTest):

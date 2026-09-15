@@ -262,3 +262,21 @@ def validate_address_or_algo_name_url_path(url_path):
     response = check_algorand_address(url_path)
     if response:
         raise ValidationError(ADDRESS_AND_ALGO_NAME_URL_PATH_ERROR)
+
+
+def liverefresh_daily_minutes(permission):
+    """Return the live-refresh minutes a day `permission` allows, or None.
+
+    None means no limit, which is every tier from Asastatser up. The number is
+    the widget's to decide - it is the widget's feature and its manifest carries
+    the address bands - so this only converts it for the settings page, which
+    has no business importing a widget's internals for a label.
+
+    :param permission: the reader's permission integer
+    :type permission: int
+    :return: int or None
+    """
+    from widgets.inhouse.liverefresh.allowance import daily_allowance
+
+    seconds = daily_allowance(permission)
+    return None if seconds is None else seconds // 60

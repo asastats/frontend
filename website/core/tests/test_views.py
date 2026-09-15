@@ -1084,21 +1084,25 @@ class ProfileSettingsPageTest(TestCase):
         self.user.profile.refresh_from_db()
         assert self.user.profile.live_refresh is False
 
-    def test_settings_page_liverefresh_post_redirects_unentitled(self):
-        """Below the band the control is a link to subscriptions, but the POST
-        has to refuse as well - the page is not the enforcement."""
+    def test_settings_page_liverefresh_post_saves_for_a_free_reader(self):
+        """**The opt-in has to reach them or the allowance is unreachable.**
+
+        This asserted a redirect to subscriptions, which was right while the
+        bands admitted nobody below Asastatser. An allowance a reader cannot
+        switch on is not an allowance, so the POST now saves and the limit is
+        enforced per poll instead - see `liverefresh/allowance.py`.
+        """
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
         self.user.profile.save()
 
         with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
-            response = self.client.post(
+            self.client.post(
                 reverse("profile_settings"),
                 data={"section": "liverefresh", "live_refresh": "on"},
             )
 
-        self.assertRedirects(response, reverse("subscriptions"))
         self.user.profile.refresh_from_db()
-        assert self.user.profile.live_refresh is False
+        assert self.user.profile.live_refresh is True
 
     def test_settings_page_liverefresh_post_invalid_rerenders_bound_form(self):
         """**`is_valid` is mocked because nothing else can make it false.**
@@ -1136,10 +1140,15 @@ class ProfileSettingsPageTest(TestCase):
         self.user.profile.refresh_from_db()
         assert self.user.profile.live_refresh is False
 
-    def test_settings_page_liverefresh_locked_names_the_tier_and_links_out(self):
-        """The house pattern for a setting somebody cannot have: show the
-        control disabled so they can see what it is, name the tier, and take a
-        tap to the page where they can act - as the explorer preference does."""
+    def test_settings_page_liverefresh_names_the_daily_allowance(self):
+        """**The upgrade prompt moved to where it means something.**
+
+        This used to show the control disabled and name the tier, because below
+        Asastatser a reader could not have it at all. They can now: every
+        authenticated reader gets a daily allowance, and what a subscription
+        buys is the limit coming off. So the control is live and the number is
+        the prompt - told here rather than by the page quietly stopping later.
+        """
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
         self.user.profile.save()
 
@@ -1147,9 +1156,29 @@ class ProfileSettingsPageTest(TestCase):
             response = self.client.get(reverse("profile_settings"))
 
         content = response.content.decode()
-        assert "Real-time refresh is available from the" in content
-        assert "Asastatser" in content
+        assert "30 minutes" in content
         assert reverse("subscriptions") in content
+        assert "Real-time refresh is available from the" not in content
+
+    def test_settings_page_liverefresh_says_nothing_about_limits_when_unlimited(self):
+        """A subscriber has no number to be told, and a prompt to subscribe
+        would be addressed to somebody who already has."""
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.save()
+
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+
+        assert "minutes</span> of" not in response.content.decode()
+
+    def test_settings_page_liverefresh_untiered_reader_gets_the_free_minutes(self):
+        self.user.profile.permission = 0
+        self.user.profile.save()
+
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+
+        assert "15 minutes" in response.content.decode()
 
     def test_settings_page_explorer_post_saves_for_entitled_user(self):
         self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
@@ -1323,7 +1352,12 @@ class SwapEntryViewTest(TestCase):
 
         for live_refresh, permission, expected in (
             (False, SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], False),
-            (True, SUBSCRIPTION_TIER_PERMISSIONS["Intro"], False),
+            (False, 0, False),
+            # Below Asastatser the marker is rendered now: the allowance is
+            # spent per poll rather than withheld at the gate, and a reader with
+            # no marker could never spend it.
+            (True, SUBSCRIPTION_TIER_PERMISSIONS["Intro"], True),
+            (True, 0, True),
             (True, SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], True),
         ):
             with self.subTest(live_refresh=live_refresh, permission=permission):

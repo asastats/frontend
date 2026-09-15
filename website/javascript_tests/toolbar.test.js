@@ -671,7 +671,12 @@ describe("sorting", () => {
     // there, so seeing AAA first is the tie-break doing the work.
     const list = document.getElementById("asset-list");
     list.insertBefore(document.getElementById("f2"), document.getElementById("f1"));
-    document.getElementById("f2").setAttribute("data-sort-value", "40");
+    // The *shown* figure, which is what value sorts read now: `data-sort-value`
+    // on the row is the one the page was rendered with and stops moving the
+    // moment the live refresh starts swapping value spans.
+    document
+      .querySelector("#f2 .cval .v")
+      .setAttribute("data-val", "40");
     const rebase = jest.fn();
     window.asastatsPins = { rebase, apply: jest.fn() };
     load();
@@ -1979,5 +1984,55 @@ describe("a page whose sections are not there", () => {
     Object.defineProperty(event, "target", { value: {}, configurable: true });
 
     expect(() => document.querySelector(".asasec").dispatchEvent(event)).not.toThrow();
+  });
+});
+
+describe("sorting after a live update", () => {
+  test("value sorts on the figure the row is showing, not the one it loaded with", () => {
+    // **The bug this closes.** The live refresh swaps the value span out of
+    // band every block and deliberately leaves the row element alone - swapping
+    // the row would close it and discard the reader's drag order. So
+    // `data-sort-value` is the figure the page was *rendered* with, and after a
+    // while sorting by value put the rows in an order that contradicted the
+    // column beside them.
+    const list = document.getElementById("asset-list");
+    // f1 loaded cheapest and is now the most valuable; only the span moves.
+    document.getElementById("f1").setAttribute("data-sort-value", "1");
+    document.querySelector("#f1 .cval .v").setAttribute("data-val", "9999");
+    const rebase = jest.fn();
+    window.asastatsPins = { rebase, apply: jest.fn() };
+    load();
+
+    document.getElementById("tb-dir").click();
+
+    const order = rebase.mock.calls[rebase.mock.calls.length - 1][1].map((el) => el.id);
+    expect(order[order.length - 1]).toBe("f1");
+  });
+
+  test("falls back when the shown figure is not a number", () => {
+    // A fragment that rendered an empty `data-val` - an older engine, a missing
+    // key - must not sort that row as zero and move it to the end. The rendered
+    // figure is stale but it is a number.
+    const rebase = jest.fn();
+    document.getElementById("f1").setAttribute("data-sort-value", "9999");
+    document.querySelector("#f1 .cval .v").setAttribute("data-val", "");
+    window.asastatsPins = { rebase, apply: jest.fn() };
+    load();
+
+    document.getElementById("tb-dir").click();
+
+    const order = rebase.mock.calls[rebase.mock.calls.length - 1][1].map((el) => el.id);
+    expect(order[order.length - 1]).toBe("f1");
+  });
+
+  test("falls back to the rendered figure when a row has no value cell", () => {
+    // The three other sorts have no live equivalent and read the row attribute
+    // as they always did; so does a value sort on a row whose cell is missing.
+    const rebase = jest.fn();
+    document.querySelector("#f1 .cval .v").remove();
+    window.asastatsPins = { rebase, apply: jest.fn() };
+    load();
+
+    expect(() => document.getElementById("tb-dir").click()).not.toThrow();
   });
 });

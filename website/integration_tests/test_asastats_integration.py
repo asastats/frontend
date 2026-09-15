@@ -236,9 +236,24 @@ class AsastatsQuoteViewTest(TestCase):
 
 
 #: What the engine says when it cannot reach the standalone quote signer.
-#: `engine/core/quote_signer.py:184` raises `QuoteSignerUnavailable` with this
+#: `engine/core/quote_signer.py` raises `QuoteSignerUnavailable` with this
 #: prefix, and `group()` turns it into the view's 503.
 SIGNER_UNREACHABLE = "quote signer service is unreachable"
+
+#: And what it says when no signer is configured at all. Since S8's option B
+#: the engine refuses to sign mainnet locally, so an engine with no
+#: `ROUTER_QUOTE_SIGNER_URL` cannot build a group either.
+#:
+#: **Two messages, one situation as far as these tests are concerned**: there is
+#: no signer here. A development machine has neither the URL nor the service
+#: more often than it has one without the other, and this test failed for a day
+#: because it knew about only the second of them.
+SIGNER_ABSENT = "requires the standalone quote signer"
+
+#: Both of the above. Deliberately *not* every refusal naming the signer: "the
+#: quote signer service signed as somebody else" also names it and is a real
+#: fault that must fail rather than skip.
+NO_SIGNER_HERE = (SIGNER_UNREACHABLE, SIGNER_ABSENT)
 
 
 class AsastatsGroupViewTest(TestCase):
@@ -283,11 +298,12 @@ class AsastatsGroupViewTest(TestCase):
 
         if response.status_code == 503:
             error = response.json().get("error", "")
-            if SIGNER_UNREACHABLE in error:
+            if any(reason in error for reason in NO_SIGNER_HERE):
                 self.skipTest(
-                    "no quote signer is answering ROUTER_QUOTE_SIGNER_URL - "
-                    "start `python -m router.signer` on the engine's host, or "
-                    "unset the URL to sign locally in development"
+                    "no quote signer here - set ROUTER_QUOTE_SIGNER_URL on the "
+                    "engine and start `python -m router.signer` on its host. "
+                    "Since S8's option B there is no local-signing fallback on "
+                    f"mainnet, so the engine refuses rather than signs: {error}"
                 )
             raise AssertionError(f"the engine refused for another reason: {error}")
 
@@ -311,7 +327,8 @@ class AsastatsGroupViewTest(TestCase):
         """
         response = self._quoted_group()
 
-        if SIGNER_UNREACHABLE not in response.content.decode(errors="replace"):
+        body = response.content.decode(errors="replace")
+        if not any(reason in body for reason in NO_SIGNER_HERE):
             self.skipTest("a signer is answering, so there is no fallback to catch")
 
         assert response.status_code == 503, response.status_code

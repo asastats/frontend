@@ -88,5 +88,15 @@
       data-poll-url="{{ liverefresh_url }}"
       data-interval="{{ liverefresh_interval }}"
       data-grace="{{ liverefresh_grace }}"></span>
+{% comment %} Revealed by `liverefresh.js` when the day's free watching is spent.
+
+   Rendered hidden rather than inserted by the script, so the message is in the
+   markup one place and a reader with no JavaScript is not shown a notice about
+   a feature that needs it. It sits in this non-cached partial with the marker,
+   because it is per-reader: the address page's cache entry is shared. {% endcomment %}
+<div id="id-liverefresh-spent" class="alert alert-info mx-auto mt-4 max-w-2xl" role="status" hidden>
+  <span>That is today's free real-time refresh used up. The page will keep
+    updating on the slower timer &mdash; a subscription removes the limit.</span>
+</div>
 <script src="{% static 'liverefresh/liverefresh.js' %}"></script>
 {% endif %}

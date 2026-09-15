@@ -107,12 +107,28 @@
       {% comment %} Off by default even for a reader entitled to it: the tier
          buys the choice, not the behaviour. With it off, "refresh data" on the
          address page keeps the sixty-second reload. {% endcomment %}
+      {% comment %} **The upgrade prompt, at the moment it means something.**
+         Every authenticated reader may now switch this on; what a subscription
+         buys is the limit coming off. Telling them the number here - rather
+         than letting the page quietly stop later - is the whole reason the
+         allowance exists, and `liverefresh_minutes` is None for the tiers that
+         have none. {% endcomment %}
+      {% if liverefresh_minutes %}
+      <span class="mt-1 block text-xs text-base-content/60">
+        Your plan includes <span class="text-primary">{{ liverefresh_minutes }} minutes</span> of
+        real-time refresh a day. <a href="{% url 'subscriptions' %}" class="link">Subscribe</a> to remove the limit.
+      </span>
+      {% endif %}
       <div class="mt-4">
         <button type="submit" class="btn btn-primary" id="id_save_liverefresh">Save</button>
       </div>
       {% include "snippets/messages_section.html" with section="liverefresh" %}
     </form>
     {% else %}
+    {% comment %} Unreachable on this deployment - the widget's free band admits
+       every authenticated reader - and kept deliberately: the bands live in
+       `widget.toml`, and a fork that removes the free one needs this branch to
+       have something to render. {% endcomment %}
     <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Asastatser tier — open subscriptions">
       <div>
         <label class="flex items-center gap-3">

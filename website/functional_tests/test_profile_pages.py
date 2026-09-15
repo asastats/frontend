@@ -251,19 +251,37 @@ class LiveRefreshSettingTest(FunctionalTest):
 
         assert not checkbox.is_selected()
 
-    def test_below_the_tier_it_names_the_tier_and_links_to_subscriptions(self):
-        """The house pattern for a setting somebody cannot have: show it
-        disabled so they can see what it is, say what it costs, and take a tap
-        to where they can act - rather than a control that does nothing."""
-        self._open(SUBSCRIPTION_TIER_PERMISSIONS["Intro"], "locked")
+    def test_below_the_tier_the_control_works_and_names_the_daily_limit(self):
+        """**This asserted a disabled control until the allowance existed.**
+
+        The house pattern for a setting somebody cannot have is to show it
+        disabled, name the tier and link out. Below Asastatser nobody could have
+        this at all, so that was right. They can now - 15 minutes a day with no
+        tier, 30 with Intro - and an allowance a reader cannot switch on is not
+        an allowance, so the control is live.
+
+        The upgrade prompt did not disappear, it moved to where it means
+        something: the number, beside the checkbox they are ticking, rather than
+        a page that quietly stops on them twenty minutes later.
+        """
+        self._open(SUBSCRIPTION_TIER_PERMISSIONS["Intro"], "limited")
 
         section = self.browser.find_element(By.ID, "id-section-liverefresh")
         checkbox = section.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
         link = section.find_element(By.TAG_NAME, "a")
 
-        assert not checkbox.is_enabled()
-        assert "Asastatser" in section.text
+        assert checkbox.is_enabled()
+        assert "30 minutes" in section.text
         assert reverse("subscriptions") in link.get_attribute("href")
+
+    def test_a_subscriber_is_told_nothing_about_limits(self):
+        """They have none, and a prompt to subscribe would be addressed to
+        somebody who already has."""
+        self._open(SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], "unlimited")
+
+        section = self.browser.find_element(By.ID, "id-section-liverefresh")
+
+        assert "minutes" not in section.text
 
     def test_the_saved_preference_comes_back_checked(self):
         """A setting that does not survive a reload is a setting nobody trusts."""

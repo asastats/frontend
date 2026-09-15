@@ -475,6 +475,36 @@
    *
    * @param {Element[]} rows - every asset card, live or not.
    */
+  /**
+   * The number this row sorts by, preferring the figure it is actually showing.
+   *
+   * **`data-sort-value` is the figure the page was rendered with and does not
+   * move.** The live refresh swaps the value *span* out of band on every block
+   * and deliberately leaves the row alone - swapping the row would close it,
+   * discard the reader's drag order and lose anything open inside. So after a
+   * while the two disagree, and sorting by value put the rows in an order that
+   * contradicted the column beside it.
+   *
+   * The span carries the same quantity - both are the unrounded value - so
+   * reading it costs nothing and is right whether the page is a minute or an
+   * hour old. `data-sort-value` stays as the fallback for a row whose value
+   * cell is missing, and for the three sorts that have no live equivalent.
+   *
+   * @param {Element} row - one asset card.
+   * @param {string} attribute - the data attribute this sort reads.
+   * @returns {number}
+   */
+  function sortNumber(row, attribute) {
+    if (attribute === SORTS.value) {
+      var live = row.querySelector(".cval .v[data-val]");
+      if (live) {
+        var parsed = parseFloat(live.getAttribute("data-val"));
+        if (isFinite(parsed)) return parsed;
+      }
+    }
+    return num(row, attribute);
+  }
+
   function order(rows) {
     var attribute = SORTS[state.sort];
     var textual = state.sort === "name";
@@ -482,10 +512,10 @@
     var sorted = rows.slice().sort(function (a, b) {
       var left = textual
         ? a.getAttribute(attribute) || ""
-        : num(a, attribute);
+        : sortNumber(a, attribute);
       var right = textual
         ? b.getAttribute(attribute) || ""
-        : num(b, attribute);
+        : sortNumber(b, attribute);
       if (left === right) {
         var tieA = a.getAttribute(SORTS.name) || "";
         var tieB = b.getAttribute(SORTS.name) || "";

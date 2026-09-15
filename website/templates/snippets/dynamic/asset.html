@@ -99,10 +99,14 @@
 
          **`data-sort-value` on the `<details>` above is deliberately not
          updated.** Swapping the row itself would close it, discard the reader's
-         drag order and lose anything open inside; re-sorting after a live
-         update would reorder the page under someone reading it. So the figure
-         a reader sees is live and the sort key is the one the page was built
-         with, until they reload. {% endcomment %}
+         drag order and lose anything open inside, and re-sorting under somebody
+         mid-read is its own kind of rude.
+
+         It is no longer the stale sort key it was, though: `toolbar.js` sorts
+         by value on *this* span's `data-val`, which is the same unrounded
+         quantity and is swapped every block, falling back to the row attribute
+         only when the cell is missing or unreadable. So a sort after an hour of
+         updates agrees with the column beside it. {% endcomment %}
       {% partialdef assetvalue inline %}
       <span id="v{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}class="v val" data-val="{{ value }}">{{ value|floatformat:'2g' }}</span>
       {% endpartialdef assetvalue %}
