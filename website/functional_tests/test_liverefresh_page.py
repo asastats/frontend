@@ -75,6 +75,24 @@ class LiveRefreshTest(FunctionalTest):
         cache.clear()
         self.sample = _sample_payload()
         self.first = self.sample["asaitems"][0]
+        # **Pinned, because the real one reads the engine's Redis.** The address
+        # page renders `data-holdings` from `cached_live_holdings`, and on a
+        # machine where the engine is running and something is watching this
+        # address that answers with a real fingerprint - which will not match
+        # whatever a test publishes, so every poll orders a reload and every
+        # assertion about updating in place fails. These tests passed for an
+        # afternoon only because nothing happened to be watching it.
+        self.fingerprints = [RENDERED_FINGERPRINT]
+        patcher = mock.patch(
+            "core.views.cached_live_holdings",
+            side_effect=lambda *a, **kw: (
+                self.fingerprints.pop(0)
+                if len(self.fingerprints) > 1
+                else self.fingerprints[0]
+            ),
+        )
+        self.addCleanup(patcher.stop)
+        patcher.start()
 
     def sign_in(self, live_refresh=True, permission=ASASTATSER):
         """Log a reader in on the dynamic layout, opted in or not."""
@@ -113,22 +131,15 @@ class LiveRefreshTest(FunctionalTest):
         return client
 
     def _rendered_fingerprint(self, *fingerprints):
-        """Patch what the address page renders `data-holdings` from.
+        """Set what the address page renders `data-holdings` from.
 
-        Takes the value for the first render and then for every render after,
-        which is what a real reload sees: the page is keyed on this, so once the
-        engine has published a new one the rebuilt page carries it and the
-        reader settles rather than looping.
+        One value means every render carries it. Two means the first render
+        carries the first and everything after carries the second, which is what
+        a real reload sees: the page is keyed on this, so once the engine has
+        published a new one the rebuilt page carries it and the reader settles
+        rather than looping.
         """
-        first, rest = fingerprints[0], fingerprints[-1]
-        answers = iter([first])
-
-        def answer(*args, **kwargs):
-            return next(answers, rest)
-
-        patcher = mock.patch("core.views.cached_live_holdings", side_effect=answer)
-        self.addCleanup(patcher.stop)
-        return patcher.start()
+        self.fingerprints[:] = list(fingerprints)
 
     def holdings_attribute(self):
         """Return what the page says it was rendered from."""
@@ -150,6 +161,19 @@ class LiveRefreshTest(FunctionalTest):
     def arm(self):
         """Tick the Auto-refresh checkbox, which is what starts the poll."""
         self.browser.execute_script("localStorage.setItem('refresh', 'y');")
+
+    #: Where the band's data attributes live. The dynamic layout puts them on
+    #: the swapped element itself; classic puts them on the `.pricetip` inside
+    #: the swapped `.tooltip` wrapper.
+    BAND_DATA = "#id-band-total"
+
+    def value_text(self, figure):
+        """Return what a row's value span reads after an update.
+
+        Classic renders the unit inside the span and the dynamic layout keeps it
+        in a sibling, so the same published figure is different text.
+        """
+        return figure
 
     def band(self):
         """Return the total the band is showing."""
@@ -344,8 +368,9 @@ class LiveRefreshTest(FunctionalTest):
         self.wait_until(
             lambda: self.browser.execute_script(
                 "var el = document.getElementById('v' + arguments[0]);"
-                "return el && el.textContent.trim() === '99.50';",
+                "return el && el.textContent.trim() === arguments[1];",
                 asset_id,
+                self.value_text("99.50"),
             ),
             timeout=15,
         )
@@ -379,11 +404,13 @@ class LiveRefreshTest(FunctionalTest):
         self.wait_until(lambda: self.band() != before, timeout=15)
 
         dataset = self.browser.execute_script(
-            "var el = document.getElementById('id-band-total');"
+            "var el = document.querySelector(arguments[0]);"
             "return {price: el.dataset.price, pricealgo: el.dataset.pricealgo,"
             "        total: el.dataset.total, totalwnft: el.dataset.totalwnft,"
-            "        totalnft: el.dataset.totalnft};"
+            "        totalnft: el.dataset.totalnft};",
+            self.BAND_DATA,
         )
+
         for name, value in dataset.items():
             assert value not in (None, "", "None"), name
 
@@ -429,3 +456,63 @@ class LiveRefreshTest(FunctionalTest):
         self.open_page()
 
         assert self.browser.find_elements(By.ID, "id-liverefresh") == []
+
+
+class LiveRefreshClassicTest(LiveRefreshTest):
+    """The same feature on the layout most readers are actually on.
+
+    `address.html` renders a different band - a `.tooltip` wrapper around the
+    figure, plus an sr-only span repeating the USD line - and a row value with
+    the unit *inside* the span rather than beside it. So the fragments differ in
+    what they render as well as in what they address, and the widget branches on
+    the reader's layout to pick a set.
+
+    Inherited wholesale on purpose: every test in the parent class runs again
+    against classic markup, because the question each one asks is the same and
+    the answers are what differ. What is overridden is only how a reader is
+    signed in and what says the page has finished loading.
+    """
+
+    def sign_in(self, live_refresh=True, permission=ASASTATSER):
+        """Log a reader in on the classic layout rather than the dynamic one."""
+        cookie = self.create_session_cookie(
+            username="live@example.com", password="top_secret", permission=permission
+        )
+        profile = get_user_model().objects.get(username="live@example.com").profile
+        profile.preferred_layout = "classic"
+        profile.live_refresh = live_refresh
+        profile.save()
+        self.browser.get(self.server_url + COOKIE_SEED_URL)
+        self.browser.add_cookie(cookie)
+
+    def open_page(self):
+        """Load the address page and wait for the classic band.
+
+        The parent waits on `window.asastatsToolbar`, which is the dynamic
+        layout's toolbar and never initialises here.
+        """
+        self.record_javascript_errors()
+        self.browser.get(f"{self.server_url}/{ADDRESS}")
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!document.getElementById('id-band-classic');"
+            )
+        )
+
+    BAND_DATA = "#id-band-classic .pricetip"
+
+    def value_text(self, figure):
+        """Classic keeps ALGO inside the value span rather than in a sibling."""
+        return f"{figure} ALGO"
+
+    def band(self):
+        """Return the total the classic band is showing.
+
+        The figure lives in `.pricetip` *inside* the `.tooltip` wrapper, which
+        is the element swapped out of band - so reading the wrapper's text would
+        pass whether or not the swap reached the figure.
+        """
+        return self.browser.execute_script(
+            "var el = document.querySelector('#id-band-classic .pricetip');"
+            "return el && el.textContent.trim();"
+        )

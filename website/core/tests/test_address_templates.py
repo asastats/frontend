@@ -513,7 +513,12 @@ class TestTheTotalIsReachableWithoutAPointer:
         # Inside the `.tooltip`, not on it: DaisyUI reveals on
         # `:has(:focus-visible)`, so a tabindex on the tooltip element itself
         # matches nothing and draws nothing.
-        assert '<span class="tooltip" data-tip=' in html
+        #
+        # Anchored on the class and the attribute rather than on the whole
+        # opening tag: the wrapper carries an id now, because the live refresh
+        # swaps it out of band, and an assertion that pins every attribute in
+        # order fails on any addition rather than on the thing it is about.
+        assert 'class="tooltip" data-tip=' in html
 
     def test_the_tip_is_also_available_as_text(self, sample_payload):
         # A tooltip drawn with `content: attr(data-tip)` is not dependably in

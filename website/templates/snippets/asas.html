@@ -1,4 +1,4 @@
-{% load static %}
+{% load static %}{% load partials %}
 {% load core_extras %}
 {% comment %}
   One <details> per valued asset. The structure is a contract with address.js:
@@ -49,7 +49,7 @@
   {% with shown=ADDRESS_INITIAL_ASSETS %}
   <div class="space-y-2" data-folding>
   {% for asaitem in asaitems %}
-    {% with asset=asaitem.asset %}
+    {% with asset=asaitem.asset asset_id=asaitem.asset.id value=asaitem.value %}
       <details id="f{{ asset.id }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100{% if forloop.counter0 >= shown %} folded{% endif %}">
         {% comment %}
           The same three cells as a collection row: what you hold, the icon,
@@ -68,7 +68,20 @@
           <div class="icondiv itemmid">
             <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
           </div>
-          <span class="val itemright font-medium" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }} ALGO</span>
+          {% comment %} Rendered here from the row's own figure, and once a block
+             by the liverefresh widget from the engine's payload - which is why
+             the partial takes `asset_id` and `value` rather than reading
+             `asaitem`. There is no second copy of this markup to drift.
+
+             The `v<asset id>` id is the dynamic layout's, deliberately: a reader
+             is on one layout or the other, so the ids cannot collide, and using
+             the same one means the widget's fragment differs between layouts
+             only in what it renders - the unit is inside this span and beside
+             the dynamic one - rather than in what it addresses.
+          {% endcomment %}
+          {% partialdef classicvalue inline %}
+          <span id="v{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}class="val itemright font-medium" data-val="{{ value }}">{{ value|floatformat:'2g' }} ALGO</span>
+          {% endpartialdef classicvalue %}
         </summary>
 
         <div class="item-body border-t border-base-300 p-3">

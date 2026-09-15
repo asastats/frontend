@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% load static %}{% load core_extras %}
+{% extends 'base.html' %}{% load static %}{% load core_extras %}{% load partials %}
 {% comment %}
   The address page: the last template to leave base.html, and the one with the
   most behaviour behind it.
@@ -38,7 +38,7 @@
 {% block content %}
 <div id="id-swap-entry-container" hx-get="{% url 'swap_entry' url_value %}" hx-trigger="load" hx-swap="innerHTML"></div>
 {{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
-{% with total=account.total system=account.system_info account_info=account.account_info %}
+{% with total=account.total band=account.total system=account.system_info account_info=account.account_info %}
 
 <header class="text-center">
   {% comment %}
@@ -73,15 +73,45 @@
     class, and `.total-sub` prints the same figure and rate permanently, for
     everyone.
   {% endcomment %}
-  <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">
+  {% comment %} **`data-totalnftfloor` and `data-holdings` sit on the h1**, for
+     the same reason the dynamic layout moved them there: everything left inside
+     is a figure a block can change, and the live refresh replaces that whole
+     span. An NFT floor is not block volatile - the engine's re-price does not
+     touch `nft_values` - so riding inside the swapped element it would be gone
+     after the first update and the floor total would read empty.
+
+     `data-holdings` is what the page was rendered from. The widget sends it
+     back with every poll, and a reload is ordered when the engine's published
+     fingerprint has moved past it - which is how an asset just bought reaches a
+     page that has no row to swap it into.
+
+     The two partials below are rendered twice: here from `total`, and once a
+     block by the liverefresh widget from the payload the engine published. The
+     payload's keys are spelled exactly like `Total`'s fields, so `band` means
+     the same thing either way and there is no second copy of this markup.
+  {% endcomment %}
+  <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl"
+      data-totalnftfloor="{{ consolidated.nftfloor }}"
+      data-holdings="{{ live_holdings }}">
     <span class="sr-only">Total value:</span>
-    <span class="tooltip" data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>
+    {% partialdef classicband inline %}
+    <span id="id-band-classic" {% if oob %}hx-swap-oob="true" {% endif %}class="tooltip" data-tip='{{ band.totalusdc|floatformat:"2g" }} USD ({{ band.pricealgo|floatformat:"2g" }} USD/ALGO)'>
+      {% comment %} **Quoted, every one of them.** An unquoted attribute whose
+         value renders empty does not become blank - it swallows the next one as
+         its value. On the dynamic band a payload without `pricealgo` made
+         `data-pricealgo` read "data-total=216.3" and `data-total` vanish
+         entirely, so the currency switch computed from `undefined`. Two figures
+         lost to one missing key, and these were unquoted until now.
+      {% endcomment %}
       <span class="pricetip cursor-default" tabindex="0" aria-describedby="id-total-tip"
-          data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }}
-          data-total={{ total.totalusdc }} data-totalwnft={{ total.total }}
-          data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}>{{ total.total|floatformat:"2g" }} ALGO</span>
+          data-price="{{ band.priceusdc }}" data-pricealgo="{{ band.pricealgo }}"
+          data-total="{{ band.totalusdc }}" data-totalwnft="{{ band.total }}"
+          data-totalnft="{{ band.nft }}">{{ band.total|floatformat:"2g" }} ALGO</span>
     </span>
-    <span id="id-total-tip" class="sr-only">{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)</span>
+    {% endpartialdef classicband %}
+    {% partialdef classictip inline %}
+    <span id="id-total-tip" {% if oob %}hx-swap-oob="true" {% endif %}class="sr-only">{{ band.totalusdc|floatformat:"2g" }} USD ({{ band.pricealgo|floatformat:"2g" }} USD/ALGO)</span>
+    {% endpartialdef classictip %}
   </h1>
 
   {% comment %}
