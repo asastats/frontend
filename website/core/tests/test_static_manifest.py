@@ -37,6 +37,7 @@ from django.core.management import call_command
 from django.template import Context, Template
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 from core.staticfiles import BUILD_INPUTS
 from walletauth.models import LinkedAddress
@@ -151,6 +152,34 @@ class TestPagesUnderTheProductionStaticStorage(TestCase):
                     f"{response.status_code}; it names a static file that "
                     "production's storage has no entry for"
                 )
+
+    def test_the_entry_partial_renders_for_a_live_refresh_subscriber(self):
+        """The liverefresh branch of the same partial, which the sweep misses.
+
+        `test_every_swap_router_renders_the_entry_partial` runs as a reader who
+        never opted in, so the `{% if liverefresh_url %}` block - and the
+        `{% static 'liverefresh/liverefresh.js' %}` inside it - is never
+        rendered by it. That is precisely the shape of the bug this module was
+        written for: a branch only some readers take, naming a file that
+        production's storage may have no entry for, 500ing the partial and
+        taking the swap marker, the modal, swap.js and the Dust Sweep with it.
+
+        A widget's static directory reaches `STATICFILES_DIRS` by being listed
+        there, so a new widget shipping its first script is exactly when that
+        list is most likely to be a step behind.
+        """
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.live_refresh = True
+        self.user.profile.save()
+
+        response = self.client.get(reverse("swap_entry", args=[ADDRESS]))
+
+        assert response.status_code == 200, (
+            "the live-refresh branch of the swap entry is a "
+            f"{response.status_code}; it names a static file that production's "
+            "storage has no entry for"
+        )
+        self.assertContains(response, "id-liverefresh")
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")

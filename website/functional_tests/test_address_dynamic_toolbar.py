@@ -336,10 +336,11 @@ class ToolbarTest(FunctionalTest):
         and disabled and none for the pressed state, so a screen reader was told
         which was on and everybody else was told nothing.
 
-        Auto-refresh is where it hurt. It reloads only after 60 seconds of
-        inactivity, so with no visible state there is nothing to distinguish
-        "on, and waiting for you to stop moving the mouse" from a dead button --
-        which is exactly how it was reported.
+        Auto-refresh is where it hurt. A minute is a long time to look at a
+        button and wonder, and with no visible state there is nothing to
+        distinguish "on, and counting" from a dead button -- which is exactly
+        how it was reported. It was worse before the timer was fixed, when a
+        reader who kept moving the mouse was never refreshed at all.
 
         Asserted through the *computed* style rather than the class list,
         because a class that no rule matches is the failure being guarded

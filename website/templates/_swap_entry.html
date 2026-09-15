@@ -71,3 +71,22 @@
 {% include "dustsweep/_sweep_modal.html" %}
 <script src="{% static 'dustsweep/dustsweep.js' %}"></script>
 {% endif %}
+
+{# Real-time refresh. Per-reader like everything else in this partial, and here #}
+{# rather than in the page for the same reason: the address page is cached and  #}
+{# its cache is shared, so a flag about *this* reader baked into it is served   #}
+{# to the next one.                                                             #}
+{#                                                                              #}
+{# Rendered only when the tier allows it *and* the reader asked for it in their #}
+{# settings. Its absence is not a failure - it is the ordinary case, and the    #}
+{# free 60-second reload in `address.js` keeps the page fresh instead. That is  #}
+{# also how `address.js` knows to stand down: it looks for this marker, because #}
+{# a full reload would throw away exactly what the poll preserves - scroll      #}
+{# position, open sections and filters.                                         #}
+{% if liverefresh_url %}
+<span id="id-liverefresh"
+      data-poll-url="{{ liverefresh_url }}"
+      data-interval="{{ liverefresh_interval }}"
+      data-grace="{{ liverefresh_grace }}"></span>
+<script src="{% static 'liverefresh/liverefresh.js' %}"></script>
+{% endif %}

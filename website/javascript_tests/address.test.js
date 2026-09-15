@@ -754,7 +754,7 @@ describe("showExpiry / timeEntry", function () {
 
 
 describe("auto refresh", function () {
-  it('reloads the page after inactivity when refresh is on', function () {
+  it('reloads the page once the minute is up when refresh is on', function () {
     jest.useFakeTimers();
     localStorage.setItem("refresh", "y");
     window.Chart.getChart.mockReturnValue(chartInstance());
@@ -922,6 +922,23 @@ describe("auto refresh", function () {
       address.timerIncrement();
 
       expect(reloaded()).toBe(true);
+    });
+
+    it('stands down when the subscriber poll is on the page', function () {
+      // The two must never both be running. The poll swaps the figures that
+      // changed and leaves scroll position, open sections and filters alone;
+      // a reload on top of that throws away the one thing it exists to
+      // preserve. The marker arrives in a non-cached partial *after* load,
+      // which is why this is asked every tick rather than once at startup.
+      var marker = document.createElement('span');
+      marker.id = 'id-liverefresh';
+      document.body.appendChild(marker);
+      elapse(61000);
+
+      address.timerIncrement();
+
+      expect(reloaded()).toBe(false);
+      marker.remove();
     });
 
     it('lets a briefly hidden tab finish its own minute', function () {

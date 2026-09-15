@@ -515,7 +515,12 @@ function totalChart(name) {
   } else if (name == "nftchart") {
     total = $(".pricetip")[0].dataset.totalnft;
   } else if (name == "nftfloorchart") {
-    total = $(".pricetip")[0].dataset.totalnftfloor;
+    // **Found by the attribute, not by its element.** The two designs put it
+    // in different places - design 1 leaves it on `.pricetip`, the dynamic
+    // page hoists it to the h1 so it survives the live refresh replacing that
+    // span - and this file is shared by both. Asking for the attribute asks
+    // the only question that has the same answer on either page.
+    total = document.querySelector("[data-totalnftfloor]").dataset.totalnftfloor;
   }
 
   if (code == 'USD') {
@@ -1414,6 +1419,15 @@ function timerIncrement() {
   if ((localStorage.getItem('refresh') || '') != 'y') {
     // Disarmed: keep the clock with the reader, so ticking the box does not
     // immediately fire a refresh left over from however long it has been off.
+    lastRefreshAt = now;
+    return;
+  }
+  if (document.getElementById('id-liverefresh')) {
+    // **The subscriber poll owns refreshing this page.** It swaps the figures
+    // that changed and leaves scroll position, open sections and filters
+    // alone; reloading on top of that would throw away the one thing it exists
+    // to preserve. The marker arrives in a non-cached partial after load, so
+    // this is asked every tick rather than once at startup.
     lastRefreshAt = now;
     return;
   }

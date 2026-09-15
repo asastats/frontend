@@ -72,6 +72,8 @@ from utils.charts import (
     prepare_consolidated_charts_from_serialized_data,
 )
 from utils.constants.core import (
+    LIVEREFRESH_HIDDEN_GRACE_SECONDS,
+    LIVEREFRESH_POLL_SECONDS,
     ALGORAND_WALLETS,
     CACHE_TTL_ADDRESS,
     CACHE_TTL_CUSTOM_ADDRESS,
@@ -1704,6 +1706,7 @@ class SwapEntryView(TemplateView):
         context["swap_url"] = ""
         context["dustsweep_address"] = ""
         context["dustsweep_addresses"] = []
+        context["liverefresh_url"] = ""
         user = self.request.user
         if not user.is_authenticated:
             return context
@@ -1711,6 +1714,25 @@ class SwapEntryView(TemplateView):
         addresses = (
             [value] if len(value) > 50 else check_bundle_addresses(value).split()
         )
+        # **Per-reader, so it belongs in this partial and nowhere else.** The
+        # address page itself is cached and the cache is shared - `Vary: Cookie`
+        # is on the response but does not key the entry - so a flag about *this*
+        # reader rendered into it would be served to the next one. This partial
+        # is the page's one non-cached request, which is why the swap gate and
+        # the sweep live here too.
+        #
+        # Both halves are required: the tier has to allow it, and the reader has
+        # to have asked for it in their settings. Either missing means the free
+        # 60-second reload keeps the page fresh instead.
+        profile = getattr(user, "profile", None)
+        if (
+            profile is not None
+            and profile.live_refresh
+            and profile.can_access_live_refresh(len(addresses))
+        ):
+            context["liverefresh_url"] = reverse("liverefresh", args=[value])
+            context["liverefresh_interval"] = LIVEREFRESH_POLL_SECONDS
+            context["liverefresh_grace"] = LIVEREFRESH_HIDDEN_GRACE_SECONDS
         linked = linked_addresses_for_user(user, addresses)
         if linked:
             # **Both actions are single-address, and a bundle page is where that

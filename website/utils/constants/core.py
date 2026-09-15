@@ -279,3 +279,20 @@ the default layout is always available, Dynamic arrives with Intro, and Dynamic
 compact arrives with Asastatser. Keys are persisted on ``Profile``, so treat
 them as data: rename one and every reader who chose it silently falls back.
 """
+
+
+#: Seconds between live-refresh polls. About one Algorand block (measured p50
+#: 2.721s off the live node), because a block is what changes the figures - a
+#: shorter interval asks the same question twice and a longer one is a page
+#: that is visibly behind the explorer.
+LIVEREFRESH_POLL_SECONDS = 3
+
+#: How long the poll keeps running after the tab is hidden, in seconds.
+#:
+#: Not zero, so switching tabs for a moment does not cost a catch-up render on
+#: the way back, and not forever, because every polling tab holds an `lvx`
+#: subscription and the engine re-prices that page on every block for as long
+#: as it does - about 27ms a block for a reader who may never return. The
+#: heartbeat expires 90s after the last poll, so a tab that stops is dropped
+#: from the engine's work without anything having to say so.
+LIVEREFRESH_HIDDEN_GRACE_SECONDS = 300

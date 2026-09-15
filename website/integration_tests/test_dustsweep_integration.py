@@ -34,6 +34,41 @@ from django.urls import reverse
 from walletauth.models import LinkedAddress
 from widgets.inhouse.dustsweep.manifest import MANIFEST
 
+#: Reasons the engine may legitimately decline to convert, each a deliberate
+#: refusal rather than a fault.
+#:
+#: The field carries ``str(error)`` for any ``RouterUnavailable``, so it is the
+#: one place an unrelated failure could hide behind a 200. Pinning a single
+#: reason was wrong in both directions: it failed the day a second legitimate
+#: one appeared, and it went on asserting a first one that no longer happens -
+#: mainnet 3689591968 has been unrestricted since 2026-08-30.
+#:
+#: Add a reason here when the engine gains one, deliberately. The point is not
+#: to enumerate strings; it is that an unrecognised message should make somebody
+#: look, because "cannot convert" arriving for a reason nobody chose is exactly
+#: what this field would otherwise swallow.
+CONVERSION_REFUSALS = {
+    "RESTRICT_TO_ADMIN": (
+        "the router application accepts only its admin - obsolete since the "
+        "2026-08-30 mainnet redeploy, kept because an old deployment can "
+        "still answer this way"
+    ),
+    "ROUTER_QUOTE_SIGNER_URL": (
+        "the signer URL is unset (`QuoteSignerUnusable`). Since audit finding "
+        "S8 the engine does not hold the mainnet signing key and refuses "
+        "rather than signing locally, so a host without the signer configured "
+        "cannot convert - by design, and the ordinary state of a development "
+        "machine"
+    ),
+    "quote signer service is unreachable": (
+        "the URL is set and nothing is answering it (`QuoteSignerUnavailable`) "
+        "- a different exception from the one above, and the same conclusion. "
+        "Start `python -m router.signer` on the engine's host, or unset the "
+        "URL to sign locally in development. `test_asastats_integration` "
+        "checks this same string as SIGNER_UNREACHABLE"
+    ),
+}
+
 #: A real mainnet address. Whatever it holds, the sweep must answer coherently.
 LINKED_ADDRESS = "OGRUNXPSMO7Z7EGOGONA7BVEIN7YIJZZB372GZGJIAPB363C6KB42CEN2M"
 
@@ -131,14 +166,26 @@ class DustsweepPlanViewTest(TestCase):
         ):
             assert key in plan, f"{key} missing from {sorted(plan)}"
 
-        # A restricted router must not cost the close-out half its answer. It
-        # did until 2026-08-25: `RouterUnavailable` escaped `plan` and became a
-        # 503 for the whole sweep, and this test agreed with it because 503 was
-        # in the allowed set above. The outage now arrives as a *field* on a
-        # 200, which is the difference between "we cannot convert" and "go
-        # away".
-        if plan["conversions_unavailable"]:
-            assert "RESTRICT_TO_ADMIN" in plan["conversions_unavailable"]
+        # A router that cannot build must not cost the close-out half its
+        # answer. It did until 2026-08-25: `RouterUnavailable` escaped `plan`
+        # and became a 503 for the whole sweep, and this test agreed with it
+        # because 503 was in the allowed set above. The outage now arrives as a
+        # *field* on a 200, which is the difference between "we cannot convert"
+        # and "go away".
+        #
+        # The reason is checked against the refusals we know about rather than
+        # against one of them, so that a *new* reason surfaces here instead of
+        # passing silently - see CONVERSION_REFUSALS.
+        reason = plan["conversions_unavailable"]
+        if reason:
+            assert any(marker in reason for marker in CONVERSION_REFUSALS), (
+                f"conversions are unavailable for an unrecognised reason:\n"
+                f"  {reason}\n"
+                f"If that is a deliberate refusal, add it to "
+                f"CONVERSION_REFUSALS with why. If it is not, the sweep is "
+                f"reporting a fault as a routine outage and readers are being "
+                f"told the wrong thing."
+            )
 
         assert plan["address"] == LINKED_ADDRESS
         for key in ("close", "forfeit", "convert", "keep", "unpriced", "prompts"):

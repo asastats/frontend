@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load core_extras %}
+{% load partials %}
 {% comment %} The dynamic address page: designs 2 and 3.
 
    One template, two layouts. `compact` comes from the view, off the layout
@@ -45,7 +46,7 @@
    only the renderer changes -- `dynamic.js` draws them as SVG. {% endcomment %}
 {{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
 
-{% with total=account.total system=account.system_info account_info=account.account_info %}
+{% with total=account.total band=account.total system=account.system_info account_info=account.account_info %}
 
 <header class="head">
   <div class="head-grid">
@@ -59,16 +60,38 @@
          overwrites this element's `innerHTML` wholesale when the currency
          switches, and it writes the unit as part of the string -- a sibling
          would survive that and read "1,881.51 USD ALGO". {% endcomment %}
-      <h1 class="total">
+      {% comment %} **`data-totalnftfloor` sits on the h1, not on `.pricetip`.**
+         Everything left on the span is a figure a block can change, and the
+         live refresh replaces that span whole. NFT floors are not block
+         volatile - the engine's re-price does not touch `nft_values` at all -
+         so an attribute that rode along inside the span would be dropped on
+         the first update and the "NFT floor" total would read empty.
+
+         The two partials below are rendered twice: here, from `account.total`,
+         and once a block by the liverefresh widget, from the payload the
+         engine publishes. The payload's keys are spelled exactly like
+         `Total`'s fields so that `band` means the same thing either way -
+         there is no second rendering path, which is the point. {% endcomment %}
+      <h1 class="total" data-totalnftfloor="{{ consolidated.nftfloor }}">
         <span class="sr-only">Total value:</span>
-        <span class="pricetip num cursor-default"
-            data-price={{ total.priceusdc }} data-pricealgo={{ total.pricealgo }}
-            data-total={{ total.totalusdc }} data-totalwnft={{ total.total }}
-            data-totalnft={{ total.nft }} data-totalnftfloor={{ consolidated.nftfloor }}
-            data-tip='{{ total.totalusdc|floatformat:"2g" }} USD ({{ total.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ total.total|floatformat:"2g" }} ALGO</span>
+        {% partialdef bandtotal inline %}
+        <span id="id-band-total" {% if oob %}hx-swap-oob="true" {% endif %}class="pricetip num cursor-default"
+            {% comment %} **Quoted.** An unquoted attribute whose value renders
+               empty does not become blank - it swallows the next attribute as
+               its value. A payload without `pricealgo` made `data-pricealgo`
+               read "data-total=216.3" and `data-total` vanish entirely, so the
+               currency switch computed the total from `undefined`. Two figures
+               lost to one missing key. {% endcomment %}
+            data-price="{{ band.priceusdc }}" data-pricealgo="{{ band.pricealgo }}"
+            data-total="{{ band.totalusdc }}" data-totalwnft="{{ band.total }}"
+            data-totalnft="{{ band.nft }}"
+            data-tip='{{ band.totalusdc|floatformat:"2g" }} USD ({{ band.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ band.total|floatformat:"2g" }} ALGO</span>
+        {% endpartialdef bandtotal %}
       </h1>
       <div class="total-sub">
-        <span class="num">{{ total.totalusdc|floatformat:"2g" }} USD at {{ total.pricealgo|floatformat:"6g" }} USD/ALGO</span>
+        {% partialdef bandusd inline %}
+        <span id="id-band-usd" {% if oob %}hx-swap-oob="true" {% endif %}class="num">{{ band.totalusdc|floatformat:"2g" }} USD at {{ band.pricealgo|floatformat:"6g" }} USD/ALGO</span>
+        {% endpartialdef bandusd %}
       </div>
       <p class="total-note">Everything this address holds.</p>
       <div class="total-sub">

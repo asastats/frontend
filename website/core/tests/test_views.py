@@ -1306,6 +1306,44 @@ class SwapEntryViewTest(TestCase):
         response = self.client.get(self.url)
         self.assertNotContains(response, "id-swap-enabled")
 
+    def test_swap_entry_liverefresh_needs_the_tier_and_the_opt_in(self):
+        """**Both halves, and neither implies the other.**
+
+        The tier buys the *choice*; the setting is the reader taking it. A
+        subscriber who never ticked the box wants the page they have, and a
+        reader who ticked it before their tier lapsed must not keep a poll the
+        deployment is no longer serving them.
+
+        Asserted through the rendered marker rather than the context, because
+        the marker is what `liverefresh.js` looks for and what `address.js`
+        reads to decide whether to stand its own reload down.
+        """
+        self._login()
+        profile = self.user.profile
+
+        for live_refresh, permission, expected in (
+            (False, SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], False),
+            (True, SUBSCRIPTION_TIER_PERMISSIONS["Intro"], False),
+            (True, SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], True),
+        ):
+            with self.subTest(live_refresh=live_refresh, permission=permission):
+                profile.live_refresh = live_refresh
+                profile.permission = permission
+                profile.save()
+
+                response = self.client.get(self.url)
+
+                if expected:
+                    self.assertContains(response, "id-liverefresh")
+                else:
+                    self.assertNotContains(response, "id-liverefresh")
+
+    def test_swap_entry_liverefresh_is_absent_for_anonymous(self):
+        """No profile, no opt-in, and nothing to poll on somebody's behalf."""
+        response = self.client.get(self.url)
+
+        self.assertNotContains(response, "id-liverefresh")
+
     def test_swap_entry_forbids_caching(self):
         """The one per-reader thing on a page whose own entry is shared.
 

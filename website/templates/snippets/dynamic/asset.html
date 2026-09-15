@@ -1,5 +1,6 @@
 {% load static %}
 {% load core_extras %}
+{% load partials %}
 {% comment %} One asset, in the dynamic designs.
 
    A `<details>` rather than a button and a panel, as design 1 uses: the page
@@ -38,7 +39,7 @@
    in the closed body, so typing "6" would match most of the page. What a
    reader means by filtering is the name and the ticker.
 {% endcomment %}
-{% with asset=asaitem.asset %}
+{% with asset=asaitem.asset asset_id=asaitem.asset.id value=asaitem.value %}
 <details id="f{{ asset.id }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
          data-sort-value="{{ asaitem.value }}"
          data-sort-amount="{{ asaitem|holdings_amount }}"
@@ -91,7 +92,20 @@
        the visible text is rounded, and the ALGO/USD switch must not recompute
        from it. {% endcomment %}
     <span class="cval">
-      <span class="v val" data-val="{{ asaitem.value }}">{{ asaitem.value|floatformat:'2g' }}</span>
+      {% comment %} Rendered here from the row's own figure, and once a block by
+         the liverefresh widget from the engine's payload - which is why the
+         partial takes `asset_id` and `value` rather than reading `asaitem`.
+         There is no second copy of this markup to drift.
+
+         **`data-sort-value` on the `<details>` above is deliberately not
+         updated.** Swapping the row itself would close it, discard the reader's
+         drag order and lose anything open inside; re-sorting after a live
+         update would reorder the page under someone reading it. So the figure
+         a reader sees is live and the sort key is the one the page was built
+         with, until they reload. {% endcomment %}
+      {% partialdef assetvalue inline %}
+      <span id="v{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}class="v val" data-val="{{ value }}">{{ value|floatformat:'2g' }}</span>
+      {% endpartialdef assetvalue %}
       <span class="u unit">ALGO</span>
     </span>
 
