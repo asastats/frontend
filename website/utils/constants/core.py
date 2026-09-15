@@ -296,3 +296,11 @@ LIVEREFRESH_POLL_SECONDS = 3
 #: heartbeat expires 90s after the last poll, so a tab that stops is dropped
 #: from the engine's work without anything having to say so.
 LIVEREFRESH_HIDDEN_GRACE_SECONDS = 300
+
+#: Redis hash the engine writes a per-page fingerprint of the *holdings* into.
+#:
+#: Mirrors the engine's own `CACHE_KEY_LIVE_HOLDINGS`; the two services share
+#: this key on the liveserver's Redis, as they do `lvx` and `lvp:`. Fields are
+#: page keys - a raw address, or an uppercase bundle hash - exactly as the
+#: engine's live pass writes them.
+LIVEREFRESH_HOLDINGS_KEY = "lvh"
