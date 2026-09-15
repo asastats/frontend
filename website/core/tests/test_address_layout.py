@@ -461,3 +461,74 @@ class TestCacheIsKeyedOnEntitlementToo:
 
         assert "Historic data" not in free
         assert "Historic data" in subscriber
+
+
+@pytest.mark.django_db
+class TestCacheIsKeyedOnTheHoldings:
+    """A page rendered under one set of holdings is never handed out as another.
+
+    **This is what makes the live refresh's reload mean anything.** The widget
+    answers a changed holdings fingerprint with a reload, because an
+    out-of-band swap can only reach a row the reader's page already has -- a
+    bought asset has nowhere to arrive and a sold one is never mentioned. A
+    reload served out of the entry that prompted it would show the same stale
+    rows and send the reader round the loop for nothing.
+
+    The dynamic layout throughout, because it is the one that renders the
+    attribute and the only one the live refresh polls on.
+    """
+
+    def test_a_page_is_rerendered_when_its_holdings_change(self, payload, mocker):
+        """The account transacted, so the entry rendered before it must not be
+        the one the reload is answered with."""
+        cache.clear()
+        reader = _user("holdingskey-1", permission=ASASTATSER, layout="dynamic")
+        fingerprint = mocker.patch(
+            "core.views.cached_live_holdings", return_value="beef1234"
+        )
+        before = _render(reader, payload)
+
+        fingerprint.return_value = "cafe5678"
+        after = _render(reader, payload)
+
+        assert 'data-holdings="beef1234"' in before
+        assert 'data-holdings="cafe5678"' in after
+
+    def test_readers_still_share_an_entry_while_the_holdings_stand(
+        self, payload, mocker
+    ):
+        """**A price move is not a re-render.** This is most blocks for most
+        pages, so a key that followed anything block-volatile would defeat the
+        cache entirely and make every reader pay for a full page build.
+        """
+        cache.clear()
+        one = _user("holdingskey-2", permission=ASASTATSER, layout="dynamic")
+        two = _user("holdingskey-3", permission=ASASTATSER, layout="dynamic")
+        mocker.patch("core.views.cached_live_holdings", return_value="beef1234")
+        built = mocker.spy(BaseAddressView, "get_context_data")
+
+        _render(one, payload)
+        _render(two, payload)
+
+        assert built.call_count == 1
+
+    def test_an_unreadable_redis_still_renders_the_page(self, payload, mocker):
+        """**The address page does not render from this key.** It renders from
+        the engine's API, so a Redis that will not answer must cost a live
+        reader their reload signal and nothing else -- which is the behaviour
+        that existed before any of this.
+        """
+        cache.clear()
+        reader = _user("holdingskey-4", permission=ASASTATSER, layout="dynamic")
+        mocker.patch("core.views.redis_instance", side_effect=ConnectionError("down"))
+
+        assert 'data-holdings=""' in _render(reader, payload)
+
+    def test_an_unwatched_page_keys_exactly_as_it_did(self, payload, mocker):
+        """Every page nobody watches has no fingerprint at all, and the whole
+        mechanism costs it one Redis field lookup."""
+        cache.clear()
+        reader = _user("holdingskey-5", permission=ASASTATSER, layout="dynamic")
+        mocker.patch("core.views.cached_live_holdings", return_value="")
+
+        assert 'data-holdings=""' in _render(reader, payload)

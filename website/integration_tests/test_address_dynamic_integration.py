@@ -32,6 +32,8 @@ are the same ones ``test_address_page_integration.py`` set:
 * never assert a presentation class, which the design is entitled to change.
 """
 
+import re
+
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import Client, TestCase
@@ -217,6 +219,46 @@ class DynamicRenderTest(TestCase):
             f"{len(missing)} of {len(self.account['asaitems'])} asset rows are "
             f"in the context but not on the page: {missing}",
         )
+
+    def test_integration_the_holdings_fingerprint_reaches_the_page(self):
+        """**The one thing on this page that comes from the engine's Redis, not
+        its API.**
+
+        `data-holdings` is what the live refresh compares a published block
+        against, and what the page's own cache entry is keyed on. Every unit
+        test mocks `cached_live_holdings`, so nothing else runs the real path:
+        the frontend reading a key the *engine* writes, on an instance reached
+        through neither the API nor the ORM.
+
+        An empty value is correct and is the common case - it is what every page
+        nobody is watching carries. What must not happen is the attribute being
+        absent, which is a page the widget can never ask for a reload from, or
+        the render failing because the key could not be read.
+        """
+        found = re.search(r'data-holdings="([^"]*)"', self.html)
+
+        self.assertIsNotNone(
+            found, "the page carries no data-holdings attribute at all"
+        )
+        fingerprint = found.group(1)
+        if fingerprint:
+            self.assertRegex(
+                fingerprint,
+                r"^\d+:[0-9a-f]+$",
+                "a fingerprint the engine did not write in <counter>:<digest> "
+                f"form: {fingerprint!r}",
+            )
+
+    def test_integration_the_fingerprint_is_the_one_the_view_resolved(self):
+        """The attribute and the cache key must be the same value.
+
+        They are set from one place for that reason: a page rendered under one
+        fingerprint and stored under another is a reader reloaded into the
+        markup that prompted the reload, for ever.
+        """
+        found = re.search(r'data-holdings="([^"]*)"', self.html)
+
+        self.assertEqual(found.group(1), self.response.context["live_holdings"])
 
     def test_integration_every_asset_value_is_rendered(self):
         """`data-val` carries the payload's value, unrounded.

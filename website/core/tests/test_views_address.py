@@ -511,6 +511,7 @@ class TestBaseAddressViewGetContextData:
             # asked next -- see `core/tests/test_address_layout.py`.
             "layout",
             "compact",
+            "live_holdings",
         }
         assert set(context.keys()) == expected
 

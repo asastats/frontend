@@ -5,21 +5,35 @@ widget's fragments, the timer in `address.js` - and none of it answers the
 question the feature exists for: does the page change under a reader without
 taking anything away from them?
 
-That is a browser question and only a browser can answer it. The two halves
-that matter here are **the page must not reload** (a reload is what the free
-tier does, and the whole point of the subscriber path is that it does not) and
-**what the reader had open must survive**. A poll that swapped the right figures
-while closing an open row would pass every test in this repo except these.
+That is a browser question and only a browser can answer it, and the answer has
+two sides that unit tests cannot hold together.
+
+**A price move must not reload.** That is most blocks for most pages, it is what
+the free tier does instead, and the whole point of the subscriber path is that it
+does not. What the reader had open must survive it - a poll that swapped the
+right figures while closing an open row would pass every test in this repo except
+these.
+
+**A holdings change must reload**, and this is the half that was missing. An
+out-of-band swap can only reach a row the page already has, so an asset just
+bought has nowhere to arrive and one just sold is never mentioned; the only thing
+that renders rows is the page itself. The two cases are told apart by the
+holdings fingerprint the page was rendered from, which it sends back with every
+poll - so both halves are the same mechanism seen from two sides, and testing
+only the first one (as this file did) leaves the reader's page silently wrong
+about what they hold.
 """
 
 import json
 import os
+import time
 from unittest import mock
 
 import msgpack
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from selenium.webdriver.common.by import By
+from utils.constants.core import LIVEREFRESH_POLL_SECONDS
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 from .base import COOKIE_SEED_URL, FunctionalTest
@@ -38,6 +52,14 @@ INTRO = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
 #: Deliberately unlike anything in the sample, so an assertion that finds it
 #: cannot be reading the server-rendered page by accident.
 PUBLISHED_TOTAL = 4242.424242
+
+#: What the page is rendered from. `<counter>:<digest of the asset ids>`, as
+#: `utils.transmitters._holdings_fingerprint` builds it.
+RENDERED_FINGERPRINT = "7:abc123def456"
+#: The same holdings after the account transacted: the counter has stepped,
+#: which is what a block naming the account does, and the asset set has not
+#: changed - the case a fragment cannot express and a reload must.
+MOVED_FINGERPRINT = "8:abc123def456"
 
 
 def _sample_payload():
@@ -66,11 +88,12 @@ class LiveRefreshTest(FunctionalTest):
         self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(cookie)
 
-    def _published(self, values=None):
+    def _published(self, values=None, holdings=RENDERED_FINGERPRINT):
         """Return a msgpack block as the engine's pass publishes one."""
         total = self.sample["total"]
         return msgpack.packb(
             {
+                "holdings": holdings,
                 "total": PUBLISHED_TOTAL,
                 "algo": total["algo"],
                 "asa": total["asa"],
@@ -83,11 +106,36 @@ class LiveRefreshTest(FunctionalTest):
             }
         )
 
-    def _redis(self, values=None):
+    def _redis(self, values=None, holdings=RENDERED_FINGERPRINT):
         """A client that answers with one published block and records the beat."""
         client = mock.MagicMock()
-        client.get.return_value = self._published(values)
+        client.get.return_value = self._published(values, holdings)
         return client
+
+    def _rendered_fingerprint(self, *fingerprints):
+        """Patch what the address page renders `data-holdings` from.
+
+        Takes the value for the first render and then for every render after,
+        which is what a real reload sees: the page is keyed on this, so once the
+        engine has published a new one the rebuilt page carries it and the
+        reader settles rather than looping.
+        """
+        first, rest = fingerprints[0], fingerprints[-1]
+        answers = iter([first])
+
+        def answer(*args, **kwargs):
+            return next(answers, rest)
+
+        patcher = mock.patch("core.views.cached_live_holdings", side_effect=answer)
+        self.addCleanup(patcher.stop)
+        return patcher.start()
+
+    def holdings_attribute(self):
+        """Return what the page says it was rendered from."""
+        return self.browser.execute_script(
+            "var el = document.querySelector('[data-holdings]');"
+            "return el && el.dataset.holdings;"
+        )
 
     def open_page(self):
         """Load the address page and wait for the per-reader partial."""
@@ -129,6 +177,131 @@ class LiveRefreshTest(FunctionalTest):
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         mocked_redis.return_value = self._redis()
+
+        self.sign_in()
+        self.open_page()
+        before = self.band()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+
+        self.wait_until(lambda: self.band() != before, timeout=15)
+
+        assert "4,242.42" in self.band()
+        assert self.browser.execute_script("return window.__stillHere;") is True
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_page_carries_the_fingerprint_it_was_rendered_from(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """Without this on the page there is nothing to compare a published
+        block against, and the reload can never be asked for."""
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis()
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+
+        assert self.holdings_attribute() == RENDERED_FINGERPRINT
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_holdings_change_reloads_the_page(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**The half no fragment can do, asserted the only way it shows.**
+
+        The account transacted, so the engine's fingerprint has moved past the
+        one this page was built with. An out-of-band swap cannot add the row
+        they bought or remove the one they sold, so the widget answers
+        `HX-Refresh` and the page rebuilds itself.
+
+        The sentinel is the assertion, and it is the exact inverse of the one
+        next door: a page that merely swapped figures would keep it. Checking
+        the figures instead would prove nothing, because the server renders
+        those too.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        # Published ahead of what the page was rendered from.
+        mocked_redis.return_value = self._redis(holdings=MOVED_FINGERPRINT)
+        self._rendered_fingerprint(RENDERED_FINGERPRINT, MOVED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+
+        self.wait_until(
+            lambda: self.browser.execute_script("return !window.__stillHere;"),
+            timeout=15,
+        )
+
+        assert self.holdings_attribute() == MOVED_FINGERPRINT
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_reader_is_not_reloaded_round_and_round(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**A reload that does not settle is worse than no reload at all.**
+
+        The rebuilt page is keyed on the same fingerprint the engine published,
+        so it comes back carrying it and the next poll agrees. Were the address
+        page's cache entry not keyed on it, the reader would be handed the very
+        markup that prompted the reload and sent round again, for ever.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis(holdings=MOVED_FINGERPRINT)
+        self._rendered_fingerprint(RENDERED_FINGERPRINT, MOVED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+        self.wait_until(
+            lambda: self.browser.execute_script("return !window.__stillHere;"),
+            timeout=15,
+        )
+
+        # Settled: a fresh sentinel has to survive more than two poll intervals,
+        # so a second reload anywhere in that window fails this.
+        self.browser.execute_script("window.__settled = true;")
+        time.sleep(LIVEREFRESH_POLL_SECONDS * 3)
+
+        assert self.browser.execute_script("return window.__settled;") is True
+        assert self.holdings_attribute() == MOVED_FINGERPRINT
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_price_move_leaves_the_page_where_it_is(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """The other side of the same mechanism, and the common one.
+
+        The fingerprint has not moved, because no holding has: only what they
+        are worth. Reloading here would throw the reader's page away every few
+        seconds for figures the fragments swap perfectly well.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis(holdings=RENDERED_FINGERPRINT)
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
 
         self.sign_in()
         self.open_page()

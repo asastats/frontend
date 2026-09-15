@@ -87,6 +87,8 @@ from utils.constants.users import (
     BUNDLE_NAME_DELETED_MESSAGE,
     BUNDLE_NAME_NOT_FOUND_ERROR,
 )
+from utils.cache import cached_live_holdings
+from utils.clients import redis_instance
 from utils.helpers import (
     check_algorand_address,
     check_bundle_addresses,
@@ -342,6 +344,16 @@ class BaseAddressView(TemplateView):
     #: The default is the ungated layout, so the fallback is always renderable.
     layout = DEFAULT_ADDRESS_LAYOUT
 
+    #: The engine's fingerprint of what this page holds, replaced per request by
+    #: :meth:`dispatch`. A class attribute for the same reason as ``layout``:
+    #: ``get_context_data`` reads it, and a view that cannot be rendered unless
+    #: one particular earlier method ran is a trap for the next caller.
+    #:
+    #: Empty is the honest default -- it is what every page the engine has never
+    #: watched carries, and the widget treats it as "nothing to compare", which
+    #: is exactly right for a view rendered without a request behind it.
+    live_holdings = ""
+
     def dispatch(self, request, *args, **kwargs):
         """Validate URL value, resolve any bundle, render through the layout's
         own cache entry.
@@ -390,11 +402,52 @@ class BaseAddressView(TemplateView):
             check_forbidden_addresses(self.addresses)
 
         self.layout = layout_for_user(getattr(request, "user", None))
+        self.live_holdings = self._live_holdings(url_value)
         cached = cache_page(
             self.cache_timeout,
-            key_prefix=f"layout-{self.layout}-{self._entitlement_key(request)}",
+            key_prefix=(
+                f"layout-{self.layout}-{self._entitlement_key(request)}"
+                f"-{self.live_holdings}"
+            ),
         )(super().dispatch)
         return cached(request, *args, **kwargs)
+
+    def _live_holdings(self, url_value):
+        """Return the engine's fingerprint of what this page holds.
+
+        **This is what lets a live page show an asset that has just arrived.**
+        The live refresh swaps published figures into the reader's page out of
+        band, which can only reach an element the page already has: a bought
+        asset has no row to land in, a sold one is never mentioned and its row
+        stays as it was. So the widget answers a change to this with a reload --
+        and a reload served out of a ``cache_page`` entry built before the
+        change would show the same stale rows and the reader would be sent round
+        the loop for nothing. Folding it into the key means the entry rendered
+        under one set of holdings is never handed out as another.
+
+        ``url_value`` is already the engine's own page key: the raw address for
+        a single one, and ``bundle_from_addresses`` returns an uppercase hex
+        digest, which is what ``dispatch`` has upper-cased here.
+
+        Empty for every page the engine has never read -- which is every page
+        nobody watches -- so those key exactly as they did before, and the whole
+        mechanism costs them one Redis field lookup.
+
+        **A Redis that will not answer must not take the address page with it.**
+        This page renders from the engine's API, not from this key; falling back
+        to the empty fingerprint means a live reader briefly shares the
+        unwatched page's entry, which is the behaviour that existed before any
+        of this.
+
+        :param url_value: address or bundle hash from the URL, upper-cased
+        :type url_value: str
+        :return: str
+        """
+        try:
+            return cached_live_holdings(url_value, redis_instance())
+        except Exception:  # noqa: BLE001 - see above
+            logger.warning("live holdings unreadable for %s", url_value[:6])
+            return ""
 
     def _entitlement_key(self, request):
         """Return a token separating readers whose page differs by entitlement.
@@ -487,6 +540,14 @@ class BaseAddressView(TemplateView):
         # See `core/tests/test_address_layout.py`.
         context["layout"] = self.layout
         context["compact"] = layout_compact(self.layout)
+
+        # **Not reader-derived**, so it does not break the rule above: it is a
+        # property of the addresses, identical for everyone looking at them.
+        # It is in the key as well, so the markup rendered here and the entry it
+        # is stored under always agree - which is the whole point, since the
+        # widget compares this against what the engine has published and asks
+        # for a reload when they differ.
+        context["live_holdings"] = self.live_holdings
 
         # Heavy lifting: pull the serialized payload through the API cache.
         # On miss this still runs the full prepare_context/fetch_account

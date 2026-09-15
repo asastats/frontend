@@ -72,7 +72,18 @@
          engine publishes. The payload's keys are spelled exactly like
          `Total`'s fields so that `band` means the same thing either way -
          there is no second rendering path, which is the point. {% endcomment %}
-      <h1 class="total" data-totalnftfloor="{{ consolidated.nftfloor }}">
+      {% comment %} **`data-holdings` is what the page was rendered from, not
+         what is current.** The widget sends it back with every poll and the
+         engine's published fingerprint is compared against it; when they differ
+         the account has bought, sold or been airdropped something and the
+         update is a reload, because an out-of-band swap can only reach a row
+         this page already has.
+
+         On the h1 for the same reason as `data-totalnftfloor`: the span below
+         is replaced whole on every update, and an attribute inside it would be
+         gone after the first one. {% endcomment %}
+      <h1 class="total" data-totalnftfloor="{{ consolidated.nftfloor }}"
+          data-holdings="{{ live_holdings }}">
         <span class="sr-only">Total value:</span>
         {% partialdef bandtotal inline %}
         <span id="id-band-total" {% if oob %}hx-swap-oob="true" {% endif %}class="pricetip num cursor-default"
