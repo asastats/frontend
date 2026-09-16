@@ -20,6 +20,36 @@ from api.data import (
 )
 
 
+
+def user_for_widgets_token():
+    """Return a user the `WIDGETS_API_TOKEN` will actually resolve to.
+
+    **The auth class stopped trusting the token's claims.**
+    `JWTStatelessUserAuthentication` built a user out of the claims and never
+    touched the database, so any `user_id` resolved. `JWTAuthentication` looks it
+    up - which is the whole point, since a tier cannot be read off a token - and
+    a token naming a user who is not there is a 401.
+
+    Creating the user with an auto primary key made the first test in a class
+    pass and every later one fail: the sequence keeps climbing across tests
+    while the token keeps naming the same id, so only the first ever matched.
+    Reading the id out of the credential and creating *that* user tests the
+    credential production actually uses, rather than a convenient substitute.
+    """
+    import base64
+    import json
+
+    from django.conf import settings
+    from django.contrib.auth.models import User
+
+    payload = settings.WIDGETS_API_TOKEN.split(".")[1]
+    payload += "=" * (-len(payload) % 4)
+    user_id = json.loads(base64.urlsafe_b64decode(payload))["user_id"]
+    user, _ = User.objects.get_or_create(
+        pk=int(user_id), defaults={"email": f"{uuid.uuid4()}@email.com"}
+    )
+    return user
+
 class BaseView:
     """Base helper class for testing custom views."""
 
@@ -43,7 +73,7 @@ class BaseView:
 class TestSetup(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create(email=f"{str(uuid.uuid4())}@email.com")
+        self.user = user_for_widgets_token()
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {settings.WIDGETS_API_TOKEN}"
         )

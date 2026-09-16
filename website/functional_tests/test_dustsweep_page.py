@@ -401,6 +401,28 @@ class DustSweepSignatureTest(FunctionalTest):
     _link_address = DustSweepPageTest._link_address
     _open_page = DustSweepPageTest._open_page
 
+    #: Longer than `wait_until`'s five seconds, for the two waits that follow a
+    #: CTA click rather than a render.
+    #:
+    #: **Both tests in this class failed on GitHub and nowhere else.** They pass
+    #: run alone (5 s), as a whole file (30 tests, 72 s), and inside the whole
+    #: functional directory (320 tests, 21 min) - so what CI does differently is
+    #: not test ordering, and it is not the absent engine either: pointing
+    #: `ASASTATS_API_URL` at a dead port reproduces the `ConnectionError` in
+    #: CI's log without reproducing the failure.
+    #:
+    #: What is left is the runner. The wait spans a click, a `fetch`, a JSON
+    #: decode, a base64 decode per transaction and a bridge call, with Chrome
+    #: and Django sharing two vCPUs; five seconds is generous locally and thin
+    #: there. Raising it costs a passing run nothing - `wait_until` returns as
+    #: soon as the predicate is truthy - and only lengthens the wait before a
+    #: genuine failure is reported.
+    #:
+    #: Deliberately not a blanket change to `wait_until`'s default: every other
+    #: wait in the suite is passing, and a longer default would slow every real
+    #: failure in it.
+    SIGNING_TIMEOUT = 20
+
     #: An empty holding of asset 5, which closes to the account itself.
     HOLDING = {
         "asset": 5,
@@ -527,7 +549,8 @@ class DustSweepSignatureTest(FunctionalTest):
             )
             cta.click()
             signed = self.wait_until(
-                lambda: self.browser.execute_script("return window.__signed;")
+                lambda: self.browser.execute_script("return window.__signed;"),
+                timeout=self.SIGNING_TIMEOUT,
             )
 
         encoded = plan["next"]["transactions"][0]
@@ -573,7 +596,8 @@ class DustSweepSignatureTest(FunctionalTest):
             cta.click()
             progress = self.wait_until(
                 lambda: self.find_elem_by_css(".id-dustsweep-progress").text
-                == "Signature 2 of 2"
+                == "Signature 2 of 2",
+                timeout=self.SIGNING_TIMEOUT,
             )
 
         assert progress

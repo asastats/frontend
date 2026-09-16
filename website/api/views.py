@@ -30,7 +30,10 @@ from api.main import (
     processed_nftcollections,
     processed_nftitems,
 )
+from rest_framework.exceptions import ValidationError
+
 from api.permissions import CanAccessApiPermission
+from api.tiers import enforce_address_limit
 from api.serializers import (
     AsaItemSerializer,
     BundleHashFromAddressesSerializer,
@@ -129,6 +132,17 @@ class BaseAddressView(APIView):
         # Single address: the value is the address itself -> no lookup needed.
         # Bundle hash: resolve to the addresses the backend needs to fetch.
         addresses = "" if len(bundle) == ADDRESS_LEN else check_bundle_addresses(bundle)
+
+        # **Checked after the bundle resolves, because that is where the count
+        # becomes knowable.** A bundle arrives as a 40-character hash and says
+        # nothing about its width until Redis has been asked, so the limit
+        # cannot live in a URL validator.
+        #
+        # A refusal names the numbers. "Too many addresses" sends a subscriber
+        # to a support thread; "12 addresses, your tier allows 5" is something
+        # they can act on without one.
+        if addresses:
+            enforce_address_limit(request, addresses)
 
         serialized_data = fetch_and_serialize_account(bundle, addresses)  # noqa: F821
 

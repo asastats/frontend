@@ -106,3 +106,19 @@ WIDGETS_API_TOKEN = jwt.encode(
 EXPORT_TIERS_ADDRESSES_LIMIT = parse_export_limits(
     "free:5,Intro:6,Asastatser:7,Professional:8,Cluster:10"
 )
+
+#: No third-party CDN in the browser suite.
+#:
+#: **`_open_page` waits for every image to report `complete`, and production's
+#: CDN is a host on the internet.** Locally it answers in milliseconds or comes
+#: from the browser cache, so the wait is invisible; on a CI runner it is a
+#: network dependency inside a `wait_until`, and `base.setUp`'s own docstring
+#: names the failure it produces - "one image from a host that accepts the
+#: connection and never replies is enough".
+#:
+#: Emptying it makes `asa_icon` and `provider_icon` emit root-relative paths,
+#: which the live server answers - with a 404, which is fine: a 404 sets
+#: `img.complete` at once, and no test asserts that an icon loaded, only that
+#: the markup points somewhere. The unit tests compare against
+#: `settings.BASE_CDN_URL` rather than a literal, so they follow this.
+BASE_CDN_URL = ""

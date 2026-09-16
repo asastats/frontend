@@ -1,5 +1,6 @@
 """Testing module for :py:mod:`core.models` module."""
 
+import datetime
 import time
 import types
 from unittest import mock
@@ -12,7 +13,7 @@ from django.db.utils import IntegrityError
 from django.http import Http404
 from django.utils import timezone
 
-from core.models import BundleName, Profile
+from core.models import BundleName, LiveAllowanceBucket, Profile
 from utils.constants.users import (
     DUPLICATE_BUNDLE_ERROR,
     DUPLICATE_BUNDLE_NAME_ERROR,
@@ -2702,3 +2703,118 @@ class TestCoreModelsProfilePreferredLayout:
         assert [entry["tier"] for entry in intro.locked_layouts()] == [
             "Asastatser",
         ]
+
+
+class TestLiveAllowanceBucket:
+    """The refilling bucket behind the free live-refresh allowance.
+
+    The refill rate and the cap are exercised where they are used, in the
+    widget's own suite. What is here is what only a row has: how it prints,
+    what it is worth *now* given when it was last written, and the backwards
+    clock - which the widget suite also covers, but which has to be covered
+    here too, because the two suites run as separate pytest invocations and
+    neither one's coverage counts towards the other's threshold.
+    """
+
+    CAPACITY = 2 * 60 * 60.0
+    #: 15 minutes a week, as the free band grants it.
+    PER_SECOND = (15 * 60) / (7 * 24 * 60 * 60)
+
+    def test_core_models_liveallowancebucket_str_says_what_is_left(self):
+        """**Printed for a human reading the admin or a shell.** Seconds to the
+        whole number: a balance is a budget, and six decimal places of it
+        answers a question nobody asked."""
+        bucket = LiveAllowanceBucket(key="A" * 58, balance=5400.5)
+
+        assert str(bucket) == f"{'A' * 58}: 5400s"
+
+    @pytest.mark.django_db
+    def test_core_models_liveallowancebucket_current_balance_refills_since_modified(
+        self,
+    ):
+        """**The refill is computed on read, not by a job.** Nothing is
+        scheduled and nothing can be missed, and a key nobody watches costs one
+        row and no work - so what `modified` means is "the balance was this,
+        then", and the rest is arithmetic.
+        """
+        bucket = LiveAllowanceBucket.objects.create(
+            key="B" * 58, balance=0.0, capacity=self.CAPACITY
+        )
+        LiveAllowanceBucket.objects.filter(pk=bucket.pk).update(
+            modified=timezone.now() - datetime.timedelta(weeks=1)
+        )
+        bucket.refresh_from_db()
+
+        left = bucket.current_balance(self.CAPACITY, self.PER_SECOND)
+
+        assert round(left) == 15 * 60
+
+    @pytest.mark.django_db
+    def test_core_models_liveallowancebucket_current_balance_is_capped(self):
+        """A key left alone for a year is worth what one left alone for a month
+        is. Uncapped, a forgotten address would accumulate indefinitely and be
+        worth farming precisely because nobody had used it."""
+        bucket = LiveAllowanceBucket.objects.create(
+            key="C" * 58, balance=self.CAPACITY, capacity=self.CAPACITY
+        )
+        LiveAllowanceBucket.objects.filter(pk=bucket.pk).update(
+            modified=timezone.now() - datetime.timedelta(weeks=52)
+        )
+        bucket.refresh_from_db()
+
+        assert bucket.current_balance(self.CAPACITY, self.PER_SECOND) == self.CAPACITY
+
+    @pytest.mark.django_db
+    def test_core_models_liveallowancebucket_current_balance_takes_a_given_now(self):
+        """`now` exists so a test need not wait a week, and so the caller can
+        read one consistent moment across several keys."""
+        bucket = LiveAllowanceBucket.objects.create(
+            key="D" * 58, balance=0.0, capacity=self.CAPACITY
+        )
+
+        later = bucket.modified + datetime.timedelta(weeks=2)
+
+        assert round(
+            bucket.current_balance(self.CAPACITY, self.PER_SECOND, now=later)
+        ) == 30 * 60
+
+    @pytest.mark.django_db
+    def test_core_models_liveallowancebucket_a_backwards_clock_takes_nothing_away(
+        self,
+    ):
+        """**A clock that steps backwards must not bill anyone.** The refill is
+        `since_seconds * per_second`, so a negative interval - an NTP
+        correction, a caller reading one moment across several keys that lands
+        just before a row was written - would *subtract* from a balance the
+        user never spent. The guard returns what is there instead.
+        """
+        bucket = LiveAllowanceBucket.objects.create(
+            key="E" * 58, balance=1800.0, capacity=self.CAPACITY
+        )
+
+        earlier = bucket.modified - datetime.timedelta(weeks=4)
+
+        assert (
+            bucket.current_balance(self.CAPACITY, self.PER_SECOND, now=earlier)
+            == 1800.0
+        )
+
+    @pytest.mark.django_db
+    def test_core_models_liveallowancebucket_a_backwards_clock_still_caps(self):
+        """The backwards branch caps too, and that is not redundant: `capacity`
+        is stored per row so a tier change does not silently re-cap a balance
+        earned under another grant, which means a balance legitimately *can*
+        sit above the capacity it is now read against. Returning it whole
+        because the interval happened to be negative would hand back the grant
+        the downgrade was meant to end.
+        """
+        bucket = LiveAllowanceBucket.objects.create(
+            key="F" * 58, balance=self.CAPACITY * 4, capacity=self.CAPACITY * 4
+        )
+
+        earlier = bucket.modified - datetime.timedelta(seconds=30)
+
+        assert (
+            bucket.current_balance(self.CAPACITY, self.PER_SECOND, now=earlier)
+            == self.CAPACITY
+        )

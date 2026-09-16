@@ -1,12 +1,16 @@
 """Integration testing module for :py:mod:`api.views` module."""
 
 import uuid
+from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+from utils.helpers import create_bundle
+from rest_framework_simplejwt.tokens import AccessToken
+import os
 from math import isclose
 
 import pytest
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -22,10 +26,40 @@ from api.data import (
 from utils.helpers import check_bundle_addresses
 
 
+
+def user_for_widgets_token():
+    """Return a user the `WIDGETS_API_TOKEN` will actually resolve to.
+
+    **The auth class stopped trusting the token's claims.**
+    `JWTStatelessUserAuthentication` built a user out of the claims and never
+    touched the database, so any `user_id` resolved. `JWTAuthentication` looks it
+    up - which is the whole point, since a tier cannot be read off a token - and
+    a token naming a user who is not there is a 401.
+
+    Creating the user with an auto primary key made the first test in a class
+    pass and every later one fail: the sequence keeps climbing across tests
+    while the token keeps naming the same id, so only the first ever matched.
+    Reading the id out of the credential and creating *that* user tests the
+    credential production actually uses, rather than a convenient substitute.
+    """
+    import base64
+    import json
+
+    from django.conf import settings
+    from django.contrib.auth.models import User
+
+    payload = settings.WIDGETS_API_TOKEN.split(".")[1]
+    payload += "=" * (-len(payload) % 4)
+    user_id = json.loads(base64.urlsafe_b64decode(payload))["user_id"]
+    user, _ = User.objects.get_or_create(
+        pk=int(user_id), defaults={"email": f"{uuid.uuid4()}@email.com"}
+    )
+    return user
+
 class TestSetup(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create(email=f"{str(uuid.uuid4())}@email.com")
+        self.user = user_for_widgets_token()
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {settings.WIDGETS_API_TOKEN}"
         )
@@ -281,3 +315,79 @@ class TestIntegrationApiV2(TestSetup):
 #         self._test_all(
 #             response, address=API_EXAMPLE_ADDRESS3, ignore_asa_value=[393537671]
 #         )
+
+
+class TestIntegrationApiTierAddressLimit(TestCase):
+    """The per-request address cap, exercised through a real bundle.
+
+    **The count is only knowable after the bundle resolves.** A bundle arrives
+    as a forty-character hash and says nothing about its width until Redis has
+    been asked, so this cannot be a URL validator and a unit test over the band
+    table would not prove the limit is reached at all.
+    """
+
+    def setUp(self):
+        self.user = user_for_widgets_token()
+        self.original = self.user.profile.permission
+        self.client = APIClient()
+        self.client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(self.user)}"
+        )
+        addresses = [
+            line.split()[0]
+            for line in open(
+                os.path.expanduser("~/claude/live/all-addresses.txt")
+            ).readlines()[:7]
+        ]
+        self.wide = create_bundle(" ".join(addresses))
+        self.narrow = create_bundle(" ".join(addresses[:3]))
+
+    def tearDown(self):
+        self.user.profile.permission = self.original
+        self.user.profile.save()
+
+    def _as(self, tier):
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS[tier]
+        self.user.profile.save()
+
+    @override_settings(API_TIER_ENFORCED=True)
+    def test_integration_api_a_bundle_wider_than_the_tier_is_refused(self):
+        self._as("Asastatser")
+
+        response = self.client.get(f"/api/v2/{self.wide}/")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        # **The refusal names both numbers.** "Too many addresses" sends a
+        # subscriber to a support thread; the counts let them act without one.
+        assert "7" in str(response.data)
+        assert "5" in str(response.data)
+
+    def test_integration_api_a_wide_bundle_is_still_served_while_shadowing(self):
+        """**The switch has to mean one thing.** A limit that refused while the
+        permission gate was only observing would make API_TIER_ENFORCED a
+        half-truth, and the log written to answer "who breaks?" would be missing
+        everyone the address cap had already broken."""
+        self._as("Asastatser")
+
+        assert (
+            self.client.get(f"/api/v2/{self.wide}/").status_code == status.HTTP_200_OK
+        )
+
+    @override_settings(API_TIER_ENFORCED=True)
+    def test_integration_api_a_bundle_within_the_tier_is_served(self):
+        self._as("Asastatser")
+
+        assert (
+            self.client.get(f"/api/v2/{self.narrow}/").status_code
+            == status.HTTP_200_OK
+        )
+
+    @override_settings(API_TIER_ENFORCED=True)
+    def test_integration_api_a_richer_tier_may_ask_wider(self):
+        """The same bundle, refused for one tier and served for another, is what
+        makes this a tier limit rather than a validation rule."""
+        self._as("Cluster")
+
+        assert (
+            self.client.get(f"/api/v2/{self.wide}/").status_code == status.HTTP_200_OK
+        )

@@ -337,8 +337,16 @@ REST_FRAMEWORK = {
         "rest_framework_xml.renderers.XMLRenderer",
         "rest_framework_yaml.renderers.YAMLRenderer",
     ],
+    # **A real user, not a token's claims.** `JWTStatelessUserAuthentication`
+    # trusts the token without touching the database, which is cheap and leaves
+    # `request.user` with no profile - so nothing tier-dependent can be asked
+    # about the caller, which is why the tier gate has been returning True since
+    # the API shipped. Measured before switching: only ~71,000 API requests in
+    # five weeks of logs authenticate successfully, about 2,000 a day, and the
+    # lookup happens only for those - an invalid token is refused before it. So
+    # the database read this adds is roughly one every forty seconds.
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_RATES": {
@@ -541,6 +549,33 @@ THEME_ATTRIBUTION = {
 }
 
 # --- Rotated secrets ---
+#: Whether the API tier check refuses, or only reports what it would refuse.
+#:
+#: False until a shadow-mode log has shown who enforcement would break. The
+#: check itself runs either way - see `api.permissions.CanAccessApiPermission` -
+#: so the two modes cannot drift apart the way a check and a separate audit
+#: would.
+API_TIER_ENFORCED = get_env_variable("API_TIER_ENFORCED", "") == "1"
+
+#: User ids that may use the API whatever tier they hold.
+#:
+#: **For credentials that cannot be rotated on our schedule.** The mobile app
+#: ships a long-lived bearer token inside a released binary: changing which
+#: account it names means an app release and a store review, so between deciding
+#: to enforce the tier gate and the new build reaching every phone, the app
+#: would simply stop working. Raising the account's `permission` instead would
+#: work and is blunt - it hands that account every paid *website* feature to
+#: solve an API problem.
+#:
+#: Comma-separated ids, so it is set per deployment and reviewable in one line.
+#: Empty is the right default: an exemption nobody needs is an exemption nobody
+#: should be able to forget about.
+API_TIER_EXEMPT_USER_IDS = frozenset(
+    int(value)
+    for value in get_env_variable("API_TIER_EXEMPT_USER_IDS", "").split(",")
+    if value.strip().isdigit()
+)
+
 SIMPLE_JWT_KEY = get_env_variable("SIMPLE_JWT_KEY", "")
 
 SIMPLE_JWT = {

@@ -1104,6 +1104,30 @@ class ProfileSettingsPageTest(TestCase):
         self.user.profile.refresh_from_db()
         assert self.user.profile.live_refresh is True
 
+    def test_settings_page_liverefresh_post_redirects_when_the_manifest_refuses(
+        self,
+    ):
+        """**The gate is the widget's manifest, not a tier written in the view.**
+
+        On this deployment the free band admits everyone, so no permission
+        reaches this branch - which is why it sat uncovered. It is not dead
+        code: a fork hosting the widget on its own bands can exclude a reader,
+        and `can_access_live_refresh` is what it would say so with. Mocking the
+        gate is the only way to ask the view what it does when told no.
+        """
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            with mock.patch.object(
+                type(self.user.profile), "can_access_live_refresh", return_value=False
+            ):
+                response = self.client.post(
+                    reverse("profile_settings"),
+                    data={"section": "liverefresh", "live_refresh": "on"},
+                )
+
+        self.assertRedirects(response, reverse("subscriptions"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.live_refresh is False
+
     def test_settings_page_liverefresh_post_invalid_rerenders_bound_form(self):
         """**`is_valid` is mocked because nothing else can make it false.**
 
