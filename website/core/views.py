@@ -88,7 +88,7 @@ from utils.constants.users import (
     BUNDLE_NAME_NOT_FOUND_ERROR,
 )
 from utils.cache import cached_live_holdings
-from utils.userhelpers import liverefresh_daily_minutes
+from utils.userhelpers import liverefresh_terms
 from utils.clients import redis_instance
 from utils.helpers import (
     check_algorand_address,
@@ -1286,9 +1286,10 @@ class ProfileSettingsView(View):
             "layout_form": ProfileLayoutForm(instance=profile),
             "liverefresh_form": ProfileLiveRefreshForm(instance=profile),
             "can_access_liverefresh": profile.can_access_live_refresh(),
-            # Minutes a day, or None where there is no limit. The settings page
-            # turns it into the upgrade prompt; see `liverefresh/allowance.py`.
-            "liverefresh_minutes": liverefresh_daily_minutes(profile.permission),
+            # The refilling bucket's terms, or None where there is no limit.
+            # The settings page turns it into the upgrade prompt; see
+            # `liverefresh/allowance.py`.
+            "liverefresh_terms": liverefresh_terms(profile.permission),
             "can_access_explorer": profile.can_access_explorer_setting(),
             "can_access_layout": profile.can_access_layout_setting(),
         }

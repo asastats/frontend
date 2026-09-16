@@ -264,19 +264,28 @@ def validate_address_or_algo_name_url_path(url_path):
         raise ValidationError(ADDRESS_AND_ALGO_NAME_URL_PATH_ERROR)
 
 
-def liverefresh_daily_minutes(permission):
-    """Return the live-refresh minutes a day `permission` allows, or None.
+def liverefresh_terms(permission):
+    """Return the live-refresh allowance `permission` carries, or None.
 
-    None means no limit, which is every tier from Asastatser up. The number is
+    None means no limit, which is every tier from Asastatser up. The numbers are
     the widget's to decide - it is the widget's feature and its manifest carries
-    the address bands - so this only converts it for the settings page, which
+    the address bands - so this only converts them for the settings page, which
     has no business importing a widget's internals for a label.
+
+    Returned as minutes because that is what a reader is shown; the widget keeps
+    seconds because that is what a poll charges.
 
     :param permission: the reader's permission integer
     :type permission: int
-    :return: int or None
+    :return: dict or None
     """
-    from widgets.inhouse.liverefresh.allowance import daily_allowance
+    from widgets.inhouse.liverefresh.allowance import terms
 
-    seconds = daily_allowance(permission)
-    return None if seconds is None else seconds // 60
+    band = terms(permission)
+    if band is None:
+        return None
+    return {
+        "hours": band["capacity"] // 3600,
+        "weekly_minutes": band["per_week"] // 60,
+        "linked_only": band["linked_only"],
+    }

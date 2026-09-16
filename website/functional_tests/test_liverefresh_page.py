@@ -464,14 +464,14 @@ class LiveRefreshTest(FunctionalTest):
 
         assert self.browser.find_elements(By.ID, "id-liverefresh") != []
 
-    @mock.patch("widgets.inhouse.liverefresh.views.remaining")
+    @mock.patch("widgets.inhouse.liverefresh.views.spend")
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_a_spent_reader_is_handed_back_to_the_free_reload(
         self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis,
-        mocked_remaining,
+        mocked_spend,
     ):
         """**The handover, which is the whole reason this is not a 204.**
 
@@ -485,7 +485,7 @@ class LiveRefreshTest(FunctionalTest):
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": INTRO}
         mocked_redis.return_value = self._redis()
-        mocked_remaining.return_value = -1.0
+        mocked_spend.return_value = -1.0
 
         self.sign_in(live_refresh=True, permission=INTRO)
         self.open_page()
@@ -498,6 +498,52 @@ class LiveRefreshTest(FunctionalTest):
 
         notice = self.browser.find_element(By.ID, "id-liverefresh-spent")
         assert notice.is_displayed()
+        # **The wording is the product.** A reader who is told only that
+        # something stopped has been told the least useful half of it: they need
+        # to know the page still updates, that the allowance comes back on its
+        # own, and what removes the limit.
+        text = notice.text.lower()
+        assert "sixty-second" in text or "slower" in text
+        assert "week" in text
+        assert notice.find_elements(By.TAG_NAME, "a") != []
+
+    @mock.patch("widgets.inhouse.liverefresh.views.spend")
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_reader_is_shown_what_is_left(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis,
+        mocked_spend,
+    ):
+        """**An allowance nobody can see is one that only ever surprises them.**
+
+        The badge ships hidden in the non-cached partial - the address page is
+        cached across readers, so a balance rendered into it would show whoever
+        warmed the entry to everybody else - and the script reveals it and moves
+        it beside the control once a poll answers.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": INTRO}
+        mocked_redis.return_value = self._redis()
+        mocked_spend.return_value = 7080.0
+
+        self.sign_in(live_refresh=True, permission=INTRO)
+        self.open_page()
+        self.arm()
+
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.ID, "id-liverefresh-left"
+            ).is_displayed(),
+            timeout=15,
+        )
+        badge = self.browser.find_element(By.ID, "id-liverefresh-left")
+        # Hours and minutes, not a second count: it is an allowance, and a
+        # number ticking beside a page that already updates every block is two
+        # things moving for no reason.
+        assert "1h 58m" in badge.text
 
 
 class LiveRefreshClassicTest(LiveRefreshTest):

@@ -88,15 +88,38 @@
       data-poll-url="{{ liverefresh_url }}"
       data-interval="{{ liverefresh_interval }}"
       data-grace="{{ liverefresh_grace }}"></span>
-{% comment %} Revealed by `liverefresh.js` when the day's free watching is spent.
+{% comment %} How much watching is left, moved beside the control by the script.
+
+   In this partial rather than the toolbar because it is per-reader and
+   `address.html` is cached across readers - rendering a balance into the shared
+   entry would show whoever warmed it to everybody else. Same trap the Dust
+   Sweep button hit. The script relocates it, so it reads as part of the
+   control without being cached with it. {% endcomment %}
+<span id="id-liverefresh-left"
+      class="badge badge-sm badge-ghost align-middle"
+      title="Real-time refresh left on this address" hidden></span>
+{% comment %} Revealed by `liverefresh.js` when the free watching is spent.
 
    Rendered hidden rather than inserted by the script, so the message is in the
    markup one place and a reader with no JavaScript is not shown a notice about
    a feature that needs it. It sits in this non-cached partial with the marker,
-   because it is per-reader: the address page's cache entry is shared. {% endcomment %}
+   because it is per-reader: the address page's cache entry is shared.
+
+   **The wording is the product.** A page that just stops is indistinguishable
+   from a broken one, so it says what ran out, that the page still updates on
+   the slower timer, that it comes back on its own, and what removes the limit.
+   {% endcomment %}
 <div id="id-liverefresh-spent" class="alert alert-info mx-auto mt-4 max-w-2xl" role="status" hidden>
-  <span>That is today's free real-time refresh used up. The page will keep
-    updating on the slower timer &mdash; a subscription removes the limit.</span>
+  <div>
+    <p class="font-semibold">Real-time refresh used up for this address</p>
+    <p class="text-sm">This page keeps updating on the slower sixty-second
+      timer. Your free allowance tops up by
+      <span class="whitespace-nowrap">{{ liverefresh_weekly_minutes|default:"15" }} minutes</span>
+      each week.</p>
+    <p class="mt-2">
+      <a href="{% url 'subscriptions' %}" class="btn btn-primary btn-sm">Subscribe for unlimited</a>
+    </p>
+  </div>
 </div>
 <script src="{% static 'liverefresh/liverefresh.js' %}"></script>
 {% endif %}

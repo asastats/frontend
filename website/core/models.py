@@ -815,3 +815,101 @@ class BundleName(models.Model):
         :return: Boolean
         """
         return can_access_widget("historic", self.profile, self.size)
+
+
+class LiveAllowanceBucket(models.Model):
+    """How much live refresh a key has left, as a refilling token bucket.
+
+    **What the key is depends on the tier, and that is the anti-abuse design.**
+
+    The free tier is keyed by *address*. An allowance bound to an account is
+    bound to the cheapest thing in the system - accounts are free and need no
+    email - so a hundred of them would be a hundred allowances. Bound to the
+    address, a hundred accounts watching one address all spend the same bucket,
+    and getting more free time means splitting a portfolio across addresses,
+    which costs fees and minimum balances and fragments the combined view that
+    was the reason to watch. The abuse has to destroy the thing it is abusing
+    for.
+
+    Intro is keyed by *reader*, because a paying reader is not what that is
+    defending against, and because per-address would hand an Intro subscriber
+    four hours for every address they open, which is no limit at all. Theirs is
+    a budget to spend where they like.
+
+    **A bucket rather than a countdown, because it refills.** A grant to start
+    and a weekly top-up after that, capped back at the grant. Stored as a
+    balance and the moment it was last touched, so the refill is computed when
+    somebody asks rather than by a job that has to run - nothing to schedule,
+    nothing to miss, and a key nobody uses costs one row and no work.
+
+    **This row is the durable floor, not the hot path.** A poll arrives every
+    few seconds per watching reader and must not write here; Redis carries the
+    spend between flushes. The row exists because Redis is allowed to lose
+    things - an eviction, a flush, a failover - and for a daily allowance that
+    costs a reader one day, while for a refilling bucket it would hand every key
+    a fresh grant. The failure mode of the anti-abuse mechanism must not be the
+    abuse.
+    """
+
+    #: `key` holds an address for the free tier and `u:<pk>` for a reader, so
+    #: the two namespaces cannot collide: an address is 58 base32 characters and
+    #: can never begin `u:`.
+    key = models.CharField(max_length=64, unique=True, db_index=True)
+    #: Seconds of live refresh left, as of `modified`.
+    balance = models.FloatField(default=0.0)
+    #: The grant this row was created under, so a tier change or a policy change
+    #: does not silently re-cap a balance that was earned under another one.
+    capacity = models.FloatField(default=0.0)
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        """Ordered by the key so a listing is stable."""
+
+        ordering = ("key",)
+
+    def __str__(self):
+        """Return the key and what is left on it.
+
+        :return: str
+        """
+        return f"{self.key}: {self.balance:.0f}s"
+
+    @staticmethod
+    def refilled(balance, since_seconds, capacity, per_second):
+        """Return `balance` after `since_seconds` of refill, capped.
+
+        Capped at the grant, so a key left alone for a year is worth exactly as
+        much as one left alone for a month. Without the cap a forgotten address
+        would accumulate indefinitely and be worth farming precisely because
+        nobody had used it.
+
+        :param balance: seconds left when the row was last written
+        :type balance: float
+        :param since_seconds: wall clock since then
+        :type since_seconds: float
+        :param capacity: the grant, and the ceiling
+        :type capacity: float
+        :param per_second: seconds gained per second of wall clock
+        :type per_second: float
+        :return: float
+        """
+        if since_seconds <= 0:
+            return min(balance, capacity)
+        return min(balance + since_seconds * per_second, capacity)
+
+    def current_balance(self, capacity, per_second, now=None):
+        """Return what this key has right now, refill included.
+
+        :param capacity: the grant, and the ceiling
+        :type capacity: float
+        :param per_second: seconds gained per second of wall clock
+        :type per_second: float
+        :param now: override for the current time, for tests
+        :type now: :class:`datetime.datetime`
+        :return: float
+        """
+        now = now or timezone.now()
+        return self.refilled(
+            self.balance, (now - self.modified).total_seconds(), capacity, per_second
+        )

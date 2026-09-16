@@ -111,12 +111,15 @@
          Every authenticated reader may now switch this on; what a subscription
          buys is the limit coming off. Telling them the number here - rather
          than letting the page quietly stop later - is the whole reason the
-         allowance exists, and `liverefresh_minutes` is None for the tiers that
+         allowance exists, and `liverefresh_terms` is None for the tiers that
          have none. {% endcomment %}
-      {% if liverefresh_minutes %}
+      {% if liverefresh_terms %}
       <span class="mt-1 block text-xs text-base-content/60">
-        Your plan includes <span class="text-primary">{{ liverefresh_minutes }} minutes</span> of
-        real-time refresh a day. <a href="{% url 'subscriptions' %}" class="link">Subscribe</a> to remove the limit.
+        Your plan includes
+        <span class="text-primary">{{ liverefresh_terms.hours }} hours</span> of real-time refresh{% if liverefresh_terms.linked_only %}
+        per connected address{% endif %}, topping up by
+        {{ liverefresh_terms.weekly_minutes }} minutes a week.
+        <a href="{% url 'subscriptions' %}" class="link">Subscribe</a> to remove the limit.
       </span>
       {% endif %}
       <div class="mt-4">
