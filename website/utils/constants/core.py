@@ -297,6 +297,21 @@ LIVEREFRESH_POLL_SECONDS = 3
 #: from the engine's work without anything having to say so.
 LIVEREFRESH_HIDDEN_GRACE_SECONDS = 300
 
+#: Most per-asset fragments one poll may carry.
+#:
+#: **This bounds the reader's browser, not the engine.** `TRANSMITTER_LIVE_MAX_ASAS`
+#: decides how much work the pass will do; nothing decided how much markup a
+#: single response could ask htmx to parse and out-of-band swap. After a re-read
+#: the engine sends every holding - deliberately, since that full payload is
+#: what heals the diffs a three-second poll misses against a 2.7-second block -
+#: and on one real account that measured 85 kB of fragments landing in a 22 MB
+#: document, which no browser applies quickly.
+#:
+#: A hundred spreads a nine-hundred-holding resync over about half a minute of
+#: polling. Nothing is dropped; the remainder waits in the session. Ordinary
+#: pages never reach this, because an ordinary block moves a handful of values.
+LIVEREFRESH_MAX_FRAGMENTS = 100
+
 #: Redis hash the engine writes a per-page fingerprint of the *holdings* into.
 #:
 #: Mirrors the engine's own `CACHE_KEY_LIVE_HOLDINGS`; the two services share
