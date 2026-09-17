@@ -297,6 +297,23 @@ LIVEREFRESH_POLL_SECONDS = 3
 #: from the engine's work without anything having to say so.
 LIVEREFRESH_HIDDEN_GRACE_SECONDS = 300
 
+#: Least time between two reloads the poll may order for one reader and page.
+#:
+#: **A page slower to render than its account is to transact never converges.**
+#: The reload fires when the fingerprint the page was rendered with differs from
+#: the one the engine has published, and the engine's counter steps on every
+#: block that strikes the account. A bundle of five addresses with one busy
+#: member is struck most blocks - so a page taking seven seconds to render is
+#: already stale when it arrives, reloads, and is stale again on arrival. The
+#: symptom is a page that reloads forever, every reload a cold render, and an
+#: auto-refresh checkbox visibly flickering as each load re-reads localStorage.
+#:
+#: Sixty seconds is the cadence a non-subscriber's page already reloads at, so
+#: the worst case degrades to exactly what everyone else gets. Values keep
+#: arriving as fragments in between; what waits is only the row *structure*,
+#: which is what a reload is for.
+LIVEREFRESH_RELOAD_COOLDOWN_SECONDS = 60
+
 #: Most per-asset fragments one poll may carry.
 #:
 #: **This bounds the reader's browser, not the engine.** `TRANSMITTER_LIVE_MAX_ASAS`
