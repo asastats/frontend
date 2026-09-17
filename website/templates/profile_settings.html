@@ -88,9 +88,14 @@
       <h2 class="text-base font-medium">Real-time refresh</h2>
     </div>
     <div class="space-y-4 px-5 py-5">
+      {% comment %} **The second sentence differs by tier, and a subscriber gets
+         none.** `linked_only` is the free band's restriction and only the free
+         band's - `allowance.py` sets it True for permission 0 and False for
+         every paid tier - so this is the same flag the allowance enforces
+         rather than a second definition of "free" that could drift from it. {% endcomment %}
       <p class="max-w-prose text-sm text-base-content/70">
-        Update an address page as each block arrives, instead of reloading it every minute.
-        The page stays where it is &mdash; only the figures that moved are redrawn.
+        Update an address page as each block arrives, instead of reloading it every minute.{% if liverefresh_terms.linked_only %}
+        Only an address connected to your account can be tracked in real time.{% endif %}
       </p>
     {% if can_access_liverefresh %}
     <form method="post" action="{% url 'profile_settings' %}"

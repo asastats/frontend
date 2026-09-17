@@ -283,6 +283,40 @@ class LiveRefreshSettingTest(FunctionalTest):
 
         assert "minutes" not in section.text
 
+    def test_a_free_reader_is_told_the_address_must_be_connected(self):
+        """**The restriction that decides whether the feature works for them.**
+
+        A free reader may spend their allowance only on an address they have
+        proved they control, so a page opened on somebody else's address simply
+        will not refresh. Finding that out by watching a page fail to update is
+        the worst way to learn it; the tier that carries the restriction is the
+        tier that gets the sentence.
+        """
+        self._open(0, "freetold")
+
+        section = self.browser.find_element(By.ID, "id-section-liverefresh")
+
+        assert "connected to your account" in section.text
+
+    def test_a_paying_reader_is_not_told_about_connected_addresses(self):
+        """It does not apply to them, and a restriction described to somebody it
+        does not restrict reads as one that does.
+
+        Covers both paying shapes in one assertion each: Intro has an allowance
+        but no `linked_only`, Asastatser has no allowance at all - and the
+        template keys on `linked_only` rather than on "has terms", so the two
+        cannot be collapsed.
+        """
+        for permission, who in (
+            (SUBSCRIPTION_TIER_PERMISSIONS["Intro"], "introfree"),
+            (SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], "paidfree"),
+        ):
+            self._open(permission, who)
+
+            section = self.browser.find_element(By.ID, "id-section-liverefresh")
+
+            assert "connected to your account" not in section.text
+
     def test_the_saved_preference_comes_back_checked(self):
         """A setting that does not survive a reload is a setting nobody trusts."""
         self._open(SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], "saver")

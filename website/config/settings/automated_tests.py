@@ -117,8 +117,21 @@ EXPORT_TIERS_ADDRESSES_LIMIT = parse_export_limits(
 #: connection and never replies is enough".
 #:
 #: Emptying it makes `asa_icon` and `provider_icon` emit root-relative paths,
-#: which the live server answers - with a 404, which is fine: a 404 sets
-#: `img.complete` at once, and no test asserts that an icon loaded, only that
-#: the markup points somewhere. The unit tests compare against
+#: which the live server answers. The unit tests compare against
 #: `settings.BASE_CDN_URL` rather than a literal, so they follow this.
+#:
+#: **A 404 was assumed harmless here, and it is not.** The reasoning was that a
+#: 404 sets `img.complete` at once and no test asserts an icon *loaded*, only
+#: that the markup points somewhere. The second half is false:
+#: `static/js/csp-safe-handlers.js` listens for image `error` events and
+#: rewrites `src` to the element's `data-fallback`, so a 404 does not fail
+#: quietly - it replaces the icon's `src` with `empty.png`, under tests that
+#: read that `src` back. `SwapModalTest` asserting a USDC icon found it.
+#:
+#: So the suite serves those paths itself; see `ROOT_URLCONF` below.
 BASE_CDN_URL = ""
+
+#: The site's URLconf plus a route that answers `/icons/…` and `/thumbnails/…`
+#: with a real pixel, so nothing 404s and the fallback handler stays asleep.
+#: See `config/urls_automated_tests.py` for why this cannot simply be appended.
+ROOT_URLCONF = "config.urls_automated_tests"
