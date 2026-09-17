@@ -874,3 +874,56 @@ class TestFloorPriceFilter:
             "snippets/dynamic/nft.html", {"row": _item("215.98", floor="25.00")}
         )
         assert "25.00" in html
+
+
+class TestDeferItems:
+    """Whether a collection's items wait for the reader to open the card.
+
+    **The fold hides rows; it does not stop them being rendered.** Every
+    collection wrote out every item, invisible inside a closed ``<details>``,
+    and the fetch on open replaced them anyway. On one real account - 1,990
+    collections, 28,008 NFTs - that was 19.3 MB of a 22 MB page, 87.9% of it
+    markup nobody could see, and 152,294 elements the browser had to lay out
+    before the page would scroll. It never finished loading.
+    """
+
+    def test_core_extras_defer_items_is_false_for_an_ordinary_account(self):
+        """**Not always, deliberately.** The rendered items are what let the NFT
+        filter match inside a collection nobody has opened - `showMatchedNodes`
+        pairs a thumbnail's `t<id>` with its item's `f<id>`. Under the threshold
+        that markup is cheap and the filter keeps working."""
+        from core.templatetags.core_extras import defer_items
+
+        assert defer_items([{"name": f"c{i}"} for i in range(10)]) is False
+
+    def test_core_extras_defer_items_is_true_past_the_threshold(self):
+        from django.conf import settings
+
+        from core.templatetags.core_extras import defer_items
+
+        many = [
+            {"name": f"c{i}"}
+            for i in range(settings.ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS + 1)
+        ]
+
+        assert defer_items(many) is True
+
+    def test_core_extras_defer_items_sits_exactly_on_the_boundary(self):
+        """At the threshold, not past it: the setting says *above*."""
+        from django.conf import settings
+
+        from core.templatetags.core_extras import defer_items
+
+        exactly = [
+            {"name": f"c{i}"}
+            for i in range(settings.ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS)
+        ]
+
+        assert defer_items(exactly) is False
+
+    def test_core_extras_defer_items_survives_something_uncountable(self):
+        """A filter that raises takes the whole page with it, and this one runs
+        on every address page there is."""
+        from core.templatetags.core_extras import defer_items
+
+        assert defer_items(None) is False

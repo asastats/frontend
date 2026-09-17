@@ -43,6 +43,35 @@ function initAddress() {
   lastRefreshAt = Date.now();
   checkOpened("asa");
   checkOpened("nft");
+  wireFetchedItems();
+}
+
+
+/**
+ * Defer the images in content htmx swapped in after page load.
+ *
+ * **A collection's items are not on the page until the reader opens it.** They
+ * used to be: every collection wrote out every item, hidden inside a closed
+ * `<details>`, and the fetch on open replaced them. On one real account that
+ * was 87.9% of a 22 MB page - markup nobody could see, and 152,294 elements a
+ * browser had to lay out before the page would scroll.
+ *
+ * `deferImages` runs once, over the elements present at load, so items arriving
+ * later never had their `data-src` promoted to `src` and their art never
+ * appeared. That was already true of the design-2 layout, which has fetched on
+ * open all along; it is simply visible now that both layouts do.
+ *
+ * @function wireFetchedItems
+ *
+ */
+function wireFetchedItems() {
+  document.body.addEventListener("htmx:afterSwap", function (event) {
+    var target = event && event.target;
+    if (!target || !target.getElementsByClassName) {
+      return;
+    }
+    deferImages(target.getElementsByClassName('nft'));
+  });
 }
 
 

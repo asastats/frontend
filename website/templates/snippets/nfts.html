@@ -22,7 +22,7 @@
   {% with shown=ADDRESS_INITIAL_COLLECTIONS %}
   <div class="space-y-2" data-folding>
   {% for coll in nftcollections %}
-    {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors index=forloop.counter0 shown=shown %}
+    {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors index=forloop.counter0 shown=shown defer=nftcollections|defer_items %}
   {% endfor %}
   </div>
   {% if nftcollections|length > shown %}

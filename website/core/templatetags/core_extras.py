@@ -627,6 +627,34 @@ def program_groups(programs):
 
 
 @register.filter
+def defer_items(collections):
+    """Whether collection bodies should be left to the fetch-on-open.
+
+    **The fold hides rows; it does not stop them being rendered.** Every
+    collection writes out every item, invisible inside a closed ``<details>``,
+    and the fetch on open replaces them anyway. On one real account - 1,990
+    collections, 28,008 NFTs - that was 19.3 MB of a 22 MB page and 152,294
+    elements the browser had to lay out before it would scroll.
+
+    Conditional rather than always, because the rendered items are what let the
+    NFT filter match inside a collection nobody has opened: ``showMatchedNodes``
+    pairs a thumbnail's ``t<id>`` with its item's ``f<id>``. Under the threshold
+    that markup is cheap and the filter keeps working; over it, the page does
+    not work at all, and a filter that misses unopened collections is the better
+    failure.
+
+    :param collections: the page's NFT collections
+    :type collections: list
+    :return: bool
+    """
+    try:
+        count = len(collections)
+    except TypeError:
+        return False
+    return count > settings.ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS
+
+
+@register.filter
 def beyond(rows, shown):
     """Return how many of ``rows`` sit past the first ``shown``.
 

@@ -44,10 +44,23 @@
     </div>
   </summary>
   <div class="item-body border-t border-base-300 p-3">
-    {% comment %} **Filled in on first open.** The page's payload carries every item
-     already, but without the listings and purchase history that only an opened
-     collection shows - those are fetched once, for the collection the reader
-     actually expanded, and replace what is here.
+    {% comment %} **Filled in on first open, and empty until then.** The page's
+     payload carries every item already, but without the listings and purchase
+     history that only an opened collection shows - those are fetched once, for
+     the collection the reader actually expanded.
+
+     **Above `ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS`, nothing is written here.**
+     These items are invisible until the card opens - a closed `<details>` shows
+     none of them - and then thrown away, because the fetch replaces them. On one
+     real account that was 1,990 cards carrying a 9,698-character body each:
+     19.3 MB of the page's 22, 87.9% of it markup nobody could ever see, and
+     152,294 `<div>` elements for a browser to lay out before it would scroll at
+     all. The page never finished loading.
+
+     Under the threshold they are still rendered, and deliberately: they are what
+     lets the NFT filter match inside a collection the reader has not opened,
+     since `showMatchedNodes` pairs a thumbnail's `t<id>` with its item's
+     `f<id>`. See the setting for why that trade flips at scale.
 
      `toggle once` rather than a click handler: `<details>` fires `toggle` when
      it opens, including when `address.js` reopens a remembered collection by
@@ -58,9 +71,7 @@
      The name is a query parameter because it is arbitrary text a creator chose,
      and an empty one is a real collection: the NFTs belonging to none. {% endcomment %}
      <div class="space-y-3" hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}" hx-trigger="toggle once from:closest details" hx-swap="innerHTML">
-      {% for row in coll.nfts %}
-        {% include "snippets/nfts/item.html" with row=row %}
-      {% endfor %}
+      {% if defer %}<p class="py-2 text-sm text-base-content/60">Loading items&hellip;</p>{% else %}{% for row in coll.nfts %}{% include "snippets/nfts/item.html" with row=row %}{% endfor %}{% endif %}
     </div>
   </div>
 </details>

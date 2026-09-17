@@ -318,6 +318,24 @@ CACHE_TTL = 60 * 90  # Cache time to live is 90 minutes.
 ADDRESS_INITIAL_ASSETS = 20
 ADDRESS_INITIAL_COLLECTIONS = 10
 
+#: Above this many collections, a card's items wait for the reader to open it.
+#:
+#: **The fold hides rows; it does not stop them being rendered.** Every
+#: collection writes out every item, invisible inside a closed ``<details>``,
+#: and the fetch on open replaces them. On one real account - 1,990 collections,
+#: 28,008 NFTs - that was 19.3 MB of a 22 MB page, 87.9% of it markup nobody
+#: could see, and 152,294 elements a browser had to lay out before the page
+#: would scroll at all. It never finished loading.
+#:
+#: Conditional rather than always, because rendering them up front is what lets
+#: the NFT filter match an item in a collection the reader has not opened:
+#: ``showMatchedNodes`` pairs a thumbnail's ``t<id>`` with its item's ``f<id>``,
+#: and an item that is not on the page cannot be paired. At a hundred
+#: collections that markup is a couple of hundred kilobytes and worth it; at two
+#: thousand it is a page that does not work at all, and a filter that misses
+#: unopened collections is the better of the two failures.
+ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS = 100
+
 SITE_ID = 1
 #: The default for locally served sites, which is http. production.py raises it
 #: to https, so this is the base of a per-environment layering rather than a

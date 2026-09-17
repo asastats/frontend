@@ -33,7 +33,7 @@
   {% with shown=ADDRESS_INITIAL_COLLECTIONS %}
   <div class="rows{% if compact %} cards{% endif %}" id="nft-list" data-folding>
     {% for coll in nftcollections %}
-      {% include "snippets/dynamic/collection.html" with coll=coll nft_colors=nft_colors shown=shown index=forloop.counter0 %}
+      {% include "snippets/dynamic/collection.html" with coll=coll nft_colors=nft_colors shown=shown index=forloop.counter0 defer=nftcollections|defer_items %}
     {% endfor %}
   </div>
   {% comment %} Directly after the list it unfolds: `showmore.js` finds its

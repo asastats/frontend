@@ -149,12 +149,15 @@
          declared in `input.css` or listed as intentional in
          `test_dynamic_design_classes`, and inventing one to satisfy that is how
          a stylesheet fills up with rules that exist only for a test. {% endcomment %}
+      {% comment %} **Empty until opened.** Writing these out for every
+         collection put 87.9% of one real account's 22 MB page into markup
+         nobody could see - a closed `<details>` renders none of it - and then
+         discarded it on open, when the fetch below replaced it. See
+         `snippets/nfts/collection.html` for the measurement. {% endcomment %}
       <div hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}"
            hx-trigger="toggle once from:closest details"
            hx-swap="innerHTML">
-      {% for row in coll.nfts %}
-        {% include "snippets/dynamic/nft.html" with row=row %}
-      {% endfor %}
+        {% if defer %}<p>Loading items&hellip;</p>{% else %}{% for row in coll.nfts %}{% include "snippets/dynamic/nft.html" with row=row %}{% endfor %}{% endif %}
       </div>
     </div>
   </div>

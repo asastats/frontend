@@ -145,8 +145,22 @@ class AssetRowLayoutTest(FunctionalTest):
         # wrote a moment ago, which is a race that reports as a layout bug.
         self.wait_until(
             lambda: self.browser.execute_script(
+                # **Lazy images are excluded, and have to be.** A
+                # `loading="lazy"` image below the fold never starts loading,
+                # so `complete` stays false for as long as the page is open -
+                # waiting on it is waiting forever. The NFT thumbnails became
+                # lazy when one account's page asked for 28,008 of them at
+                # once; this wait then timed out in every test sharing this
+                # helper, including ones with nothing to do with images.
+                #
+                # What the wait is for is unaffected: it exists so a thumbnail
+                # landing without reserved space does not push rows down
+                # mid-measurement, and an image the browser has deferred is
+                # one that is not about to land.
                 "return Array.prototype.every.call("
-                "  document.images, function (img) { return img.complete; });"
+                "  document.images, function (img) {"
+                "    return img.loading === 'lazy' || img.complete;"
+                "  });"
             )
         )
 

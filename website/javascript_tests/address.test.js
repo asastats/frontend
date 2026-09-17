@@ -588,6 +588,55 @@ describe("filterChange", function () {
 });
 
 
+describe("wireFetchedItems (htmx:afterSwap)", function () {
+  // **A collection's items are not on the page until the reader opens it.**
+  // They used to be: every collection wrote out every item, hidden inside a
+  // closed <details>, and the fetch on open replaced them. On one real account
+  // that was 87.9% of a 22 MB page. Now the body arrives by htmx -- and
+  // deferImages only ever ran over the elements present at load, so the art in
+  // anything swapped in later stayed on its placeholder for good. That was
+  // already true of the design-2 layout, which has fetched on open all along.
+
+  it('promotes data-src on content htmx swapped in', function () {
+    window.onload();
+    document.body.innerHTML =
+      '<div id="swapped"><img class="nft" data-src="/late.png" src="" /></div>';
+    var swapped = document.getElementById("swapped");
+
+    swapped.dispatchEvent(
+      new CustomEvent("htmx:afterSwap", { bubbles: true })
+    );
+
+    expect(document.querySelector("img.nft").src).toContain("/late.png");
+  });
+
+  it('leaves an event with no usable target alone', function () {
+    // The listener sits on document.body and sees every afterSwap that bubbles
+    // to it, whatever dispatched it. A target with no descendants to search - a
+    // text node is the easy one to construct, and settled content can contain
+    // them - would throw on getElementsByClassName, and that throw would take
+    // down every later swap on the page rather than just this one.
+    window.onload();
+    var text = document.createTextNode("swapped text");
+    document.body.appendChild(text);
+
+    expect(function () {
+      text.dispatchEvent(new CustomEvent("htmx:afterSwap", { bubbles: true }));
+    }).not.toThrow();
+  });
+
+  it('is harmless when the swapped content holds no deferred images', function () {
+    window.onload();
+    document.body.innerHTML = '<div id="plain"><p>no art here</p></div>';
+    var plain = document.getElementById("plain");
+
+    expect(function () {
+      plain.dispatchEvent(new CustomEvent("htmx:afterSwap", { bubbles: true }));
+    }).not.toThrow();
+  });
+});
+
+
 describe("initAddress (window.onload)", function () {
   it('defers images and opens stored sections', function () {
 
