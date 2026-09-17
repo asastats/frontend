@@ -188,6 +188,29 @@ class TestAddressTemplateRenders:
         t_ids = re.findall(r'id="t(\d+)"[^>]+class="[^"]*nfticon', html)
         assert len(t_ids) > 0
 
+    def test_nft_thumbnails_are_lazy(self, sample_payload):
+        """**One account holds 28,008 NFTs, and every thumbnail was eager.**
+
+        The fold hides rows with CSS rather than fetching them, which is the
+        right trade at fifty assets - but the markup is in the document either
+        way, so an eager `<img>` is a request the browser makes whether or not
+        the reader ever expands the section. On that account the page asked for
+        28,008 images at once and never finished loading, and no amount of
+        tuning anywhere else could help while it did.
+
+        `loading="lazy"` is the whole fix for the fetching half: the browser
+        asks only for what approaches the viewport. The 22 MB of markup those
+        rows also represent is a separate problem.
+        """
+        import re
+
+        html = render_to_string("address.html", _build_context(sample_payload))
+        thumbs = re.findall(r"<img[^>]+class=\"[^\"]*nfticon[^>]*>", html)
+
+        assert thumbs, "no NFT thumbnails rendered; the fixture cannot see this"
+        eager = [tag for tag in thumbs if 'loading="lazy"' not in tag]
+        assert not eager, f"{len(eager)} eager NFT thumbnail(s): {eager[:1]}"
+
     def test_section_container_classes_present(self, sample_payload):
         # checkOpened("asa") / checkOpened("nft") use .asasec / .nftsec to find
         # the right container, and the filter shows and hides `.section-list`.

@@ -84,7 +84,7 @@
        CDN does not have, which without it renders as a broken-image glyph. {% endcomment %}
     <span class="mono-tile collection{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
       {% with first=coll.nfts.0.nft %}
-      {% if first.thumbnail %}<img src="{{ BASE_CDN_URL }}{{ first.thumbnail }}" alt="" class="collicon" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />{% else %}{{ coll.name|collection_tile }}{% endif %}
+      {% if first.thumbnail %}<img src="{{ BASE_CDN_URL }}{{ first.thumbnail }}" alt="" class="collicon" loading="lazy" decoding="async" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />{% else %}{{ coll.name|collection_tile }}{% endif %}
       {% endwith %}
     </span>
 
@@ -129,7 +129,7 @@
          or squeeze the name to nothing. {% endcomment %}
       <div class="nft-strip">
         {% for row in coll.nfts %}
-          <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
+          <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" loading="lazy" decoding="async" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
         {% endfor %}
       </div>
 

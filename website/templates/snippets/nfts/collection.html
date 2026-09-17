@@ -34,7 +34,7 @@
       </div>
       <div class="nftmid itemmid">
         {% for row in coll.nfts %}
-          <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
+          <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" loading="lazy" decoding="async" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
         {% endfor %}
       </div>
       <div class="nftright itemright">
