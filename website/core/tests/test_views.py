@@ -365,9 +365,47 @@ class HomeProfileLinkTest(TestCase):
         self.assertEqual(1, len(found), "the home page has no one link to the profile")
         return found[0]
 
+    #: The affordance at the end of the chip. Stripped by `_link` so the tests
+    #: below keep asserting on the one thing they are about - which of the
+    #: reader's fields is rendered, and in what order - rather than being
+    #: rewritten every time the label is reworded.
+    AFFORDANCE = "Open profile \u2192"
+
     def _link(self, response):
-        """Return the text of the profile link, whitespace collapsed."""
-        return " ".join(self._node(response).text().split())
+        """Return how the link names the reader, whitespace collapsed.
+
+        The trailing affordance is removed: it is the same on every account and
+        is pinned once, by `test_the_link_says_where_it_goes`.
+        """
+        return self._link_text(self._node(response))
+
+    def _link_text(self, node):
+        """How `node` names the reader, affordance removed."""
+        text = " ".join(node.text().split())
+        return text.removesuffix(self.AFFORDANCE).strip()
+
+    def test_the_link_says_where_it_goes(self):
+        """**It was grey text that did not look like anything.** A name and an
+        email in the page's own muted colour, underlined only on hover: nothing
+        said it was a link, and the profile page is where the subscription
+        address is authorised."""
+        self._sign_in(email="named@example.com")
+
+        text = " ".join(self._node(self.client.get(reverse("home"))).text().split())
+
+        assert text.endswith(self.AFFORDANCE)
+
+    def test_the_mark_is_inside_the_one_link_and_hidden_from_readers(self):
+        """One tab stop for one destination, and the link already says whose
+        account it is - a mark announced beside it would say it twice."""
+        self._sign_in(email="named@example.com")
+        node = self._node(self.client.get(reverse("home")))
+
+        marks = node.select("svg")
+
+        self.assertEqual(1, len(marks))
+        self.assertIn("identicon", marks[0].classes)
+        self.assertEqual("true", marks[0].attrs.get("aria-hidden"))
 
     def test_a_reader_who_set_a_name_is_called_by_it(self):
         """The bug the reader reported: a set name was ignored."""
@@ -383,14 +421,17 @@ class HomeProfileLinkTest(TestCase):
         """Two facts, one link.
 
         Split across two anchors they would be two tab stops to one
-        destination, so both spans sit inside the single link.
+        destination, so both sit inside the single link. Asserted on the text
+        rather than by counting spans: the chip wraps them for layout, and a
+        count breaks whenever the wrapper changes while saying nothing about
+        what a reader hears.
         """
         self._sign_in(email="named@example.com", first_name="Ada")
 
         node = self._node(self.client.get(reverse("home")))
 
         self.assertEqual("a", node.tag)
-        self.assertEqual(2, len(node.select("span")))
+        self.assertEqual("Ada named@example.com", self._link_text(node))
 
     def test_an_account_with_no_email_still_has_link_text(self):
         """A wallet sign-in never asks for one.

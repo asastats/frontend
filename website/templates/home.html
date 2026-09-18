@@ -32,9 +32,7 @@
 {% block breadcrumbs %}Home{% endblock %}
 
 {% block middle_section %}
-{% comment %} The account, once, as a line under the heading rather than as a
-   box in a gutter. `id_profile` is kept: it is how the functional tests reach
-   the profile page from here.
+{% comment %} The account, once, under the heading rather than in a gutter.
 
    `profile.name` rather than the email, because it already answers "what do we
    call this reader": first and last name if either is set, else the username,
@@ -48,12 +46,37 @@
    destination.
 
    The space between the two spans is load-bearing and must not be tidied away:
-   `ml-2` separates them for the eye only, and without real whitespace the
-   accessible name of the link is "Ada Lovelacenamed@example.com" -- one word,
-   read as one word. {% endcomment %}
-<p class="-mt-4 text-sm">
-  <a class="link link-hover text-base-content/60" href="{% url 'profile' %}" id="id_profile">
-    <span>{{ profile.name|default:"Your profile" }}</span>{% if user.email and user.email != profile.name %} <span class="ml-2 text-base-content/40">{{ user.email }}</span>{% endif %}
+   without real whitespace the accessible name of the link is "Ada
+   Lovelacenamed@example.com" -- one word, read as one word. {% endcomment %}
+{% comment %} **It was a grey line of text that did not look like anything.**
+   A name and an email set in the same muted colour as the rest of the page,
+   underlined only on hover, directly under a heading -- a reader had no reason
+   to think it went anywhere, and the profile page is where the subscription
+   address is authorised, so not finding it is not a small cost.
+
+   So it is a target rather than a line: a bordered chip, the name at full
+   contrast, the destination said out loud. `identicon` draws the mark from the
+   reader's own subscription address, which is the thing that identifies this
+   account in this product -- no upload, no storage, nothing to moderate, and
+   every account has one the day it is created, including the
+   wallet-authenticated ones a social avatar would leave blank.
+
+   Still exactly one link and one tab stop: everything here goes to the same
+   page, and two adjacent links to one destination is two tab stops for one
+   thing. `id_profile` is kept -- it is how the functional tests reach the
+   profile page from here. The mark is `aria-hidden`, because the link already
+   says whose account it is. {% endcomment %}
+<p class="-mt-2 mb-5">
+  <a class="group inline-flex max-w-full items-center gap-3 rounded-box border border-base-300 px-3 py-2 no-underline transition-colors hover:border-primary hover:bg-base-200"
+     href="{% url 'profile' %}" id="id_profile">
+    {{ profile.address|default:user.username|identicon:40 }}
+    <span class="min-w-0">
+      <span class="block truncate font-medium text-base-content">{{ profile.name|default:"Your profile" }}</span>
+      {% if user.email and user.email != profile.name %}
+      <span class="block truncate text-xs text-base-content/60">{{ user.email }}</span>
+      {% endif %}
+    </span>
+    <span class="ml-1 whitespace-nowrap text-xs text-base-content/60 group-hover:text-primary">Open profile →</span>
   </a>
 </p>
 
