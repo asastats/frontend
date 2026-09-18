@@ -1835,6 +1835,45 @@ describe("the band readout", () => {
 
     expect(() => document.querySelector('.figs [data-band="defi"]').click()).not.toThrow();
   });
+
+  test("an unfiltered page says nothing even when the two totals disagree", () => {
+    // The headline comes from what the live pass published and the sum comes
+    // from the rows this page was rendered with, so they can disagree about the
+    // address itself -- production showed 304.55 and 143.46 ALGO for one page
+    // within the hour. Inferring "something is filtered" from that difference
+    // made an untouched page announce "Showing 29.48 USD of 13.89 USD".
+    load();
+
+    document.querySelector(".pricetip").setAttribute("data-totalwnft", "70");
+    document.querySelector('.figs [data-band="defi"]').click();
+    document.querySelector('.figs [data-band="defi"]').click();
+
+    expect(readout()).toBe("");
+  });
+
+  test("a filtered page still reports against the headline it was given", () => {
+    // The guard above is about the filters being untouched, not about trusting
+    // the headline: once a category is off, the reader asked the question and
+    // gets the published figure, whatever it is.
+    load();
+    document.querySelector(".pricetip").setAttribute("data-totalwnft", "70");
+
+    document.querySelector('.figs [data-band="defi"]').click();
+
+    expect(readout()).toBe("Showing 140.00 ALGO of 70.00 ALGO");
+  });
+
+  test("a search narrows it without any category being switched off", () => {
+    // The query is the other thing that makes "showing" mean less than the
+    // whole, so it has to defeat the unfiltered guard too.
+    load();
+    const field = document.getElementById("tb-q");
+
+    field.value = "zzz-matches-nothing";
+    field.dispatchEvent(new window.Event("input"));
+
+    expect(readout()).toBe("Showing 50.00 ALGO of 150.00 ALGO");
+  });
 });
 
 describe("the reader's own settings", () => {

@@ -141,6 +141,65 @@ class HomePageTest(FunctionalTest):
         self.assertIn("/historic/", destinations["Historic"])
         self.assertEqual(3, len(set(destinations.values())))
 
+    def test_each_row_carries_a_mark_derived_from_its_own_addresses(self):
+        """**Drawn from the addresses, so it cannot drift from the row.**
+
+        Every account has one on the day it is created, including the
+        wallet-authenticated majority a social avatar would leave blank, and
+        there is no image stored, resized or moderated anywhere.
+
+        Asserted in the browser rather than on the filter because the point is
+        that it *renders* - an inline `<svg>` written through `format_html`
+        would be escaped into visible angle brackets by one wrong helper, and
+        every template test in the suite would still pass.
+        """
+        self.add("Long term holdings", f"{TEST_ADDRESS} {TEST_ADDRESS2}")
+        self.add("Cold storage", TEST_ADDRESS)
+        self.open_home()
+
+        marks = [
+            row.find_element(By.CSS_SELECTOR, "svg.identicon") for row in self.rows()
+        ]
+        self.assertEqual(2, len(marks))
+        for mark in marks:
+            with self.subTest(mark=mark):
+                self.assertTrue(mark.is_displayed(), "the mark rendered but is hidden")
+
+        # Two bundles, two different marks -- a mark every row shares tells a
+        # reader nothing and is worse than no mark at all.
+        drawn = [mark.get_attribute("innerHTML") for mark in marks]
+        self.assertNotEqual(drawn[0], drawn[1])
+
+        # Decorative: the bundle name is the label, and a screen reader that
+        # announced the mark as well would read every row twice.
+        for mark in marks:
+            self.assertEqual("true", mark.get_attribute("aria-hidden"))
+
+    def test_the_mark_does_not_push_the_row_apart(self):
+        """It sits inside the row's flexible column, so a long bundle name still
+        truncates against it rather than shoving the buttons off the end."""
+        self.add("Long term holdings", f"{TEST_ADDRESS} {TEST_ADDRESS2}")
+        self.open_home()
+
+        row = self.rows()[0]
+        mark = row.find_element(By.CSS_SELECTOR, "svg.identicon")
+        edit = [
+            link
+            for link in row.find_elements(By.TAG_NAME, "a")
+            if link.text.strip() == "Edit"
+        ][0]
+
+        self.assertLess(
+            mark.location["x"] + mark.size["width"],
+            edit.location["x"],
+            "the mark overlaps the row's controls",
+        )
+        self.assertLessEqual(
+            row.location["x"] + row.size["width"],
+            self.browser.execute_script("return document.body.clientWidth;") + 1,
+            "the row is wider than the page it sits in",
+        )
+
     def test_the_address_count_is_said_rather_than_shown(self):
         """It was a bare number in a badge in the corner, which reads as an
         index or a notification rather than as a count of addresses."""

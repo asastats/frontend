@@ -795,11 +795,32 @@
    * from the headline -- an unfiltered page does not need to be told that its
    * total is its total.
    *
+   * **"Unfiltered" is read off the state, not off the arithmetic.** It used to
+   * be inferred from the two figures differing, which is only the same question
+   * while the two agree about the address: `shown` is summed from the rows this
+   * page was rendered with, and `whole` comes from whatever the live pass last
+   * published. Those are two readers of the same account, and when they
+   * disagree -- a re-price that valued fewer positions, a reload suppressed by
+   * the cooldown, a resync still draining -- a page with nothing switched off
+   * announced "Showing 29.48 USD of 13.89 USD", which is not a filter and reads
+   * as the page having lost track of the money.
+   *
+   * Reported from production on 2026-09-18, and the engine side of it is real:
+   * the live pass published 304.55 and 143.46 ALGO for the same page within the
+   * hour. This element is not the place that surfaces it -- it exists to say
+   * what the *filters* left out, and it now says nothing when they left out
+   * nothing, whatever the two totals think.
+   *
    * @param {object} view - the result of `evaluate`.
    */
   function paintReadout(view) {
     var readout = document.getElementById("band-readout");
     if (!readout) return;
+
+    if (!state.q && state.nft && state.cats.length === CATEGORIES.length) {
+      readout.textContent = "";
+      return;
+    }
 
     var head = document.querySelector(".dynamic-page .pricetip");
     var whole = head ? num(head, "data-totalwnft") : 0;

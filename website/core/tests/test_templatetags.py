@@ -20,6 +20,7 @@ from core.templatetags.core_extras import (
     has_styling,
     historic_access,
     historic_data,
+    identicon,
     integer_comma,
     invert_price,
     is_distribution,
@@ -315,6 +316,60 @@ class TestFilters:
             + "..."
             + TEST_ADDRESS2[-5:]
         )
+
+    # # identicon
+    def test_filters_identicon_is_the_same_every_time(self):
+        """**The whole premise.** Nothing is stored, so the only thing making
+        this row's mark that row's mark is that the digest is reproducible -
+        across workers, across restarts and across deploys. `hash()` is salted
+        per process and would give a reader a new avatar on every request."""
+        assert identicon(TEST_ADDRESS) == identicon(TEST_ADDRESS)
+
+    def test_filters_identicon_ignores_how_the_addresses_were_spaced(self):
+        """A bundle re-saved with a double space is the same bundle, and has to
+        keep its mark."""
+        joined = f"{TEST_ADDRESS} {TEST_ADDRESS2}"
+
+        assert identicon(f"  {TEST_ADDRESS}   {TEST_ADDRESS2} ") == identicon(joined)
+
+    def test_filters_identicon_separates_two_addresses(self):
+        assert identicon(TEST_ADDRESS) != identicon(TEST_ADDRESS2)
+
+    def test_filters_identicon_is_mirrored(self):
+        """Which is what makes it read as a mark rather than as noise."""
+        import re
+
+        filled = {
+            (int(x), int(y))
+            for x, y in re.findall(r'<rect x="(\d)" y="(\d)"', identicon(TEST_ADDRESS))
+        }
+
+        assert filled == {(4 - x, y) for x, y in filled}
+
+    def test_filters_identicon_takes_its_colour_from_the_hue_alone(self):
+        """Saturation and lightness are fixed, so no address can be dealt a
+        mark that disappears into a light theme or a dark one."""
+        import re
+
+        colours = set(re.findall(r'fill="hsl\((\d+) (\d+)% (\d+)%\)"', identicon(TEST_ADDRESS)))
+
+        assert len(colours) == 1
+        assert [pair[1:] for pair in colours] == [("58", "52")]
+
+    def test_filters_identicon_plate_follows_the_theme(self):
+        """`currentColor`, because this is drawn in 57 themes and a fixed plate
+        would assume one of them."""
+        assert 'fill="currentColor"' in identicon(TEST_ADDRESS)
+
+    def test_filters_identicon_renders_nothing_without_an_address(self):
+        """A bundle form mid-edit, and `string_if_invalid` is "" - neither is a
+        reason to draw a mark for the empty string, which would be the same mark
+        for every one of them."""
+        assert identicon("") == ""
+        assert identicon(None) == ""
+
+    def test_filters_identicon_sizes_itself(self):
+        assert 'width="16" height="16"' in identicon(TEST_ADDRESS, 16)
 
     # # split_by_space
     def test_filters_split_by_space_returns_addresses(self):

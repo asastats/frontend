@@ -1,9 +1,13 @@
 """Module containing Django templates filters and tags for the website."""
 
+import hashlib
+
 from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template import Library
 from django.template.defaultfilters import floatformat
+from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 
 from core.exportpermissions import tier_allows
 from utils import explorers as explorer_constants
@@ -269,6 +273,81 @@ def short_addresses(addresses):
     """
     return "\n".join(
         address[:5] + "..." + address[-5:] for address in addresses.split(" ")
+    )
+
+
+#: The grid is five wide and mirrored, so three columns decide a whole icon.
+IDENTICON_GRID = 5
+IDENTICON_COLUMNS = (IDENTICON_GRID + 1) // 2
+
+
+@register.filter
+def identicon(addresses, size=32):
+    """Return an inline SVG identifying ``addresses``, derived from them alone.
+
+    **Nothing is stored and nothing is uploaded.** Every account has one on the
+    day it is created, including the wallet-authenticated majority who would
+    never have a social avatar, and there is no image to host, resize or
+    moderate. It is also the honest picture for this product: what identifies a
+    row here *is* its addresses, so the icon is a rendering of the identity
+    rather than a decoration beside it.
+
+    The design is the mirrored-grid identicon: a digest supplies both the colour
+    and which of fifteen cells are filled, and the mirror is what makes the
+    result read as a mark instead of as noise. Five columns rather than the more
+    common eight - at the 32px this is drawn at, eight columns is a texture.
+
+    Two theming rules it has to obey, because this is drawn in 57 of them:
+
+    * the plate is `currentColor` at low opacity, so it follows the text colour
+      of whatever sits behind it rather than assuming a light page;
+    * the cells are a fixed mid lightness, which is the band that keeps contrast
+      on a dark background and on a light one. Hue is the only thing the digest
+      chooses, so no address can land on an unreadable colour.
+
+    `sha256` rather than `hash()`: the icon must be the same in every worker and
+    after every restart, and Python salts `hash()` per process.
+
+    :param addresses: Algorand address, or addresses separated by spaces
+    :type addresses: str
+    :param size: rendered width and height in pixels
+    :type size: int
+    :return: SafeString
+    """
+    # Normalised for the same reason `_live_pages` normalises: a stray space is
+    # a different string, and a bundle whose icon changed because somebody
+    # retyped its addresses with two spaces would look like a different bundle.
+    normalised = " ".join((addresses or "").split())
+    if not normalised:
+        return mark_safe("")
+
+    digest = hashlib.sha256(normalised.encode()).digest()
+    hue = int.from_bytes(digest[:2], "big") % 360
+
+    cells = set()
+    for index in range(IDENTICON_GRID * IDENTICON_COLUMNS):
+        if not digest[index + 2] & 1:
+            continue
+        row, column = divmod(index, IDENTICON_COLUMNS)
+        cells.add((column, row))
+        cells.add((IDENTICON_GRID - 1 - column, row))
+
+    return format_html(
+        '<svg class="identicon shrink-0" width="{}" height="{}" '
+        'viewBox="0 0 {} {}" role="img" aria-hidden="true" focusable="false">'
+        '<rect width="{}" height="{}" rx="1" fill="currentColor" '
+        'opacity=".08"/>{}</svg>',
+        int(size),
+        int(size),
+        IDENTICON_GRID,
+        IDENTICON_GRID,
+        IDENTICON_GRID,
+        IDENTICON_GRID,
+        format_html_join(
+            "",
+            '<rect x="{}" y="{}" width="1" height="1" fill="hsl({} 58% 52%)"/>',
+            ((column, row, hue) for column, row in sorted(cells)),
+        ),
     )
 
 

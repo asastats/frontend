@@ -390,6 +390,21 @@ class FunctionalTest(Setup):
         "});"
     )
 
+    #: See `pin_wallet_bridge` for what this defends against. Held as source
+    #: rather than run there so `publish_wallet_bridge` can send it in the same
+    #: script as the install, with no event-loop turn in between.
+    _PIN_BRIDGE = (
+        "['asastatsSwap', 'asastatsWallet'].forEach(function (name) {"
+        "  var pinned = window[name];"
+        "  if (!pinned) return;"
+        "  Object.defineProperty(window, name, {"
+        "    configurable: true,"
+        "    get: function () { return pinned; },"
+        "    set: function () {}"  # the real bridge writes into the void
+        "  });"
+        "});"
+    )
+
     def publish_wallet_bridge(self, script, *args):
         """Run a bridge-installing `script`, and make what it published stick.
 
@@ -399,13 +414,31 @@ class FunctionalTest(Setup):
         a bare pin silently swallows, and which is how pinning first broke
         `test_switching_account_withdraws_the_offer` while fixing three others.
 
+        **Unpin, install and pin go out as one script, and that is the point.**
+        Three `execute_script` calls are three turns of the event loop, and the
+        clobber `pin_wallet_bridge` exists to stop is a continuation waiting on
+        exactly those turns: `initSwapBridge` reads its guard, `await`s a
+        `WalletManager`, and assigns afterwards. Landing between the install and
+        the pin, it replaces the stub and *then* gets pinned itself - so the
+        guard holds the real bridge, `activeAddress()` is null, and the CTA the
+        test presses reaches a wallet that is not connected.
+
+        Nothing of ours interleaves inside one script body: JavaScript is single
+        threaded and an awaited continuation cannot run until this returns. The
+        window is not narrowed, it is closed.
+
+        Seen as `DustSweepSignatureTest` timing out on GitHub and nowhere else,
+        which is what two vCPUs do to a race that a developer machine wins every
+        time. A raised `SIGNING_TIMEOUT` never addressed it - at 120 seconds it
+        still failed, because nothing was ever going to call the stub.
+
         :param script: JavaScript that assigns the bridge globals
         :type script: str
         :param args: arguments forwarded to the script
         """
-        self.browser.execute_script(self._UNPIN_BRIDGE)
-        self.browser.execute_script(script, *args)
-        self.pin_wallet_bridge()
+        self.browser.execute_script(
+            f"{self._UNPIN_BRIDGE}\n{script}\n{self._PIN_BRIDGE}", *args
+        )
 
     def pin_wallet_bridge(self):
         """Make the stub bridges on `window` survive the real one publishing.
@@ -429,18 +462,12 @@ class FunctionalTest(Setup):
         returns without publishing. Redefining the property has no such edge:
         the setter swallows the assignment, so whoever assigns later - now or
         on any future `htmx:afterSettle` - simply has no effect.
+
+        `publish_wallet_bridge` does not call this: it sends the same source in
+        the *same* script as the install, because the gap between two
+        `execute_script` calls is itself somewhere the real bridge can land.
         """
-        self.browser.execute_script(
-            "['asastatsSwap', 'asastatsWallet'].forEach(function (name) {"
-            "  var pinned = window[name];"
-            "  if (!pinned) return;"
-            "  Object.defineProperty(window, name, {"
-            "    configurable: true,"
-            "    get: function () { return pinned; },"
-            "    set: function () {}"   # the real bridge writes into the void
-            "  });"
-            "});"
-        )
+        self.browser.execute_script(self._PIN_BRIDGE)
 
     def page_state(self):
         """Return {ready, sheets, title, text} for the current page in one call.
