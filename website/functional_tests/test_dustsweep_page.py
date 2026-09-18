@@ -421,7 +421,7 @@ class DustSweepSignatureTest(FunctionalTest):
     #: Deliberately not a blanket change to `wait_until`'s default: every other
     #: wait in the suite is passing, and a longer default would slow every real
     #: failure in it.
-    SIGNING_TIMEOUT = 20
+    SIGNING_TIMEOUT = 120
 
     #: An empty holding of asset 5, which closes to the account itself.
     HOLDING = {

@@ -71,7 +71,44 @@ function wireFetchedItems() {
       return;
     }
     deferImages(target.getElementsByClassName('nft'));
+    restoreDisplayChoices();
   });
+}
+
+
+/**
+ * Put the reader's currency and total mode back after a swap replaced them.
+ *
+ * **The live poll ships figures the server rendered, and the server does not
+ * know what the reader chose.** `lvp` is one payload per page, shared by
+ * everyone watching it, so it can only ever carry ALGO and the full total. The
+ * classic fragments swap the band, the `.pricetip` and every changed
+ * `span.val` - each one arriving as freshly rendered ALGO - so a reader who
+ * picked USD watched it revert on the next block, and one who had turned NFTs
+ * out of the total watched them come back.
+ *
+ * `setCurrency` and `setTotalNoNft` ran once, at load. That was true for as
+ * long as nothing rewrote a figure after load, which stopped being true when
+ * real-time refresh shipped.
+ *
+ * Only when the reader is away from the defaults: both functions walk every
+ * `span.val` on the page, and doing that three seconds apart on a long page for
+ * a reader who never left ALGO would be work with no effect. Both are design 1's
+ * - they return immediately on a dynamic page, where `toolbar.js` owns this and
+ * reads its own keys.
+ *
+ * @function restoreDisplayChoices
+ *
+ */
+function restoreDisplayChoices() {
+  var code = localStorage.getItem('cur') || 'ALGO';
+  var nonft = localStorage.getItem('totalnonft') || '';
+  if (code !== 'ALGO') {
+    setCurrency(code);
+  }
+  if (nonft) {
+    setTotalNoNft(nonft);
+  }
 }
 
 

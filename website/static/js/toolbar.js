@@ -1246,6 +1246,39 @@
     writeView();
   }
 
+  /**
+   * Repaint the figures after the live poll swapped server-rendered ones in.
+   *
+   * **The poll ships what the server rendered, and the server does not know
+   * what this reader chose.** `lvp` is one payload per page, shared by
+   * everyone watching it, so it can only carry ALGO and the full total. The
+   * fragments replace the band and every changed figure - so a reader who
+   * picked USD watched it revert on the next block, and one who had turned
+   * NFTs out of the total watched them come back.
+   *
+   * The whole of `render` is deliberately not called: it `regroup`s, which
+   * moves position rows between cards. Doing that under a reader every three
+   * seconds would disturb what they were reading to fix how it is denominated.
+   * Only the paints that depend on the reader's currency and total mode run.
+   *
+   * Nothing happens while both are at their defaults, which is the common case
+   * and the one where the server's own rendering is already right.
+   */
+  function repaintAfterSwap() {
+    // `state` holds the reader's settings; `evaluate` computes the figures the
+    // paints consume. They are not the same object and the paints need the
+    // second - `paintFigures` reads `view.values`, which a settings view does
+    // not carry.
+    if (!state || (state.ccy === SHARED_DEFAULTS.ccy && !state.nonft)) {
+      return;
+    }
+    var view = evaluate();
+    paintFigures(view);
+    paintUnits();
+    paintTotal(view);
+    paintBand(view);
+  }
+
   // -- events ---------------------------------------------------------------
 
   /**
@@ -1405,6 +1438,8 @@
     init();
   }
 
+  document.body.addEventListener("htmx:afterSwap", repaintAfterSwap);
+
   // Exposed for the jest suite, which drives these directly.
   window.asastatsToolbar = {
     init: init,
@@ -1417,6 +1452,7 @@
     limit: limit,
     fmt: fmt,
     paintTotal: paintTotal,
+    repaintAfterSwap: repaintAfterSwap,
     paintReadout: paintReadout,
     paintCollections: paintCollections,
     write: write,

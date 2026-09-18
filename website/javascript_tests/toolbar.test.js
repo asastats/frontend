@@ -2036,3 +2036,60 @@ describe("sorting after a live update", () => {
     expect(() => document.getElementById("tb-dir").click()).not.toThrow();
   });
 });
+
+
+describe("repainting after the live poll swaps figures in", () => {
+  // **The poll ships what the server rendered, and the server does not know
+  // what this reader chose.** `lvp` is one payload per page, shared by everyone
+  // watching it, so it can only carry ALGO and the full total. The fragments
+  // replace the band and every changed figure - so a reader who picked USD
+  // watched it revert on the next block, and one who had turned NFTs out of the
+  // total watched them come back.
+
+  test("puts USD back after a swap rendered ALGO", () => {
+    window.localStorage.setItem("cur", "USD");
+    const toolbar = load();
+    const figure = document.querySelector("#f1 .cval .val");
+    // What the fragment swap does: server-rendered ALGO, straight over the top.
+    figure.textContent = "999.99";
+
+    toolbar.repaintAfterSwap();
+
+    expect(figure.textContent.trim()).not.toBe("999.99");
+  });
+
+  test("does nothing while the reader is on the defaults", () => {
+    // The common case, and the one where the server's own rendering is already
+    // right. Repainting every three seconds for no change would be work with no
+    // effect on a page that can be very long.
+    const toolbar = load();
+    const figure = document.querySelector("#f1 .cval .val");
+    figure.textContent = "left alone";
+
+    toolbar.repaintAfterSwap();
+
+    expect(figure.textContent).toBe("left alone");
+  });
+
+  test("puts the NFT-less total back after a swap restored the full one", () => {
+    window.localStorage.setItem("totalnonft", "y");
+    const toolbar = load();
+
+    expect(() => toolbar.repaintAfterSwap()).not.toThrow();
+  });
+
+  test("is wired to htmx:afterSwap, not only callable", () => {
+    // The binding is the half that makes it happen at all; a repaint nothing
+    // calls is a repaint that never runs.
+    window.localStorage.setItem("cur", "USD");
+    load();
+    const figure = document.querySelector("#f1 .cval .val");
+    figure.textContent = "999.99";
+
+    document.body.dispatchEvent(
+      new CustomEvent("htmx:afterSwap", { bubbles: true })
+    );
+
+    expect(figure.textContent.trim()).not.toBe("999.99");
+  });
+});

@@ -283,7 +283,7 @@ keeps.
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | Selector               | Required                                                           | Why                                                                                |
 +========================+====================================================================+====================================================================================+
-| ``.dynamic-page``        | wraps the whole page body                                          | Every dynamic rule in ``input.css`` is written under it, so none of them can  |
+| ``.dynamic-page``      | wraps the whole page body                                          | Every dynamic rule in ``input.css`` is written under it, so none of them can       |
 |                        |                                                                    | reach design 1 — the two pages share a base template and a stylesheet              |
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | ``.mcard``             | the asset entry; also carries ``.fitem`` and an ``f<asset id>`` id | ``.fitem`` and the id are design 1's contract, reused on purpose: ``pins.js``      |

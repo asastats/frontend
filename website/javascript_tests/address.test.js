@@ -1286,3 +1286,56 @@ describe("every figure's tooltip", function () {
     expect(head.closest(".tooltip").dataset.tip).toContain("ALGO/USD");
   });
 });
+
+
+describe("restoreDisplayChoices (after a live-poll swap)", () => {
+  // **The poll ships what the server rendered, and the server does not know
+  // what this reader chose.** `lvp` is one payload per page, shared by everyone
+  // watching it, so it can only carry ALGO and the full total. The classic
+  // fragments replace the band, the `.pricetip` and every changed `span.val` -
+  // so a reader who picked USD watched it revert on the next block, and one who
+  // had turned NFTs out of the total watched them come back. `setCurrency` and
+  // `setTotalNoNft` ran once, at load, which was true for as long as nothing
+  // rewrote a figure afterwards.
+
+  it("puts the chosen currency back", () => {
+    localStorage.setItem("cur", "USD");
+    window.onload();
+    const tip = document.querySelector(".pricetip");
+    tip.innerHTML = "999.99 ALGO";
+
+    document.body.dispatchEvent(
+      new CustomEvent("htmx:afterSwap", { bubbles: true })
+    );
+
+    expect(tip.innerHTML).not.toBe("999.99 ALGO");
+  });
+
+  it("leaves a reader on the defaults alone", () => {
+    // Both functions walk every `span.val` on the page. Doing that three
+    // seconds apart for a reader who never left ALGO is work with no effect,
+    // and the page can be very long.
+    localStorage.setItem("cur", "ALGO");
+    localStorage.setItem("totalnonft", "");
+    window.onload();
+    const tip = document.querySelector(".pricetip");
+    tip.innerHTML = "left alone";
+
+    document.body.dispatchEvent(
+      new CustomEvent("htmx:afterSwap", { bubbles: true })
+    );
+
+    expect(tip.innerHTML).toBe("left alone");
+  });
+
+  it("puts the NFT-less total back", () => {
+    localStorage.setItem("totalnonft", "y");
+    window.onload();
+
+    expect(() => {
+      document.body.dispatchEvent(
+        new CustomEvent("htmx:afterSwap", { bubbles: true })
+      );
+    }).not.toThrow();
+  });
+});
