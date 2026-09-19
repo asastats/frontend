@@ -639,6 +639,59 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_page_over_the_readers_warm_set_stays_put(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**A second page beyond the tier's addresses goes static, quietly.**
+
+        Asastatser buys one address. Their second tab passes its own size-1
+        access check, so before the warm set the engine re-priced both; now the
+        second one is not warmed at all.
+
+        What a reader must see is *nothing*: the figures simply do not move.
+        No error, no banner, no reload - the same thing a page shed by
+        admission control already does, on a tab they are probably not looking
+        at. So this asserts the band is unchanged **and** that the page is
+        still the one that was loaded, because a reload would also leave the
+        band reading what the server rendered and would pass a figure-only
+        check.
+        """
+        import time as _time
+
+        client = self._redis()
+        # This reader's one slot is held by another page that is **still
+        # polling**, so it cannot be taken.
+        #
+        # The score has to be computed per call, not once here: signing in and
+        # loading the page takes longer than `IDLE_SECONDS`, so a fixed
+        # timestamp would be stale by the time the first poll ran, the other
+        # tab would be evicted as abandoned, and this page would update. That
+        # is correct behaviour for an abandoned tab and the wrong thing to
+        # assert here - it is covered by the unit tests instead.
+        client.zrange.side_effect = lambda *args, **kwargs: [
+            (b"OTHERADDRESS", _time.time())
+        ]
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = client
+
+        self.sign_in()
+        self.open_page()
+        before = self.band()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+
+        # Long enough for several polls at LIVEREFRESH_POLL_SECONDS.
+        _time.sleep(10)
+
+        assert self.band() == before
+        assert self.browser.execute_script("return window.__stillHere;") is True
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
     def test_a_reader_who_did_not_opt_in_polls_nothing(
         self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
     ):
