@@ -39,7 +39,7 @@
    in the closed body, so typing "6" would match most of the page. What a
    reader means by filtering is the name and the ticker.
 {% endcomment %}
-{% with asset=asaitem.asset asset_id=asaitem.asset.id value=asaitem.value %}
+{% with asset=asaitem.asset asset_id=asaitem.asset.id value=asaitem.value amount=asaitem.amount decimals=asaitem.asset.decimals %}
 <details id="f{{ asset.id }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
          data-sort-value="{{ asaitem.value }}"
          data-sort-amount="{{ asaitem|holdings_amount }}"
@@ -78,7 +78,26 @@
     <span class="cid">
       <span class="cid-top">
         <span class="cid-name">{{ asset.name|default:asset.unit }}</span>
-        <span class="cid-amt num">{{ asaitem.amount|amount_repr:asset.decimals }} {{ asset.unit }}</span>
+        {% comment %} **The unit is a sibling, not a child, and that is load
+           bearing.** This span is replaced whole once a block by the
+           liverefresh widget, from the engine's payload - so a unit nested
+           inside it would have to be reproduced in every fragment or be eaten
+           by the first swap. The band above has the same rule, for the same
+           reason: `bandtotal` keeps its unit *inside* precisely because
+           `address.js` overwrites it wholesale, and here the swap is the
+           other way round.
+
+           Separating it also means the fragment carries the number and
+           nothing else, and that the two layouts differ in what they render
+           rather than in what they address - the goal `fragments.html`
+           already states for values.
+
+           No class: the span inherits the styling of the cell it sits in, so
+           one would be a name that does nothing and still has to be declared
+           and de-collided. The id is what the fragment addresses. `q` for
+           quantity - `v` is the value, and `.amt` is taken: it is the value
+           span on a position and `pins.js` reads it. {% endcomment %}
+        <span class="cid-amt num">{% partialdef assetamount inline %}<span id="q{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}>{{ amount|amount_repr:decimals }}</span>{% endpartialdef assetamount %} <span class="u unit">{{ asset.unit }}</span></span>
       </span>
       <span class="cid-meta">
         <span class="num">{{ asaitem.programs|length }} position{{ asaitem.programs|length|pluralize }}</span>

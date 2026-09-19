@@ -49,7 +49,7 @@
   {% with shown=ADDRESS_INITIAL_ASSETS %}
   <div class="space-y-2" data-folding>
   {% for asaitem in asaitems %}
-    {% with asset=asaitem.asset asset_id=asaitem.asset.id value=asaitem.value %}
+    {% with asset=asaitem.asset asset_id=asaitem.asset.id value=asaitem.value amount=asaitem.amount decimals=asaitem.asset.decimals %}
       <details id="f{{ asset.id }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100{% if forloop.counter0 >= shown %} folded{% endif %}">
         {% comment %}
           The same three cells as a collection row: what you hold, the icon,
@@ -64,7 +64,26 @@
           either side leaves it.
         {% endcomment %}
         <summary class="token item-header itemrow cursor-pointer list-none p-3{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
-          <span class="itemleft truncate">{{ asaitem.amount|amount_repr:asset.decimals }}&nbsp;<span class="unit font-medium">{{ asset.unit }}</span></span>
+          {% comment %} **The unit is a sibling, not a child, and that is load
+             bearing.** This span is replaced whole once a block by the
+             liverefresh widget, from the engine's payload - so a unit nested
+             inside it would have to be reproduced in every fragment or be eaten
+             by the first swap. The band above has the same rule, for the same
+             reason: `bandtotal` keeps its unit *inside* precisely because
+             `address.js` overwrites it wholesale, and here the swap is the
+             other way round.
+
+             Separating it also means the fragment carries the number and
+             nothing else, and that the two layouts differ in what they render
+             rather than in what they address - the goal `fragments.html`
+             already states for values.
+
+             No class: the span inherits the styling of the cell it sits in, so
+             one would be a name that does nothing and still has to be declared
+             and de-collided. The id is what the fragment addresses. `q` for
+             quantity - `v` is the value, and `.amt` is taken: it is the value
+             span on a position and `pins.js` reads it. {% endcomment %}
+          <span class="itemleft truncate">{% partialdef classicamount inline %}<span id="q{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}>{{ amount|amount_repr:decimals }}</span>{% endpartialdef classicamount %}&nbsp;<span class="unit font-medium">{{ asset.unit }}</span></span>
           <div class="icondiv itemmid">
             <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
           </div>

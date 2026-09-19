@@ -56,10 +56,20 @@ PUBLISHED_TOTAL = 4242.424242
 #: What the page is rendered from. `<counter>:<digest of the asset ids>`, as
 #: `utils.transmitters._holdings_fingerprint` builds it.
 RENDERED_FINGERPRINT = "7:abc123def456"
-#: The same holdings after the account transacted: the counter has stepped,
-#: which is what a block naming the account does, and the asset set has not
-#: changed - the case a fragment cannot express and a reload must.
-MOVED_FINGERPRINT = "8:abc123def456"
+#: The same holdings after a block named the account: the counter has stepped
+#: and the digest has not, so the asset set is unchanged and only figures moved.
+#:
+#: **This used to be what `MOVED_FINGERPRINT` meant, and it used to reload.**
+#: That was right while an amount could not be sent as a fragment - a counter
+#: step is exactly how an amount moves, and the rebuild was the only thing that
+#: corrected it. Now that `_live_payload` publishes amounts, this case is
+#: carried out of band and the reader keeps their scroll, their filters and
+#: every collection they had opened.
+STRUCK_FINGERPRINT = "8:abc123def456"
+#: The account bought or sold something: the **digest** has moved, so the asset
+#: set itself is different. A fragment cannot create a row for an asset that has
+#: just arrived, which is the one case that still has to rebuild the page.
+MOVED_FINGERPRINT = "8:0ff113579bdf"
 
 
 def _sample_payload():
@@ -270,6 +280,40 @@ class LiveRefreshTest(FunctionalTest):
         )
 
         assert self.holdings_attribute() == MOVED_FINGERPRINT
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_struck_account_alone_does_not_reload(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**The reload that used to happen on almost every block.**
+
+        A block named the account, so the counter stepped; the asset set did
+        not change. Everything that moved is a figure, and figures now travel
+        as fragments - including the amount, which is what a counter step
+        actually signals and what used to make this case need the page.
+
+        The sentinel survives, which is the only way "did not reload" shows: a
+        page that rebuilt would lose it, along with the reader's scroll, their
+        filters and every collection they had opened.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis(holdings=STRUCK_FINGERPRINT)
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+        self.sleep()
+        self.sleep()
+
+        assert self.browser.execute_script("return window.__stillHere;") is True
+        assert self.holdings_attribute() == RENDERED_FINGERPRINT
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
