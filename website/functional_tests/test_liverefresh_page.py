@@ -445,41 +445,52 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_a_struck_account_reloads_too(
+    def test_a_struck_account_keeps_its_page_and_its_positions_move(
         self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
     ):
-        """**Narrowed to the digest on 2026-09-19 and reverted the same day.**
+        """**Both halves of the bargain, in one test, deliberately.**
 
-        A block named the account, so the counter stepped and the asset set did
-        not. Comparing only the digest stopped this rebuilding, which is the
-        reload this work exists to retire - and it was wrong about what a row
-        contains. A row's positions render `prog.amount` with no id, nothing
-        addresses them, and the rebuild was the only thing correcting them.
+        A block named the account so the counter stepped; the asset set did not
+        change. The page must not rebuild - that is the reload this work exists
+        to retire - *and* a position's figure must arrive anyway, because the
+        rebuild was the only thing that used to correct one.
 
-        Reported within the hour of shipping: 1 USDC between two watched pages,
-        the receiver's figure rose, the sender's "Wallet balance" sat at 3.7552
-        until F5 made it 2.7552 - while the row total above it was right
-        throughout.
-
-        The sentinel going is how a reload shows.
+        Asserting only the first half is what made narrowing this a mistake on
+        2026-09-19: the page stopped reloading, every position froze, and the
+        row total above them stayed live. One assertion cannot catch that; the
+        pair can.
         """
-        mocked_fetch.return_value = self.sample
+        if not self.RENDERS_POSITIONS:
+            self.skipTest("design 1 renders no positions")
+        sample = self._annotated_sample()
+        asset_id, program = self._a_position(sample)
+        mocked_fetch.return_value = sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
-        mocked_redis.return_value = self._redis(holdings=STRUCK_FINGERPRINT)
-        self._rendered_fingerprint(RENDERED_FINGERPRINT, STRUCK_FINGERPRINT)
+        mocked_redis.return_value = self._redis(
+            holdings=STRUCK_FINGERPRINT,
+            positions=[self._as_published(asset_id, program, 1234.5)],
+        )
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
 
         self.sign_in()
         self.open_page()
         self.arm()
         self.browser.execute_script("window.__stillHere = true;")
 
+        target = f"pv-{program['pid']}"
         self.wait_until(
-            lambda: self.browser.execute_script("return !window.__stillHere;"),
+            lambda: self.browser.execute_script(
+                "var el = document.getElementById(arguments[0]);"
+                "return el && el.getAttribute('data-val') === '1234.5';",
+                target,
+            ),
             timeout=15,
         )
 
-        assert self.holdings_attribute() == STRUCK_FINGERPRINT
+        # The sentinel is how "did not reload" shows: a rebuilt page loses it.
+        assert self.browser.execute_script("return window.__stillHere;") is True
+        assert self.holdings_attribute() == RENDERED_FINGERPRINT
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
