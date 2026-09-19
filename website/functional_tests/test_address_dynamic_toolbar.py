@@ -429,6 +429,60 @@ class ToolbarTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_holdings_quantity_keeps_the_assets_own_unit(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """**The quantity is denominated in the asset, and never in ALGO.**
+
+        A row says how much of the thing is held - `0.1022 g`, `10.9129 USDC` -
+        beside what it is worth, which is the figure the currency switch moves.
+        Those are two different denominations in one row and only one of them
+        follows the toolbar.
+
+        Shipped broken on 2026-09-19 and reported off the live page: the unit
+        had been wrapped in `u unit` while splitting the amount into its own
+        span, and `paintUnits` selects `.dynamic-page .u.unit` and writes the
+        display currency into every one it finds. Every non-ALGO row read
+        `0.1022 ALGO`.
+
+        Only a browser shows it - `paintUnits` never runs in a template test,
+        and the jest harness builds its own DOM, so its `.u.unit` spans are
+        ones it created rather than ones the page has.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page()
+
+        def quantities():
+            return self.browser.execute_script(
+                "return Array.from("
+                "  document.querySelectorAll('.dynamic-page .cid-amt')"
+                ").map(function (el) { return el.textContent.trim(); });"
+            )
+
+        before = quantities()
+        self.assertTrue(before, "no row carries a quantity at all")
+        # At least one row is not ALGO, or this proves nothing.
+        self.assertTrue(
+            any(not text.endswith(" ALGO") for text in before),
+            f"every quantity is denominated in ALGO: {before}",
+        )
+
+        self.press('#tb-ccy [data-ccy="USD"]')
+        self.wait_until(lambda: "USD" in self.headline())
+
+        # The switch moved the money column; it must not have touched these.
+        self.assertEqual(before, quantities())
+        self.assertFalse(
+            any(text.endswith(" USD") for text in quantities()),
+            "the currency switch rewrote a holding's own unit",
+        )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_currency_switch_leaves_one_unit_per_figure(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):

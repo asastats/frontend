@@ -285,35 +285,41 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_a_struck_account_alone_does_not_reload(
+    def test_a_struck_account_reloads_too(
         self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
     ):
-        """**The reload that used to happen on almost every block.**
+        """**Narrowed to the digest on 2026-09-19 and reverted the same day.**
 
-        A block named the account, so the counter stepped; the asset set did
-        not change. Everything that moved is a figure, and figures now travel
-        as fragments - including the amount, which is what a counter step
-        actually signals and what used to make this case need the page.
+        A block named the account, so the counter stepped and the asset set did
+        not. Comparing only the digest stopped this rebuilding, which is the
+        reload this work exists to retire - and it was wrong about what a row
+        contains. A row's positions render `prog.amount` with no id, nothing
+        addresses them, and the rebuild was the only thing correcting them.
 
-        The sentinel survives, which is the only way "did not reload" shows: a
-        page that rebuilt would lose it, along with the reader's scroll, their
-        filters and every collection they had opened.
+        Reported within the hour of shipping: 1 USDC between two watched pages,
+        the receiver's figure rose, the sender's "Wallet balance" sat at 3.7552
+        until F5 made it 2.7552 - while the row total above it was right
+        throughout.
+
+        The sentinel going is how a reload shows.
         """
         mocked_fetch.return_value = self.sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         mocked_redis.return_value = self._redis(holdings=STRUCK_FINGERPRINT)
-        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+        self._rendered_fingerprint(RENDERED_FINGERPRINT, STRUCK_FINGERPRINT)
 
         self.sign_in()
         self.open_page()
         self.arm()
         self.browser.execute_script("window.__stillHere = true;")
-        self.sleep()
-        self.sleep()
 
-        assert self.browser.execute_script("return window.__stillHere;") is True
-        assert self.holdings_attribute() == RENDERED_FINGERPRINT
+        self.wait_until(
+            lambda: self.browser.execute_script("return !window.__stillHere;"),
+            timeout=15,
+        )
+
+        assert self.holdings_attribute() == STRUCK_FINGERPRINT
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
