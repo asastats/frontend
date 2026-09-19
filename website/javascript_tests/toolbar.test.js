@@ -1829,6 +1829,56 @@ describe("the band readout", () => {
     expect(readout()).toBe("");
   });
 
+  test("switching off a category you hold nothing in says nothing", () => {
+    // The readout exists to say what the filters left out. A filter that left
+    // out nothing has nothing to report, and "Showing 140.00 ALGO of 140.00
+    // ALGO" is worse than silence - it reads as a discrepancy where there is
+    // none.
+    //
+    // Compared loosely on purpose: `shown` is summed from the rows and `whole`
+    // comes from the payload, so the two differ in the last fraction even when
+    // they agree, and an exact test would print a readout on every page.
+    load();
+    // An empty DeFi position, and a headline that therefore never counted it.
+    document
+      .querySelector('[data-owner="f4"]')
+      .setAttribute("data-value", "0");
+    document.querySelector(".pricetip").setAttribute("data-totalwnft", "140");
+
+    document.querySelector('.figs [data-band="defi"]').click();
+
+    expect(readout()).toBe("");
+  });
+
+  test("a rounding gap alone is not a discrepancy", () => {
+    // The same guard, at its edge: a hundredth of an ALGO between the two is
+    // the arithmetic disagreeing with itself, not the reader filtering.
+    load();
+    document
+      .querySelector('[data-owner="f4"]')
+      .setAttribute("data-value", "0");
+    document.querySelector(".pricetip").setAttribute("data-totalwnft", "140.009");
+
+    document.querySelector('.figs [data-band="defi"]').click();
+
+    expect(readout()).toBe("");
+  });
+
+  test("a page with no headline still reports what is filtered", () => {
+    // The band and the headline are separate partials and a page can render
+    // one without the other - design 3's compact list does, and a fragment
+    // that replaced the headline can be in flight. Reading the whole off a
+    // missing element must leave the readout working rather than throw and
+    // take every later repaint with it.
+    load();
+    document.querySelector(".pricetip").remove();
+
+    expect(() =>
+      document.querySelector('.figs [data-band="defi"]').click()
+    ).not.toThrow();
+    expect(readout()).toContain("Showing");
+  });
+
   test("a page without one renders the rest", () => {
     document.getElementById("band-readout").remove();
     load();

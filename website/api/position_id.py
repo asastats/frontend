@@ -125,6 +125,26 @@ def position_id(asset_id, program):
     return _hash(asset_id, _discriminators(asset_id, program))
 
 
+def identifying_link_ids(links):
+    """Return the ids among `links` that identify a position rather than describe it.
+
+    **The rule lives here, which is the point of taking the engine's links
+    whole.** It sends every linked id with its text and this decides which of
+    them counts - so "a Pact liquidity position is only distinguishable by its
+    LP token" stays written down once, and promoting a second kind of link never
+    needs an engine release to match.
+
+    :param links: `[[text, id], ...]` as the live payload carries them
+    :type links: iterable
+    :return: list
+    """
+    return [
+        link_id
+        for text, link_id in links or ()
+        if text in _IDENTIFYING_LINK_TEXTS
+    ]
+
+
 def position_id_from_fields(asset_id, fields, link_ids=()):
     """Return the identifier for a position described by its fields alone.
 

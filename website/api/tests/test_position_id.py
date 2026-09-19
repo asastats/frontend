@@ -396,6 +396,22 @@ class TestTheLivePassAgrees:
 
         assert compared == EXPECTED_POSITIONS
 
+    def test_the_link_rule_stays_on_this_side(self):
+        """The engine sends every linked id with its text; this decides which
+        counts. So promoting a second kind of link never needs an engine
+        release to match."""
+        from api.position_id import identifying_link_ids
+
+        links = [["Source LP token", "42"], ["Vestige", "7"], ["Haystack", "9"]]
+
+        assert identifying_link_ids(links) == ["42"]
+
+    def test_a_position_with_no_links_identifies_anyway(self):
+        from api.position_id import identifying_link_ids
+
+        assert identifying_link_ids([]) == []
+        assert identifying_link_ids(None) == []
+
     def test_the_field_names_are_the_contract(self):
         """A renamed field must fail loudly, not hash differently.
 

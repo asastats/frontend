@@ -1,4 +1,5 @@
 {% load core_extras %}
+{% load partials %}
 {% comment %} One position: the atom of the dynamic designs.
 
    A position is one program under one asset -- a balance, a stake, an LP
@@ -55,6 +56,12 @@
 {% endcomment %}
 {% with program=prog.program dist=prog.distribution %}
 {% with has_breakdown=dist|length %}
+{% comment %} **Neutral names, because these two figures are rendered twice.**
+   Once here from `prog`, and once a block by the liverefresh widget from
+   what the engine published - which has no `prog` and no `asset`. The
+   partials below read these and nothing else, so there is one description
+   of a position's figures rather than two that drift. {% endcomment %}
+{% with pid=prog.pid pambig=prog.pid_ambiguous pvalue=prog.value pamount=prog.amount passet=asset.id pdecimals=asset.decimals punit=asset.unit pbreakdown=has_breakdown pdistkey=prog.pid|default:counter %}
 {% comment %} `data-cat` is the allocation category this row belongs to, and it
    is what makes the band a control rather than a picture: pressing "Staked"
    hides every row whose category is not that one. See `position_band`, and the
@@ -120,8 +127,8 @@
          quantity learned the hard way: the span is replaced whole, and a unit
          inside it would have to be re-sent every block or be eaten by the first
          swap. {% endcomment %}
-      {% if prog.amount %}
-        <span class="num"><span {% if prog.pid and not prog.pid_ambiguous %}id="pq-{{ prog.pid }}" {% endif %}{% if oob %}hx-swap-oob="true" {% endif %}>{% if prog.amount|is_negative %}({{ prog.amount|abs_value|amount_repr:asset.decimals }}){% else %}{{ prog.amount|amount_repr:asset.decimals }}{% endif %}</span> {{ asset.unit }}</span>
+      {% if pamount %}
+        <span class="num">{% partialdef positionamount inline %}<span {% if pid and not pambig %}id="pq-{{ pid }}" {% endif %}{% if oob %}hx-swap-oob="true" {% endif %}>{% if pamount|is_negative %}({{ pamount|abs_value|amount_repr:pdecimals }}){% else %}{{ pamount|amount_repr:pdecimals }}{% endif %}</span>{% endpartialdef positionamount %} {{ punit }}</span>
       {% endif %}
       {% for ld in prog.linked %}
         {% if ld.text != "Source LP token" %}
@@ -139,17 +146,28 @@
      switch to recompute from. Same contract as design 1's `.val`.
   {% endcomment %}
   <div class="position-val">
-    {% if has_breakdown %}
+    {% comment %} **The id is on this element and not on a span inside it.**
+       `write` in `toolbar.js` puts the figure in the element's first *text*
+       node, and inserts one when the first child is an element - so a cell
+       holding only a span would print its number twice on the next currency
+       switch. That is why the fragment has to know whether it is replacing a
+       button or a span, and why the payload carries `breakdown`.
+
+       `aria-expanded` is written here as closed and is live state afterwards:
+       `dynamic.js` toggles it and the `.dist` panel is a sibling that survives
+       the swap. A fragment landing on an open one must put it back, or the
+       control says closed over an open breakdown. {% endcomment %}
+    {% partialdef positionvalue inline %}{% if pbreakdown %}
       <button type="button"
-              {% if prog.pid and not prog.pid_ambiguous %}id="pv-{{ prog.pid }}" {% endif %}
-              class="amt tdist val{% if prog.value|is_negative %} neg{% endif %}"
-              data-distid="dist-{{ asset.id }}-{{ prog.pid|default:counter }}"
-              data-val="{{ prog.value }}"
+              {% if pid and not pambig %}id="pv-{{ pid }}" {% endif %}{% if oob %}hx-swap-oob="true" {% endif %}
+              class="amt tdist val{% if pvalue|is_negative %} neg{% endif %}"
+              data-distid="dist-{{ passet }}-{{ pdistkey }}"
+              data-val="{{ pvalue }}"
               aria-expanded="false"
-              title="What this figure is made of">{% if prog.value|is_negative %}({{ prog.value|abs_value|floatformat:'2g' }}){% else %}{{ prog.value|floatformat:'2g' }}{% endif %}</button>
+              title="What this figure is made of">{% if pvalue|is_negative %}({{ pvalue|abs_value|floatformat:'2g' }}){% else %}{{ pvalue|floatformat:'2g' }}{% endif %}</button>
     {% else %}
-      <span {% if prog.pid and not prog.pid_ambiguous %}id="pv-{{ prog.pid }}" {% endif %}class="amt val{% if prog.value|is_negative %} neg{% endif %}" data-val="{{ prog.value }}">{% if prog.value|is_negative %}({{ prog.value|abs_value|floatformat:'2g' }}){% else %}{{ prog.value|floatformat:'2g' }}{% endif %}</span>
-    {% endif %}
+      <span {% if pid and not pambig %}id="pv-{{ pid }}" {% endif %}{% if oob %}hx-swap-oob="true" {% endif %}class="amt val{% if pvalue|is_negative %} neg{% endif %}" data-val="{{ pvalue }}">{% if pvalue|is_negative %}({{ pvalue|abs_value|floatformat:'2g' }}){% else %}{{ pvalue|floatformat:'2g' }}{% endif %}</span>
+    {% endif %}{% endpartialdef positionvalue %}
     <span class="u unit">ALGO</span>
   </div>
 
@@ -206,5 +224,6 @@
 </div>
 {% endif %}
 </div>
+{% endwith %}
 {% endwith %}
 {% endwith %}

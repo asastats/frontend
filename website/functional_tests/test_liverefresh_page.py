@@ -116,7 +116,13 @@ class LiveRefreshTest(FunctionalTest):
         self.browser.get(self.server_url + COOKIE_SEED_URL)
         self.browser.add_cookie(cookie)
 
-    def _published(self, values=None, holdings=RENDERED_FINGERPRINT):
+    #: Design 1 renders no positions at all, so its subclass skips the two
+    #: position tests rather than asserting against markup that cannot exist.
+    RENDERS_POSITIONS = True
+
+    def _published(
+        self, values=None, holdings=RENDERED_FINGERPRINT, positions=None
+    ):
         """Return a msgpack block as the engine's pass publishes one."""
         total = self.sample["total"]
         return msgpack.packb(
@@ -130,15 +136,73 @@ class LiveRefreshTest(FunctionalTest):
                 "priceusdc": total["priceusdc"],
                 "pricealgo": total["pricealgo"],
                 "values": values or {},
+                "positions": positions or [],
                 "round": 64595872,
             }
         )
 
-    def _redis(self, values=None, holdings=RENDERED_FINGERPRINT):
+    def _redis(self, values=None, holdings=RENDERED_FINGERPRINT, positions=None):
         """A client that answers with one published block and records the beat."""
         client = mock.MagicMock()
-        client.get.return_value = self._published(values, holdings)
+        client.get.return_value = self._published(values, holdings, positions)
         return client
+
+    def _annotated_sample(self):
+        """Return the sample with every position given its `pid`.
+
+        **`fetch_and_serialize_account` is what annotates, and this suite mocks
+        it.** So a page built from the raw sample renders positions with no
+        identity - no `data-pid`, no element ids - and a fragment addressed at
+        one lands nowhere. That is the same gap `api/main.py` records from the
+        other direction: the whole position-pinning feature was dead against
+        the real backend while passing every test, because the fixtures
+        annotated themselves.
+        """
+        from copy import deepcopy
+
+        from api.position_id import annotate_positions
+
+        sample = deepcopy(self.sample)
+        for item in sample["asaitems"]:
+            annotate_positions(item["asset"]["id"], item["programs"])
+        return sample
+
+    def _a_position(self, sample):
+        """Return (asset id, program) for a position `sample` names.
+
+        Skips the ambiguous ones deliberately: the page gives those no element
+        id, so a fragment for one has nowhere to land and would prove nothing.
+        """
+        for item in sample["asaitems"]:
+            for program in item["programs"]:
+                if program.get("pid") and not program.get("pid_ambiguous"):
+                    return item["asset"]["id"], program
+        raise AssertionError("the sample bundle names no position")
+
+    @staticmethod
+    def _as_published(asset_id, program, value):
+        """Return `program` as the engine publishes it, at a new value."""
+        detail = program.get("program") or {}
+        provider = detail.get("provider") or {}
+        return {
+            "asset": asset_id,
+            "fields": {
+                "type": detail.get("type") or "",
+                "name": detail.get("name") or "",
+                "provider": provider.get("name") or "",
+                "code": detail.get("code") or "",
+                "url": detail.get("url") or "",
+            },
+            "links": [
+                [link.get("text") or "", str(link["id"])]
+                for link in (program.get("linked") or [])
+                if link.get("id") is not None
+            ],
+            "value": value,
+            "amount": program.get("amount") or 0,
+            "decimals": 6,
+            "breakdown": bool(program.get("distribution")),
+        }
 
     def _rendered_fingerprint(self, *fingerprints):
         """Set what the address page renders `data-holdings` from.
@@ -280,6 +344,102 @@ class LiveRefreshTest(FunctionalTest):
         )
 
         assert self.holdings_attribute() == MOVED_FINGERPRINT
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_position_figure_lands_on_the_row_it_belongs_to(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**The join, proved in a browser rather than against a fixture.**
+
+        The engine cannot name a position and the page cannot value one: the
+        live pass never serializes, so it sends what the position *is* and the
+        view turns that into the `pid` the row was given. Everything under this
+        has a unit test, and every one of them builds its own DOM - which is
+        exactly how a swap that lands nowhere stays green.
+
+        Nothing but a real page can say the id the engine's fields hash to is
+        the id the template wrote.
+        """
+        if not self.RENDERS_POSITIONS:
+            self.skipTest("design 1 renders no positions")
+        sample = self._annotated_sample()
+        asset_id, program = self._a_position(sample)
+        mocked_fetch.return_value = sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis(
+            positions=[self._as_published(asset_id, program, 1234.5)]
+        )
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+
+        target = f"pv-{program['pid']}"
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var el = document.getElementById(arguments[0]);"
+                "return el && el.getAttribute('data-val') === '1234.5';",
+                target,
+            ),
+            timeout=15,
+        )
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_position_figure_carries_its_total_with_it(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**The property a whole-position swap would have given for free.**
+
+        `data-value` is on the `.position` itself and is what `toolbar.js` sums
+        for every category total and the allocation band. A fragment cannot
+        reach an attribute without replacing the element that holds it, so the
+        page would go on totalling the figure the position no longer has - the
+        headline drifting away from its own rows, which is the failure that
+        made narrowing the reload a mistake the first time.
+
+        Swapping the whole `.position` was the alternative and costs 17x the
+        bytes; this is what has to be true for the cheap version to be right.
+        """
+        if not self.RENDERS_POSITIONS:
+            self.skipTest("design 1 renders no positions")
+        sample = self._annotated_sample()
+        asset_id, program = self._a_position(sample)
+        mocked_fetch.return_value = sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis(
+            positions=[self._as_published(asset_id, program, 1234.5)]
+        )
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+
+        target = f"pv-{program['pid']}"
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var el = document.getElementById(arguments[0]);"
+                "return el && el.getAttribute('data-val') === '1234.5';",
+                target,
+            ),
+            timeout=15,
+        )
+
+        assert self.browser.execute_script(
+            "var el = document.getElementById(arguments[0]);"
+            "var row = el && el.closest('.position');"
+            "return row && row.getAttribute('data-value');",
+            target,
+        ) == "1234.5"
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
@@ -610,6 +770,9 @@ class LiveRefreshClassicTest(LiveRefreshTest):
     the answers are what differ. What is overridden is only how a reader is
     signed in and what says the page has finished loading.
     """
+
+    #: `address.html` has no position rows; the breakdown is design 2/3 only.
+    RENDERS_POSITIONS = False
 
     def sign_in(self, live_refresh=True, permission=ASASTATSER):
         """Log a reader in on the classic layout rather than the dynamic one."""
