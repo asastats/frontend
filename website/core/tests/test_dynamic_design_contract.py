@@ -69,6 +69,69 @@ class TestPositionIdentity:
 
         assert all(pid.startswith(f"{PID_VERSION}-") for pid in pids)
 
+    def test_a_positions_figures_are_addressable(self, page):
+        """**So a block can correct a position without rebuilding the page.**
+
+        Until 2026-09-19 nothing inside a position carried an id, so no
+        out-of-band swap could reach one and the full reload was the only thing
+        that ever updated them. Narrowing that reload froze every "Wallet
+        balance" on the page while the row total above it stayed live.
+        """
+        positions = page.select(".position")
+        assert positions, "no .position components rendered"
+
+        addressable = [
+            el
+            for el in positions
+            if (el.get("data-pid") or "").strip()
+            and not el.has_attr("data-pid-ambiguous")
+        ]
+        assert addressable, "no position is unambiguously identified"
+
+        for el in addressable:
+            pid = el["data-pid"]
+            assert el.select_one(f"#pv-{pid}"), f"{pid} has no addressable value"
+
+    def test_an_ambiguous_position_is_not_given_an_id(self, page):
+        """Two rows sharing a pid would share an element id, and a swap would
+        land on whichever came first - silently, and on the wrong money.
+
+        No id means no fragment, which is honest: the reload still corrects it.
+        """
+        ambiguous = [
+            el for el in page.select(".position") if el.has_attr("data-pid-ambiguous")
+        ]
+        assert ambiguous, "the reference bundle no longer has an ambiguous pid"
+
+        for el in ambiguous:
+            # `^=` is not in this parser's grammar, so filter in Python.
+            figures = [
+                node["id"]
+                for node in el.select("[id]")
+                if node["id"].startswith(("pv-", "pq-"))
+            ]
+            assert not figures, f"an ambiguous position was given ids: {figures}"
+
+    def test_the_figure_ids_are_unique(self, page):
+        """The point of the two guards above, asserted directly.
+
+        Scoped to the ids this adds. The page has a **pre-existing** collision
+        elsewhere: `dist-<asset>-<pid>` panels of two indistinguishable
+        positions share an id, so expanding either toggles whichever
+        `getElementById` reaches first. Real, older than this, and needing a
+        key that is unique per position per render - see `position.html`.
+        Asserting it here would only paint this change with somebody else's
+        bug.
+        """
+        ids = [
+            el["id"]
+            for el in page.select("[id]")
+            if el["id"].startswith(("pv-", "pq-", "v", "q"))
+        ]
+        duplicates = {value for value in ids if ids.count(value) > 1}
+
+        assert not duplicates, f"duplicate figure ids: {sorted(duplicates)}"
+
     def test_ambiguity_is_declared_where_it_exists(self, page):
         """Six rows in this bundle share an identity with another row.
 

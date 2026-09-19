@@ -37,7 +37,19 @@
 
    Required context:
      prog     one entry from asaitem.programs
-     counter  the parent loop's forloop.counter, for a unique breakdown id
+     counter  the parent loop's forloop.counter, a fallback for the breakdown
+              id when a position has no pid.
+
+              **Known collision, not fixed here.** `prog.pid|default:counter` is
+              unique only while every pid is, and three positions on the
+              reference bundle are genuinely indistinguishable - so their
+              breakdown panels share an element id and expanding either toggles
+              whichever `getElementById` reaches first. Swapping in `counter`
+              outright is *worse*: it is `forloop.counter` from the grouped
+              inner loop, so it restarts at 1 in every group and collides within
+              a single asset. A real fix needs a key that is unique per position
+              per render - the group's index alongside this one would do it -
+              and it is not this change's business.
               when a position carries no pid
      asset    the parent asaitem.asset dict
 {% endcomment %}
@@ -90,8 +102,26 @@
        exactly as design 1 filters it -- it names the wrapper, not a holding.
     {% endcomment %}
     <div class="position-sub">
+      {% comment %} **Addressable, so a block can correct it without the page.**
+         Until 2026-09-19 nothing here carried an id, so no fragment could reach
+         a position and the full reload was the only thing that ever updated
+         one. A row's aggregate would move while the "Wallet balance" inside it
+         sat at its rendered figure.
+
+         `prog.pid` and not an index: a position's rank changes whenever its
+         value does, and `api/position_id.py` exists because of exactly that.
+         **Omitted when the pid is ambiguous** - three positions on the
+         reference bundle are genuinely indistinguishable, so two rows would
+         share one id and a swap would silently land on whichever came first.
+         No id means no fragment, which is honest; the reload still corrects
+         them.
+
+         The unit is bare text outside the span, for the reason the row's
+         quantity learned the hard way: the span is replaced whole, and a unit
+         inside it would have to be re-sent every block or be eaten by the first
+         swap. {% endcomment %}
       {% if prog.amount %}
-        <span class="num">{% if prog.amount|is_negative %}({{ prog.amount|abs_value|amount_repr:asset.decimals }}){% else %}{{ prog.amount|amount_repr:asset.decimals }}{% endif %} {{ asset.unit }}</span>
+        <span class="num"><span {% if prog.pid and not prog.pid_ambiguous %}id="pq-{{ prog.pid }}" {% endif %}{% if oob %}hx-swap-oob="true" {% endif %}>{% if prog.amount|is_negative %}({{ prog.amount|abs_value|amount_repr:asset.decimals }}){% else %}{{ prog.amount|amount_repr:asset.decimals }}{% endif %}</span> {{ asset.unit }}</span>
       {% endif %}
       {% for ld in prog.linked %}
         {% if ld.text != "Source LP token" %}
@@ -111,13 +141,14 @@
   <div class="position-val">
     {% if has_breakdown %}
       <button type="button"
+              {% if prog.pid and not prog.pid_ambiguous %}id="pv-{{ prog.pid }}" {% endif %}
               class="amt tdist val{% if prog.value|is_negative %} neg{% endif %}"
               data-distid="dist-{{ asset.id }}-{{ prog.pid|default:counter }}"
               data-val="{{ prog.value }}"
               aria-expanded="false"
               title="What this figure is made of">{% if prog.value|is_negative %}({{ prog.value|abs_value|floatformat:'2g' }}){% else %}{{ prog.value|floatformat:'2g' }}{% endif %}</button>
     {% else %}
-      <span class="amt val{% if prog.value|is_negative %} neg{% endif %}" data-val="{{ prog.value }}">{% if prog.value|is_negative %}({{ prog.value|abs_value|floatformat:'2g' }}){% else %}{{ prog.value|floatformat:'2g' }}{% endif %}</span>
+      <span {% if prog.pid and not prog.pid_ambiguous %}id="pv-{{ prog.pid }}" {% endif %}class="amt val{% if prog.value|is_negative %} neg{% endif %}" data-val="{{ prog.value }}">{% if prog.value|is_negative %}({{ prog.value|abs_value|floatformat:'2g' }}){% else %}{{ prog.value|floatformat:'2g' }}{% endif %}</span>
     {% endif %}
     <span class="u unit">ALGO</span>
   </div>
