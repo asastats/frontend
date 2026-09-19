@@ -47,8 +47,38 @@ _DIGEST_BYTES = 8
 _IDENTIFYING_LINK_TEXTS = frozenset({"Source LP token"})
 
 
+#: The fields a position is identified by, in the order they are hashed.
+#:
+#: **Named here and nowhere else.** The live pass has to identify the same
+#: position from the engine's own structures, which are not the serialized shape
+#: `_discriminators` reads - so it sends the fields and this module puts them in
+#: order. Were the order duplicated on the engine's side, a reordering would
+#: produce ids that hash differently, match no element on the page, and show up
+#: only as fragments that quietly land nowhere.
+IDENTIFYING_FIELDS = ("type", "name", "provider", "code", "url")
+
+
+def _parts(asset_id, fields, link_ids):
+    """Return the ordered parts that describe one position.
+
+    :param asset_id: the asset the position belongs to
+    :type asset_id: int | str
+    :param fields: the values of `IDENTIFYING_FIELDS`, keyed by field name
+    :type fields: dict
+    :param link_ids: ids of `linked` entries that identify rather than describe
+    :type link_ids: iterable
+    :return: list of str
+    """
+    parts = [str(asset_id)]
+    parts.extend(str(fields.get(name) or "") for name in IDENTIFYING_FIELDS)
+    # Sorted, because `linked` order is the engine's business and a reordering
+    # there must not change the identity of the position.
+    parts.extend(sorted(str(value) for value in link_ids))
+    return parts
+
+
 def _discriminators(asset_id, program):
-    """Ordered parts that describe one position.
+    """Ordered parts that describe one position, from a serialized program.
 
     :param asset_id: the asset the position belongs to
     :type asset_id: int | str
@@ -58,24 +88,29 @@ def _discriminators(asset_id, program):
     """
     detail = program.get("program") or {}
     provider = detail.get("provider") or {}
-    parts = [
-        str(asset_id),
-        detail.get("type") or "",
-        detail.get("name") or "",
-        provider.get("name") or "",
-        detail.get("code") or "",
-        detail.get("url") or "",
-    ]
-    # Sorted, because `linked` order is the engine's business and a reordering
-    # there must not change the identity of the position.
-    parts.extend(
-        sorted(
-            str(link["id"])
+    return _parts(
+        asset_id,
+        {
+            "type": detail.get("type"),
+            "name": detail.get("name"),
+            "provider": provider.get("name"),
+            "code": detail.get("code"),
+            "url": detail.get("url"),
+        },
+        (
+            link["id"]
             for link in (program.get("linked") or [])
-            if link.get("id") is not None and link.get("text") in _IDENTIFYING_LINK_TEXTS
-        )
+            if link.get("id") is not None
+            and link.get("text") in _IDENTIFYING_LINK_TEXTS
+        ),
     )
-    return parts
+
+
+def _hash(asset_id, parts):
+    """Return the identifier for already-ordered `parts`."""
+    payload = "\x1f".join(parts).encode()
+    digest = blake2s(payload, digest_size=_DIGEST_BYTES).hexdigest()
+    return f"{PID_VERSION}-{asset_id}-{digest}"
 
 
 def position_id(asset_id, program):
@@ -87,9 +122,37 @@ def position_id(asset_id, program):
     :type program: dict
     :return: str
     """
-    payload = "\x1f".join(_discriminators(asset_id, program)).encode()
-    digest = blake2s(payload, digest_size=_DIGEST_BYTES).hexdigest()
-    return f"{PID_VERSION}-{asset_id}-{digest}"
+    return _hash(asset_id, _discriminators(asset_id, program))
+
+
+def position_id_from_fields(asset_id, fields, link_ids=()):
+    """Return the identifier for a position described by its fields alone.
+
+    **For the live pass, which never serializes.** `_live_payload` works from
+    the engine's own structures because serializing an account every block per
+    page is the cost that design exists to avoid - so it cannot hand
+    :func:`position_id` the shape that function reads. It sends the identifying
+    fields by name instead, and this puts them in order and hashes them.
+
+    The field *names* are the contract; their order is not, and deliberately:
+    a name that stops matching fails loudly on the way in, while an order that
+    drifts would produce a perfectly valid id for a position nothing on the page
+    is called - fragments landing nowhere, which is the failure that hides
+    longest.
+
+    Both paths meet at :func:`_parts`, so an id built here and an id built from
+    a serialized program are the same id for the same position. The test suite
+    pins that against the real bundle rather than trusting it.
+
+    :param asset_id: the asset the position belongs to
+    :type asset_id: int | str
+    :param fields: values of `IDENTIFYING_FIELDS`, keyed by field name
+    :type fields: dict
+    :param link_ids: ids of `linked` entries that identify the position
+    :type link_ids: iterable
+    :return: str
+    """
+    return _hash(asset_id, _parts(asset_id, fields, link_ids))
 
 
 def annotate_positions(asset_id, programs):

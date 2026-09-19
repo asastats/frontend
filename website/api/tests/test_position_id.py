@@ -337,6 +337,104 @@ class TestAgainstTheRealBundle:
         assert sorted(p["pid"] for p in forward) == sorted(p["pid"] for p in backward)
 
 
+class TestTheLivePassAgrees:
+    """**The live pass identifies a position without serializing one.**
+
+    `_live_payload` works from the engine's own structures because serializing
+    an account every block per page is the cost that design exists to avoid, so
+    it cannot hand `position_id` the shape that function reads. It sends the
+    identifying fields by name and `position_id_from_fields` orders and hashes
+    them.
+
+    Two paths to one id is a drift risk, and this is what makes it safe: every
+    position on the real bundle, both ways, must come out identical. A field
+    dropped, renamed or reordered on either side fails here rather than in
+    production as fragments landing on nothing.
+    """
+
+    @staticmethod
+    def _fields(program):
+        """What the engine would send for `program`, by field name."""
+        detail = program.get("program") or {}
+        provider = detail.get("provider") or {}
+        return {
+            "type": detail.get("type"),
+            "name": detail.get("name"),
+            "provider": provider.get("name"),
+            "code": detail.get("code"),
+            "url": detail.get("url"),
+        }
+
+    @staticmethod
+    def _link_ids(program):
+        from api.position_id import _IDENTIFYING_LINK_TEXTS
+
+        return [
+            link["id"]
+            for link in (program.get("linked") or [])
+            if link.get("id") is not None
+            and link.get("text") in _IDENTIFYING_LINK_TEXTS
+        ]
+
+    def test_both_paths_agree_on_every_position_in_the_bundle(self, payload):
+        """190 positions, two ways, no exceptions."""
+        from api.position_id import position_id, position_id_from_fields
+
+        compared = 0
+        for item in payload["asaitems"]:
+            asset_id = item["asset"]["id"]
+            for program in item["programs"]:
+                serialized = position_id(asset_id, program)
+                from_fields = position_id_from_fields(
+                    asset_id, self._fields(program), self._link_ids(program)
+                )
+
+                assert from_fields == serialized, (
+                    f"asset {asset_id}: {from_fields} != {serialized}"
+                )
+                compared += 1
+
+        assert compared == EXPECTED_POSITIONS
+
+    def test_the_field_names_are_the_contract(self):
+        """A renamed field must fail loudly, not hash differently.
+
+        `IDENTIFYING_FIELDS` is what the engine populates by name; an unknown
+        name contributes nothing and a missing one is empty, so a rename shows
+        up as an id that does not match rather than as a silent near-miss. This
+        pins the names so a rename is a deliberate act with a version bump.
+        """
+        from api.position_id import IDENTIFYING_FIELDS
+
+        assert IDENTIFYING_FIELDS == ("type", "name", "provider", "code", "url")
+
+    def test_a_missing_field_is_empty_rather_than_absent(self):
+        """The engine will not always have all five - a wallet balance has no
+        provider and no url - so an omitted field and an empty one have to be
+        the same position, or the id would depend on how the sender spelled
+        "nothing"."""
+        from api.position_id import position_id_from_fields
+
+        sparse = position_id_from_fields(5, {"type": "Balance"})
+
+        assert sparse == position_id_from_fields(
+            5, {"type": "Balance", "name": None, "provider": "", "url": None}
+        )
+
+    def test_an_unprovided_position_agrees_with_its_serialized_form(self):
+        """The same case through both paths: a position with no provider and no
+        url, which is what a wallet balance is."""
+        from api.position_id import position_id, position_id_from_fields
+
+        program = _program(
+            type="Balance", name="Wallet balance", provider="", url=""
+        )
+
+        assert position_id_from_fields(
+            5, {"type": "Balance", "name": "Wallet balance"}
+        ) == position_id(5, program)
+
+
 class TestSerializerIntegration:
     """The identifiers have to survive the serializer, not just the function."""
 
