@@ -1,5 +1,19 @@
 {% load static %}
 {% load core_extras %}
+{% comment %} **`decimals` is bound here rather than read inline, and that is
+   not tidying.** Django swallows a failed lookup in `{{ a.b }}` and renders
+   `string_if_invalid`; it does *not* swallow one in a filter's argument -
+   `FilterExpression.resolve` calls `arg.resolve(context)` directly, so
+   `decimals` on a null asset raises `VariableDoesNotExist` and takes the
+   whole address page down with a 500.
+
+   Bound through `{% with %}` it takes the forgiving path: a null asset gives
+   the empty string, and `amount_repr` already answers "0" to anything it
+   cannot divide by. A wrong figure on one line beats a dead page.
+
+   Seen in production on 2026-09-18 in `snippets/nonval.html`, which had the
+   same shape. {% endcomment %}
+{% with decimals=decimals %}
 {% comment %} Per-program panel for one entry under an asaitem.
 
    Required context:
@@ -106,7 +120,7 @@
                 {{ ld.text }}
               {% endif %}
               {% if ld.value %}: {{ ld.value|floatformat:'-6g' }}{% if ld.info %} {{ ld.info }}{% endif %}{% endif %}
-              {% if ld.amount %} ({{ ld.amount|amount_repr:asset.decimals }} {{ asset.unit }}){% endif %}
+              {% if ld.amount %} ({{ ld.amount|amount_repr:decimals }} {{ asset.unit }}){% endif %}
             </div>
             {% endif %}
           {% endfor %}
@@ -119,13 +133,13 @@
              `text-success` the Materialize conversion left behind. {% endcomment %}
           {% if asset.id != 0 and prog.amount %}
             {% if program.type == "Balance" %}
-            <div><span class="balance text-primary">Balance:</span> {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
-              {% dist_price prog asset.decimals as prog_price %}
+            <div><span class="balance text-primary">Balance:</span> {{ prog.amount|amount_repr:decimals }} {{ asset.unit }}</div>
+              {% dist_price prog decimals as prog_price %}
               {% if prog_price %}<div><span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ prog_price }}">{{ prog_price|floatformat:'-8g' }} ALGO/{{ asset.unit }}</span></div>{% endif %}
             {% elif prog.amount|is_negative %}
-            <div>{{ program.type }}: (<span class="text-error">{{ prog.amount|abs_value|amount_repr:asset.decimals }} {{ asset.unit }}</span>)</div>
+            <div>{{ program.type }}: (<span class="text-error">{{ prog.amount|abs_value|amount_repr:decimals }} {{ asset.unit }}</span>)</div>
             {% else %}
-            <div>{{ program.type }}: {{ prog.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
+            <div>{{ program.type }}: {{ prog.amount|amount_repr:decimals }} {{ asset.unit }}</div>
             {% endif %}
           {% endif %}
         </div>
@@ -150,12 +164,12 @@
                 </div>
                 {% endwith %}
                 {% if d.amount %}
-                <div class="text-sm text-base-content/70">{{ d.amount|amount_repr:asset.decimals }} {{ asset.unit }}</div>
+                <div class="text-sm text-base-content/70">{{ d.amount|amount_repr:decimals }} {{ asset.unit }}</div>
                 {% endif %}
                 {% comment %} W3 — per-distribution price line, e.g.
                    "0.10966392 USDC/ALGO". The value is 1/price (asset units
                    per 1 ALGO). Skipped for ALGO and when price missing. {% endcomment %}
-                {% dist_price d asset.decimals as row_price %}
+                {% dist_price d decimals as row_price %}
                 {% if row_price and asset.id != 0 %}<div><span class="price cursor-pointer text-xs opacity-70" data-unit="{{ asset.unit }}" data-val="{{ row_price }}">{{ row_price|invert_price|floatformat:'-8g' }} {{ asset.unit }}/ALGO</span></div>{% endif %}
               </div>
             {% endfor %}
@@ -165,4 +179,5 @@
     {% endwith %}
   {% endwith %}
 {% endif %}
+{% endwith %}
 {% endwith %}

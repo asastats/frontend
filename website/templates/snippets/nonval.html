@@ -22,7 +22,27 @@
             <div>
               <a class="link link-hover" href="{% explorer_url 'asset' asset.id %}" target="_blank" title="Show in {% explorer_name %}">{{ asset.id }}</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
             </div>
+            {% comment %} **Guarded, because a filter argument is not forgiving.**
+               Django swallows a failed lookup in `{{ a.b }}` and renders
+               `string_if_invalid`; it does *not* swallow one in a filter's
+               argument - `FilterExpression.resolve` calls `arg.resolve(context)`
+               directly, so `asset.decimals` on a null asset raises
+               `VariableDoesNotExist` and takes the whole address page down with
+               a 500.
+
+               A not-evaluated asset is exactly the one whose metadata the
+               engine could not resolve, so a null `asset` here is the ordinary
+               case rather than an exotic one. Observed on 2026-09-18 against
+               `BNFIREKG…`.
+
+               The raw amount is still worth showing: without decimals it is in
+               base units, which is true, and the alternative is a card that
+               says nothing. {% endcomment %}
+            {% if asset %}
             <div>Amount: {{ noteval.amount|amount_repr:asset.decimals }}</div>
+            {% else %}
+            <div>Amount: {{ noteval.amount }} <span class="text-base-content/50">(base units)</span></div>
+            {% endif %}
             <div>Unit name: {{ asset.unit }}</div>
             <div>Total supply: {{ asset.total|floatformat:"g" }}</div>
             <div>Decimals: {{ asset.decimals }}</div>
