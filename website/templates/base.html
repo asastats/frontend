@@ -42,11 +42,30 @@
       it, so declaring 77 families costs their declarations and nothing more.
     {% endcomment %}
     <link href="{% static 'css/style.tw.css' %}" type="text/css" rel="stylesheet" media="screen">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#ababab">
+    {% comment %}
+    **The `?v=` is a cache-bust, and the first of these links is load-bearing.**
+
+    These are served from the site root by `nginx/templates/favicon.conf`, not
+    through `{% static %}`, so their URLs do not change when the image does --
+    and `favicon-16x16` and `favicon-32x32` carry `expires 365d`. A reader who
+    visited before the 2026-09-05 logo change would otherwise keep the old tab
+    icon for up to a year.
+
+    The apple-touch-icon matters for a second reason. Pera Wallet's SDK builds
+    the dApp metadata it shows at connect time by scraping this page:
+    `favicon: ae()[0]`, where `ae()` collects every `<link>` whose `rel`
+    *contains* "icon" -- so `apple-touch-icon` and `mask-icon` both qualify, and
+    the **first one in document order wins**. Keep the 180x180 apple-touch-icon
+    first: it is the best size of the set for a wallet's connect screen. See
+    `post-deploy/FINDING-pera-logo.md`.
+
+    Bump `v` whenever one of these images is replaced.
+    {% endcomment %}
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2">
+    <link rel="manifest" href="/site.webmanifest?v=2">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg?v=2" color="#ababab">
     <meta name="msapplication-TileColor" content="#ababab">
     <meta name="theme-color" content="#ffffff">
 </head>

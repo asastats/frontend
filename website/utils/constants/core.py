@@ -336,3 +336,14 @@ LIVEREFRESH_MAX_FRAGMENTS = 100
 #: page keys - a raw address, or an uppercase bundle hash - exactly as the
 #: engine's live pass writes them.
 LIVEREFRESH_HOLDINGS_KEY = "lvh"
+
+#: How long a touch keeps a page - or an address - counted as being watched.
+#:
+#: **Mirrors the engine's `LIVE_SUBSCRIPTION_SECONDS`**, which is the window it
+#: applies when reading `lvx`: anything scored older than this is not re-priced.
+#: The per-reader warm set ages on the same number so that an address stops
+#: counting against a reader's budget at the same moment it stops being
+#: re-priced for them. The two services deploy separately, so this is a copy of
+#: the engine's constant rather than a shared one, and the pair must move
+#: together.
+LIVEREFRESH_SUBSCRIPTION_SECONDS = 90
