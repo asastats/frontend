@@ -134,7 +134,7 @@ class TestApiV2BaseAddressView(BaseView):
         # Check.
         assert response.status_code == status.HTTP_200_OK
         assert response.data == processed_data
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "", fresh=False)
         mocked_processed.assert_called_once_with(serialized_data, self.request.GET)
         mocked_filtered_asa.assert_not_called()
         mocked_processed_nftitems.assert_not_called()
@@ -176,7 +176,7 @@ class TestApiV2BaseAddressView(BaseView):
         # Check.
         assert response.status_code == status.HTTP_200_OK
         assert response.data == filtered_data
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "", fresh=False)
         mocked_filtered_asa.assert_called_once_with(
             asset_id, serialized_data, self.request.GET
         )
@@ -220,7 +220,7 @@ class TestApiV2BaseAddressView(BaseView):
         # Check.
         assert response.status_code == status.HTTP_200_OK
         assert response.data == processed_data
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "", fresh=False)
         mocked_processed_nftitems.assert_called_once_with(
             serialized_data, self.request.GET
         )
@@ -264,7 +264,7 @@ class TestApiV2BaseAddressView(BaseView):
         # Check.
         assert response.status_code == status.HTTP_200_OK
         assert response.data == filtered_data
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "", fresh=False)
         mocked_filtered_nft.assert_called_once_with(
             nft_id, serialized_data, self.request.GET
         )
@@ -306,7 +306,7 @@ class TestApiV2BaseAddressView(BaseView):
         # Check.
         assert response.status_code == status.HTTP_200_OK
         assert response.data == processed_data
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "", fresh=False)
         mocked_processed_nftcollections.assert_called_once_with(
             serialized_data, self.request.GET
         )
@@ -350,7 +350,7 @@ class TestApiV2BaseAddressView(BaseView):
         # Check.
         assert response.status_code == status.HTTP_200_OK
         assert response.data == filtered_data
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "", fresh=False)
         mocked_filtered_nftcollection.assert_called_once_with(
             collection, serialized_data, self.request.GET
         )
@@ -394,7 +394,7 @@ class TestApiV2BaseAddressView(BaseView):
         # Check.
         assert response.status_code == status.HTTP_200_OK
         assert response.data == account_entities
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "", fresh=False)
         mocked_entities.assert_called_once_with(serialized_data)
         mocked_filtered_nftcollection.assert_not_called()
         mocked_processed_asaitems.assert_not_called()
@@ -435,7 +435,7 @@ class TestApiV2BaseAddressView(BaseView):
         # Check.
         assert response.status_code == status.HTTP_200_OK
         assert response.data == processed_account
-        mocked_fetch.assert_called_once_with(bundle, "")
+        mocked_fetch.assert_called_once_with(bundle, "", fresh=False)
         mocked_processed_account.assert_called_once_with(
             serialized_data, self.request.GET
         )
@@ -477,7 +477,7 @@ class TestApiV2AddressView(BaseView):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == data
         mocked_validate.assert_called_once_with(address)
-        mocked_fetch.assert_called_once_with(validated_address, "")
+        mocked_fetch.assert_called_once_with(validated_address, "", fresh=False)
 
 
 class TestApiV2NfdBundleNameView(BaseView):
@@ -536,6 +536,7 @@ class TestApiV2BundleView(BaseView):
         mocked_fetch.assert_called_once_with(
             validated_bundle,
             addresses,
+            fresh=False,
         )
 
 
@@ -568,7 +569,7 @@ class TestApiV2NfdNameView(BaseView):
         assert response.status_code == status.HTTP_200_OK
         assert response.data == data
         mocked_validate.assert_called_once_with(nfd_name)
-        mocked_fetch.assert_called_once_with(validated_nfd_name, "")
+        mocked_fetch.assert_called_once_with(validated_nfd_name, "", fresh=False)
 
 
 class TestApiV2RawPostView(BasePostView):

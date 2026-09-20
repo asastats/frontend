@@ -19,13 +19,15 @@ subscriber keeps *warm* - under the live pass a warm page is re-priced every
 block whether or not anyone reads it - and that is bounded separately where the
 subscription is made, not here.
 
-**Freshness is deliberately absent from this table.** Professional and Cluster
-are meant to get block-time data, and nothing serves it: the live pass publishes
-a diff, and a REST caller holds no state for a diff to apply to - see the gap
-recorded in `live/API-TIERS.md`. A `block_time` flag sat here briefly, read by
-nothing and asserted by a test, which is how a later change comes to be written
-against a promise the code never kept. Freshness lands in this table when
-something serves it.
+**Freshness is in this table now, because something serves it.** It was taken
+out once - a `block_time` flag read by nothing and asserted by a test, which is
+how a later change comes to be written against a promise the code never kept -
+and the rule then was that it comes back when the promise is kept. It is:
+engine `d5e318c` publishes a full serialized account per block for pages an API
+caller has asked to keep warm, and `api/live.py` asks, reads and serves it.
+
+So `block_time` here is read, by `api.live.wants_block_time`, and it is the one
+place that decides which tiers get it.
 """
 
 import logging
@@ -45,15 +47,18 @@ logger = logging.getLogger(__name__)
 API_TIER_BANDS = (
     (
         SUBSCRIPTION_TIER_PERMISSIONS["Cluster"],
-        {"addresses": 20},
+        {"addresses": 20, "block_time": True},
     ),
     (
         SUBSCRIPTION_TIER_PERMISSIONS["Professional"],
-        {"addresses": 5},
+        {"addresses": 5, "block_time": True},
     ),
     (
         SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
-        {"addresses": 5},
+        # Five addresses, but the 60-second cached path it has always had.
+        # Professional's whole advantage over it is freshness - see DECIDED.md,
+        # where that is called out as deliberate rather than an oversight.
+        {"addresses": 5, "block_time": False},
     ),
 )
 
@@ -63,7 +68,7 @@ API_TIER_BANDS = (
 #: through and still has to be given *some* answer. One address is the honest
 #: one: they are not paying for a bundle, and shadow mode is meant to show what
 #: enforcement would do rather than to hand out entitlements in the meantime.
-DEFAULT_BAND = {"addresses": 1}
+DEFAULT_BAND = {"addresses": 1, "block_time": False}
 
 
 def band_for(permission):
@@ -87,6 +92,16 @@ def max_addresses(permission):
     :return: int
     """
     return band_for(permission)["addresses"]
+
+
+def block_time(permission):
+    """Return whether `permission` includes block-time data.
+
+    :param permission: the caller's permission integer
+    :type permission: int
+    :return: bool
+    """
+    return band_for(permission).get("block_time", False)
 
 
 def enforce_address_limit(request, addresses):

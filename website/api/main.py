@@ -1,5 +1,6 @@
 """Module containing public functions for API v2 package."""
 
+from api import live
 from api.client import fetch_serialized_account
 from api.position_id import annotate_positions
 from api.helpers import (
@@ -38,7 +39,9 @@ def account_entities(serialized_data):
     return extract_account_entities(serialized_data)
 
 
-def fetch_and_serialize_account(value, addresses, light=False, permission=0):
+def fetch_and_serialize_account(
+    value, addresses, light=False, permission=0, fresh=False
+):
     """Fetch and serialize an account for a single address or a bundle.
 
     ``value`` is the URL path segment as the visitor supplied it — a single
@@ -68,6 +71,13 @@ def fetch_and_serialize_account(value, addresses, light=False, permission=0):
     :type value: str
     :param addresses: space-joined addresses for a multi-address bundle
     :type addresses: str
+    :param fresh: serve the live pass's block-time snapshot when one is
+        published for this page. The API view sets it for a caller whose tier
+        includes block-time data; the address page never does, because it has
+        its own live path in the `liverefresh` widget. Falls back to the engine
+        call whenever no snapshot is there, which is every first request of a
+        subscription and every page the pass has not reached yet.
+    :type fresh: bool
     :param light: ask for thinner NFT records; see
         :func:`api.client.fetch_serialized_account`. The address page does; this
         app's own JSON API does not, because that is the shared contract.
@@ -78,9 +88,16 @@ def fetch_and_serialize_account(value, addresses, light=False, permission=0):
     if " " in addresses:
         value = bundle_from_addresses(addresses)
 
-    serialized = fetch_serialized_account(
-        value, addresses, light=light, permission=permission
-    )
+    # **The snapshot goes through the same annotation as the engine call**,
+    # which is the whole reason the choice is made here rather than in the view:
+    # `pid` is the website's identifier for a position and the engine does not
+    # emit it, so a path that skipped this would serve positions with no
+    # identity - the failure recorded above, arriving by a new route.
+    serialized = live.snapshot(value, addresses) if fresh else None
+    if serialized is None:
+        serialized = fetch_serialized_account(
+            value, addresses, light=light, permission=permission
+        )
     for item in serialized.get("asaitems") or ():
         annotate_positions((item.get("asset") or {}).get("id"), item.get("programs"))
     return serialized

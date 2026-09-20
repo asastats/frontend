@@ -19,6 +19,7 @@ from api.helpers import (
     validate_nfd_name,
     validate_raw_addresses,
 )
+from api import live
 from api.main import (
     account_entities,
     fetch_and_serialize_account,
@@ -144,7 +145,30 @@ class BaseAddressView(APIView):
         if addresses:
             enforce_address_limit(request, addresses)
 
-        serialized_data = fetch_and_serialize_account(bundle, addresses)  # noqa: F821
+        # **Asking is what makes the page fresh, and it is the same call that
+        # bounds it.** Until the API wrote these keys a request cost the engine
+        # nothing per block, so a cap on API callers would have refused the
+        # heaviest of them for no saving - see `api/live.py`. Subscribing puts
+        # the page in front of the live pass *and* charges it to this caller's
+        # warm set; over the cap, `subscribe` returns False and the answer comes
+        # off the cached path exactly as it did before, rather than erroring.
+        #
+        # The snapshot lands one block later, so a caller's first request is
+        # always the cached one and every request after it is block-fresh.
+        # **`request.user` is absent entirely on a bare WSGIRequest** - no
+        # authentication middleware has run - and reaching for it directly is
+        # how a subscription becomes a 500. `enforce_address_limit` above
+        # learned this from a unit test; this is the same lesson two lines
+        # later. Absent reads as no entitlement, which is the cached path.
+        user = getattr(request, "user", None)
+        permission = getattr(getattr(user, "profile", None), "permission", 0)
+        fresh = live.subscribe(
+            bundle, addresses, getattr(user, "pk", None), permission
+        )
+
+        serialized_data = fetch_and_serialize_account(
+            bundle, addresses, fresh=fresh
+        )  # noqa: F821
 
         if asset_id is True:
             serialized_data = processed_asaitems(
@@ -177,7 +201,27 @@ class BaseAddressView(APIView):
                 serialized_data, request.GET
             )  # noqa: F821
 
-        return Response(serialized_data, status=status.HTTP_200_OK)
+        response = Response(serialized_data, status=status.HTTP_200_OK)
+        # **Says what the cap decided, without refusing anybody.**
+        # `NEXT-unified-budget.md` specified a 429 here, on the reasoning that a
+        # machine consumer wants a status code rather than stale data. Half
+        # right: refusing a caller who is *entitled* to this data and merely
+        # asked for more breadth than their plan keeps warm would turn a working
+        # integration into an outage, and downgrading freshness is the
+        # degradation that matches what was actually oversubscribed. So the
+        # answer is served and the fact is stated.
+        #
+        # Only for tiers that were sold freshness - for everyone else there is
+        # nothing to report and the header would be noise.
+        #
+        # It reports the *subscription*, not this response's provenance: a page
+        # is not warm until a block has passed over it, so the first request
+        # after subscribing is cached with `warm=1`. That transient resolves
+        # itself; being over the cap does not, which is the thing worth telling
+        # a caller about.
+        if live.wants_block_time(permission):
+            response["X-ASAStats-Warm"] = "1" if fresh else "0"
+        return response
 
 
 @extend_schema_view(

@@ -125,3 +125,45 @@
           - "'/etc/nginx/sites-enabled/' in verify_nginx_dump.stdout"
         fail_msg: "nginx is not loading any sites-enabled drop-in; the api site would be ignored."
         success_msg: "nginx loads sites-enabled drop-ins (api site will be honored)."
+
+    # ── The unauthenticated-API throttle ────────────────────────────────────
+    # Three separate things have to hold, and each has its own way of being
+    # silently wrong: the zone has to exist, the limit has to be keyed so that
+    # a credential exempts it, and it must be scoped so the browser's wallet
+    # and schema paths are never caught.
+    - name: Assert the unauthenticated-API rate limit zone is defined
+      ansible.builtin.assert:
+        that:
+          - "'zone=api_unauth' in verify_nginx_dump.stdout"
+          - "'map $http_authorization $api_unauth_key' in verify_nginx_dump.stdout"
+        fail_msg: >-
+          The api_unauth rate limit zone or its Authorization-keyed map is missing —
+          unauthenticated API scraping would be unthrottled.
+        success_msg: "The unauthenticated-API rate limit zone is defined."
+
+    - name: Assert the throttle is scoped to address-shaped API paths only
+      ansible.builtin.assert:
+        that:
+          - "'^/api/v2/[A-Z2-7]{58}(/|$)' in verify_nginx_dump.stdout"
+        fail_msg: >-
+          The api_unauth limit is not scoped to address-shaped paths. Applied to all of
+          /api/, it throttles the browser's wallet login flow (/api/v2/wallet/nonce/,
+          /verify/, /wallets/), which sends a session cookie and no Authorization header.
+        success_msg: "The unauthenticated-API throttle is scoped to address-shaped paths."
+
+    - name: Fetch a wallet endpoint repeatedly to prove it is not throttled
+      ansible.builtin.uri:
+        url: "http://localhost/api/v2/wallet/wallets/"
+        status_code: [200, 401, 403, 404, 405]
+      register: verify_wallet_unthrottled
+      changed_when: false
+      loop: "{{ range(0, 12) | list }}"
+
+    - name: Assert no wallet request was rate limited
+      ansible.builtin.assert:
+        that:
+          - verify_wallet_unthrottled.results | map(attribute='status') | select('equalto', 429) | list | length == 0
+        fail_msg: >-
+          A /api/v2/wallet/ request was answered 429. The throttle is catching the
+          browser's sign-in flow — check the location regex.
+        success_msg: "The wallet endpoints are outside the throttle."

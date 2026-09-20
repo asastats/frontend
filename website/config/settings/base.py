@@ -599,6 +599,35 @@ API_TIER_EXEMPT_USER_IDS = frozenset(
     if value.strip().isdigit()
 )
 
+#: Whether an entitled API caller may ask for a page to be kept block-fresh.
+#:
+#: **Off by default, and it ships that way.** Everything else in `api/live.py`
+#: costs this process a Redis round trip; subscribing costs the *engine* a
+#: re-price every block, for as long as the caller keeps asking. There is no
+#: ramp - it begins the moment a Professional-or-above caller makes a request -
+#: so it is a switch somebody throws once the engine that publishes snapshots
+#: (`d5e318c`) is deployed and the list below is filled in.
+API_LIVE_ENABLED = get_env_variable("API_LIVE_ENABLED", "") == "1"
+
+#: Accounts that are a whole population rather than a reader.
+#:
+#: **A per-account limit measures a person, and a shared token is not one.** The
+#: mobile app ships one baked credential for its entire installed base, so its
+#: account must never subscribe: it would put every address any phone user
+#: glanced at in front of the live pass, and spend one warm set of five between
+#: all of them. `WIDGETS_API_TOKEN`'s account is the same shape.
+#:
+#: Separate from `API_TIER_EXEMPT_USER_IDS`, which answers the opposite question
+#: - that list grants access these accounts would otherwise lose, this one
+#: withholds a cost they should never incur. An account can need both.
+#:
+#: **Fill this in before setting `API_LIVE_ENABLED=1`**, or the app subscribes.
+API_LIVE_SHARED_TOKEN_USER_IDS = frozenset(
+    int(value)
+    for value in get_env_variable("API_LIVE_SHARED_TOKEN_USER_IDS", "").split(",")
+    if value.strip().isdigit()
+)
+
 SIMPLE_JWT_KEY = get_env_variable("SIMPLE_JWT_KEY", "")
 
 SIMPLE_JWT = {

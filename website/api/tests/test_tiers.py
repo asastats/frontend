@@ -2,7 +2,13 @@
 
 import pytest
 
-from api.tiers import API_TIER_BANDS, DEFAULT_BAND, band_for, max_addresses
+from api.tiers import (
+    API_TIER_BANDS,
+    DEFAULT_BAND,
+    band_for,
+    block_time,
+    max_addresses,
+)
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS as TIERS
 
 
@@ -25,17 +31,48 @@ class TestApiTiers:
         assert band_for(TIERS[tier])["addresses"] == addresses
 
     def test_api_tiers_the_table_claims_nothing_it_does_not_do(self):
-        """**No freshness flag until something serves freshness.**
+        """**Every key here must be read by something.**
 
-        Professional and Cluster are meant to get block-time data and nothing
-        does: the pass publishes a diff and a REST caller holds no state for a
-        diff to apply to. A `block_time` key sat here briefly, read by nothing
-        and asserted by a test - which is how a later change comes to be written
-        against a promise the code never kept.
+        `block_time` sat in this table once, read by nothing and asserted by a
+        test, which is how a later change comes to be written against a promise
+        the code never kept. It was removed, and the rule was that it returns
+        when the promise is kept. It is kept now - engine `d5e318c` publishes a
+        snapshot per block and `api.live` asks for it and serves it - so the
+        flag is back, and this test's job changes from "it must not be here" to
+        "nothing may be here that no one reads".
+
+        A new key added to a band without a reader fails this, which is the
+        original protection aimed at the thing it was really about.
         """
+        served = {"addresses": max_addresses, "block_time": block_time}
         for _, band in API_TIER_BANDS:
-            assert set(band) == {"addresses"}
-        assert set(DEFAULT_BAND) == {"addresses"}
+            assert set(band) == set(served)
+        assert set(DEFAULT_BAND) == set(served)
+        for name, reader in served.items():
+            assert reader(TIERS["Cluster"]) == API_TIER_BANDS[0][1][name]
+
+    @pytest.mark.parametrize(
+        "tier,expected",
+        (
+            ("Cluster", True),
+            ("Professional", True),
+            ("Asastatser", False),
+            ("Intro", False),
+        ),
+    )
+    def test_api_tiers_block_time_by_name(self, tier, expected):
+        """**Asastatser has five addresses and no freshness.**
+
+        Professional's entire advantage over it is block-time data - recorded
+        in `post-deploy/DECIDED.md` as deliberate rather than an oversight -
+        so this is the line that makes the two tiers different at all.
+        """
+        assert block_time(TIERS[tier]) is expected
+
+    def test_api_tiers_block_time_is_false_below_every_band(self):
+        """The shadow-mode caller gets the cached path, like everyone unpaid."""
+        assert block_time(0) is False
+        assert block_time(-1) is False
 
     def test_api_tiers_a_tier_between_bands_takes_the_one_below(self):
         """Permissions are thresholds, not identities: an account a point above
