@@ -321,6 +321,65 @@ You can get access to our API if you:
 * <a href="https://github.com/asastats/channel/wiki/GovernorCandidates#description">"""
     r"""have contributed</a> to the ASA Stats project
 
+__What your tier includes:__
+
+| Tier | Addresses per request | Data freshness | Addresses kept live |
+| --- | --- | --- | --- |
+| Asastatser | 5 | up to 60 seconds old | &mdash; |
+| Professional | 5 | block-time | 5 |
+| Cluster | 20 | block-time | 20 |
+
+A request naming more addresses than your tier allows is refused, and the
+refusal names both numbers so you can act on it without opening a support
+thread.
+
+__How often to call us:__
+
+**We recommend polling every 10 to 60 seconds.** Your data is equally fresh
+whichever interval you choose, and it is worth explaining why that is not a
+limitation.
+
+The ASA Stats engine re-prices every subscribed portfolio as each Algorand
+block arrives &mdash; roughly every 2.7 seconds &mdash; whether or not you
+happen to be asking at that moment. The freshly valued answer is always
+waiting for you. **Your polling interval decides how often you look at it, not
+how current it is when you do.**
+
+So on Professional or Cluster, a request made once a minute returns a portfolio
+that was *computed at block time* and is at most a minute old. On Asastatser,
+the same request returns an answer that may itself have been computed up to a
+minute ago. That is the difference between the tiers, and it holds at every
+polling interval.
+
+A portfolio value is a level rather than an event: you cannot miss it, you can
+only learn it late. Polling every block costs around twenty times the bandwidth
+of polling every minute, and buys you a figure that has typically moved by
+about 0.0003% in the meantime.
+
+__Conditional requests:__
+
+Every response carries an `ETag`. Send it back in an `If-None-Match` header and
+any request whose answer has not changed is met with `304 Not Modified` and no
+body, which is the cheapest thing either of us can do. This is most useful if
+you poll faster than we suggest above.
+
+__Knowing whether you are live:__
+
+Professional and Cluster responses carry an `X-ASAStats-Warm` header: `1` means
+the portfolio you asked for is being kept block-fresh for you, and `0` means it
+is not &mdash; which happens when you have asked us to keep more addresses live
+than your tier allows.
+
+**A `0` is not an error.** You still receive a complete and correct portfolio,
+served from the 60-second cached path, exactly as an Asastatser request would
+be. It is telling you that the block-time part of your subscription is not
+being applied to this request, so that you can reduce how many distinct
+addresses you are asking about if you want it back.
+
+The first request for a portfolio is always served from cache, because we
+cannot have it block-fresh until a block has passed over it. Every request
+after that one is live.
+
 The following functions and features are included in the API:
 
 __Evaluate any:__

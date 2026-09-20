@@ -1,5 +1,7 @@
 """Module containing core app's views."""
 
+import hashlib
+import json
 import logging
 
 from algosdk.constants import ADDRESS_LEN
@@ -84,6 +86,33 @@ from utils.constants.core import CACHE_TTL_ADDRESS
 from utils.helpers import check_bundle_addresses, create_bundle
 
 logger = logging.getLogger(__name__)
+
+
+def _etag_for(serialized_data):
+    """Return a strong ETag for this response body, or "" if it cannot be made.
+
+    Hashed over the *data* rather than the rendered bytes, because DRF renders
+    lazily and the renderer is deterministic for a given structure - so the two
+    are equivalent and this one is available before the response exists.
+
+    `sort_keys` because a dict that iterates in a different order between
+    processes is the same answer, and an ETag that changed with worker identity
+    would never match. `default=str` because the payload carries Decimals, and a
+    body we cannot serialize is one we simply do not offer an ETag for - the
+    caller then gets the full response every time, which is what happens today.
+
+    :param serialized_data: the response body, before rendering
+    :type serialized_data: dict or list
+    :return: str
+    """
+    try:
+        encoded = json.dumps(
+            serialized_data, sort_keys=True, default=str, separators=(",", ":")
+        ).encode()
+    except (TypeError, ValueError) as error:  # noqa: BLE001 - see above
+        logger.warning("api etag not computable: %s", error)
+        return ""
+    return f'"{hashlib.blake2b(encoded, digest_size=16).hexdigest()}"'
 
 
 @extend_schema_view(
@@ -201,7 +230,25 @@ class BaseAddressView(APIView):
                 serialized_data, request.GET
             )  # noqa: F821
 
-        response = Response(serialized_data, status=status.HTTP_200_OK)
+        # **A bound on the caller who polls faster than blocks, and not a
+        # compression scheme.** A re-price moves some figure most blocks even
+        # when the total moves 0.0003%, so a block-rate poller still gets a
+        # changed body; what this collapses is the request made twice between
+        # re-prices. See `ANALYSIS-bandwidth-lever.md`, where the real lever
+        # turns out to be poll rate: 22x between block-rate and 60-second
+        # polling, against which no encoding trick competes.
+        #
+        # **Keyed on the body, not on the round**, which is how the original
+        # note framed it. The round advances every block whether or not this
+        # page changed, so a round ETag would report a change for a page that
+        # is byte-identical - the opposite of the point.
+        etag = _etag_for(serialized_data)
+        if etag and request.headers.get("If-None-Match") == etag:
+            response = Response(status=status.HTTP_304_NOT_MODIFIED)
+        else:
+            response = Response(serialized_data, status=status.HTTP_200_OK)
+        if etag:
+            response["ETag"] = etag
         # **Says what the cap decided, without refusing anybody.**
         # `NEXT-unified-budget.md` specified a 429 here, on the reasoning that a
         # machine consumer wants a status code rather than stale data. Half
@@ -219,6 +266,11 @@ class BaseAddressView(APIView):
         # after subscribing is cached with `warm=1`. That transient resolves
         # itself; being over the cap does not, which is the thing worth telling
         # a caller about.
+        #
+        # Set on a 304 as well as a 200, because the caller polling with
+        # `If-None-Match` is precisely the one who wants to know whether their
+        # pages are still warm, and losing the signal on exactly those requests
+        # would make it useless to them.
         if live.wants_block_time(permission):
             response["X-ASAStats-Warm"] = "1" if fresh else "0"
         return response
