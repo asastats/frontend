@@ -255,7 +255,14 @@
             <span></span>
           </div>
           {% for prog in group.positions %}
-            {% include "snippets/dynamic/position.html" with prog=prog asset=asset counter=forloop.counter %}
+            {% comment %} **Two numbers, because this loop restarts.** The
+               counter is the fallback key for a position whose `pid` is
+               ambiguous, and positions are a loop inside a loop over program
+               groups - so an inner counter alone would give the first position
+               of every group the same `1`, and two ambiguous positions in
+               different groups would collide exactly as the shared `pid` did.
+               See `breakdown_key`. {% endcomment %}
+            {% include "snippets/dynamic/position.html" with prog=prog asset=asset counter=forloop.parentloop.counter|stringformat:"s"|add:"-"|add:forloop.counter|stringformat:"s" %}
           {% endfor %}
         </div>
         {% endfor %}

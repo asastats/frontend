@@ -103,6 +103,35 @@ class TestApiLiveWarmSetImport:
 
         assert live._warm_set() == (None, None)
 
+    def test_api_live_warm_set_returns_the_real_widget_module(self):
+        """**The success path, which every other test here patches away.**
+
+        The rest either force the ImportError or replace `_warm_set` wholesale,
+        so nothing was actually importing the widget - and an import that
+        silently stopped resolving would have looked exactly like a passing
+        suite while the feature quietly refused every subscription in
+        production.
+
+        Asserts the objects are usable rather than merely non-None: the cap and
+        the touch are what `subscribe` calls on them.
+        """
+        warmset, manifest = live._warm_set()
+
+        assert callable(warmset.touch)
+        assert callable(warmset.cap_for)
+        assert manifest.required_permission
+
+    def test_api_live_warm_set_agrees_with_the_widgets_own_bands(self):
+        """One warm set per reader spans browser and API, so the cap this
+        module resolves has to be the number the widget itself would use."""
+        from widgets.inhouse.liverefresh import warmset as widget_warmset
+        from widgets.inhouse.liverefresh.manifest import MANIFEST
+
+        warmset, manifest = live._warm_set()
+
+        assert warmset is widget_warmset
+        assert manifest is MANIFEST
+
     def test_api_live_subscribe_refuses_without_a_warm_set(self, mocker):
         """No cap can be applied, so nothing is subscribed: an unbounded warm
         set is a worse answer than a cached one."""

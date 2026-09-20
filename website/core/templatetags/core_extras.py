@@ -1062,6 +1062,45 @@ ALLOCATION_BANDS = (
 
 
 @register.filter
+def breakdown_key(program, counter):
+    """Return a key naming one position's breakdown panel, unique on the page.
+
+    **A `pid` is not unique when it is ambiguous, and that is the whole bug.**
+    Three pairs of positions on the reference bundle are genuinely
+    indistinguishable - same type, name, provider, code and link - so
+    :func:`api.position_id.position_id` gives the pair one identifier and flags
+    it. The markup already declines to put `pq-`/`pv-` ids on those, because two
+    elements under one id means an out-of-band swap lands on whichever comes
+    first and corrects the wrong money. The breakdown panel did not decline: it
+    kept using the shared `pid`, so expanding one position opened the other
+    one's breakdown.
+
+    The fallback is positional, and it has to be **two** numbers.
+    ``asset.html`` renders positions as a loop inside a loop over program
+    groups, so the inner counter restarts at 1 in every group - two ambiguous
+    positions sitting in different groups would both be `1` and collide again.
+    The pair identifies a position within its asset, and the caller already
+    namespaces by asset id, so the result is unique per page.
+
+    Positional is acceptable here and nowhere else in this feature. A breakdown
+    panel is opened and closed inside one rendered page, so a key that changes
+    on the next render costs nothing - which is exactly why the same trick is
+    wrong for a `pid`, where a rank change between renders would silently move a
+    reader's pin to a different position.
+
+    :param program: one serialized entry from an asset's ``programs``
+    :type program: dict
+    :param counter: positional fallback, as ``"<group>-<position>"``
+    :type counter: str
+    :return: str
+    """
+    pid = (program or {}).get("pid")
+    if pid and not (program or {}).get("pid_ambiguous"):
+        return pid
+    return f"n{counter}"
+
+
+@register.filter
 def allocation_bands(consolidated, total):
     """Return the five allocation categories with their values and shares.
 
