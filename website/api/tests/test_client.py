@@ -399,6 +399,51 @@ class TestApiClientFunctions:
         )
 
     # # export_status
+    def test_api_client_export_status_canonicalises_an_old_bookmark(self, mocker):
+        """**The export is not stored under the hash the URL carries.**
+
+        `ExportView` ignores the bundle it is posted and keys the export by
+        `_cache_key(addresses)` - the hash recomputed from the addresses -
+        while this poll looked the value up verbatim. So a pre-sort bookmark
+        started an export that ran, finished, and was never found again.
+
+        Nothing logged it, which is why it outlived the collection bug beside
+        it: an empty status is exactly what "not ready yet" looks like, so the
+        page waits for ever and a reader who gives up and retries buys another
+        full CSV export.
+        """
+        mocked_canonical = mocker.patch("api.client.canonical_bundle")
+        mocked_request = mocker.patch("api.client._request")
+
+        export_status("0" * 40)
+
+        mocked_canonical.assert_called_once_with("0" * 40)
+        assert str(mocked_canonical.return_value) in mocked_request.call_args.args[1]
+
+    def test_api_client_download_export_canonicalises_an_old_bookmark(self, mocker):
+        """Same key, same reason - otherwise the archive 404s for ever."""
+        mocked_canonical = mocker.patch("api.client.canonical_bundle")
+        mocked_request = mocker.patch("api.client._request")
+
+        download_export("0" * 40)
+
+        mocked_canonical.assert_called_once_with("0" * 40)
+        assert str(mocked_canonical.return_value) in mocked_request.call_args.args[1]
+
+    def test_api_client_reset_export_canonicalises_an_old_bookmark(self, mocker):
+        """Worst of the three: a delete that silently removes nothing.
+
+        The reader asks to be rid of an archive and is told it is gone, while
+        it stays exactly where it was under the canonical key.
+        """
+        mocked_canonical = mocker.patch("api.client.canonical_bundle")
+        mocked_request = mocker.patch("api.client._request")
+
+        reset_export("0" * 40)
+
+        mocked_canonical.assert_called_once_with("0" * 40)
+        assert str(mocked_canonical.return_value) in mocked_request.call_args.args[1]
+
     def test_api_client_export_status_functionality(self, mocker):
         bundle = API_EXAMPLE_BUNDLE1
         mocked_request = mocker.patch("api.client._request")

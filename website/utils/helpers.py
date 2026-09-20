@@ -249,6 +249,38 @@ def check_bundle_addresses(bundle):
     return cached if cached is not False else ""
 
 
+def canonical_bundle(value):
+    """Return the hash the backend keys `value`'s bundle under.
+
+    **An old bookmark carries an old hash.** `bundle_from_addresses` became
+    sort-and-dedupe over the address set at some point, and visitors who saved
+    a bundle URL before that still arrive with the hash it produced then. Those
+    URLs keep working because :func:`check_bundle_addresses` is a cache lookup -
+    any hash ever stored resolves to its addresses, whichever algorithm minted
+    it - but the *backend* keys everything by the canonical hash it recomputes
+    from those addresses, so a legacy hash names nothing there.
+
+    Resolving through the cache rather than asking callers for `addresses` is
+    what keeps this a one-line change at each call site: the addresses are not
+    in scope at most of them, and threading them through would touch four
+    signatures to answer a question the cache already holds.
+
+    Idempotent by construction - a canonical hash resolves to the addresses
+    that produce it - so it is safe to apply on a path that may already be
+    canonical, and a single address or an unknown hash is returned untouched.
+
+    :param value: address or bundle value as it appeared in the URL
+    :type value: str
+    :var addresses: whatever the cache holds for `value`
+    :type addresses: str
+    :return: str
+    """
+    addresses = check_bundle_addresses(value)
+    if " " in addresses:
+        return bundle_from_addresses(addresses)
+    return value
+
+
 def create_bundle(addresses):
     """Return bundle hash from `addresses` and update cache if needed.
 

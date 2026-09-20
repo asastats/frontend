@@ -9,7 +9,7 @@ from urllib.parse import quote
 
 import requests
 from django.conf import settings
-from utils.helpers import bundle_from_addresses
+from utils.helpers import bundle_from_addresses, canonical_bundle
 
 
 class BackendError(Exception):
@@ -206,18 +206,44 @@ def start_export(value, addresses):
 
 
 def export_status(bundle):
-    """Return processing/finished status + report filename for ``bundle``."""
-    return _request("GET", f"/api/v2/exports/{bundle}/status/").json()
+    """Return processing/finished status + report filename for ``bundle``.
+
+    **Canonicalised, because the export is not stored under the hash the
+    reader's URL carries.** `ExportView` ignores the `bundle` it is posted and
+    keys the export by `_cache_key(addresses)` - the hash recomputed from the
+    addresses - while this poll looks the value up verbatim. An old bookmark
+    therefore starts an export that runs, completes, and is never found again:
+    the status stays `{}`, the download 404s, and nothing anywhere logs an
+    error, because an empty status is exactly what "not ready yet" looks like.
+
+    Silent, and it costs a full CSV export every time a reader gives up and
+    tries again.
+    """
+    return _request(
+        "GET", f"/api/v2/exports/{canonical_bundle(bundle)}/status/"
+    ).json()
 
 
 def download_export(bundle):
-    """Return the export archive bytes (streamed) for ``bundle``."""
-    return _request("GET", f"/api/v2/exports/{bundle}/download/", stream=True).content
+    """Return the export archive bytes (streamed) for ``bundle``.
+
+    Canonicalised for the same reason as :func:`export_status`.
+    """
+    return _request(
+        "GET", f"/api/v2/exports/{canonical_bundle(bundle)}/download/", stream=True
+    ).content
 
 
 def reset_export(bundle):
-    """Delete the backend export archive and reset its status for ``bundle``."""
-    return _request("DELETE", f"/api/v2/exports/{bundle}/").json()
+    """Delete the backend export archive and reset its status for ``bundle``.
+
+    Canonicalised for the same reason as :func:`export_status` - and here the
+    cost of not doing it is a delete that silently removes nothing, leaving the
+    archive the reader asked to be rid of exactly where it was.
+    """
+    return _request(
+        "DELETE", f"/api/v2/exports/{canonical_bundle(bundle)}/"
+    ).json()
 
 
 def engine_request(scope, method, path, allowed_scopes, **kwargs):

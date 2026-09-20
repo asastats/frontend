@@ -20,6 +20,7 @@ from utils.constants.core import (
 from utils.helpers import (
     base64_to_utf,
     bundle_from_addresses,
+    canonical_bundle,
     check_algorand_address,
     check_bundle_addresses,
     create_bundle,
@@ -440,6 +441,62 @@ class TestUtilsHelpersGeneralPublicFunctions:
     )
     def test_utils_helpers_bundle_from_addresses_functionality(self, addresses, result):
         assert bundle_from_addresses(addresses) == result
+
+    # # canonical_bundle
+    def test_utils_helpers_canonical_bundle_rehashes_an_old_bookmark(self, mocker):
+        """**The point of the function: what goes in is not what comes out.**
+
+        A visitor who saved a bundle URL before the hash became sort-and-dedupe
+        over the address set still resolves through the cache - any hash ever
+        stored does - but the backend keys everything by the canonical hash, so
+        the old one names nothing there.
+
+        Asserted against the real computed hash rather than a mock, because a
+        mock would pass whatever the function returned.
+        """
+        addresses = "FOO BAR"
+        mocker.patch(
+            "utils.helpers.check_bundle_addresses", return_value=addresses
+        )
+
+        assert canonical_bundle("0" * 40) == bundle_from_addresses(addresses)
+
+    def test_utils_helpers_canonical_bundle_is_idempotent(self, mocker):
+        """A canonical hash resolves to the addresses that produce it.
+
+        Worth pinning because this is applied on paths that may already be
+        canonical, and a function that only worked on stale input would be a
+        trap for the next caller.
+        """
+        addresses = "FOO BAR"
+        mocker.patch(
+            "utils.helpers.check_bundle_addresses", return_value=addresses
+        )
+        canonical = bundle_from_addresses(addresses)
+
+        assert canonical_bundle(canonical) == canonical
+
+    def test_utils_helpers_canonical_bundle_leaves_a_single_address_alone(
+        self, mocker
+    ):
+        """One address is not a bundle, and the cache holds nothing for it."""
+        address = "A" * 58
+        mocker.patch("utils.helpers.check_bundle_addresses", return_value="")
+
+        assert canonical_bundle(address) == address
+
+    def test_utils_helpers_canonical_bundle_passes_an_unknown_hash_through(
+        self, mocker
+    ):
+        """An unknown bundle must not become something else.
+
+        The cache answering with nothing is not a licence to invent a hash -
+        the caller's value is still the best answer available, and the backend
+        can refuse it on its own terms.
+        """
+        mocker.patch("utils.helpers.check_bundle_addresses", return_value="")
+
+        assert canonical_bundle("F" * 40) == "F" * 40
 
     # # check_bundle_addresses
     def test_utils_helpers_check_bundle_addresses_returns_addresses(self, mocker):
