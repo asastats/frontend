@@ -47,6 +47,7 @@ class TestProfileModel:
             ("votes", models.BigIntegerField),
             ("permission", models.BigIntegerField),
             ("currency", models.CharField),
+            ("api_tokens_valid_from", models.DateTimeField),
         ],
     )
     def test_profile_model_fields(self, name, typ):
@@ -92,6 +93,49 @@ class TestProfileModel:
         profile = Profile()
         assert profile.currency == "ALGO"
 
+    def test_profile_model_default_api_tokens_valid_from_for_profile(self):
+        profile = Profile()
+        assert profile.api_tokens_valid_from is None
+
+    def test_profile_model_api_tokens_valid_from_is_optional(self):
+        # No cutoff means no revocation: every profile has to be able to sit
+        # here, and `full_clean` runs on profiles edited through the admin.
+        field = Profile._meta.get_field("api_tokens_valid_from")
+        assert field.null is True
+        assert field.blank is True
+
+    @pytest.mark.django_db
+    def test_profile_model_api_tokens_valid_from_round_trip(self):
+        user = user_model.objects.create(email="revocation@example.com")
+        cutoff = timezone.now()
+        user.profile.api_tokens_valid_from = cutoff
+        user.profile.save(update_fields=["api_tokens_valid_from"])
+        assert Profile.objects.get(pk=user.profile.pk).api_tokens_valid_from == cutoff
+
+    @pytest.mark.django_db
+    def test_profile_model_api_tokens_valid_from_can_be_cleared(self):
+        user = user_model.objects.create(email="restore@example.com")
+        user.profile.api_tokens_valid_from = timezone.now()
+        user.profile.save(update_fields=["api_tokens_valid_from"])
+        user.profile.api_tokens_valid_from = None
+        user.profile.save(update_fields=["api_tokens_valid_from"])
+        assert Profile.objects.get(pk=user.profile.pk).api_tokens_valid_from is None
+
+    @pytest.mark.django_db
+    def test_profile_model_api_tokens_valid_from_survives_address_change(self):
+        # `save` resets `permission` when the address changes; the cutoff must
+        # not ride along, or re-linking an address would silently un-revoke.
+        user = user_model.objects.create(email="addresschange@example.com")
+        cutoff = timezone.now()
+        user.profile.api_tokens_valid_from = cutoff
+        user.profile.address = TEST_ADDRESS2
+        user.profile.save()
+        user.profile.address = TEST_ADDRESS3
+        user.profile.save()
+        profile = Profile.objects.get(pk=user.profile.pk)
+        assert profile.permission == 0
+        assert profile.api_tokens_valid_from == cutoff
+
     # # __str__
     @pytest.mark.django_db
     def test_profile_model_string_representation_is_profilenama(self):
@@ -136,9 +180,12 @@ class TestProfileModel:
     def test_profile_model_check_votes_and_permission_skips_on_none(self, mocker):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = None
-        profile = Profile()
+        # An address is required for the provider to be consulted at all, and
+        # this test is about what happens to its answer.
+        profile = Profile(address=TEST_ADDRESS)
         save = mocker.patch.object(Profile, "save")
         profile.check_votes_and_permission()
+        provider.votes_and_permission.assert_called_once_with(TEST_ADDRESS)
         save.assert_not_called()
 
     def test_core_models_profile_check_votes_and_permission_keeps_votes_on_zero(
@@ -162,6 +209,63 @@ class TestProfileModel:
         profile.check_votes_and_permission()
         assert (profile.votes, profile.permission) == (3, 100)
         save.assert_called_once()
+
+    def test_profile_model_check_votes_and_permission_skips_without_address(
+        self, mocker
+    ):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        save = mocker.patch.object(Profile, "save")
+        profile = Profile(votes=0, permission=0, address="")
+        profile.check_votes_and_permission()
+        provider.votes_and_permission.assert_not_called()
+        save.assert_not_called()
+
+    def test_profile_model_check_votes_and_permission_keeps_granted_permission(
+        self, mocker
+    ):
+        # The trial case: a permission set by hand on an account with no
+        # on-chain address must survive a refresh, which the provider would
+        # otherwise answer with `(0, 0)` - "entitled to nothing".
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (0, 0)
+        save = mocker.patch.object(Profile, "save")
+        profile = Profile(votes=0, permission=258885438200, address="")
+        profile.check_votes_and_permission()
+        assert profile.permission == 258885438200
+        save.assert_not_called()
+
+    def test_profile_model_check_votes_and_permission_skips_on_empty_derivation(
+        self, mocker
+    ):
+        # An xChain profile whose EVM address derives to nothing: there is an
+        # `address`, but still no Algorand address to look up.
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        mocker.patch.object(
+            Profile, "algorand_address", new_callable=mock.PropertyMock, return_value=""
+        )
+        save = mocker.patch.object(Profile, "save")
+        profile = Profile(votes=0, permission=100, address=TEST_ADDRESS_EVM)
+        profile.check_votes_and_permission()
+        provider.votes_and_permission.assert_not_called()
+        save.assert_not_called()
+        assert profile.permission == 100
+
+    def test_profile_model_check_votes_and_permission_uses_algorand_address(
+        self, mocker
+    ):
+        # The derived address is what the provider is asked about, not the
+        # stored EVM one.
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = None
+        mocker.patch.object(
+            Profile,
+            "algorand_address",
+            new_callable=mock.PropertyMock,
+            return_value=TEST_ADDRESS2,
+        )
+        profile = Profile(address=TEST_ADDRESS_EVM)
+        profile.check_votes_and_permission()
+        provider.votes_and_permission.assert_called_once_with(TEST_ADDRESS2)
 
     # # save
     @pytest.mark.django_db

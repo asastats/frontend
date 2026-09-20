@@ -363,8 +363,13 @@ REST_FRAMEWORK = {
     # five weeks of logs authenticate successfully, about 2,000 a day, and the
     # lookup happens only for those - an invalid token is refused before it. So
     # the database read this adds is roughly one every forty seconds.
+    # **Revocable.** `RevocableJWTAuthentication` is `JWTAuthentication` plus a
+    # check of the token's `iat` against `Profile.api_tokens_valid_from`, which
+    # is the only way to kill one leaked credential without rotating the
+    # signing key and taking every other token with it. See
+    # `api.authentication`.
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "api.authentication.RevocableJWTAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_RATES": {

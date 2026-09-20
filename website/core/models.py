@@ -71,6 +71,27 @@ class Profile(models.Model):
     #: the "refresh data" control falls back to the sixty-second reload.
     live_refresh = models.BooleanField(default=False)
 
+    #: Tokens issued before this moment are refused. Null means none are.
+    #:
+    #: **The revocation a stateless JWT otherwise cannot have.** Nothing here
+    #: keeps a list of issued tokens, so the only other kill switch is rotating
+    #: `SIMPLE_JWT_KEY` - which invalidates *every* token at once, including
+    #: `WIDGETS_API_TOKEN` and the one baked into the published mobile app, and
+    #: so is unusable for a single leaked credential.
+    #:
+    #: Comparing against a token's `iat` revokes every token one account holds,
+    #: instantly, and costs nothing: the move to `JWTAuthentication` already
+    #: loads this profile on every API request, so the check is an attribute
+    #: read rather than a query. `token_blacklist` would have added a table and
+    #: a lookup, and by default covers refresh tokens rather than the access
+    #: tokens actually in circulation.
+    #:
+    #: Set it to now to revoke; clear it to un-revoke. Re-issuing from
+    #: `/profile/api/` afterwards produces a token that postdates the cutoff and
+    #: therefore works, which is what makes this recoverable by the account
+    #: holder rather than by us.
+    api_tokens_valid_from = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         """Return string representation of the profile instance
 
@@ -251,7 +272,29 @@ class Profile(models.Model):
         :var permission: user's permission on website
         :type permission: int
         """
-        result = get_permission_provider().votes_and_permission(self.algorand_address)
+        # **A profile with no address has nothing on chain to be checked
+        # against, so there is nothing here to reconcile.** The ASA Stats
+        # provider answers `(0, 0)` for an address it holds no box for - not
+        # `None` - so without this guard an empty address reads as "this
+        # account is entitled to nothing" and zeroes whatever permission was
+        # set by hand. That is the difference between a permission granted
+        # administratively (a trial, a comped account, a support case) lasting
+        # until someone ends it and lasting until the holder next presses the
+        # refresh button on their own profile page.
+        #
+        # `algorand_address` is checked as well as `address` because an
+        # xChain profile stores an EVM address whose Algorand counterpart is
+        # derived, and a derivation that comes back empty is equally nothing
+        # to check. `address` is tested first so the common case costs no node
+        # call.
+        if not self.address:
+            return
+
+        address = self.algorand_address
+        if not address:
+            return
+
+        result = get_permission_provider().votes_and_permission(address)
         if result is None:
             return
 
