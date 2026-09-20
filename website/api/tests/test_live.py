@@ -12,6 +12,19 @@ PROFESSIONAL = SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
 CLUSTER = SUBSCRIPTION_TIER_PERMISSIONS["Cluster"]
 
 
+def _warm(mocker, admitted, evicted=None):
+    """Stand in for the widgets repo's warm-set module and manifest.
+
+    Patched through `_warm_set` rather than as a module attribute, because
+    `api.live` deliberately does not hold one - see `_warm_set`.
+    """
+    warmset = mocker.MagicMock()
+    warmset.touch.return_value = (admitted, evicted or [])
+    warmset.cap_for.return_value = 5
+    mocker.patch.object(live, "_warm_set", return_value=(warmset, mocker.MagicMock()))
+    return warmset
+
+
 @pytest.fixture(autouse=True)
 def _enabled(settings):
     """These tests are about the gates below the switch, so it is on.
@@ -54,7 +67,7 @@ class TestApiLiveSharedToken:
         """
         settings.API_LIVE_SHARED_TOKEN_USER_IDS = frozenset({24})
         client = mocker.MagicMock()
-        mocker.patch.object(live.warmset, "touch", return_value=([TEST_ADDRESS], []))
+        _warm(mocker, [TEST_ADDRESS])
 
         assert live.subscribe(TEST_ADDRESS, "", 24, CLUSTER, client=client) is False
         client.zadd.assert_not_called()
@@ -65,13 +78,39 @@ class TestApiLiveSharedToken:
         """The exclusion is about the credential, not the entitlement."""
         settings.API_LIVE_SHARED_TOKEN_USER_IDS = frozenset({24})
         client = mocker.MagicMock()
-        mocker.patch.object(live.warmset, "touch", return_value=([TEST_ADDRESS], []))
+        _warm(mocker, [TEST_ADDRESS])
 
         assert live.subscribe(TEST_ADDRESS, "", 25, CLUSTER, client=client) is True
 
     def test_api_live_shared_token_list_is_empty_by_default(self):
         """An exclusion nobody has filled in must not silently exclude."""
         assert live.is_shared_token(1) is False
+
+
+class TestApiLiveWarmSetImport:
+    """Testing class for :py:func:`api.live._warm_set`."""
+
+    def test_api_live_a_missing_warm_set_does_not_break_the_import(self, mocker):
+        """**This took the whole site down on 2026-09-20.**
+
+        `warmset` lives in the widgets repo, which syncs separately from this
+        one, so "frontend newer than widgets" is an ordinary state for minutes
+        at a time. Imported at module scope it made `api.views` unimportable,
+        then `config/urls.py`, and every page on the site 500d - for a feature
+        that was switched off.
+        """
+        mocker.patch.dict("sys.modules", {"widgets.inhouse.liverefresh": None})
+
+        assert live._warm_set() == (None, None)
+
+    def test_api_live_subscribe_refuses_without_a_warm_set(self, mocker):
+        """No cap can be applied, so nothing is subscribed: an unbounded warm
+        set is a worse answer than a cached one."""
+        client = mocker.MagicMock()
+        mocker.patch.object(live, "_warm_set", return_value=(None, None))
+
+        assert live.subscribe(TEST_ADDRESS, "", 7, CLUSTER, client=client) is False
+        client.zadd.assert_not_called()
 
 
 class TestApiLiveWantsBlockTime:
@@ -145,7 +184,7 @@ class TestApiLiveSubscribe:
         account nobody reads.
         """
         client = mocker.MagicMock()
-        mocker.patch.object(live.warmset, "touch", return_value=([TEST_ADDRESS], []))
+        _warm(mocker, [TEST_ADDRESS])
 
         assert (
             live.subscribe(TEST_ADDRESS, "", 7, PROFESSIONAL, client=client, now=100.0)
@@ -167,9 +206,7 @@ class TestApiLiveSubscribe:
         """
         client = mocker.MagicMock()
         addresses = f"{TEST_ADDRESS} {TEST_ADDRESS2}"
-        mocker.patch.object(
-            live.warmset, "touch", return_value=([TEST_ADDRESS, TEST_ADDRESS2], [])
-        )
+        _warm(mocker, [TEST_ADDRESS, TEST_ADDRESS2])
 
         live.subscribe("thehash", addresses, 7, CLUSTER, client=client, now=100.0)
 
@@ -187,9 +224,7 @@ class TestApiLiveSubscribe:
         would bill `C` twice and make the two surfaces incomparable.
         """
         client = mocker.MagicMock()
-        touch = mocker.patch.object(
-            live.warmset, "touch", return_value=([TEST_ADDRESS, TEST_ADDRESS2], [])
-        )
+        touch = _warm(mocker, [TEST_ADDRESS, TEST_ADDRESS2]).touch
 
         live.subscribe(
             "thehash",
@@ -212,7 +247,7 @@ class TestApiLiveSubscribe:
         the cap the caller still gets the cached answer.
         """
         client = mocker.MagicMock()
-        mocker.patch.object(live.warmset, "touch", return_value=([], []))
+        _warm(mocker, [])
 
         assert (
             live.subscribe(TEST_ADDRESS, "", 7, CLUSTER, client=client) is False
@@ -223,7 +258,7 @@ class TestApiLiveSubscribe:
         """The API must not 500 because the live feature is down."""
         client = mocker.MagicMock()
         client.zadd.side_effect = RuntimeError("connection refused")
-        mocker.patch.object(live.warmset, "touch", return_value=([TEST_ADDRESS], []))
+        _warm(mocker, [TEST_ADDRESS])
 
         assert live.subscribe(TEST_ADDRESS, "", 7, CLUSTER, client=client) is False
 

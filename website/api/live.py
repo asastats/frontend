@@ -39,10 +39,35 @@ from django.conf import settings
 from api.tiers import block_time
 from utils.clients import redis_instance
 from utils.helpers import bundle_from_addresses
-from widgets.inhouse.liverefresh import warmset
-from widgets.inhouse.liverefresh.manifest import MANIFEST
 
 logger = logging.getLogger(__name__)
+
+
+def _warm_set():
+    """Return the widget's warm-set module and manifest, or `(None, None)`.
+
+    **Imported here rather than at module scope, and this is not style.** These
+    live in the *widgets* repo, which is synced separately from this one, so
+    "the frontend is newer than the widgets" is an ordinary state of the world
+    for minutes at a time - and on 2026-09-20 it took the whole site down for
+    exactly that reason. A module-level import made `api.views` unimportable,
+    which made `config/urls.py` unimportable, which 500s every page on the site
+    rather than the one feature that needed the module.
+
+    This module's own docstring promises that a failure here is never an error.
+    An import that cannot fail to be satisfied is the one way that promise can
+    be broken before any of the guards below ever run.
+
+    :return: tuple of the module and the manifest, or (None, None)
+    """
+    try:
+        from widgets.inhouse.liverefresh import warmset
+        from widgets.inhouse.liverefresh.manifest import MANIFEST
+    except ImportError as error:  # noqa: BLE001 - see above
+        logger.warning("api live warm set unavailable: %s", error)
+        return None, None
+    return warmset, MANIFEST
+
 
 #: Pages the pass re-prices, and the pages among them that also want a full
 #: snapshot. Written as the widget writes `lvx`: member scored by the unix time
@@ -169,6 +194,13 @@ def subscribe(value, addresses, user_pk, permission, client=None, now=None):
     if is_shared_token(user_pk):
         return False
 
+    warmset, manifest = _warm_set()
+    if warmset is None:
+        # The widgets repo has not caught up with this one. No cap can be
+        # applied, so nothing is subscribed: an unbounded warm set is a worse
+        # answer than a cached one.
+        return False
+
     members = addresses.split() if addresses else [value]
     now = time.time() if now is None else now
     try:
@@ -177,7 +209,7 @@ def subscribe(value, addresses, user_pk, permission, client=None, now=None):
         # one warm set per reader across both surfaces, so the cap has to be
         # the same number from the same place - and a tier change must not be
         # able to land in one of them and not the other.
-        cap = warmset.cap_for(permission, MANIFEST.required_permission)
+        cap = warmset.cap_for(permission, manifest.required_permission)
         admitted, _ = warmset.touch(
             user_pk, members, cap, client, now, evict=False
         )
