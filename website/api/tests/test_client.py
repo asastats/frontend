@@ -18,7 +18,12 @@ from api.client import (
     reset_export,
     start_export,
 )
-from api.data import API_EXAMPLE_ADDRESS1, API_EXAMPLE_BUNDLE1
+from api.data import (
+    API_EXAMPLE_ADDRESS1,
+    API_EXAMPLE_ADDRESS2,
+    API_EXAMPLE_BUNDLE1,
+)
+from utils.helpers import bundle_from_addresses
 
 
 class TestApiClientFunctions:
@@ -288,14 +293,52 @@ class TestApiClientFunctions:
 
     def test_api_client_fetch_collection_items_carries_bundle_addresses(self, mocker):
         value, addresses = API_EXAMPLE_BUNDLE1, "FOO BAR"
+        mocked_bundle = mocker.patch("api.client.bundle_from_addresses")
         mocked_request = mocker.patch("api.client._request")
 
         fetch_collection_items(value, "Goannas", addresses)
 
         mocked_request.assert_called_once_with(
             "GET",
-            f"/api/v2/internal/accounts/{value}/collection",
+            f"/api/v2/internal/accounts/{mocked_bundle.return_value}/collection",
             params={"name": "Goannas", "addresses": addresses},
+        )
+
+    def test_api_client_fetch_collection_items_rehashes_an_old_bookmark(self, mocker):
+        """**A bundle URL saved before the hash changed must still work.**
+
+        `core.helpers.resolve_addresses` recomputes the hash over the addresses
+        supplied and refuses a request whose path disagrees. The page survives
+        that because `api.main.fetch_and_serialize_account` normalises first;
+        this call did not, so a reader on an old bookmark got a collection that
+        never filled - 44 refusals in one day on one page, once a minute.
+
+        Asserted on the real hash rather than a mock, because the whole point is
+        that the value sent is *not* the one passed in.
+        """
+        addresses = f"{API_EXAMPLE_ADDRESS1} {API_EXAMPLE_ADDRESS2}"
+        stale = "0" * 40
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_collection_items(stale, "Goannas", addresses)
+
+        sent = mocked_request.call_args.args[1]
+        assert stale not in sent
+        assert bundle_from_addresses(addresses) in sent
+
+    def test_api_client_fetch_collection_items_leaves_one_address_alone(self, mocker):
+        """A single address is not a bundle and must not be re-hashed."""
+        value = API_EXAMPLE_ADDRESS1
+        mocked_bundle = mocker.patch("api.client.bundle_from_addresses")
+        mocked_request = mocker.patch("api.client._request")
+
+        fetch_collection_items(value, "Goannas", value)
+
+        mocked_bundle.assert_not_called()
+        mocked_request.assert_called_once_with(
+            "GET",
+            f"/api/v2/internal/accounts/{value}/collection",
+            params={"name": "Goannas", "addresses": value},
         )
 
     def test_api_client_fetch_collection_items_sends_an_empty_name(self, mocker):

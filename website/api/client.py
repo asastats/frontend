@@ -9,6 +9,7 @@ from urllib.parse import quote
 
 import requests
 from django.conf import settings
+from utils.helpers import bundle_from_addresses
 
 
 class BackendError(Exception):
@@ -166,6 +167,24 @@ def fetch_collection_items(value, name, addresses=""):
     :param addresses: space-joined addresses for multi-address bundles
     :return: dict
     """
+    # **An old bookmark carries an old hash, and the engine re-derives.**
+    # `core.helpers.resolve_addresses` recomputes `bundle_from_addresses` over
+    # the addresses supplied and refuses the request when it does not match the
+    # hash in the path - which is every visitor who saved a bundle URL before
+    # the hash became sort-and-dedupe over the address set.
+    #
+    # `api.main.fetch_and_serialize_account` already normalises for exactly this
+    # reason, which is why the *page* renders for such a bookmark while this
+    # call 400s underneath it: 44 times in one day on a single page, once a
+    # minute, leaving a reader with an NFT collection that silently never
+    # filled.
+    #
+    # Keyed on a space rather than on the value's length, matching the account
+    # path: a single address is passed through untouched, and only a real
+    # multi-address bundle is re-hashed.
+    if " " in addresses:
+        value = bundle_from_addresses(addresses)
+
     params = {"name": name}
     if addresses:
         params["addresses"] = addresses
