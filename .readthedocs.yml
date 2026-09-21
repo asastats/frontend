@@ -26,8 +26,19 @@ sphinx:
   configuration: docs/conf.py
   # You can configure Sphinx to use a different builder, for instance use the dirhtml builder for simpler URLs
   # builder: "dirhtml"
-  # Fail on all warnings to avoid broken references
-  # fail_on_warning: true
+  # Fail on all warnings to avoid broken references.
+  #
+  # Turned on 2026-09-22, once the build was clean *here* - which is the part
+  # worth remembering. A developer has `website/.env`, Read the Docs does not,
+  # and the same commit produced one warning locally and thirteen there:
+  # `api.views`, `core.views`, `walletauth.views` and every `urls` module were
+  # undocumented on the published site and fine on every laptop.
+  #
+  # `docs/conf.py` now supplies placeholders for the settings those modules
+  # need, so the two builds agree. Before changing that block, check the build
+  # with `website/.env` moved aside - otherwise this flag protects the one
+  # environment that was never broken.
+  fail_on_warning: true
 
 # Optionally build your docs in additional formats such as PDF and ePub
 # formats:

@@ -29,6 +29,41 @@ sys.path.insert(0, project_root)
 # Set Django settings
 os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.development"
 
+# **Placeholders for every setting the documented modules require outright.**
+#
+# `get_env_variable` raises `ImproperlyConfigured` when a name has no default,
+# which is right for a server - a deployment missing its database or its mail
+# credentials should refuse to start - and fatal for autodoc, which only wants
+# to import the module and read its docstrings.
+#
+# **What made this worth chasing: the local build and the Read the Docs build
+# fail differently.** A developer has `website/.env`, so locally only
+# `EMAIL_HOST_USER` was missing and the damage looked like one warning on
+# `config.settings.production`. There is no `.env` on Read the Docs, and the
+# same build produced thirteen - `api.views`, `core.views`, `walletauth.views`
+# and every `urls` module among them. None of that was visible from here.
+#
+# Two distinct causes behind those thirteen: the three `DATABASE_*` names, and
+# an empty `SECRET_KEY`. The latter has a default of `""` in `base.py`, so it
+# never raises on read - Django raises later, when something actually signs
+# with it, which is why the failures landed on views and URL configurations
+# rather than on settings.
+#
+# Every one of these is read at import to build a dictionary. Nothing here opens
+# a file, connects to a database or sends mail, so a placeholder documents the
+# module exactly as a real value would.
+#
+# `setdefault`, so a real environment always wins. The values are deliberately
+# unusable: a path that does not exist, an address in a reserved TLD, and a
+# key that says what it is.
+os.environ.setdefault("PGPASSFILE", "/nonexistent/docs-build.pgpass")
+os.environ.setdefault("EMAIL_HOST_USER", "docs-build@example.invalid")
+os.environ.setdefault("EMAIL_HOST_PASSWORD", "unused-by-the-docs-build")
+os.environ.setdefault("DATABASE_NAME", "docs_build")
+os.environ.setdefault("DATABASE_USER", "docs_build")
+os.environ.setdefault("DATABASE_PASSWORD", "unused-by-the-docs-build")
+os.environ.setdefault("SECRET_KEY", "docs-build-placeholder-not-a-real-secret")
+
 
 django.setup()
 

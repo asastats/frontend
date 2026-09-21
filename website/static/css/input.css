@@ -4430,6 +4430,19 @@
 
 .alerts-note { margin: 0; }
 
+/* The warm-up line under the period selector. A percentage rule reports
+   nothing until it has a total from a whole window ago - see `percent_move` -
+   so a reader choosing "7 days" hears nothing for a week, and that has to read
+   as expected rather than as a broken feature. Block, because the label it
+   sits in is a flex row and it belongs under the control rather than beside
+   it. */
+.alerts-window-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  color: var(--alert-ink-3);
+}
+
 /* The push-support notice. One of three, revealed by `alerts.js` according to
    what the browser can actually do - see the template for why the copy is
    there and the decision is in script. Warning rather than error: nothing has

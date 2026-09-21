@@ -7,6 +7,15 @@
   :show-inheritance:
 
 
+:mod:`api.authentication` -- API authentication module
+-------------------------------------------------------
+
+.. automodule:: api.authentication
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`api.client` -- API client module
 --------------------------------------
 
@@ -34,6 +43,15 @@
   :show-inheritance:
 
 
+:mod:`api.live` -- API live-refresh support module
+---------------------------------------------------
+
+.. automodule:: api.live
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`api.main` -- API main module
 ----------------------------------
 
@@ -52,6 +70,15 @@
   :show-inheritance:
 
 
+:mod:`api.position_id` -- API position identifier module
+---------------------------------------------------------
+
+.. automodule:: api.position_id
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`api.serializers` -- API serializers module
 ------------------------------------------------
 
@@ -65,6 +92,15 @@
 ------------------------------------------------
 
 .. automodule:: api.structs
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`api.tiers` -- API subscription tiers module
+--------------------------------------------------
+
+.. automodule:: api.tiers
   :members:
   :undoc-members:
   :show-inheritance:
@@ -178,6 +214,15 @@
   :show-inheritance:
 
 
+:mod:`config.settings.zz_manifest_check` -- widget manifest check settings module
+----------------------------------------------------------------------------------
+
+.. automodule:: config.settings.zz_manifest_check
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`config.sitemaps` -- Sitemaps configuration module
 -------------------------------------------------------
 
@@ -232,6 +277,15 @@
   :show-inheritance:
 
 
+:mod:`core.checks` -- system checks module
+-------------------------------------------
+
+.. automodule:: core.checks
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`core.context_processors` -- Context processors module
 -----------------------------------------------------------
 
@@ -272,6 +326,51 @@
 -------------------------------------------------------------
 
 .. automodule:: core.management
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.management.commands` -- management commands package
+---------------------------------------------------------------
+
+.. automodule:: core.management.commands
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.management.commands.checkpublicbundles` -- public bundles check command
+-----------------------------------------------------------------------------------
+
+.. automodule:: core.management.commands.checkpublicbundles
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.management.commands.deletedeactivated` -- deactivated accounts removal command
+------------------------------------------------------------------------------------------
+
+.. automodule:: core.management.commands.deletedeactivated
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.management.commands.permissionsupdater` -- permissions updater command
+----------------------------------------------------------------------------------
+
+.. automodule:: core.management.commands.permissionsupdater
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.management.commands.revoke_api_tokens` -- API token revocation command
+----------------------------------------------------------------------------------
+
+.. automodule:: core.management.commands.revoke_api_tokens
   :members:
   :undoc-members:
   :show-inheritance:
@@ -353,6 +452,15 @@
 -----------------------------------------------------------
 
 .. automodule:: core.signals
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.staticfiles` -- static files handling module
+--------------------------------------------------------
+
+.. automodule:: core.staticfiles
   :members:
   :undoc-members:
   :show-inheritance:
@@ -592,10 +700,28 @@
   :show-inheritance:
 
 
+:mod:`utils.explorers` -- block explorers module
+-------------------------------------------------
+
+.. automodule:: utils.explorers
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`utils.helpers` -- Helper utility functions
 ------------------------------------------------
 
 .. automodule:: utils.helpers
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`utils.layouts` -- layouts module
+---------------------------------------
+
+.. automodule:: utils.layouts
   :members:
   :undoc-members:
   :show-inheritance:
@@ -709,6 +835,24 @@
   :show-inheritance:
 
 
+:mod:`walletauth.linking` -- wallet linking module
+---------------------------------------------------
+
+.. automodule:: walletauth.linking
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.login_views` -- wallet login views module
+-----------------------------------------------------------
+
+.. automodule:: walletauth.login_views
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`walletauth.management` -- Account address-management operations
 ---------------------------------------------------------------------
 
@@ -740,6 +884,15 @@
 ------------------------------------------------------------
 
 .. automodule:: walletauth.models
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`walletauth.schema` -- wallet schema module
+-------------------------------------------------
+
+.. automodule:: walletauth.schema
   :members:
   :undoc-members:
   :show-inheritance:
