@@ -207,6 +207,7 @@ class TestCoreContextProcessors:
             # copies of the numbers that can drift apart.
             "ADDRESS_INITIAL_ASSETS": settings.ADDRESS_INITIAL_ASSETS,
             "ADDRESS_INITIAL_COLLECTIONS": settings.ADDRESS_INITIAL_COLLECTIONS,
+            "ADDRESS_FOLD_CHOICES": settings.ADDRESS_FOLD_CHOICES,
             "X_HANDLE": settings.X_HANDLE,
             "SUBREDDIT_NAME": settings.SUBREDDIT_NAME,
             "ANDROID_APP": settings.ANDROID_APP,

@@ -2393,6 +2393,56 @@
   display: none;
 }
 
+/* A reader's own fold size, from the Asastatser tier upward.
+
+   **Every offered value needs its own rule, and that is why the choice is a
+   fixed list.** `:nth-child()` cannot take a custom property, so a number the
+   reader types is not expressible in CSS at all. Eight static rules are the
+   whole cost of offering five choices on two kinds of section.
+
+   `all` is the cheapest of them rather than the most expensive: it needs no
+   counting, only "reveal what the server folded". It is nearly the rule this
+   file deleted once -- `[data-folding].unfolded .fitem.folded` -- and the
+   objection to that one does not apply here. That was a *container state*
+   standing in for a batch; this is a property of the reader, which is why it
+   is keyed off the document element.
+
+   **`.prefold` is not decoration.** These rules only cover the gap between
+   first paint and the section scripts running. After that `toolbar.js` owns
+   which rows are folded and re-folds them whenever the reader filters or
+   sorts -- and `:nth-child` counts DOM position, not filtered position, so a
+   permanent rule would reveal a row the filter had just hidden. The scripts
+   remove the class once they have painted. */
+/* **The reader's fold size is applied by script, not here, and that is a
+   retraction.**
+
+   There were eight rules here keyed off `html.prefold[data-fold-*]`, to set a
+   reader's chosen fold before the section scripts ran. They were reported on
+   2026-09-21 as making a real page slow enough that Firefox complained and the
+   reader turned JavaScript off.
+
+   The mechanism: `.fitem` is not the foldable row. Eight templates use it,
+   including `dynamic/nft.html` - *every individual NFT body* - so a page with
+   120 collections whose items are not deferred carries thousands. A browser
+   buckets candidates by a selector's rightmost compound, and every one of those
+   rules ended in `.fitem:nth-child(...)`, so all of them were tested against
+   every such element, each test computing a sibling index. That is paid on
+   every style recalculation, and `csp-safe-handlers.js` rewrites a `src` for
+   each failing icon, so a page with failing icons paid it over and over.
+
+   Narrowing them with `>` was tried and is not enough: the rightmost compound
+   is matched before the combinator, so the `nth-child` work happens anyway.
+
+   What is lost is only the pre-paint window. `toolbar.js` applies the reader's
+   size on load for the dynamic designs; on design 1 `showmore.js` does not paint
+   until the first press, so the first fold there stays at the server's number
+   until then. That is a smaller wrong than a page that has to have its scripts
+   disabled.
+
+   If it is wanted back, it needs a marker class that only foldable rows carry -
+   `.fitem` is shared with things that are never folded - and it should be
+   measured on the 120-collection page before being believed. */
+
 /* One button, two labels, whichever the state calls for. Keeping the text out
    of the script means the attribute a screen reader reads and the text a
    sighted reader sees cannot disagree. */

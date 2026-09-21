@@ -2619,6 +2619,43 @@ class TestCoreModelsProfilePreferredExplorer:
             == "allo"
         )
 
+    def test_core_models_profile_can_access_fold_setting_for_true(self):
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+            ).can_access_fold_setting()
+            is True
+        )
+
+    def test_core_models_profile_can_access_fold_setting_for_false(self):
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"] - 1
+            ).can_access_fold_setting()
+            is False
+        )
+
+    def test_core_models_profile_can_access_fold_setting_above_the_tier(self):
+        """A floor, not an equality: Professional and Cluster keep it."""
+        assert (
+            Profile(
+                permission=SUBSCRIPTION_TIER_PERMISSIONS["Cluster"]
+            ).can_access_fold_setting()
+            is True
+        )
+
+    def test_core_models_profile_fold_gate_sits_below_the_typeface_gate(self):
+        """**The two appearance gates are deliberately different tiers.**
+
+        Fold size is Asastatser and typeface is Professional, so a reader can
+        hold one without the other. Pinned because the obvious edit when adding
+        a third is to copy whichever gate is nearest and quietly move this one.
+        """
+        asastatser = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
+
+        assert asastatser.can_access_fold_setting() is True
+        assert asastatser.can_access_typeface_setting() is False
+
     def test_core_models_profile_can_access_typeface_setting_for_true(self):
         assert (
             Profile(

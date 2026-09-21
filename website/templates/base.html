@@ -28,6 +28,26 @@
         // after paint it would swap the font under the reader's eyes.
         var face = localStorage.getItem("typeface");
         if (face) document.documentElement.setAttribute("data-typeface", face);
+        // How many rows an address section shows before its control. Stamped
+        // here for the same reason as the two above: applied after paint, the
+        // reader would watch rows appear or vanish under them.
+        //
+        // `prefold` is what scopes the CSS that acts on these. Once
+        // `toolbar.js` or `showmore.js` has painted a section it owns which
+        // rows are folded - it re-folds them when the reader filters or sorts,
+        // and a CSS rule counting DOM position would then fight it. The
+        // scripts drop this class, so the rules only cover the gap before they
+        // run.
+        var folds = { "fold-assets": 1, "fold-collections": 1 };
+        var stamped = false;
+        for (var key in folds) {
+          var value = localStorage.getItem(key);
+          if (value) {
+            document.documentElement.setAttribute("data-" + key, value);
+            stamped = true;
+          }
+        }
+        if (stamped) document.documentElement.classList.add("prefold");
       })();
     </script>
     <title>{% block title %}{{ WEBSITE_NAME }}{% endblock %}</title>

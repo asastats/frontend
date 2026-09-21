@@ -1719,6 +1719,73 @@ describe("the load-more rule", () => {
 
     expect(unfolded()).toEqual(["f1"]);
   });
+
+  describe("the size the reader chose", () => {
+    afterEach(() => {
+      document.documentElement.removeAttribute("data-fold-assets");
+      document.documentElement.removeAttribute("data-fold-collections");
+      document.documentElement.classList.remove("prefold");
+    });
+
+    test("it wins over the number the section publishes", () => {
+      // The section says 2; the reader says 3.
+      document.documentElement.setAttribute("data-fold-assets", "3");
+      load();
+
+      expect(unfolded()).toEqual(["f1", "f2", "f3"]);
+    });
+
+    test("`all` shows every row without a press", () => {
+      document.documentElement.setAttribute("data-fold-assets", "all");
+      load();
+
+      expect(unfolded()).toEqual(["f1", "f2", "f3", "f4"]);
+    });
+
+    test("`all` leaves nothing for the control to offer", () => {
+      document.documentElement.setAttribute("data-fold-assets", "all");
+      load();
+
+      const control = document.querySelector(".asasec [data-show-more]");
+      expect(control.parentNode.hidden).toBe(true);
+    });
+
+    test("the assets choice does not reach the collections", () => {
+      // Two attributes because they are two sections; one leaking into the
+      // other is silent, and the stylesheet keys them apart the same way.
+      document.documentElement.setAttribute("data-fold-assets", "all");
+      load();
+
+      expect(
+        document.querySelectorAll(".nftsec .fitem:not(.folded)").length
+      ).toBe(1);
+    });
+
+    test("an unreadable choice falls back to the section's own number", () => {
+      document.documentElement.setAttribute("data-fold-assets", "lots");
+      load();
+
+      expect(unfolded()).toEqual(["f1", "f2"]);
+    });
+
+    test("it drops `prefold`, because the stylesheet must stop now", () => {
+      // `:nth-child` counts DOM position and this script folds by *filtered*
+      // position, so leaving both in force would reveal a row the filter hid.
+      document.documentElement.classList.add("prefold");
+      load();
+
+      expect(document.documentElement.classList.contains("prefold")).toBe(false);
+    });
+
+    test("a press still adds one batch of the reader's size", () => {
+      document.documentElement.setAttribute("data-fold-assets", "1");
+      load();
+
+      document.querySelector(".asasec [data-show-more]").click();
+
+      expect(unfolded()).toEqual(["f1", "f2"]);
+    });
+  });
 });
 
 describe("the headline", () => {

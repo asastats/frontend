@@ -1247,6 +1247,30 @@ class ProfileAppearanceView(CanAccessAppearanceMixin, TemplateView):
         context["can_access_typeface"] = (
             self.request.user.profile.can_access_typeface_setting()
         )
+        # Beside the typeface for the same reason it is here rather than on the
+        # settings page: both are stored in the browser and take effect as the
+        # reader chooses, where the settings page posts a form and saves to the
+        # account. The gate is a different tier, which is the only thing the
+        # template has to say differently about it.
+        context["can_access_fold"] = (
+            self.request.user.profile.can_access_fold_setting()
+        )
+        # The two foldable sections, with the default each falls back to. Built
+        # here rather than spelled out in the template so the defaults come from
+        # the same settings the address page renders its first fold from -- two
+        # places naming 20 and 10 is how they come to disagree.
+        context["fold_groups"] = (
+            {
+                "key": "assets",
+                "label": "Assets",
+                "default": settings.ADDRESS_INITIAL_ASSETS,
+            },
+            {
+                "key": "collections",
+                "label": "NFT collections",
+                "default": settings.ADDRESS_INITIAL_COLLECTIONS,
+            },
+        )
         return context
 
 

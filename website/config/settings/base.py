@@ -318,6 +318,17 @@ CACHE_TTL = 60 * 90  # Cache time to live is 90 minutes.
 ADDRESS_INITIAL_ASSETS = 20
 ADDRESS_INITIAL_COLLECTIONS = 10
 
+#: What a reader may choose instead, from the Asastatser tier upward.
+#:
+#: **Every value here needs its own CSS rule**, because `:nth-child()` cannot
+#: take a custom property - see the `[data-fold-assets]` block in `input.css`.
+#: That is the only reason this is a fixed list rather than a number: eight
+#: static rules are cheap, an arbitrary number is not expressible in CSS at all.
+#:
+#: `"all"` is the cheapest of them rather than the most expensive: it needs no
+#: counting, only "reveal what was folded".
+ADDRESS_FOLD_CHOICES = (10, 20, 50, 100, "all")
+
 #: Above this many collections, a card's items wait for the reader to open it.
 #:
 #: **The fold hides rows; it does not stop them being rendered.** Every

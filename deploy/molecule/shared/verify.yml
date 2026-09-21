@@ -126,6 +126,75 @@
         fail_msg: "nginx is not loading any sites-enabled drop-in; the api site would be ignored."
         success_msg: "nginx loads sites-enabled drop-ins (api site will be honored)."
 
+    # ── Request timings are logged ──────────────────────────────────────────
+    - name: Assert the timed log format is defined and used
+      ansible.builtin.assert:
+        that:
+          - "'log_format timed' in verify_nginx_dump.stdout"
+          - "'access_log /var/log/nginx/access.log timed' in verify_nginx_dump.stdout"
+        fail_msg: >-
+          The timed log format is missing, so the access log carries no request
+          duration — and worker contention cannot be measured from it at all.
+        success_msg: "Requests are logged with their duration."
+
+    - name: Read the last access log line after a request
+      ansible.builtin.shell: |
+        set -o pipefail
+        tail -n 1 /var/log/nginx/access.log
+      args:
+        executable: /bin/bash
+      register: verify_log_line
+      changed_when: false
+
+    - name: Assert the logged line actually carries the two timings
+      ansible.builtin.assert:
+        that:
+          - verify_log_line.stdout | regex_search('[0-9]+\\.[0-9]+ ([0-9]+\\.[0-9]+|-)\\s*$')
+        fail_msg: >-
+          The last log line has no trailing timings, so nginx is writing the stock
+          combined format whatever the config says — most likely a second
+          access_log on the same level, which accumulates rather than replaces.
+          Line was: {{ verify_log_line.stdout }}
+        success_msg: "Logged lines carry $request_time and $upstream_response_time."
+
+    # ── The live poll is served by ASGI, not by gunicorn ────────────────────
+    - name: Assert the live poll routes to the ASGI upstream
+      ansible.builtin.assert:
+        that:
+          - "'location /widgets/liverefresh/' in verify_nginx_dump.stdout"
+        fail_msg: >-
+          /widgets/liverefresh/ has no location of its own, so the poll falls through
+          to /widgets/ and back onto gunicorn's blocking workers — 4.9% of all traffic,
+          growing with readers rather than clicks.
+        success_msg: "The live poll has its own location."
+
+    - name: Extract the live poll's location block
+      ansible.builtin.set_fact:
+        verify_poll_block: >-
+          {{ verify_nginx_dump.stdout
+             | regex_search('location /widgets/liverefresh/[^}]*}')
+             | default('', true) }}
+
+    - name: Assert the poll is not rate limited
+      ansible.builtin.assert:
+        that:
+          - "'limit_req' not in verify_poll_block"
+        fail_msg: >-
+          The live poll's location carries a limit_req. `zone=main` is 4r/m and the
+          poll runs every ~3 s, so a limiter from that zone refuses it continuously —
+          and error_page 503 would answer an htmx fragment with an HTML page. The
+          first draft of this block had exactly that, copied from the address page.
+        success_msg: "The live poll is not rate limited."
+
+    - name: Assert the poll reaches the ASGI upstream rather than gunicorn
+      ansible.builtin.assert:
+        that:
+          - "'channels-backend' in verify_poll_block"
+        fail_msg: >-
+          The poll's location does not proxy to channels-backend, so it is still on
+          gunicorn's blocking workers whatever the location says.
+        success_msg: "The live poll proxies to the ASGI upstream."
+
     # ── The unauthenticated-API throttle ────────────────────────────────────
     # Three separate things have to hold, and each has its own way of being
     # silently wrong: the zone has to exist, the limit has to be keyed so that

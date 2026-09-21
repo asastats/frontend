@@ -453,9 +453,37 @@
    * @returns {number} how many rows to show.
    */
   function limit(section, key) {
-    var initial = parseInt(section.getAttribute("data-initial"), 10);
+    var initial = foldSize(key);
+    if (initial === Infinity) return Infinity;
+    if (!isFinite(initial) || initial < 1) {
+      initial = parseInt(section.getAttribute("data-initial"), 10);
+    }
     if (!isFinite(initial) || initial < 1) initial = 1;
     return initial * (1 + state.more[key]);
+  }
+
+  /**
+   * The reader's own fold size for a section, or NaN to use the server's.
+   *
+   * **Read from the same attribute the CSS reads.** `base.html` stamps it
+   * before paint from `localStorage`, the stylesheet acts on it for the gap
+   * before this script runs, and this function acts on it afterwards. One
+   * value in one place: the alternative is the stylesheet and the script
+   * disagreeing about how many rows are shown, which shows up as a control
+   * offering to reveal rows that are already visible.
+   *
+   * `"all"` is `Infinity` rather than a large number, so `Math.min` against the
+   * row count does the right thing without a magic constant to outgrow.
+   *
+   * @param {string} key - "asa" or "nft".
+   * @returns {number} the reader's size, Infinity for all, or NaN if unset.
+   */
+  function foldSize(key) {
+    var name = key === "nft" ? "data-fold-collections" : "data-fold-assets";
+    var chosen = document.documentElement.getAttribute(name);
+    if (!chosen) return NaN;
+    if (chosen === "all") return Infinity;
+    return parseInt(chosen, 10);
   }
 
   // -- rendering ------------------------------------------------------------
@@ -1451,6 +1479,13 @@
     }
 
     render();
+    // **The stylesheet's job is over now.** `html.prefold` positions rows by
+    // DOM index, which is the right answer only until something folds by a
+    // *filtered* index instead - and `render` above has just done exactly
+    // that. Leaving the rules in force would reveal a row the filter had
+    // hidden, because `:nth-child` cannot see a filter. `showmore.js` drops it
+    // at its own first paint, which for design 1 is the first press.
+    document.documentElement.classList.remove("prefold");
   }
 
   if (document.readyState === "loading") {

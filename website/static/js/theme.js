@@ -115,6 +115,71 @@
   }
 
   /**
+   * Wire the fold-size radios, so a choice applies and is remembered.
+   *
+   * **Written to the same `localStorage` keys the inline head script reads**,
+   * and stamped onto the document element here so the choice takes effect on
+   * the page the reader is looking at rather than on the next one. The address
+   * page's own scripts read the attribute, not the storage, so one value
+   * travels: storage across page loads, attribute within one.
+   *
+   * `data-fold-target` on the group names which key its radios write. One
+   * handler for both groups rather than one per section, because "assets" and
+   * "collections" differ only in the key.
+   *
+   * @param {Document|Element} [root=document] - subtree to wire
+   * @returns {number} how many inputs were wired this call
+   */
+  function wireFoldPicker(root) {
+    var host = root || document;
+    var groups = host.querySelectorAll("[data-fold-target]");
+    var wired = 0;
+
+    Array.prototype.forEach.call(groups, function (group) {
+      var key = "fold-" + group.getAttribute("data-fold-target");
+      var saved = null;
+      try {
+        saved = localStorage.getItem(key);
+      } catch (e) {
+        saved = null;
+      }
+
+      Array.prototype.forEach.call(
+        group.querySelectorAll("input[type='radio']"),
+        function (input) {
+          if (saved && input.value === saved) input.checked = true;
+          if (input.dataset.foldBound === "1") return;
+          input.dataset.foldBound = "1";
+          input.addEventListener("change", function () {
+            applyFold(key, input.value);
+          });
+          wired += 1;
+        }
+      );
+    });
+    return wired;
+  }
+
+  /**
+   * Apply one fold size to the document and remember it.
+   *
+   * @param {string} key - "fold-assets" or "fold-collections"
+   * @param {string} value - a row count, or "all"
+   * @returns {boolean} whether anything was applied
+   */
+  function applyFold(key, value) {
+    if (!value) return false;
+    document.documentElement.setAttribute("data-" + key, value);
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      // Private browsing can refuse the write. The choice still applies to
+      // this page; it simply will not be there on the next one.
+    }
+    return true;
+  }
+
+  /**
    * Return the theme currently applied, falling back to what was saved.
    *
    * @returns {string} the active theme name, or "" when none is set
@@ -408,6 +473,8 @@
       applyTypeface: applyTypeface,
       TYPEFACE_KEY: TYPEFACE_KEY,
       wireTypefacePicker: wireTypefacePicker,
+      wireFoldPicker: wireFoldPicker,
+      applyFold: applyFold,
       currentTheme: currentTheme,
       USAGE_KEY: USAGE_KEY,
       COUNTED_KEY: COUNTED_KEY,
@@ -427,6 +494,8 @@
         wireThemePicker(document);
         wireThemeToggle(document);
         wireTypefacePicker(document);
+      wireFoldPicker(document);
+        wireFoldPicker(document);
         selectSchemeTab(document);
       });
     } else {
@@ -435,6 +504,7 @@
       wireThemePicker(document);
       wireThemeToggle(document);
       wireTypefacePicker(document);
+      wireFoldPicker(document);
       selectSchemeTab(document);
     }
     // The header can be replaced by an htmx swap; re-tick and re-bind after one.
@@ -443,6 +513,7 @@
       wireThemePicker(document);
       wireThemeToggle(document);
       wireTypefacePicker(document);
+      wireFoldPicker(document);
       selectSchemeTab(document);
     });
   }

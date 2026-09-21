@@ -154,6 +154,11 @@ def global_constants(request):
         # the `ADDRESS_SECTION_FLOOR` it needed are gone.
         "ADDRESS_INITIAL_ASSETS": settings.ADDRESS_INITIAL_ASSETS,
         "ADDRESS_INITIAL_COLLECTIONS": settings.ADDRESS_INITIAL_COLLECTIONS,
+        # What a reader may choose instead. Published for the appearance page's
+        # control; the address page itself never reads it, because the choice
+        # lives in `localStorage` and is applied by the scripts - that page is
+        # shared-cached and must not carry per-reader state.
+        "ADDRESS_FOLD_CHOICES": settings.ADDRESS_FOLD_CHOICES,
         "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
         "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
         # What the header dropdown starts from. The appearance page uses the

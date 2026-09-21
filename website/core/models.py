@@ -262,6 +262,30 @@ class Profile(models.Model):
         """
         return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
 
+    def can_access_fold_setting(self):
+        """Return True if the user may choose how many rows a section shows.
+
+        Available from the Asastatser subscription tier upward; below that the
+        appearance page shows the choice as a link to subscriptions, the way the
+        typeface tab and the explorer preference already do.
+
+        **The gate is on the control, not on the page that obeys it.** The
+        preference lives in `localStorage` and is applied by the address page's
+        own scripts, and that page is served from a *shared* cache keyed on
+        `layout-{layout}-e{export}h{historic}-{holdings}`. Folding a fourth
+        boolean into that key would double its entries for every address, and
+        what it would buy is stopping a reader hand-editing their own browser
+        storage to see more of their own rows. That is not worth halving the
+        hit rate of the cache heavy pages depend on.
+
+        So this gates whether the choice is *offered*, exactly as
+        :meth:`can_access_typeface_setting` does, and nothing re-checks it when
+        the preference is applied.
+
+        :return: Boolean
+        """
+        return self.permission >= SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+
     def check_votes_and_permission(self):
         """Check and possibly update profile with new votes and permission values.
 

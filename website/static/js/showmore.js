@@ -94,10 +94,39 @@
    */
   function batchSize(container, total) {
     var section = container.closest("[data-initial]");
+    var chosen = foldSize(section);
+    if (chosen === Infinity) return Infinity;
+    if (isFinite(chosen) && chosen > 0) return chosen;
     var initial = section
       ? parseInt(section.getAttribute("data-initial"), 10)
       : NaN;
     return isFinite(initial) && initial > 0 ? initial : total;
+  }
+
+  /**
+   * The reader's own fold size for a section, or NaN to use the server's.
+   *
+   * **Read from the same attribute the stylesheet reads.** `base.html` stamps
+   * it before paint from `localStorage`, the `html.prefold` rules act on it for
+   * the gap before this script runs, and this reads it afterwards. One value in
+   * one place: a script and a stylesheet disagreeing about how many rows are
+   * shown surfaces as a control offering to reveal rows already on screen.
+   *
+   * Which section it is comes from the section's own class, the same pair the
+   * stylesheet keys on - `.asasec` and `.nftsec` exist in both designs.
+   *
+   * @param {Element} section - the `[data-initial]` section, or null.
+   * @returns {number} the reader's size, Infinity for all, or NaN if unset.
+   */
+  function foldSize(section) {
+    if (!section || !section.classList) return NaN;
+    var name = section.classList.contains("nftsec")
+      ? "data-fold-collections"
+      : "data-fold-assets";
+    var chosen = document.documentElement.getAttribute(name);
+    if (!chosen) return NaN;
+    if (chosen === "all") return Infinity;
+    return parseInt(chosen, 10);
   }
 
   /**
@@ -124,6 +153,23 @@
     }
     // Everything is showing, so the only thing left to offer is putting it back.
     button.setAttribute("aria-expanded", folded ? "false" : "true");
+    // **Unless there was never anything to put back.** A reader who chose to
+    // see every row gets a control whose only remaining offer is "Show fewer",
+    // and pressing it would reveal the same rows again - the batch is already
+    // the whole list. The template renders the control from the *server's*
+    // fold, which does not know what the reader chose, so hiding it is this
+    // script's job. `toolbar.js` does the same for the dynamic designs.
+    if (button.parentNode) {
+      button.parentNode.hidden = batch === Infinity;
+    }
+    // **The stylesheet's job is over the moment this runs.** `html.prefold`
+    // rules position rows by DOM index, which is right until something starts
+    // folding by a filtered index instead. This script does not filter, but it
+    // does own `.folded` from here on, and leaving both in force would mean two
+    // answers to one question. Dropped here rather than at load because, unlike
+    // the dynamic designs, nothing paints this page until a press: until then
+    // the stylesheet *is* the reader's fold.
+    document.documentElement.classList.remove("prefold");
   }
 
   /**
