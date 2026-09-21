@@ -146,10 +146,17 @@
       register: verify_log_line
       changed_when: false
 
+    # `is not none` rather than the bare filter: `regex_search` returns the
+    # matched *text*, and ansible-core 2.19 refuses a conditional that did not
+    # evaluate to a boolean -- so this failed on a line that matched perfectly
+    # well, reporting "Conditional result (True) was derived from value of type
+    # 'str'". A truthiness test would also be wrong in principle here, since a
+    # regex can match the empty string; this asks the only question that matters,
+    # which is whether it matched at all.
     - name: Assert the logged line actually carries the two timings
       ansible.builtin.assert:
         that:
-          - verify_log_line.stdout | regex_search('[0-9]+\\.[0-9]+ ([0-9]+\\.[0-9]+|-)\\s*$')
+          - verify_log_line.stdout | regex_search('[0-9]+\\.[0-9]+ ([0-9]+\\.[0-9]+|-)\\s*$') is not none
         fail_msg: >-
           The last log line has no trailing timings, so nginx is writing the stock
           combined format whatever the config says — most likely a second
