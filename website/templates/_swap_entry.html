@@ -72,6 +72,46 @@
 <script src="{% static 'dustsweep/dustsweep.js' %}"></script>
 {% endif %}
 
+{# Alerts, beside the sweep and on the same partial for the same reason: what  #}
+{# it says is per-reader - how many rules you keep, how many your tier still   #}
+{# allows - and `address.html` is cached across readers. A second htmx         #}
+{# partial would be a second request for a question this one already answered. #}
+{#                                                                             #}
+{# **Not gated on a linked address.** The swap and the sweep are signed by the #}
+{# holder's key, so they need one; watching a total or a price needs nothing   #}
+{# but a reader. The gate is the tier, and below it this is a link rather than #}
+{# a disabled button - a dead control teaches a reader the feature is broken.  #}
+{% if alerts_entitled %}
+<div id="id-alerts" class="alerts-toolbar"
+     data-bundle="{{ alerts_bundle }}"
+     data-rules-left="{{ alerts_left }}">
+  {# Fetches the modal rather than carrying it: the rule list is per-reader  #}
+  {# and changes as it is edited, so loading it on press is both smaller on   #}
+  {# every page view and fresher when it matters.                            #}
+  <button type="button" class="alerts-open id-alerts-open"
+          hx-get="{% url 'alerts' alerts_bundle %}"
+          hx-target="#id-alerts-modal-slot"
+          hx-swap="innerHTML"
+          {% if alerts_left == 0 %}data-at-limit="true"{% endif %}>
+    Alerts{% if alerts_kept %}
+    <span class="badge badge-sm alerts-count">{{ alerts_kept }}</span>
+    {% endif %}
+  </button>
+</div>
+{# The dialog lands here. Outside the toolbar so the flex row does not have to #}
+{# reserve space for something that is display:none until it is asked for.    #}
+<div id="id-alerts-modal-slot"></div>
+<script src="{% static 'alerts/alerts.js' %}"></script>
+{% elif user.is_authenticated %}
+<div id="id-alerts" class="alerts-toolbar">
+  <a href="{% url 'subscriptions' %}" class="alerts-upgrade"
+     title="Alerts are available from the Asastatser tier">
+    Alerts
+    <span class="badge badge-outline badge-xs ml-2">Asastatser</span>
+  </a>
+</div>
+{% endif %}
+
 {# Real-time refresh. Per-reader like everything else in this partial, and here #}
 {# rather than in the page for the same reason: the address page is cached and  #}
 {# its cache is shared, so a flag about *this* reader baked into it is served   #}

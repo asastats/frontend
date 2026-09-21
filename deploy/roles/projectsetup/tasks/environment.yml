@@ -41,6 +41,14 @@
       - FOLKS_REFERRER_ADDRESS
       - HAYSTACK_API_KEY
       - HAYSTACK_REFERRER_ADDRESS
+      # Web push for the alerts widget. The private key signs; keep it in
+      # deploy/.env.production and nowhere else. Naming a key here before its
+      # value exists is safe - the template skips any key absent from env_vars.
+      - VAPID_PUBLIC_KEY
+      - VAPID_PRIVATE_KEY
+      - VAPID_ADMIN_EMAIL
+      # The engine signs its alert triggers with this; the website verifies.
+      - ALERTS_WEBHOOK_SECRET
   ansible.builtin.template:
     src: environment_file
     dest: "{{ site_path }}/source/{{ app_name }}/.env"

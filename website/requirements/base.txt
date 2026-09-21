@@ -27,3 +27,14 @@ drf-spectacular>=0.29.0  # TODO: pin an exact/latest version in production
 drf-spectacular-sidecar>=2026.6.1
 djangorestframework-xml>=2.0.0
 djangorestframework-yaml>=2.0.0
+
+## Web push, for the alerts widget
+# pywebpush brings py_vapid, which is also what generates the key pair - see
+# post-deploy/RUN-vapid-keys.md.
+#
+# **No task queue here, and that was checked twice.** The engine runs huey
+# already - `engine/settings.py:54`, and `core/views.py:551` enqueues the
+# historic widget's price and ledger processing on it - so the background half
+# of alerts belongs there, beside work of exactly that shape. This project's
+# part is delivery: look up a subscription and send one request.
+pywebpush>=2.0.0

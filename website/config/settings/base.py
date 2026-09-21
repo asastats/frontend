@@ -722,6 +722,7 @@ INHOUSE_WIDGETS = [
     "swapcore",
     "dustsweep",
     "liverefresh",
+    "alerts",
 ]
 THIRDPARTY_WIDGETS = []
 
@@ -746,3 +747,32 @@ FOLKS_REFERRER_ADDRESS = get_env_variable("FOLKS_REFERRER_ADDRESS", "")
 
 HAYSTACK_API_KEY = get_env_variable("HAYSTACK_API_KEY", "")
 HAYSTACK_REFERRER_ADDRESS = get_env_variable("HAYSTACK_REFERRER_ADDRESS", "")
+
+# Web push, for the alerts widget. **The private key is a signing key**, so it
+# lives where every other secret here does - `deploy/.env.production` on the
+# control machine, which is gitignored - and reaches the app only as Ansible
+# renders the `.env` at mode 0600. Never in the repo, and never in a template.
+#
+# The public key is not secret and is served to the browser: a subscription is
+# bound to it, so changing the pair invalidates every existing subscription and
+# every reader has to re-enable alerts. Treat a rotation as a migration.
+#
+# `VAPID_ADMIN_EMAIL` is the `sub` claim the push services require as a contact
+# for the sender. It is published to them, not to readers.
+#
+# Empty by default, and the widget must treat empty as "push is not configured
+# here" rather than erroring: a fork with no keys should still be able to run
+# the site. See `notifications/DESIGN.md`.
+VAPID_PUBLIC_KEY = get_env_variable("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = get_env_variable("VAPID_PRIVATE_KEY", "")
+VAPID_ADMIN_EMAIL = get_env_variable("VAPID_ADMIN_EMAIL", "")
+
+# The secret the engine signs its alert triggers with, verified by
+# `AlertsRepricedView`. Shaped like the router monitor's webhook settings, which
+# is the pattern it copies.
+#
+# **Empty means the endpoint refuses everything**, which is the safe default and
+# differs from the monitor: that one signs only when it has a secret, which is
+# right for a monitor and would make this an endpoint anybody could post rule
+# firings to.
+ALERTS_WEBHOOK_SECRET = get_env_variable("ALERTS_WEBHOOK_SECRET", "")

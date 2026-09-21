@@ -109,6 +109,34 @@ class FilesViewTest(TestCase):
         )
         self.assertIn("text/plain", response._content_type_for_repr)
 
+    # # service_worker
+    def test_service_worker_is_served_as_javascript(self):
+        """It is a script, and a browser will refuse to register one served as
+        anything else."""
+        response = self.client.get(reverse("alerts_service_worker"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/javascript", response._content_type_for_repr)
+
+    def test_service_worker_handles_a_push(self):
+        """**The only thing it has to do.** A worker that registers and ignores
+        `push` is indistinguishable, from the outside, from one that never
+        registered - and nothing reports either."""
+        response = self.client.get(reverse("alerts_service_worker"))
+        body = response.content.decode()
+
+        self.assertIn('addEventListener("push"', body)
+        self.assertIn("showNotification", body)
+
+    def test_service_worker_is_served_from_the_site_root(self):
+        """**Scope is the path it is served from.** Under /static/ it would
+        register cleanly and receive nothing for the site, which is why this is
+        a view beside `index_file` rather than a static file."""
+        url = reverse("alerts_service_worker")
+
+        self.assertEqual(url, "/alerts-service-worker.js")
+        self.assertNotIn("/static/", url)
+
     # # social_icons
     def test_social_icons_view_returns_png_content_type_for_png(self):
         response = self.client.get(reverse("social_icons", args=["twitter24.png"]))
@@ -1860,3 +1888,73 @@ class SwapSourceRedirectViewTest(TestCase):
             "core.views.linked_addresses_for_user", return_value={self.address}
         ), mock.patch("core.views.swap_entry_url", return_value=""):
             self.assertEqual(self.client.get(self.url).status_code, 404)
+
+
+class AlertsAllowanceTest(TestCase):
+    """Testing class for :py:func:`core.views._alerts_allowance`.
+
+    **The guard is the point of this class.** The alerts widget lives in the
+    widgets repo, which syncs separately, so "the frontend is newer than the
+    widgets" is an ordinary state of the world for minutes at a time. A
+    module-level import of it made `api.views` unimportable on 2026-09-20 and
+    500'd every page on the site; the function-level import with an
+    `ImportError` guard is what stops that recurring, and it is worth a test
+    because nothing else would notice it being "tidied" back to the top.
+    """
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="allow@example.com", email="allow@example.com", password="x"
+        )
+
+    def test_alerts_allowance_reads_the_readers_tier(self):
+        from core.views import _alerts_allowance
+        from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+
+        profile = self.user.profile
+        profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
+        profile.save()
+
+        self.assertEqual(_alerts_allowance(self.user), (25, 0))
+
+    def test_alerts_allowance_skips_the_query_below_the_tier(self):
+        """Zero rules allowed means the count is never shown, so asking for it
+        would be a query run and discarded on every address page."""
+        from core.views import _alerts_allowance
+
+        self.assertEqual(_alerts_allowance(self.user), (0, 0))
+
+    def test_alerts_allowance_survives_a_widgets_repo_that_is_behind(self):
+        """**The outage this exists to prevent.**
+
+        With the widget unimportable the reader loses the alerts control and
+        nothing else - rather than every page on the site returning 500.
+        """
+        from core.views import _alerts_allowance
+        from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+
+        profile = self.user.profile
+        profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Cluster"]
+        profile.save()
+
+        # `None` in sys.modules is what makes `from … import …` raise
+        # ImportError, which is the shape a half-synced checkout produces.
+        with mock.patch.dict(
+            "sys.modules", {"widgets.inhouse.alerts.models": None}
+        ):
+            allowed, kept = _alerts_allowance(self.user)
+
+        self.assertEqual((allowed, kept), (0, 0))
+
+    def test_alerts_allowance_says_so_in_the_log(self):
+        """A control vanishing silently is a bug report rather than a log line.
+        The warning is how the skew is diagnosed instead of guessed at."""
+        from core.views import _alerts_allowance
+
+        with mock.patch.dict(
+            "sys.modules", {"widgets.inhouse.alerts.tiers": None}
+        ):
+            with self.assertLogs("core.views", level="WARNING") as captured:
+                _alerts_allowance(self.user)
+
+        self.assertIn("alerts control unavailable", captured.output[0])

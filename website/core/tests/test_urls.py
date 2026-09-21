@@ -278,8 +278,21 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.NftCollectionItemsView"
         assert url.name == "nft_collection_items"
 
+    def test_core_urls_service_worker_is_served_from_the_root(self):
+        """**Root, not /static/, and this is the test that keeps it there.**
+
+        A service worker controls only the scope it is served from, so one under
+        /static/ would receive no push for the site - and it would still
+        register cleanly, so nothing else would complain. The alerts widget
+        would simply never be notified.
+        """
+        url = self._url_from_pattern(r"^alerts-service-worker\.js$")
+
+        assert url.lookup_str == "core.views.service_worker"
+        assert url.name == "alerts_service_worker"
+
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 41
+        assert len(urls.urlpatterns) == 42
 
 
 class RootAssetUrlTest(TestCase):

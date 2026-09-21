@@ -151,6 +151,25 @@ def index_file(request, filename):
     return render(request, filename, {}, content_type="text/plain")
 
 
+def service_worker(request):
+    """Serve the alerts service worker from the site root.
+
+    **From `/`, not `/static/`.** A service worker's scope is the path it is
+    served from, so one under `/static/` could only receive events for
+    `/static/`. `index_file` above already serves `robots.txt` this way, and
+    this is the same trick with a different content type.
+
+    Rendered rather than read from disk so the template can carry the site's
+    name, and so the file lives with the widget that owns it.
+    """
+    return render(
+        request,
+        "alerts/service-worker.js",
+        {},
+        content_type="text/javascript",
+    )
+
+
 def html_file(request, filename):
     """Return html content defined by provided `filename`."""
     return render(request, f"static/{filename}")
@@ -1747,6 +1766,40 @@ class NftCollectionItemsView(TemplateView):
         return context
 
 
+def _alerts_allowance(user):
+    """Return (allowed, kept) alert rules for `user`, or (0, 0).
+
+    **Imported inside the function, and that is not style.** The alerts widget
+    lives in the *widgets* repo, which is synced separately from this one, so
+    "the frontend is newer than the widgets" is an ordinary state of the world
+    for minutes at a time. A module-level import here would make `core.views`
+    unimportable during that window, which 500s every page on the site rather
+    than hiding one control - which is exactly what happened on 2026-09-20 and
+    what `api/live.py:_warm_set` was written to stop happening again.
+
+    A skew therefore costs the reader the alerts control and nothing else.
+
+    :param user: the authenticated reader
+    :return: two-tuple of (rules allowed, rules kept)
+    :rtype: tuple
+    """
+    try:
+        from widgets.inhouse.alerts.models import AlertRule
+        from widgets.inhouse.alerts.tiers import rules_allowed
+    except ImportError as error:  # noqa: BLE001 - see above
+        logger.warning("alerts control unavailable: %s", error)
+        return 0, 0
+
+    profile = getattr(user, "profile", None)
+    allowed = rules_allowed(getattr(profile, "permission", 0))
+    if not allowed:
+        # Below the tier. The count is what the control would show beside the
+        # label, and an unentitled reader is shown an upgrade link instead - so
+        # the query is skipped rather than run and discarded.
+        return 0, 0
+    return allowed, AlertRule.objects.filter(user=user, active=True).count()
+
+
 @method_decorator(never_cache, name="dispatch")
 class SwapEntryView(TemplateView):
     """Non-cached htmx partial rendering the per-user entries for an address page.
@@ -1824,6 +1877,18 @@ class SwapEntryView(TemplateView):
             context["liverefresh_url"] = reverse("liverefresh", args=[value])
             context["liverefresh_interval"] = LIVEREFRESH_POLL_SECONDS
             context["liverefresh_grace"] = LIVEREFRESH_HIDDEN_GRACE_SECONDS
+        # **Alerts are about watching, not signing**, so unlike the swap and
+        # the sweep they are not gated on a linked address: a reader may watch
+        # the total of a page they do not own, or the price of an asset they do
+        # not hold. The gate is the tier, and it bands how many rules may be
+        # kept rather than whether the control appears - below it the control is
+        # a link to subscriptions, never a dead button.
+        alerts_allowed, alerts_kept = _alerts_allowance(user)
+        context["alerts_entitled"] = alerts_allowed > 0
+        context["alerts_kept"] = alerts_kept
+        context["alerts_left"] = max(0, alerts_allowed - alerts_kept)
+        context["alerts_bundle"] = value
+
         linked = linked_addresses_for_user(user, addresses)
         if linked:
             # **Both actions are single-address, and a bundle page is where that

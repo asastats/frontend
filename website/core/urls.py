@@ -18,6 +18,14 @@ urlpatterns = [
         core_views.index_file,
         name="index_file",
     ),
+    # **Root, deliberately.** A service worker only controls the scope it is
+    # served from; under /static/ it would receive nothing for the site. See
+    # `core_views.service_worker`.
+    re_path(
+        r"^alerts-service-worker\.js$",
+        core_views.service_worker,
+        name="alerts_service_worker",
+    ),
     # html files
     re_path(
         r"^(?P<filename>(auth_privacy\.html|auth_terms\.html))$",
