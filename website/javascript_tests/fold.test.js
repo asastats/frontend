@@ -283,4 +283,134 @@ describe("the fold size a reader chose", () => {
       expect(T.applyFold("fold-assets", "")).toBe(false);
     });
   });
+
+  describe("resetting to the site's default", () => {
+    /** The panel as `profile_appearance.html` renders it, both groups. */
+    function panel() {
+      document.body.innerHTML = `
+        <div data-fold-target="assets" data-fold-default="20">
+          <input type="radio" name="fold-assets" value="20">
+          <input type="radio" name="fold-assets" value="50">
+          <input type="radio" name="fold-assets" value="all">
+        </div>
+        <div data-fold-target="collections" data-fold-default="10">
+          <input type="radio" name="fold-collections" value="10">
+          <input type="radio" name="fold-collections" value="all">
+        </div>
+        <button type="button" data-fold-reset>Reset to defaults</button>`;
+    }
+
+    it("forgets the choice rather than storing the default", () => {
+      // **The whole point, and the reason pressing "20" is not a reset.** An
+      // address page reads storage in preference to the site's own setting, so
+      // a stored 20 pins 20 for good; only an absent key follows
+      // `settings.ADDRESS_INITIAL_ASSETS` wherever it goes next.
+      localStorage.setItem("fold-assets", "all");
+      localStorage.setItem("fold-collections", "all");
+      panel();
+
+      expect(T.resetFold(document)).toBe(2);
+
+      expect(localStorage.getItem("fold-assets")).toBeNull();
+      expect(localStorage.getItem("fold-collections")).toBeNull();
+    });
+
+    it("unstamps the document so this page changes, not the next one", () => {
+      document.documentElement.setAttribute("data-fold-assets", "all");
+      document.documentElement.setAttribute("data-fold-collections", "all");
+      panel();
+
+      T.resetFold(document);
+
+      expect(
+        document.documentElement.hasAttribute("data-fold-assets")
+      ).toBe(false);
+      expect(
+        document.documentElement.hasAttribute("data-fold-collections")
+      ).toBe(false);
+    });
+
+    it("moves the tick to each group's own default", () => {
+      // Two groups with different defaults, which is why the number is read
+      // from the group rather than written into the script.
+      panel();
+      document.querySelector("input[name='fold-assets'][value='all']").checked =
+        true;
+      document.querySelector(
+        "input[name='fold-collections'][value='all']"
+      ).checked = true;
+
+      T.resetFold(document);
+
+      expect(
+        document.querySelector("input[name='fold-assets'][value='20']").checked
+      ).toBe(true);
+      expect(
+        document.querySelector("input[name='fold-assets'][value='all']").checked
+      ).toBe(false);
+      expect(
+        document.querySelector("input[name='fold-collections'][value='10']")
+          .checked
+      ).toBe(true);
+    });
+
+    it("is wired to the button, not merely callable", () => {
+      localStorage.setItem("fold-assets", "all");
+      panel();
+
+      expect(T.wireFoldReset(document)).toBe(true);
+      document.querySelector("[data-fold-reset]").click();
+
+      expect(localStorage.getItem("fold-assets")).toBeNull();
+    });
+
+    it("binds the button once, however often it is asked", () => {
+      panel();
+
+      expect(T.wireFoldReset(document)).toBe(true);
+      expect(T.wireFoldReset(document)).toBe(false);
+    });
+
+    it("does nothing on a page with no reset button", () => {
+      document.body.innerHTML = "<div></div>";
+
+      expect(T.wireFoldReset(document)).toBe(false);
+    });
+
+    it("defaults to the whole document when given no root", () => {
+      panel();
+
+      expect(T.resetFold()).toBe(2);
+      expect(T.wireFoldReset()).toBe(true);
+    });
+
+    it("still unstamps the page when storage refuses the removal", () => {
+      // Private browsing. The choice cannot be forgotten, but the page being
+      // looked at must still fall back to the default - otherwise the button
+      // does nothing at all and looks broken.
+      const real = window.localStorage;
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: {
+          getItem: () => null,
+          setItem: () => {},
+          removeItem: () => {
+            throw new Error("denied");
+          },
+        },
+      });
+      document.documentElement.setAttribute("data-fold-assets", "all");
+      panel();
+
+      expect(() => T.resetFold(document)).not.toThrow();
+      expect(
+        document.documentElement.hasAttribute("data-fold-assets")
+      ).toBe(false);
+
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        value: real,
+      });
+    });
+  });
 });

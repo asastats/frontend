@@ -453,13 +453,36 @@
    * @returns {number} how many rows to show.
    */
   function limit(section, key) {
-    var initial = foldSize(key);
-    if (initial === Infinity) return Infinity;
-    if (!isFinite(initial) || initial < 1) {
-      initial = parseInt(section.getAttribute("data-initial"), 10);
-    }
-    if (!isFinite(initial) || initial < 1) initial = 1;
-    return initial * (1 + state.more[key]);
+    var batch = batchFor(section, key);
+    if (batch === Infinity) return Infinity;
+    return batch * (1 + state.more[key]);
+  }
+
+  /**
+   * How many rows one press reveals: the reader's fold, or the server's.
+   *
+   * **Its own function because two callers need it and one of them is the
+   * label.** `fold` used to read `data-initial` directly to say "Show N more",
+   * while `limit` above preferred the reader's choice - so a reader who set
+   * collections to 20 saw twenty rows, pressed a control that said ten, and got
+   * twenty. The control was lying about itself in exactly the way the label's
+   * own comment says it must not, because the two numbers were derived twice
+   * from different places.
+   *
+   * @param {Element} section - the section element.
+   * @param {string} key - "asa" or "nft".
+   * @returns {number} the batch size, or Infinity when the reader chose all.
+   */
+  function batchFor(section, key) {
+    var chosen = foldSize(key);
+    if (chosen === Infinity) return Infinity;
+    if (isFinite(chosen) && chosen > 0) return chosen;
+    // No null guard on `section`: both callers sit below `fold`'s own
+    // `if (!section) return`, so one here would be a branch no test could
+    // reach. `showmore.js`'s twin does guard, because its section comes from a
+    // `closest()` that genuinely can miss.
+    var initial = parseInt(section.getAttribute("data-initial"), 10);
+    return isFinite(initial) && initial > 0 ? initial : 1;
   }
 
   /**
@@ -632,8 +655,12 @@
         // What the next press reveals, not the whole tail. "Show 20 more" is a
         // promise the control keeps; "Show 56 more" over a control that reveals
         // twenty is not.
-        var batch = parseInt(section.getAttribute("data-initial"), 10);
-        var next = Math.min(hidden, isFinite(batch) && batch > 0 ? batch : hidden);
+        //
+        // **From `batchFor`, the same source `limit` folds by.** Reading
+        // `data-initial` here instead was how the label came to say ten over a
+        // control that revealed twenty.
+        var batch = batchFor(section, key);
+        var next = Math.min(hidden, batch === Infinity ? hidden : batch);
         label.textContent =
           "Show " + next + " more " + noun + (next === 1 ? "" : "s");
       }

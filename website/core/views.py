@@ -1247,30 +1247,6 @@ class ProfileAppearanceView(CanAccessAppearanceMixin, TemplateView):
         context["can_access_typeface"] = (
             self.request.user.profile.can_access_typeface_setting()
         )
-        # Beside the typeface for the same reason it is here rather than on the
-        # settings page: both are stored in the browser and take effect as the
-        # reader chooses, where the settings page posts a form and saves to the
-        # account. The gate is a different tier, which is the only thing the
-        # template has to say differently about it.
-        context["can_access_fold"] = (
-            self.request.user.profile.can_access_fold_setting()
-        )
-        # The two foldable sections, with the default each falls back to. Built
-        # here rather than spelled out in the template so the defaults come from
-        # the same settings the address page renders its first fold from -- two
-        # places naming 20 and 10 is how they come to disagree.
-        context["fold_groups"] = (
-            {
-                "key": "assets",
-                "label": "Assets",
-                "default": settings.ADDRESS_INITIAL_ASSETS,
-            },
-            {
-                "key": "collections",
-                "label": "NFT collections",
-                "default": settings.ADDRESS_INITIAL_COLLECTIONS,
-            },
-        )
         return context
 
 
@@ -1316,6 +1292,31 @@ class ProfileSettingsView(View):
             "liverefresh_terms": liverefresh_terms(profile.permission),
             "can_access_explorer": profile.can_access_explorer_setting(),
             "can_access_layout": profile.can_access_layout_setting(),
+            # **The one preference here that is not saved to the account.** It
+            # lives in `localStorage`, because the address page it governs is
+            # served from a cache shared between readers - `can_access_fold_setting`
+            # records why keying that cache on it was rejected. It sits on this
+            # page rather than under Appearance because it is about how an
+            # address page is arranged, like the layout preference above it,
+            # and not about how the site looks.
+            "can_access_fold": profile.can_access_fold_setting(),
+            # The two foldable sections, with the default each falls back to.
+            # Built here rather than spelled out in the template so the defaults
+            # come from the same settings the address page renders its first
+            # fold from -- two places naming 20 and 10 is how they come to
+            # disagree.
+            "fold_groups": (
+                {
+                    "key": "assets",
+                    "label": "Assets",
+                    "default": settings.ADDRESS_INITIAL_ASSETS,
+                },
+                {
+                    "key": "collections",
+                    "label": "NFT collections",
+                    "default": settings.ADDRESS_INITIAL_COLLECTIONS,
+                },
+            ),
         }
 
     def get(self, request, *args, **kwargs):

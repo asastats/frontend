@@ -207,6 +207,80 @@
     </div>
   </section>
 
+  {% comment %} How many rows an address page opens before its "Show more".
+     Beside the layout preference, because both are about how that page is
+     arranged - and a reader looking for "how much of my account do I see at
+     once" looks here rather than under Themes.
+
+     **The one section on this page with no Save button, and that is not an
+     omission.** Every other preference here posts a form and is stored on the
+     account. This one lives in `localStorage`, because the address page it
+     governs is served from a cache shared between readers - see
+     `can_access_fold_setting` for why folding it into the cache key was
+     rejected. So it applies as it is chosen, on this browser, and the copy says
+     both.
+
+     `data-fold-target` names which key a group's radios write and
+     `data-fold-default` what "Reset" puts back; `theme.js` reads both, so this
+     markup can live on any page without it knowing which.
+  {% endcomment %}
+  <section class="rounded-box border border-base-300 bg-base-100" id="id-section-fold">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">Rows shown</h2>
+    </div>
+    <div class="space-y-4 px-5 py-5">
+      <p class="max-w-prose text-sm text-base-content/70">
+        How much of an address page opens at once. Applies to this browser only,
+        and takes effect as you choose &mdash; there is nothing to save.
+      </p>
+    {% if can_access_fold %}
+      {% for group in fold_groups %}
+      <div class="mb-5 last:mb-0" data-fold-target="{{ group.key }}"
+           data-fold-default="{{ group.default }}">
+        <h3 class="mb-2 text-sm font-medium">{{ group.label }}</h3>
+        <div class="flex flex-wrap gap-2">
+          {% for choice in ADDRESS_FOLD_CHOICES %}
+          <label class="cursor-pointer">
+            <input type="radio" name="fold-{{ group.key }}" value="{{ choice }}"
+                   class="peer sr-only"{% if choice == group.default %} checked{% endif %}>
+            <span class="flex items-center rounded-field border border-base-300 px-3 py-1.5 text-sm
+                         transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
+              {% if choice == "all" %}All{% else %}{{ choice }}{% endif %}
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+      {% comment %} **Clearing the choice, which picking the default does not
+         do.** Every radio writes a value, and a stored value is what an address
+         page reads instead of the site's own default - so pressing "20" pins
+         20, where never having chosen follows `ADDRESS_INITIAL_ASSETS` wherever
+         it goes. This removes the keys. {% endcomment %}
+      <div class="mt-5 flex items-center gap-3 border-t border-base-300 pt-4">
+        <button type="button" id="id-fold-reset" class="btn btn-ghost btn-xs"
+                data-fold-reset>
+          Reset to defaults
+        </button>
+        <span class="text-xs text-base-content/50">
+          {% for group in fold_groups %}{% if not forloop.first %}, {% endif %}{{ group.default }} {{ group.label|lower }}{% endfor %}
+        </span>
+      </div>
+      <p class="mt-4 text-xs text-base-content/50">
+        Showing everything is slower on very large accounts &mdash; the page has
+        to lay out every row before it will scroll.
+      </p>
+    {% else %}
+    <a href="{% url 'subscriptions' %}" class="link link-hover" title="Choosing how many rows a page shows is available from the Asastatser tier">
+      <div>
+        <span class="text-sm text-base-content/60">Choose how many rows open at once</span>
+        <span class="mt-1 block text-xs text-base-content/60">Available from the <span class="text-primary">Asastatser</span> tier. Tap to upgrade.</span>
+      </div>
+    </a>
+    {% endif %}
+    </div>
+  </section>
+
   <div class="flex flex-wrap items-center justify-between gap-4">
     <a class="btn btn-ghost" href="{% url 'profile' %}">Back</a>
     <dl class="flex items-baseline gap-2 text-sm">

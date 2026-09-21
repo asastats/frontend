@@ -20,6 +20,7 @@ predate this one.
 from datetime import UTC, datetime, timedelta
 from unittest import mock
 
+from django.conf import settings
 from django.urls import reverse
 from selenium.webdriver.common.by import By
 
@@ -489,4 +490,119 @@ class LinkedAddressActionsTest(FunctionalTest):
                 ]
             ),
             "the address was removed by a dialog the reader dismissed",
+        )
+
+
+class FoldSizeSettingTest(FunctionalTest):
+    """Getting back to the number the site chose.
+
+    **Pressing the default's own radio is not a reset, and that is the point.**
+    Every radio writes its value to `localStorage`, and an address page reads
+    that in preference to `settings.ADDRESS_INITIAL_ASSETS`. So a reader who
+    picked "all" and then picked "20" has pinned 20 for good, where a reader who
+    never touched the control follows the site wherever it goes. Until this
+    button there was no way back to the second state, from anywhere.
+
+    The tier is Asastatser. The control sits here rather than under
+    Appearance because it is about how an address page is arranged, like
+    the layout preference beside it, and not about how the site looks.
+    """
+
+    def _open(self):
+        self.create_cookie_and_go_to_index_page_tier(
+            "fold-reset@example.com",
+            permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
+        )
+        self.browser.get(self.server_url + reverse("profile_settings"))
+
+    def _stored(self, key):
+        return self.browser.execute_script(
+            "return localStorage.getItem(arguments[0]);", key
+        )
+
+    def _stamped(self, key):
+        return self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+            f"data-{key}"
+        )
+
+    def _choose(self, group, value):
+        target = self.browser.find_element(
+            By.CSS_SELECTOR, f'input[name="fold-{group}"][value="{value}"]'
+        )
+        self.browser.execute_script(
+            "arguments[0].checked = true;"
+            "arguments[0].dispatchEvent(new Event('change'));",
+            target,
+        )
+
+    def test_the_panel_offers_a_reset(self):
+        self._open()
+
+        self.assertTrue(
+            self.browser.find_elements(By.CSS_SELECTOR, "#id-fold-reset"),
+            "the Rows section offers no way back to the site's default",
+        )
+
+    def test_resetting_forgets_the_choice_rather_than_storing_the_default(self):
+        """The assertion that distinguishes a reset from pressing "20"."""
+        self._open()
+        self._choose("assets", "all")
+        self.wait_until(lambda: self._stored("fold-assets") == "all")
+
+        self.browser.find_element(By.CSS_SELECTOR, "#id-fold-reset").click()
+
+        self.wait_until(lambda: self._stored("fold-assets") is None)
+        self.assertIsNone(
+            self._stored("fold-collections"),
+            "the other group kept a stored choice",
+        )
+
+    def test_resetting_unstamps_the_page_being_looked_at(self):
+        """Not on the next load: the reader pressed a button and must see it."""
+        self._open()
+        self._choose("assets", "all")
+        self.wait_until(lambda: self._stamped("fold-assets") == "all")
+
+        self.browser.find_element(By.CSS_SELECTOR, "#id-fold-reset").click()
+
+        self.wait_until(lambda: self._stamped("fold-assets") is None)
+
+    def test_resetting_moves_the_tick_to_each_default(self):
+        """Two groups, two different defaults, so the number is read from the
+        group rather than written into the script."""
+        self._open()
+        self._choose("assets", "all")
+        self._choose("collections", "all")
+
+        self.browser.find_element(By.CSS_SELECTOR, "#id-fold-reset").click()
+
+        self.wait_until(
+            lambda: self.browser.find_element(
+                By.CSS_SELECTOR,
+                f'input[name="fold-assets"]'
+                f'[value="{settings.ADDRESS_INITIAL_ASSETS}"]',
+            ).is_selected()
+        )
+        self.assertTrue(
+            self.browser.find_element(
+                By.CSS_SELECTOR,
+                f'input[name="fold-collections"]'
+                f'[value="{settings.ADDRESS_INITIAL_COLLECTIONS}"]',
+            ).is_selected()
+        )
+
+    def test_the_reset_survives_a_page_change(self):
+        """Forgotten means forgotten: the next page must not restore it."""
+        self._open()
+        self._choose("assets", "all")
+        self.wait_until(lambda: self._stored("fold-assets") == "all")
+        self.browser.find_element(By.CSS_SELECTOR, "#id-fold-reset").click()
+        self.wait_until(lambda: self._stored("fold-assets") is None)
+
+        self.browser.get(self.server_url + reverse("profile_settings"))
+
+        self.assertIsNone(self._stored("fold-assets"))
+        self.assertIsNone(
+            self._stamped("fold-assets"),
+            "the head script stamped a value nobody has chosen",
         )

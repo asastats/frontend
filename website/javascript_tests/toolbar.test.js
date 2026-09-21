@@ -1595,6 +1595,45 @@ describe("the load-more rule", () => {
     expect(unfolded()).toEqual(["f1", "f2", "f3", "f4"]);
   });
 
+  test("the label counts the reader's batch, not the server's", () => {
+    // **Reported from production**: a reader set NFT collections to 20, saw
+    // twenty rows, and pressed a control that said "Show 10 more" - which then
+    // revealed twenty. `limit` preferred the reader's fold while the label
+    // re-derived the batch from `data-initial`, so the two disagreed and the
+    // control was lying about itself in exactly the way its own comment
+    // forbids.
+    //
+    // The fixture's server batch is 2 assets, so a reader batch of 1 is what
+    // distinguishes them: the same four rows, but the label must promise one.
+    // try/finally because a bare `removeAttribute` after a failed expectation
+    // never runs, and the attribute then leaks into every test after it.
+    document.documentElement.setAttribute("data-fold-assets", "1");
+    try {
+      load();
+
+      expect(unfolded()).toEqual(["f1"]);
+      expect(
+        document.querySelector(".asasec .show-more-open").textContent
+      ).toBe("Show 1 more asset");
+    } finally {
+      document.documentElement.removeAttribute("data-fold-assets");
+    }
+  });
+
+  test("a reader who chose all is offered nothing more", () => {
+    document.documentElement.setAttribute("data-fold-assets", "all");
+    try {
+      load();
+
+      expect(unfolded()).toEqual(["f1", "f2", "f3", "f4"]);
+      expect(
+        document.querySelector(".asasec [data-show-more]").parentNode.hidden
+      ).toBe(true);
+    } finally {
+      document.documentElement.removeAttribute("data-fold-assets");
+    }
+  });
+
   test("the label promises only what the press delivers", () => {
     // "Show 56 more" over a control that reveals twenty is a lie the reader
     // finds out about by pressing it.

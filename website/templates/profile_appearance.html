@@ -126,54 +126,6 @@
     </a>
     {% endif %}
 
-    {% comment %} How many rows an address page shows before its "Show more".
-       Gated a tier lower than Fonts, and the same shape: a panel for readers
-       who may choose, a link to subscriptions for everyone else.
-
-       `data-fold-target` names which `localStorage` key a radio writes, so one
-       handler in `theme.js` serves both groups rather than two that drift.
-    {% endcomment %}
-    {% if can_access_fold %}
-    <input type="radio" name="appearance-tab" role="tab" id="id-tab-rows"
-           class="tab flex-1 cursor-pointer rounded-field py-2 text-center text-sm font-medium
-                  checked:bg-base-100 checked:shadow-sm"
-           aria-label="Rows">
-    <div role="tabpanel" class="tab-content -mx-1 -mb-1 mt-1 w-full rounded-box bg-base-100 p-5"
-         id="id-section-fold">
-      <p class="mb-4 text-sm text-base-content/60">
-        How much of an address page opens at once. Applies to this browser only,
-        and takes effect as you choose.
-      </p>
-      {% for group in fold_groups %}
-      <div class="mb-5 last:mb-0" data-fold-target="{{ group.key }}">
-        <h3 class="mb-2 text-sm font-medium">{{ group.label }}</h3>
-        <div class="flex flex-wrap gap-2">
-          {% for choice in ADDRESS_FOLD_CHOICES %}
-          <label class="cursor-pointer">
-            <input type="radio" name="fold-{{ group.key }}" value="{{ choice }}"
-                   class="peer sr-only"{% if choice == group.default %} checked{% endif %}>
-            <span class="flex items-center rounded-field border border-base-300 px-3 py-1.5 text-sm
-                         transition peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary">
-              {% if choice == "all" %}All{% else %}{{ choice }}{% endif %}
-            </span>
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-      {% endfor %}
-      <p class="mt-4 text-xs text-base-content/50">
-        Showing everything is slower on very large accounts &mdash; the page has
-        to lay out every row before it will scroll.
-      </p>
-    </div>
-    {% else %}
-    <a role="tab" id="id-tab-rows" href="{% url 'subscriptions' %}"
-       class="tab flex-1 cursor-pointer rounded-field py-2 text-center text-sm font-medium"
-       title="Choosing how many rows a page shows is available from the Asastatser tier">
-      Rows
-      <span class="badge badge-outline badge-xs ml-2">Asastatser</span>
-    </a>
-    {% endif %}
   </div>
 
   {% if THEME_ATTRIBUTION.themes %}

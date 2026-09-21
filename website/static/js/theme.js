@@ -161,6 +161,64 @@
   }
 
   /**
+   * Put every fold group back to the site's default, and forget the choice.
+   *
+   * **Not the same as pressing the default's own radio.** Every radio *stores*
+   * its value, and an address page reads storage in preference to the site's
+   * own setting - so choosing 20 pins 20, where choosing nothing follows
+   * `settings.ADDRESS_INITIAL_ASSETS` wherever it goes. Only removing the key
+   * returns a reader to the second state, and nothing else in the panel can.
+   *
+   * The attribute goes too, so the page being looked at changes with the press
+   * rather than on the next load - the same reason `applyFold` stamps it.
+   *
+   * @param {Document|Element} [root=document] - subtree holding the groups
+   * @returns {number} how many groups were reset
+   */
+  function resetFold(root) {
+    var host = root || document;
+    var groups = host.querySelectorAll("[data-fold-target]");
+    var reset = 0;
+
+    Array.prototype.forEach.call(groups, function (group) {
+      var key = "fold-" + group.getAttribute("data-fold-target");
+      var fallback = group.getAttribute("data-fold-default");
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        // Private browsing can refuse it. The attribute still goes, so this
+        // page follows the default even where the choice cannot be forgotten.
+      }
+      document.documentElement.removeAttribute("data-" + key);
+      Array.prototype.forEach.call(
+        group.querySelectorAll("input[type='radio']"),
+        function (input) {
+          input.checked = input.value === fallback;
+        }
+      );
+      reset += 1;
+    });
+    return reset;
+  }
+
+  /**
+   * Wire the "Reset to defaults" button, if this page carries one.
+   *
+   * @param {Document|Element} [root=document] - subtree to wire
+   * @returns {boolean} whether a button was found and bound
+   */
+  function wireFoldReset(root) {
+    var host = root || document;
+    var button = host.querySelector("[data-fold-reset]");
+    if (!button || button.dataset.foldResetBound === "1") return false;
+    button.dataset.foldResetBound = "1";
+    button.addEventListener("click", function () {
+      resetFold(host);
+    });
+    return true;
+  }
+
+  /**
    * Apply one fold size to the document and remember it.
    *
    * @param {string} key - "fold-assets" or "fold-collections"
@@ -474,6 +532,8 @@
       TYPEFACE_KEY: TYPEFACE_KEY,
       wireTypefacePicker: wireTypefacePicker,
       wireFoldPicker: wireFoldPicker,
+      wireFoldReset: wireFoldReset,
+      resetFold: resetFold,
       applyFold: applyFold,
       currentTheme: currentTheme,
       USAGE_KEY: USAGE_KEY,
@@ -494,8 +554,8 @@
         wireThemePicker(document);
         wireThemeToggle(document);
         wireTypefacePicker(document);
-      wireFoldPicker(document);
         wireFoldPicker(document);
+        wireFoldReset(document);
         selectSchemeTab(document);
       });
     } else {
@@ -505,6 +565,7 @@
       wireThemeToggle(document);
       wireTypefacePicker(document);
       wireFoldPicker(document);
+      wireFoldReset(document);
       selectSchemeTab(document);
     }
     // The header can be replaced by an htmx swap; re-tick and re-bind after one.
@@ -514,6 +575,7 @@
       wireThemeToggle(document);
       wireTypefacePicker(document);
       wireFoldPicker(document);
+      wireFoldReset(document);
       selectSchemeTab(document);
     });
   }
