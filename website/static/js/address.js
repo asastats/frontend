@@ -65,7 +65,7 @@ function initAddress() {
  *
  */
 function wireFetchedItems() {
-  document.body.addEventListener("htmx:afterSwap", function (event) {
+  document.body.addEventListener("htmx:after:swap", function (event) {
     var target = event && event.target;
     if (!target || !target.getElementsByClassName) {
       return;

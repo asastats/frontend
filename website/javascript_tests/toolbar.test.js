@@ -2234,7 +2234,7 @@ describe("repainting after the live poll swaps figures in", () => {
     expect(() => toolbar.repaintAfterSwap()).not.toThrow();
   });
 
-  test("is wired to htmx:afterSwap, not only callable", () => {
+  test("is wired to htmx:after:swap, not only callable", () => {
     // The binding is the half that makes it happen at all; a repaint nothing
     // calls is a repaint that never runs.
     window.localStorage.setItem("cur", "USD");
@@ -2243,7 +2243,7 @@ describe("repainting after the live poll swaps figures in", () => {
     figure.textContent = "999.99";
 
     document.body.dispatchEvent(
-      new CustomEvent("htmx:afterSwap", { bubbles: true })
+      new CustomEvent("htmx:after:swap", { bubbles: true })
     );
 
     expect(figure.textContent.trim()).not.toBe("999.99");

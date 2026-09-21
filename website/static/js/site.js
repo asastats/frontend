@@ -42,7 +42,7 @@ function mainSite() {
   // The settings forms post with htmx, so their confirmations arrive in a
   // swapped fragment rather than on a page load and `mainSite` never runs for
   // them. Without this the toast appears and neither dismisses nor hides.
-  document.body.addEventListener('htmx:afterSwap', initMessageToasts);
+  document.body.addEventListener('htmx:after:swap', initMessageToasts);
 }
 
 

@@ -32,12 +32,21 @@
 
   {% csrf_token %}
 
+  {# `hx-headers:inherited`, because htmx 4 does not inherit attributes         #}
+  {# implicitly as htmx 2 did. The CSRF token is set on the container and used  #}
+  {# by the hx-post buttons rendered inside it, which carry no headers of their #}
+  {# own - so without the modifier it stops reaching them and Django rejects    #}
+  {# every address operation with a 403.                                        #}
+  {#                                                                            #}
+  {# Outside the tag, not inside it: a Django comment between attributes is     #}
+  {# legal and renders away, but any HTML parser reading the template - the     #}
+  {# htmx upgrade checker included - sees its words as attribute names.         #}
   <div
     id="connected-addresses"
     data-api-base="{{ wallet_api_base|default:'/api/v2/wallet' }}"
     data-wc-project-id="{{ wallet_connect_project_id|default:'' }}"
     data-ops-url="{% url 'profile_addresses_action' %}"
-    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+    hx-headers:inherited='{"X-CSRFToken": "{{ csrf_token }}"}'
   >
     <section class="rounded-box border border-base-300 bg-base-100">
     <div class="border-b border-base-300 px-5 py-4">

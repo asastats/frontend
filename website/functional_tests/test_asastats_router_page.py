@@ -295,7 +295,7 @@ class AsastatsRouterSwapOptInTest(FunctionalTest):
         **Both halves, or neither survives.** `initSwapBridge` returns early
         only when `window.asastatsWallet` *and* `window.asastatsSwap` are both
         up. Publishing the swap half alone fails that test, so the real bridge
-        builds itself on the next `htmx:afterSettle` - which the lazy holdings
+        builds itself on the next `htmx:after:settle` - which the lazy holdings
         panel guarantees - and overwrites this stub with one whose
         `activeAddress()` is null because no wallet is connected. `walletOwns`
         is then false, `applyOwnership` disables the CTA and labels it "Connect

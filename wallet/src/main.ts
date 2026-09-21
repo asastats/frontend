@@ -143,7 +143,13 @@ new App();
   // wallet state and no swap bridge, so that condition would be true forever
   // and re-resume the wallet on every settle. `initSwapBridge` owns the
   // decision now, because it is the half that knows what this page asked for.
-  document.body.addEventListener("htmx:afterSettle", () => {
+  // `htmx:after:settle` is htmx 4's spelling; htmx 2 called it
+  // `htmx:afterSettle` and fires nothing under the new name. This bundle is
+  // vendored into the Django static tree as a built artifact, so a page serving
+  // htmx 4 against a stale bundle would simply never re-init the swap bridge -
+  // no error, just a Swap button and a Dust Sweep button that never wire up,
+  // because the entry partial arrives by htmx swap after DOMContentLoaded.
+  document.body.addEventListener("htmx:after:settle", () => {
     void initSwapBridge();
   });
 }

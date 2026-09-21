@@ -508,7 +508,7 @@
       selectSchemeTab(document);
     }
     // The header can be replaced by an htmx swap; re-tick and re-bind after one.
-    document.body.addEventListener("htmx:afterSwap", function () {
+    document.body.addEventListener("htmx:after:swap", function () {
       wireRecentThemes(document);
       wireThemePicker(document);
       wireThemeToggle(document);

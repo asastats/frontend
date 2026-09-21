@@ -461,7 +461,7 @@ class FunctionalTest(Setup):
         hangs on any page where `initSwapBridge` finds no wallet entry and
         returns without publishing. Redefining the property has no such edge:
         the setter swallows the assignment, so whoever assigns later - now or
-        on any future `htmx:afterSettle` - simply has no effect.
+        on any future `htmx:after:settle` - simply has no effect.
 
         `publish_wallet_bridge` does not call this: it sends the same source in
         the *same* script as the install, because the gap between two

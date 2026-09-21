@@ -324,9 +324,43 @@ LIVEREFRESH_RELOAD_COOLDOWN_SECONDS = 60
 #: and on one real account that measured 85 kB of fragments landing in a 22 MB
 #: document, which no browser applies quickly.
 #:
-#: A hundred spreads a nine-hundred-holding resync over about half a minute of
-#: polling. Nothing is dropped; the remainder waits in the session. Ordinary
-#: pages never reach this, because an ordinary block moves a handful of values.
+#: **A hundred, and measured rather than inherited.** It was a hundred while a
+#: fragment meant one changed asset value; `11f5e9f` made it bound amounts and
+#: positions too, so it began bounding a different quantity than the one it was
+#: chosen for, and a wide page's poll reached 1,036 fragments.
+#:
+#: Measured with `live/tools/fragment_budget.py`: headless Chromium against a
+#: page built to the shape of the one that pinned a reader's Firefox - 50,241
+#: elements, 259 assets, 600 positions - with the real `liverefresh.js` loaded.
+#: Median wall time for one poll, request through applied:
+#:
+#:      fragments        25      50     100     200     400    1036
+#:      htmx 2.0.4       32     102     238     717    2713   16247
+#:      htmx 4.0.0       55      45     100     160     313     753
+#:
+#: **On htmx 2 the cost was quadratic, and it was htmx's, not ours.** 2.0.4
+#: dispatches its settle events over an accumulating list, so the k-th
+#: out-of-band element fires k of them - 1,036 fragments produced 528,969
+#: events. Confirmed with `liverefresh.js` removed entirely (identical counts)
+#: and shown independent of page size (a 12,628-element page gives the same
+#: milliseconds). 2.0.10 does not fix it.
+#:
+#: htmx 4 settles once per response, so the cost is linear and the per-fragment
+#: figure *falls* with the batch, from 2.2 ms to 0.73 ms. The budget is
+#: therefore a much weaker lever than it was, and a hundred costs about 100 ms.
+#:
+#: **Why not higher.** 200 is measured at 160 ms and would drain the widest page
+#: in 6 polls rather than 11 - real headroom, deliberately not taken: 100 is
+#: what the site ran with for months, so it changes no drain behaviour while the
+#: htmx 4 upgrade beds in, and a poll's bytes double with it (11.4 kB against
+#: 22.8 kB), which `ANALYSIS-bandwidth-lever.md` cares about more than the CPU.
+#:
+#: Nothing is dropped; the remainder waits in the session. Ordinary pages never
+#: reach this, because an ordinary block moves a handful of figures - the
+#: measured p50 poll is 2.8 kB and the p90 is 12 kB.
+#:
+#: **Re-measure if htmx changes again.** The number tracks the library, not the
+#: markup: it moved from 100 to 50 and back purely on what htmx did with a batch.
 LIVEREFRESH_MAX_FRAGMENTS = 100
 
 #: Redis hash the engine writes a per-page fingerprint of the *holdings* into.

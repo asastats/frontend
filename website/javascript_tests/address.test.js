@@ -588,7 +588,7 @@ describe("filterChange", function () {
 });
 
 
-describe("wireFetchedItems (htmx:afterSwap)", function () {
+describe("wireFetchedItems (htmx:after:swap)", function () {
   // **A collection's items are not on the page until the reader opens it.**
   // They used to be: every collection wrote out every item, hidden inside a
   // closed <details>, and the fetch on open replaced them. On one real account
@@ -604,7 +604,7 @@ describe("wireFetchedItems (htmx:afterSwap)", function () {
     var swapped = document.getElementById("swapped");
 
     swapped.dispatchEvent(
-      new CustomEvent("htmx:afterSwap", { bubbles: true })
+      new CustomEvent("htmx:after:swap", { bubbles: true })
     );
 
     expect(document.querySelector("img.nft").src).toContain("/late.png");
@@ -621,7 +621,7 @@ describe("wireFetchedItems (htmx:afterSwap)", function () {
     document.body.appendChild(text);
 
     expect(function () {
-      text.dispatchEvent(new CustomEvent("htmx:afterSwap", { bubbles: true }));
+      text.dispatchEvent(new CustomEvent("htmx:after:swap", { bubbles: true }));
     }).not.toThrow();
   });
 
@@ -631,7 +631,7 @@ describe("wireFetchedItems (htmx:afterSwap)", function () {
     var plain = document.getElementById("plain");
 
     expect(function () {
-      plain.dispatchEvent(new CustomEvent("htmx:afterSwap", { bubbles: true }));
+      plain.dispatchEvent(new CustomEvent("htmx:after:swap", { bubbles: true }));
     }).not.toThrow();
   });
 });
@@ -1305,7 +1305,7 @@ describe("restoreDisplayChoices (after a live-poll swap)", () => {
     tip.innerHTML = "999.99 ALGO";
 
     document.body.dispatchEvent(
-      new CustomEvent("htmx:afterSwap", { bubbles: true })
+      new CustomEvent("htmx:after:swap", { bubbles: true })
     );
 
     expect(tip.innerHTML).not.toBe("999.99 ALGO");
@@ -1322,7 +1322,7 @@ describe("restoreDisplayChoices (after a live-poll swap)", () => {
     tip.innerHTML = "left alone";
 
     document.body.dispatchEvent(
-      new CustomEvent("htmx:afterSwap", { bubbles: true })
+      new CustomEvent("htmx:after:swap", { bubbles: true })
     );
 
     expect(tip.innerHTML).toBe("left alone");
@@ -1334,7 +1334,7 @@ describe("restoreDisplayChoices (after a live-poll swap)", () => {
 
     expect(() => {
       document.body.dispatchEvent(
-        new CustomEvent("htmx:afterSwap", { bubbles: true })
+        new CustomEvent("htmx:after:swap", { bubbles: true })
       );
     }).not.toThrow();
   });

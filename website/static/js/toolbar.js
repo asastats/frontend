@@ -1494,7 +1494,7 @@
     init();
   }
 
-  document.body.addEventListener("htmx:afterSwap", repaintAfterSwap);
+  document.body.addEventListener("htmx:after:swap", repaintAfterSwap);
 
   // Exposed for the jest suite, which drives these directly.
   window.asastatsToolbar = {
