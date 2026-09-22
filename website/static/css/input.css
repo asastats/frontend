@@ -536,7 +536,26 @@
   cursor: pointer;
 }
 
-.dustsweep-open:hover { filter: brightness(1.06); }
+/* **The alerts button shares these, and did not.** It took the sweep's layout
+   rules below but not its `cursor` or its hover, so the one control in that row
+   that looked like a button behaved like text: no hand, no response to the
+   pointer. A control that does not answer the mouse reads as disabled. */
+.alerts-open,
+.alerts-upgrade {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.dustsweep-open:hover,
+.alerts-open:hover,
+.alerts-upgrade:hover { filter: brightness(1.06); }
 
 /* On the address page the entry is a page-level action rather than a row. It
    used to render in a strip of its own above the heading, which is a whole band
@@ -4436,6 +4455,30 @@
    as expected rather than as a broken feature. Block, because the label it
    sits in is a flex row and it belongs under the control rather than beside
    it. */
+/* The asset search's results, which are the swap window's rows rendered into
+   this form. They need somewhere to sit that does not push the rest of the
+   form down the modal, so the list is capped and scrolls. */
+.alerts-asset-results {
+  display: block;
+  max-height: 11rem;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.alerts-asset-results:empty { display: none; }
+
+/* What was picked, shown beside the box once the list closes - otherwise a
+   reader who chose an asset and saw the list vanish has no confirmation that
+   anything was recorded. */
+.alerts-asset-chosen {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--alert-ink-3);
+}
+
+.alerts-asset-chosen:empty { display: none; }
+
 .alerts-window-note {
   display: block;
   margin-top: 4px;
