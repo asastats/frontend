@@ -4377,6 +4377,42 @@
 
 .alerts-rule-text { flex: 1 1 auto; font-size: 0.85rem; }
 
+/* Edit sits beside Remove on a rule, and is quieter than either: it opens the
+   form rather than committing anything. */
+.alerts-edit {
+  padding: 0 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--alert-ink-3);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.alerts-edit:hover { color: var(--color-primary); }
+
+/* The rule currently loaded into the form. A reader editing one is looking at
+   the form rather than the list, and needs to be able to glance back and see
+   which rule they are changing. */
+.alerts-rule-editing {
+  outline: 1px solid var(--color-primary);
+  border-radius: 0.35rem;
+}
+
+/* The only way out of editing without saving, so it sits beside the save
+   button and is styled as the secondary of the pair. */
+.alerts-cancel {
+  margin-left: 0.4rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--alert-line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.alerts-cancel:hover { border-color: var(--color-primary); }
+
 .alerts-remove {
   border: none;
   background: none;
@@ -4391,6 +4427,12 @@
 .alerts-empty,
 .alerts-left,
 .alerts-full { font-size: 0.78rem; color: var(--alert-ink-3); }
+
+/* **Spent, rather than an error.** "0 of 5 left" is the state a paying reader
+   is meant to reach, so the line steps up one level of ink to be noticed and
+   stops there - colouring it like the rejection banner would say something had
+   gone wrong. */
+.alerts-left-capped { color: var(--alert-ink-2); }
 
 .alerts-error {
   margin-bottom: 0.75rem;

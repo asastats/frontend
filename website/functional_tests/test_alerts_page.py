@@ -51,6 +51,9 @@ ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 ASASTATSER = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
 INTRO = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
 
+#: The top band, and the only one with nothing to be upsold to.
+CLUSTER = SUBSCRIPTION_TIER_PERMISSIONS["Cluster"]
+
 
 class AlertsReaderMixin:
     """Sign a reader in at a chosen tier, with ADDRESS linked to them."""
@@ -258,14 +261,23 @@ class AlertsModalTest(AlertsReaderMixin, FunctionalTest):
         """**Server-rendered, so anything else a browser posts was typed.**
 
         The form's choices come from `Subject.choices`; a reader cannot invent
-        a fifth. That is what lets the view trust the field.
+        one the server does not know. That is what lets the view trust the
+        field.
+
+        Counted off `Subject` rather than pinned to a number: a subject added
+        to the model and not to the form is the failure worth catching here,
+        and a hard-coded count catches "somebody added a subject" instead -
+        which is a test that fails on the working case.
         """
         self.sign_in("alerts-subjects@example.com")
         self.open_modal_url()
 
         options = self.find_elems_by_css(".alerts-subject option")
 
-        assert len(options) == 4
+        assert len(options) == len(Subject.choices)
+        assert [option.get_attribute("value") for option in options] == [
+            value for value, _ in Subject.choices
+        ]
 
     def test_the_remainder_is_shown_rather_than_the_total(self):
         """The template never subtracts - a second place doing that arithmetic
@@ -277,6 +289,45 @@ class AlertsModalTest(AlertsReaderMixin, FunctionalTest):
         self.open_modal_url()
 
         assert "3 of 5 left" in self.find_elem_by_class("alerts-left").text
+
+    def test_a_spent_allowance_says_why_and_where_to_go(self):
+        """**"0 of 5 left" needs a sentence beside it.**
+
+        On its own the number reads as something being broken, and the form
+        simply vanishing is the only other signal. The reason belongs next to
+        the count rather than only where the form used to be - that sentence is
+        below the fold on a phone, and is not rendered at all while the reader
+        is editing a rule.
+        """
+        user = self.sign_in("alerts-capped@example.com")
+        for threshold in range(1, 6):
+            self.rule(user, threshold=str(threshold * 100))
+
+        self.open_modal_url()
+
+        left = self.find_elem_by_class("alerts-left")
+        assert "0 of 5 left" in left.text
+        assert "a larger plan" in left.text
+        assert left.find_element(By.CSS_SELECTOR, "a").get_attribute(
+            "href"
+        ).endswith("/subscriptions/")
+
+    def test_the_top_tier_is_not_sold_what_it_already_has(self):
+        """A Cluster reader at their cap has the largest allowance sold.
+
+        Linking them to the plans page invites them to buy what they own, which
+        reads as the site not knowing what they bought.
+        """
+        user = self.sign_in("alerts-cluster@example.com", permission=CLUSTER)
+        for threshold in range(1, 51):
+            self.rule(user, threshold=str(threshold * 100))
+
+        self.open_modal_url()
+
+        left = self.find_elem_by_class("alerts-left")
+        assert "0 of 50 left" in left.text
+        assert "the most any plan keeps" in left.text
+        assert left.find_elements(By.CSS_SELECTOR, "a") == []
 
     def test_a_kept_rule_is_listed_with_a_way_to_remove_it(self):
         user = self.sign_in("alerts-listed@example.com")
