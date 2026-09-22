@@ -11,7 +11,19 @@
   class on the images is what `deferImages` collects, so the large image is
   fetched only after the page has loaded.
 {% endcomment %}
-<details id="f{{ coll.name|slugify }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100{% if shown and index >= shown %} folded{% endif %}">
+{% comment %} **The request lives on the `<details>`, not on the div it fills** -
+   see `snippets/dynamic/collection.html` for the full reason. Short version:
+   htmx 4 has no `from:` modifier, so `from:closest details` never bound and
+   opening a collection fetched nothing.
+
+   Outside the tag, not between its attributes, for the reason
+   `profile_addresses.html` gives.
+{% endcomment %}
+<details id="f{{ coll.name|slugify }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100{% if shown and index >= shown %} folded{% endif %}"
+         hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}"
+         hx-trigger="toggle once"
+         hx-target="#items-{{ coll.name|slugify }}"
+         hx-swap="innerHTML">
   <summary class="nft item-header cursor-pointer list-none p-3{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
     {% comment %}
       What you hold, the thumbnails, what it is worth.
@@ -70,7 +82,7 @@
 
      The name is a query parameter because it is arbitrary text a creator chose,
      and an empty one is a real collection: the NFTs belonging to none. {% endcomment %}
-     <div class="space-y-3" hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}" hx-trigger="toggle once from:closest details" hx-swap="innerHTML">
+     <div class="space-y-3" id="items-{{ coll.name|slugify }}">
       {% if defer %}<p class="py-2 text-sm text-base-content/60">Loading items&hellip;</p>{% else %}{% for row in coll.nfts %}{% include "snippets/nfts/item.html" with row=row %}{% endfor %}{% endif %}
     </div>
   </div>

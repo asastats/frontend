@@ -25,6 +25,7 @@ from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.test import override_settings
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
@@ -101,7 +102,18 @@ class AlertsReaderMixin:
         an htmx swap that was merely slow reads as a swap that never happened.
         """
         elements = self.browser.find_elements(By.CSS_SELECTOR, selector)
-        return elements[0].text if elements else ""
+        if not elements:
+            return ""
+        try:
+            return elements[0].text
+        except StaleElementReferenceException:
+            # **Found, then replaced before it could be read.** Every one of
+            # these polls runs while htmx is swapping the panel, so the element
+            # this found a moment ago may already be detached.
+            # `WebDriverWait` ignores `NoSuchElementException` and *not* this,
+            # so letting it out fails the wait instead of retrying - the same
+            # trap as the waiting finders above, one layer down.
+            return ""
 
     def open_modal_url(self):
         """Load the modal at its own URL and open it, which needs no engine.
@@ -223,6 +235,7 @@ class AddressPageMixin(AlertsReaderMixin):
         )
         self.find_elem_by_css(".id-alerts-open").click()
         self.wait_until(self.dialog_is_open, timeout=self.OPEN_TIMEOUT)
+
 
 
 class AlertsModalTest(AlertsReaderMixin, FunctionalTest):

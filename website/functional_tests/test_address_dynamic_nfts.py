@@ -101,11 +101,12 @@ class DynamicNftTest(FunctionalTest):
             selector,
         )
 
+    @mock.patch("core.views.fetch_collection_items")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_money_column_runs_to_the_bottom_of_the_page(
-        self, mocked_fetch, mocked_status, mocked_capabilities
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
     ):
         """One figure from each of the five levels, on one edge.
 
@@ -117,6 +118,8 @@ class DynamicNftTest(FunctionalTest):
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_items.return_value = _sample_payload()["nftcollections"][0]
+        mocked_items.return_value = _sample_payload()["nftcollections"][0]
         self.sign_in()
         self.open_page()
         self.browser.execute_script(
@@ -237,11 +240,12 @@ class DynamicNftTest(FunctionalTest):
         self.assertIn("no floor reported", card.text)
         self.assertNotIn("floor 0.00", card.text)
 
+    @mock.patch("core.views.fetch_collection_items")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_each_figure_says_what_it_is(
-        self, mocked_fetch, mocked_status, mocked_capabilities
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
     ):
         """An estimate, a floor and a price paid are three different facts.
 
@@ -252,6 +256,7 @@ class DynamicNftTest(FunctionalTest):
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_items.return_value = _sample_payload()["nftcollections"][0]
         self.sign_in()
         self.open_page()
 
@@ -265,11 +270,17 @@ class DynamicNftTest(FunctionalTest):
         # item worth eight times its floor read as not clearing it.
         self.assertIn("the estimate sits above it", text)
 
+    # **`fetch_collection_items` is mocked here now, and it was not before.**
+    # Opening a card used to fetch nothing at all - `from:closest details` never
+    # bound under htmx 4 - so this test reached the engine only in the sense
+    # that it never tried. With the trigger repaired it does, and on CI there is
+    # no engine to answer.
+    @mock.patch("core.views.fetch_collection_items")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_scripts_still_find_what_they_bind_to(
-        self, mocked_fetch, mocked_status, mocked_capabilities
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
     ):
         """The hooks this section shares with design 1, exercised.
 
@@ -294,11 +305,29 @@ class DynamicNftTest(FunctionalTest):
             "document.querySelector('#nft-list > .fitem').open = true;"
         )
 
-        epochs = self.browser.find_elements(By.CSS_SELECTOR, "#nft-list .epoch")
-        if not epochs:
-            self.skipTest("the first collection has no purchase history")
-        self.wait_until(lambda: epochs[0].text.strip() != "")
-        self.assertIn("ago", epochs[0].text.lower())
+        # **Re-queried every poll, never held.** Opening the card now fetches
+        # its items and swaps them in, which replaces these elements - a
+        # reference taken before the swap goes stale and the wait dies on
+        # `StaleElementReferenceException` instead of retrying. It only worked
+        # before because the fetch never fired; see the template comment in
+        # `snippets/dynamic/collection.html`.
+        def first_epoch():
+            found = self.browser.find_elements(By.CSS_SELECTOR, "#nft-list .epoch")
+            return found[0].text.strip() if found else ""
+
+        # **KNOWN FAILURE, 2026-09-22.** Opening a card now really fetches its
+        # items - the trigger was broken, see the template comment - and the
+        # swapped-in `.epoch` spans are never filled, because `dynamic.js` runs
+        # `epochs(document)` once at `DOMContentLoaded` and nothing re-runs it
+        # after a swap.
+        #
+        # Re-running it on `htmx:after:swap` was tried and did not fix this, so
+        # the cause is not simply "nothing calls it": diagnose before assuming.
+        # `epochs` selects `.dynamic-page .epoch[data-epoch]`, so it has to be
+        # given `document` rather than the swapped region - the region sits
+        # inside that ancestor, not above it.
+        self.wait_until(lambda: first_epoch() != "")
+        self.assertIn("ago", first_epoch().lower())
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
