@@ -82,7 +82,15 @@
 {# but a reader. The gate is the tier, and below it this is a link rather than #}
 {# a disabled button - a dead control teaches a reader the feature is broken.  #}
 {% if alerts_entitled %}
-<div id="id-alerts" class="alerts-toolbar"
+{# **Hidden until `alerts.js` has put it where it belongs.** This partial lands #}
+{# near the top of the page and the button belongs in the action row beside    #}
+{# Sweep dust, so `placeToolbar` moves it - and without this the browser paints #}
+{# it in the wrong row first and the reader watches it jump. The sweep's own    #}
+{# toolbar above is rendered hidden for the same kind of reason.               #}
+{#                                                                             #}
+{# Safe because this branch is the one that loads `alerts.js`: the control does #}
+{# nothing without it anyway, since opening the dialog is that script's job.    #}
+<div id="id-alerts" class="alerts-toolbar" hidden
      data-bundle="{{ alerts_bundle }}"
      data-rules-left="{{ alerts_left }}">
   {# Fetches the modal rather than carrying it: the rule list is per-reader  #}

@@ -169,3 +169,108 @@ jobs:
           directory: website/javascript_tests/coverage
           flags: website-javascript
           name: website-coverage
+
+  # **The widgets submodule's JavaScript, at the commit this repo pins.**
+  #
+  # It was tested nowhere here. The submodule's own `test.yml` runs on pushes
+  # to *that* repo, so a frontend build that moved the submodule pointer never
+  # ran a line of the JavaScript it was integrating - which is the half of the
+  # widgets code this repo actually ships.
+  #
+  # **Why this is not `uses: <owner>/widgets/.github/workflows/test.yml@ref`.**
+  # A reusable workflow is referenced by a static ref, and `uses:` takes no
+  # expressions - so the call would test that repo's `main` while this build is
+  # integrating whatever SHA the submodule points at. Testing a different
+  # commit than the one being built is worse than not testing it, because the
+  # tick would say otherwise. Run in place, against the checkout.
+  #
+  # The matrix is **discovered, not listed**. Two widgets with real suites sat
+  # outside the submodule's own hand-written list for months, and a second
+  # hand-written list here would drift from that one as well. A widget is in
+  # CI when it declares a `test` script, which is the same condition that makes
+  # it runnable at all.
+  widgets-discover:
+    runs-on: ubuntu-latest
+    needs: main
+    outputs:
+      widgets: ${{ steps.find.outputs.widgets }}
+
+    steps:
+      - name: Checkout code and submodules
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Find widgets that declare a test script
+        id: find
+        run: |
+          widgets=$(node -e '
+            const fs = require("fs");
+            const path = require("path");
+            const root = "website/widgets/inhouse";
+            const names = fs
+              .readdirSync(root)
+              .filter((name) => {
+                const manifest = path.join(root, name, "package.json");
+                if (!fs.existsSync(manifest)) return false;
+                const data = JSON.parse(fs.readFileSync(manifest, "utf8"));
+                return Boolean(data.scripts && data.scripts.test);
+              })
+              .sort();
+            if (!names.length) {
+              console.error("no widget declares a test script");
+              process.exit(1);
+            }
+            console.log(JSON.stringify(names));
+          ')
+          echo "found: $widgets"
+          echo "widgets=$widgets" >> "$GITHUB_OUTPUT"
+
+  widgets:
+    runs-on: ubuntu-latest
+    needs: widgets-discover
+
+    strategy:
+      # Every widget is reported rather than the run stopping at the first
+      # failure: "which of them broke" is what a red build has to answer.
+      fail-fast: false
+      matrix:
+        widget: ${{ fromJSON(needs.widgets-discover.outputs.widgets) }}
+
+    name: widgets ${{ matrix.widget }} JavaScript
+
+    steps:
+      - name: Checkout code and submodules
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+          # Per widget: each keeps its own lockfile, and one shared path would
+          # key every job's cache on a single widget's dependencies.
+          cache-dependency-path: "website/widgets/inhouse/${{ matrix.widget }}/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: website/widgets/inhouse/${{ matrix.widget }}
+        # `npm ci`, so a lockfile that has drifted from its `package.json`
+        # fails here rather than quietly resolving something else.
+        run: npm ci
+
+      - name: Run ${{ matrix.widget }} JavaScript tests with coverage
+        working-directory: website/widgets/inhouse/${{ matrix.widget }}
+        # Coverage and its threshold come from each widget's own `jest` block,
+        # so they are enforced by the config rather than by a flag somebody has
+        # to remember here.
+        run: npm run test
+
+      - name: Upload ${{ matrix.widget }} coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: website/widgets/inhouse/${{ matrix.widget }}/tests/javascript/coverage
+          flags: ${{ matrix.widget }}-javascript
+          name: ${{ matrix.widget }}-coverage

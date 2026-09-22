@@ -611,6 +611,13 @@
 #id-dustsweep-slot { display: contents; }
 #id-dustsweep-slot > .dustsweep-toolbar { margin: 0; }
 
+/* `[hidden]` loses to the `display: flex` above without this - the same trap
+   `.alerts-field[hidden]` carries a note about further down. The alerts toolbar
+   is rendered hidden and revealed by `placeToolbar` once it has been moved into
+   the action row, so without this rule the attribute does nothing and the
+   button is painted in the wrong row before it jumps. */
+.alerts-toolbar[hidden] { display: none; }
+
 /* Shown only when the page carries several of the reader's own addresses, so
    the buttons are distinguishable. On a single-address page the span is not
    rendered at all rather than being hidden - one button needs no label. */

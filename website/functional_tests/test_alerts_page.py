@@ -577,6 +577,89 @@ class AlertsAddressPageEntryTest(AddressPageMixin, FunctionalTest):
         assert toolbar.get_attribute("data-rules-left") == "5"
         assert self.find_elem_by_css(".id-alerts-open")
 
+    def test_the_button_is_shown_where_it_belongs_and_not_before(self):
+        """**The jump a reader watched on every page load.**
+
+        This partial lands near the top of the page and the button belongs in
+        the action row beside Sweep dust, so `placeToolbar` moves it - and a
+        move after paint is a visible hop from one row to the next. The partial
+        now renders it `hidden` and the script reveals it once it has arrived,
+        so the two halves have to hold together: still hidden means a reader
+        with no way to reach their alerts, still jumping means the server
+        stopped marking it.
+        """
+        self.sign_in("alerts-placed@example.com")
+
+        self.open_address_page()
+
+        # **Both halves in one condition.** The reveal waits on `alerts.js`
+        # finishing its own fetch - the script tag rides in the partial that
+        # carries the button - so this is asynchronous by nature. Asserting
+        # "in the slot" and "displayed" as two reads would be two looks at a
+        # page still settling.
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var t = document.getElementById('id-alerts');"
+                "return !!(t && !t.hidden && t.parentNode"
+                "          && t.parentNode.id === 'id-dustsweep-slot');"
+            ),
+            timeout=self.OPEN_TIMEOUT,
+        )
+
+    def test_editing_a_rule_shows_what_the_asset_costs_now(self):
+        """**The reference price had one source: the search results.**
+
+        A row carries `data-usdc-price`, so picking an asset out of the picker
+        gave the reader a "Now …" figure to aim at - and the two paths where
+        the asset arrives *already chosen* gave them nothing. Editing a rule is
+        one of them, and it is the moment a reader is most likely to be
+        adjusting a threshold against what the price is doing.
+
+        `resolveAsset` asks the same endpoint the picker asks, by id.
+        """
+        user = self.sign_in("alerts-reference@example.com")
+        self.rule(
+            user,
+            subject=Subject.ASA_PRICE,
+            asset_id=31566704,
+            threshold="0.5",
+            address=ADDRESS,
+        )
+        # The endpoint is the swap widget's, and it reaches the engine - which
+        # is not running here. The row shape is `swap/_assets.html`'s.
+        matches = mock.patch(
+            "widgets.inhouse.swapcore.views.fetch_asset_matches",
+            return_value=[
+                {"id": 31566704, "unit": "USDC", "name": "USDC", "usdc_price": 1.0}
+            ],
+        )
+        matches.start()
+        self.addCleanup(matches.stop)
+
+        self.open_address_page()
+        self.find_elem_by_css(".id-alerts-open").click()
+        self.wait_until(
+            lambda: self.text_for(".alerts-edit") != "", timeout=self.OPEN_TIMEOUT
+        )
+        self.find_elem_by_css(".alerts-edit").click()
+
+        # **The attribute, not the rendered line.** `resolveAsset` owns getting
+        # the asset's price onto the page; turning it into "Now 4.00 ALGO" is
+        # `showCurrent`, and that needs the page's own ALGO/USD rate - which
+        # the live pass publishes and a page in a test has never had. Asserting
+        # the text here would be asserting that the *engine* had run.
+        #
+        # One condition, because the lookup is a fetch and a wait-then-read
+        # would be two looks at a settling page.
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var n = document.querySelector('.alerts-now');"
+                "return n && n.getAttribute('data-asset-usd');"
+            )
+            == "1.0",
+            timeout=self.OPEN_TIMEOUT,
+        )
+
     def test_the_button_counts_what_the_reader_already_keeps(self):
         user = self.sign_in("alerts-entry-count@example.com")
         self.rule(user)
