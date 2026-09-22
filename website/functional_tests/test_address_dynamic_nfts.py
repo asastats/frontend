@@ -28,6 +28,7 @@ from api.client import BackendError
 from api.position_id import annotate_positions
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
@@ -118,7 +119,6 @@ class DynamicNftTest(FunctionalTest):
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
-        mocked_items.return_value = _sample_payload()["nftcollections"][0]
         mocked_items.return_value = _sample_payload()["nftcollections"][0]
         self.sign_in()
         self.open_page()
@@ -293,6 +293,11 @@ class DynamicNftTest(FunctionalTest):
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
+        # **The fetch needs a payload, not just a mock.** Without this the view
+        # gets a `MagicMock`, decides the collection is unavailable and swaps in
+        # `nft-items-unavailable` - so the card opens with no items and no
+        # `.epoch` at all, and what this test is about never happens.
+        mocked_items.return_value = _sample_payload()["nftcollections"][0]
         self.sign_in()
         self.browser.get(f"{self.server_url}/{ADDRESS}")
         self.wait_until(
@@ -305,29 +310,35 @@ class DynamicNftTest(FunctionalTest):
             "document.querySelector('#nft-list > .fitem').open = true;"
         )
 
-        # **Re-queried every poll, never held.** Opening the card now fetches
-        # its items and swaps them in, which replaces these elements - a
-        # reference taken before the swap goes stale and the wait dies on
-        # `StaleElementReferenceException` instead of retrying. It only worked
-        # before because the fetch never fired; see the template comment in
-        # `snippets/dynamic/collection.html`.
-        def first_epoch():
-            found = self.browser.find_elements(By.CSS_SELECTOR, "#nft-list .epoch")
-            return found[0].text.strip() if found else ""
-
-        # **KNOWN FAILURE, 2026-09-22.** Opening a card now really fetches its
-        # items - the trigger was broken, see the template comment - and the
-        # swapped-in `.epoch` spans are never filled, because `dynamic.js` runs
-        # `epochs(document)` once at `DOMContentLoaded` and nothing re-runs it
-        # after a swap.
+        # **Inside the opened card, and read through the DOM.**
         #
-        # Re-running it on `htmx:after:swap` was tried and did not fix this, so
-        # the cause is not simply "nothing calls it": diagnose before assuming.
-        # `epochs` selects `.dynamic-page .epoch[data-epoch]`, so it has to be
-        # given `document` rather than the swapped region - the region sits
-        # inside that ancestor, not above it.
-        self.wait_until(lambda: first_epoch() != "")
-        self.assertIn("ago", first_epoch().lower())
+        # Two traps, both of which made this assert nothing. Asking for the
+        # first `#nft-list .epoch` finds one in a *closed* collection, and a
+        # closed `<details>` is `display:none`, so Selenium's `.text` returns ""
+        # for it however well the script ran - the wait could never pass.
+        # `textContent` answers for a hidden element; `.text` does not.
+        #
+        # And never held across the wait: the swap replaces these nodes, and
+        # `WebDriverWait` does not ignore `StaleElementReferenceException`.
+        def opened_epoch():
+            return self.browser.execute_script(
+                "var card = document.querySelector('#nft-list > .fitem');"
+                "var span = card && card.querySelector('.epoch[data-epoch]');"
+                "return span ? span.textContent.trim() : '';"
+            )
+
+        # The spans arrive with the swapped-in items, empty by design and filled
+        # from `data-epoch`. `init` runs once at `DOMContentLoaded`, so what
+        # fills these is `watchSwaps` in `dynamic.js` - without it a reader who
+        # opens a card reads "Last purchase on Rand Gallery" and is not told
+        # when.
+        #
+        # **One condition, one read.** Waiting for "not empty" and then reading
+        # again asserts against a *different* read of a page that is still
+        # settling - it passed alone and failed in a full-module run, where the
+        # node was replaced between the two. What is being asserted is that the
+        # span fills, so that is the whole wait.
+        self.wait_until(lambda: "ago" in opened_epoch().lower())
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
@@ -347,9 +358,26 @@ class DynamicNftTest(FunctionalTest):
         self.sign_in()
         self.open_page()
 
-        art = self.browser.find_element(By.CSS_SELECTOR, "#nft-list .nft-art img")
-        self.assertTrue(art.get_attribute("data-fallback"))
-        self.wait_until(lambda: "/thumbnails/" in (art.get_attribute("src") or ""))
+        # **Re-found each poll rather than held.** This kept one reference and
+        # polled it, which passes here and failed on CI with a
+        # `StaleElementReferenceException` - the list is swapped in, so the node
+        # found at first paint can be replaced before `src` settles, and
+        # `WebDriverWait` does not ignore that exception the way it ignores a
+        # missing element. Holding a reference across a wait is the bug; a
+        # longer timeout would only have made it rarer.
+        def art_attribute(name):
+            elements = self.browser.find_elements(
+                By.CSS_SELECTOR, "#nft-list .nft-art img"
+            )
+            if not elements:
+                return ""
+            try:
+                return elements[0].get_attribute(name) or ""
+            except StaleElementReferenceException:
+                return ""
+
+        self.wait_until(lambda: "/thumbnails/" in art_attribute("src"))
+        self.assertTrue(art_attribute("data-fallback"))
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")

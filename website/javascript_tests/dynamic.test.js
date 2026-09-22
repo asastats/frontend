@@ -1120,4 +1120,39 @@ describe("dating the NFT purchases", () => {
 
     expect(span.textContent).toBe("5 days ago");
   });
+
+  test("a span that arrives with a swap is filled too", () => {
+    // **The gap a reader saw.** Opening a collection fetches its items, and
+    // their `.epoch` spans arrive empty - `init` ran once at load, long before
+    // they existed, so the card read "Last purchase on Rand Gallery" with no
+    // indication of when.
+    window.timeEntry = () => "4 days";
+    load().init();
+    const span = mountEpoch(1691625566);
+    expect(span.textContent).toBe("");
+
+    document.body.dispatchEvent(
+      new Event("htmx:after:swap", { bubbles: true })
+    );
+
+    expect(span.textContent).toBe("4 days ago");
+  });
+
+  test("the whole page is refilled, not the swapped region", () => {
+    // `epochs` selects `.dynamic-page .epoch[data-epoch]`, and that ancestor is
+    // *above* the swapped region rather than inside it - so a region-scoped
+    // query matches nothing. Re-running over the document is the point, not a
+    // shortcut.
+    window.timeEntry = () => "6 days";
+    load().init();
+    const first = mountEpoch(1691625566);
+    const second = mountEpoch(1691625566);
+
+    document.body.dispatchEvent(
+      new Event("htmx:after:swap", { bubbles: true })
+    );
+
+    expect(first.textContent).toBe("6 days ago");
+    expect(second.textContent).toBe("6 days ago");
+  });
 });

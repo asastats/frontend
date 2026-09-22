@@ -329,6 +329,25 @@ class AlertsModalTest(AlertsReaderMixin, FunctionalTest):
         assert "the most any plan keeps" in left.text
         assert left.find_elements(By.CSS_SELECTOR, "a") == []
 
+    def test_a_rule_reads_as_a_sentence_rather_than_a_row(self):
+        """**Both halves of what the running site showed a reader.**
+
+        `Portfolio total 86C2B129E807A583C4D37BA182B4EC26F64B3CC9 falls below
+        100.0000000000` - a hash of the single address they were looking at,
+        and the threshold column's own scale. The page here is one address, so
+        it names that address; the threshold is money, so it reads like money.
+        """
+        user = self.sign_in("alerts-sentence@example.com")
+        self.rule(user)
+
+        self.open_modal_url()
+
+        text = self.find_elem_by_class("alerts-rule-text").text
+        assert text == (
+            f"Portfolio total {ADDRESS[:5]}...{ADDRESS[-5:]} "
+            "falls below 100.00 ALGO"
+        )
+
     def test_a_kept_rule_is_listed_with_a_way_to_remove_it(self):
         user = self.sign_in("alerts-listed@example.com")
         self.rule(user)

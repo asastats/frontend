@@ -33,6 +33,11 @@
   /** The same guard for the delegated breakdown handler, on the root element. */
   var BREAKDOWN_ATTR = "data-dynamic-breakdowns-bound";
 
+  //: Guards the swap listener, for the same reason `BREAKDOWN_ATTR` guards its
+  //  handlers: this file can run twice, and a second listener would recompute
+  //  every epoch on the page a second time per swap.
+  var EPOCH_SWAP_ATTR = "data-dynamic-epochs-bound";
+
   /** Radii of the ring, in the 120x120 user space the viewBox sets up. */
   var INNER = 34;
   var OUTER = 56;
@@ -698,9 +703,39 @@
    * payload does not change while the page is open, so redrawing on every
    * toggle would rebuild several hundred nodes to show the same picture.
    */
+  /**
+   * Refill the epoch spans after an htmx swap brings new ones in.
+   *
+   * **Opening a collection fetches its items**, and the `.epoch` spans inside
+   * them arrive empty - they are rendered empty by design and filled from
+   * `data-epoch` here. `init` runs once at `DOMContentLoaded`, so every span on
+   * the page at load is filled and every span that arrives afterwards was not:
+   * a reader who opened a card saw "Last purchase on Rand Gallery" with no
+   * indication of when.
+   *
+   * **`document`, not the swapped region.** `epochs` selects
+   * `.dynamic-page .epoch[data-epoch]`, and that ancestor is *above* the
+   * swapped region rather than inside it - so a region-scoped query matches
+   * nothing. Re-running over the whole page is cheap and recomputes the
+   * relative times, which are stale by then anyway.
+   *
+   * `htmx:after:swap` on `document.body` is how the rest of this codebase
+   * listens - `address.js`, `toolbar.js`, `theme.js` and the alerts widget all
+   * do. Note the colons: htmx 4 renamed these events, and `htmx:afterSwap`
+   * silently never fires.
+   */
+  function watchSwaps() {
+    if (document.documentElement.hasAttribute(EPOCH_SWAP_ATTR)) return;
+    document.documentElement.setAttribute(EPOCH_SWAP_ATTR, "true");
+    document.body.addEventListener("htmx:after:swap", function () {
+      epochs(document);
+    });
+  }
+
   function init() {
     breakdowns();
     epochs(document);
+    watchSwaps();
 
     var panel = document.getElementById("charts");
     var grid = document.getElementById("charts-grid");
