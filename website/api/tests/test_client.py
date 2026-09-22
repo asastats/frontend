@@ -2,6 +2,8 @@
 
 import pytest
 
+import requests
+
 from api.client import (
     BackendError,
     _headers,
@@ -488,3 +490,66 @@ class TestApiClientEngineRequest:
         )
         assert returned == mocked.return_value
         mocked.assert_called_once_with("POST", "/p/", json={"a": 1})
+
+
+class TestApiClientTransportFailures:
+    """Testing class for a backend that cannot be reached at all.
+
+    **The gap this closes.** Everything else in `client.py` raises
+    `BackendError` and every caller catches it - but a transport failure came
+    out of `requests` as its own exception and went past all of them. Opening an
+    NFT collection while the engine was restarting answered a **500** rather
+    than the "could not be loaded" the template already carries.
+    """
+
+    @pytest.mark.parametrize(
+        "failure",
+        [
+            requests.ConnectionError("connection refused"),
+            requests.Timeout("read timed out"),
+            requests.TooManyRedirects("too many redirects"),
+        ],
+    )
+    def test_api_client_a_transport_failure_is_a_backend_error(self, mocker, failure):
+        """Every `requests` failure, not just the one that was reported: they
+        share a base class precisely because a caller should not have to
+        enumerate them."""
+        mocker.patch("api.client.requests.request", side_effect=failure)
+
+        with pytest.raises(BackendError):
+            _request("GET", "/api/v2/anything/")
+
+    def test_api_client_a_transport_failure_carries_no_status(self, mocker):
+        """There was no response to have one, and a caller branching on
+        `status_code` must not read a zero as an HTTP zero."""
+        mocker.patch(
+            "api.client.requests.request",
+            side_effect=requests.ConnectionError("refused"),
+        )
+
+        with pytest.raises(BackendError) as caught:
+            _request("GET", "/api/v2/anything/")
+
+        assert caught.value.status_code is None
+
+    def test_api_client_a_transport_failure_says_what_happened(self, mocker):
+        mocker.patch(
+            "api.client.requests.request",
+            side_effect=requests.ConnectionError("connection refused"),
+        )
+
+        with pytest.raises(BackendError) as caught:
+            _request("GET", "/api/v2/anything/")
+
+        assert "could not reach the backend" in str(caught.value)
+
+    def test_api_client_the_original_is_kept_as_the_cause(self, mocker):
+        """`raise ... from error`, so a traceback still names the socket failure
+        rather than stopping at our own wrapper."""
+        original = requests.ConnectionError("refused")
+        mocker.patch("api.client.requests.request", side_effect=original)
+
+        with pytest.raises(BackendError) as caught:
+            _request("GET", "/api/v2/anything/")
+
+        assert caught.value.__cause__ is original

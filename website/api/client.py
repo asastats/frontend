@@ -51,13 +51,31 @@ def _request(method, path, **kwargs):
             f"{settings.ASASTATS_API_URL!r} by concatenation"
         )
 
-    resp = requests.request(
-        method,
-        f"{settings.ASASTATS_API_URL}{path}",
-        headers=_headers(),
-        timeout=settings.ASASTATS_API_TIMEOUT,
-        **kwargs,
-    )
+    # **A backend that cannot be reached is a backend error.**
+    #
+    # Everything below raises `BackendError` and every caller catches it, but a
+    # *transport* failure - the engine down, a DNS miss, a read timeout - came
+    # out of `requests` as its own exception and went straight past all of them.
+    # Opening an NFT collection while the engine was restarting answered a 500
+    # rather than the "could not be loaded" the template already carries, and
+    # the same held for every other caller in this module.
+    #
+    # Wrapped here rather than at each call site because this is the one place
+    # that knows the request was ours, and because the alternative is every
+    # caller having to name a `requests` type to catch a condition the client is
+    # supposed to hide from them.
+    #
+    # `status_code` stays None: there was no response to have one.
+    try:
+        resp = requests.request(
+            method,
+            f"{settings.ASASTATS_API_URL}{path}",
+            headers=_headers(),
+            timeout=settings.ASASTATS_API_TIMEOUT,
+            **kwargs,
+        )
+    except requests.RequestException as error:
+        raise BackendError(f"could not reach the backend: {error}") from error
     if resp.status_code >= 400:
         try:
             detail = resp.json().get("detail")

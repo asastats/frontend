@@ -4455,6 +4455,97 @@
    as expected rather than as a broken feature. Block, because the label it
    sits in is a flex row and it belongs under the control rather than beside
    it. */
+/* The asset button: the control the reader actually chooses with, styled as
+   the swap window's `swap-assetbtn` is, because that is where they met this
+   pattern first. Empty it reads "Choose asset"; filled it carries the token. */
+.alerts-assetbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--alert-line);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.alerts-assetbtn:hover { border-color: var(--color-primary); }
+
+.alerts-assetbtn-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+}
+
+/* The picker, revealed by the button rather than shown beside it - the search
+   is how a reader reaches an asset, not the field itself. */
+.alerts-picker {
+  margin-top: 4px;
+  padding: 0.4rem;
+  border: 1px solid var(--alert-line);
+  border-radius: 0.5rem;
+}
+
+.alerts-picker[hidden] { display: none; }
+
+.alerts-search input {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--alert-line);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: inherit;
+  font-size: 0.8rem;
+}
+
+/* The unit toggle, beside the threshold it applies to. */
+.alerts-threshold-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.alerts-threshold-row .alerts-threshold { flex: 1 1 auto; min-width: 0; }
+
+.alerts-units { display: inline-flex; }
+
+.alerts-units[hidden] { display: none; }
+
+.alerts-unit {
+  padding: 0 0.5rem;
+  border: 1px solid var(--alert-line);
+  background: transparent;
+  color: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.alerts-unit:first-child { border-radius: 0.4rem 0 0 0.4rem; }
+.alerts-unit:last-child { border-radius: 0 0.4rem 0.4rem 0; border-left: none; }
+
+/* `aria-pressed` is the state, so the style follows it rather than a second
+   class that could disagree with what a screen reader is told. */
+.alerts-unit[aria-pressed="true"] {
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  border-color: var(--color-primary);
+}
+
+/* What the figure is now. Absent when the page has never been re-priced, and
+   `:empty` keeps it from reserving a line it has nothing to put in. */
+.alerts-now {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--alert-ink-3);
+}
+
+.alerts-now:empty { display: none; }
+
 /* The asset search's results, which are the swap window's rows rendered into
    this form. They need somewhere to sit that does not push the rest of the
    form down the modal, so the list is capped and scrolls. */
@@ -4466,18 +4557,6 @@
 }
 
 .alerts-asset-results:empty { display: none; }
-
-/* What was picked, shown beside the box once the list closes - otherwise a
-   reader who chose an asset and saw the list vanish has no confirmation that
-   anything was recorded. */
-.alerts-asset-chosen {
-  display: inline-block;
-  margin-top: 4px;
-  font-size: 0.75rem;
-  color: var(--alert-ink-3);
-}
-
-.alerts-asset-chosen:empty { display: none; }
 
 .alerts-window-note {
   display: block;

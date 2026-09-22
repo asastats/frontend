@@ -93,9 +93,14 @@
           hx-target="#id-alerts-modal-slot"
           hx-swap="innerHTML"
           {% if alerts_left == 0 %}data-at-limit="true"{% endif %}>
-    Alerts{% if alerts_kept %}
-    <span class="badge badge-sm alerts-count">{{ alerts_kept }}</span>
-    {% endif %}
+    Alerts
+    {# Always rendered, hidden at zero, so `alerts.js` can update it after a #}
+    {# create or a delete without having to build the element. The panel      #}
+    {# swap replaces the modal's contents only - this badge lives out here in #}
+    {# the toolbar, so nothing touched it and the count went stale the moment #}
+    {# a reader added their first rule.                                       #}
+    <span class="badge badge-sm alerts-count"
+          {% if not alerts_kept %}hidden{% endif %}>{{ alerts_kept }}</span>
   </button>
 </div>
 {# The dialog lands here. Outside the toolbar so the flex row does not have to #}
