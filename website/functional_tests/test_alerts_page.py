@@ -344,7 +344,7 @@ class AlertsModalTest(AlertsReaderMixin, FunctionalTest):
 
         text = self.find_elem_by_class("alerts-rule-text").text
         assert text == (
-            f"Portfolio total {ADDRESS[:5]}...{ADDRESS[-5:]} "
+            f"Portfolio total for {ADDRESS[:5]}...{ADDRESS[-5:]} "
             "falls below 100.00 ALGO"
         )
 

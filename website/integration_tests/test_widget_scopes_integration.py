@@ -26,10 +26,16 @@ goes untested. `test_every_engine_backed_scope_is_accounted_for` fails when any
 manifest declares a scope this file neither exercises nor has deliberately
 excused, so a new scope forces a decision instead of a silence.
 
-**On what is deliberately not called.** `historic:process` and `historic:reset`
-mutate a reader's stored history, and `router:quote` builds a real quote against
-the chain. They are excused by name below with the reason, not skipped by
-omission - the difference being that an excuse is visible in a diff.
+**On what is deliberately not called.** `router:quote` builds a real quote
+against the chain and `router:group` a real transaction group. They are excused
+by name below with the reason, not skipped by omission - the difference being
+that an excuse is visible in a diff.
+
+**Three excuses came off on 2026-09-24**, which is what the list is for. The
+five `historic:*` scopes were excused as needing "a reader's stored history";
+asked instead of assumed, four of them answer a bundle with *no* history with
+the contract their consumer is written against, so they are covered in
+`test_historic_integration.py` and named here as such rather than deleted.
 """
 
 import importlib
@@ -87,11 +93,11 @@ EXPECTED_READERS = {
 #: changes it; a scope simply missing from the table above is invisible for
 #: ever. Each of these wants its own test with its own setup, not a line here.
 EXCUSED = {
-    "historic:process": "starts a real evaluation run against a reader's history",
-    "historic:reset": "deletes a reader's stored history",
-    "historic:evaluate": "runs a real evaluation for a period",
+    "historic:process": "covered by `test_historic_integration.py`, grant included",
+    "historic:reset": "covered by `test_historic_integration.py`, grant included",
+    "historic:evaluate": "covered by `test_historic_integration.py`, grant included",
     "historic:events": "covered by `test_historic_integration.py`, grant included",
-    "historic:timestamp": "a POST that evaluates one point in a stored history",
+    "historic:timestamp": "covered by `test_historic_integration.py`, grant included",
     "router:quote": "builds a real quote against the chain, ~15 s on this hardware",
     "router:group": "builds a real transaction group; belongs with the swap tests",
     "router:sweep": "covered by `test_dustsweep_integration.py`, grant included",

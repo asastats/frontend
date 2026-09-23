@@ -11,6 +11,13 @@ for pages named in `lva`**. This module is what names them.
     lvx   pages the pass should re-price      written here and by the widget
     lva   pages that also want a snapshot     written here alone
     lvn   the snapshot itself                 read here, written by the engine
+    lvnh  the fingerprint that snapshot is of read here, written by the engine
+
+**`lvn:` holds an account and nothing else, and that is a contract rather than
+a convention.** This module serves it to entitled callers, so its shape cannot
+be changed by an engine deploy that lands before a website deploy - the two
+services sync separately, and minutes out of step is ordinary. Anything the
+browser's live widget needs *about* a snapshot goes in a key beside it.
 
 **Why the subscription and the cap are the same call.** Before this, an API
 request cost the engine nothing per block - `website/api/` wrote none of these
@@ -77,6 +84,11 @@ SUBSCRIBED_KEY = "lvx"
 API_WARM_KEY = "lva"
 #: Where the engine publishes a serialized account for an `lva` page.
 SNAPSHOT_PREFIX = "lvn"
+#: The fingerprint that snapshot describes, beside it rather than inside it -
+#: this process serves `lvn:` to API callers, so its shape is a contract an
+#: engine deploy must not be able to change. See the engine's
+#: `CACHE_KEY_LIVE_SNAPSHOT_HOLDINGS`.
+SNAPSHOT_HOLDINGS_PREFIX = "lvnh"
 
 
 def subscribing_enabled():
@@ -259,9 +271,14 @@ def stamped_snapshot(value, addresses, client=None):
     caught up to - so it has to know which fingerprint this snapshot actually
     describes rather than assume it is the one just published.
 
-    A snapshot written before the engine carried the stamp comes back with an
-    empty fingerprint, which every caller must read as "cannot tell" and fall
-    back on. `snapshot` keeps the old shape so the API path is untouched.
+    **`lvn:` keeps the shape it has always had**, because this process serves it
+    to entitled API callers and an engine deployed ahead of this one must not be
+    able to change what they get. The fingerprint lives in `lvnh:`, a key that
+    did not exist before: an engine that predates it leaves it absent, which
+    reads as "cannot tell" and costs the reader a reload rather than an answer.
+
+    One `MGET`, so the pair comes back as the engine wrote it rather than as a
+    fingerprint from one block against an account from the next.
 
     :param value: single address, or the bundle hash from the path
     :type value: str
@@ -275,19 +292,18 @@ def stamped_snapshot(value, addresses, client=None):
 
     try:
         client = redis_instance() if client is None else client
-        raw = client.get(f"{SNAPSHOT_PREFIX}:{page_key(value, addresses)}")
+        page = page_key(value, addresses)
+        raw, holdings = client.mget(
+            f"{SNAPSHOT_PREFIX}:{page}", f"{SNAPSHOT_HOLDINGS_PREFIX}:{page}"
+        )
         if not raw:
             return None
+        if isinstance(holdings, bytes):
+            holdings = holdings.decode()
         # `strict_map_key=False` for the same reason the widget's payload read
         # needs it: these structures are keyed by asset id, and msgpack refuses
         # integer keys by default.
-        stored = msgpack.unpackb(raw, strict_map_key=False)
-        # An unwrapped account is one the engine published before the stamp, and
-        # `asaitems` is what tells the two apart: the wrapper has exactly two
-        # keys and neither is a field of a serialized account.
-        if isinstance(stored, dict) and "account" in stored and "holdings" in stored:
-            return stored.get("account"), stored.get("holdings") or ""
-        return stored, ""
+        return msgpack.unpackb(raw, strict_map_key=False), holdings or ""
     except Exception as error:  # noqa: BLE001 - see the module docstring
         logger.warning("api live snapshot unreadable: %s", error, exc_info=True)
         return None

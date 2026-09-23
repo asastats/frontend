@@ -295,20 +295,57 @@ class TestApiLiveSubscribe:
 class TestApiLiveSnapshot:
     """Testing class for :py:func:`api.live.snapshot`."""
 
-    def test_api_live_snapshot_returns_the_published_account(self, mocker):
+    @staticmethod
+    def _published(mocker, account=None, holdings=None):
+        """A client answering the one MGET this module makes."""
         client = mocker.MagicMock()
-        client.get.return_value = msgpack.packb({"total": {"total": 1.0}})
+        client.mget.return_value = [
+            None if account is None else msgpack.packb(account),
+            holdings,
+        ]
+        return client
+
+    def test_api_live_snapshot_returns_the_published_account(self, mocker):
+        """**`lvn:` holds an account and nothing else.** This is what an
+        entitled caller is served, so its shape is a contract an engine deploy
+        must not be able to change - the fingerprint the browser's widget needs
+        lives in a key beside it rather than wrapped around this one."""
+        client = self._published(mocker, {"total": {"total": 1.0}})
 
         assert live.snapshot(TEST_ADDRESS, "", client=client) == {
             "total": {"total": 1.0}
         }
-        client.get.assert_called_once_with(f"{live.SNAPSHOT_PREFIX}:{TEST_ADDRESS}")
+        client.mget.assert_called_once_with(
+            f"{live.SNAPSHOT_PREFIX}:{TEST_ADDRESS}",
+            f"{live.SNAPSHOT_HOLDINGS_PREFIX}:{TEST_ADDRESS}",
+        )
+
+    def test_api_live_stamped_snapshot_carries_the_fingerprint(self, mocker):
+        """The widget writes this back onto the page as what it has caught up
+        to, so it has to be the fingerprint of *this* account rather than of
+        whatever was published most recently."""
+        client = self._published(mocker, {"total": {}}, b"8:assets:positions")
+
+        assert live.stamped_snapshot(TEST_ADDRESS, "", client=client) == (
+            {"total": {}},
+            "8:assets:positions",
+        )
+
+    def test_api_live_stamped_snapshot_reads_an_absent_stamp_as_unknown(self, mocker):
+        """An engine that predates `lvnh:` leaves it absent. Empty is "cannot
+        tell", and the caller falls back to the reload rather than claiming the
+        page has caught up to something it has not."""
+        client = self._published(mocker, {"total": {}}, None)
+
+        assert live.stamped_snapshot(TEST_ADDRESS, "", client=client) == (
+            {"total": {}},
+            "",
+        )
 
     def test_api_live_snapshot_reads_integer_keyed_maps(self, mocker):
         """msgpack refuses integer keys unless told not to, and these
         structures are keyed by asset id."""
-        client = mocker.MagicMock()
-        client.get.return_value = msgpack.packb({"values": {31566704: 2.5}})
+        client = self._published(mocker, {"values": {31566704: 2.5}})
 
         assert live.snapshot(TEST_ADDRESS, "", client=client) == {
             "values": {31566704: 2.5}
@@ -321,20 +358,19 @@ class TestApiLiveSnapshot:
         first answer is the cached one and every one after it is fresh. A
         caller that never subscribes stays on this path forever.
         """
-        client = mocker.MagicMock()
-        client.get.return_value = None
+        client = self._published(mocker, None, "8:assets:positions")
 
         assert live.snapshot(TEST_ADDRESS, "", client=client) is None
 
     def test_api_live_snapshot_survives_an_undecodable_payload(self, mocker):
         """Falls back to the engine rather than serving half an account."""
         client = mocker.MagicMock()
-        client.get.return_value = b"\xff\xfe not msgpack"
+        client.mget.return_value = [b"\xff\xfe not msgpack", None]
 
         assert live.snapshot(TEST_ADDRESS, "", client=client) is None
 
     def test_api_live_snapshot_survives_an_unreachable_redis(self, mocker):
         client = mocker.MagicMock()
-        client.get.side_effect = RuntimeError("connection refused")
+        client.mget.side_effect = RuntimeError("connection refused")
 
         assert live.snapshot(TEST_ADDRESS, "", client=client) is None

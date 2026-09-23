@@ -170,12 +170,13 @@ class LiveRefreshTest(FunctionalTest):
             client.get.return_value = block
             return client
 
-        packed = msgpack.packb({"holdings": holdings, "account": snapshot})
-
-        def answer(key, *args, **kwargs):
-            return packed if str(key).startswith("lvn:") else block
-
-        client.get.side_effect = answer
+        # `lvn:` holds the account alone - that shape is what API callers are
+        # served - and `lvnh:` the fingerprint beside it, read together with one
+        # `MGET`. Stubbing them as one wrapped value would test a shape the
+        # engine does not write.
+        packed = msgpack.packb(snapshot)
+        client.get.return_value = block
+        client.mget.return_value = [packed, holdings]
         return client
 
     def _opened_position(self, sample, asset_id):
