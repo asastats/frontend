@@ -56,6 +56,13 @@ PUBLISHED_TOTAL = 4242.424242
 #: What the page is rendered from. `<counter>:<digest of the asset ids>`, as
 #: `utils.transmitters._holdings_fingerprint` builds it.
 RENDERED_FINGERPRINT = "7:abc123def456"
+#: The same page under the split fingerprint: `<counter>:<assets>:<positions>`.
+#: Two-part fingerprints stay in the tests above deliberately - they are what a
+#: page rendered by an older engine carries, and those must still reload.
+RENDERED_FINGERPRINT_SPLIT = "7:abc123def456:pos000000"
+#: After a position opened: the asset half stands, the position half moved. The
+#: counter steps too, because the block that opened it named the account.
+REGROUPED_FINGERPRINT = "8:abc123def456:pos111111"
 #: The same holdings after a block named the account: the counter has stepped
 #: and the digest has not, so the asset set is unchanged and only figures moved.
 #:
@@ -141,11 +148,70 @@ class LiveRefreshTest(FunctionalTest):
             }
         )
 
-    def _redis(self, values=None, holdings=RENDERED_FINGERPRINT, positions=None):
-        """A client that answers with one published block and records the beat."""
+    def _redis(
+        self,
+        values=None,
+        holdings=RENDERED_FINGERPRINT,
+        positions=None,
+        snapshot=None,
+    ):
+        """A client that answers with one published block and records the beat.
+
+        **Keyed by prefix once a snapshot is involved.** The widget reads two
+        things out of this Redis now - `lvp:` for the block's diff and `lvn:`
+        for the account a venue group is re-rendered from - and a client that
+        answers every `get` with the diff would hand the regroup a payload
+        where it expects an account, which reads as "no snapshot" and falls
+        back to the reload this is trying to prove it does not need.
+        """
         client = mock.MagicMock()
-        client.get.return_value = self._published(values, holdings, positions)
+        block = self._published(values, holdings, positions)
+        if snapshot is None:
+            client.get.return_value = block
+            return client
+
+        packed = msgpack.packb({"holdings": holdings, "account": snapshot})
+
+        def answer(key, *args, **kwargs):
+            return packed if str(key).startswith("lvn:") else block
+
+        client.get.side_effect = answer
         return client
+
+    def _opened_position(self, sample, asset_id):
+        """Return `sample` with one more position under `asset_id`.
+
+        Named after the report: a Mallow directional position, which is what
+        the reader opened while watching the page. The name is what the test
+        looks for, because it is the one thing on the row that cannot have come
+        from the server-rendered page.
+        """
+        from copy import deepcopy
+
+        from api.position_id import annotate_positions
+
+        opened = deepcopy(sample)
+        for item in opened["asaitems"]:
+            if item["asset"]["id"] != asset_id:
+                continue
+            item["programs"].append(
+                {
+                    "program": {
+                        "type": "Staked",
+                        "name": "Mallow (ALGO down)",
+                        "provider": {"name": "Mallow"},
+                        "url": "https://usemallow.app/",
+                        "code": "",
+                    },
+                    "value": 22.0,
+                    "amount": 5500000,
+                    "linked": [],
+                    "distribution": [],
+                }
+            )
+        for item in opened["asaitems"]:
+            annotate_positions(item["asset"]["id"], item["programs"])
+        return opened
 
     def _annotated_sample(self):
         """Return the sample with every position given its `pid`.
@@ -491,6 +557,63 @@ class LiveRefreshTest(FunctionalTest):
         # The sentinel is how "did not reload" shows: a rebuilt page loses it.
         assert self.browser.execute_script("return window.__stillHere;") is True
         assert self.holdings_attribute() == RENDERED_FINGERPRINT
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_new_position_arrives_without_reloading_the_page(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**The reported case, and the thing this whole path is for.**
+
+        A Mallow position opened on an account that already held the asset. No
+        asset arrived, so nothing on this page needs rebuilding - but until the
+        two digests were published apart it was indistinguishable from buying
+        one, and the reader lost their scroll, their filters and every open
+        section to a full reload to gain one row. Reported 2026-09-23, watched
+        live while staking.
+
+        The sentinel is the assertion and it is the exact inverse of
+        `test_a_holdings_change_reloads_the_page`: a rebuilt page loses it, so
+        finding it *and* the new row is the whole claim. Asserting the row
+        alone would pass on a reload, which is what used to happen.
+        """
+        if not self.RENDERS_POSITIONS:
+            self.skipTest("design 1 renders no positions")
+        sample = self._annotated_sample()
+        asset_id, program = self._a_position(sample)
+        mocked_fetch.return_value = sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+
+        # The snapshot the engine publishes on the block that changed the
+        # positions: the same account, plus one position the page has never
+        # seen. A copy rather than the sample itself - the page is rendered
+        # from that, and a row already on it would prove nothing.
+        opened = self._opened_position(sample, asset_id)
+        mocked_redis.return_value = self._redis(
+            holdings=REGROUPED_FINGERPRINT, snapshot=opened
+        )
+        self._rendered_fingerprint(RENDERED_FINGERPRINT_SPLIT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!document.querySelector("
+                "'.position[data-search*=\"Mallow (ALGO down)\"]');"
+            ),
+            timeout=20,
+        )
+
+        # Still the same document: the row arrived in place.
+        assert self.browser.execute_script("return window.__stillHere;") is True
+        # And the page has caught up, so it stops asking for the same regroup.
+        assert self.holdings_attribute() == REGROUPED_FINGERPRINT
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")

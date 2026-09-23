@@ -661,10 +661,27 @@ class AlertsAddressPageEntryTest(AddressPageMixin, FunctionalTest):
         )
 
     def test_the_button_counts_what_the_reader_already_keeps(self):
+        """**Waits for the reveal, because `.text` is empty until then.**
+
+        The toolbar renders `hidden` and `placeToolbar` moves it into the
+        action row and unhides it, so between load and reveal this badge is a
+        present element that Selenium reads as "". Read straight after
+        `open_address_page` - which waits only for the element to exist - this
+        passed alone and failed in a class run, where the page is slower to
+        settle than the assertion is to arrive. The count is server-rendered
+        and was never wrong; the test was looking too early.
+        """
         user = self.sign_in("alerts-entry-count@example.com")
         self.rule(user)
 
         self.open_address_page()
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var t = document.getElementById('id-alerts');"
+                "return !!(t && !t.hidden);"
+            ),
+            timeout=self.OPEN_TIMEOUT,
+        )
 
         assert self.find_elem_by_class("alerts-count").text == "1"
 

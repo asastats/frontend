@@ -211,8 +211,19 @@
          carrying its own subtotal in the money column. A reader with the same
          asset in four places is asking "how much of it is on Tinyman", and a
          flat list makes them add it up themselves. See `program_groups`.
+
+         **This is also the unit the live pass re-renders, which is why it is a
+         partial and why it carries an id.** A position opening or closing used
+         to reload the whole page, because a fragment reaches only elements that
+         already exist and the value fragments carry figures, not rows. What it
+         cannot be is a single `.position`: a group has a heading, a count and a
+         subtotal that only appears above two positions, so a row arriving
+         changes three things outside itself. Re-rendering the group is what
+         makes all of them right at once, from this markup rather than from a
+         second copy of it in JavaScript.
       {% endcomment %}
-      <div class="program-groups">
+      {% partialdef programgroups inline %}
+      <div class="program-groups" id="pg-f{{ asset.id }}"{% if oob %} hx-swap-oob="true"{% endif %}>
         {% for group in asaitem.programs|program_groups %}
         {% comment %} `data-venue` is what "Group: by venue" collects on, and
            `data-asset` is what a group has to say about itself once it has
@@ -267,6 +278,7 @@
         </div>
         {% endfor %}
       </div>
+      {% endpartialdef programgroups %}
 
       {% include "snippets/asas/links.html" with asset=asset %}
     </div>

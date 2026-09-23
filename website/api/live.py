@@ -246,6 +246,31 @@ def snapshot(value, addresses, client=None):
     :type client: :class:`Redis`
     :return: dict or None
     """
+    return (stamped_snapshot(value, addresses, client) or (None, ""))[0]
+
+
+def stamped_snapshot(value, addresses, client=None):
+    """Return `(account, holdings fingerprint)` for a page, or None.
+
+    **The fingerprint is what the browser's reader needs and the API does not.**
+    An API caller wants the freshest account there is and has nothing to compare
+    it against. The live widget re-renders one venue group from this instead of
+    reloading the page, and then writes onto the page the fingerprint it has
+    caught up to - so it has to know which fingerprint this snapshot actually
+    describes rather than assume it is the one just published.
+
+    A snapshot written before the engine carried the stamp comes back with an
+    empty fingerprint, which every caller must read as "cannot tell" and fall
+    back on. `snapshot` keeps the old shape so the API path is untouched.
+
+    :param value: single address, or the bundle hash from the path
+    :type value: str
+    :param addresses: space-joined addresses for a multi-address bundle
+    :type addresses: str
+    :param client: Redis client instance, for tests
+    :type client: :class:`Redis`
+    :return: tuple of (dict, str), or None
+    """
     import msgpack
 
     try:
@@ -256,7 +281,13 @@ def snapshot(value, addresses, client=None):
         # `strict_map_key=False` for the same reason the widget's payload read
         # needs it: these structures are keyed by asset id, and msgpack refuses
         # integer keys by default.
-        return msgpack.unpackb(raw, strict_map_key=False)
+        stored = msgpack.unpackb(raw, strict_map_key=False)
+        # An unwrapped account is one the engine published before the stamp, and
+        # `asaitems` is what tells the two apart: the wrapper has exactly two
+        # keys and neither is a field of a serialized account.
+        if isinstance(stored, dict) and "account" in stored and "holdings" in stored:
+            return stored.get("account"), stored.get("holdings") or ""
+        return stored, ""
     except Exception as error:  # noqa: BLE001 - see the module docstring
         logger.warning("api live snapshot unreadable: %s", error, exc_info=True)
         return None
