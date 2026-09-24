@@ -155,9 +155,7 @@ class TestCoreHelpersParsingRawFunctions:
         assert mocked_check.call_count == len(stripped)
 
     # # _strip_address
-    @pytest.mark.parametrize(
-        "char", [*[char for char in BUNDLE_SEPARATION_CHARS], "\n"]
-    )
+    @pytest.mark.parametrize("char", [*[char for char in BUNDLE_SEPARATION_CHARS], "\n"])
     def test_corehelpers_strip_address_functionality(self, char):
         returned = _strip_address(TEST_ADDRESS + char)
         assert returned == TEST_ADDRESS
@@ -184,9 +182,7 @@ class TestCoreHelpersParsingRawFunctions:
         assert TEST_ADDRESS in returned
         assert TEST_ADDRESS2 in returned
 
-    def test_corehelpers_addresses_from_raw_is_valid_for_valid_raw_of_names(
-        self, mocker
-    ):
+    def test_corehelpers_addresses_from_raw_is_valid_for_valid_raw_of_names(self, mocker):
         addresses1, addresses2 = "addresses1", "addresses2"
         mocker.patch(
             "core.helpers.check_algorand_address",

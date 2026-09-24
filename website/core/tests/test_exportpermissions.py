@@ -80,8 +80,7 @@ class TestCoreExportPermissionsTierAllows:
             is True
         )
         assert (
-            tier_allows(SUBSCRIPTION_TIER_PERMISSIONS["Intro"], 2, limits=limits)
-            is False
+            tier_allows(SUBSCRIPTION_TIER_PERMISSIONS["Intro"], 2, limits=limits) is False
         )
 
     def test_tier_allows_checks_intro_permission_for_size_under_intro_but_over_free(
@@ -96,8 +95,7 @@ class TestCoreExportPermissionsTierAllows:
         }
         # Size 1 <= Intro (2), but > free (0) -> falls through to the final return
         assert (
-            tier_allows(SUBSCRIPTION_TIER_PERMISSIONS["Intro"], 1, limits=limits)
-            is True
+            tier_allows(SUBSCRIPTION_TIER_PERMISSIONS["Intro"], 1, limits=limits) is True
         )
         # Tests the 'permission_value = permission_value or 0' fallback logic
         assert tier_allows(None, 1, limits=limits) is False

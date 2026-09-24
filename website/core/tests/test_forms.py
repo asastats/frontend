@@ -208,9 +208,7 @@ class TestExportForm:
 
     # # clean
     def test_exportform_clean_calls_and_returns_super_clean(self):
-        form = ExportForm(
-            data={"provider": "koinly", "use_mve": True, "non_zero": True}
-        )
+        form = ExportForm(data={"provider": "koinly", "use_mve": True, "non_zero": True})
         form.is_valid()
         returned = form.clean()
         assert returned == {"provider": "koinly", "use_mve": True, "non_zero": True}
@@ -228,9 +226,7 @@ class TestExportForm:
         form.is_valid()
         with pytest.raises(ValidationError) as exception:
             form.clean()
-        assert (
-            str(exception.value) == "['Only Koinly is available as provider for now.']"
-        )
+        assert str(exception.value) == "['Only Koinly is available as provider for now.']"
 
 
 # # USERS
@@ -356,9 +352,7 @@ class TestProfileBundleNameForm:
         mocked = mocker.patch("core.forms.BaseBundleNameForm.__init__")
         ProfileBundleNameForm.instance = mocker.MagicMock()
         ProfileBundleNameForm.fields = {"addresses": mocker.MagicMock()}
-        ProfileBundleNameForm(
-            mocker.MagicMock(), 2, 5, named1="named1", named2="named2"
-        )
+        ProfileBundleNameForm(mocker.MagicMock(), 2, 5, named1="named1", named2="named2")
         mocked.assert_called_once_with(2, 5, named1="named1", named2="named2")
 
     def test_profilebundlenameform_init_sets_instance_profile_to_provided(self, mocker):
@@ -507,9 +501,7 @@ class TestProfileBundleNameForm:
             data={"name": name, "addresses": "addresses"},
         )
         mocker.patch("core.forms.addresses_from_raw", return_value=parsed_addresses)
-        mocked_address = mocker.patch(
-            "core.forms.validate_address_or_algo_name_url_path"
-        )
+        mocked_address = mocker.patch("core.forms.validate_address_or_algo_name_url_path")
         mocked_system = mocker.patch(
             "core.models.Profile.bundlename_system_reserved_url_path_check"
         )
@@ -535,9 +527,7 @@ class TestProfileBundleNameForm:
             data={"name": name, "addresses": "addresses"},
         )
         mocker.patch("core.forms.addresses_from_raw", return_value=parsed_addresses)
-        mocked_address = mocker.patch(
-            "core.forms.validate_address_or_algo_name_url_path"
-        )
+        mocked_address = mocker.patch("core.forms.validate_address_or_algo_name_url_path")
         assert form.is_valid()
         mocked_address.assert_called_once_with(name)
 
@@ -844,9 +834,7 @@ class TestProfileLayoutForm:
 
     def test_profilelayoutform_accepts_an_entitled_layout(self):
         profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
-        form = ProfileLayoutForm(
-            data={"preferred_layout": "dynamic"}, instance=profile
-        )
+        form = ProfileLayoutForm(data={"preferred_layout": "dynamic"}, instance=profile)
         assert form.is_valid() is True
 
     def test_profilelayoutform_rejects_compact_layout_below_its_tier(self):
@@ -863,9 +851,7 @@ class TestProfileLayoutForm:
 
     def test_profilelayoutform_accepts_dynamic_layout_at_intro(self):
         profile = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
-        form = ProfileLayoutForm(
-            data={"preferred_layout": "dynamic"}, instance=profile
-        )
+        form = ProfileLayoutForm(data={"preferred_layout": "dynamic"}, instance=profile)
         assert form.is_valid() is True
 
     def test_profilelayoutform_rejects_unknown_layout(self):

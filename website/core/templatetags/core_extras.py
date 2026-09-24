@@ -49,9 +49,9 @@ def asa_icon(asaitem):
     For non-USDC assets, look for a provider override match in three places
     (in order): explicit provider name on any program, the asset's display
     name, and linked URLs on programs. The redundancy matches how the
-    serialized payload describes Lofty/ANote assets — some entries carry
-    the provider explicitly, some only the linked URL, some only the asset
-    name prefix. Falls back to the standard per-asset thumbnail path.
+    serialized payload describes Lofty/ANote assets: some entries carry the
+    provider explicitly, some only the linked URL, some only the asset name
+    prefix. Falls back to the standard per-asset thumbnail path.
 
     :param asaitem: serialized asaitem
     :type asaitem: dict
@@ -285,28 +285,20 @@ IDENTICON_COLUMNS = (IDENTICON_GRID + 1) // 2
 def identicon(addresses, size=32):
     """Return an inline SVG identifying ``addresses``, derived from them alone.
 
-    **Nothing is stored and nothing is uploaded.** Every account has one on the
-    day it is created, including the wallet-authenticated majority who would
-    never have a social avatar, and there is no image to host, resize or
-    moderate. It is also the honest picture for this product: what identifies a
-    row here *is* its addresses, so the icon is a rendering of the identity
-    rather than a decoration beside it.
+    **Nothing is stored and nothing is uploaded.** A digest supplies the colour
+    and which of fifteen cells are filled, and the grid is mirrored so the
+    result reads as a mark rather than as noise.
 
-    The design is the mirrored-grid identicon: a digest supplies both the colour
-    and which of fifteen cells are filled, and the mirror is what makes the
-    result read as a mark instead of as noise. Five columns rather than the more
-    common eight - at the 32px this is drawn at, eight columns is a texture.
-
-    Two theming rules it has to obey, because this is drawn in 57 of them:
+    Two theming rules it must obey, because this is drawn in 57 of them:
 
     * the plate is `currentColor` at low opacity, so it follows the text colour
-      of whatever sits behind it rather than assuming a light page;
-    * the cells are a fixed mid lightness, which is the band that keeps contrast
-      on a dark background and on a light one. Hue is the only thing the digest
-      chooses, so no address can land on an unreadable colour.
+      behind it rather than assuming a light page;
+    * the cells are a fixed mid lightness, which holds contrast on a dark
+      background and on a light one. Hue is the only thing the digest chooses,
+      so no address can land on an unreadable colour.
 
-    `sha256` rather than `hash()`: the icon must be the same in every worker and
-    after every restart, and Python salts `hash()` per process.
+    `sha256` rather than `hash()`, which Python salts per process: the icon has
+    to be the same in every worker and after every restart.
 
     :param addresses: Algorand address, or addresses separated by spaces
     :type addresses: str
@@ -403,10 +395,10 @@ def has_styling(elem):
 def invert_price(price):
     """Return 1/price (or 0 when price is missing/zero).
 
-    Used by the per-distribution price line in ``snippets/asas/program.html``
-    (Phase 5c-fixes / W3). ``price`` is the parent asaitem's ``price`` field
-    — ALGO per 1 unit of asset. Inverting it gives asset units per 1 ALGO,
-    which is the form the website renders (e.g. ``0.10966392 USDC/ALGO``).
+    Used by the per-distribution price line in ``snippets/asas/program.html``.
+    ``price`` is the parent asaitem's ``price`` field, ALGO per 1 unit of
+    asset; inverting it gives asset units per 1 ALGO, which is the form the
+    website renders (e.g. ``0.10966392 USDC/ALGO``).
 
     :param price: Decimal/string/float price value
     :return: 1/price as a float, or 0.0 if price is falsy or non-numeric
@@ -448,8 +440,8 @@ def abs_value(value):
 
     Used by ``snippets/asas/program.html`` to display the magnitude of
     negative amounts (e.g. borrowed asset amount) inside parens without
-    a stray minus sign — the parens + ``myred-text`` styling already
-    convey the negative semantics.
+    a stray minus sign: the parens and the ``myred-text`` styling already
+    carry the negative.
 
     For int input returns an int (so it composes cleanly with
     ``amount_repr`` which expects ``int(amount) / 10**decimals``);
@@ -653,33 +645,21 @@ def program_url(context, program_url):
 def program_groups(programs):
     """Group an asset's positions by the program holding them, with subtotals.
 
-    The dynamic designs stack positions under their program rather than
-    listing them flat, because "how much of this asset is locked in CompX" is
-    the question a reader with the same asset in nine places is actually asking,
-    and a flat list makes them add it up themselves.
+    **By program, not by venue**, and the distinction is not pedantic:
+    ``program.name`` is a venue for most position types but is the category
+    "Liquidity" for liquidity positions, with the venue in ``program.code``.
+    Calling this a venue grouping would be dishonest, and splitting `code` on
+    whitespace to recover one would be guessing at a string the engine never
+    promised the shape of.
 
-    **By program, not by venue**, and the distinction is not pedantic. The
-    payload's ``program.name`` is a venue for most position types -- "AlgoRai
-    deposit", "CompX token stream", "Wallet balance" -- but for liquidity
-    positions it is the category "Liquidity", with the actual venue in
-    ``program.code`` ("Pact LP ALGO-EURS"). So the reference address groups 18
-    LP positions across five venues under one "Liquidity" heading. That is a
-    useful grouping and an honest one; calling it a venue grouping would not be,
-    and splitting `code` on whitespace to recover the venue would be guessing at
-    a string the engine never promised the shape of.
+    Grouping happens here rather than in the view because it is presentation,
+    and the serialized payload is shared with the JSON API.
 
-    Grouping happens here rather than in the view because it is presentation:
-    design 1 renders the same programs ungrouped, and the serialized payload is
-    shared with the JSON API, which must not grow a website-shaped key.
-
-    Order is first appearance, not value. The payload arrives ordered by the
-    engine, and re-sorting here would put the subtotal ordering at odds with the
-    position ordering inside each group for no gain -- the toolbar sorts, later,
-    and it sorts both together.
+    Order is first appearance, not value: the payload arrives ordered by the
+    engine and the toolbar sorts later, both together.
 
     A position with no program name is its own group under the empty string,
-    which the template renders as the asset's own balance rather than inventing
-    a label for it.
+    which the template renders as the asset's own balance.
 
     :param programs: one asaitem's ``programs`` list
     :type programs: list
@@ -709,18 +689,15 @@ def program_groups(programs):
 def defer_items(collections):
     """Whether collection bodies should be left to the fetch-on-open.
 
-    **The fold hides rows; it does not stop them being rendered.** Every
-    collection writes out every item, invisible inside a closed ``<details>``,
-    and the fetch on open replaces them anyway. On one real account - 1,990
-    collections, 28,008 NFTs - that was 19.3 MB of a 22 MB page and 152,294
-    elements the browser had to lay out before it would scroll.
+    **The fold hides rows; it does not stop them being rendered**, and the
+    fetch on open replaces them anyway.
 
     Conditional rather than always, because the rendered items are what let the
     NFT filter match inside a collection nobody has opened: ``showMatchedNodes``
-    pairs a thumbnail's ``t<id>`` with its item's ``f<id>``. Under the threshold
-    that markup is cheap and the filter keeps working; over it, the page does
-    not work at all, and a filter that misses unopened collections is the better
-    failure.
+    pairs a thumbnail's ``t<id>`` with its item's ``f<id>``. Under the
+    threshold that markup is cheap and the filter keeps working; over it the
+    page does not work at all, and a filter that misses unopened collections is
+    the better failure.
 
     :param collections: the page's NFT collections
     :type collections: list
@@ -996,34 +973,20 @@ def collection_tile(name):
 def position_band(program):
     """Return the allocation category one position belongs to.
 
-    The band above the list is a decomposition of the same positions the list
-    shows, so the toolbar's category filter has to agree with it exactly: a
-    reader who presses "Staked" and sees a balance row has been told the band
-    was lying. That means the category has to be known *per position*, and the
-    payload does not carry one -- :class:`utils.structs.Consolidated` arrives
-    already summed.
+    **This rule is reproduced from :mod:`utils.charts` and drift is caught by a
+    test, not by a comment.** ``test_dynamic_extras.py`` sums the reference
+    payload's positions by this filter and asserts the four totals equal
+    ``Consolidated``'s own, so either side changing fails it.
 
-    The rule is therefore reproduced here, and it is reproduced rather than
-    shared because the four originals in :mod:`utils.charts` --
-    ``_balance_totals_from_serialized_data`` and its three siblings -- are
-    dict comprehensions over the whole payload with no per-position function to
-    call. Extracting one would mean editing the module design 1's charts are
-    built from, which is finished and is not to be touched.
+    It is reproduced rather than shared because the four originals are dict
+    comprehensions over the whole payload with no per-position function to
+    call, and extracting one would mean editing the module design 1's charts
+    are built from.
 
-    Reproduction invites drift, so it is *tested* rather than commented:
-    ``test_dynamic_extras.py`` sums the reference payload's positions by this
-    filter and asserts the four totals equal ``Consolidated``'s own. If either
-    side ever changes, that fails.
-
-    One deliberate difference, and it is not drift. ``_balance_totals`` uses
-    ``next(...)``, so a second ``Balance`` position on the same asset
-    contributes nothing to the balance total; the ``defi`` comprehension
-    excludes every ``Balance`` position, so that second one lands in no
-    category at all and is missing from the band. Here it is labelled
-    ``balance``, because a row on the page must belong to the category a reader
-    would say it belongs to. The reference payload has no such asset, which is
-    why the two agree; if one appears, the band under-reports and this filter
-    is right.
+    One deliberate difference: a second ``Balance`` position on the same asset
+    lands in no category at all over there, and is labelled ``balance`` here.
+    A row on the page must belong to the category a reader would say it
+    belongs to.
 
     :param program: one entry from an asaitem's ``programs``
     :type program: dict
@@ -1065,28 +1028,17 @@ ALLOCATION_BANDS = (
 def breakdown_key(program, counter):
     """Return a key naming one position's breakdown panel, unique on the page.
 
-    **A `pid` is not unique when it is ambiguous, and that is the whole bug.**
-    Three pairs of positions on the reference bundle are genuinely
-    indistinguishable - same type, name, provider, code and link - so
-    :func:`api.position_id.position_id` gives the pair one identifier and flags
-    it. The markup already declines to put `pq-`/`pv-` ids on those, because two
-    elements under one id means an out-of-band swap lands on whichever comes
-    first and corrects the wrong money. The breakdown panel did not decline: it
-    kept using the shared `pid`, so expanding one position opened the other
-    one's breakdown.
-
-    The fallback is positional, and it has to be **two** numbers.
+    **A `pid` is not unique when it is ambiguous**, so an ambiguous position
+    falls back to a positional key - and it has to be *two* numbers.
     ``asset.html`` renders positions as a loop inside a loop over program
-    groups, so the inner counter restarts at 1 in every group - two ambiguous
-    positions sitting in different groups would both be `1` and collide again.
-    The pair identifies a position within its asset, and the caller already
-    namespaces by asset id, so the result is unique per page.
+    groups, so an inner counter alone restarts at 1 in every group and two
+    ambiguous positions in different groups collide again. The caller
+    namespaces by asset id, so the pair is unique per page.
 
-    Positional is acceptable here and nowhere else in this feature. A breakdown
+    Positional is acceptable here and nowhere else in this feature: a breakdown
     panel is opened and closed inside one rendered page, so a key that changes
-    on the next render costs nothing - which is exactly why the same trick is
-    wrong for a `pid`, where a rank change between renders would silently move a
-    reader's pin to a different position.
+    on the next render costs nothing. A `pid` that moved between renders would
+    silently move a reader's pin to a different position.
 
     :param program: one serialized entry from an asset's ``programs``
     :type program: dict

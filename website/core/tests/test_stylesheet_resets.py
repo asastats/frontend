@@ -91,9 +91,9 @@ class TestCoreStylesheetResets:
             assert match, f"{level} has no rem size to compare"
             sizes.append(float(match.group(1)))
 
-        assert sizes == sorted(sizes, reverse=True), (
-            f"the scale is not descending: {sizes}"
-        )
+        assert sizes == sorted(
+            sizes, reverse=True
+        ), f"the scale is not descending: {sizes}"
 
     def test_core_stylesheet_headings_can_still_be_overridden(self, stylesheet):
         """A card header at `text-base` has to beat the base scale.
@@ -141,9 +141,9 @@ class TestCoreStylesheetResets:
         match = re.search(rf"\.token\.{slot}\{{([^}}]*)\}}", stylesheet)
 
         assert match, f"no rule for slot {slot}"
-        assert "--stripe:" in match.group(1), (
-            f"slot {slot} sets something other than the stripe colour"
-        )
+        assert "--stripe:" in match.group(
+            1
+        ), f"slot {slot} sets something other than the stripe colour"
 
     def test_core_stylesheet_keeps_no_collapsible_rules(self, stylesheet):
         """`collapsible` is Materialize's; the address page stopped emitting it.
@@ -166,9 +166,9 @@ class TestCoreStylesheetResets:
         match = re.search(r"\.nftpreview\{([^}]*)\}", stylesheet)
 
         assert match, "the preview has no styling, so it cannot appear as a popup"
-        assert "position:absolute" in match.group(1).replace(" ", ""), (
-            "the preview is not positioned, so its coordinates do nothing"
-        )
+        assert "position:absolute" in match.group(1).replace(
+            " ", ""
+        ), "the preview is not positioned, so its coordinates do nothing"
 
     def test_core_stylesheet_preview_does_not_eat_its_own_events(self, stylesheet):
         """It opens under the cursor, so it must not receive the pointer.
@@ -195,9 +195,7 @@ class TestCoreStylesheetResets:
         that a Tailwind upgrade which stops doing it shows up here rather than
         leaving a compensating rule in place with nothing to compensate for.
         """
-        match = re.search(
-            r"button,input,select,optgroup,textarea\{([^}]*)\}", stylesheet
-        )
+        match = re.search(r"button,input,select,optgroup,textarea\{([^}]*)\}", stylesheet)
 
         assert match, "preflight no longer resets form controls as a group"
         assert "background-color:#0000" in match.group(1).replace(" ", "")
@@ -229,9 +227,9 @@ class TestCoreStylesheetSwapCaptions:
     def test_core_stylesheet_hides_the_caption_for_the_other_mode(
         self, stylesheet, selector
     ):
-        assert selector in stylesheet, (
-            f"{selector} is not hidden, so both captions render at once"
-        )
+        assert (
+            selector in stylesheet
+        ), f"{selector} is not hidden, so both captions render at once"
 
     def test_core_stylesheet_styles_the_usdc_helper(self, stylesheet):
         """The value under the computed leg. Without a rule it renders inline

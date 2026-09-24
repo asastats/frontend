@@ -289,13 +289,17 @@ class _Builder(HTMLParser):
         self.stack = [self.root]
 
     def handle_starttag(self, tag, attrs):
-        node = Element(tag, {k: (v if v is not None else "") for k, v in attrs}, self.stack[-1])
+        node = Element(
+            tag, {k: (v if v is not None else "") for k, v in attrs}, self.stack[-1]
+        )
         self.stack[-1].children.append(node)
         if tag not in VOID_TAGS:
             self.stack.append(node)
 
     def handle_startendtag(self, tag, attrs):
-        node = Element(tag, {k: (v if v is not None else "") for k, v in attrs}, self.stack[-1])
+        node = Element(
+            tag, {k: (v if v is not None else "") for k, v in attrs}, self.stack[-1]
+        )
         self.stack[-1].children.append(node)
 
     def handle_endtag(self, tag):

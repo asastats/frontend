@@ -76,9 +76,9 @@ class TestCoreStylesheetAffordances:
         """
         body = rules_for(stylesheet, f".{control}")
 
-        assert "text-decoration" in body, (
-            f".{control} has no decoration at rest, so it renders as plain text"
-        )
+        assert (
+            "text-decoration" in body
+        ), f".{control} has no decoration at rest, so it renders as plain text"
 
     @pytest.mark.parametrize("control", IN_PLACE_CONTROLS)
     def test_core_stylesheet_in_place_control_is_dotted_at_rest(
@@ -108,9 +108,7 @@ class TestCoreStylesheetAffordances:
         assert "solid" in body, f".{control} does not respond to hover"
 
     @pytest.mark.parametrize("control", IN_PLACE_CONTROLS)
-    def test_core_stylesheet_in_place_control_answers_a_tap(
-        self, stylesheet, control
-    ):
+    def test_core_stylesheet_in_place_control_answers_a_tap(self, stylesheet, control):
         """`:hover` is the wrong hook on touch -- it sticks after the tap.
 
         Without an `:active` state a touch reader gets no acknowledgement that
@@ -120,9 +118,7 @@ class TestCoreStylesheetAffordances:
 
         assert "solid" in body, f".{control} gives no feedback to a tap"
 
-    def test_core_stylesheet_hover_states_are_gated_on_a_real_pointer(
-        self, stylesheet
-    ):
+    def test_core_stylesheet_hover_states_are_gated_on_a_real_pointer(self, stylesheet):
         """Otherwise a tapped row stays in its hover state until you tap away.
 
         The `:active` rules above are what serve touch; these have to be kept
@@ -163,9 +159,7 @@ class TestCoreStylesheetAffordances:
 
         assert "opacity" in body, ".copy has no hover response"
 
-    def test_core_stylesheet_in_place_controls_can_take_focus_styling(
-        self, stylesheet
-    ):
+    def test_core_stylesheet_in_place_controls_can_take_focus_styling(self, stylesheet):
         """They are not keyboard-reachable yet; this is so they can be.
 
         They are spans with a click handler, so no `tabindex` means no focus
@@ -187,5 +181,7 @@ class TestCoreStylesheetAffordances:
         plain underline-on-hover, the dotted/solid pairing above no longer
         converges on anything and needs rethinking.
         """
-        assert re.search(r"\.link-hover:hover\{[^}]*text-decoration-line:underline", stylesheet)
+        assert re.search(
+            r"\.link-hover:hover\{[^}]*text-decoration-line:underline", stylesheet
+        )
         assert re.search(r"\.link-hover\{[^}]*text-decoration-line:none", stylesheet)

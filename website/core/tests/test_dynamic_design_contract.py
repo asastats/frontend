@@ -18,8 +18,11 @@ import pytest
 from django.template.loader import render_to_string
 
 from core.tests.dom import parse
+from core.tests.test_address_templates import (  # noqa: F401
+    _build_context,
+    sample_payload,
+)
 
-from core.tests.test_address_templates import _build_context, sample_payload  # noqa: F401
 
 @pytest.fixture(scope="module")
 def page(sample_payload):  # noqa: F811
@@ -145,9 +148,9 @@ class TestPositionIdentity:
 
         for pid, shared in by_pid.items():
             if len(shared) > 1:
-                assert all(el.has_attr("data-pid-ambiguous") for el in shared), (
-                    f"{pid} names {len(shared)} positions without saying so"
-                )
+                assert all(
+                    el.has_attr("data-pid-ambiguous") for el in shared
+                ), f"{pid} names {len(shared)} positions without saying so"
 
     def test_unambiguous_positions_are_not_flagged(self, page):
         """Otherwise the flag means nothing and the page cannot act on it."""
@@ -213,8 +216,11 @@ class TestPositionPresentation:
         for position in page.select(".position"):
             children = [c for c in position.children if c.classes]
             names = [
-                "summary" if "position-summary" in c.classes else
-                "breakdown" if "position-breakdown" in c.classes else None
+                (
+                    "summary"
+                    if "position-summary" in c.classes
+                    else "breakdown" if "position-breakdown" in c.classes else None
+                )
                 for c in children
             ]
             named = [n for n in names if n]
@@ -249,9 +255,9 @@ class TestPinControls:
             entry = control.find_parent(class_="fitem")
 
             assert entry is not None, f"{target} control sits outside any entry"
-            assert entry.get("id") == target, (
-                f"pin names {target} but sits in {entry.get('id')}"
-            )
+            assert (
+                entry.get("id") == target
+            ), f"pin names {target} but sits in {entry.get('id')}"
 
     def test_controls_ship_unpressed(self, page):
         """The reader's own pins are pressed by the script, not by the server."""
@@ -283,9 +289,9 @@ class TestPinControls:
     def test_each_control_is_labelled(self, page):
         """The icon is the only content, so the label is the whole name."""
         for control in page.select("[data-pin]"):
-            assert control.get("aria-label"), (
-                f"{control['data-pin']} control has no accessible name"
-            )
+            assert control.get(
+                "aria-label"
+            ), f"{control['data-pin']} control has no accessible name"
 
 
 class TestPositionPins:
@@ -308,9 +314,9 @@ class TestPositionPins:
         judgement can change when the payload does.
         """
         for position in page.select(".position"):
-            assert position.has_attr("data-amount"), (
-                f"{position.get('data-pid')} carries no amount to disambiguate by"
-            )
+            assert position.has_attr(
+                "data-amount"
+            ), f"{position.get('data-pid')} carries no amount to disambiguate by"
 
     def test_the_witness_is_not_part_of_the_identity(self, page):
         """Two positions sharing a pid must still differ in amount.
@@ -328,9 +334,9 @@ class TestPositionPins:
         shared = {pid: amounts for pid, amounts in by_pid.items() if len(amounts) > 1}
         assert shared, "no ambiguous positions in the sample; the fallback is untested"
         for pid, amounts in shared.items():
-            assert len(set(amounts)) == len(amounts), (
-                f"{pid} names rows that even the amount cannot tell apart"
-            )
+            assert len(set(amounts)) == len(
+                amounts
+            ), f"{pid} names rows that even the amount cannot tell apart"
 
     def test_ambiguous_positions_say_so(self, page):
         """The pin still works there; the page just does not overpromise."""
@@ -385,7 +391,6 @@ class TestPositionPins:
         assert all(position.select("[data-pin-position]") for position in lone)
 
 
-
 class TestTheSwapEntry:
     """The Swap button, which this layout did not have at all.
 
@@ -419,9 +424,9 @@ class TestTheSwapEntry:
 
         assert rows, "the asset list rendered no rows to check"
         assert len(toggles) == len(rows)
-        assert len(page.select(".id-swap-swap-toggle")) == len(toggles), (
-            "a Swap button rendered outside the asset list"
-        )
+        assert len(page.select(".id-swap-swap-toggle")) == len(
+            toggles
+        ), "a Swap button rendered outside the asset list"
 
     def test_each_button_names_a_different_asset(self, page):
         """Two rows offering the same `data-from` would open the same swap and

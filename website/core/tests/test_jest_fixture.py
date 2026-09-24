@@ -59,9 +59,7 @@ from django.test import RequestFactory
 WEBSITE = Path(__file__).parent.parent.parent
 
 INDEX_FIXTURE = WEBSITE / "javascript_tests/index.html"
-HISTORIC_FIXTURE = (
-    WEBSITE / "widgets/inhouse/historic/tests/javascript/index.html"
-)
+HISTORIC_FIXTURE = WEBSITE / "widgets/inhouse/historic/tests/javascript/index.html"
 
 #: A bundle is a 40-character hash, not an address: the `historic_reset` route
 #: accepts only that width, so a 58-character address here fails the render with

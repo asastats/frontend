@@ -296,9 +296,7 @@ class TestFilters:
 
     # # short_address
     def test_filters_short_address_returns_string(self):
-        assert (
-            short_address(TEST_ADDRESS) == TEST_ADDRESS[:5] + "..." + TEST_ADDRESS[-5:]
-        )
+        assert short_address(TEST_ADDRESS) == TEST_ADDRESS[:5] + "..." + TEST_ADDRESS[-5:]
 
     # # short_addresses
     def test_filters_short_addresses_returns_string(self):
@@ -351,7 +349,9 @@ class TestFilters:
         mark that disappears into a light theme or a dark one."""
         import re
 
-        colours = set(re.findall(r'fill="hsl\((\d+) (\d+)% (\d+)%\)"', identicon(TEST_ADDRESS)))
+        colours = set(
+            re.findall(r'fill="hsl\((\d+) (\d+)% (\d+)%\)"', identicon(TEST_ADDRESS))
+        )
 
         assert len(colours) == 1
         assert [pair[1:] for pair in colours] == [("58", "52")]
@@ -763,15 +763,11 @@ class TestCoreExtrasExplorerTags:
         assert explorer_base(context) == "https://lora.algokit.io/mainnet/"
 
     def test_core_extras_explorer_name_uses_viewer_preference(self, mocker):
-        context = {
-            "request": self._request(mocker, authenticated=True, explorer="pera")
-        }
+        context = {"request": self._request(mocker, authenticated=True, explorer="pera")}
         assert explorer_name(context) == "Pera Explorer"
 
     def test_core_extras_explorer_tx_path_uses_viewer_preference(self, mocker):
-        context = {
-            "request": self._request(mocker, authenticated=True, explorer="pera")
-        }
+        context = {"request": self._request(mocker, authenticated=True, explorer="pera")}
         assert explorer_tx_path(context) == "tx/"
 
     def test_program_url_returns_standard_url_as_is(self):
@@ -860,7 +856,7 @@ class TestCoreExtrasFoldCounts:
         assert beyond(list(range(50)), shown) == 0
 
     def test_core_extras_beyond_is_never_negative(self):
-        """"Show -3 more assets" is worse than showing no control at all."""
+        """ "Show -3 more assets" is worse than showing no control at all."""
         assert beyond(list(range(3)), 20) == 0
 
     def test_core_extras_next_batch_is_capped_at_one_batch(self):

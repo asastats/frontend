@@ -57,9 +57,7 @@ INTRO = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
 
 #: The real bundle payload, so the page renders its full asset list rather than
 #: a trimmed stand-in that might not reach the position component at all.
-SAMPLE = (
-    Path(__file__).parent.parent.parent / "utils/tests/sample_serialized_540A5.json"
-)
+SAMPLE = Path(__file__).parent.parent.parent / "utils/tests/sample_serialized_540A5.json"
 
 
 @pytest.fixture(scope="module")
@@ -334,8 +332,7 @@ class TestCachedPageIsSharedWithinOneLayout:
             second_html = client_two.get(f"/{ADDRESS}").content.decode()
 
         assert (
-            client_one.cookies["sessionid"].value
-            != client_two.cookies["sessionid"].value
+            client_one.cookies["sessionid"].value != client_two.cookies["sessionid"].value
         ), "the two clients shared a session; the test proves nothing"
         assert first_html == second_html, (
             "the address page no longer shares a cache entry between readers on "
@@ -494,9 +491,7 @@ class TestCacheIsKeyedOnTheHoldings:
         assert 'data-holdings="beef1234"' in before
         assert 'data-holdings="cafe5678"' in after
 
-    def test_readers_still_share_an_entry_while_the_holdings_stand(
-        self, payload, mocker
-    ):
+    def test_readers_still_share_an_entry_while_the_holdings_stand(self, payload, mocker):
         """**A price move is not a re-render.** This is most blocks for most
         pages, so a key that followed anything block-volatile would defeat the
         cache entirely and make every reader pay for a full page build.

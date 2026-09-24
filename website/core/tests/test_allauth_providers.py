@@ -67,9 +67,7 @@ def _installed_providers():
     """
     prefix = "allauth.socialaccount.providers."
     return {
-        app[len(prefix) :]
-        for app in settings.INSTALLED_APPS
-        if app.startswith(prefix)
+        app[len(prefix) :] for app in settings.INSTALLED_APPS if app.startswith(prefix)
     }
 
 
@@ -116,9 +114,9 @@ class TestCoreAllauthProviders:
         """
         response = client.get(f"/accounts/{provider}/login/")
 
-        assert response.status_code == 200, (
-            f"/accounts/{provider}/login/ does not resolve"
-        )
+        assert (
+            response.status_code == 200
+        ), f"/accounts/{provider}/login/ does not resolve"
 
     @pytest.mark.parametrize("provider", sorted(AUTHORIZE_URLS))
     def test_core_allauth_login_redirects_to_the_provider(self, client, provider):
@@ -126,14 +124,12 @@ class TestCoreAllauthProviders:
         response = client.post(f"/accounts/{provider}/login/")
 
         assert response.status_code == 302
-        assert response.headers["Location"].startswith(AUTHORIZE_URLS[provider]), (
-            f"{provider} sends the user to {response.headers['Location'][:60]}"
-        )
+        assert response.headers["Location"].startswith(
+            AUTHORIZE_URLS[provider]
+        ), f"{provider} sends the user to {response.headers['Location'][:60]}"
 
     @pytest.mark.parametrize("provider", sorted(AUTHORIZE_URLS))
-    def test_core_allauth_the_provider_is_told_to_come_back_to_us(
-        self, client, provider
-    ):
+    def test_core_allauth_the_provider_is_told_to_come_back_to_us(self, client, provider):
         """The `redirect_uri` is where the provider returns the user.
 
         Worth its own assertion because it is the one parameter in that URL
@@ -179,12 +175,8 @@ class TestCoreAllauthCallbackFailures:
     """
 
     @pytest.mark.parametrize("provider", sorted(AUTHORIZE_URLS))
-    def test_core_allauth_a_declined_consent_screen_is_handled(
-        self, client, provider
-    ):
-        response = client.get(
-            f"/accounts/{provider}/login/callback/?error=access_denied"
-        )
+    def test_core_allauth_a_declined_consent_screen_is_handled(self, client, provider):
+        response = client.get(f"/accounts/{provider}/login/callback/?error=access_denied")
 
         assert response.status_code == 401
         assert "socialaccount/authentication_error.html" in [

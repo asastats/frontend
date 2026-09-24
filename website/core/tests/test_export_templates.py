@@ -73,14 +73,12 @@ def test_export_taxfinished_contact_links_have_visible_text(rendered):
 
 def test_export_taxfinished_keeps_its_four_destinations(rendered):
     """Each contact channel is still reachable, and still the specific one."""
-    hrefs = [
-        element.attrs.get("href", "") for element in parse(rendered).select("a")
-    ]
+    hrefs = [element.attrs.get("href", "") for element in parse(rendered).select("a")]
 
     for fragment, why in EXPECTED.items():
-        assert any(fragment in href for href in hrefs), (
-            f"no link to {fragment} ({why}). Rendered hrefs: {hrefs}"
-        )
+        assert any(
+            fragment in href for href in hrefs
+        ), f"no link to {fragment} ({why}). Rendered hrefs: {hrefs}"
 
 
 def test_export_taxfinished_external_links_are_safe(rendered):
@@ -163,9 +161,9 @@ def test_export_taxfinished_agree_checkbox_is_styled(rendered):
 
     assert len(boxes) == 1, "expected exactly one consent checkbox"
     assert boxes[0].attrs.get("name") == "agree"
-    assert "checkbox" in boxes[0].attrs.get("class", ""), (
-        "the consent checkbox has no DaisyUI class"
-    )
+    assert "checkbox" in boxes[0].attrs.get(
+        "class", ""
+    ), "the consent checkbox has no DaisyUI class"
 
 
 def test_export_taxfinished_agreement_is_a_list(rendered):

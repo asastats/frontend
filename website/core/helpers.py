@@ -26,11 +26,7 @@ from utils.constants.users import (
     PUBLIC_BUNDLE_ADDRESSES_LIMIT_HELP_TEXT,
     PUBLIC_BUNDLE_ADDRESSES_NOT_ALLOWED_HELP_TEXT,
 )
-from utils.helpers import (
-    check_algorand_address,
-    check_bundle_addresses,
-    message_for_app_code_in_values,
-)
+from utils.helpers import check_algorand_address, check_bundle_addresses
 
 
 ## RAW PARSING

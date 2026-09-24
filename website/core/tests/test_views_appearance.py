@@ -259,7 +259,7 @@ class ProfileAppearanceTypefaceTest(TestCase):
         response = self.client.get(self.url)
         html = response.content.decode()
 
-        tab = html[html.index('id="id-tab-fonts"') - 200:]
+        tab = html[html.index('id="id-tab-fonts"') - 200 :]
         tab = tab[: tab.index(">", tab.index('id="id-tab-fonts"')) + 1]
         self.assertIn(reverse("subscriptions"), tab)
 
@@ -342,7 +342,7 @@ class ProfileAppearanceTabsTest(TestCase):
         would have every assertion here passing on the wrong control.
         """
         html = response.content.decode()
-        return html[html.index('id="id-appearance-tabs"'):]
+        return html[html.index('id="id-appearance-tabs"') :]
 
     def test_core_views_appearance_light_tab_holds_the_light_themes(self):
         """Light comes first, matching the order the header dropdown uses."""

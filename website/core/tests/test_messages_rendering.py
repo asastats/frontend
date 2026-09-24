@@ -62,7 +62,9 @@ def _rendered(*added):
 
 def _toast_half(html):
     """Return only the part of `html` inside the toast container."""
-    return html.split("data-message-toasts", 1)[1] if "data-message-toasts" in html else ""
+    return (
+        html.split("data-message-toasts", 1)[1] if "data-message-toasts" in html else ""
+    )
 
 
 class TestTheSplit(SimpleTestCase):
@@ -182,9 +184,7 @@ class TestItIsRenderedInOnePlace(SimpleTestCase):
     #: an absence check that cannot fail is not a check. Hence
     #: `test_the_sweep_actually_reads_templates` below.
     TEMPLATE_ROOTS = [Path(settings.BASE_DIR).parent / "templates"] + [
-        Path(entry)
-        for entry in settings.TEMPLATES[0]["DIRS"]
-        if isinstance(entry, Path)
+        Path(entry) for entry in settings.TEMPLATES[0]["DIRS"] if isinstance(entry, Path)
     ]
 
     def _templates(self):

@@ -55,9 +55,9 @@ class TestStaticReferences:
 
     def test_core_static_references_are_discoverable(self):
         """Guard the guard: an empty list would make this suite vacuous."""
-        assert len(REFERENCES) > 10, (
-            f"found almost no {{% static %}} references: {REFERENCES[:3]}"
-        )
+        assert (
+            len(REFERENCES) > 10
+        ), f"found almost no {{% static %}} references: {REFERENCES[:3]}"
 
     @pytest.mark.parametrize(
         "template,reference",

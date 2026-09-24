@@ -210,9 +210,7 @@ class TestProfileModel:
         assert (profile.votes, profile.permission) == (3, 100)
         save.assert_called_once()
 
-    def test_profile_model_check_votes_and_permission_skips_without_address(
-        self, mocker
-    ):
+    def test_profile_model_check_votes_and_permission_skips_without_address(self, mocker):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         save = mocker.patch.object(Profile, "save")
         profile = Profile(votes=0, permission=0, address="")
@@ -250,9 +248,7 @@ class TestProfileModel:
         save.assert_not_called()
         assert profile.permission == 100
 
-    def test_profile_model_check_votes_and_permission_uses_algorand_address(
-        self, mocker
-    ):
+    def test_profile_model_check_votes_and_permission_uses_algorand_address(self, mocker):
         # The derived address is what the provider is asked about, not the
         # stored EVM one.
         provider = mocker.patch("core.models.get_permission_provider").return_value
@@ -623,9 +619,7 @@ class TestProfileModel:
             SUBSCRIPTION_TIER_PERMISSIONS["Professional"] - 1,
         ],
     )
-    def test_profile_model_can_sort_and_filter_functionality_for_false(
-        self, permission
-    ):
+    def test_profile_model_can_sort_and_filter_functionality_for_false(self, permission):
         profile = Profile()
         profile.permission = permission
         assert profile._can_sort_and_filter() is False
@@ -648,9 +642,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=[]
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.bundle_size_limit() == limit
@@ -686,9 +678,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.bundle_size_limit() == limit
@@ -751,9 +741,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.bundle_size_limit() == limit
@@ -859,9 +847,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.bundle_size_limit() == limit
@@ -974,9 +960,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.bundle_size_limit() == limit
@@ -1000,9 +984,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_public_bundle_names", return_value=[]
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.bundle_size_limit_for_public() == limit
@@ -1028,9 +1010,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_public_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.bundle_size_limit_for_public() == limit
@@ -1064,9 +1044,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_public_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.bundle_size_limit_for_public() == limit
@@ -1075,18 +1053,14 @@ class TestProfileModel:
     # # can_access_api
     @pytest.mark.django_db
     def test_profile_model_can_access_api_for_true(self):
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
         user.profile.save()
         assert user.profile.can_access_api() is True
 
     @pytest.mark.django_db
     def test_profile_model_can_access_api_for_false(self):
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"] - 1
         user.profile.save()
         assert user.profile.can_access_api() is False
@@ -1094,18 +1068,14 @@ class TestProfileModel:
     # # can_access_authorize
     @pytest.mark.django_db
     def test_profile_model_can_access_authorize_for_true(self):
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.authorized = ""
         user.profile.save()
         assert user.profile.can_access_authorize() is True
 
     @pytest.mark.django_db
     def test_profile_model_can_access_authorize_for_false(self):
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.authorized = "value"
         user.profile.save()
         assert user.profile.can_access_authorize() is False
@@ -1148,9 +1118,7 @@ class TestProfileModel:
             (SUBSCRIPTION_TIER_PERMISSIONS["Cluster"], 37),
         ],
     )
-    def test_profile_model_can_add_bundle_name_for_true(
-        self, permission, count, mocker
-    ):
+    def test_profile_model_can_add_bundle_name_for_true(self, permission, count, mocker):
         query = mocker.MagicMock()
         query.count.return_value = count
         mocked_query = mocker.patch(
@@ -1181,9 +1149,7 @@ class TestProfileModel:
             (SUBSCRIPTION_TIER_PERMISSIONS["Cluster"], 100),
         ],
     )
-    def test_profile_model_can_add_bundle_name_for_false(
-        self, permission, count, mocker
-    ):
+    def test_profile_model_can_add_bundle_name_for_false(self, permission, count, mocker):
         query = mocker.MagicMock()
         query.count.return_value = count
         mocked_query = mocker.patch(
@@ -1230,9 +1196,7 @@ class TestProfileModel:
     def test_profile_model_can_add_public_bundle_name_for_true_no_instance(
         self, permission, count, mocker
     ):
-        mocker.patch(
-            "core.models.Profile.bundle_size_limit_for_public", return_value=10
-        )
+        mocker.patch("core.models.Profile.bundle_size_limit_for_public", return_value=10)
         bundlenames = [mocker.MagicMock()] * count
         mocked_query = mocker.patch(
             "core.models.Profile._query_public_bundle_names", return_value=bundlenames
@@ -1263,9 +1227,7 @@ class TestProfileModel:
     def test_profile_model_can_add_public_bundle_name_for_true_with_instance(
         self, permission, count, mocker
     ):
-        mocker.patch(
-            "core.models.Profile.bundle_size_limit_for_public", return_value=10
-        )
+        mocker.patch("core.models.Profile.bundle_size_limit_for_public", return_value=10)
         bundlenames = [mocker.MagicMock()] * count
         user = user_model.objects.create(
             username="username{}{}".format(permission, count)
@@ -1301,9 +1263,7 @@ class TestProfileModel:
     def test_profile_model_can_add_public_bundle_name_for_false(
         self, permission, count, mocker
     ):
-        mocker.patch(
-            "core.models.Profile.bundle_size_limit_for_public", return_value=10
-        )
+        mocker.patch("core.models.Profile.bundle_size_limit_for_public", return_value=10)
         bundlenames = [mocker.MagicMock()] * count
         mocked_query = mocker.patch(
             "core.models.Profile._query_public_bundle_names", return_value=bundlenames
@@ -1337,9 +1297,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.can_use_bundle_names() is result
@@ -1363,9 +1321,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.can_use_bundle_names() is result
@@ -1403,9 +1359,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.can_use_bundle_names() is result
@@ -1459,9 +1413,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.can_use_bundle_names() is result
@@ -1525,9 +1477,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.can_use_bundle_names() is result
@@ -1601,9 +1551,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.can_use_bundle_names() is result
@@ -1724,9 +1672,7 @@ class TestProfileModel:
         mocked_query = mocker.patch(
             "core.models.Profile._query_bundle_names", return_value=bundlenames
         )
-        user = user_model.objects.create(
-            username="{}permission.com".format(time.time())
-        )
+        user = user_model.objects.create(username="{}permission.com".format(time.time()))
         user.profile.permission = permission
         user.profile.save()
         assert user.profile.can_use_bundle_names() is result
@@ -2020,9 +1966,7 @@ class TestProfileModel:
         mocked_add.assert_called_once_with(bundlename.id, TEST_ADDRESS3)
 
     @pytest.mark.django_db
-    def test_profile_model_integrity_check_for_public_bundlename_cannot_add(
-        self, mocker
-    ):
+    def test_profile_model_integrity_check_for_public_bundlename_cannot_add(self, mocker):
         mocked_add = mocker.patch(
             "core.models.Profile.can_add_public_bundle_name", return_value=False
         )
@@ -2102,9 +2046,7 @@ class TestProfileProperties:
 
     # # algorand_address
     @pytest.mark.django_db
-    def test_profile_model_algorand_address_returns_stored_algorand_address(
-        self, mocker
-    ):
+    def test_profile_model_algorand_address_returns_stored_algorand_address(self, mocker):
         check = mocker.patch("nameservice.xchain.check_evm_address")
         user1 = user_model.objects.create(email="abs@abc1.com")
         user1.profile.address = TEST_ADDRESS
@@ -2254,9 +2196,7 @@ class TestBundleNameModel:
     @pytest.mark.django_db
     def test_bundlename_model_cannot_save_too_long_bundlename_name(self):
         profile = Profile.objects.create()
-        bundlename = BundleName(
-            profile=profile, name="xyz" * 20, addresses=TEST_ADDRESS2
-        )
+        bundlename = BundleName(profile=profile, name="xyz" * 20, addresses=TEST_ADDRESS2)
         with pytest.raises(DataError):
             bundlename.save()
             bundlename.full_clean()
@@ -2365,9 +2305,7 @@ class TestBundleNameModel:
     def test_bundlename_model_keeps_original_case(self):
         user = user_model.objects.create(email="{}test.com".format(time.time()))
         name = "BundleName1"
-        bundlename = BundleName(
-            profile=user.profile, name=name, addresses=TEST_ADDRESS2
-        )
+        bundlename = BundleName(profile=user.profile, name=name, addresses=TEST_ADDRESS2)
         bundlename.save()
         bundlename.name = name
         bundlename.save()
@@ -2537,9 +2475,7 @@ class TestBundleNameModel:
             name="bundlename-a6",
             addresses=TEST_ADDRESS3,
         )
-        assert bundlename.str_created == bundlename.created.strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+        assert bundlename.str_created == bundlename.created.strftime("%Y-%m-%d %H:%M:%S")
 
     # # str_modified
     @pytest.mark.django_db
@@ -2575,9 +2511,7 @@ class TestCoreModelsProfilePreferredRouter:
     def test_core_models_profile_preferred_router_defaults_blank(self):
         assert Profile().preferred_router == ""
 
-    def test_core_models_profile_preferred_router_or_default_returns_choice(
-        self, mocker
-    ):
+    def test_core_models_profile_preferred_router_or_default_returns_choice(self, mocker):
         mocker.patch(
             "widgethost.registry.swap_routers",
             return_value=[("folks", "Folks"), ("pact", "Pact")],
@@ -2615,8 +2549,7 @@ class TestCoreModelsProfilePreferredExplorer:
 
     def test_core_models_profile_preferred_explorer_or_default_when_unknown(self):
         assert (
-            Profile(preferred_explorer="bogus").preferred_explorer_or_default()
-            == "allo"
+            Profile(preferred_explorer="bogus").preferred_explorer_or_default() == "allo"
         )
 
     def test_core_models_profile_can_access_fold_setting_for_true(self):
@@ -2693,16 +2626,12 @@ class TestCoreModelsProfilePreferredExplorer:
         assert intro.can_access_appearance_page() is False
         assert intro.can_access_typeface_setting() is False
 
-        asastatser = Profile(
-            permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
-        )
+        asastatser = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"])
         assert asastatser.can_access_theme_setting() is True
         assert asastatser.can_access_appearance_page() is True
         assert asastatser.can_access_typeface_setting() is False
 
-        professional = Profile(
-            permission=SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
-        )
+        professional = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Professional"])
         assert professional.can_access_typeface_setting() is True
 
     def test_core_models_profile_no_subscription_reaches_no_theme_gate(self):
@@ -2725,9 +2654,7 @@ class TestCoreModelsProfilePreferredExplorer:
         an easy and silent way to give the feature away, since both methods sit
         beside each other and read almost identically.
         """
-        entitled_for_explorer = Profile(
-            permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
-        )
+        entitled_for_explorer = Profile(permission=SUBSCRIPTION_TIER_PERMISSIONS["Intro"])
         assert entitled_for_explorer.can_access_explorer_setting() is True
         assert entitled_for_explorer.can_access_typeface_setting() is False
 
@@ -2764,7 +2691,7 @@ class TestCoreModelsProfilePreferredLayout:
         )
         assert profile.preferred_layout_or_default() == "dynamic"
 
-    def test_core_models_profile_preferred_layout_or_default_returns_dynamic_choice_at_intro(
+    def test_core_models_profile_preferred_layout_dynamic_at_intro(
         self,
     ):
         profile = Profile(
@@ -2915,9 +2842,10 @@ class TestLiveAllowanceBucket:
 
         later = bucket.modified + datetime.timedelta(weeks=2)
 
-        assert round(
-            bucket.current_balance(self.CAPACITY, self.PER_SECOND, now=later)
-        ) == 30 * 60
+        assert (
+            round(bucket.current_balance(self.CAPACITY, self.PER_SECOND, now=later))
+            == 30 * 60
+        )
 
     @pytest.mark.django_db
     def test_core_models_liveallowancebucket_a_backwards_clock_takes_nothing_away(
@@ -2936,8 +2864,7 @@ class TestLiveAllowanceBucket:
         earlier = bucket.modified - datetime.timedelta(weeks=4)
 
         assert (
-            bucket.current_balance(self.CAPACITY, self.PER_SECOND, now=earlier)
-            == 1800.0
+            bucket.current_balance(self.CAPACITY, self.PER_SECOND, now=earlier) == 1800.0
         )
 
     @pytest.mark.django_db

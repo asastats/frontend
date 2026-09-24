@@ -24,8 +24,6 @@ from core.forms import (
 )
 from core.models import BundleName, Profile
 from utils.constants.core import INVALID_ADDRESS_TEXT
-
-from . import dom
 from utils.constants.users import (
     DUPLICATE_BUNDLE_ERROR,
     REQUIRED_BUNDLE_NAME_ERROR,
@@ -35,6 +33,8 @@ from utils.constants.users import (
 )
 from utils.tests.fixtures import TEST_ADDRESS, TEST_ADDRESS2, TEST_ADDRESS3
 
+from . import dom
+
 user_model = get_user_model()
 
 
@@ -43,7 +43,9 @@ def get_user_edit_fake_post_data(user, first_name="first_name", last_name="last_
     return {
         "first_name": first_name,
         "last_name": last_name,
-        "csrfmiddlewaretoken": "ebklx66wgoqT9kReeo67yxdCyzG2EtoBIRDvGjShzWfvbAnOhsdC4dok2vNta0PQ",
+        "csrfmiddlewaretoken": (
+            "ebklx66wgoqT9kReeo67yxdCyzG2EtoBIRDvGjShzWfvbAnOhsdC4dok2vNta0PQ"
+        ),
         "profile-TOTAL_FORMS": 1,
         "profile-INITIAL_FORMS": 1,
         "profile-MIN_NUM_FORMS": 0,
@@ -62,7 +64,9 @@ def get_bundlename_fake_post_data(user, first_name="first_name", last_name="last
     return {
         "first_name": first_name,
         "last_name": last_name,
-        "csrfmiddlewaretoken": "ebklx66wgoqT9kReeo67yxdCyzG2EtoBIRDvGjShzWfvbAnOhsdC4dok2vNta0PQ",
+        "csrfmiddlewaretoken": (
+            "ebklx66wgoqT9kReeo67yxdCyzG2EtoBIRDvGjShzWfvbAnOhsdC4dok2vNta0PQ"
+        ),
         "profile-TOTAL_FORMS": 1,
         "profile-INITIAL_FORMS": 1,
         "profile-MIN_NUM_FORMS": 0,
@@ -218,9 +222,7 @@ class IndexPageTest(TestCase):
 
     def test_index_page_links_to_twitter_page(self):
         response = self.client.get(reverse("index"))
-        self.assertContains(
-            response, 'href="https://x.com/{}"'.format(settings.X_HANDLE)
-        )
+        self.assertContains(response, 'href="https://x.com/{}"'.format(settings.X_HANDLE))
 
     def test_index_page_links_to_reddit_page(self):
         response = self.client.get(reverse("index"))
@@ -350,9 +352,7 @@ class HomePageTest(TestCase):
             name="name-1", addresses=TEST_ADDRESS3, profile=self.user.profile
         )
         response = self.client.get(reverse("home"))
-        self.assertContains(
-            response, reverse("bundlename_edit", args=[bundlename.name])
-        )
+        self.assertContains(response, reverse("bundlename_edit", args=[bundlename.name]))
 
 
 class HomeProfileLinkTest(TestCase):
@@ -834,9 +834,7 @@ class BundleNameAddPageTest(TestCase):
             profile=self.user.profile,
         )
         response = self.client.get(reverse("bundlename_add"))
-        self.assertContains(
-            response, reverse("bundlename_edit", args=[bundlename.name])
-        )
+        self.assertContains(response, reverse("bundlename_edit", args=[bundlename.name]))
 
 
 class BundleNameEditPageTest(TestCase):
@@ -1146,9 +1144,7 @@ class ProfileSettingsPageTest(TestCase):
         self.user.profile.save()
 
         with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
-            self.client.post(
-                reverse("profile_settings"), data={"section": "liverefresh"}
-            )
+            self.client.post(reverse("profile_settings"), data={"section": "liverefresh"})
 
         self.user.profile.refresh_from_db()
         assert self.user.profile.live_refresh is False
@@ -1621,7 +1617,9 @@ class SwapEntryViewTest(TestCase):
         ), mock.patch(
             "core.views.linked_addresses_for_user",
             return_value={self.address, second},
-        ), mock.patch("core.views.swap_entry_url", return_value=""):
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value=""
+        ):
             response = self.client.get(reverse("swap_entry", args=["B" * 40]))
         rendered = response.content.decode()
         assert rendered.count('class="dustsweep-open id-dustsweep-open"') == 1
@@ -1646,7 +1644,9 @@ class SwapEntryViewTest(TestCase):
             return_value=f"{self.address} {stranger}",
         ), mock.patch(
             "core.views.linked_addresses_for_user", return_value={self.address}
-        ), mock.patch("core.views.swap_entry_url", return_value=""):
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value=""
+        ):
             response = self.client.get(reverse("swap_entry", args=["B" * 40]))
         assert response.context["dustsweep_addresses"] == [self.address]
         assert f'data-addresses="{self.address}"' in response.content.decode()
@@ -1681,7 +1681,9 @@ class SwapEntryViewTest(TestCase):
             "core.views.check_bundle_addresses", return_value=f"{first} {primary}"
         ), mock.patch(
             "core.views.linked_addresses_for_user", return_value={first, primary}
-        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/BBB"):
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value="/widgets/folks/BBB"
+        ):
             response = self.client.get(reverse("swap_entry", args=["B" * 40]))
         assert response.context["swap_address"] == primary
         assert response.context["dustsweep_address"] == primary
@@ -1698,7 +1700,9 @@ class SwapEntryViewTest(TestCase):
             "core.views.check_bundle_addresses", return_value=f"{first} {second}"
         ), mock.patch(
             "core.views.linked_addresses_for_user", return_value={first, second}
-        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/BBB"):
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value="/widgets/folks/BBB"
+        ):
             response = self.client.get(reverse("swap_entry", args=["B" * 40]))
         assert response.context["swap_address"] == first
 
@@ -1720,7 +1724,9 @@ class SwapEntryViewTest(TestCase):
             "core.views.check_bundle_addresses", return_value=f"{first} {primary}"
         ), mock.patch(
             "core.views.linked_addresses_for_user", return_value={first, primary}
-        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/BBB"):
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value="/widgets/folks/BBB"
+        ):
             response = self.client.get(reverse("swap_entry", args=["B" * 40]))
 
         assert response.context["swap_addresses"] == [first, primary]
@@ -1783,7 +1789,9 @@ class SwapEntryViewTest(TestCase):
             return_value=f"{self.address} {stranger}",
         ), mock.patch(
             "core.views.linked_addresses_for_user", return_value={self.address}
-        ), mock.patch("core.views.swap_entry_url", return_value="/widgets/folks/BBB"):
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value="/widgets/folks/BBB"
+        ):
             response = self.client.get(reverse("swap_entry", args=["B" * 40]))
 
         assert response.context["swap_addresses"] == [self.address]
@@ -1939,9 +1947,7 @@ class AlertsAllowanceTest(TestCase):
 
         # `None` in sys.modules is what makes `from … import …` raise
         # ImportError, which is the shape a half-synced checkout produces.
-        with mock.patch.dict(
-            "sys.modules", {"widgets.inhouse.alerts.models": None}
-        ):
+        with mock.patch.dict("sys.modules", {"widgets.inhouse.alerts.models": None}):
             allowed, kept = _alerts_allowance(self.user)
 
         self.assertEqual((allowed, kept), (0, 0))
@@ -1951,9 +1957,7 @@ class AlertsAllowanceTest(TestCase):
         The warning is how the skew is diagnosed instead of guessed at."""
         from core.views import _alerts_allowance
 
-        with mock.patch.dict(
-            "sys.modules", {"widgets.inhouse.alerts.tiers": None}
-        ):
+        with mock.patch.dict("sys.modules", {"widgets.inhouse.alerts.tiers": None}):
             with self.assertLogs("core.views", level="WARNING") as captured:
                 _alerts_allowance(self.user)
 

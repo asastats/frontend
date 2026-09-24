@@ -105,9 +105,7 @@ def _deserialized_box_value(client, app_id, box_name):
         response = client.application_box_by_name(app_id, box_name)
     except AlgodHTTPError:
         return None
-    return deserialize_values_data(
-        base64.b64decode(response.get("value")).decode("utf8")
-    )
+    return deserialize_values_data(base64.b64decode(response.get("value")).decode("utf8"))
 
 
 class PermissionDappProvider(PermissionProvider):
@@ -150,9 +148,7 @@ class PermissionDappProvider(PermissionProvider):
         # that they have no subscription, which is worse than an error page,
         # and an error page is the version somebody notices. Do not "harden"
         # this into a swallowed exception.
-        subscriptions = fetch_subscriptions_for_address(
-            _mainnet_algod_client(), address
-        )
+        subscriptions = fetch_subscriptions_for_address(_mainnet_algod_client(), address)
         if not subscriptions:
             return None
         return formatted_subscription_timestamps(subscriptions)

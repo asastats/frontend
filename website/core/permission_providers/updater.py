@@ -40,10 +40,7 @@ def _check_interval_passed(last_timestamp):
     """
     while True:
         current_timestamp = datetime.now(UTC).timestamp()
-        if (
-            last_timestamp is None
-            or current_timestamp > last_timestamp + PERMISSIONS_TTL
-        ):
+        if last_timestamp is None or current_timestamp > last_timestamp + PERMISSIONS_TTL:
             break
         pause(QUARTER)
 

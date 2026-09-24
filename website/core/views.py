@@ -67,18 +67,20 @@ from core.permissions import (
     CanUseBundleNamesMixin,
 )
 from core.templatetags.core_extras import export_access, historic_access
+from utils.cache import cached_live_holdings
 from utils.charts import (
     prepare_base_charts_from_serialized_data,
     prepare_consolidated_charts_from_serialized_data,
 )
+from utils.clients import redis_instance
 from utils.constants.core import (
-    LIVEREFRESH_HIDDEN_GRACE_SECONDS,
-    LIVEREFRESH_POLL_SECONDS,
     ALGORAND_WALLETS,
     CACHE_TTL_ADDRESS,
     CACHE_TTL_CUSTOM_ADDRESS,
     CONTENT_TYPES_FOR_EXTENSION,
     DEFAULT_ADDRESS_LAYOUT,
+    LIVEREFRESH_HIDDEN_GRACE_SECONDS,
+    LIVEREFRESH_POLL_SECONDS,
 )
 from utils.constants.nameservice import NAME_SERVICE_MULTIPLE
 from utils.constants.users import (
@@ -87,9 +89,6 @@ from utils.constants.users import (
     BUNDLE_NAME_DELETED_MESSAGE,
     BUNDLE_NAME_NOT_FOUND_ERROR,
 )
-from utils.cache import cached_live_holdings
-from utils.userhelpers import liverefresh_terms
-from utils.clients import redis_instance
 from utils.helpers import (
     check_algorand_address,
     check_bundle_addresses,
@@ -100,7 +99,10 @@ from utils.helpers import (
     weighted_randomized_banner,
 )
 from utils.layouts import layout_compact, layout_for_user, layout_template
-from utils.userhelpers import check_authorization_transaction
+from utils.userhelpers import (
+    check_authorization_transaction,
+    liverefresh_terms,
+)
 from walletauth.gating import linked_addresses_for_user
 from widgethost.registry import (
     swap_client_cfg,
@@ -156,11 +158,10 @@ def service_worker(request):
 
     **From `/`, not `/static/`.** A service worker's scope is the path it is
     served from, so one under `/static/` could only receive events for
-    `/static/`. `index_file` above already serves `robots.txt` this way, and
-    this is the same trick with a different content type.
+    `/static/`.
 
-    Rendered rather than read from disk so the template can carry the site's
-    name, and so the file lives with the widget that owns it.
+    Rendered rather than read from disk, so the template can carry the site's
+    name and the file can live with the widget that owns it.
     """
     return render(
         request,
@@ -181,9 +182,7 @@ def social_icons(request, suffix):
     path = os.path.join(settings.STATIC_ROOT, "img/social/", "{}".format(suffix))
     response = HttpResponse(
         open(path, "rb"),
-        content_type="{}".format(
-            CONTENT_TYPES_FOR_EXTENSION[os.path.splitext(path)[1]]
-        ),
+        content_type="{}".format(CONTENT_TYPES_FOR_EXTENSION[os.path.splitext(path)[1]]),
     )
     response["Content-Disposition"] = 'attachment; filename="{}"'.format(
         os.path.basename(path)
@@ -435,29 +434,18 @@ class BaseAddressView(TemplateView):
     def _live_holdings(self, url_value):
         """Return the engine's fingerprint of what this page holds.
 
-        **This is what lets a live page show an asset that has just arrived.**
-        The live refresh swaps published figures into the reader's page out of
-        band, which can only reach an element the page already has: a bought
-        asset has no row to land in, a sold one is never mentioned and its row
-        stays as it was. So the widget answers a change to this with a reload --
-        and a reload served out of a ``cache_page`` entry built before the
-        change would show the same stale rows and the reader would be sent round
-        the loop for nothing. Folding it into the key means the entry rendered
-        under one set of holdings is never handed out as another.
+        **It is folded into the ``cache_page`` key**, or the reload the widget
+        orders would be answered out of an entry built before the holdings
+        changed and the reader would be sent round the loop again.
 
         ``url_value`` is already the engine's own page key: the raw address for
-        a single one, and ``bundle_from_addresses`` returns an uppercase hex
-        digest, which is what ``dispatch`` has upper-cased here.
+        a single one, and the uppercase hex digest ``dispatch`` produced for a
+        bundle.
 
-        Empty for every page the engine has never read -- which is every page
-        nobody watches -- so those key exactly as they did before, and the whole
-        mechanism costs them one Redis field lookup.
-
-        **A Redis that will not answer must not take the address page with it.**
-        This page renders from the engine's API, not from this key; falling back
-        to the empty fingerprint means a live reader briefly shares the
-        unwatched page's entry, which is the behaviour that existed before any
-        of this.
+        Empty for every page the engine has never read, which keys those pages
+        exactly as they were keyed before. A Redis that will not answer falls
+        back to the same empty value rather than taking the page with it: this
+        page renders from the engine's API, not from this key.
 
         :param url_value: address or bundle hash from the URL, upper-cased
         :type url_value: str
@@ -551,37 +539,26 @@ class BaseAddressView(TemplateView):
         context["banner"] = weighted_randomized_banner()
         context["url_value"] = url_value
 
-        # The layout and its compact flag are the *only* reader-derived values
-        # this context may carry, because they are the only ones the cache key
-        # accounts for (see `dispatch`). Everything else about the reader --
-        # their addresses, their router, their subscription -- is shared between
-        # signed-in readers by the cache entry and must stay out; the swap entry
-        # is loaded as a separate non-cached partial for exactly that reason.
-        # See `core/tests/test_address_layout.py`.
+        # **The only reader-derived values this context may carry**, because
+        # they are the only ones the cache key accounts for. Everything else
+        # about the reader is shared between signed-in readers by the cache
+        # entry and must stay out; the swap entry is a separate non-cached
+        # partial for exactly that reason.
         context["layout"] = self.layout
         context["compact"] = layout_compact(self.layout)
 
-        # **Not reader-derived**, so it does not break the rule above: it is a
-        # property of the addresses, identical for everyone looking at them.
-        # It is in the key as well, so the markup rendered here and the entry it
-        # is stored under always agree - which is the whole point, since the
-        # widget compares this against what the engine has published and asks
-        # for a reload when they differ.
+        # Not reader-derived: a property of the addresses, identical for
+        # everyone looking at them. In the key as well, so the markup and the
+        # entry it is stored under always agree.
         context["live_holdings"] = self.live_holdings
 
-        # Heavy lifting: pull the serialized payload through the API cache.
-        # On miss this still runs the full prepare_context/fetch_account
-        # pipeline (via api.main); on hit it returns the cached dict.
         # **The light payload.** Every collection and every item is present;
-        # what each NFT record drops is the listings and purchase history only
-        # an opened collection shows, which `nfts.js` fetches per collection on
-        # expand. Measured on a 7,002-NFT account, that is NFT serialization
-        # from 0.499 s to about 0.126 s.
-        # The reader's class, stated by this layer because it is the only one
-        # that knows it. `_entitlement_key` has already resolved the profile to
-        # pick a cache entry, so this costs nothing further; the engine sizes
-        # admission by it rather than by a per-minute limit that punishes a lone
-        # reader on an idle box. See `core.views.reader_permission` there.
+        # what an NFT record drops is the listings and purchase history only an
+        # opened collection shows, which `nfts.js` fetches on expand.
+        #
+        # The permission is stated here because this layer is the only one that
+        # knows it, and `_entitlement_key` has already resolved the profile.
+        # The engine sizes admission by it.
         profile = getattr(getattr(self.request, "user", None), "profile", None)
         context["account"] = fetch_and_serialize_account(
             url_value,
@@ -1311,19 +1288,13 @@ class ProfileSettingsView(View):
             "liverefresh_terms": liverefresh_terms(profile.permission),
             "can_access_explorer": profile.can_access_explorer_setting(),
             "can_access_layout": profile.can_access_layout_setting(),
-            # **The one preference here that is not saved to the account.** It
-            # lives in `localStorage`, because the address page it governs is
-            # served from a cache shared between readers - `can_access_fold_setting`
-            # records why keying that cache on it was rejected. It sits on this
-            # page rather than under Appearance because it is about how an
-            # address page is arranged, like the layout preference above it,
-            # and not about how the site looks.
+            # **The one preference here that is not saved to the account**,
+            # because the address page it governs is served from a cache shared
+            # between readers. It lives in `localStorage`.
             "can_access_fold": profile.can_access_fold_setting(),
-            # The two foldable sections, with the default each falls back to.
-            # Built here rather than spelled out in the template so the defaults
-            # come from the same settings the address page renders its first
-            # fold from -- two places naming 20 and 10 is how they come to
-            # disagree.
+            # Built here rather than in the template so the defaults come from
+            # the same settings the address page folds on. Two places naming
+            # 20 and 10 is how they come to disagree.
             "fold_groups": (
                 {
                     "key": "assets",
@@ -1366,9 +1337,7 @@ class ProfileSettingsView(View):
             form = ProfileLayoutForm(data=request.POST, instance=profile)
             if form.is_valid():
                 form.save()
-                messages.success(
-                    request, "Layout preference saved.", extra_tags="layout"
-                )
+                messages.success(request, "Layout preference saved.", extra_tags="layout")
                 return redirect("profile_settings")
             context = self._context(request)
             context["layout_form"] = form
@@ -1655,16 +1624,13 @@ class DeactivateProfileView(FormView):
 def preferred_linked_address(user, linked):
     """Return which of `linked` an action should open on.
 
-    **The profile's primary when it is one of them**, because that is the
-    address the user authorised, the one their subscription and permission hang
-    off, and by a long way the one most likely to be connected in the wallet
-    right now. Alphabetical order - the previous rule - correlates with nothing
-    at all, and on a bundle page it silently picked whichever of the reader's
-    accounts happened to sort first.
+    **The profile's primary when it is one of them**: the address the reader
+    authorised, the one their subscription hangs off, and the one most likely
+    to be connected in the wallet right now.
 
-    Falls back to the sorted first only so the choice is *stable*: an entry that
-    opened on a different account between two page loads would be worse than one
-    that opens on a predictable wrong guess.
+    Falls back to the sorted first only so the choice is *stable*. An entry
+    that opened on a different account between two page loads would be worse
+    than one that opens on a predictable wrong guess.
 
     :param user: the requesting user
     :type user: django.contrib.auth.models.User
@@ -1676,8 +1642,8 @@ def preferred_linked_address(user, linked):
     """
     ordered = sorted(linked)
     primary = (getattr(getattr(user, "profile", None), "address", "") or "").upper()
-    # matched case-insensitively but returned as the page spelled it, so the
-    # value handed to the template is one the gate will recognise again
+    # Matched case-insensitively, returned as the page spelled it, so the
+    # template gets a value the gate will recognise again.
     for one in ordered:
         if one.upper() == primary:
             return one
@@ -1687,9 +1653,8 @@ def preferred_linked_address(user, linked):
 
 #: Which item template each address-page layout renders an opened NFT with.
 #:
-#: Keyed on the layout rather than on its template, because the two dynamic
-#: layouts share `address_dynamic.html` and differ only by a compact flag - so
-#: keying on the page would have made the table look like it had a hole in it.
+#: Keyed on the layout rather than on its template: the two dynamic layouts
+#: share one page and differ only by a compact flag.
 NFT_ITEM_TEMPLATES = {
     "classic": "snippets/nfts/item.html",
     "dynamic": "snippets/dynamic/nft.html",
@@ -1700,24 +1665,18 @@ NFT_ITEM_TEMPLATES = {
 class NftCollectionItemsView(TemplateView):
     """One NFT collection's items, in full, for a reader who opened it.
 
-    **The other half of the light payload.** The address page's records drop an
-    NFT's listings and purchase history because a page showing 7,002 of them
-    opens almost none, and this restores them for the one collection a reader
-    actually expanded. The engine slices the collection out of the full payload,
-    so these are the same records the shared endpoint sends rather than a second
-    construction of them.
+    **The other half of the light payload.** An address page's NFT records drop
+    their listings and purchase history; this restores them for the one
+    collection a reader expanded. The engine slices it out of the full payload,
+    so these are the same records the shared endpoint sends.
 
-    Rendered here rather than returned as JSON: the item markup is two templates
-    with real logic in them - a floor line with three outcomes, a purchase
-    history that hides when the best price is the last one - and rebuilding that
-    in the browser would be a second definition of an NFT that drifts from the
-    first.
+    Rendered here rather than returned as JSON, because the item markup carries
+    real logic - a floor line with three outcomes, a purchase history that
+    hides when the best price is the last one - and rebuilding that in the
+    browser would be a second definition of an NFT.
 
-    **Not per-reader, so it may be cached like the page.** Everything it renders
-    comes from the account payload, which is the same for everyone; the two
-    things on an address page that are *not* - the swap entry and the dust sweep
-    - are a different partial for exactly that reason. See
-    `address-page-cache-is-shared`.
+    Not per-reader, so it may be cached like the page. Everything it renders
+    comes from the account payload, which is the same for everyone.
 
     :var template_name: relative path to the partial template
     :type template_name: str
@@ -1793,9 +1752,8 @@ def _alerts_allowance(user):
     profile = getattr(user, "profile", None)
     allowed = rules_allowed(getattr(profile, "permission", 0))
     if not allowed:
-        # Below the tier. The count is what the control would show beside the
-        # label, and an unentitled reader is shown an upgrade link instead - so
-        # the query is skipped rather than run and discarded.
+        # Below the tier: an unentitled reader is shown an upgrade link, so
+        # the count is never rendered and the query is skipped.
         return 0, 0
     return allowed, AlertRule.objects.filter(user=user, active=True).count()
 
@@ -1804,36 +1762,21 @@ def _alerts_allowance(user):
 class SwapEntryView(TemplateView):
     """Non-cached htmx partial rendering the per-user entries for an address page.
 
-    **"Non-cached" was only ever true of the server.** Django sends no cache
-    headers of its own here, which leaves a browser free to cache the response
-    *heuristically* - and this partial is the one per-reader thing on a page
-    whose own entry is shared, so a stale copy is a reader looking at somebody
-    else's answer to "which of these addresses are yours?".
-
+    **`never_cache` because a browser will cache this heuristically.** Django
+    sends no cache headers of its own, and this partial is the one per-reader
+    thing on a page whose own entry is shared - so a stale copy is a reader
+    looking at somebody else's answer to "which of these addresses are yours?".
     Content-hashed static names do not help: the hash protects the asset, and
-    what goes stale here is the HTML naming it. An old copy of this partial
-    holds old hashed URLs and keeps loading the old scripts indefinitely, which
-    is exactly the shape of the 2026-09-13 report where the Dust Sweep button
-    was missing in a normal window and present in a private one.
+    what goes stale is the HTML naming it.
 
-    The decorator is the same one the widgets' own router endpoints carry, for
-    the same reason.
+    It carries the dust sweep as well as the swap, because both are actions on
+    an address the reader has proved they own and a second partial would ask
+    the same question twice.
 
-    The address page is ``cache_page``'d across users, so this per-user entry is
-    loaded separately. It links to the user's preferred router's swap page when
-    the user has linked at least one address on the page; otherwise nothing.
-
-    **It carries the dust sweep too**, for the same reason and on the same gate:
-    both are actions on an address the reader has proved they own, and neither
-    may be rendered into the shared page. A second htmx partial would be a
-    second request for the same question - "which of these addresses are
-    yours?" - answered from the same `linked_addresses_for_user` call.
-
-    The two are gated *independently*, though. A sweep needs a linked address
-    and nothing else; a swap additionally needs a router that resolves, and
-    `swap_url` is "" when it does not. Hanging the sweep off `swap_url` would
-    have hidden it whenever the router was misconfigured, which is precisely
-    when the close-out half is still perfectly usable.
+    The two are gated *independently*. A sweep needs a linked address and
+    nothing else; a swap also needs a router that resolves, and `swap_url` is
+    "" when it does not - so hanging the sweep off `swap_url` would hide it
+    exactly when the close-out half is still usable.
 
     :var template_name: relative path to the partial template
     :type template_name: str
@@ -1855,19 +1798,14 @@ class SwapEntryView(TemplateView):
         if not user.is_authenticated:
             return context
         value = self.args[0].upper()
-        addresses = (
-            [value] if len(value) > 50 else check_bundle_addresses(value).split()
-        )
+        addresses = [value] if len(value) > 50 else check_bundle_addresses(value).split()
         # **Per-reader, so it belongs in this partial and nowhere else.** The
-        # address page itself is cached and the cache is shared - `Vary: Cookie`
-        # is on the response but does not key the entry - so a flag about *this*
-        # reader rendered into it would be served to the next one. This partial
-        # is the page's one non-cached request, which is why the swap gate and
-        # the sweep live here too.
+        # address page is cached and the cache is shared - `Vary: Cookie` is on
+        # the response but does not key the entry - so a flag about *this*
+        # reader rendered into it is served to the next one.
         #
-        # Both halves are required: the tier has to allow it, and the reader has
-        # to have asked for it in their settings. Either missing means the free
-        # 60-second reload keeps the page fresh instead.
+        # Both halves are required: the tier has to allow it and the reader has
+        # to have asked for it. Either missing leaves the free 60-second reload.
         profile = getattr(user, "profile", None)
         if (
             profile is not None
@@ -1877,12 +1815,10 @@ class SwapEntryView(TemplateView):
             context["liverefresh_url"] = reverse("liverefresh", args=[value])
             context["liverefresh_interval"] = LIVEREFRESH_POLL_SECONDS
             context["liverefresh_grace"] = LIVEREFRESH_HIDDEN_GRACE_SECONDS
-        # **Alerts are about watching, not signing**, so unlike the swap and
-        # the sweep they are not gated on a linked address: a reader may watch
-        # the total of a page they do not own, or the price of an asset they do
-        # not hold. The gate is the tier, and it bands how many rules may be
-        # kept rather than whether the control appears - below it the control is
-        # a link to subscriptions, never a dead button.
+        # Alerts are about watching rather than signing, so unlike the swap
+        # and the sweep they are not gated on a linked address. The tier bands
+        # how many rules may be kept rather than whether the control appears:
+        # below it the control is a link to subscriptions, never a dead button.
         alerts_allowed, alerts_kept = _alerts_allowance(user)
         context["alerts_entitled"] = alerts_allowed > 0
         context["alerts_kept"] = alerts_kept
@@ -1891,16 +1827,13 @@ class SwapEntryView(TemplateView):
 
         linked = linked_addresses_for_user(user, addresses)
         if linked:
-            # **Both actions are single-address, and a bundle page is where that
-            # stops being invisible.** A swap and a sweep are signed by one
-            # holder's key, so what matters is which of the page's addresses the
-            # reader actually controls - the rest of the bundle is somebody
-            # else's, or at least some other key's, and has to be discarded.
+            # **Both actions are signed by one holder's key**, so what matters
+            # is which of the page's addresses this reader controls; the rest
+            # of a bundle belongs to some other key.
             #
-            # The sweep offers *every* linked address rather than choosing for
-            # them, because choosing is what breaks: the wallet is connected to
-            # one account, and an entry that silently picked a different one
-            # produced a group that account cannot sign.
+            # Every linked address is offered rather than one being chosen,
+            # because the wallet is connected to one account and an entry that
+            # picked a different one produces a group it cannot sign.
             context["dustsweep_addresses"] = sorted(linked)
             context["dustsweep_address"] = preferred_linked_address(user, linked)
             context["dustsweep_plan_url"] = reverse("dustsweep_plan")
@@ -1916,30 +1849,17 @@ class SwapEntryView(TemplateView):
             context["swap_holdings_tmpl"] = swap_holdings_tmpl(router)
             # The ASA Stats router quotes in our engine rather than in the
             # browser, so the modal has to know where to post. Absent for every
-            # other router, and absent here entirely until now -- which is why
-            # selecting ours on an address page answered "this deployment has
-            # no ASA Stats router endpoint".
+            # other router.
             context.update(swap_endpoint_urls(router))
-            # **The candidates, and a fallback among them.** The swap opens on
-            # one address, and which one cannot be decided here for the same
-            # reason the sweep's cannot: linkage is a server fact and connection
-            # is a browser one. So the marker carries both - every address on
-            # this page the reader owns, and the best guess to use when the
-            # wallet is on none of them - and `swap.js` prefers the connected
-            # account.
-            #
-            # The guess alone was wrong on a bundle: it opened on the profile's
-            # primary, so a reader connected to the bundle's *other* address was
-            # shown that other account's holdings. Nothing was unsafe about it -
-            # the Swap button stays disabled unless the wallet owns the
-            # from-address - but the holdings, the balances and the percentage
-            # buttons were all somebody else's.
+            # **The candidates and a fallback among them**, because linkage is
+            # a server fact and connection is a browser one. The marker carries
+            # every address on this page the reader owns plus the best guess
+            # for when the wallet is on none of them, and `swap.js` prefers the
+            # connected account.
             context["swap_addresses"] = context["dustsweep_addresses"]
             context["swap_address"] = context["dustsweep_address"]
-            # The shared controller is loaded once; the chosen router's SDK
-            # bundle is loaded by id, e.g. "haystack/haystack-sdk.bundle.js" --
-            # and is "" for a router that ships none, which the template then
-            # skips rather than naming a static file that does not exist.
+            # "" for a router that ships no SDK, which the template skips
+            # rather than naming a static file that does not exist.
             context["swap_sdk_static"] = swap_sdk_static(router)
         return context
 
@@ -1988,9 +1908,7 @@ class SwapSourceRedirectView(View):
 
         # No safe referer (e.g. a direct hit on this URL): fall back to the
         # standalone router swap page with the asset preselected.
-        base = swap_entry_url(
-            request.user.profile.preferred_router_or_default(), address
-        )
+        base = swap_entry_url(request.user.profile.preferred_router_or_default(), address)
         if not base:
             raise Http404
 

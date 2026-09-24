@@ -6,7 +6,6 @@ every item already - identity, image, price, traits - so this replaces those
 with the same items carrying the parts only an opened card shows.
 """
 
-
 import pytest
 from django.http import Http404
 from django.template.loader import render_to_string

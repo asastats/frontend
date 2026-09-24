@@ -37,9 +37,9 @@ from django.core.management import call_command
 from django.template import Context, Template
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 from core.staticfiles import BUILD_INPUTS
+from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 from walletauth.models import LinkedAddress
 from widgethost.registry import swap_routers
 

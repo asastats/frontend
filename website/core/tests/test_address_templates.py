@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 from django.conf import settings
 from django.template.loader import render_to_string
-
 from django.test import RequestFactory
 
 from core.tests.dom import parse
@@ -406,7 +405,7 @@ class TestAddressTemplateRenders:
         program and the next was a trailing break inside the last one.
         """
         html = render_to_string("address.html", _build_context(sample_payload))
-        panels = html[html.index('data-program-panel'):]
+        panels = html[html.index("data-program-panel") :]
 
         assert "<br" not in panels[: panels.index("</details>")]
 
@@ -442,7 +441,7 @@ class TestAddressTemplateRenders:
         # `<div id="d-`, not `id="d-`: the control above it carries the same
         # value in `data-distid`, and that comes first in the markup.
         start = html.index('<div id="d-')
-        panel = html[start: start + 400]
+        panel = html[start : start + 400]
 
         assert "bg-base-200" in panel
         assert "border-base-300" in panel
@@ -473,9 +472,9 @@ class TestAddressTemplateRenders:
         at = html.index('<span class="copy')
         before = html[:at]
 
-        assert before.rstrip().endswith("</a>"), (
-            "something now sits between the asset id and its copy control"
-        )
+        assert before.rstrip().endswith(
+            "</a>"
+        ), "something now sits between the asset id and its copy control"
 
     def test_the_total_says_what_it_counts(self, sample_payload):
         """The heading was the figure alone.
@@ -484,7 +483,7 @@ class TestAddressTemplateRenders:
         the page's actual subject, the address, sat below it as a paragraph.
         """
         html = render_to_string("address.html", _build_context(sample_payload))
-        heading = html[html.index("<h1"): html.index("</h1>")]
+        heading = html[html.index("<h1") : html.index("</h1>")]
 
         assert "sr-only" in heading
         assert "Total value" in heading
@@ -500,7 +499,7 @@ class TestAddressTemplateRenders:
         """
         html = render_to_string("address.html", _build_context(sample_payload))
         start = html.index('class="pricetip')
-        element = html[start: html.index("</span>", start)]
+        element = html[start : html.index("</span>", start)]
 
         assert "sr-only" not in element
 
@@ -672,9 +671,7 @@ class TestTheLoadMoreControlKeepsItsPromise:
         `toolbar.js` and `showmore.js` both look.
         """
         for template in self.TEMPLATES:
-            sections = self._page(template, sample_payload).select(
-                ".asasec, .nftsec"
-            )
+            sections = self._page(template, sample_payload).select(".asasec, .nftsec")
 
             assert sections, f"{template} renders no foldable section"
             for section in sections:
@@ -702,9 +699,7 @@ class TestTheLoadMoreControlKeepsItsPromise:
                     f"while publishing a batch of {batch}"
                 )
 
-    def test_the_label_promises_one_batch_and_not_the_whole_tail(
-        self, sample_payload
-    ):
+    def test_the_label_promises_one_batch_and_not_the_whole_tail(self, sample_payload):
         """The defect, in one assertion.
 
         The control names a number and that number is what the next press
@@ -718,13 +713,11 @@ class TestTheLoadMoreControlKeepsItsPromise:
             for control in controls:
                 promised = control.select_one(".show-more-open").text()
                 count = int(promised.split()[1])
-                assert 0 < count <= settings.ADDRESS_INITIAL_ASSETS, (
-                    f"{template}: {promised!r} does not describe one press"
-                )
+                assert (
+                    0 < count <= settings.ADDRESS_INITIAL_ASSETS
+                ), f"{template}: {promised!r} does not describe one press"
 
-    def test_the_control_names_what_the_scripts_will_call_the_rows(
-        self, sample_payload
-    ):
+    def test_the_control_names_what_the_scripts_will_call_the_rows(self, sample_payload):
         """``data-noun`` is how the scripts rewrite the count.
 
         Without it the plural lives in two JavaScript files, which is how
@@ -735,7 +728,8 @@ class TestTheLoadMoreControlKeepsItsPromise:
                 "[data-show-more]"
             ):
                 noun = control.get("data-noun")
-                assert noun in ("assets", "collections"), (
-                    f"{template}: a control carries {noun!r} as its noun"
-                )
+                assert noun in (
+                    "assets",
+                    "collections",
+                ), f"{template}: a control carries {noun!r} as its noun"
                 assert noun in control.select_one(".show-more-open").text()

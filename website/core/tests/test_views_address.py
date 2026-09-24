@@ -246,9 +246,7 @@ class TestBaseAddressViewGetContextData:
 
         view.get_context_data()
 
-        mocks["fetch"].assert_called_once_with(
-            ADDRESS, ADDRESS, light=True, permission=0
-        )
+        mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS, light=True, permission=0)
 
     def test_states_the_signed_in_readers_class_to_the_engine(self, mocker):
         """**The class signal, and this is the layer that knows it.**
@@ -379,9 +377,7 @@ class TestBaseAddressViewGetContextData:
 
         context = view.get_context_data()
 
-        mocks["fetch"].assert_called_once_with(
-            ADDRESS, ADDRESS, light=True, permission=0
-        )
+        mocks["fetch"].assert_called_once_with(ADDRESS, ADDRESS, light=True, permission=0)
         assert context["account"] is sentinel
 
     def test_single_address_writes_address_key_not_bundle(self, mocker):
@@ -474,9 +470,9 @@ class TestBaseAddressViewGetContextData:
             "warning",
             "information",
         }
-        assert legacy_keys.isdisjoint(context.keys()), (
-            f"Legacy context keys leaked back in: {legacy_keys & context.keys()}"
-        )
+        assert legacy_keys.isdisjoint(
+            context.keys()
+        ), f"Legacy context keys leaked back in: {legacy_keys & context.keys()}"
 
     def test_full_context_shape(self, mocker):
         # Lock the exact set of keys written by get_context_data, so any

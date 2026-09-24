@@ -109,9 +109,7 @@ class TestWidgetsApiTokenCheck:
         assert _ids(messages) == ["asastats.W001"]
         assert "401" in messages[0].msg
 
-    def test_core_check_errors_on_a_token_signed_with_another_key(
-        self, our_signing_key
-    ):
+    def test_core_check_errors_on_a_token_signed_with_another_key(self, our_signing_key):
         """The failure that reads like expiry and is not.
 
         A token minted against the engine's SIMPLE_JWT_KEY carries a valid
@@ -128,9 +126,7 @@ class TestWidgetsApiTokenCheck:
         assert "lapsed" not in messages[0].hint
 
     def test_core_check_errors_on_an_expired_token(self, our_signing_key):
-        our_signing_key.WIDGETS_API_TOKEN = _token(
-            lifetime=timedelta(days=-1)
-        )
+        our_signing_key.WIDGETS_API_TOKEN = _token(lifetime=timedelta(days=-1))
         messages = check_widgets_api_token(None)
         assert _ids(messages) == ["asastats.E002"]
         # ... and not the signature advice, which would send the reader after
@@ -145,9 +141,7 @@ class TestWidgetsApiTokenCheck:
         :param days: remaining lifetime to test
         :type days: int
         """
-        our_signing_key.WIDGETS_API_TOKEN = _token(
-            lifetime=timedelta(days=days, hours=1)
-        )
+        our_signing_key.WIDGETS_API_TOKEN = _token(lifetime=timedelta(days=days, hours=1))
         messages = check_widgets_api_token(None)
         assert _ids(messages) == ["asastats.W002"]
         assert "mint-widgets-token.sh" in messages[0].hint
@@ -210,7 +204,11 @@ class TestExportTierLimitsCheck:
     def test_core_check_passes_when_limits_are_configured(self, settings):
         """Guard the guard: the good case must be silent."""
         settings.EXPORT_TIERS_ADDRESSES_LIMIT = {
-            "free": 5, "Intro": 6, "Asastatser": 7, "Professional": 8, "Cluster": 10
+            "free": 5,
+            "Intro": 6,
+            "Asastatser": 7,
+            "Professional": 8,
+            "Cluster": 10,
         }
         assert check_export_tier_limits(None) == []
 
@@ -328,9 +326,7 @@ class TestExportTierLimitsDefaults:
 
         assert check_export_tier_limits(None) == []
 
-    def test_core_check_still_warns_when_one_tier_is_blocked(
-        self, settings, monkeypatch
-    ):
+    def test_core_check_still_warns_when_one_tier_is_blocked(self, settings, monkeypatch):
         """Guard the guard: the silence above must be about the defaults.
 
         Without this, the test above would also pass if the check had simply

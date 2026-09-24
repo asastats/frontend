@@ -41,7 +41,6 @@ nothing about whether anybody forgot to rebuild.
 
 import re
 import subprocess
-
 from pathlib import Path
 
 import pytest
@@ -57,7 +56,11 @@ STYLESHEET = CSS_DIR / "style.tw.css"
 SOURCE = CSS_DIR / "input.css"
 
 #: The standalone binary and the two plugins `build-tailwind.sh` requires.
-TOOLCHAIN = [CSS_DIR / "tailwindcss", CSS_DIR / "daisyui.mjs", CSS_DIR / "daisyui-theme.mjs"]
+TOOLCHAIN = [
+    CSS_DIR / "tailwindcss",
+    CSS_DIR / "daisyui.mjs",
+    CSS_DIR / "daisyui-theme.mjs",
+]
 
 #: The attribution line `build-tailwind.sh` prepends after minifying. Lightning
 #: CSS strips even preserve-comments, so the script puts it back; it is not part

@@ -28,8 +28,10 @@ import pytest
 from django.template.loader import render_to_string
 
 from core.tests.dom import parse
-
-from core.tests.test_address_templates import _build_context, sample_payload  # noqa: F401
+from core.tests.test_address_templates import (  # noqa: F401
+    _build_context,
+    sample_payload,
+)
 
 
 @pytest.fixture(scope="module")
@@ -164,7 +166,9 @@ class TestValueSpans:
         `.pricetip`; the same rule applies to every span the switch rewrites.
         """
         with_children = [
-            str(el)[:80] for el in page.select("span.val, span.val6") if el.has_element_children()
+            str(el)[:80]
+            for el in page.select("span.val, span.val6")
+            if el.has_element_children()
         ]
 
         assert not with_children, f"markup inside rewritten spans: {with_children[:3]}"
@@ -283,7 +287,9 @@ class TestAddressableEntries:
         assert outermost, "no top-level entries found"
         not_details = [(el.get("id"), el.tag) for el in outermost if el.tag != "details"]
 
-        assert not not_details, f"top-level entries that are not <details>: {not_details[:5]}"
+        assert (
+            not not_details
+        ), f"top-level entries that are not <details>: {not_details[:5]}"
 
     def test_entries_sit_inside_a_section_list(self, page):
         """The filter shows an entry's `.section-list` ancestors along with it.
@@ -323,23 +329,23 @@ class TestFoldedRows:
             section = control.find_parent(class_="section-list")
 
             assert section is not None, "a show-more control outside any section"
-            assert section.select(".fitem.folded"), (
-                "a show-more control in a section with nothing folded"
-            )
+            assert section.select(
+                ".fitem.folded"
+            ), "a show-more control in a section with nothing folded"
 
     def test_folded_rows_only_appear_where_a_control_exists(self, page):
         """Otherwise the rows are hidden with no way to reach them."""
         for section in page.select(".section-list"):
             if section.select(".fitem.folded"):
-                assert section.select("[data-show-more]"), (
-                    "folded rows in a section with no control to reveal them"
-                )
+                assert section.select(
+                    "[data-show-more]"
+                ), "folded rows in a section with no control to reveal them"
 
     def test_the_control_reports_its_state(self, page):
         for control in page.select("[data-show-more]"):
-            assert control.get("aria-expanded") == "false", (
-                "the control must ship collapsed; the reader expands it"
-            )
+            assert (
+                control.get("aria-expanded") == "false"
+            ), "the control must ship collapsed; the reader expands it"
 
     def test_the_control_carries_both_labels(self, page):
         """The stylesheet shows one, keyed off `aria-expanded`.
@@ -376,7 +382,9 @@ class TestNftPairing:
 
         entry_ids = {el["id"] for el in page.select(".fitem") if el.get("id")}
         unpaired = [
-            el["id"] for el in icons if el["id"][1:] not in entry_ids or el["id"][0] != "t"
+            el["id"]
+            for el in icons
+            if el["id"][1:] not in entry_ids or el["id"][0] != "t"
         ]
 
         assert not unpaired, f"thumbnails with no matching entry: {unpaired[:5]}"
@@ -434,7 +442,14 @@ class TestCharts:
 
     @pytest.mark.parametrize(
         "name",
-        ["asachart", "nftchart", "ratiochart", "nftfloorchart", "distchart", "consolidated"],
+        [
+            "asachart",
+            "nftchart",
+            "ratiochart",
+            "nftfloorchart",
+            "distchart",
+            "consolidated",
+        ],
     )
     def test_json_payload_block_is_present_and_parses(self, page, name):
         """`parseJsonScript` calls `JSON.parse` on the block's text.
@@ -451,7 +466,14 @@ class TestCharts:
 
     @pytest.mark.parametrize(
         "name",
-        ["distchart", "ratiochart", "ratiochartfloor", "asachart", "nftchart", "nftfloorchart"],
+        [
+            "distchart",
+            "ratiochart",
+            "ratiochartfloor",
+            "asachart",
+            "nftchart",
+            "nftfloorchart",
+        ],
     )
     def test_canvas_and_legend_container_pair_up(self, page, name):
         """Each chart is `#id-<name>` with its legend at `#id-legend-<name>`.
@@ -463,7 +485,8 @@ class TestCharts:
         assert page.select_one(f"#id-legend-{name}") is not None
 
     @pytest.mark.parametrize(
-        "wrapper", ["id-chart-ratio", "id-chart-ratiofloor", "id-chart-nft", "id-chart-nftfloor"]
+        "wrapper",
+        ["id-chart-ratio", "id-chart-ratiofloor", "id-chart-nft", "id-chart-nftfloor"],
     )
     def test_floor_switch_has_all_four_wrappers(self, page, wrapper):
         """`setNftFloor` returns early unless all four are present.
@@ -516,7 +539,11 @@ class TestChartClickTargets:
 
         assert units, "no .unit labels for chartClick to match against"
 
-    def test_unit_label_text_matches_the_chart_labels(self, page, sample_payload):  # noqa: F811
+    def test_unit_label_text_matches_the_chart_labels(
+        self,
+        page,
+        sample_payload,  # noqa: F811
+    ):
         """The match is on exact text, so formatting the label breaks it.
 
         A slice is labelled with the asset's unit name; wrapping the rendered

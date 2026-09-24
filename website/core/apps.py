@@ -15,8 +15,7 @@ class CoreConfig(AppConfig):
 
     def ready(self):
         """Run these imports when Django starts."""
-        import core.signals
-
         # Registers the system checks; importing the module is what registers
         # them, hence the noqa rather than a call.
         import core.checks  # noqa: F401
+        import core.signals  # noqa: F401 - the import is the registration

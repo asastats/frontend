@@ -396,3 +396,159 @@ function's to settle.
 
 The address bands belong to the widget's manifest. This exists only so the
 settings page can put a label on them without importing a widget's internals.
+
+---
+
+## website/core/views.py
+
+### `service_worker`
+
+`index_file` above already serves `robots.txt` from the root this way; this is
+the same trick with a different content type.
+
+### `AddressView._live_holdings`
+
+The fingerprint is what lets a live page show an asset that has just arrived.
+An out-of-band swap reaches only an element the page already has: a bought
+asset has no row to land in, a sold one is never mentioned and its row stays as
+it was. So the widget answers a change to it with a reload - and a reload
+served out of a `cache_page` entry built before the change would show the same
+stale rows, which is why the fingerprint is in the key.
+
+Every page nobody watches keys exactly as it did before, at the cost of one
+Redis field lookup.
+
+### `AddressView.get_context_data`
+
+**Why only the layout may be reader-derived.** Everything else about the reader
+- their addresses, their router, their subscription - is shared between
+signed-in readers by the cache entry. `core/tests/test_address_layout.py` holds
+the line.
+
+**What the light payload bought.** Measured on a 7,002-NFT account: NFT
+serialization from 0.499 s to about 0.126 s. Every collection and item is still
+present; what each record drops is the listings and purchase history only an
+opened collection shows.
+
+The engine sizes admission by the reader's permission rather than by a
+per-minute limit that punishes a lone reader on an idle box. See
+`core.views.reader_permission` there.
+
+### `preferred_linked_address`
+
+Alphabetical order was the previous rule and correlates with nothing at all. On
+a bundle page it silently picked whichever of the reader's accounts happened to
+sort first.
+
+### `SwapEntryView`
+
+**The 2026-09-13 report.** The Dust Sweep button was missing in a normal window
+and present in a private one. An old heuristically-cached copy of this partial
+holds old content-hashed URLs and keeps loading the old scripts indefinitely,
+which is why `never_cache` is on it - the same decorator the widgets' own
+router endpoints carry.
+
+**Why the swap marker carries a list and not just a guess.** The guess alone
+was wrong on a bundle: it opened on the profile's primary, so a reader
+connected to the bundle's *other* address was shown that other account's
+holdings. Nothing unsafe - the Swap button stays disabled unless the wallet
+owns the from-address - but the holdings, balances and percentage buttons were
+all somebody else's.
+
+The ASA Stats router's endpoint URLs were absent entirely until they were
+added, which is why selecting our own router on an address page answered "this
+deployment has no ASA Stats router endpoint".
+
+### `NftCollectionItemsView`
+
+A page showing 7,002 NFTs opens almost none of them, which is the whole reason
+the payload is split in two.
+
+---
+
+## website/core/templatetags/core_extras.py
+
+### `identicon`
+
+Every account has one on the day it is created, including the
+wallet-authenticated majority who would never have a social avatar, and there
+is no image to host, resize or moderate. It is also the honest picture for this
+product: what identifies a row here *is* its addresses.
+
+Five columns rather than the more common eight - at the 32px this is drawn at,
+eight columns is a texture rather than a mark.
+
+### `program_groups`
+
+The reference address groups 18 LP positions across five venues under one
+"Liquidity" heading, because that is what `program.name` says for a liquidity
+position. It is a useful grouping and an honest one; calling it a venue
+grouping would not be.
+
+Design 1 renders the same programs ungrouped, which is why the grouping is
+presentation rather than payload.
+
+### `position_band`
+
+**Why the band and the filter must agree exactly.** A reader who presses
+"Staked" and sees a balance row has been told the band was lying. The category
+has to be known per position and `utils.structs.Consolidated` arrives already
+summed, so the rule is reproduced here.
+
+The deliberate difference: `_balance_totals` uses `next(...)`, so a second
+`Balance` position on the same asset contributes nothing to the balance total,
+and the `defi` comprehension excludes every `Balance` position - so that second
+one lands in no category and is missing from the band. This filter calls it
+`balance`. The reference payload has no such asset, which is why the two agree
+today; if one appears, the band under-reports and this filter is right.
+
+### `breakdown_key`
+
+Three pairs of positions on the reference bundle are genuinely
+indistinguishable, so `position_id` gives each pair one identifier and flags
+it. The markup already declined to put `pq-`/`pv-` ids on those; the breakdown
+panel did not, so expanding one position opened the other one's breakdown.
+
+### `defer_items`
+
+Measured on one real account - 1,990 collections, 28,008 NFTs - the rendered
+items were 19.3 MB of a 22 MB page and 152,294 elements the browser had to lay
+out before it would scroll.
+
+---
+
+## website/core/models.py
+
+### `Profile.api_tokens_valid_from`
+
+`token_blacklist` would have added a table and a lookup per request, and by
+default covers refresh tokens rather than the access tokens actually in
+circulation. Rotating `SIMPLE_JWT_KEY` invalidates every token at once,
+including `WIDGETS_API_TOKEN` and the one baked into the published mobile app.
+Neither is usable for a single leaked credential.
+
+### `Profile.can_access_fold_setting`
+
+The address page's cache key is `layout-{layout}-e{export}h{historic}-{holdings}`.
+Folding a fourth boolean into it would double the entries for every address,
+and what that buys is stopping a reader hand-editing their own browser storage
+to see more of their own rows. Not worth halving the hit rate of the cache that
+heavy pages depend on.
+
+### `LiveAllowanceBucket`
+
+**Why the free tier is keyed by address and Intro by reader.** An allowance
+bound to an account is bound to the cheapest thing in the system - accounts are
+free and need no email - so a hundred of them would be a hundred allowances.
+Bound to the address, getting more free time means splitting a portfolio, which
+costs fees and minimum balances and fragments the combined view that was the
+reason to watch. The abuse has to destroy the thing it is abusing for.
+
+A paying reader is not what that defends against, and per-address would hand an
+Intro subscriber four hours for every address they open, which is no limit at
+all.
+
+**Why the row exists at all when Redis carries the spend.** Redis is allowed to
+lose things - an eviction, a flush, a failover. For a daily allowance that
+costs a reader one day; for a refilling bucket it would hand every key a fresh
+grant. The failure mode of the anti-abuse mechanism must not be the abuse.

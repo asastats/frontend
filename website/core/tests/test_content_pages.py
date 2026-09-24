@@ -27,7 +27,6 @@ honest use on these pages.
 """
 
 import re
-
 from pathlib import Path
 
 import pytest

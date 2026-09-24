@@ -52,9 +52,7 @@ def _suites():
     :return: list of :class:`pathlib.Path`
     """
     return [
-        path
-        for path in WEBSITE.rglob("*.test.js")
-        if "node_modules" not in path.parts
+        path for path in WEBSITE.rglob("*.test.js") if "node_modules" not in path.parts
     ]
 
 
@@ -72,9 +70,7 @@ def _required_packages(text):
     for match in REQUIRE.finditer(text):
         module = match.group("module")
         parts = module.split("/")
-        packages.add(
-            "/".join(parts[:2]) if module.startswith("@") else parts[0]
-        )
+        packages.add("/".join(parts[:2]) if module.startswith("@") else parts[0])
     return packages - NODE_BUILTINS
 
 

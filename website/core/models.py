@@ -25,11 +25,7 @@ from utils.constants.users import (
 )
 from utils.explorers import normalized_explorer
 from utils.helpers import bundle_from_addresses, create_bundle
-from utils.layouts import (
-    layout_choices,
-    locked_layouts,
-    normalized_layout,
-)
+from utils.layouts import layout_choices, locked_layouts, normalized_layout
 from utils.userhelpers import (
     is_system_reserved_url_path,
     slugified_bundle_name,
@@ -73,18 +69,10 @@ class Profile(models.Model):
 
     #: Tokens issued before this moment are refused. Null means none are.
     #:
-    #: **The revocation a stateless JWT otherwise cannot have.** Nothing here
-    #: keeps a list of issued tokens, so the only other kill switch is rotating
-    #: `SIMPLE_JWT_KEY` - which invalidates *every* token at once, including
-    #: `WIDGETS_API_TOKEN` and the one baked into the published mobile app, and
-    #: so is unusable for a single leaked credential.
-    #:
-    #: Comparing against a token's `iat` revokes every token one account holds,
-    #: instantly, and costs nothing: the move to `JWTAuthentication` already
-    #: loads this profile on every API request, so the check is an attribute
-    #: read rather than a query. `token_blacklist` would have added a table and
-    #: a lookup, and by default covers refresh tokens rather than the access
-    #: tokens actually in circulation.
+    #: **The revocation a stateless JWT otherwise cannot have.** Comparing
+    #: against a token's `iat` revokes every token one account holds, instantly
+    #: and for an attribute read: `JWTAuthentication` already loads this
+    #: profile on every API request. See `api/authentication.py`.
     #:
     #: Set it to now to revoke; clear it to un-revoke. Re-issuing from
     #: `/profile/api/` afterwards produces a token that postdates the cutoff and
@@ -270,15 +258,12 @@ class Profile(models.Model):
         typeface tab and the explorer preference already do.
 
         **The gate is on the control, not on the page that obeys it.** The
-        preference lives in `localStorage` and is applied by the address page's
-        own scripts, and that page is served from a *shared* cache keyed on
-        `layout-{layout}-e{export}h{historic}-{holdings}`. Folding a fourth
-        boolean into that key would double its entries for every address, and
-        what it would buy is stopping a reader hand-editing their own browser
-        storage to see more of their own rows. That is not worth halving the
-        hit rate of the cache heavy pages depend on.
+        preference lives in `localStorage` and the address page is served from
+        a shared cache; folding a fourth boolean into that key would double its
+        entries per address, to stop a reader hand-editing their own browser
+        storage to see more of their own rows.
 
-        So this gates whether the choice is *offered*, exactly as
+        So this gates whether the choice is *offered*, as
         :meth:`can_access_typeface_setting` does, and nothing re-checks it when
         the preference is applied.
 
@@ -888,34 +873,22 @@ class LiveAllowanceBucket(models.Model):
     """How much live refresh a key has left, as a refilling token bucket.
 
     **What the key is depends on the tier, and that is the anti-abuse design.**
+    The free tier is keyed by *address*, so a hundred accounts watching one
+    address spend one bucket and more free time costs fees, minimum balances
+    and the combined view that was the reason to watch. Intro is keyed by
+    *reader*: a budget to spend where they like, because per-address would hand
+    a subscriber four hours for every address they open.
 
-    The free tier is keyed by *address*. An allowance bound to an account is
-    bound to the cheapest thing in the system - accounts are free and need no
-    email - so a hundred of them would be a hundred allowances. Bound to the
-    address, a hundred accounts watching one address all spend the same bucket,
-    and getting more free time means splitting a portfolio across addresses,
-    which costs fees and minimum balances and fragments the combined view that
-    was the reason to watch. The abuse has to destroy the thing it is abusing
-    for.
+    A bucket rather than a countdown, because it refills: a grant to start and
+    a weekly top-up capped back at the grant. Stored as a balance and the
+    moment it was last touched, so the refill is computed when somebody asks
+    rather than by a job that has to run.
 
-    Intro is keyed by *reader*, because a paying reader is not what that is
-    defending against, and because per-address would hand an Intro subscriber
-    four hours for every address they open, which is no limit at all. Theirs is
-    a budget to spend where they like.
-
-    **A bucket rather than a countdown, because it refills.** A grant to start
-    and a weekly top-up after that, capped back at the grant. Stored as a
-    balance and the moment it was last touched, so the refill is computed when
-    somebody asks rather than by a job that has to run - nothing to schedule,
-    nothing to miss, and a key nobody uses costs one row and no work.
-
-    **This row is the durable floor, not the hot path.** A poll arrives every
-    few seconds per watching reader and must not write here; Redis carries the
-    spend between flushes. The row exists because Redis is allowed to lose
-    things - an eviction, a flush, a failover - and for a daily allowance that
-    costs a reader one day, while for a refilling bucket it would hand every key
-    a fresh grant. The failure mode of the anti-abuse mechanism must not be the
-    abuse.
+    This row is the durable floor rather than the hot path. A poll arrives
+    every few seconds per watching reader and must not write here; Redis
+    carries the spend between flushes, and the row exists because Redis may
+    lose things - which for a refilling bucket would hand every key a fresh
+    grant.
     """
 
     #: `key` holds an address for the free tier and `u:<pk>` for a reader, so

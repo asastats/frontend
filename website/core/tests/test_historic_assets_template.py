@@ -108,9 +108,7 @@ class TestHistoricAssetsColours:
         spaced or aligned as a unit -- and the gap between one program and the
         next was a trailing break inside the last one, which is the list's job.
         """
-        html = _render(
-            "asa_batch", items=[_asa_item(1, "AAA")], colors={1: "0"}
-        )
+        html = _render("asa_batch", items=[_asa_item(1, "AAA")], colors={1: "0"})
 
         assert "<br" not in html
 
@@ -147,7 +145,12 @@ class TestHistoricAssetsColours:
         # `BASE_DIR` points at the settings package, not the project root.
         css = (
             Path(settings.STATICFILES_DIRS[0]).parent
-            / "widgets" / "inhouse" / "historic" / "static" / "historic" / "style.css"
+            / "widgets"
+            / "inhouse"
+            / "historic"
+            / "static"
+            / "historic"
+            / "style.css"
         ).read_text()
 
         assert 'input[type="text"]' in css
@@ -164,7 +167,12 @@ class TestHistoricAssetsColours:
         """
         css = (
             Path(settings.STATICFILES_DIRS[0]).parent
-            / "widgets" / "inhouse" / "historic" / "static" / "historic" / "style.css"
+            / "widgets"
+            / "inhouse"
+            / "historic"
+            / "static"
+            / "historic"
+            / "style.css"
         ).read_text()
         tray = css.split(".historic-tabs {", 1)[1].split("}", 1)[0]
         selected = css.split('.historic-tabs [role="tab"][aria-selected="true"] {', 1)
@@ -187,7 +195,11 @@ class TestHistoricSettingsPanel:
         """
         raw = (
             Path(settings.STATICFILES_DIRS[0]).parent
-            / "widgets" / "inhouse" / "historic" / "templates" / "historic"
+            / "widgets"
+            / "inhouse"
+            / "historic"
+            / "templates"
+            / "historic"
             / "index.html"
         ).read_text()
         return re.sub(
@@ -200,7 +212,12 @@ class TestHistoricSettingsPanel:
     def _css(self):
         return (
             Path(settings.STATICFILES_DIRS[0]).parent
-            / "widgets" / "inhouse" / "historic" / "static" / "historic" / "style.css"
+            / "widgets"
+            / "inhouse"
+            / "historic"
+            / "static"
+            / "historic"
+            / "style.css"
         ).read_text()
 
     def test_historic_index_uses_no_line_breaks_for_layout(self):
@@ -242,7 +259,7 @@ class TestHistoricSettingsPanel:
         """
         markup = self._index()
         at = markup.index("historic_reset")
-        form = markup[at: markup.index("</form>", at)]
+        form = markup[at : markup.index("</form>", at)]
 
         assert 'class="danger"' in form
         assert "--color-error" in self._css().split("button.danger", 1)[1][:200]

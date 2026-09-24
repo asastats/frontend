@@ -92,9 +92,7 @@ class TestCorePermissionBaseMixins:
             assert returned == mocked_super.return_value
             mocked_super.assert_called_once_with()
 
-    def test_profileredirection_handle_no_permission_redirects_on_exception(
-        self, mocker
-    ):
+    def test_profileredirection_handle_no_permission_redirects_on_exception(self, mocker):
         mocked_redirect = mocker.patch("core.permissions.redirect")
         base = ProfileRedirection()
         with mock.patch(
@@ -111,9 +109,7 @@ class TestCorePermissionUserMixins(BaseView):
 
     # # BundleNamesRedirection
     # # handle_no_permission
-    def test_bundlenamesredirection_handle_no_permission_redirects_to_home(
-        self, mocker
-    ):
+    def test_bundlenamesredirection_handle_no_permission_redirects_to_home(self, mocker):
         mocked_redirect = mocker.patch("core.permissions.redirect")
         view = BundleNamesRedirection()
         self.request.user = mocker.MagicMock()
@@ -141,9 +137,7 @@ class TestCorePermissionUserMixins(BaseView):
         mocked_redirect = mocker.patch("core.permissions.redirect")
         view = BundleNamesRedirection()
         self.request.user = mocker.MagicMock()
-        self.request.user.profile.permission = (
-            SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
-        )
+        self.request.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
         view = self.setup_view(view, self.request)
         with (
             mock.patch(
@@ -200,9 +194,7 @@ class TestCorePermissionMixins:
         assert issubclass(CanAddBundleNameMixin, SubscribeRedirection)
 
     # # test_func
-    def test_core_permissions_canaddbundlenamemixin_test_func_calls_can_add(
-        self, mocker
-    ):
+    def test_core_permissions_canaddbundlenamemixin_test_func_calls_can_add(self, mocker):
         mixin = CanAddBundleNameMixin()
         mixin.request = mocker.MagicMock()
         mixin.test_func()

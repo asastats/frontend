@@ -4,7 +4,6 @@ import time
 from unittest import mock
 
 import pytest
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
@@ -263,9 +262,7 @@ class TestIndexViewBranches(BaseView):
         mocked_super = mocker.patch("core.views.FormView.form_invalid")
         returned = view.form_invalid(form)
         assert returned == mocked_super.return_value
-        mocked_form_class.return_value.add_error.assert_called_once_with(
-            "bundle", "ADDR"
-        )
+        mocked_form_class.return_value.add_error.assert_called_once_with("bundle", "ADDR")
         mocked_super.assert_called_once_with(mocked_form_class.return_value)
 
     def test_core_views_indexview_get_success_url_for_bundle(self, mocker):
@@ -539,9 +536,7 @@ class TestBaseStaticPageView(BaseView):
         # Check.
         assert context["mode"] == "dark"
 
-    def test_core_views_basestaticpageview_get_context_data_for_light_mode(
-        self, mocker
-    ):
+    def test_core_views_basestaticpageview_get_context_data_for_light_mode(self, mocker):
         # Setup view
         view = BaseStaticPageView()
         view = self.setup_view(view, self.request)
@@ -699,9 +694,7 @@ class TestExportView(BaseView):
         view = ExportView()
         view = self.setup_view(view, self.request, TEST_BUNDLE)
         # Run.
-        mocked_bundle = mocker.patch(
-            "core.views.check_bundle_addresses", return_value=""
-        )
+        mocked_bundle = mocker.patch("core.views.check_bundle_addresses", return_value="")
         mocked_create = mocker.patch("core.views.create_bundle")
         view_object = view.dispatch(self.request, [TEST_BUNDLE])
         # Check.
@@ -812,9 +805,7 @@ class TestExportView(BaseView):
         # Check.
         assert context == mocked_prepare.return_value
         assert mocked_prepare.call_args_list[0][0][0].get("view") == view
-        assert isinstance(
-            mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm
-        )
+        assert isinstance(mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm)
         assert mocked_prepare.call_args_list[0][0][1] == TEST_ADDRESS
 
     def test_core_views_exportview_get_context_data_for_bundle(self, mocker):
@@ -827,9 +818,7 @@ class TestExportView(BaseView):
         # Check.
         assert context == mocked_prepare.return_value
         assert mocked_prepare.call_args_list[0][0][0].get("view") == view
-        assert isinstance(
-            mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm
-        )
+        assert isinstance(mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm)
         assert mocked_prepare.call_args_list[0][0][1] == TEST_BUNDLE
 
     def test_core_views_exportview_get_context_data_for_finished_tax(self, mocker):
@@ -863,9 +852,7 @@ class TestExportView(BaseView):
         assert context == mocked_prepare.return_value
         # Check.
         assert mocked_prepare.call_args_list[0][0][0].get("view") == view
-        assert isinstance(
-            mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm
-        )
+        assert isinstance(mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm)
         assert (
             mocked_prepare.call_args_list[0][0][0].get("processing_tax") == TEST_ADDRESS
         )
@@ -890,9 +877,7 @@ class TestExportView(BaseView):
         assert context == mocked_prepare.return_value
         # Check.
         assert mocked_prepare.call_args_list[0][0][0].get("view") == view
-        assert isinstance(
-            mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm
-        )
+        assert isinstance(mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm)
         assert mocked_prepare.call_args_list[0][0][0].get("analysis_tax") == {
             "errors": 2,
             "locked": [TEST_ADDRESS, TEST_ADDRESS2],
@@ -953,9 +938,7 @@ class TestExportView(BaseView):
         view = ExportView()
         view = self.setup_view(view, self.request, TEST_BUNDLE)
         # Run.
-        mocked_bundle = mocker.patch(
-            "core.views.check_bundle_addresses", return_value=""
-        )
+        mocked_bundle = mocker.patch("core.views.check_bundle_addresses", return_value="")
         mocked_process = mocker.patch("core.views.start_export")
         view_object = view.get_success_url(typ="process")
         # Check.
@@ -964,9 +947,7 @@ class TestExportView(BaseView):
         mocked_bundle.assert_called_once_with(TEST_BUNDLE)
         mocked_process.assert_not_called()
 
-    def test_core_views_exportview_get_success_url_returns_url_from_address(
-        self, mocker
-    ):
+    def test_core_views_exportview_get_success_url_returns_url_from_address(self, mocker):
         # Setup view
         view = ExportView()
         view = self.setup_view(view, self.request, TEST_ADDRESS)
@@ -979,9 +960,7 @@ class TestExportView(BaseView):
         mocked_process.assert_called_once_with(TEST_ADDRESS, TEST_ADDRESS, self.request)
         mocked_bundle.assert_not_called()
 
-    def test_core_views_exportview_get_success_url_returns_url_from_bundle(
-        self, mocker
-    ):
+    def test_core_views_exportview_get_success_url_returns_url_from_bundle(self, mocker):
         # Setup view
         view = ExportView()
         view = self.setup_view(view, self.request, TEST_BUNDLE)
@@ -1808,9 +1787,7 @@ class TestDbProfileDisplayView(BaseUserCreatedView):
 
         # Check.
         assert view_object.context_data["subscriptions"] == subscriptions
-        mocked_provider.return_value.subscriptions.assert_called_once_with(
-            TEST_ADDRESS2
-        )
+        mocked_provider.return_value.subscriptions.assert_called_once_with(TEST_ADDRESS2)
 
     def test_core_views_profiledisplay_get_context_data_checks_subscriptions_evm_auth(
         self, mocker
@@ -1852,9 +1829,7 @@ class TestDbProfileDisplayView(BaseUserCreatedView):
         # Check.
         assert view_object.context_data.get("subscriptions") is None
         mocked_provider.assert_called_once_with()
-        mocked_provider.return_value.subscriptions.assert_called_once_with(
-            TEST_ADDRESS2
-        )
+        mocked_provider.return_value.subscriptions.assert_called_once_with(TEST_ADDRESS2)
 
     def test_core_views_profiledisplay_get_context_data_checks_subscriptions_no_auth(
         self, mocker

@@ -89,9 +89,7 @@ class WebsiteDomainSettingTest(TestCase):
         self.assertNotIn("/", settings.WEBSITE_DOMAIN)
 
     def test_core_website_domain_matches_the_website_url(self):
-        self.assertEqual(
-            settings.WEBSITE_DOMAIN, urlparse(settings.WEBSITE_URL).netloc
-        )
+        self.assertEqual(settings.WEBSITE_DOMAIN, urlparse(settings.WEBSITE_URL).netloc)
 
     def test_core_website_domain_renders_as_an_address(self):
         """The page it appears on has to read as an email address."""

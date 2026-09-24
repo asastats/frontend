@@ -38,18 +38,14 @@ TAG = re.compile(
 )
 
 #: `{% comment %}` blocks hold prose, and the prose here often quotes markup.
-DJANGO_COMMENT = re.compile(
-    r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}", re.DOTALL
-)
+DJANGO_COMMENT = re.compile(r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}", re.DOTALL)
 
 #: The alternative arms of a conditional. Removing them leaves the branch a
 #: request takes when every condition holds.
 ELSE_ARM = re.compile(
     r"\{%\s*(?:else|empty)\s*%\}.*?(?=\{%\s*end(?:if|for)\s*%\})", re.DOTALL
 )
-ELIF_ARM = re.compile(
-    r"\{%\s*elif\b.*?%\}.*?(?=\{%\s*(?:elif|else|endif)\b)", re.DOTALL
-)
+ELIF_ARM = re.compile(r"\{%\s*elif\b.*?%\}.*?(?=\{%\s*(?:elif|else|endif)\b)", re.DOTALL)
 
 #: Everything else Django owns.
 DJANGO_TAG = re.compile(r"\{%.*?%\}|\{\{.*?\}\}|\{#.*?#\}", re.DOTALL)

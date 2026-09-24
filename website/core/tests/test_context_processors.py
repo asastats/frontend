@@ -10,6 +10,9 @@ from django.urls import reverse
 
 import core.context_processors
 from api.client import BackendError
+# The navigation lists live on the module, not in Django settings: they are
+# structure rather than configuration, and nothing deploys differently.
+from core import context_processors as settings_module
 from core.context_processors import (
     deployment_capabilities,
     global_constants,
@@ -18,9 +21,6 @@ from core.context_processors import (
     profile_navigation,
     walletconnect,
 )
-# The navigation lists live on the module, not in Django settings: they are
-# structure rather than configuration, and nothing deploys differently.
-from core import context_processors as settings_module
 
 
 class TestCoreContextProcessors:
@@ -36,9 +36,7 @@ class TestCoreContextProcessors:
         yield
         core.context_processors._TYPEFACES_CACHE = None
 
-    def test_core_context_processors_load_typefaces_reads_the_build_output(
-        self, mocker
-    ):
+    def test_core_context_processors_load_typefaces_reads_the_build_output(self, mocker):
         path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")
         path.read_text.return_value = (
             '{"asastats": {"display": "Sora", "sans": "Inter", "mono": "Fira Code"}}'
@@ -50,9 +48,7 @@ class TestCoreContextProcessors:
             "asastats": {"display": "Sora", "sans": "Inter", "mono": "Fira Code"}
         }
 
-    def test_core_context_processors_load_typefaces_reads_once_per_process(
-        self, mocker
-    ):
+    def test_core_context_processors_load_typefaces_reads_once_per_process(self, mocker):
         """Every request renders a page; re-reading the file on each is waste."""
         path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")
         path.read_text.return_value = '{"asastats": {"sans": "Inter"}}'
@@ -378,9 +374,7 @@ class TestCoreContextProcessors:
         stylesheet, which is where every theme, ours and stock and vendored
         alike, ends up declaring its scheme.
         """
-        css = (
-            Path(settings.STATICFILES_DIRS[0]) / "css" / "style.tw.css"
-        ).read_text()
+        css = (Path(settings.STATICFILES_DIRS[0]) / "css" / "style.tw.css").read_text()
         declared = {}
         for match in re.finditer(
             r'\[data-theme=(?:"([^"]+)"|([\w-]+))\]\s*\{([^}]*)\}', css

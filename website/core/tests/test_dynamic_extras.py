@@ -34,8 +34,8 @@ from core.templatetags.core_extras import (
     clears_floor,
     collection_above_floor,
     collection_floor,
-    floor_price,
     collection_tile,
+    floor_price,
     holdings_amount,
     position_band,
     program_groups,
@@ -48,9 +48,7 @@ Totals = namedtuple("Totals", ["balance", "staked", "liquidity", "defi", "nftflo
 #: The captured bundle payload: 76 assets, 190 positions, every position type
 #: the engine emits. A hand-built fixture would agree with whatever rule it was
 #: written against, which is the one thing the cross-check below must not do.
-SAMPLE = (
-    Path(__file__).parent.parent.parent / "utils/tests/sample_serialized_540A5.json"
-)
+SAMPLE = Path(__file__).parent.parent.parent / "utils/tests/sample_serialized_540A5.json"
 
 
 @pytest.fixture(scope="module")
@@ -252,7 +250,7 @@ class TestPositionBand:
     category a row belongs to, or pressing "Staked" shows a balance row and the
     reader learns the band cannot be trusted. The payload carries no per-
     position category -- ``Consolidated`` arrives already summed -- so
-    :func:`position_band` reproduces the rule, and :class:`TestPositionBandMatchesConsolidated`
+    :func:`position_band` reproduces the rule, and the class below
     is what stops the reproduction drifting.
     """
 
@@ -297,7 +295,12 @@ class TestPositionBand:
 
 @pytest.mark.parametrize(
     "band, field",
-    [("balance", "balance"), ("staked", "staked"), ("liquidity", "liquidity"), ("defi", "defi")],
+    [
+        ("balance", "balance"),
+        ("staked", "staked"),
+        ("liquidity", "liquidity"),
+        ("defi", "defi"),
+    ],
 )
 def test_position_band_agrees_with_consolidated(payload, band, field):
     """Sum the real payload by category and compare against `Consolidated`.
@@ -309,8 +312,10 @@ def test_position_band_agrees_with_consolidated(payload, band, field):
     company and this fails -- which is the only reason the duplication is safe
     to have.
     """
-    from utils.charts import _consolidated_data_from_serialized_data
-    from utils.charts import _consolidated_totals_from_consolidated_data
+    from utils.charts import (
+        _consolidated_data_from_serialized_data,
+        _consolidated_totals_from_consolidated_data,
+    )
 
     totals = _consolidated_totals_from_consolidated_data(
         _consolidated_data_from_serialized_data(payload)
@@ -444,10 +449,10 @@ class TestHoldingsAmount:
             # a tolerance rather than `round()`: Python rounds half to even and
             # `floatformat` does not, so an exact `.5` would fail on a
             # disagreement about tie-breaking rather than about the number
-            tolerance = 0.5 * 10 ** -places
-            assert abs(
-                float(sorted_on) - float(displayed.replace(",", ""))
-            ) <= tolerance, (
+            tolerance = 0.5 * 10**-places
+            assert (
+                abs(float(sorted_on) - float(displayed.replace(",", ""))) <= tolerance
+            ), (
                 f"{item['asset'].get('unit')}: shows {displayed}, "
                 f"sorts on {sorted_on}"
             )
@@ -540,7 +545,10 @@ class TestCollectionFloor:
     """
 
     def test_it_sums_the_items_floors(self):
-        collection = {"value": "300", "nfts": [_item("200", floor="25"), _item("100", floor="30")]}
+        collection = {
+            "value": "300",
+            "nfts": [_item("200", floor="25"), _item("100", floor="30")],
+        }
 
         assert collection_floor(collection) == 55.0
 
@@ -580,7 +588,9 @@ class TestCollectionFloor:
     def test_a_collection_with_no_items_floors_at_nothing(self):
         assert collection_floor({"value": "0", "nfts": []}) == 0.0
 
-    @pytest.mark.parametrize("collection", [None, {}, {"nfts": None}], ids=["None", "empty", "null nfts"])
+    @pytest.mark.parametrize(
+        "collection", [None, {}, {"nfts": None}], ids=["None", "empty", "null nfts"]
+    )
     def test_a_collection_the_payload_did_not_describe(self, collection):
         assert collection_floor(collection) == 0.0
 
@@ -637,7 +647,9 @@ class TestClearsFloor:
         """The template renders a different line for that case."""
         assert clears_floor(_item("215.98")) is False
 
-    @pytest.mark.parametrize("row", [None, {}, {"nft": None}], ids=["None", "empty", "null nft"])
+    @pytest.mark.parametrize(
+        "row", [None, {}, {"nft": None}], ids=["None", "empty", "null nft"]
+    )
     def test_an_item_the_payload_did_not_describe(self, row):
         assert clears_floor(row) is False
 
@@ -743,7 +755,7 @@ class TestBeyond:
         assert beyond(list(range(20)), 20) == 0
 
     def test_a_short_section_never_goes_negative(self):
-        """"Show -3 more assets" is worse than showing no control at all."""
+        """ "Show -3 more assets" is worse than showing no control at all."""
         assert beyond(list(range(3)), 20) == 0
 
     def test_an_empty_section_has_nothing_beyond_it(self):
@@ -765,7 +777,13 @@ class TestBeyond:
             (list(range(5)), "twenty"),
             (list(range(5)), [1]),
         ],
-        ids=["no rows", "rows not sized", "no count", "count not a number", "count a list"],
+        ids=[
+            "no rows",
+            "rows not sized",
+            "no count",
+            "count not a number",
+            "count a list",
+        ],
     )
     def test_anything_unusable_counts_as_nothing(self, rows, shown):
         """Never an exception, and never a control offering a nonsense number.
@@ -788,10 +806,14 @@ class TestBeyond:
         assets = payload["asaitems"]
         collections = payload["nftcollections"]
 
-        assert beyond(assets, settings.ADDRESS_INITIAL_ASSETS) == len(assets) - settings.ADDRESS_INITIAL_ASSETS
-        assert beyond(collections, settings.ADDRESS_INITIAL_COLLECTIONS) == len(
-            collections
-        ) - settings.ADDRESS_INITIAL_COLLECTIONS
+        assert (
+            beyond(assets, settings.ADDRESS_INITIAL_ASSETS)
+            == len(assets) - settings.ADDRESS_INITIAL_ASSETS
+        )
+        assert (
+            beyond(collections, settings.ADDRESS_INITIAL_COLLECTIONS)
+            == len(collections) - settings.ADDRESS_INITIAL_COLLECTIONS
+        )
         # The reference address is long enough for both controls to appear,
         # which is what makes the assertion above worth making.
         assert beyond(assets, settings.ADDRESS_INITIAL_ASSETS) > 0

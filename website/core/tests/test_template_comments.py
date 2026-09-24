@@ -55,8 +55,7 @@ def test_core_templates_are_discovered():
 def test_core_template_has_no_unclosed_comment(path):
     source = path.read_text()
     offenders = [
-        source[: match.start()].count("\n") + 1
-        for match in UNCLOSED.finditer(source)
+        source[: match.start()].count("\n") + 1 for match in UNCLOSED.finditer(source)
     ]
 
     assert not offenders, (

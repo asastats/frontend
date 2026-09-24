@@ -132,9 +132,7 @@ class TestCoreUrls:
     def test_core_urls_profile_action_address(self):
         url = self._url_from_pattern("profile/addresses/action/")
         assert isinstance(url, URLPattern)
-        assert (
-            url.lookup_str == "core.views_connected_addresses.profile_addresses_action"
-        )
+        assert url.lookup_str == "core.views_connected_addresses.profile_addresses_action"
         assert url.name == "profile_addresses_action"
 
     def test_core_urls_profile_link_address(self):

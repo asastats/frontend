@@ -22,7 +22,6 @@ are compared against the themes they were copied from, by value.
 """
 
 import re
-
 from pathlib import Path
 
 import pytest
@@ -91,9 +90,9 @@ def test_core_error_page_carries_its_own_style(name):
     html = _rendered(name)
 
     assert "<style>" in html
-    assert "prefers-color-scheme: dark" in html, (
-        f"{name} has one palette, so a reader on a dark site gets a white flash"
-    )
+    assert (
+        "prefers-color-scheme: dark" in html
+    ), f"{name} has one palette, so a reader on a dark site gets a white flash"
 
 
 @pytest.mark.parametrize("name", ERROR_PAGES)

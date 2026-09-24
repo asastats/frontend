@@ -110,9 +110,9 @@ class TestCorePageHeaders:
         article = ARTICLE.search(source)
 
         assert article, f"{name} is listed as prose but has no <article>"
-        assert HEADER.search(source).start() < article.start(), (
-            f"{name} puts its page header inside the article"
-        )
+        assert (
+            HEADER.search(source).start() < article.start()
+        ), f"{name} puts its page header inside the article"
 
     @pytest.mark.parametrize("name", PROSE_PAGES)
     def test_core_page_header_shares_the_measure_of_its_prose(self, name):
@@ -154,10 +154,7 @@ class TestCorePageHeaders:
 
         # The nearest measured wrapper above the header is what it is centred
         # against; on this page that is the outer column the controls sit in.
-        wrappers = [
-            match
-            for match in MEASURE.finditer(source[: header.start()])
-        ]
+        wrappers = [match for match in MEASURE.finditer(source[: header.start()])]
         assert wrappers, "export.html header has no measured container above it"
         assert header_width.group(1) == wrappers[-1].group(1), (
             f"export.html centres its header over max-w-{header_width.group(1)} "
