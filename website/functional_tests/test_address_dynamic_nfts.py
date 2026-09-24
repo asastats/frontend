@@ -340,11 +340,12 @@ class DynamicNftTest(FunctionalTest):
         # span fills, so that is the whole wait.
         self.wait_until(lambda: "ago" in opened_epoch().lower())
 
+    @mock.patch("core.views.fetch_collection_items")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_art_is_deferred_and_has_somewhere_to_fall_back_to(
-        self, mocked_fetch, mocked_status, mocked_capabilities
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
     ):
         """`deferImages` swaps `data-src` in after load.
 
@@ -353,31 +354,43 @@ class DynamicNftTest(FunctionalTest):
         enough that a broken-image glyph would be a routine sight.
         """
         mocked_fetch.return_value = _sample_payload()
+        mocked_items.return_value = _sample_payload()["nftcollections"][0]
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         self.sign_in()
         self.open_page()
 
-        # **Re-found each poll rather than held.** This kept one reference and
-        # polled it, which passes here and failed on CI with a
-        # `StaleElementReferenceException` - the list is swapped in, so the node
-        # found at first paint can be replaced before `src` settles, and
-        # `WebDriverWait` does not ignore that exception the way it ignores a
-        # missing element. Holding a reference across a wait is the bug; a
-        # longer timeout would only have made it rarer.
-        def art_attribute(name):
+        # **Re-found each poll rather than held**, because opening a card
+        # swaps `#items-<slug>` and the node found at first paint is replaced
+        # before `src` settles - and `WebDriverWait` does not ignore
+        # `StaleElementReferenceException` the way it ignores a missing
+        # element. Holding a reference across a wait is the bug; a longer
+        # timeout would only have made it rarer.
+        #
+        # **Both attributes in one poll, and this is the rest of that fix.**
+        # Waiting on `src` and then reading `data-fallback` in a second call
+        # left the swap a window to land between them: the guard turned the
+        # stale read into `""`, and the assertion turned `""` into a failure
+        # that reads as a missing attribute rather than as the race it is.
+        def art():
             elements = self.browser.find_elements(
                 By.CSS_SELECTOR, "#nft-list .nft-art img"
             )
             if not elements:
-                return ""
+                return None
             try:
-                return elements[0].get_attribute(name) or ""
+                return (
+                    elements[0].get_attribute("src") or "",
+                    elements[0].get_attribute("data-fallback") or "",
+                )
             except StaleElementReferenceException:
-                return ""
+                return None
 
-        self.wait_until(lambda: "/thumbnails/" in art_attribute("src"))
-        self.assertTrue(art_attribute("data-fallback"))
+        def deferred_and_covered():
+            found = art()
+            return bool(found and "/thumbnails/" in found[0] and found[1])
+
+        self.wait_until(deferred_and_covered)
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
@@ -665,11 +678,12 @@ class DynamicNftLightPayloadTest(FunctionalTest):
             )
         )
 
+    @mock.patch("core.views.fetch_collection_items")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_every_collection_and_item_still_reaches_the_page(
-        self, mocked_fetch, mocked_status, mocked_capabilities
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
     ):
         """Not a fold. The filter, the thumbnails and the position sort all read
         the items out of the DOM, so every one has to be there."""
@@ -677,6 +691,7 @@ class DynamicNftLightPayloadTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         payload = _light_payload()
         mocked_fetch.return_value = payload
+        mocked_items.return_value = payload["nftcollections"][0]
         self.sign_in()
         self.open_page()
 
@@ -697,11 +712,12 @@ class DynamicNftLightPayloadTest(FunctionalTest):
             == expected_items
         )
 
+    @mock.patch("core.views.fetch_collection_items")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_floor_bar_still_rests_on_a_real_figure(
-        self, mocked_fetch, mocked_status, mocked_capabilities
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
     ):
         """`collection_floor` reads the floor out of every item. Reading only
         the listings, it would total zero on this payload and every collection
@@ -710,6 +726,7 @@ class DynamicNftLightPayloadTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         payload = _light_payload()
         mocked_fetch.return_value = payload
+        mocked_items.return_value = payload["nftcollections"][0]
         self.sign_in()
         self.open_page()
 
@@ -738,11 +755,12 @@ class DynamicNftLightPayloadTest(FunctionalTest):
             round(value or 0.001, 4) for value in expected
         ]
 
+    @mock.patch("core.views.fetch_collection_items")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_an_nft_can_still_be_found_by_name(
-        self, mocked_fetch, mocked_status, mocked_capabilities
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
     ):
         """The filter matches text nodes inside `.fitem`, and an NFT's name is
         one. Withholding items would have made them unsearchable."""
@@ -750,6 +768,7 @@ class DynamicNftLightPayloadTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         payload = _light_payload()
         mocked_fetch.return_value = payload
+        mocked_items.return_value = payload["nftcollections"][0]
         wanted = payload["nftcollections"][0]["nfts"][0]["nft"]["name"]
         self.sign_in()
         self.open_page()
@@ -765,11 +784,12 @@ class DynamicNftLightPayloadTest(FunctionalTest):
         )
         assert found, f"{wanted!r} is not anywhere in the rendered items"
 
+    @mock.patch("core.views.fetch_collection_items")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_collections_still_carry_their_position_count(
-        self, mocked_fetch, mocked_status, mocked_capabilities
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
     ):
         """`data-sort-positions` is `coll.nfts|length`, so a payload without
         items would sort every collection as though it held none."""
@@ -777,6 +797,7 @@ class DynamicNftLightPayloadTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         payload = _light_payload()
         mocked_fetch.return_value = payload
+        mocked_items.return_value = payload["nftcollections"][0]
         self.sign_in()
         self.open_page()
 
