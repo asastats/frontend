@@ -3,36 +3,17 @@
 {% load i18n %}
 {% load core_extras %}
 {% comment %} Authorizing the address that carries your permission value.
+  Two routes to the same result: connect a wallet, or send a 0 ALGO transaction
+  by hand.
 
-  Two routes to the same result -- connect a wallet, or send a 0 ALGO
-  transaction by hand -- and the page now says so before offering either, rather
-  than presenting the wallet cards and leaving the fallback to be discovered
-  inside a collapsible with no lead-in.
-
-  What changed and why:
-
-  * **`<blockquote>` for addresses.** Nothing here is being quoted. The same
-    call was already made for the historic page, where
-    `test_historic_assets_template.py` asserts the element is gone. Addresses
-    and the note are `<code>` now, monospace, with a copy control -- these exist
-    to be copied exactly, and a proportional face makes an Algorand address
-    impossible to check by eye.
-  * **The messages block carried four colour classes at once** --
-    `badge-outline bg-neutral text-neutral-content text-base-content/60` -- so
-    which one won depended on source order. They are alerts now, and they carry
-    `role="alert"`/`role="status"`, without which a message that appears after
-    load is announced to nobody.
-  * `<!-- HTML comments -->` shipped three banner rules to every reader. Django
-    comments do not.
-  * `<br><br>` before the check button, and a 7/5 grid whose right-hand column
-    held one button.
-
-  `.copy` copies the text of the element **immediately before** it -- see
+  **`.copy` copies the text of the element immediately before it** - see
   `copyToClipboard` in `site.js`. A wrapper between the two silently breaks it.
+  Addresses and the note are `<code>`, because they exist to be copied exactly
+  and a proportional face makes an Algorand address impossible to check by eye.
 
-  Kept: `id_check`, which `functional_tests/test_profile_authorize.py` uses, and
-  `#wallet-connect` with `data-api-base`, which the wallet bundle finds by id.
-{% endcomment %}
+  Contracts: `id_check`, used by `functional_tests/test_profile_authorize.py`,
+  and `#wallet-connect` with `data-api-base`, which the wallet bundle finds by
+  id. {% endcomment %}
 {% block title %}Authorize user address - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Authorize your public Algorand address by connecting your wallet, or with a manual 0 ALGO transaction, to receive your permission value from the ASA Stats Permission dApp.{% endblock %}
 {% block keywords %}account,authorization,wallet,connect,public,Algorand address,permission,Permission dApp{% endblock %}
@@ -74,10 +55,9 @@
   </section>
 
   {% comment %} ---- route two: by hand ----
-     A native `<details>`: this was a Materialize collapsible and nothing on the
-     page initialises one any more. Closed by default because connecting is the
-     route most readers want, but it is now announced by a heading rather than
-     sitting unlabelled at the foot of the page. {% endcomment %}
+     Closed by default, because connecting is the route most readers want, but
+     announced by a heading rather than sitting unlabelled at the foot of the
+     page. {% endcomment %}
   <details class="rounded-box border border-base-300 bg-base-100">
     <summary class="cursor-pointer px-5 py-4 text-base font-medium">
       Authorize with a manual transaction instead
@@ -104,8 +84,8 @@
       </div>
 
       {% comment %} The QR encodes the pool address, for sending from a phone.
-         Capped rather than three-quarters of whatever the column happens to be:
-         a QR code past a certain size is not easier to scan, only larger.
+         Capped rather than sized off the column: past a certain size a QR code
+         is not easier to scan, only larger.
       {% endcomment %}
       <div>
         <img class="h-auto w-full max-w-[220px] rounded-box border border-base-300 bg-base-100 p-2"

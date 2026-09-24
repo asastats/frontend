@@ -1,29 +1,20 @@
 {% comment %} The error pages' entire stylesheet, inlined.
-
-   These three pages must render when the application is broken, which is the
-   one situation in which the built stylesheet cannot be relied on: a 500 is
-   often exactly the moment `style.tw.css` is missing, stale, or unreachable.
-   So they link nothing and inherit nothing, and that is deliberate rather than
-   an oversight.
-
-   What was wrong is that they also looked nothing like the site. Fixed light
-   colours on an implicit white background, `display: table` centring, `<br>`
-   for vertical rhythm and a paragraph pinned to 400px -- a reader who hits one
-   from a dark-themed site gets a flash of white and a page from another decade.
-
-   The tokens below are copied from the `asastats` and `asastats-dark` themes in
-   `input.css`, which is the only honest way to match a stylesheet you may not
-   load. They are a copy, so they can drift; `core/tests/test_error_pages.py`
-   compares them against the source and fails when they do.
-
-   Which theme a reader has chosen is not knowable here -- the choice lives in
-   storage this page will not read, and a 500 page has no business running
-   scripts to find out. `prefers-color-scheme` is the closest honest answer and
-   costs nothing.
-
-   Included rather than triplicated: if `get_template` works at all then so does
-   `{% include %}` of a sibling, and three hand-maintained copies of a palette
-   are three chances to fix one and forget the others.
+   
+   **These three pages link nothing and inherit nothing, deliberately.** They
+   must render when the application is broken, which is the one situation in
+   which `style.tw.css` may be missing, stale or unreachable.
+   
+   The tokens below are copied from the `asastats` and `asastats-dark` themes
+   in `input.css`, which is the only honest way to match a stylesheet you may
+   not load. Being a copy they can drift, so `core/tests/test_error_pages.py`
+   compares them against the source.
+   
+   Which theme a reader chose is not knowable here - the choice lives in
+   storage this page will not read - so `prefers-color-scheme` is the closest
+   honest answer.
+   
+   Included rather than triplicated: if `get_template` works at all then so
+   does an include of a sibling.
 {% endcomment %}
 <style>
   :root {

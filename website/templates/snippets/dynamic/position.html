@@ -1,83 +1,46 @@
 {% load core_extras %}
 {% load partials %}
-{% comment %} One position: the atom of the dynamic designs.
+{% comment %} One position - one program under one asset - in the dynamic
+   designs.
 
-   A position is one program under one asset -- a balance, a stake, an LP
-   share. The row is three cells wide and the middle one is *the money column*:
-   every position in every venue under every asset puts its figure at the same
-   x, which is what lets a reader compare down the page instead of across it.
-   That alignment is the design; if a row here stops using `--col`, the design
-   is gone whatever else survives.
+   Context: prog (one asaitem.programs entry), asset (the parent asset dict),
+   counter (`"<group>-<position>"`, the breakdown key's fallback; see
+   `breakdown_key`).
 
-   `.position` wraps the row *and* its breakdown, rather than the two being
-   siblings. Pinning reorders `.position` elements, and a breakdown left behind
-   when its row moves would sit under a different position entirely -- the kind
-   of fault that looks like a rendering glitch and is actually wrong data.
+   **The middle cell is the money column.** Every position in every venue under
+   every asset puts its figure at the same x, which is what lets a reader
+   compare down the page. A row that stops using `--col` leaves the design.
 
-   The two link idioms are load-bearing and must stay distinguishable *at rest*,
-   because a reader deciding where to click has not pointed at anything yet:
+   `.position` wraps the row *and* its breakdown rather than the two being
+   siblings, because pinning reorders `.position` elements and a breakdown left
+   behind would sit under a different position.
 
-     `.out`    leaves the site (a venue, an explorer). Underline on hover.
-     `.tdist`  acts in place -- opens the breakdown below. Dotted at rest,
-               resolving to solid under the pointer.
+   The two link idioms must stay distinguishable at rest: `.out` leaves the
+   site, `.tdist` opens the breakdown below. A figure with no breakdown gets
+   neither.
 
-   A figure with no breakdown gets neither, and is just a figure.
-
-   One divergence from the prototype, deliberately: the row's class is
-   `.position`, not the prototype's `.pos`. `static/js/pins.js` and its jest
-   suite already address positions by that name and are covered to 100%; a
-   cosmetic rename would churn a tested engine to no reader's benefit. The
-   prototype is the spec for the *design*, not for identifiers.
-
-   `data-pid` is the stable position identifier from `api/position_id.py`. It
-   is what a position pin remembers, and it deliberately does *not* hash the
-   amount: the amount moves, and hashing it would restabilise nothing while
-   destabilising every position that never changed. Where a pid names more than
-   one row -- three do in the reference bundle -- `data-amount` is the witness
-   that tells them apart. See `static/js/pins.js`.
-
-   Required context:
-     prog     one entry from asaitem.programs
-     counter  the parent loop's forloop.counter, a fallback for the breakdown
-              id when a position has no pid.
-
-              **Known collision, not fixed here.** `prog.pid|default:counter` is
-              unique only while every pid is, and three positions on the
-              reference bundle are genuinely indistinguishable - so their
-              breakdown panels share an element id and expanding either toggles
-              whichever `getElementById` reaches first. Swapping in `counter`
-              outright is *worse*: it is `forloop.counter` from the grouped
-              inner loop, so it restarts at 1 in every group and collides within
-              a single asset. A real fix needs a key that is unique per position
-              per render - the group's index alongside this one would do it -
-              and it is not this change's business.
-              when a position carries no pid
-     asset    the parent asaitem.asset dict
+   `data-pid` is the stable identifier from `api/position_id.py` and is what a
+   pin remembers. It does not hash the amount, so where a pid names more than
+   one row, `data-amount` is the witness that tells them apart. See
+   `static/js/pins.js`.
 {% endcomment %}
 {% with program=prog.program dist=prog.distribution %}
 {% with has_breakdown=dist|length %}
-{% comment %} **Neutral names, because these two figures are rendered twice.**
-   Once here from `prog`, and once a block by the liverefresh widget from
-   what the engine published - which has no `prog` and no `asset`. The
-   partials below read these and nothing else, so there is one description
-   of a position's figures rather than two that drift. {% endcomment %}
+{% comment %} **Neutral names, because these figures are rendered twice.** Once
+   here from `prog`, and once a block by the liverefresh widget from the
+   engine's payload, which has no `prog` and no `asset`. The partials below
+   read these names and nothing else. {% endcomment %}
 {% with pid=prog.pid pambig=prog.pid_ambiguous pvalue=prog.value pamount=prog.amount passet=asset.id pdecimals=asset.decimals punit=asset.unit pbreakdown=has_breakdown pdistkey=prog|breakdown_key:counter %}
-{% comment %} `data-cat` is the allocation category this row belongs to, and it
-   is what makes the band a control rather than a picture: pressing "Staked"
-   hides every row whose category is not that one. See `position_band`, and the
-   test that holds it to the same answer `Consolidated` gives.
-
-   `data-search` is the row's own haystack -- the form, the venue, the code --
-   so filtering reaches a position inside an asset whose name matches nothing.
+{% comment %} `data-cat` is what makes the allocation band a control: pressing
+   "Staked" hides every row whose category is not that one. See
+   `position_band`. `data-search` is the row's own haystack, so filtering
+   reaches a position inside an asset whose name matches nothing.
    `data-value` repeats the figure unrounded for the subtotals the toolbar
-   recomputes; the visible one is rounded and would drift a few hundredths per
-   venue.
-{% endcomment %}
-{% comment %} `data-owner` is the asset card this row belongs to, and it has to
-   be on the row itself rather than inferred from where the row sits: "Group by
-   venue" moves the whole `.pgroup` out of its asset, so for as long as that is
-   on, a position's ancestors say nothing about which asset it is a holding of.
-   Everything the toolbar totals per asset is attributed through this.
+   recomputes.
+
+   **`data-owner` must be on the row, not inferred from where it sits.**
+   "Group by venue" moves the whole `.pgroup` out of its asset, so while that
+   is on, a position's ancestors say nothing about which asset it belongs to.
 {% endcomment %}
 <div class="position"
      data-owner="f{{ asset.id }}"
@@ -90,9 +53,8 @@
   <div class="position-row">
   <div class="position-left">
     <div class="position-title">
-      {% comment %} The form, as a chip: Balance, Staked, LP. Short enough to
-         read as a label rather than a sentence, and coloured by the category it
-         belongs to so the allocation band above and this row agree. {% endcomment %}
+      {% comment %} The form, as a chip: Balance, Staked, LP. Coloured by its
+         category so the allocation band and this row agree. {% endcomment %}
       {% if program.type %}<span class="form-chip">{{ program.type }}</span>{% endif %}
       <span class="position-label">
         {% if program.url %}
@@ -104,29 +66,18 @@
         {% endif %}
       </span>
     </div>
-    {% comment %} What the position is made of, one line: the holding, and any
-       linked facts the engine attached. "Source LP token" is filtered out here
-       exactly as design 1 filters it -- it names the wrapper, not a holding.
-    {% endcomment %}
+    {% comment %} The holding and any linked facts the engine attached.
+       "Source LP token" is filtered out as design 1 filters it: it names the
+       wrapper, not a holding. {% endcomment %}
     <div class="position-sub">
-      {% comment %} **Addressable, so a block can correct it without the page.**
-         Until 2026-09-19 nothing here carried an id, so no fragment could reach
-         a position and the full reload was the only thing that ever updated
-         one. A row's aggregate would move while the "Wallet balance" inside it
-         sat at its rendered figure.
+      {% comment %} The id is `prog.pid` and not an index, because a position's
+         rank changes whenever its value does. **It is omitted when the pid is
+         ambiguous**: two rows would otherwise share one id and a swap would
+         land on whichever came first. No id means no fragment, and the reload
+         still corrects those rows.
 
-         `prog.pid` and not an index: a position's rank changes whenever its
-         value does, and `api/position_id.py` exists because of exactly that.
-         **Omitted when the pid is ambiguous** - three positions on the
-         reference bundle are genuinely indistinguishable, so two rows would
-         share one id and a swap would silently land on whichever came first.
-         No id means no fragment, which is honest; the reload still corrects
-         them.
-
-         The unit is bare text outside the span, for the reason the row's
-         quantity learned the hard way: the span is replaced whole, and a unit
-         inside it would have to be re-sent every block or be eaten by the first
-         swap. {% endcomment %}
+         The unit is bare text outside the span, which is replaced whole every
+         block. {% endcomment %}
       {% if pamount %}
         <span class="num">{% partialdef positionamount inline %}<span {% if pid and not pambig %}id="pq-{{ pid }}" {% endif %}{% if oob %}hx-swap-oob="true" {% endif %}>{% if pamount|is_negative %}({{ pamount|abs_value|amount_repr:pdecimals }}){% else %}{{ pamount|amount_repr:pdecimals }}{% endif %}</span>{% endpartialdef positionamount %} {{ punit }}</span>
       {% endif %}
@@ -141,22 +92,20 @@
     </div>
   </div>
 
-  {% comment %} The money column. `data-val` carries the unvarnished figure --
-     the visible text is rounded and is not a safe source for the currency
-     switch to recompute from. Same contract as design 1's `.val`.
-  {% endcomment %}
+  {% comment %} The money column. `data-val` carries the unrounded figure; the
+     visible text is rounded and the currency switch must not recompute from
+     it. Same contract as design 1's `.val`. {% endcomment %}
   <div class="position-val">
-    {% comment %} **The id is on this element and not on a span inside it.**
+    {% comment %} **The id is on the button or span itself, not on a wrapper.**
        `write` in `toolbar.js` puts the figure in the element's first *text*
-       node, and inserts one when the first child is an element - so a cell
+       node and inserts one when the first child is an element, so a cell
        holding only a span would print its number twice on the next currency
-       switch. That is why the fragment has to know whether it is replacing a
-       button or a span, and why the payload carries `breakdown`.
+       switch. This is why the payload carries `breakdown`: the fragment has to
+       know whether it is replacing a button or a span.
 
-       `aria-expanded` is written here as closed and is live state afterwards:
-       `dynamic.js` toggles it and the `.dist` panel is a sibling that survives
-       the swap. A fragment landing on an open one must put it back, or the
-       control says closed over an open breakdown. {% endcomment %}
+       `aria-expanded` renders closed and is live state afterwards, toggled by
+       `dynamic.js` over a `.dist` sibling that survives the swap. A fragment
+       landing on an open row must put it back. {% endcomment %}
     {% partialdef positionvalue inline %}{% if pbreakdown %}
       <button type="button"
               {% if pid and not pambig %}id="pv-{{ pid }}" {% endif %}{% if oob %}hx-swap-oob="true" {% endif %}
@@ -171,10 +120,9 @@
     <span class="u unit">ALGO</span>
   </div>
 
-  {% comment %} Position-level pinning. The button is rendered at rest for
-     everybody and set by the reader's own browser, for the same reason the
-     asset-row controls are: this page's cache entry is shared between readers
-     on the same layout. {% endcomment %}
+  {% comment %} Rendered at rest for everybody and set by the reader's own
+     browser: this page's cache entry is shared across readers on a layout.
+  {% endcomment %}
   {% if prog.pid %}
   <button type="button"
           class="pin-btn"
@@ -192,11 +140,8 @@
   {% endif %}
   </div>
 
-{% comment %} Level three: what the amount above is made of. Rendered *under*
-   the row rather than beside it, because it is a decomposition of one figure
-   and the money column is where that figure lives -- putting it in a side panel
-   would break the alignment the design is built on.
-{% endcomment %}
+{% comment %} What the figure above is made of. Under the row rather than beside
+   it, so the breakdown keeps the money column's alignment. {% endcomment %}
 {% if has_breakdown %}
 <div id="dist-{{ asset.id }}-{{ pdistkey }}" class="dist" hidden>
   <p class="dist-note">What the {{ prog.value|floatformat:'2g' }} ALGO above is made of.</p>

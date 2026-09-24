@@ -1,23 +1,12 @@
 {% load core_extras %}
-{% comment %}
-  The end of the CSV export flow: what the engine found, the agreement, and the
-  download.
-
-  This snippet was still shaped for Materialize. Under Tailwind's preflight a
-  bare `<h4>` or `<h5>` has no size and no weight, so both headings here read as
-  body text and the page arrived as one undifferentiated column -- which is what
-  a reader reported. Every heading carries its own classes now, the way the
-  redesigned `taxprepare.html` beside it already did.
-
-  The three buttons were each wrapped in `<div class="w-1/3">` with no flex
-  parent, so they stacked vertically at a third of the width apiece instead of
-  sitting in a row. They are one flex row now.
-
-  The agreement was four paragraphs separated by `<br><br>` and numbered by
-  hand. It is an `<ol>`, which is what it always was.
-
-  `#download_form`, `#download`, `#refresh`, `#back` and `.errorlist` are
-  `tax.js` hooks -- keep the names.
+{% comment %} The end of the CSV export flow: what the engine found, the agreement, and
+   the download.
+   
+   **Every heading carries its own classes**, because under Tailwind's preflight
+   a bare `<h4>` or `<h5>` has no size and no weight and reads as body text.
+   
+   `#download_form`, `#download`, `#refresh`, `#back` and `.errorlist` are
+   `tax.js` hooks - keep the names.
 {% endcomment %}
 <div class="mx-auto max-w-2xl">
   <h4 class="text-center text-xl font-semibold tracking-tight">Your CSV report is ready for download</h4>
@@ -72,20 +61,9 @@
     that you've discovered throughout your analysis, to inform us about the problems you've encountered
     while importing the report file(s) into the tax software, to suggest solutions to the issues
     you have with the report, as well as to provide general feedback.</p>
-  {% comment %}
-    Text links, not the old sprite buttons.
-
-    Those were four empty `<a>` elements: the label was pushed off-screen
-    with `text-indent: -99999px` and the icon came from a shared sprite
-    sheet, `img/social/social-c.png`, which is no longer in the tree. With
-    the image gone they rendered as four blank 32x32 boxes -- a paragraph
-    asking the reader to get in touch, followed by nothing to click.
-
-    The same move base.html made when the footer was rebuilt, and for the
-    same reason: a link should say where it goes. The destinations here are
-    specific -- an issue form and one Discord channel, not the project's
-    front doors -- so the labels say which, and the `title` attributes are
-    kept for the longer version.
+  {% comment %} Text links rather than icons. These destinations are specific - an issue
+     form and one Discord channel, not the project's front doors - so the labels
+     say which, with `title` carrying the longer version.
   {% endcomment %}
   <div class="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
     <a class="link link-hover" href="https://github.com/asastats/channel/issues/new/choose" target="_blank" rel="noopener" title="Create an issue in ASA Stats Channel on GitHub">Open a GitHub issue</a>

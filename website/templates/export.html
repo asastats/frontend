@@ -1,23 +1,17 @@
 {% extends 'base.html' %}{% load static %}{% load core_extras %}
-{% comment %}
-  The CSV export page. Three states, one shell: prepare, processing, finished.
-
-  The shell had three wrapper `<div>`s doing nothing, an empty centred `<div>`
-  at the end, and the address links were separated by `&nbsp;` inside an `<h4>`
-  -- a heading used as a row of links. The links are a flex row with a gap now,
-  and the wrappers are gone.
-
-  Do not write a width class into this comment. `test_page_headers` reads this
-  file as text and takes the last measure *before* the header as the column the
-  header is centred against, so a width named in prose here would be read as
-  markup -- and the header's own measure has to equal the column's.
-
-  **The progress bar below is still dead**, and deliberately left in place
-  rather than silently removed: `tax.js` toggles `.progress` on the parent of
-  `.indeterminate`, and both classes left with Materialize. Worse, `.progress`
-  is now DaisyUI's own, so the toggle reaches a different component than the one
-  it was written for. Fixing it means changing `tax.js` and its jest fixture
-  together, which is a separate change from this formatting pass.
+{% comment %} The CSV export page. Three states, one shell: prepare, processing,
+   finished.
+   
+   **Do not write a width class into this comment.** `test_page_headers`
+   reads this file as text and takes the last measure *before* the header as
+   the column the header is centred against, so a width named in prose here
+   would be read as markup.
+   
+   **The progress bar below is dead**, and left in place rather than silently
+   removed: `tax.js` toggles `.progress` on the parent of `.indeterminate`,
+   and both classes left with Materialize. `.progress` is now DaisyUI's own,
+   so the toggle reaches a different component than the one it was written
+   for. Fixing it means changing `tax.js` and its jest fixture together.
 {% endcomment %}
 {% block otherheader %}<meta name="format-detection" content="telephone=no">{% endblock %}
 {% block content %}

@@ -1,27 +1,15 @@
 {% extends 'base.html' %}{% load static %}{% load core_extras %}{% load partials %}
 {% comment %}
-  The address page: the last template to leave base.html, and the one with the
-  most behaviour behind it.
+  The address page, design 1.
 
-  Three things changed beyond styling, all of them because Materialize is gone:
+  The accordions are native `<details>`/`<summary>`, so sections open and close
+  even if `address.js` fails to load, and the tooltips are DaisyUI's
+  `tooltip`/`data-tip`, which need nothing initialised.
 
-  * the accordions are native <details>/<summary>. address.js no longer
-    initialises anything -- sections open and close without JavaScript, so they
-    keep working even if the script fails to load. The hook names moved with
-    them: `.collapsible-header` -> `.item-header`, `.collapsible-body` ->
-    `.item-body`, and the `<ul class="collapsible">` containers became
-    `.section-list`;
-  * `.tooltipped`/`data-tooltip` needed M.Tooltip to say anything at all. They
-    are DaisyUI `tooltip`/`data-tip` now: CSS only, nothing to initialise, and
-    they survive a JS error;
-  * the icon font is gone. The scroll-to-top control is an inline SVG, which
-    is one fewer font to load and does not render as a stray ligature while
-    the page is still fetching.
-
-  Everything address.js selects on is unchanged otherwise -- `.fitem`, `.val`,
-  `.unit`, `.price`, `.unitprice`, `.tdist`, `.nfticon`, `#filter`,
-  `#id-cons`, the chart canvases and their legends. core/tests/test_template_hooks.py
-  is what keeps that honest.
+  **Everything `address.js` selects on is a contract**: `.fitem`, `.val`,
+  `.unit`, `.price`, `.unitprice`, `.tdist`, `.nfticon`, `#filter`, `#id-cons`,
+  the chart canvases and their legends. `core/tests/test_template_hooks.py`
+  keeps that honest.
 {% endcomment %}
 {% block otherheader %}<meta name="format-detection" content="telephone=no">{% endblock %}
 {% block banner %}
@@ -42,54 +30,36 @@
 
 <header class="text-center">
   {% comment %}
-    The heading was the number itself, so a screen reader announced "heading
-    level one, 1,234.56 ALGO" -- a figure with nothing saying what it counts,
-    on a page whose actual subject (the address) sat below it as a paragraph.
+    **Nothing may live inside `.pricetip`.** `setCurrency` and the
+    total-without-NFTs toggle both assign to its `innerHTML`, so any markup
+    within it is discarded the first time a reader flips to USD. The `sr-only`
+    label is a sibling for that reason; the data attributes ride on the span
+    itself, because `address.js` reads them off `$(".pricetip")[0]`.
 
-    The label cannot go inside `.pricetip`: the currency switch and the
-    total-without-NFTs toggle both assign to that element's `innerHTML`, so
-    any markup within it is discarded the first time a reader flips to USD.
-    The label is a sibling, and `.pricetip` is now a span the h1 wraps -- the
-    data attributes move with it, since address.js reads them off
-    `$(".pricetip")[0]`.
+    **The `.tooltip` is a wrapper and the focusable element is the span inside
+    it.** DaisyUI reveals a tooltip on `:has(:focus-visible)` - a focused
+    *descendant* - so a tabindex on the `.tooltip` element matches nothing and
+    draws nothing.
 
-    `tabindex` and `aria-describedby`: this is the one figure on the page whose
-    tooltip carries something available nowhere else -- the exchange rate. Every
-    other tip repeats an amount in the other currency, which the currency switch
-    already gives in one keystroke, so those stay pointer conveniences rather
-    than a tab stop on each of several dozen numbers. The hidden span is what a
-    screen reader gets, because a tip drawn as `content: attr(data-tip)` is not
-    dependably announced; `setTip` in address.js keeps the two in step.
-
-    The `.tooltip` is a *wrapper* and the focusable element is the span inside
-    it. That is not decoration: DaisyUI reveals a tooltip on
-    `:has(:focus-visible)` -- a focused **descendant**, not the element itself
-    -- so a tabindex on the `.tooltip` element matches nothing and draws
-    nothing. The wrapper is also the only safe place for it, because
-    `setCurrency` overwrites `.pricetip`'s `innerHTML` wholesale and anything
-    inside that would not survive.
-
-    The money designs need none of this: their `.pricetip` carries no `.tooltip`
-    class, and `.total-sub` prints the same figure and rate permanently, for
-    everyone.
+    This is the one figure whose tooltip carries something available nowhere
+    else, the exchange rate, which is why it is a tab stop and the others are
+    not. The `sr-only` span is what a screen reader gets, because a tip drawn
+    as `content: attr(data-tip)` is not dependably announced; `setTip` keeps
+    the two in step.
   {% endcomment %}
-  {% comment %} **`data-totalnftfloor` and `data-holdings` sit on the h1**, for
-     the same reason the dynamic layout moved them there: everything left inside
-     is a figure a block can change, and the live refresh replaces that whole
-     span. An NFT floor is not block volatile - the engine's re-price does not
-     touch `nft_values` - so riding inside the swapped element it would be gone
-     after the first update and the floor total would read empty.
+  {% comment %} **`data-totalnftfloor` and `data-holdings` sit on the h1**: the
+     live refresh replaces the span below whole, so an attribute inside it is
+     gone after the first update. The floor total would then read empty, since
+     the engine's re-price does not touch `nft_values`.
 
-     `data-holdings` is what the page was rendered from. The widget sends it
-     back with every poll, and a reload is ordered when the engine's published
-     fingerprint has moved past it - which is how an asset just bought reaches a
-     page that has no row to swap it into.
+     `data-holdings` is what the page was *rendered* from. The widget sends it
+     back with every poll and a reload is ordered once the engine's published
+     fingerprint moves past it, which is how an asset just bought reaches a
+     page with no row to swap it into.
 
-     The two partials below are rendered twice: here from `total`, and once a
-     block by the liverefresh widget from the payload the engine published. The
-     payload's keys are spelled exactly like `Total`'s fields, so `band` means
-     the same thing either way and there is no second copy of this markup.
-  {% endcomment %}
+     The partials below are rendered twice: here from `total`, and once a block
+     from the engine's payload, whose keys are spelled like `Total`'s fields so
+     `band` means the same thing either way. {% endcomment %}
   <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl"
       data-totalnftfloor="{{ consolidated.nftfloor }}"
       data-holdings="{{ live_holdings }}">
@@ -97,11 +67,8 @@
     {% partialdef classicband inline %}
     <span id="id-band-classic" {% if oob %}hx-swap-oob="true" {% endif %}class="tooltip" data-tip='{{ band.totalusdc|floatformat:"2g" }} USD ({{ band.pricealgo|floatformat:"2g" }} USD/ALGO)'>
       {% comment %} **Quoted, every one of them.** An unquoted attribute whose
-         value renders empty does not become blank - it swallows the next one as
-         its value. On the dynamic band a payload without `pricealgo` made
-         `data-pricealgo` read "data-total=216.3" and `data-total` vanish
-         entirely, so the currency switch computed from `undefined`. Two figures
-         lost to one missing key, and these were unquoted until now.
+         value renders empty swallows the next one as its value rather than
+         becoming blank, which costs two figures for one missing key.
       {% endcomment %}
       <span class="pricetip cursor-default" tabindex="0" aria-describedby="id-total-tip"
           data-price="{{ band.priceusdc }}" data-pricealgo="{{ band.pricealgo }}"
@@ -114,13 +81,8 @@
     {% endpartialdef classictip %}
   </h1>
 
-  {% comment %}
-    A notice, not a section heading. This was an `<h2>` carrying red text,
-    which put a heading in the document outline that is not a section, and
-    left the message to be noticed by colour alone -- so a reader who does not
-    see colour got nothing, and a screen reader announced a heading rather
-    than a warning. `role="alert"` is what makes it interrupt.
-  {% endcomment %}
+  {% comment %} A notice rather than a section heading, and `role="alert"` is
+    what makes it interrupt. {% endcomment %}
   {% if system.warning %}
     <div class="alert alert-warning mx-auto mt-4 max-w-2xl" role="alert">
       <span>{{ system.warning }}</span>
@@ -137,14 +99,10 @@
     </p>
   {% endif %}
 
-  {% comment %} `btn-outline`, not `btn-ghost`. A ghost button is transparent,
-    and these two are the only way to reach the CSV export and the historic
-    widget from this page -- a reader reported not being able to find the export
-    at all, on this design and on the money ones, and it was rendering perfectly
-    well as text with no edge on either. The old Materialize markup was
-    `btn-flat`, so this is not a regression: the affordance has been weak the
-    whole time and the conversion carried it across faithfully. `btn-primary`
-    still marks the one state that earns it. {% endcomment %}
+  {% comment %} `btn-outline` and not `btn-ghost`: a ghost button is
+    transparent, and these two are the only way to reach the CSV export and the
+    historic widget from this page. `btn-primary` marks the one state that
+    earns it. {% endcomment %}
   <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
     {% if is_bundle %}
       {% with historic=bundle|historic_data %}
@@ -173,21 +131,16 @@
         {% endif %}
       {% endif %}
     {% endif %}
-    {% comment %} Where the Dust Sweep entry lands. It arrives in the
-      `_swap_entry.html` partial -- it is per-reader, and this page's cache entry
-      is not -- and `dustsweep.js` moves it here, so it sits with the other two
-      actions instead of in a strip of its own above the page. It keeps its own
-      styling: like Swap, it opens a modal rather than going anywhere, and the
-      two should not look like Historic data, which leaves. Empty and unstyled
-      when there is nothing to move into it. {% endcomment %}
+    {% comment %} Where `dustsweep.js` moves the Dust Sweep entry to. It
+      arrives in `_swap_entry.html`, because it is per-reader and this page's
+      cache entry is not, and it keeps its own styling: like Swap it opens a
+      modal rather than going anywhere. {% endcomment %}
     <span id="id-dustsweep-slot"></span>
     {% if account_info.online %}<span class="badge badge-success badge-outline" title="{% if is_bundle %}One or more addresses are{% else %}Address is{% endif %} participating in Algorand consensus">Online</span>{% endif %}
   </div>
 
-  {% comment %}
-    The same, one level quieter: information is worth announcing once the
-    reader gets to it, not interrupting them, which is what `status` means.
-  {% endcomment %}
+  {% comment %} `status` rather than `alert`: worth announcing once the reader
+    reaches it, not worth interrupting them. {% endcomment %}
   {% if system.information %}
     <div class="alert alert-success mx-auto mt-4 max-w-2xl" role="status">
       <span>{{ system.information }}</span>
@@ -197,9 +150,8 @@
 
 {% comment %}
   The consolidated totals double as the charts' disclosure: the summary is the
-  six figures, and opening it reveals the charts they describe. That was a
-  Materialize collapsible whose open state had to be restored by JavaScript;
-  as a <details> the browser owns it, and address.js only records the state.
+  six figures and opening it reveals the charts they describe. The browser owns
+  the open state and `address.js` only records it.
 {% endcomment %}
 <div class="mt-8 consolidated">
   <details id="id-cons" class="group rounded-box border border-base-300 bg-base-100" open>
@@ -273,14 +225,8 @@
 </div>
 
 {% comment %}
-  Filter and display switches. `.switch` keeps its name because address.js
-  reads it, but it is a plain checkbox now rather than a Materialize lever.
-{% endcomment %}
-{% comment %}
-  In a card like everything else on the page. These controls sat bare between
-  the totals card and the first asset row, so the one region a reader operates
-  was the one region with no surface under it -- it read as a gap rather than
-  as a toolbar.
+  Filter and display switches. `.switch` keeps its name because `address.js`
+  reads it, though it is a plain checkbox rather than a Materialize lever.
 {% endcomment %}
 <div class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-box border border-base-300 bg-base-100 p-3">
   <div class="filter">
@@ -318,18 +264,15 @@
     <path d="M12 19V5M5 12l7-7 7 7"/>
   </svg>
 </a>
-{# The swap modal ships with the per-user #id-swap-entry-container partial at   #}
-{# the top: including it here as well put two #swap-modal elements (and two    #}
-{# sets of its controls) on the page for any linked viewer, of which swap.js   #}
-{# only ever addressed the first. For anonymous viewers this copy was inert -- #}
-{# the controller is loaded by that same partial and never arrived.            #}
+{# The swap modal ships with the #id-swap-entry-container partial at the top.  #}
+{# Including it here too puts two #swap-modal elements on the page for a       #}
+{# linked viewer, and swap.js only ever addresses the first.                   #}
 {% endwith %}
 {% endblock %}
 {% block otherfooter %}
 <script src="{% static 'js/chart.min.js' %}"></script>
 <script src="{% static 'js/address.js' %}"></script>
-{% comment %} The fold, and only the fold. Pinning and reordering belong to the
-   dynamic designs -- this page is the old one, deliberately unchanged
-   apart from not leading with seventy-six rows. {% endcomment %}
+{% comment %} The fold, and only the fold: pinning and reordering belong to the
+   dynamic designs. {% endcomment %}
 <script src="{% static 'js/showmore.js' %}"></script>
 {% endblock %}

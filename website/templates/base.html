@@ -1,43 +1,33 @@
-{% comment %}
-  Tailwind/DaisyUI base template, standing beside base.html during the
-  migration. A page belongs to exactly ONE of the two: Materialize and the
-  DaisyUI build both define .btn, .card, .card-title, .modal, .badge,
-  .container, .avatar, .input, .truncate, .disabled and .fixed, so a page that
-  loaded both would have whichever lost the cascade silently deform.
-
-  The block names are deliberately identical to base.html's, so converting a
-  page is a one-line `extends` change plus the markup inside those blocks.
-
-  When the last page moves off base.html, this file becomes base.html.
+{% comment %} The site's base template. Every page extends this or one of its shells.
+   
+   **A page may carry only one CSS vocabulary.** Materialize and the DaisyUI
+   build both define .btn, .card, .card-title, .modal, .badge, .container,
+   .avatar, .input, .truncate, .disabled and .fixed, which is why the
+   migration off Materialize was page by page. It is finished: nothing in
+   `templates/` or `static/` loads Materialize, and no first-party script
+   reads `window.M`.
 {% endcomment %}<!DOCTYPE html>
 <html lang="en">{% load static %}{% load i18n %}
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     {% comment %}
-      Stamp the saved theme before the stylesheet paints, so there is no flash
-      of the default one. Themes are a client-side preference and are never
-      sent to the server, so this has to run here rather than be rendered in.
+      Every preference here is the reader's, never sent to the server, and has
+      to be stamped before the stylesheet paints: applied afterwards, the
+      reader would watch the theme flash, the font swap or rows appear under
+      them.
     {% endcomment %}
     <script>
       (function () {
         "use strict";
         var saved = localStorage.getItem("theme");
         if (saved) document.documentElement.setAttribute("data-theme", saved);
-        // The typeface override is stamped here for the same reason: applied
-        // after paint it would swap the font under the reader's eyes.
         var face = localStorage.getItem("typeface");
         if (face) document.documentElement.setAttribute("data-typeface", face);
-        // How many rows an address section shows before its control. Stamped
-        // here for the same reason as the two above: applied after paint, the
-        // reader would watch rows appear or vanish under them.
-        //
-        // `prefold` is what scopes the CSS that acts on these. Once
-        // `toolbar.js` or `showmore.js` has painted a section it owns which
-        // rows are folded - it re-folds them when the reader filters or sorts,
-        // and a CSS rule counting DOM position would then fight it. The
-        // scripts drop this class, so the rules only cover the gap before they
-        // run.
+        // `prefold` scopes the CSS that folds sections before the scripts run.
+        // `toolbar.js` and `showmore.js` drop it and own folding from then on,
+        // because they re-fold on filter and sort and a CSS rule counting DOM
+        // position would fight them.
         var folds = { "fold-assets": 1, "fold-collections": 1 };
         var stamped = false;
         for (var key in folds) {
@@ -55,31 +45,20 @@
     <meta name="keywords" content="{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount{% endblock %}">
     {% block otherheader %}{% endblock %}
     {% comment %}
-      Fonts are self-hosted now -- every face is declared in typefaces.css and
-      served from static/fonts, so there is no request to Google here and no
-      third party told who reads this site. Only the pair the active theme uses
-      is downloaded: a browser fetches a font file when text actually matches
-      it, so declaring 77 families costs their declarations and nothing more.
+      No font request here: every face is declared in typefaces.css and served
+      from static/fonts, so no third party is told who reads this site.
     {% endcomment %}
     <link href="{% static 'css/style.tw.css' %}" type="text/css" rel="stylesheet" media="screen">
     {% comment %}
-    **The `?v=` is a cache-bust, and the first of these links is load-bearing.**
+    **Keep the 180x180 apple-touch-icon first.** Pera Wallet's SDK builds the
+    dApp metadata it shows at connect time from the first `<link>` whose `rel`
+    contains "icon", in document order - which `apple-touch-icon` and
+    `mask-icon` both match. See `post-deploy/FINDING-pera-logo.md`.
 
-    These are served from the site root by `nginx/templates/favicon.conf`, not
-    through `{% static %}`, so their URLs do not change when the image does --
-    and `favicon-16x16` and `favicon-32x32` carry `expires 365d`. A reader who
-    visited before the 2026-09-05 logo change would otherwise keep the old tab
-    icon for up to a year.
-
-    The apple-touch-icon matters for a second reason. Pera Wallet's SDK builds
-    the dApp metadata it shows at connect time by scraping this page:
-    `favicon: ae()[0]`, where `ae()` collects every `<link>` whose `rel`
-    *contains* "icon" -- so `apple-touch-icon` and `mask-icon` both qualify, and
-    the **first one in document order wins**. Keep the 180x180 apple-touch-icon
-    first: it is the best size of the set for a wallet's connect screen. See
-    `post-deploy/FINDING-pera-logo.md`.
-
-    Bump `v` whenever one of these images is replaced.
+    These are served from the site root by `nginx/templates/favicon.conf`
+    rather than through `{% templatetag openblock %} static %}`, and two of
+    them carry `expires 365d`, so their URLs never change on their own. Bump
+    `v` whenever one of the images is replaced.
     {% endcomment %}
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
@@ -93,52 +72,30 @@
 <script src="{% static 'js/csp-safe-handlers.js' %}"></script>
 {% block header %}
 {% comment %}
-  Site chrome. Three changes worth knowing about:
-
-  * the primary nav marks the section you are in with `aria-current="page"`,
-    the same contract the auth tabs and the profile sub-nav use. Without it a
-    reader had no way to tell where they were except by reading the url;
-  * account actions are separated from navigation. Logout sat in the same row
-    as Home and API, so leaving the site looked like another destination;
-  * the appearance control was an unlabelled circle. It is still an icon, but
-    it now says what it is to a screen reader and on hover.
-{% endcomment %}
-{% comment %}
-  Deliberately not sticky. A bar that follows the reader costs the same strip
-  of screen on every page, and on the address page -- which is a long scroll
-  through assets -- that is the row they most want back.
+  Site chrome. It deliberately does not follow the reader down the page: that
+  costs the same strip of screen everywhere, and the address page is a long
+  scroll.
+  `h-14` is a decision, not an override - this is a plain flex row rather than
+  DaisyUI's `navbar`, which would impose its own `min-height`.
 {% endcomment %}
 <header class="border-b border-base-300 bg-base-100">
-  {% comment %}
-    The bar's height is ours to choose. Nothing in DaisyUI fixes it: the
-    framework's own `navbar` component would impose `min-height: 4rem`, but this
-    header is a plain flex row and does not use it, so `h-14` is a decision
-    rather than an override of one.
-
-    56px with a 40px logo leaves 8px above and below. The wordmark is two lines
-    of type in a 605x256 bitmap with no padding baked in, so every pixel of the
-    bar that is not the logo reads as air around it -- at the previous 64/36 it
-    was 14px a side, nearly a third of the logo's own height.
-  {% endcomment %}
   <div class="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
     {% block navigation %}
     <a href="/" class="flex-none" aria-label="{{ WEBSITE_NAME }} home">
       {% comment %}
-        `{% templatetag openblock %} static %}` rather than pasting the name onto
+        `{% templatetag openblock %} static %}` and not a name pasted onto
         `{% templatetag openblock %} get_static_prefix %}`: under
-        ManifestStaticFilesStorage the served filename carries a content hash,
-        which only the `static` tag knows how to look up. A concatenated path
-        would 404 in production while working perfectly in development.
+        ManifestStaticFilesStorage the served filename carries a content hash
+        only the `static` tag can look up, so a concatenated path 404s in
+        production while working in development.
       {% endcomment %}
       <img class="h-10 w-auto" src="{% static WEBSITE_SHORT_NAME|add:'.png' %}" alt="{{ WEBSITE_NAME }} logo">
     </a>
 
     {% comment %}
-      Logo left, navigation right, the way it has always been here. The list
-      itself is short and depends on the reader -- Home / API / Log out signed
-      in, Log in / API / Subscriptions signed out -- and comes from the context
-      processor, except Log in: that opens a dialog rather than navigating, so
-      it has no url to reverse and is rendered here, ahead of the rest.
+      The link list comes from the context processor and depends on the reader.
+      Log in is the exception: it opens a dialog rather than navigating, so it
+      has no url to reverse and is rendered here, ahead of the rest.
     {% endcomment %}
     <div class="ml-auto flex items-center gap-2">
       {% include "snippets/theme_picker.html" %}
@@ -183,39 +140,16 @@
 <main class="flex-1">
   <div class="mx-auto w-full max-w-6xl px-4 py-8">
     {% comment %}
-      Rendered here, once, rather than by each page: inline errors line up with
-      the content they refer to, and the toasts are `position: fixed` so where
-      they sit in the document does not matter.
+      Once, here, rather than in each page: inline errors line up with the
+      content they refer to, and the toasts are `position: fixed`.
     {% endcomment %}
     {% include "snippets/messages.html" %}
     {% block content %}{% endblock %}
   </div>
 </main>
 <footer class="mt-16 border-t border-base-300 bg-base-100">
-  {% comment %}
-    Four centred columns, and nothing beneath them.
-
-    The old footer was two structures stacked: a column grid, a rule, then a
-    second row for copyright, legal and the app stores. That split is
-    Materialize's -- `.page-footer` above `.footer-copyright` -- and it made the
-    footer read as two footers, the second one apparently an afterthought
-    holding whatever did not fit above. Legal and the app stores are an
-    ordinary group now, and the copyright is one closing line.
-
-    The former liquidity buttons were sprite images -- fixed at 133x32, with a
-    light background and both states baked in, so they could not follow a theme
-    and were invisible on the dark ones. They are ordinary links in the Token
-    column now, like everything else here.
-  {% endcomment %}
   <div class="mx-auto w-full max-w-6xl px-4 py-10 text-center">
 
-    {% comment %}
-      Copyright leads the tagline rather than closing the footer. It was the
-      last line under the columns, which is where a copyright traditionally
-      goes -- but that put the one piece of text nobody reads at the end of the
-      scroll, and gave the footer a second horizontal band to be the last thing
-      on the page. One line at the top carries both.
-    {% endcomment %}
     <p class="text-sm text-base-content/60">
       &copy;&nbsp;2026&nbsp;{{ WEBSITE_NAME }}
       <span class="mx-1.5 opacity-40" aria-hidden="true">&middot;</span>
@@ -223,14 +157,9 @@
     </p>
 
     {% comment %}
-      `w-fit` on the grid is what centres it: the columns size to their content
-      and the block is then centred as a unit, rather than being stretched to
-      the full width with the text merely centred inside four wide cells --
-      which reads as four separate centrings, not one.
-
-      Each column is a heading and its list, so the groups stay real landmarks
-      for a screen reader instead of one flat run of links. Two columns below
-      `sm`, which is the only thing that changes on a narrow screen.
+      `w-fit` is what centres the grid as a unit. Stretched to the full width,
+      the text is merely centred inside four wide cells, which reads as four
+      separate centrings.
     {% endcomment %}
     <nav class="mt-8" aria-label="Footer">
       <div class="mx-auto grid w-fit max-w-full grid-cols-2 gap-x-10 gap-y-8 sm:grid-cols-4 sm:gap-x-14">
@@ -249,7 +178,6 @@
 
         <div>
           <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Token</h2>
-          {% comment %} Buy leads: it is the one entry here a reader acts on. {% endcomment %}
           <ul class="mt-3 space-y-2 text-sm">
             <li><a class="link link-hover" href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener">Buy ASASTATS</a></li>
             <li><a class="link link-hover" href="{% url 'tokenomics' %}">Tokenomics</a></li>
@@ -273,11 +201,9 @@
           <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">About</h2>
           <ul class="mt-3 space-y-2 text-sm">
             {% comment %}
-              One slot, first: Log in for a visitor, Home for a reader who
-              already is. They are the same affordance -- the way to your own
-              portfolio -- so they share a place rather than appearing in
-              different columns depending on who is looking. `home` redirects
-              a signed-out visitor, which is why it is not simply always here.
+              One slot for the same affordance: the way to your own portfolio.
+              `home` redirects a signed-out visitor, which is why it cannot
+              simply always be here.
             {% endcomment %}
             {% if user.is_authenticated %}
             <li><a class="link link-hover" href="{% url 'home' %}">Home</a></li>
@@ -295,32 +221,24 @@
     </nav>
 
     {% comment %}
-      Empty on every page that has a header, because the header carries the
-      appearance control. index blanks the header, so it fills this instead --
-      a block rather than an unconditional include, because rendering the
-      control in both places gives a page two of them: a duplicated
-      `id-theme-list`, and two radio groups sharing the name `theme-dropdown`,
-      fighting over which theme shows as chosen. There are tests for exactly
-      one per page in core.tests.test_theme_control.
+      Empty wherever the header carries the appearance control; `index` blanks
+      the header and fills this instead. **A block rather than an include**,
+      because two controls on a page means a duplicated `id-theme-list` and two
+      radio groups named `theme-dropdown` fighting over which theme shows as
+      chosen. See `core.tests.test_theme_control`.
     {% endcomment %}
     {% block footer_appearance %}{% endblock %}
   </div>
 </footer>
 {% block login_modal %}{% if not user.is_authenticated %}{% include "snippets/modal_login.html" %}{% endif %}{% endblock %}
-{% comment %}
-  Everything here earns its place:
-
-  * jQuery, because every page script still uses it -- home.js, index.js,
-    tax.js, subscriptions.js and profile-authorize.js are all jQuery. Dropping
-    it made those scripts throw on load, which looked like nothing at all;
-  * site.js, for copy-to-clipboard and the swap login gate. Its
-    Materialize calls are all guarded (`typeof M === 'undefined'` checks), so
-    the tab/modal/toast parts simply no-op here -- theme.js and authmodal.js
-    cover those instead;
-  * bundle.js, the wallet package. Without it there is no wallet connect, no
-    EVM flow and no swap bridge on any page built on this template.
-
-  jQuery leaves when the page scripts stop needing it, not before.
+{% comment %} jQuery stays until the page scripts stop needing it: home.js, index.js,
+   tax.js, subscriptions.js and profile-authorize.js are all jQuery, and
+   dropping it makes them throw on load, which looks like nothing happening.
+   
+   site.js is here for copy-to-clipboard and the swap login gate; theme.js
+   and authmodal.js cover the tabs, modals and toasts. bundle.js is the
+   wallet package - without it there is no wallet connect, no EVM flow and no
+   swap bridge.
 {% endcomment %}
 <script src="{% static 'js/jquery-2.2.4.min.js' %}"></script>
 <script src="{% static 'js/htmx.min.js' %}"></script>

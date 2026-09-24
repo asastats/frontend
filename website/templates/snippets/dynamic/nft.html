@@ -2,19 +2,14 @@
 {% load core_extras %}
 {% comment %} One NFT inside an open collection.
 
-  Two columns: the art, and the facts beside it. Every fact is a `.nft-line` --
-  a label on the left and a figure in `--col` on the right -- so an item's
-  estimate, its floor and what was paid for it all land in the same column as
-  the collection subtotal above and the asset values further up the page. That
-  is the difference from design 1's version, which lays the same facts out as
-  three columns of running text with the numbers wherever they fall.
+  Context: row, one entry from a collection's `nfts`.
 
-  Each line pairs a figure with what it *means*, because none of these numbers
-  means anything alone: an estimate above a floor and one below it are the same
-  number and opposite news. Design 1 renders "Floor price: 25.00 ALGO" and
-  leaves the reader to compare it against a figure eight lines away.
+  The art, and the facts beside it. Every fact is a `.nft-line`, a label on the
+  left and a figure in `--col` on the right, so an item's estimate, its floor
+  and what was paid for it land in the same column as the collection subtotal
+  and the asset values above.
 
-  Hooks kept, all of them shared with design 1's scripts:
+  Hooks shared with design 1's scripts:
 
     `.fitem` + `id="<nft id>"`   the filter matches and reveals these
     `.val` + `data-val`          every figure the currency switch recomputes
@@ -23,19 +18,15 @@
     `class="nft"` + `data-src`   `deferImages` swaps in the full image after
                                  load and installs the CDN fallback
     `.copy`                      `site.js` copies the element *before* it
-
-  Required context:
-    row  one entry from a collection's ``nfts``
 {% endcomment %}
 {% with nft=row.nft amount=row.amount price=row.price %}
 {% with floor=nft.floor.0 %}
 <div id="{{ nft.id }}" class="fitem nft-body">
 
-  {% comment %} The art. A link to the original through an IPFS gateway, which
-     is the only copy that is not ours -- the thumbnail and the full image both
-     come off our CDN. A `Vault` or `Locked` first URL is the custody record
-     rather than the artwork, so the second is used when that is what is there;
-     design 1 makes the same choice. {% endcomment %}
+  {% comment %} The art. The link is to the original through an IPFS gateway;
+     the thumbnail and full image come off our CDN. **A `Vault` or `Locked`
+     first URL is the custody record rather than the artwork**, so the second
+     is used when that is what is there. {% endcomment %}
   {% with primary=nft.urls.0 secondary=nft.urls.1 %}
   <a class="nft-art"
      href="{% if primary.typ == 'Vault' or primary.typ == 'Locked' %}{{ secondary.url }}{% else %}{{ primary.url }}{% endif %}"
@@ -65,16 +56,14 @@
       </div>
     </div>
 
-    {% comment %} The floor, and what it says about the estimate. Every branch
-       renders a line: "no marketplace reports one" is a fact about the holding
-       and leaving the row out would make its absence look like an oversight.
+    {% comment %} Every branch renders a line: "no marketplace reports one" is a
+       fact about the holding, and an absent row reads as an oversight.
 
        The page's payload carries the floor *price* without the listing around
-       it -- the marketplace and its link only arrive when a collection is
-       opened - so the first branch covers both, naming the marketplace only
-       when it knows one. Testing `floor` alone would have told a reader no
-       marketplace floors an NFT that one does, which is worse than saying less
-       about it.
+       it - the marketplace and its link arrive only when a collection is
+       opened - so the first branch covers both and names the marketplace only
+       when it knows one. **Testing `floor` alone would deny a floor that
+       exists.**
     {% endcomment %}
     {% if floor or nft.floor_price %}
     <div class="nft-line">
@@ -124,9 +113,8 @@
     </div>
     {% endif %}
 
-    {% comment %} Only when it beats the last purchase: otherwise the two lines
-       are the same transaction said twice, which is what the reference address
-       shows for most items. {% endcomment %}
+    {% comment %} Only when it beats the last purchase, or the two lines are the
+       same transaction said twice. {% endcomment %}
     {% if nft|beats_last_purchase %}
     <div class="nft-line">
       <div class="k">

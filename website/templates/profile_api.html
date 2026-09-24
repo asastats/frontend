@@ -3,22 +3,11 @@
 {% load i18n %}
 {% load core_extras %}
 {% comment %} The API token page.
-
-  **The copy controls were dead.** `site.js` binds `copyToClipboard` to `.copy`
-  and copies `$(this).prev()`; both clipboard spans here carried
-  `cursor-pointer` and no `.copy`, so they said "click me" and did nothing.
-  Three other templates -- `snippets/asas/meta.html`, `nonval.html`,
-  `nfts/item.html` -- had it right, which is why this went unnoticed: the
-  control looks identical and only this copy of it was inert. Fixed, and the
-  contract is now written down where the next person will read it.
-
-  Rebuilt otherwise from a page that used `<br><br>` five times for spacing and
-  put the tier in a right-hand column opposite the tokens, as though the two
-  were comparable. A token is a secret to be copied once and pasted elsewhere;
-  it wants width, a monospace face and an unmissable copy control, not half a
-  grid.
-
-  `id_obtain` is kept: it is the handle for obtaining a pair.
+   
+   A token is a secret to be copied once and pasted elsewhere, so it gets the
+   full width, a monospace face and an unmissable copy control.
+   
+   `id_obtain` is kept: it is the handle for obtaining a pair.
 {% endcomment %}
 {% block title %}API token data - ASA Stats{% endblock %}
 {% block description %}This is the page where you can see and refresh your API token.{% endblock %}
@@ -38,14 +27,13 @@
 
     <div class="space-y-5 px-5 py-5">
       {% if refresh or access %}
-        {% comment %} The token is the whole point of the page, so it gets the
-           full width and a monospace face -- a 200-character string in a
-           proportional face is unreadable and unverifiable by eye.
-
-           `.copy` must be the element **immediately after** the one it copies:
-           `copyToClipboard` reads `$(this).prev()`. A wrapper between them
-           silently breaks it, which is exactly how the pair below came to be
-           inert. {% endcomment %}
+        {% comment %} **`.copy` must be the element immediately after the one it copies**:
+           `copyToClipboard` reads `$(this).prev()`, and a wrapper between them
+           silently breaks it.
+           
+           The token gets the full width and a monospace face, because a
+           200-character string in a proportional face is unverifiable by eye.
+        {% endcomment %}
         {% if refresh %}
         <div>
           <p class="mb-1 text-sm text-base-content/60" id="id_refresh_label">Refresh token</p>
@@ -66,8 +54,9 @@
         </div>
         {% endif %}
       {% else %}
-        {% comment %} An empty state that says what to do, rather than an empty
-           area above a button. {% endcomment %}
+        {% comment %} An empty state that says what to do, rather than an empty area above a
+           button.
+        {% endcomment %}
         <p class="text-sm text-base-content/60">
           You have no tokens yet. Obtaining a pair gives you a refresh token and
           an access token for the ASA Stats API.

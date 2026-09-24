@@ -13,23 +13,15 @@
 {% endcomment %}
 <div class="text-left text-sm">
   <span class="title font-medium">{{ asset.name }}</span>
-  {% comment %}
-    A real definition list: this was a `<dl>` whose children were plain
-    `<div>`s with the label written into the text, so it announced a list with
-    no terms and no definitions in it -- the one structure a screen reader
-    could have used to read "Total supply" and its number as a pair.
-
-    Laid out as a two-column grid on the same element, so the values line up
-    with each other instead of each starting wherever its label ended.
-    `items-baseline` because a term and its value are one line of text.
+  {% comment %} A two-column grid on the `<dl>` itself, so the values line up with each
+     other instead of each starting wherever its label ended. `items-baseline`
+     because a term and its value are one line of text.
   {% endcomment %}
   <dl class="mt-1 grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-1 text-xs text-base-content/70">
     <dt class="sr-only">{% if asset.id != 0 %}Asset id{% else %}Explorer{% endif %}</dt>
     <dd class="col-span-2">
-      {% comment %}
-        `.copy` copies the text of the element immediately before it
-        (`$(this).prev()` in site.js), so the link and the control have to stay
-        adjacent siblings -- no wrapper may come between them.
+      {% comment %} `.copy` copies the element immediately before it (`$(this).prev()` in
+         site.js): no wrapper may come between them.
       {% endcomment %}
       <a class="link link-hover" href="{% if asset.id != 0 %}{% explorer_url 'asset' asset.id %}{% else %}{% explorer_base %}{% endif %}" target="_blank" title="Show in {% explorer_name %}">{% if asset.id != 0 %}{{ asset.id }}{% else %}{% explorer_name %}{% endif %}</a>{% if asset.id != 0 %}<span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>{% endif %}
     </dd>

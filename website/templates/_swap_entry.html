@@ -1,6 +1,7 @@
-{# Non-cached, per-user gate + swap config. Carries the chosen router + its       #}
-{# public client cfg, and loads that router's SDK bundle plus the shared          #}
-{# controller. htmx executes these scripts when the partial swaps in.             #}
+{# The per-reader half of the address page. **Everything here is here because  #}
+{# `address.html` is cached and that entry is shared**, so a flag about one    #}
+{# reader baked into it is served to the next. htmx executes these scripts     #}
+{# when the partial swaps in.                                                  #}
 {% load static %}
 {% if swap_url %}
 <span id="id-swap-enabled"
@@ -11,59 +12,45 @@
       data-fee-bps="{{ swap_fee_bps }}"
       data-api-key="{{ swap_api_key }}"
       data-holdings-tmpl="{{ swap_holdings_tmpl }}"
-      {# Only the ASA Stats router carries these: it quotes in our engine, so #}
-      {# the browser posts to us instead of to a vendor SDK. Rendered empty   #}
-      {# for the others, which `markerCfg` reads as "" and their adapters     #}
-      {# never consult.                                                       #}
+      {# Only the ASA Stats router carries these, because it quotes in our    #}
+      {# engine. Empty for the others, whose adapters never consult them.     #}
       data-quote-url="{{ quote_url|default:'' }}"
       data-group-url="{{ group_url|default:'' }}"
       data-reauthorize-url="{{ reauthorize_url|default:'' }}"
-      {# Both halves of "which account does this swap spend from". `data-address` #}
-      {# is the server's guess - the profile's primary when it is on this page - #}
-      {# and `data-addresses` is every address here the reader owns. `swap.js`   #}
-      {# opens on the connected one when it is among them, because on a bundle   #}
-      {# page the guess is wrong exactly as often as the reader is connected to  #}
-      {# the other address.                                                      #}
+      {# Which account a swap spends from. `data-address` is the server's       #}
+      {# guess, the profile's primary when it is on this page; `data-addresses` #}
+      {# is every address here the reader owns. `swap.js` prefers the connected #}
+      {# one, because on a bundle page the guess is often the other address.    #}
       data-address="{{ swap_address }}"
       data-addresses="{{ swap_addresses|join:' ' }}"></span>
 {% include "swap/_swap_modal.html" %}
-{# Only for a router that ships one. `{% static %}` RAISES under production's #}
+{# Only for a router that ships one. **`static` RAISES** under production's   #}
 {# ManifestStaticFilesStorage for a path with no manifest entry, so naming a  #}
-{# bundle that does not exist 500s this whole partial -- and with it the      #}
-{# marker, the modal, swap.js and the Dust Sweep below.                       #}
+{# bundle that does not exist 500s this whole partial, taking the marker, the #}
+{# modal, swap.js and the Dust Sweep with it.                                 #}
 {% if swap_sdk_static %}<script src="{% static swap_sdk_static %}"></script>{% endif %}
 <script src="{% static 'swap/swap.js' %}"></script>
 {% endif %}
 
-{# Dust sweep. Gated on linkage alone, deliberately not on `swap_url`: a sweep #}
-{# needs an address the reader owns and nothing else, while a swap also needs  #}
-{# a router that resolves. Hanging the sweep off the swap gate would hide the  #}
-{# sweep exactly when the router is misconfigured - which is when its          #}
-{# close-out half is still perfectly usable, and carries most of the value.    #}
+{# **Gated on linkage alone and deliberately not on `swap_url`.** A sweep      #}
+{# needs an address the reader owns; a swap also needs a router that resolves. #}
+{# Hanging the sweep off the swap gate would hide it exactly when the router   #}
+{# is misconfigured, which is when its close-out half is still usable.         #}
 {#                                                                             #}
-{# **One button, for the account the wallet is actually connected to.** This   #}
-{# was a button per linked address, and on a bundle page that offered several  #}
-{# - of which every one but the connected account is an offer the reader       #}
-{# cannot take. A sweep is signed by one key and a wallet has one active       #}
-{# account, so pressing any of the others built a group that account cannot    #}
-{# sign, and the reader found that out at the signature prompt.                #}
-{#                                                                             #}
-{# Which account that is cannot be decided here: linkage is a server fact and  #}
-{# connection is a browser one. So the server renders the *candidates* -       #}
-{# `data-addresses`, the reader's own addresses among the ones this page shows #}
-{# - and `dustsweep.js` reveals the button only while the live wallet is on    #}
-{# one of them. Rendered hidden rather than omitted so that connecting a       #}
-{# wallet needs no second request.                                             #}
+{# One button, because a sweep is signed by one key and a wallet has one       #}
+{# active account. Which account that is cannot be decided here - linkage is a #}
+{# server fact, connection a browser one - so the server renders the           #}
+{# candidates in `data-addresses` and `dustsweep.js` reveals the button while  #}
+{# the live wallet is on one of them. Hidden rather than omitted, so           #}
+{# connecting a wallet needs no second request.                                #}
 {% if dustsweep_address %}
 <div id="id-dustsweep" class="dustsweep-toolbar" hidden
      data-plan-url="{{ dustsweep_plan_url }}"
      data-addresses="{{ dustsweep_addresses|join:' ' }}">
   <button type="button" class="dustsweep-open id-dustsweep-open" data-address="">
     Sweep dust{% if dustsweep_addresses|length > 1 %}
-    {# Several of the reader's own accounts are on this page, so the button #}
-    {# says which one it will sweep; `dustsweep.js` fills it in from the    #}
-    {# connected account. One address needs no label, and then the span is  #}
-    {# not rendered at all rather than rendered empty.                      #}
+    {# Several of the reader's accounts are on this page, so the button says #}
+    {# which one it will sweep; `dustsweep.js` fills it in.                  #}
     <span class="dustsweep-open-address"></span>
     {% endif %}
   </button>
@@ -72,47 +59,35 @@
 <script src="{% static 'dustsweep/dustsweep.js' %}"></script>
 {% endif %}
 
-{# Alerts, beside the sweep and on the same partial for the same reason: what  #}
-{# it says is per-reader - how many rules you keep, how many your tier still   #}
-{# allows - and `address.html` is cached across readers. A second htmx         #}
-{# partial would be a second request for a question this one already answered. #}
-{#                                                                             #}
 {# **Not gated on a linked address.** The swap and the sweep are signed by the #}
-{# holder's key, so they need one; watching a total or a price needs nothing   #}
-{# but a reader. The gate is the tier, and below it this is a link rather than #}
-{# a disabled button - a dead control teaches a reader the feature is broken.  #}
+{# holder's key; watching a total or a price needs nothing but a reader. The   #}
+{# gate is the tier, and below it this is a link rather than a disabled        #}
+{# button, because a dead control teaches a reader the feature is broken.      #}
 {% if alerts_entitled %}
-{# **Hidden until `alerts.js` has put it where it belongs.** This partial lands #}
-{# near the top of the page and the button belongs in the action row beside    #}
-{# Sweep dust, so `placeToolbar` moves it - and without this the browser paints #}
-{# it in the wrong row first and the reader watches it jump. The sweep's own    #}
-{# toolbar above is rendered hidden for the same kind of reason.               #}
-{#                                                                             #}
-{# Safe because this branch is the one that loads `alerts.js`: the control does #}
-{# nothing without it anyway, since opening the dialog is that script's job.    #}
+{# Hidden until `placeToolbar` moves it into the action row beside Sweep dust, #}
+{# or the browser paints it in the wrong row first and the reader watches it   #}
+{# jump. Safe because this branch is the one that loads `alerts.js`, without   #}
+{# which the control does nothing anyway.                                      #}
 <div id="id-alerts" class="alerts-toolbar" hidden
      data-bundle="{{ alerts_bundle }}"
      data-rules-left="{{ alerts_left }}">
-  {# Fetches the modal rather than carrying it: the rule list is per-reader  #}
-  {# and changes as it is edited, so loading it on press is both smaller on   #}
-  {# every page view and fresher when it matters.                            #}
+  {# Fetches the modal rather than carrying it: the rule list changes as it #}
+  {# is edited, so loading it on press is smaller and fresher.              #}
   <button type="button" class="alerts-open id-alerts-open"
           hx-get="{% url 'alerts' alerts_bundle %}"
           hx-target="#id-alerts-modal-slot"
           hx-swap="innerHTML"
           {% if alerts_left == 0 %}data-at-limit="true"{% endif %}>
     Alerts
-    {# Always rendered, hidden at zero, so `alerts.js` can update it after a #}
-    {# create or a delete without having to build the element. The panel      #}
-    {# swap replaces the modal's contents only - this badge lives out here in #}
-    {# the toolbar, so nothing touched it and the count went stale the moment #}
-    {# a reader added their first rule.                                       #}
+    {# **Always rendered, hidden at zero**, so `alerts.js` can update it    #}
+    {# after a create or a delete without building the element. The panel   #}
+    {# swap replaces the modal's contents only, and this badge is out here. #}
     <span class="badge badge-sm alerts-count"
           {% if not alerts_kept %}hidden{% endif %}>{{ alerts_kept }}</span>
   </button>
 </div>
-{# The dialog lands here. Outside the toolbar so the flex row does not have to #}
-{# reserve space for something that is display:none until it is asked for.    #}
+{# The dialog lands here, outside the toolbar so the flex row does not reserve #}
+{# space for something that is display:none until it is asked for.             #}
 <div id="id-alerts-modal-slot"></div>
 <script src="{% static 'alerts/alerts.js' %}"></script>
 {% elif user.is_authenticated %}
@@ -125,38 +100,26 @@
 </div>
 {% endif %}
 
-{# Real-time refresh. Per-reader like everything else in this partial, and here #}
-{# rather than in the page for the same reason: the address page is cached and  #}
-{# its cache is shared, so a flag about *this* reader baked into it is served   #}
-{# to the next one.                                                             #}
-{#                                                                              #}
-{# Rendered only when the tier allows it *and* the reader asked for it in their #}
-{# settings. Its absence is not a failure - it is the ordinary case, and the    #}
-{# free 60-second reload in `address.js` keeps the page fresh instead. That is  #}
-{# also how `address.js` knows to stand down: it looks for this marker, because #}
-{# a full reload would throw away exactly what the poll preserves - scroll      #}
-{# position, open sections and filters.                                         #}
+{# Real-time refresh, rendered only when the tier allows it *and* the reader   #}
+{# asked for it. **Its absence is the ordinary case, not a failure**: the free #}
+{# 60-second reload in `address.js` keeps the page fresh, and that reload is   #}
+{# what stands down when this marker is present, because a full reload throws  #}
+{# away what the poll preserves - scroll position, open sections and filters.  #}
 {% if liverefresh_url %}
 <span id="id-liverefresh"
       data-poll-url="{{ liverefresh_url }}"
       data-interval="{{ liverefresh_interval }}"
       data-grace="{{ liverefresh_grace }}"></span>
-{% comment %} How much watching is left, moved beside the control by the script.
-
-   In this partial rather than the toolbar because it is per-reader and
-   `address.html` is cached across readers - rendering a balance into the shared
-   entry would show whoever warmed it to everybody else. Same trap the Dust
-   Sweep button hit. The script relocates it, so it reads as part of the
-   control without being cached with it. {% endcomment %}
+{% comment %} How much watching is left. Rendered here and relocated by the
+   script, so it reads as part of the toolbar without being cached with it -
+   a balance in the shared entry would show whoever warmed it to everybody
+   else. {% endcomment %}
 <span id="id-liverefresh-left"
       class="badge badge-sm badge-ghost align-middle"
       title="Real-time refresh left on this address" hidden></span>
-{% comment %} Revealed by `liverefresh.js` when the free watching is spent.
-
-   Rendered hidden rather than inserted by the script, so the message is in the
-   markup one place and a reader with no JavaScript is not shown a notice about
-   a feature that needs it. It sits in this non-cached partial with the marker,
-   because it is per-reader: the address page's cache entry is shared.
+{% comment %} Revealed by `liverefresh.js` when the free watching is spent, and
+   rendered hidden rather than inserted so a reader with no JavaScript is not
+   shown a notice about a feature that needs it.
 
    **The wording is the product.** A page that just stops is indistinguishable
    from a broken one, so it says what ran out, that the page still updates on

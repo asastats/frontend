@@ -2,43 +2,28 @@
 {% comment %} "Where the money is": the allocation band, its figures, and the
    charts panel underneath.
 
-   Three drawings of one set of numbers -- the stacked bar, the five figures,
-   and the donuts. They share `allocation_bands`, so they cannot disagree; a
-   reader who sees the bar and the figures tell different stories has no way to
-   know which one lied.
+   Context: consolidated (utils.structs.Consolidated), total (account.total).
 
-   The segments and the figures **are** controls as of pass 2. Each is a real
-   `<button>` carrying `aria-pressed`, and all of them -- plus the donut slices
-   -- read and write one filter state in `toolbar.js`, so the three drawings can
-   never disagree about what is showing. That state is the reader's and lives in
-   their browser: this page's cache entry is shared by everyone on the layout,
-   so nothing about it may be rendered here.
+   Three drawings of one set of numbers - the bar, the figures and the donuts -
+   all from `allocation_bands`, so they cannot disagree. Every segment and
+   figure is a real `<button>`, and they share one filter state in
+   `toolbar.js` with the donut slices.
 
-   Rendered *pressed* -- `aria-pressed="true"`, every category on -- because
-   that is the state of an unfiltered page, which is what the server can know.
-   `toolbar.js` corrects it on load from what the reader last chose.
+   **Rendered pressed, every category on**, because that is the state of an
+   unfiltered page and this page's cache entry is shared by everyone on the
+   layout. `toolbar.js` corrects it on load from what the reader last chose.
 
    The bar keeps its `<span>`s inside the buttons rather than styling the
-   buttons themselves: the segment widths are percentages of the bar, and a
-   button is a flex item whose min-width would fight them.
+   buttons: the segment widths are percentages of the bar, and a button is a
+   flex item whose min-width would fight them.
 
-   The category colours do **not** follow the theme. All 57 themes recolour the
-   chrome around this band, but balance-is-green and NFT-is-red have to mean the
-   same thing in every one of them, or the bar, the figures and the donut stop
-   being readable as the same fact.
+   The category colours do *not* follow the theme. Balance-is-green and
+   NFT-is-red have to mean the same thing in all 57 of them, or the three
+   drawings stop reading as one fact.
 
-   The charts panel is a `<details>`: closed, the page costs nothing to draw:
-   open, `dynamic.js` renders the donuts as inline SVG from the JSON payload
-   blocks. Design 1's Chart.js is not loaded here at all.
-
-   Four of the five categories filter positions. The fifth, NFT, has no
-   positions in the asset list to filter -- collections are their own section --
-   so pressing it shows and hides that section instead. The prototype models it
-   the same way: four entries in `CAT`, and a separate `showNft`.
-
-   Required context:
-     consolidated  utils.structs.Consolidated totals
-     total         account.total
+   Four of the five categories filter positions. NFT has none to filter -
+   collections are their own section - so pressing it shows and hides that
+   section instead.
 {% endcomment %}
 <section class="band">
   <div class="band-head">

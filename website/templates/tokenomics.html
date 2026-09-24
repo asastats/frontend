@@ -1,20 +1,8 @@
 {% extends 'base.html' %}{% load static %}
-{% comment %}
-  Structure, not styling. This page had its Tailwind wrappers already -- the
-  centred column, `space-y-4`, the muted body colour -- around content that was
-  still written the way Materialize left it: every list was a run of `&#8226;`
-  characters and `<br>` tags inside one `<p>`, and the vertical rhythm was more
-  `<br>` inside a container that already spaces its children.
-
-  So the five facts under Token Overview were one paragraph, not a list of five,
-  and that is what a screen reader announced. `<ul>`/`<li>` is the fix; the
-  spacing `<br>`s go with it, because `space-y-4` was always doing that job.
-
-  The table was unstyled -- a bare `<table>`, browser default, no borders and no
-  padding. It carries DaisyUI's `.table` now, inside the `overflow-x-auto`
-  wrapper any wide table needs so it scrolls itself rather than the page.
-
-  Not a rewrite: every word here is the wording that was here before.
+{% comment %} Structure, not styling. The wording is unchanged; what changed is that the
+   lists are `<ul>`/`<li>` rather than `&#8226;` runs inside one `<p>`, and
+   the table carries DaisyUI's `.table` inside the `overflow-x-auto` wrapper
+   any wide table needs.
 {% endcomment %}
 {% block title %}ASA Stats - Token metrics page{% endblock %}
 {% block description %}Understanding the Utility, Supply, and Governance Model Behind ASASTATS{% endblock %}
@@ -103,10 +91,10 @@
 <div class="mt-3 space-y-4 text-base-content/80">
   <p>Every transfer in and out of any pool in the pre-DAO phase is conducted by the Team and listed in the Team's monthly financial/transparency reports.</p>
   <p>Download ASA Stats Transparency Reports:</p>
-  {% comment %} One row per year, which is what the `<br>` after each group was
-     for. A wrapping flex row rather than a paragraph of separators: the pipes
-     were rendered text a screen reader read out between every pair of
-     links. {% endcomment %}
+  {% comment %} One row per year, as a wrapping flex row rather than a paragraph of
+     separators: the pipes were rendered text a screen reader read out between
+     every pair of links.
+  {% endcomment %}
   <div class="space-y-1">
     {% for year_group in transparency_reports %}
       <div class="flex flex-wrap gap-x-3 gap-y-1">

@@ -1,31 +1,16 @@
-{% comment %} The dynamic toolbar: pass 2 of designs 2 and 3.
+{% comment %} The dynamic toolbar for designs 2 and 3.
 
-  Everything here acts on the page already in the browser. Nothing fetches:
-  the whole payload is in the DOM, sort keys and categories rendered onto the
-  rows as data attributes (see `snippets/dynamic/asset.html` and
-  `position.html`), so filtering 190 positions is a class toggle rather than a
-  round trip. That is also why the state is the reader's and lives in their
-  browser -- this page's cache entry is shared by everyone on the layout, so
-  the server cannot know any of it and must not render any of it.
+  Everything here acts on the page already in the browser: the sort keys and
+  categories are rendered onto the rows as data attributes (see
+  `snippets/dynamic/asset.html` and `position.html`), so nothing fetches.
 
-  **Every control ships in its default state**, for the same reason. The reader's
-  actual state is applied by `toolbar.js` on load. A control rendered pressed
-  because *someone* pressed it would be handed to whoever asked next.
+  **Every control ships in its default state**, and `toolbar.js` applies the
+  reader's own on load. This page's cache entry is shared by everyone on the
+  layout, so a control rendered pressed would be handed to whoever asked next.
+  The counts beside the sort buttons are filled in for the same reason.
 
-  Two things are deliberately not here:
-
-  * **A Rows/Cards toggle.** The prototype has one; here that choice is the
-    layout the reader picked on the settings page -- `dynamic` against
-    `dynamic-compact` -- which is a server-side preference and part of the
-    cache key. A second, client-side control for the same thing would let the
-    two disagree about which design the reader is looking at.
-  * **Dismissing an asset.** The prototype's fifth header cell is a dismiss
-    control; that feature is not built, so `reset` has nothing to undo for it.
-
-  `role="search"` on the field's form landmark and `aria-pressed` on every
-  segmented button: these are toggles, not links, and a screen reader is told
-  which one is on. The counts beside the sort buttons are filled in by
-  `toolbar.js` -- rendering them would be rendering the reader's filter.
+  `aria-pressed` on every segmented button, because these are toggles rather
+  than links.
 {% endcomment %}
 <div class="toolbar" id="toolbar">
   <div class="tb-wrap">
@@ -50,77 +35,42 @@
       <button type="button" data-sort="positions" aria-pressed="false">Positions</button>
     </div>
     {% comment %} Not a segmented pair: descending and ascending are one
-       reversible choice, and two buttons would imply they are independent of
-       the sort beside them. The label says which way it currently is, because
-       an arrow alone is read as "sort" rather than as a state. {% endcomment %}
+       reversible choice. The label says which way it currently is, because an
+       arrow alone reads as "sort" rather than as a state. {% endcomment %}
     <button class="ghost" id="tb-dir" type="button" aria-pressed="false"
             title="Reverse the sort direction">↓ Desc</button>
 
-    {% comment %} No spacer between the two halves. There was one -- the
-       prototype pushes the right-hand controls to the edge -- and with a dozen
-       of them the row wraps on any realistic width, so all it achieved was a
-       gap in the middle of the first line and two lonely controls on the
-       second. Packed left, a wrapped row reads as one block.
-
-       There is no 95%/99%/99.5%/All control here any more. The prototype has
-       one and it was never a setting: it existed to *demonstrate* the page with
-       everything on screen, before a load-more did. "Show me the rows carrying
-       99.5% of the value" is not a sentence a reader thinks in. Each section
-       now shows a fixed first batch and offers the next -- see
-       `ADDRESS_INITIAL_ASSETS` and `ADDRESS_INITIAL_COLLECTIONS`.
-    {% endcomment %}
+    {% comment %} No spacer between the two halves: with a dozen controls the
+       row wraps on any realistic width, and packed left a wrapped row reads as
+       one block. {% endcomment %}
     <div class="seg" id="tb-ccy" role="group" aria-label="Currency">
       <button type="button" data-ccy="ALGO" aria-pressed="true">ALGO</button>
       <button type="button" data-ccy="USD" aria-pressed="false">USD</button>
     </div>
 
-    {% comment %} Two settings design 1 has and this design was missing. Both
-       are the reader's rather than this address's, so both are stored under
-       design 1's own keys -- a reader who turns auto-refresh on means on, not
-       "on for this address".
+    {% comment %} Both of these are the reader's setting rather than this
+       address's, so both are stored under design 1's own keys; `refresh` is
+       read by the timer already running in `address.js`.
 
-       `refresh` is read by the timer already running in `address.js`, so
-       writing that key is the whole implementation. Toggle buttons rather than
-       checkboxes to match every other control in this row.
-
-       **`aria-pressed` alone was not enough, and for a while it was all there
-       was.** A screen reader was told which of these was on and a sighted
-       reader was told nothing: `.ghost` had rules for rest, hover and disabled
-       and none for the pressed state, so both buttons looked identical either
-       way. `tb-toggle` is what the stylesheet paints. It marks these two
-       specifically rather than every `.ghost`, because `#tb-dir` carries
-       `aria-pressed` too and there it means *ascending*, not *on* -- it says so
-       in its own label, and tinting it would assert something untrue.
+       **`tb-toggle` is what paints the pressed state**, and it marks these two
+       specifically rather than every `.ghost`: `#tb-dir` carries
+       `aria-pressed` too, and there it means *ascending* rather than *on*.
     {% endcomment %}
     <button class="ghost tb-toggle" id="tb-nonft" type="button" aria-pressed="false"
             title="Leave NFTs out of the total">Without NFTs</button>
-    {% comment %}
-      The title says *about once a minute*, because that is what the timer does
-      again.
-
-      It said exactly this once before, and was changed to "after 60 seconds of
-      inactivity" because it was not true: `resetTimer` was bound to `mousemove`
-      and `keypress`, so any movement put the count back to zero and a reader
-      who moved the mouse never saw it fire at all. The label was corrected to
-      match the code.
-
-      The code is what moved this time. The clock is fixed now and only the
-      *firing* waits for a pause, so a reader who keeps touching the page still
-      gets refreshed - a little late, not never. Both designs share the one
-      timer, so design 1's own label says the same thing.
-
-      The wording still matters more than a tooltip usually does: this is the
-      only place the page explains why a refresh it promised has not happened
-      yet.
-    {% endcomment %}
+    {% comment %} The title has to match what the timer does, and the timer is
+      shared with design 1, whose label says the same thing. *About once a
+      minute*: the clock is fixed and only the firing waits for a pause. This
+      is the only place the page explains why a promised refresh has not
+      happened yet. {% endcomment %}
     <button class="ghost tb-toggle" id="tb-refresh" type="button" aria-pressed="false"
             title="Reload this page about once a minute, waiting for a pause if you are reading">Auto-refresh</button>
 
     <button class="ghost" id="tb-reset" type="button" disabled>Reset view</button>
   </div>
-  {% comment %} One live region for the whole toolbar. Filtering changes what is
-     on the page without moving focus, which a screen reader is otherwise never
-     told about; `polite` so it waits for a pause rather than interrupting the
-     reader mid-word as they type into the field above. {% endcomment %}
+  {% comment %} One live region for the whole toolbar: filtering changes the
+     page without moving focus, which a screen reader is otherwise never told
+     about. `polite` so it does not interrupt the reader mid-word as they type
+     into the field above. {% endcomment %}
   <p class="tb-status" id="tb-status" role="status" aria-live="polite"></p>
 </div>

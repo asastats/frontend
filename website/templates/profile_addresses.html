@@ -9,18 +9,12 @@
 {% block profile_title %}Manage linked addresses{% endblock %}
 {% comment %} The linked-address list.
 
-  Structure is load-bearing and deliberately untouched: `partialdef
-  address_list inline` renders here on first paint *and* makes the fragment
-  addressable as `profile_addresses.html#address_list`, which is what
+  **The structure is load-bearing.** `partialdef address_list inline` renders
+  here on first paint *and* makes the fragment addressable as
+  `profile_addresses.html#address_list`, which is what
   `core/views_connected_addresses.py` re-renders into
   `#connected-addresses-list` after every operation. `.connected-address-row`
   is what `functional_tests/test_profile_pages.py` counts.
-
-  What changed is the chrome and the button hierarchy. Every action was a plain
-  `btn`, so "Remove" -- which is irreversible and asks for confirmation --
-  looked exactly like "Make primary", and "Add address", the reason most people
-  open this page, looked like neither. One primary per view, destructive
-  actions marked as such, and the rest quiet.
 {% endcomment %}
 {% block profile_content %}
 <div class="space-y-4">
@@ -32,15 +26,14 @@
 
   {% csrf_token %}
 
-  {# `hx-headers:inherited`, because htmx 4 does not inherit attributes         #}
-  {# implicitly as htmx 2 did. The CSRF token is set on the container and used  #}
-  {# by the hx-post buttons rendered inside it, which carry no headers of their #}
-  {# own - so without the modifier it stops reaching them and Django rejects    #}
-  {# every address operation with a 403.                                        #}
-  {#                                                                            #}
-  {# Outside the tag, not inside it: a Django comment between attributes is     #}
-  {# legal and renders away, but any HTML parser reading the template - the     #}
-  {# htmx upgrade checker included - sees its words as attribute names.         #}
+{# **`hx-headers:inherited`, because htmx 4 does not inherit implicitly** as  #}
+{# htmx 2 did. The CSRF token is set here and used by the hx-post buttons     #}
+{# inside, which carry no headers of their own - so without the modifier      #}
+{# Django rejects every address operation with a 403.                         #}
+{#                                                                            #}
+{# Outside the tag, not between its attributes: a Django comment there is     #}
+{# legal and renders away, but an HTML parser reading the template - the htmx #}
+{# upgrade checker included - sees its words as attribute names.              #}
   <div
     id="connected-addresses"
     data-api-base="{{ wallet_api_base|default:'/api/v2/wallet' }}"
@@ -53,14 +46,12 @@
       <h2 class="text-base font-medium">Linked addresses</h2>
     </div>
     <div id="connected-addresses-list" class="px-5 py-4">
-      {% comment %}
-        Rendered server-side. `inline` renders here on first paint AND makes the
-        fragment addressable as "<this template>#address_list" for htmx swaps.
+      {% comment %} `inline`: rendered here on first paint, and addressable as
+         "<this template>#address_list" for the htmx swaps.
       {% endcomment %}
       {% partialdef address_list inline %}
-      {# Native <details>, not a JS accordion: the wallet package no longer      #}
-      {# initialises a framework component, and this list is swapped in by htmx #}
-      {# -- a freshly swapped <details> works on arrival with nothing to rebind. #}
+{# Native <details>, not a JS accordion: this list is swapped in by htmx, and #}
+{# a freshly swapped <details> works on arrival with nothing to bind.         #}
       <ul class="address-list">
         {% for row in addresses %}
         <li class="connected-address-row" id="address-{{ row.id }}">
@@ -96,9 +87,9 @@
                     Enable login
                   </button>
                 {% endif %}
-                {% comment %} Marked as destructive, and outline rather than
-                   filled: findable without being the most inviting thing in
-                   the row. `hx-confirm` is the real guard. {% endcomment %}
+                {% comment %} Outline rather than filled, so it is findable without
+                   being the most inviting thing in the row. `hx-confirm` is
+                   the real guard. {% endcomment %}
                 <button type="button" class="btn btn-outline btn-error btn-sm"
                         hx-post="{% url 'profile_addresses_action' %}"
                         hx-vals='{"operation": "remove", "target_id": {{ row.id }}}'

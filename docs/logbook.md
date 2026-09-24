@@ -660,3 +660,1032 @@ literal.
 Submodules, each with its own repository. `widgets/` gets its own logbook at
 `website/widgets/docs/logbook.md` rather than entries here; `permissiondapp/`
 is out of scope.
+
+---
+
+# Templates
+
+The same rule as for the Python modules. A template comment stays when a
+reader editing the markup would otherwise break something they cannot see -
+an attribute a script binds to, an id a fragment swaps on, an element another
+widget replaces whole. Everything else is here.
+
+---
+
+## website/templates/snippets/dynamic/asset.html
+
+### Module
+
+**Why a `<details>` and not a button and a panel.** Design 1 uses the latter.
+This one works with the script disabled, the open state is the browser's to
+remember, and a screen reader is told it is a disclosure without being told so
+twice.
+
+**The header is five rigid cells** - grip, tile, identity, value, pin - and the
+fourth is the money column, `--col` wide, the same width the venue subtotals and
+every position row inside use. Below 620px they cannot all fit and the
+stylesheet drops to two rows with the value under the name; the media query in
+`input.css` carries the measurement behind that number.
+
+**Why design 1's `.fitem` and `f<id>` are reused rather than renamed.** They are
+what a reader's saved order is remembered against, so reusing them is what lets
+an arrangement survive switching designs.
+
+**Why the sort keys are attributes.** `toolbar.js` sorts, filters and re-cuts
+the list in the browser. Reading the keys back out of the rendered text would
+mean parsing "1,234.57", whose separator is locale-dependent, against a figure
+that is already rounded - so a sort would silently tie rows that differ.
+`data-val` existed for the currency switch for exactly this reason; the other
+three are the same idea.
+
+`data-search` is deliberately not the card's `textContent`, which includes the
+asset id, decimals, total supply and every provider link in the closed body:
+typing "6" would match most of the page.
+
+### The header controls
+
+There was a shared `entry_controls.html` snippet wrapping the grip and the pin.
+It was written for design 1 back when the controls were going there, nothing
+included it once design 1 was restored, and a wrapper is wrong here anyway -
+each control is a named grid area and a wrapper collapses both into one cell.
+
+The prototype puts a dismiss control in the pin's cell, hiding an asset from the
+list. That is a separate feature and is not built.
+
+### `assetamount` and the unit span
+
+**2026-09-19, live for about an hour.** The asset's own unit was wrapped in
+`<span class="u unit">`, which looks like styling and is not: `paintUnits`
+selects `.dynamic-page .u.unit` and writes the *display currency* into every one
+of them. Every row of every non-ALGO asset read "0.1022 ALGO" where "0.1022 g"
+belonged. A class here is a subscription to somebody else's behaviour.
+
+The `q` span carries no class, because it inherits the cell's styling and a
+class would be a name that does nothing and still has to be de-collided against
+DaisyUI. `q` for quantity: `v` is the value and `.amt` is taken - it is the
+value span on a position and `pins.js` reads it.
+
+The band above follows the opposite rule: `bandtotal` keeps its unit *inside*,
+precisely because `address.js` overwrites that element wholesale. Which element
+the swap replaces is what decides where the unit goes.
+
+### `assetvalue`
+
+`data-sort-value` on the row was a stale sort key until `toolbar.js` was pointed
+at this span's `data-val` instead - the same unrounded quantity, swapped every
+block, with the row attribute as the fallback when the cell is missing or
+unreadable. A sort after an hour of updates now agrees with the column beside
+it.
+
+### Total supply
+
+Read `amount_repr` until it was noticed being wrong by orders of magnitude
+against the same asset in design 1: ALGO's ten billion rendered as ten thousand.
+`amount_repr` divides by `10 ** decimals` and is right everywhere else in these
+templates because everywhere else is a holding, which the chain reports in base
+units. `asset.total` arrives already scaled.
+
+### The Swap entry
+
+Placed with the asset's own facts rather than at the foot of the row, where it
+sat below every position and every provider link - a scroll away from the thing
+it operates on.
+
+**Design 1's inline panel is deliberately not copied.** It carries a
+`swap-panel-<id>` div for `handleInlineSwapClick`, which reads a
+`data-swap-target` attribute no template sets, and which is not registered as a
+listener either. Only `handleSwapModalClick` is. The panel is vestigial there
+and would be dead markup here.
+
+### `programgroups`
+
+Positions are grouped by venue because a reader holding the same asset in four
+places is asking how much of it is on Tinyman, and a flat list makes them add it
+up themselves.
+
+A position opening or closing used to reload the whole page: a fragment reaches
+only elements that already exist, and the value fragments carry figures rather
+than rows. Re-rendering the group from this markup is what makes the heading,
+the count and the subtotal right at once, without a second copy of the markup in
+JavaScript.
+
+### The group heading
+
+Moved into a venue card, a group named by its venue would be a column of
+identical "Wallet balance" headings with no way to tell which holding each one
+is. Both headings render and the stylesheet picks, so the switch cannot get out
+of step with where the group sits - which a script writing the text would
+eventually manage.
+
+A group of one had the same figure twice, three lines apart: the subtotal beside
+the venue and the position's own value under it. They cannot differ, because
+with one position the subtotal is that position.
+
+### The position counter
+
+Two ambiguous positions in different groups collided exactly as the shared `pid`
+did, because positions are a loop inside a loop over program groups and the
+inner counter restarts.
+
+---
+
+## website/templates/snippets/dynamic/position.html
+
+### Module
+
+**Why the row's class is `.position` and not the prototype's `.pos`.**
+`static/js/pins.js` and its jest suite already address positions by that name
+and are covered to 100%. A cosmetic rename would churn a tested engine to no
+reader's benefit. The prototype is the spec for the design, not for
+identifiers.
+
+**Why the two link idioms have to be distinguishable at rest.** A reader
+deciding where to click has not pointed at anything yet. `.out` underlines on
+hover; `.tdist` is dotted at rest and resolves to solid under the pointer.
+
+**Why `data-pid` does not hash the amount.** The amount moves. Hashing it would
+restabilise nothing while destabilising every position that never changed.
+Three positions on the reference bundle are genuinely indistinguishable, which
+is what `data-amount` and `pid_ambiguous` exist for.
+
+### `counter` and the breakdown key
+
+This template's header carried a "known collision, not fixed here" note for as
+long as the breakdown id was `prog.pid|default:counter`: ambiguous positions
+shared an element id, so expanding either toggled whichever `getElementById`
+reached first. Substituting `counter` outright was worse - it is the grouped
+inner loop's counter, so it restarts at 1 in every group and collides within a
+single asset.
+
+**Closed** by `breakdown_key` plus a two-number counter from `asset.html`
+(`"<group>-<position>"`, namespaced by asset id). Positional keys are acceptable
+for this one thing and nowhere else in the feature: a breakdown panel opens and
+closes inside a single rendered page, so a key that changes on the next render
+costs nothing, while a pid that moved between renders would silently move a
+reader's pin.
+
+### `positionamount`
+
+**2026-09-19.** Nothing inside a position carried an id, so no fragment could
+reach one and a full reload was the only thing that ever updated a position. A
+row's aggregate would move while the "Wallet balance" inside it sat at its
+rendered figure.
+
+---
+
+## website/templates/snippets/dynamic/collection.html
+
+### Module
+
+A collection is a holding, so it uses the asset card's shell. Giving it its own
+layout would break the one thing this design promises.
+
+**The `.nft` tile modifier was a collision.** Design 1 owns `.nft` and pairs it
+with the colour slot in `.nft.cN` rules, which were landing on the collection
+tile and setting a `--stripe` nothing here consumes. Renamed to `.collection`.
+
+`.cid-meta` carries the floor/estimate split as a two-part bar because it is the
+one fact about a collection a single figure cannot express: the estimate is what
+the section totals, the floor is what a marketplace will pay today, and the gap
+between them is the risk. A collection whose floor is most of its estimate reads
+as solid; one where it is a sliver reads as mostly hope.
+
+### The `hx-get`
+
+**htmx 4 has no `from:` modifier.** It was
+`hx-trigger="toggle once from:closest details"` on the inner div: the string
+never bound, the toggle never fired, and opening a collection fetched nothing.
+Three browser tests caught it and nothing else could, because the markup is
+still valid HTML and the card still opens. Moved to the `<details>` rather than
+respelled, so there is no modifier left to get wrong.
+
+### The header cells
+
+The grip cell was empty while the space it reserves was still there, so a
+collection header had an asset's indent with nothing in it.
+
+The tile held the collection's initials for a while, as a stand-in for "a
+collection has no logo of its own". Four grey capitals tell a reader nothing
+they cannot read in the name beside them, so the one place on the row reserved
+for recognition was spending itself on a second copy of the name. The art is
+what a reader recognises a collection by, and the first item is on the page
+anyway.
+
+### `items-<slug>`
+
+Rendering every item for every collection put **87.9% of one real account's
+22 MB page** into markup nobody could see - a closed `<details>` renders none of
+it - and then discarded it on open. The measurement is in
+`snippets/nfts/collection.html`.
+
+---
+
+## website/templates/snippets/dynamic/toolbar.html
+
+### Module
+
+Filtering 190 positions is a class toggle rather than a round trip, which is why
+every sort key and category is rendered onto the rows.
+
+**Two prototype controls are deliberately absent.** A Rows/Cards toggle: that
+choice is the layout the reader picked on the settings page, `dynamic` against
+`dynamic-compact`, which is a server-side preference and part of the cache key -
+a second client-side control would let the two disagree about which design the
+reader is looking at. And dismissing an asset, which is not built, so `reset`
+has nothing to undo for it.
+
+There was a 95%/99%/99.5%/All control. It was never a setting: it existed to
+demonstrate the page with everything on screen, before a load-more did. "Show me
+the rows carrying 99.5% of the value" is not a sentence a reader thinks in. Each
+section now shows a fixed first batch and offers the next - see
+`ADDRESS_INITIAL_ASSETS` and `ADDRESS_INITIAL_COLLECTIONS`.
+
+There was also a spacer between the two halves, as the prototype has, pushing
+the right-hand controls to the edge. With a dozen controls the row wraps on any
+realistic width, so all it achieved was a gap in the middle of the first line
+and two lonely controls on the second.
+
+### `tb-toggle`
+
+`aria-pressed` was all there was for a while: a screen reader was told which of
+these was on and a sighted reader was told nothing, because `.ghost` had rules
+for rest, hover and disabled and none for the pressed state.
+
+### `tb-refresh`
+
+The title said "about once a minute", was corrected to "after 60 seconds of
+inactivity" because that was what the code did - `resetTimer` was bound to
+`mousemove` and `keypress`, so any movement put the count back to zero and a
+reader who moved the mouse never saw it fire at all - and then went back, once
+the code was fixed so that only the *firing* waits for a pause. A reader who
+keeps touching the page now gets refreshed a little late rather than never.
+
+---
+
+## website/templates/base.html
+
+### Module
+
+This file is the DaisyUI base standing beside the Materialize one; when the last
+page moves off that one, this becomes `base.html`. The eleven-class collision
+listed at the top is why the cutover is page by page rather than global.
+
+### The header
+
+Three changes made when the chrome was rebuilt: the primary nav marks the
+current section with `aria-current="page"` (the same contract the auth tabs and
+the profile sub-nav use, and without it a reader could only tell where they were
+by reading the url); account actions were separated from navigation, because
+Logout sat in the same row as Home and API and so leaving the site looked like
+another destination; and the appearance control, which was an unlabelled circle,
+now says what it is to a screen reader and on hover.
+
+**Why `h-14`.** 56px with a 40px logo leaves 8px above and below. The wordmark is
+two lines of type in a 605x256 bitmap with no padding baked in, so every pixel of
+the bar that is not the logo reads as air around it - at the previous 64/36 it
+was 14px a side, nearly a third of the logo's own height.
+
+### The favicon links
+
+`favicon-16x16` and `favicon-32x32` carry `expires 365d`, so a reader who visited
+before the 2026-09-05 logo change would otherwise have kept the old tab icon for
+up to a year.
+
+Pera Wallet's SDK reads `favicon: ae()[0]`, where `ae()` collects every `<link>`
+whose `rel` *contains* "icon". The 180x180 apple-touch-icon is first because it
+is the best size of the set for a wallet's connect screen.
+
+### The footer
+
+The old footer was two structures stacked: a column grid, a rule, then a second
+row for copyright, legal and the app stores. That split is Materialize's -
+`.page-footer` above `.footer-copyright` - and it made the footer read as two
+footers, the second an afterthought holding whatever did not fit above.
+
+The copyright now leads the tagline instead of closing the page. As the last line
+under the columns it put the one piece of text nobody reads at the end of the
+scroll, and gave the footer a second horizontal band.
+
+The liquidity entries were sprite images, fixed at 133x32 with a light background
+and both states baked in, so they could not follow a theme and were invisible on
+the dark ones.
+
+Each footer column is a heading and its list, so the groups stay landmarks for a
+screen reader rather than one flat run of links. Two columns below `sm` is the
+only thing that changes on a narrow screen.
+
+### Fonts
+
+Self-hosted: every face is declared in `typefaces.css` and served from
+`static/fonts`. Only the pair the active theme uses is downloaded, because a
+browser fetches a font file when text actually matches it - so declaring 77
+families costs their declarations and nothing more.
+
+---
+
+## website/templates/address_dynamic.html
+
+### Module
+
+**One template for two layouts.** Two files would duplicate every asset row,
+venue group and chart in order to change a handful of grid rules.
+
+**Why the charts are SVG and not Chart.js.** Design 1 keeps Chart.js; this page
+does not load it. 57 themes an SVG `fill` can follow and a canvas cannot, slices
+that are real buttons sharing one filter state, and ~200 KB saved. The full
+reasoning is in `frontend/docs/address_page_dom.rst`.
+
+### `bandtotal`
+
+The unquoted-attribute bug: a payload without `pricealgo` made `data-pricealgo`
+read `"data-total=216.3"` and `data-total` vanish entirely, so the currency
+switch computed the total from `undefined`. Two figures lost to one missing key.
+
+### The header actions
+
+A reader reported not being able to find the CSV export at all: a bare `.btn`
+fills with a colour within a few percent of the page background, so on a dark
+theme both buttons read as static text.
+
+### The fold control
+
+The venue list sat between the asset list and its fold control, which pointed
+`showmore.js` at the empty venue container - so pressing "Show 38 more assets"
+revealed nothing and every measurement of a folded row read zero. It degrades to
+the right answer through a fallback, which is not where this belongs.
+
+### `venue-list`
+
+Rendering the venue grouping server-side as a second list was the alternative. It
+doubles a page that already carries 190 positions, and the two copies would drift
+the first time one of them was edited.
+
+---
+
+## website/templates/address.html
+
+### Module
+
+**What the Materialize removal changed beyond styling.** The accordions became
+native `<details>`/`<summary>`, so `address.js` no longer initialises anything
+and the hook names moved with them: `.collapsible-header` to `.item-header`,
+`.collapsible-body` to `.item-body`, and the `<ul class="collapsible">`
+containers to `.section-list`. `.tooltipped`/`data-tooltip` needed `M.Tooltip`
+to say anything at all and became DaisyUI's CSS-only pair. The icon font went,
+which is one fewer font to load and no stray ligature while the page fetches.
+
+The consolidated totals were a Materialize collapsible whose open state had to
+be restored by JavaScript.
+
+### The h1
+
+The heading was the number itself, so a screen reader announced "heading level
+one, 1,234.56 ALGO" - a figure with nothing saying what it counts, on a page
+whose actual subject, the address, sat below it as a paragraph.
+
+Every tooltip other than the total's repeats an amount in the other currency,
+which the currency switch gives in one keystroke. Those stay pointer
+conveniences rather than a tab stop on each of several dozen numbers.
+
+The money designs need none of this: their `.pricetip` carries no `.tooltip`
+class, and `.total-sub` prints the same figure and rate permanently, for
+everyone.
+
+### The system warning
+
+It was an `<h2>` carrying red text, which put a heading in the document outline
+that is not a section and left the message to be noticed by colour alone.
+
+### The action buttons
+
+A reader reported not being able to find the CSV export at all, on this design
+and on the money ones, where it was rendering as text with no edge. The old
+Materialize markup was `btn-flat`, so the weak affordance was carried across
+faithfully rather than introduced by the conversion.
+
+### The filter row
+
+These controls sat bare between the totals card and the first asset row, so the
+one region a reader operates was the one region with no surface under it. It
+read as a gap rather than as a toolbar.
+
+### The swap modal
+
+Included here as well as in the per-user partial, it put two `#swap-modal`
+elements and two sets of its controls on the page for any linked viewer. For
+anonymous viewers the copy was inert, because the controller is loaded by that
+same partial and never arrived.
+
+---
+
+## website/templates/snippets/asas.html
+
+### The load-more rule
+
+It was a magnitude rule: show whatever number of rows accounted for 99.5% of the
+section's value, then reveal *all* of the rest in one press. Both halves read as
+arbitrary from the outside. The first showed 33 rows on one address and 8 on the
+next with nothing on the page to explain the difference; the second made the
+control's own promise wrong - "Show 39 more assets" over a button that then
+showed thirty-nine, which is an unfold rather than a load-more. The dynamic
+designs already used a plain count, so the change was the two designs agreeing.
+
+### The asset header
+
+The icon sits in the middle of the header because that is where the old design
+put it: `.icondiv` was absolutely positioned at `left: 50%`, and the conversion
+moved it to the start of a flex row instead.
+
+Each program panel used to end with a `<br />` to separate it from the next.
+Spacing between siblings belongs to the list that holds them.
+
+### `classicamount` and the unit
+
+The band above follows the opposite rule: `bandtotal` keeps its unit *inside*,
+because `address.js` overwrites that element wholesale. Which element the swap
+replaces is what decides where the unit goes. See
+`snippets/dynamic/asset.html` for the `u unit` incident and the `q`/`v` naming.
+
+---
+
+## website/templates/snippets/asas/program.html
+
+### Module
+
+The `{% templatetag openblock %} with %}` binding of `decimals` was written
+after this shape took the address page down with a 500 on 2026-09-18, in
+`snippets/nonval.html`. `amount_repr` already answers "0" to anything it cannot
+divide by, so a wrong figure on one line beats a dead page.
+
+The template still carries the shape of a phase of work labelled W1-W7: the
+distribution-bearing rows starting as `asar` and toggling to `shadow`; non-ALGO
+Balance rows structured like generic rows, with the same `tdist`/`data-distid`
+toggle and panel rather than a stand-alone provider line; per-row price lines on
+distribution sub-rows; "Source LP token" filtered out of linked rows; the
+amount line rendered after them; and negative programs - Borrowed, Loss, Debt,
+the legacy `ffb`/`afb`/`gab`/`gl` keys - shown as an absolute value in
+parentheses and `text-error`, triggered on `prog.value < 0` alone.
+
+### The Balance label
+
+It was green because the Materialize site painted this label in its link colour
+and the conversion carried the colour across as the nearest token rather than as
+a decision - so the one coloured label on the page was claiming "success", which
+is not what a balance is. `text-primary` says "this is the site's colour", is
+defined by all 57 themes, and already marks emphasis here through `btn-primary`
+and the scroll-to-top control.
+
+### The breakdown panel
+
+Until it was given a surface and a border it was bare text, distinguished from
+the summary it belongs to only by position.
+
+---
+
+## website/templates/_swap_entry.html
+
+### The Dust Sweep button
+
+It was a button per linked address, so a bundle page offered several - of which
+every one but the connected account is an offer the reader cannot take. A sweep
+is signed by one key and a wallet has one active account, so pressing any of the
+others built a group that account cannot sign, and the reader found that out at
+the signature prompt.
+
+### Alerts
+
+They sit in this partial rather than behind a second htmx request because what
+the toolbar says is per-reader - how many rules you keep, how many your tier
+still allows - and that second partial would be a second request for a question
+this one already answers.
+
+The count badge lives in the toolbar while the panel swap replaces the modal's
+contents only, so nothing touched it and the count went stale the moment a reader
+added their first rule.
+
+### `id-liverefresh-left`
+
+Rendering a per-reader balance into the shared address-page entry would show
+whoever warmed the cache to everybody else. This is the trap the Dust Sweep
+button hit; see `dustsweep-button-hidden-by-swap-bridge`.
+
+---
+
+## website/templates/home.html
+
+### Module
+
+Rebuilt on 2026-08-22 from a page that centred every line, spaced with
+`<br><br>`, and put each bundle's name *above* the card rather than in it - so a
+bundle was three separate things: a centred name, a centred "Historic data"
+link, and a wide box whose entire area was a fourth link to a fourth place.
+Nothing said which of the three destinations a click would take, and a column of
+centred names of different widths has no edge to scan down.
+
+The rail went with the shell. It held one box printing `profile.name`,
+`user.username` and `user.email`, which are the same address three times on
+every account that signed up with one.
+
+### The account chip
+
+**It was a grey line of text that did not look like anything**: a name and an
+email in the same muted colour as the rest of the page, underlined only on
+hover, directly under a heading. A reader had no reason to think it went
+anywhere, and the profile page is where the subscription address is authorised.
+
+`profile.name` answers "what do we call this reader" - first and last name if
+either is set, else the username, else the local part of the email. Naming the
+email directly ignored a name the reader had set, and an account without one - a
+wallet sign-in has no email at all - fell back through a different chain.
+
+`identicon` draws the mark from the reader's own subscription address: no
+upload, no storage, nothing to moderate, and every account has one the day it is
+created, including the wallet-authenticated ones a social avatar would leave
+blank.
+
+### The sort panel
+
+The radios were two ragged fieldsets with the second pushed down five units, so
+its rows never lined up with the first's. As one segmented row, four sort
+options plus a label and a Descending toggle pushed past both edges of the card
+and clipped the label, because the group's own content sets a floor it cannot
+shrink below.
+
+---
+
+## website/templates/snippets/nfts/collection.html
+
+### The deferred item list
+
+The measurement behind `ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS`: on one real
+account, 1,990 cards carrying a 9,698-character body each came to **19.3 MB of
+the page's 22 - 87.9% of it markup nobody could ever see** - and 152,294 `<div>`
+elements for a browser to lay out before it would scroll at all. The page never
+finished loading.
+
+---
+
+## website/templates/snippets/dynamic/band.html
+
+### Module
+
+The segments and figures became controls in pass 2. Before that the band was a
+picture: three drawings of one set of numbers that a reader could read but not
+act on.
+
+The charts panel is a `<details>` so that a closed page costs nothing to draw;
+`dynamic.js` renders the donuts as inline SVG from the JSON payload blocks, and
+design 1's Chart.js is not loaded here at all.
+
+The prototype models the fifth category the same way this does: four entries in
+`CAT`, and a separate `showNft`.
+
+---
+
+## Template comments compile into CSS, and can keep a dead hook alive
+
+Found on 2026-09-24 while shortening the comments, by two tests that changed
+their answer when prose was deleted.
+
+**Tailwind scans the comments.** `@source` in `input.css` names the template
+roots, and the extractor reads the whole file - so a bare word in a
+`{% templatetag openblock %} comment %}` block is a candidate class. "a social
+avatar would leave blank" in `home.html` is why `.avatar` and `.avatar-group`
+had rules in the committed stylesheet; nothing rendered either. Writing the
+word "sticky" into a rewritten comment put a `.sticky` rule back the same way.
+Keep framework words out of prose, or spell them as part of a sentence rather
+than as a bare token.
+
+**`test_template_hooks` was satisfied by prose.** `address.html` explained that
+`<ul class="collapsible">` containers had become `.section-list`. That sentence
+contains the literal `class="collapsible"`, which is what the test searches
+for - so `.collapsible` counted as still rendered, and
+`profile-authorize.js`'s `M.Collapsible.init(...)` looked live. No template has
+rendered it since the Materialize removal. The dead initialiser is gone, its
+three jest tests with it (they built their own `.collapsible` element, so they
+passed on a DOM no page produces), and `_template_markup` now strips comments
+before searching.
+
+---
+
+## website/templates/snippets/messages.html
+
+### Module
+
+Before this existed, **nine templates each rendered `messages` themselves and no
+two agreed**. Six used a bare `alert` with no tag branch, so a failure and a
+success were the same neutral box. `export.html` put Django's tag straight into
+`class` - `class="success"`, which is not a DaisyUI class - and rendered plain
+unstyled list items. `base.html` rendered none, which is why each page had to.
+
+The section tags are skipped here so a full page load does not show them twice:
+the htmx post keeps only its `hx-select` fragment, and those sections render
+their own from `snippets/messages_section.html`.
+
+---
+
+## website/templates/snippets/dynamic/nfts.html
+
+### Module
+
+This page included design 1's `snippets/nfts.html` unchanged at first, which made
+the section a different design bolted to the bottom of this one: its rows are a
+three-column flex arrangement with the value wherever the text left room, so the
+money column stopped at the assets. A section that opts out of that column is not
+a section of this page.
+
+---
+
+## website/templates/base_profile.html
+
+### Module
+
+The profile pages inherited `base_home`'s three-column shape: a breadcrumb rail
+on the left, content in the middle, actions stacked on the right. On a profile
+page that produced two mostly empty gutters, a ragged column of identical green
+pills for navigation, and page actions sitting so far from the fields they
+operate on that the relationship was invisible. Every control was the same
+weight, so nothing read as the primary one.
+
+---
+
+## website/templates/snippets/theme_picker.html
+
+### Module
+
+Recent is a separate group rather than the list re-sorting itself because a menu
+that reorders under a reader makes their muscle memory wrong every time they use
+it.
+
+A reader who never reaches the appearance page is not shown a credit for themes
+they were never offered, which is why the credit renders there and not here.
+
+---
+
+## website/templates/profile_settings.html
+
+### The fold section
+
+It sits beside the layout preference because both are about how the address page
+is arranged, and a reader looking for "how much of my account do I see at once"
+looks there rather than under Themes.
+
+### The live-refresh section
+
+The upgrade prompt names the allowance at the point it means something. Every
+authenticated reader may switch live refresh on; what a subscription buys is the
+limit coming off, and a page that quietly stops later is indistinguishable from
+a broken one.
+
+---
+
+## website/templates/profile_appearance.html
+
+### Module
+
+The header dropdown lists every theme by name, which is a list you scan rather
+than choose from - "abyss" and "nightfox" tell a reader nothing.
+
+Three tabs replaced one long page: 57 swatches in a single column meant
+scrolling past every dark theme to reach a light one, and the typeface section -
+an independent axis, and the only gated one - was stranded at the bottom where a
+reader had to already know it existed.
+
+Radio tabs so the panels switch with no script: a reader whose JavaScript failed
+still gets a working page rather than three headings and nothing under them.
+
+`tabs-lift` is gone. It is DaisyUI's folder-tab style, and it was the one
+control on the site that did not match the rest. What replaced it is the login
+modal's segmented control, which is itself the swap modal's `.swap-modes`
+written against theme tokens instead of `--swap-*`.
+
+Every specimen renders in the face it offers, for the same reason the theme
+swatches render in their own colours.
+
+---
+
+## website/templates/snippets/dynamic/nft.html
+
+### Module
+
+Design 1 lays the same facts out as three columns of running text with the
+numbers wherever they fall, and renders "Floor price: 25.00 ALGO" eight lines
+from the estimate it should be read against. None of these numbers means
+anything alone: an estimate above a floor and one below it are the same number
+and opposite news.
+
+The "best offer" line shows only when it beats the last purchase, because on the
+reference address the two are the same transaction for most items.
+
+---
+
+## website/templates/profile_authorize.html
+
+### Module
+
+The page now states the two routes before offering either, rather than
+presenting the wallet cards and leaving the by-hand fallback to be discovered
+inside a collapsible with no lead-in. That collapsible was Materialize's, and
+nothing on the page initialises one any more.
+
+What else changed in that pass: `<blockquote>` was used for addresses, though
+nothing here is being quoted - the same call was already made for the historic
+page, where `test_historic_assets_template.py` asserts the element is gone. The
+messages block carried four colour classes at once (`badge-outline bg-neutral
+text-neutral-content text-base-content/60`), so which one won depended on source
+order, and carried no `role`, without which a message appearing after load is
+announced to nobody. `<!-- HTML comments -->` shipped three banner rules to every
+reader. And there was a `<br><br>` before the check button, above a 7/5 grid
+whose right-hand column held one button.
+
+---
+
+## website/templates/base_bundlename.html
+
+### Module
+
+Rebuilt on 2026-08-22 with the shell. The fields sat in nine of twelve columns
+with the actions in the other three, so Save was a third of a page to the right
+of the last field it saves, level with the first - and the list of other bundles
+was wedged into the rail beside them, which is real navigation in a gutter.
+
+The primary action was previously indistinguishable from Back.
+
+A list that silently omits the current entry makes the reader count, which is why
+sibling navigation includes the page you are on.
+
+---
+
+## website/templates/profile_link_address.html
+
+### Module
+
+The two wallet families were two bare `<div>`s in a row with nothing saying where
+one ended and the next began. A reader with only an Algorand wallet met a
+heading-less empty area below their own wallets and no way to know it was for
+something else.
+
+**This template used to hand-roll its own copy of the EVM container, and the copy
+was wrong twice over.** It had no `#evm-app-error`, so a reader with no EVM
+wallet met an empty box and no explanation - `evmWalletComponent.showNoWallets`
+looks for that id and does nothing without it. And it read
+`wallet_connect_project_id`, which nothing provides: the context processor
+supplies `WALLET_CONNECT_PROJECT_ID`, so the attribute was always empty and
+WalletConnect was unconfigured on this page alone.
+
+A second `#app-error` was invalid HTML whose only effect was that a page which
+could not fetch its wallet list showed the snippet's banner and left this one
+hidden forever.
+
+---
+
+## website/templates/snippets/home_bundlenames.html
+
+### Module
+
+The old card was four links to three destinations with nothing to tell them
+apart: the name went to the evaluation, a line under it to the historic widget,
+and the entire box below - addresses, size badge and all - was a fourth link to
+the edit form. A reader could not know where a click would take them without
+watching the status bar.
+
+The filter also read `$(this).children().children().attr('title')`, which was the
+literal string "Evaluate bundle" on every row - so typing "eval" showed
+everything and the title matched nothing a reader would type. `home.js` matches
+on the data attributes only now.
+
+---
+
+## website/templates/snippets/taxfinished.html
+
+### Module
+
+This snippet was still shaped for Materialize, and a reader reported the page
+arriving as one undifferentiated column: under Tailwind's preflight the bare
+`<h4>` and `<h5>` had no size and no weight, so both headings read as body text.
+The redesigned `taxprepare.html` beside it already carried its own classes.
+
+The three buttons were each wrapped in `<div class="w-1/3">` with no flex parent,
+so they stacked vertically at a third of the width apiece. The agreement was four
+paragraphs separated by `<br><br>` and numbered by hand; it is an `<ol>`, which
+is what it always was.
+
+### The contact links
+
+They were four empty `<a>` elements with the label pushed off-screen by
+`text-indent: -99999px` and the icon coming from `img/social/social-c.png`, a
+sprite sheet no longer in the tree. With the image gone they rendered as four
+blank 32x32 boxes: a paragraph asking the reader to get in touch, followed by
+nothing to click.
+
+---
+
+## website/templates/profile_addresses.html
+
+### The button hierarchy
+
+Every action was a plain `btn`, so "Remove" - which is irreversible and asks for
+confirmation - looked exactly like "Make primary", and "Add address", the reason
+most people open this page, looked like neither.
+
+---
+
+## website/templates/snippets/asas/meta.html
+
+### The metadata list
+
+It was a `<dl>` whose children were plain `<div>`s with the label written into
+the text, so it announced a list with no terms and no definitions in it - the one
+structure a screen reader could have used to read "Total supply" and its number
+as a pair.
+
+---
+
+## website/templates/snippets/nonval.html
+
+### The amount
+
+Observed in production on 2026-09-18 against `BNFIREKG…`: a null `asset` in a
+filter argument took the whole address page down with a 500. This is the shape
+`snippets/asas/program.html` was then guarded against too.
+
+---
+
+## website/templates/base_home.html
+
+### Module
+
+These pages kept the arrangement the profile section left behind on 2026-08-22: a
+four-column grid with the content in three of them and a narrow rail in the
+fourth, carrying right-aligned breadcrumbs and whatever the page had spare. On
+home that rail held one box printing the reader's email three times, and
+three-quarters of the column was empty; on the bundle forms it held a list of
+other bundles, which is real content wedged into a gutter.
+
+The old shell put the main column first so a phone met the content before the
+navigation. A single column does that by construction.
+
+---
+
+## website/templates/profile_api.html
+
+### Module
+
+**The copy controls were dead.** `site.js` binds `copyToClipboard` to `.copy` and
+copies `$(this).prev()`; both clipboard spans here carried `cursor-pointer` and
+no `.copy`, so they said "click me" and did nothing. Three other templates -
+`snippets/asas/meta.html`, `nonval.html`, `nfts/item.html` - had it right, which
+is why this went unnoticed: the control looks identical and only this copy of it
+was inert.
+
+Rebuilt otherwise from a page that used `<br><br>` five times for spacing and put
+the tier in a right-hand column opposite the tokens, as though the two were
+comparable.
+
+---
+
+## website/templates/profile_account.html
+
+### Module
+
+Rebuilt from a 25-line page that used `<br><br>` twice for vertical spacing and
+`&nbsp;` for horizontal, inside a 7/5 column split holding one line of text on
+each side. The split was inherited from a denser page and made the tier and the
+deactivate link read as two comparable things placed side by side, when one is a
+status and the other is the most destructive action in the account.
+
+A solid red button in the middle of a settings page is inviting, which is the one
+thing deactivation must not be.
+
+---
+
+## website/templates/snippets/show_more.html
+
+### Module
+
+The rows are in the document already because the payload is in hand by the time
+the page renders: a round trip to reveal dust would cost more than the markup
+does, and the reader gets an instant answer instead of a spinner.
+
+"Show more" alone tells a reader nothing about whether it is worth the tap.
+
+---
+
+## The Materialize migration is finished
+
+Confirmed 2026-09-24: nothing under `website/templates/` or `website/static/`
+loads Materialize, no first-party script reads `window.M`, and every template
+extends `base.html` or one of its shells. What remains are prose references and
+two legacy stylesheets under `widgets/inhouse/historic/`.
+
+Three template comments still described the migration as under way, each
+claiming a Materialize counterpart that no longer exists - `base.html` ("this
+file becomes base.html when the last page moves off"), `snippets/modal_login.html`
+and `snippets/wallet_signing.html` (both "the Materialize original stays at
+<their own path>", a self-reference left by the rename). All three are corrected.
+
+`site.js` still carries two `M.` mentions, both in comments explaining what a
+call used to do. `snippets/wallet_signing.html` still explains why
+`browser-default` is absent, which is worth keeping: it is a class somebody
+would otherwise add back.
+
+---
+
+## website/templates/account/base_auth.html
+
+The Sign up / Log in pair was a Materialize `.tabs` widget, but it never was one:
+the two anchors are ordinary links to two different pages, and the child template
+marked the current one with `class="active"`.
+
+The wide-screen order - providers left of the form - is the order the old
+`push-m6`/`pull-m6` pair produced.
+
+---
+
+## website/templates/snippets/taxprepare.html
+
+Every hint on this page was a Materialize tooltip: `.tooltipped` with
+`data-tooltip` and `data-position`, initialised by `$.fn.tooltip()`. That plugin
+left with Materialize and `tax.js` guards the call, so **the hints rendered as
+nothing at all** - the "Not implemented yet" note on every provider but Koinly,
+and both option help texts from `core/forms.py`, were invisible. `.providertip`
+went with the plugin call that was its only reader.
+
+---
+
+## website/templates/profile.html
+
+`{{ field }}` was rendered *before* `{{ field.label_tag }}`, which is a
+Materialize floating-label arrangement; without it the page read
+"2EVGZ4... Address:" - value first, label after.
+
+The widgets in `core/forms.py` carry no class, so they rendered with no border at
+all: the name fields were invisible and only their labels showed.
+
+Every control was a filled button, so Update carried no more weight than Social.
+
+---
+
+## website/templates/index.html
+
+A lone theme switcher floating above the logo made it the first thing on the
+page, which is not what it is worth - hence `footer_appearance`.
+
+The provider icons were `{% templatetag openblock %} static %}` calls, but there
+is no `static/icons/` directory any more, so nginx's `try_files` fallback had
+been quietly serving `empty.png` in place of both.
+
+---
+
+## website/templates/export.html
+
+`mb-10` on the page header is load-bearing: `test_page_headers` finds the header
+by it.
+
+---
+
+## website/templates/tokenomics.html
+
+This page had its Tailwind wrappers already - the centred column, `space-y-4`,
+the muted body colour - around content still written the way Materialize left it:
+every list a run of `&#8226;` characters and `<br>` tags inside one `<p>`. So the
+five facts under Token Overview were one paragraph, and that is what a screen
+reader announced. The table was a bare `<table>`, browser default, no borders and
+no padding.
+
+---
+
+## Smaller templates: what was moved out of them
+
+**`snippets/taxprocessing.html`** — the heading was a bare `<h4>` followed by a
+`<br>`, which under Tailwind's preflight is body text followed by a blank line.
+Same shape as `taxfinished.html`.
+
+**`disclaimer.html`** — the first page on the DaisyUI base. Its sections were
+`row` + `col s12` purely to get one readable column, so they became a capped
+measure and spacing utilities: no grid is needed to replace a grid that was not
+doing any grid work.
+
+**`account/snippets/already_logged_in.html`** — was a Materialize `.chip` with a
+close icon that closed nothing. There was no handler behind it.
+
+**`features.html`** — the lead-in read "ASASTATS is used for:", copied from the
+token page's Utility section. These bullets are about the tracker, not the token.
+Removed rather than reworded, because every other feature below is bullets with
+no lead-in.
+
+**`subscriptions.html`** — the "1. 2. 3." were literal text, so nothing announced
+the steps as a sequence and nothing would renumber them if one were added.
+
+**`about.html`** — the pull quote was a line of text in an unclosed paragraph, so
+nothing said it was a quotation.
+
+**`bundlename_edit.html`** — deletion was a red link three lines under Save.
+
+**`snippets/evm_signing.html`** — its comment said `data-notice` is styled by
+*both* stylesheets so the snippet needs no Materialize/DaisyUI variant. There is
+one stylesheet now; the snippet is still the single EVM container shared by the
+authorize and link pages, which is the part worth keeping.
+
+**`snippets/theme_icon.html`** — a half-filled circle reads as light/dark at that
+size, where a sun or moon would claim a state the control does not always have.

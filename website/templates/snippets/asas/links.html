@@ -1,15 +1,13 @@
 {% load static %}
 {% load core_extras %}
-{% comment %}
-  Provider links for one asset -- the row of small marketplace and explorer
-  icons under an open entry.
-
-  The wrapper used to be opened in one `{% templatetag openblock %} if %}` and
-  closed in another, with the loop between them. It rendered correctly, but the
-  two halves could drift apart independently and nothing would report it: the
-  nesting guard strips Django tags before walking the markup, so it sees a
-  balanced pair whatever the conditions say. One condition around the whole
-  block cannot come apart.
+{% comment %} Provider links for one asset: the row of marketplace and explorer icons
+   under an open entry.
+   
+   **One condition around the whole block**, never a `{% templatetag
+   openblock %} if %}` opening the wrapper and another closing it. That
+   rendered correctly but could drift silently, because the nesting guard
+   strips Django tags before walking the markup and sees a balanced pair
+   whatever the conditions say.
 {% endcomment %}
 {% if "Lofty" not in asset.name and asset.unit|slice:":4" != "anmc" and asset.links %}
 <div class="mt-3 flex flex-wrap items-center justify-end gap-3">

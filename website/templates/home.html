@@ -2,27 +2,17 @@
 {% load i18n %}{% load static %}{% load core_extras %}
 {% comment %} The reader's bundles.
 
-  Rebuilt on 2026-08-22 from a page that centred every line, spaced with
-  `<br><br>`, and put each bundle's name *above* the card rather than in it --
-  so a bundle was three separate things: a centred name, a centred "Historic
-  data" link, and a wide box whose entire area was a fourth link to a fourth
-  place. Nothing said which of the three destinations a click would take, and a
-  column of centred names of different widths has no edge to scan down.
-
-  The rail is gone with the shell. It held one box printing
-  `profile.name`, `user.username` and `user.email` -- which are the same
-  address three times on every account that signed up with one.
-
-  Contracts `home.js` and the functional tests depend on, none of them styling:
+  **Contracts `home.js` and the functional tests depend on**, none of them
+  styling:
 
     `.bundlenames`      the sorter replaces its contents with its own children
-                        re-sorted, so each card must stay a **direct div child**
+                        re-sorted, so each card must stay a direct div child
     `.cardiv`           what the filter shows and hides
     `data-name` etc.    the sort keys and what the filter matches on
     `#id_panel`         the sort/filter block; `test_home_filtering` asserts it
                         is absent for a reader with too few bundles to sort
     `#id_name` `#id_size` `#id_created` `#id_modified`  the sort radios, whose
-                        ids are read as the field name -- `this.id.slice(3)`
+                        ids are read as the field name - `this.id.slice(3)`
     `#id_desc` `#id_filter` `#id_add` `#id_profile`
 {% endcomment %}
 {% block title %}Home page - {{ WEBSITE_NAME }}{% endblock %}
@@ -32,40 +22,18 @@
 {% block breadcrumbs %}Home{% endblock %}
 
 {% block middle_section %}
-{% comment %} The account, once, under the heading rather than in a gutter.
+{% comment %} The account chip. `profile.name` rather than the email, because
+   it already answers "what do we call this reader"; the email follows when
+   there is one and it is not what was just said.
 
-   `profile.name` rather than the email, because it already answers "what do we
-   call this reader": first and last name if either is set, else the username,
-   else the local part of the email. Naming the email directly ignored a name
-   the reader had gone and set, and left an account without one -- a wallet
-   sign-in has no email at all -- falling back through a different chain.
+   **Exactly one link and one tab stop**, everything inside it: two adjacent
+   links to the same page are two tab stops for one destination. `id_profile`
+   is how the functional tests reach the profile page, and the identicon is
+   `aria-hidden` because the link already says whose account it is.
 
-   The email comes after it when there is one and it is not already what we
-   just said. Both are inside the link: it is one thing, "your account", and
-   two adjacent links to the same page would be two tab stops for one
-   destination.
-
-   The space between the two spans is load-bearing and must not be tidied away:
-   without real whitespace the accessible name of the link is "Ada
-   Lovelacenamed@example.com" -- one word, read as one word. {% endcomment %}
-{% comment %} **It was a grey line of text that did not look like anything.**
-   A name and an email set in the same muted colour as the rest of the page,
-   underlined only on hover, directly under a heading -- a reader had no reason
-   to think it went anywhere, and the profile page is where the subscription
-   address is authorised, so not finding it is not a small cost.
-
-   So it is a target rather than a line: a bordered chip, the name at full
-   contrast, the destination said out loud. `identicon` draws the mark from the
-   reader's own subscription address, which is the thing that identifies this
-   account in this product -- no upload, no storage, nothing to moderate, and
-   every account has one the day it is created, including the
-   wallet-authenticated ones a social avatar would leave blank.
-
-   Still exactly one link and one tab stop: everything here goes to the same
-   page, and two adjacent links to one destination is two tab stops for one
-   thing. `id_profile` is kept -- it is how the functional tests reach the
-   profile page from here. The mark is `aria-hidden`, because the link already
-   says whose account it is. {% endcomment %}
+   **The space between the two spans must not be tidied away.** Without real
+   whitespace the accessible name is "Ada Lovelacenamed@example.com", read as
+   one word. {% endcomment %}
 <p class="-mt-2 mb-5">
   <a class="group inline-flex max-w-full items-center gap-3 rounded-box border border-base-300 px-3 py-2 no-underline transition-colors hover:border-primary hover:bg-base-200"
      href="{% url 'profile' %}" id="id_profile">
@@ -94,31 +62,21 @@
   </div>
 
   {% if user.profile.show_sort_and_filter %}
-  {% comment %} Sorting and filtering, in the card header rather than floating
-     above the page. The radios keep their ids and their `name=sort`; what
-     changed is that they are a segmented control instead of two ragged
-     fieldsets with the second pushed down five units so its rows never lined
-     up with the first's.
-
-     `sr-only` on the input rather than `hidden`: a hidden radio is not
-     focusable, and arrow-key navigation within a radio group is the reason to
-     use radios here at all. {% endcomment %}
+  {% comment %} **`sr-only` on the input rather than `hidden`**: a hidden radio
+     is not focusable, and arrow-key navigation within the group is the reason
+     to use radios here at all. {% endcomment %}
   <div id="id_panel" class="space-y-2 border-b border-base-300 px-5 py-4">
-    {% comment %} Two rows, not one. Four sort options, a label and a
-       Descending toggle do not fit a card's width beside each other: the
-       segmented group's own content sets a floor it cannot shrink below, so the
-       row pushed past both edges of the card and clipped the label.
-
-       `min-w-0` on the group and on each label, so they can shrink at all -- a
-       flex item's default `min-width: auto` refuses to go below its content,
-       which is what made `flex-1` here do nothing. {% endcomment %}
+    {% comment %} Two rows, because four sort options, a label and a Descending
+       toggle do not fit a card's width together. `min-w-0` on the group and on
+       each label so they can shrink: a flex item's default `min-width: auto`
+       refuses to go below its content, which is what made `flex-1` do nothing.
+    {% endcomment %}
     <div class="flex items-center gap-3">
       <span class="text-xs font-semibold uppercase tracking-wide text-base-content/50" id="sort-label">Sort</span>
       <div class="flex min-w-0 flex-1 gap-1 rounded-field bg-base-200 p-1" role="group" aria-labelledby="sort-label">
-        {% comment %} Written out rather than looped: the id *is* the contract
-           -- `changeSorting` reads the sort field as `this.id.slice(3)` -- and
-           a loop building the id hides the four names from anyone grepping for
-           them. {% endcomment %}
+        {% comment %} Written out rather than looped: the id *is* the contract,
+           and a loop building it hides these four names from a grep.
+        {% endcomment %}
         <label class="min-w-0 flex-1 cursor-pointer truncate rounded-field px-2 py-1.5 text-center text-sm font-medium has-[:checked]:bg-base-100 has-[:checked]:shadow-sm">
           <input class="sr-only" type="radio" name="sort" id="id_name" checked><span>Name</span>
         </label>

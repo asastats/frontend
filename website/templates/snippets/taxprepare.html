@@ -1,20 +1,13 @@
 {% load core_extras %}
-{% comment %}
-  The tax-export form: which provider's format to produce, and two options
-  about what goes into it.
-
-  Every hint on this page was a Materialize tooltip -- `.tooltipped` with
-  `data-tooltip` and `data-position`, initialised by `$.fn.tooltip()`. That
-  plugin left with Materialize, so `tax.js` guards the call and the hints have
-  been rendering as nothing at all: the "Not implemented yet" note on every
-  provider but Koinly, and both option help texts from `core/forms.py`, were
-  invisible. They are DaisyUI tooltips now -- CSS only, `data-tip`, nothing to
-  initialise -- and the two option hints are also written out beneath their
-  labels, because a hint a reader has to hover to discover is one most readers
-  never discover.
-
-  `#process_form` and `#process` are `tax.js` hooks. `.providertip` is gone
-  with the plugin call that was its only reader.
+{% comment %} The tax-export form: which provider's format to produce, and two options
+   about what goes into it.
+   
+   The hints are DaisyUI tooltips - CSS only, `data-tip`, nothing to
+   initialise - and the two option hints are also written out beneath their
+   labels, because a hint a reader has to hover to discover is one most
+   readers never discover.
+   
+   `#process_form` and `#process` are `tax.js` hooks.
 {% endcomment %}
 <form method="POST" action="." id="process_form" class="form-fields mt-6 space-y-6">
 {% csrf_token %}

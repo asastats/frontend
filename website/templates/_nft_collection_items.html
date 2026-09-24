@@ -1,35 +1,30 @@
-{% comment %}
-  One collection's items, in full, swapped into the card a reader opened.
-
-  The page renders these already from the light payload - identity, image,
-  price, traits, urls - so what this replaces them with is the same items
-  carrying their listings and purchase history. A replacement rather than an
-  enrichment because the item templates own that markup, and patching fields
-  into rendered DOM would be a second place deciding what an NFT looks like.
-
-  **Only the items.** The thumbnails a collection shows are not in here: the
-  light payload already carries every NFT's thumbnail, so the strip rendered at
-  page load is already right and re-rendering it would replace it with itself.
-
-  **The item template is chosen by the view, not branched on here.** The two
-  designs' items are not variations - design 1 stacks identity, art and figures
-  in three columns, design 2 runs every figure down a shared money column - so
-  the choice is a real one; making it in the view keeps this a flat loop, which
-  is also the only shape `test_core_template_nesting_is_balanced` can check,
-  since its stripper cannot see past a `{% templatetag openblock %} for
-  {% templatetag closeblock %}` inside an alternative arm.
-
-  Required context:
-    coll           one entry from account.nftcollections, or None on failure
-    item_template  path to the layout's item template
+{% comment %} One collection's items, in full, swapped into the card a reader opened.
+   
+   The page already renders these from the light payload; this replaces them
+   with the same items carrying their listings and purchase history. A
+   replacement rather than an enrichment, because the item templates own that
+   markup.
+   
+   **Only the items.** The thumbnail strip is not in here: the light payload
+   already carries every NFT's thumbnail, so re-rendering it would replace it
+   with itself.
+   
+   **The item template is chosen by the view, not branched on here.** That
+   keeps this a flat loop, which is the only shape
+   `test_core_template_nesting_is_balanced` can check - its stripper cannot
+   see past a `{% templatetag openblock %} for {% templatetag closeblock %}`
+   inside an alternative arm.
+   
+   Context: coll (one account.nftcollections entry, or None on failure),
+   item_template (the layout's item template).
 {% endcomment %}
 {% for row in coll.nfts %}
   {% include item_template with row=row %}
 {% empty %}
-  {% comment %} Either the fetch failed or the collection really is empty.
-     Saying so beats a blank body that reads as "this holds nothing" - and the
-     reader can retry by closing and opening, since the trigger fires once per
-     element rather than once per page. {% endcomment %}
+  {% comment %} Either the fetch failed or the collection really is empty. Saying so beats
+     a blank body that reads as "this holds nothing", and the reader can retry
+     by closing and opening, since the trigger fires once per element.
+  {% endcomment %}
   <p class="nft-items-unavailable text-xs opacity-70">
     {% if coll %}This collection holds no items.{% else %}The details for this collection could not be loaded. Close and open it again to retry.{% endif %}
   </p>

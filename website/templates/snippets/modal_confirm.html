@@ -1,16 +1,11 @@
 {% load static %}{% load i18n %}
-{% comment %}
-  Confirmation dialog for the destructive email actions, included only by
-  account/email.html.
-
-  A native <dialog>, like the swap and login ones: the browser owns the
-  backdrop, focus capture and Escape, so there is no M.Modal here and the
-  `.modal-close` class -- which was Materialize's way of wiring the buttons --
-  is gone with it. emails.js opens and closes it explicitly.
-
-  The ids are the contract with emails.js: #id_modalconfirm, #id_pconfirm,
-  #id_confirm (whose data-target carries which action was asked for) and
-  #id_cclose.
+{% comment %} Confirmation dialog for the destructive email actions, included only by
+   `account/email.html`. A native `<dialog>`, opened and closed explicitly by
+   `emails.js`.
+   
+   The ids are the contract with `emails.js`: #id_modalconfirm, #id_pconfirm,
+   #id_confirm (whose data-target carries which action was asked for) and
+   #id_cclose.
 {% endcomment %}
 <dialog id="id_modalconfirm" class="w-full max-w-md rounded-box border-0 bg-base-100 p-0 text-base-content backdrop:bg-black/50">
   <div id="id_confirmcontent" class="p-6 text-center">

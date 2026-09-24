@@ -1,33 +1,21 @@
 {% extends 'base_profile.html' %}
 {% load static %}
 {% load core_extras %}
-{% comment %} Linking a second wallet to an existing profile.
+{% comment %}
+  Linking a second wallet to an existing profile. Two wallet families, each its
+  own named section.
 
-  Two wallet families, two very different sets of software, and previously two
-  bare `<div>`s in a row with nothing saying where one ended and the next began.
-  A reader with only an Algorand wallet met a heading-less empty area below
-  their own wallets and no way to know it was for something else. They are
-  sections now, each named.
-
-  Three contracts this page has to keep, none of them obvious from the markup:
+  **Three contracts, none of them obvious from the markup:**
 
   * `#wallet-connect` and `#evm-wallet-connect` are found by the wallet bundle
-    by id, and `data-api-base` on each is what points them at the *link*
-    endpoint rather than the login one. Changing either silently turns this page
-    into the sign-in page.
-  * `#app-error` is revealed by the bundle assigning `style.display = "block"`,
-    so its `style="display:none"` is the contract and not a stray inline style.
+    by id, and `data-api-base` on each points them at the *link* endpoint
+    rather than the login one. Changing either silently turns this page into
+    the sign-in page.
+  * `#app-error`'s `style="display:none"` is a contract, not a stray inline
+    style: the bundle reveals it by assigning `style.display = "block"`, and
     `wallet/src/main.test.ts` asserts on exactly that markup.
   * The EVM half is `snippets/evm_signing.html`, shared with the authorize
-    page. This template used to hand-roll its own copy of that container, and
-    the copy was wrong twice over: it had no `#evm-app-error`, so a reader with
-    no EVM wallet met an empty box and no explanation
-    (`evmWalletComponent.showNoWallets` looks for that id and does nothing
-    without it); and it read `wallet_connect_project_id`, which nothing
-    provides. The context processor supplies `WALLET_CONNECT_PROJECT_ID`, so
-    the attribute was always empty and WalletConnect was unconfigured on this
-    page alone. Using the snippet fixes both and stops the two pages drifting
-    again.
+    page, so the two cannot drift.
 {% endcomment %}
 {% block title %}Link address to profile - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Link an Algorand or EVM address to the user's profile.{% endblock %}
@@ -63,16 +51,12 @@
     </div>
   </section>
 
-  {% comment %} There is no `#app-error` here, and that is deliberate.
-
-     `snippets/wallet_cards.html` -- included by the Algorand section above --
-     already renders one, and `main.ts` reveals it with
-     `document.getElementById("app-error")`, which returns the *first* in
-     document order. A second one here was therefore a duplicate id whose only
-     effect was to be invalid HTML: the bundle never reached it, so a page that
-     could not fetch its wallet list showed the snippet's banner and left this
-     one hidden forever. `functional_tests/test_profile_link_address.py` pins
-     that there is exactly one.
+  {% comment %} **No `#app-error` here, deliberately.**
+     `snippets/wallet_cards.html` above already renders one, and `main.ts`
+     reveals it by `getElementById`, which returns the first in document order.
+     A second would be a duplicate id the bundle never reaches.
+     `functional_tests/test_profile_link_address.py` pins that there is exactly
+     one.
   {% endcomment %}
 
   <div>

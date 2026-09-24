@@ -2,19 +2,15 @@
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
-{% comment %}
-  Shared shell for the login and signup pages.
-
-  Two changes worth knowing about beyond the styling:
-
-  * The Sign up / Log in pair was a Materialize `.tabs` widget, but it never
-    was one -- the two anchors are ordinary links to two different pages, and
-    the child template marked the current one with `class="active"`. They are
-    a segmented control now, and the current page is marked with
-    `aria-current="page"` so the state is announced rather than only painted.
-  * allauth renders these form fields itself, with no classes on the widgets,
-    so the inputs are styled through the `.auth-form` scope in input.css
-    rather than by adding classes we cannot reach.
+{% comment %} Shared shell for the login and signup pages.
+   
+   The Sign up / Log in pair is a segmented control, and the current page is
+   marked with `aria-current="page"` so the state is announced rather than
+   only painted.
+   
+   **allauth renders these form fields itself, with no classes on the
+   widgets**, so the inputs are styled through the `.auth-form` scope in
+   `input.css` rather than by adding classes we cannot reach.
 {% endcomment %}
 {% block content %}
 <div class="mx-auto max-w-4xl">
@@ -30,10 +26,9 @@
        {% block login_tab %}target="_self" href="{% url 'account_login' %}"{% endblock %}>Log in</a>
   </nav>
 
-  {% comment %}
-    On wide screens the providers sit left of the form, which is the order the
-    old `push-m6`/`pull-m6` pair produced. On narrow screens the form comes
-    first, because that is what someone arriving to log in wants.
+  {% comment %} On wide screens the providers sit left of the form; on narrow screens the
+     form comes first, because that is what someone arriving to log in
+     wants.
   {% endcomment %}
   <div class="mt-8 grid gap-10 md:grid-cols-2">
 

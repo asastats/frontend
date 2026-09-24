@@ -1,17 +1,13 @@
 {% load static %}{% load i18n %}
-{% comment %}
-  DaisyUI login modal, for pages on base.html. The Materialize original
-  stays at snippets/modal_login.html until base.html is retired -- both exist
-  for the same reason the two base templates do.
-
-  A native <dialog>: the browser owns the backdrop, focus capture and Escape,
-  so nothing here needs M.Modal, and the tabs are switched by
-  static/js/authmodal.js rather than M.Tabs.
-
-  The ids are the contract addressed by the functional tests, the allauth POST
-  and the wallet bridge -- #modalLogin, #modal-tab-login/social/wallet,
-  #id_login_modal, #id_password_modal, #id_cta_modal, #id_cancel -- so they are
-  unchanged; only the presentation differs.
+{% comment %} The login modal.
+   
+   A native `<dialog>`: the browser owns the backdrop, focus capture and
+   Escape, and `static/js/authmodal.js` switches the tabs.
+   
+   **The ids are the contract** addressed by the functional tests, the
+   allauth POST and the wallet bridge: #modalLogin,
+   #modal-tab-login/social/wallet, #id_login_modal, #id_password_modal,
+   #id_cta_modal, #id_cancel.
 {% endcomment %}
 <dialog id="modalLogin" class="w-full max-w-2xl rounded-box border-0 bg-base-100 p-0 text-base-content backdrop:bg-black/50">
   <div class="p-6">

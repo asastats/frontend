@@ -68,11 +68,23 @@ def _selected_classes():
     return found - set(NOT_IN_TEMPLATES)
 
 
+#: Django's two comment forms, stripped before the markup is searched.
+COMMENTS = re.compile(r"{%\s*comment\s*%}.*?{%\s*endcomment\s*%}|\{#.*?#\}", re.S)
+
+
 def _template_markup():
+    """Return every template's markup, with the comments taken out.
+
+    **The comments have to go, or a hook can be kept alive by prose about it.**
+    ``.collapsible`` passed this test for as long as `address.html` explained
+    that ``<ul class="collapsible">`` had become ``.section-list`` - the string
+    the search looks for, inside a comment, describing markup that no longer
+    existed. The script initialising them was dead the whole time.
+    """
     text = []
     for directory in settings.TEMPLATES[0]["DIRS"]:
         for path in Path(directory).rglob("*.html"):
-            text.append(path.read_text(errors="ignore"))
+            text.append(COMMENTS.sub("", path.read_text(errors="ignore")))
     return "\n".join(text)
 
 

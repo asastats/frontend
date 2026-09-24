@@ -5,21 +5,12 @@
 {% comment %}
   Shell for the three bundle-name forms: add, edit and delete.
 
-  Rebuilt on 2026-08-22 with the shell. The fields sat in nine of twelve columns
-  with the actions in the other three, so Save was a third of a page to the
-  right of the last field it saves, level with the first -- and the list of
-  other bundles was wedged into the rail beside them, which is real navigation
-  in a gutter.
+  The fields in a card, the actions in that card's footer beside what they act
+  on, and the other bundles as their own card below. One primary action per
+  view, and no icons - the buttons say what they do.
 
-  Now: the fields in a card, the actions in that card's footer beside what they
-  act on, and the other bundles as their own card below. One primary action per
-  view.
-
-  Kept from the previous pass, both still true:
-
-  * the `public` field's help text is a DaisyUI `tooltip` -- CSS only, nothing
-    to initialise, and nothing to break when a framework goes;
-  * no icons. The buttons say what they do.
+  The `public` field's help text is a DaisyUI `tooltip`: CSS only, nothing to
+  initialise.
 
   Contracts: `#id_form`, `#id_submit`, and the field ids Django generates.
 {% endcomment %}
@@ -48,8 +39,7 @@
     </div>
 
     {% comment %} The actions, in the footer of the card holding the fields they
-       act on. The primary one first: it is what the reader opened this page to
-       do, and it was previously indistinguishable from Back. {% endcomment %}
+       act on, the primary one first. {% endcomment %}
     <div class="flex flex-wrap items-center gap-3 border-t border-base-300 px-5 py-4">
       <button class="primaryAction btn submit btn-sm {% block bundlename_submit_color %}btn-primary{% endblock %}" id="id_submit" type="submit">{% block bundlename_submit_text %}{% endblock %}</button>
       {% block back_button %}<a class="btn btn-ghost btn-sm" href="{% url 'home' %}">Back</a>{% endblock %}
@@ -61,18 +51,13 @@
 {% endblock %}
 
 {% block left_section %}
-{% comment %} The reader's bundles, as a card rather than a rail. It is
-   navigation between siblings, which is worth a full-width row each and is
-   unreadable in a gutter. Rendered only when there is somewhere else to go.
+{% comment %} The reader's other bundles: sibling navigation, so the list
+   includes the one being edited, marked with `aria-current="page"`.
 
-   The list includes the one being edited, marked with `aria-current="page"` --
-   "which of these am I looking at" is half of what sibling navigation is for,
-   and a list that silently omits the current entry makes the reader count.
-
-   Shown when there is somewhere else to go, which is not the same test on
-   every page: editing your only bundle gives a one-row list containing only
-   where you already are, while *adding* one makes every existing bundle
-   somewhere else. So: more than one, or no current bundle at all. {% endcomment %}
+   **"Somewhere else to go" is not the same test on every page.** Editing your
+   only bundle gives a one-row list containing only where you already are,
+   while *adding* one makes every existing bundle somewhere else - hence more
+   than one, or no current bundle at all. {% endcomment %}
 {% if object.profile.bundlenames|length > 1 or not bundlename %}
 <section class="rounded-box border border-base-300 bg-base-100">
   <div class="border-b border-base-300 px-5 py-4">
@@ -80,11 +65,6 @@
   </div>
   <div class="divide-y divide-base-300">
   {% for element in object.profile.bundlenames %}
-    {% comment %}
-      The current entry was `class="active"`, which Materialize painted. It is
-      `aria-current="page"` now, so the state is announced as well as painted --
-      the same change the login/signup tabs got.
-    {% endcomment %}
     <a href="{% url 'bundlename_edit' element.name %}"
        class="flex items-baseline justify-between gap-3 px-5 py-3 text-sm hover:bg-base-200 aria-[current=page]:bg-base-200 aria-[current=page]:font-medium"
        {% block active_link %}{% endblock %}>

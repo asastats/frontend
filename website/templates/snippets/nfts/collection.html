@@ -11,14 +11,11 @@
   class on the images is what `deferImages` collects, so the large image is
   fetched only after the page has loaded.
 {% endcomment %}
-{% comment %} **The request lives on the `<details>`, not on the div it fills** -
-   see `snippets/dynamic/collection.html` for the full reason. Short version:
+{% comment %} **The request lives on the `<details>`, not on the div it fills**:
    htmx 4 has no `from:` modifier, so `from:closest details` never bound and
-   opening a collection fetched nothing.
-
-   Outside the tag, not between its attributes, for the reason
-   `profile_addresses.html` gives.
-{% endcomment %}
+   opening a collection fetched nothing. The comment sits outside the tag
+   rather than between its attributes, for the reason `profile_addresses.html`
+   gives. {% endcomment %}
 <details id="f{{ coll.name|slugify }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100{% if shown and index >= shown %} folded{% endif %}"
          hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}"
          hx-trigger="toggle once"
@@ -26,19 +23,12 @@
          hx-swap="innerHTML">
   <summary class="nft item-header cursor-pointer list-none p-3{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
     {% comment %}
-      What you hold, the thumbnails, what it is worth.
-
-      The three sit in one grid cell rather than three columns: the thumbnails
-      have to centre on the middle of the header itself, and a middle column
-      only centres them when the text either side happens to be the same
-      width. Stacked, each cell aligns to its own edge and the thumbnails to
-      the centre of the row.
-
-      The thumbnails are drawn last and lifted, so where a long collection name
-      or a wide value reaches them they cover it rather than being squeezed --
-      the arrangement the old design had. The row grows to whichever cell is
-      tallest, so a collection with sixty of them still gets the height it
-      needs.
+      What you hold, the thumbnails, what it is worth - stacked in one grid
+      cell rather than three columns, because the thumbnails have to centre on
+      the header itself and a middle column only centres them when the text
+      either side happens to be the same width. The thumbnails are drawn last
+      and lifted, so a long name or a wide value is covered rather than
+      squeezing them.
     {% endcomment %}
     <div class="itemrow">
       <div class="nftleft itemleft">
@@ -56,32 +46,22 @@
     </div>
   </summary>
   <div class="item-body border-t border-base-300 p-3">
-    {% comment %} **Filled in on first open, and empty until then.** The page's
-     payload carries every item already, but without the listings and purchase
-     history that only an opened collection shows - those are fetched once, for
-     the collection the reader actually expanded.
+    {% comment %} Filled on first open with the listings and purchase history
+     only an opened collection shows.
 
-     **Above `ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS`, nothing is written here.**
-     These items are invisible until the card opens - a closed `<details>` shows
-     none of them - and then thrown away, because the fetch replaces them. On one
-     real account that was 1,990 cards carrying a 9,698-character body each:
-     19.3 MB of the page's 22, 87.9% of it markup nobody could ever see, and
-     152,294 `<div>` elements for a browser to lay out before it would scroll at
-     all. The page never finished loading.
+     **Above `ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS` nothing is written here**,
+     because a closed `<details>` shows none of it and the fetch then replaces
+     it. Under the threshold the items are still rendered, deliberately: they
+     are what lets the NFT filter match inside an unopened collection, since
+     `showMatchedNodes` pairs a thumbnail's `t<id>` with its item's `f<id>`.
 
-     Under the threshold they are still rendered, and deliberately: they are what
-     lets the NFT filter match inside a collection the reader has not opened,
-     since `showMatchedNodes` pairs a thumbnail's `t<id>` with its item's
-     `f<id>`. See the setting for why that trade flips at scale.
+     `<details>` fires `toggle` on itself, including when `address.js` reopens
+     a remembered collection by setting `open`, so a restored card fills itself
+     with no extra wiring.
 
-     `toggle once` rather than a click handler: `<details>` fires `toggle` when
-     it opens, including when `address.js` reopens a remembered collection by
-     setting `open`, so a restored card fills itself with no extra wiring. Once
-     per element, so closing and reopening costs nothing - and a failed fetch
-     can be retried by doing exactly that.
-
-     The name is a query parameter because it is arbitrary text a creator chose,
-     and an empty one is a real collection: the NFTs belonging to none. {% endcomment %}
+     The name is a query parameter because it is arbitrary text a creator
+     chose, and an empty one is a real collection: the NFTs belonging to none.
+    {% endcomment %}
      <div class="space-y-3" id="items-{{ coll.name|slugify }}">
       {% if defer %}<p class="py-2 text-sm text-base-content/60">Loading items&hellip;</p>{% else %}{% for row in coll.nfts %}{% include "snippets/nfts/item.html" with row=row %}{% endfor %}{% endif %}
     </div>

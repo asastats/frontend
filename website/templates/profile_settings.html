@@ -31,10 +31,9 @@
       <div class="mt-4">
         <button type="submit" class="btn btn-primary" id="id_save_router">Save</button>
       </div>
-      {% comment %} Inside the htmx-swapped section on purpose: the form
-         carries `hx-select="#id-section-…"`, so the toast container in
-         base.html is discarded from the response and the confirmation
-         would be consumed unseen. {% endcomment %}
+      {% comment %} Inside the swapped section on purpose: `hx-select` drops
+         base.html's toast container, so a confirmation rendered there would be
+         consumed unseen. {% endcomment %}
       {% include "snippets/messages_section.html" with section="router" %}
     </form>
     </div>
@@ -64,10 +63,9 @@
       <div class="mt-4">
         <button type="submit" class="btn btn-primary" id="id_save_explorer">Save</button>
       </div>
-      {% comment %} Inside the htmx-swapped section on purpose: the form
-         carries `hx-select="#id-section-…"`, so the toast container in
-         base.html is discarded from the response and the confirmation
-         would be consumed unseen. {% endcomment %}
+      {% comment %} Inside the swapped section on purpose: `hx-select` drops
+         base.html's toast container, so a confirmation rendered there would be
+         consumed unseen. {% endcomment %}
       {% include "snippets/messages_section.html" with section="explorer" %}
     </form>
     {% else %}
@@ -88,11 +86,10 @@
       <h2 class="text-base font-medium">Real-time refresh</h2>
     </div>
     <div class="space-y-4 px-5 py-5">
-      {% comment %} **The second sentence differs by tier, and a subscriber gets
-         none.** `linked_only` is the free band's restriction and only the free
-         band's - `allowance.py` sets it True for permission 0 and False for
-         every paid tier - so this is the same flag the allowance enforces
-         rather than a second definition of "free" that could drift from it. {% endcomment %}
+      {% comment %} **The second sentence differs by tier**, off `linked_only` -
+         the free band's restriction, set in `allowance.py` - so the copy reads
+         the same flag the allowance enforces rather than a second definition
+         of "free". {% endcomment %}
       <p class="max-w-prose text-sm text-base-content/70">
         Update an address page as each block arrives, instead of reloading it every minute.{% if liverefresh_terms.linked_only %}
         Only an address connected to your account can be tracked in real time.{% endif %}
@@ -110,14 +107,11 @@
         <span class="text-sm">Refresh on every block</span>
       </label>
       {% comment %} Off by default even for a reader entitled to it: the tier
-         buys the choice, not the behaviour. With it off, "refresh data" on the
-         address page keeps the sixty-second reload. {% endcomment %}
-      {% comment %} **The upgrade prompt, at the moment it means something.**
-         Every authenticated reader may now switch this on; what a subscription
-         buys is the limit coming off. Telling them the number here - rather
-         than letting the page quietly stop later - is the whole reason the
-         allowance exists, and `liverefresh_terms` is None for the tiers that
-         have none. {% endcomment %}
+         buys the choice, not the behaviour. {% endcomment %}
+      {% comment %} Every authenticated reader may switch this on; a subscription
+         buys the limit coming off. **Naming the number here is the point** -
+         a page that quietly stops later is indistinguishable from a broken
+         one. `liverefresh_terms` is None for the tiers with no limit. {% endcomment %}
       {% if liverefresh_terms %}
       <span class="mt-1 block text-xs text-base-content/60">
         Your plan includes
@@ -133,10 +127,9 @@
       {% include "snippets/messages_section.html" with section="liverefresh" %}
     </form>
     {% else %}
-    {% comment %} Unreachable on this deployment - the widget's free band admits
-       every authenticated reader - and kept deliberately: the bands live in
-       `widget.toml`, and a fork that removes the free one needs this branch to
-       have something to render. {% endcomment %}
+    {% comment %} Unreachable on this deployment, because the widget's free band
+       admits every authenticated reader. Kept because the bands live in
+       `widget.toml` and a fork that removes the free one needs this branch. {% endcomment %}
     <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Asastatser tier — open subscriptions">
       <div>
         <label class="flex items-center gap-3">
@@ -174,15 +167,14 @@
       <div class="mt-4">
         <button type="submit" class="btn btn-primary" id="id_save_layout">Save</button>
       </div>
-      {% comment %} Inside the htmx-swapped section on purpose: the form
-         carries `hx-select="#id-section-…"`, so the toast container in
-         base.html is discarded from the response and the confirmation
-         would be consumed unseen. {% endcomment %}
+      {% comment %} Inside the swapped section on purpose: `hx-select` drops
+         base.html's toast container, so a confirmation rendered there would be
+         consumed unseen. {% endcomment %}
       {% include "snippets/messages_section.html" with section="layout" %}
     </form>
-    {% comment %} Name what the reader cannot pick, and the tier that unlocks
-       it. A select showing two of four options otherwise leaves them to guess
-       whether the rest exist. {% endcomment %}
+    {% comment %} Name what the reader cannot pick and the tier that unlocks it:
+       a select showing two of four options leaves them guessing whether the
+       rest exist. {% endcomment %}
     {% with locked=user.profile.locked_layouts %}
     {% if locked %}
     <ul class="mt-4 space-y-1">
@@ -208,21 +200,15 @@
   </section>
 
   {% comment %} How many rows an address page opens before its "Show more".
-     Beside the layout preference, because both are about how that page is
-     arranged - and a reader looking for "how much of my account do I see at
-     once" looks here rather than under Themes.
 
-     **The one section on this page with no Save button, and that is not an
-     omission.** Every other preference here posts a form and is stored on the
-     account. This one lives in `localStorage`, because the address page it
-     governs is served from a cache shared between readers - see
-     `can_access_fold_setting` for why folding it into the cache key was
-     rejected. So it applies as it is chosen, on this browser, and the copy says
-     both.
+     **The one section here with no Save button, and that is not an omission.**
+     Every other preference posts a form and is stored on the account; this one
+     lives in `localStorage`, because the address page it governs is served
+     from a cache shared between readers. See `can_access_fold_setting`.
 
-     `data-fold-target` names which key a group's radios write and
+     `data-fold-target` names the key a group's radios write and
      `data-fold-default` what "Reset" puts back; `theme.js` reads both, so this
-     markup can live on any page without it knowing which.
+     markup can live on any page.
   {% endcomment %}
   <section class="rounded-box border border-base-300 bg-base-100" id="id-section-fold">
     <div class="border-b border-base-300 px-5 py-4">
@@ -252,11 +238,10 @@
         </div>
       </div>
       {% endfor %}
-      {% comment %} **Clearing the choice, which picking the default does not
-         do.** Every radio writes a value, and a stored value is what an address
-         page reads instead of the site's own default - so pressing "20" pins
-         20, where never having chosen follows `ADDRESS_INITIAL_ASSETS` wherever
-         it goes. This removes the keys. {% endcomment %}
+      {% comment %} **Clearing the choice, which picking the default does not do.**
+         A stored value is what an address page reads instead of the site's own
+         default, so pressing "20" pins 20 while never having chosen follows
+         `ADDRESS_INITIAL_ASSETS` wherever it goes. This removes the keys. {% endcomment %}
       <div class="mt-5 flex items-center gap-3 border-t border-base-300 pt-4">
         <button type="button" id="id-fold-reset" class="btn btn-ghost btn-xs"
                 data-fold-reset>

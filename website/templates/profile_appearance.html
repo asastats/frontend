@@ -1,21 +1,13 @@
 {% extends 'base_profile.html' %}
 {% load static %}
 {% comment %}
-  Appearance: pick a theme, seeing it rather than reading its name.
+  Appearance: pick a theme by seeing it rather than reading its name. Each
+  swatch is drawn with that theme's own tokens.
 
-  The header dropdown lists every theme by name, which is a list you scan
-  rather than choose from -- "abyss" and "nightfox" tell a reader nothing. Here
-  each theme renders its own swatch, drawn with that theme's own tokens, so the
-  choice is made by looking.
-
-  Three tabs rather than one long page. 57 swatches in a single column meant
-  scrolling past every dark theme to reach a light one, and the typeface
-  section -- an independent axis, and the only gated one -- was stranded at the
-  bottom where a reader had to already know it existed.
-
-  Light leads, matching the order the header dropdown lists the groups in.
-  static/js/theme.js then reselects whichever tab holds the active theme on
-  load, so the page opens where the reader already is.
+  Three tabs rather than one long page, light first to match the order the
+  header dropdown lists the groups in. `static/js/theme.js` then reselects
+  whichever tab holds the active theme, so the page opens where the reader
+  already is.
 {% endcomment %}
 {% block title %}Appearance - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Choose the theme and typeface used across {{ WEBSITE_URL }}.{% endblock %}

@@ -1,20 +1,13 @@
 /**
  * @file Page-scoped script for profile_authorize.
- * @description Sets the wallet test flag and initializing Materialize collapsibles.
- * 
- * Note: Include this in the page footer BEFORE the wallet bundle, ensuring 
- * the flag is set synchronously before the bundle attempts to read it. Kept 
- * page-local to prevent double-initialization of collapsibles globally.
+ * @description Sets the wallet test flag the bundle reads.
+ *
+ * Load this in the page footer BEFORE the wallet bundle, so the flag is set
+ * synchronously before the bundle reads it.
  */
 
 (function () {
   "use strict";
-
-  /*
-   * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * SECTION: Wallet Test Flag Initialization
-   * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   */
 
   /**
    * Reads the server-rendered dataset value and sets the global test flag.
@@ -23,19 +16,4 @@
   if (flags && flags.dataset.walletTest === "1") {
     window.__WALLET_TEST__ = true;
   }
-
-  /*
-   * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   * SECTION: Materialize Collapsibles
-   * * * * * * * * * * * * * * * * * * * * * * * * * * *
-   */
-
-  /**
-   * Initializes Materialize collapsibles once the DOM is ready.
-   */
-  document.addEventListener("DOMContentLoaded", function () {
-    if (window.M && window.M.Collapsible) {
-      window.M.Collapsible.init(document.querySelectorAll(".collapsible"));
-    }
-  });
 })();

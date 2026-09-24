@@ -2,22 +2,14 @@
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
-{% comment %} The account page: what you are subscribed to, and how to leave.
-
-  Rebuilt from a 25-line page that used `<br><br>` twice for vertical spacing
-  and `&nbsp;` for horizontal, inside a 7/5 column split holding one line of
-  text on each side. The split was inherited from a denser page and made the
-  tier and the deactivate link read as two comparable things placed side by
-  side, when one is a status and the other is the most destructive action in
-  the account.
-
-  They are two sections now, in the card idiom `profile.html` established, and
-  deactivation is at the bottom where a destructive action belongs.
-
-  Kept for the functional tests, which are a contract in both directions:
-    * `id_deactivate` on the link to the deactivate page;
-    * a link to `/profile/` whose text is exactly "Back";
-    * the h1, which `base_profile` builds from `profile_title`.
+{% comment %} The account page: what you are subscribed to, and how to leave. Two
+   sections in the card idiom `profile.html` established, with deactivation
+   at the bottom where a destructive action belongs.
+   
+   Kept for the functional tests, a contract in both directions:
+     * `id_deactivate` on the link to the deactivate page;
+     * a link to `/profile/` whose text is exactly "Back";
+     * the h1, which `base_profile` builds from `profile_title`.
 {% endcomment %}
 {% block title %}Profile account page - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}This is your profile account page where you can see your subscription tier or deactivate your account.{% endblock %}
@@ -32,10 +24,9 @@
       <h2 class="text-base font-medium">Subscription</h2>
     </div>
     <div class="px-5 py-5">
-      {% comment %} A description list rather than two spans: the tier is the
-         value of a named thing, and that is what `dt`/`dd` are for. It also
-         gives a screen reader the pairing, which "Active tier:" followed by a
-         coloured word does not. {% endcomment %}
+      {% comment %} A description list rather than two spans: the tier is the value of a named
+         thing, and `dt`/`dd` give a screen reader that pairing.
+      {% endcomment %}
       <dl class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <dt class="text-sm text-base-content/60">Active tier</dt>
         <dd class="font-medium text-primary">{{ user.profile.tier_name|upper }}</dd>
@@ -48,10 +39,10 @@
   </section>
 
   {% comment %} ---- leaving ----
-     Its own section, last, and visually separated: it is the one control here
-     that cannot be undone by clicking again. Outline rather than filled --
-     findable without being inviting, which a solid red button in the middle of
-     a settings page is not. {% endcomment %}
+     Its own section, last: it is the one control here that cannot be undone by
+     clicking again. Outline rather than filled, so it is findable without
+     being inviting.
+  {% endcomment %}
   <section class="rounded-box border border-error/30 bg-base-100">
     <div class="border-b border-error/30 px-5 py-4">
       <h2 class="text-base font-medium">Deactivate account</h2>

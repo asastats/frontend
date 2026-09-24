@@ -1,29 +1,20 @@
 {% extends 'base.html' %}
-{% comment %}
-  Shell for home and the three bundle-name forms.
-
-  What this replaces. These pages kept the arrangement the profile section left
-  behind on 2026-08-22: a four-column grid with the content in three of them and
-  a narrow rail in the fourth, carrying right-aligned breadcrumbs and whatever
-  the page had spare. On home that rail held one box printing the reader's email
-  three times, and three-quarters of the column was empty; on the bundle forms it
-  held a list of other bundles, which is real content wedged into a gutter.
-
-  The same answer the profile section reached: one centred column, content in
-  cards, actions in the footer of the card they act on. There is no `aside` here
-  now, which also means there is no source-order question to get backwards --
-  the reason the old shell put the main column first was so a phone met the
-  content before the navigation, and a single column does that by construction.
-
-  Blocks:
-    breadcrumbs     the trail, above the heading
-    page_header     the page heading
-    middle_section  the page's cards
-    left_section    a secondary card *below* the main one. It is still called
-                    `left_section` because three templates fill it and renaming
-                    a block is a rename in each; what changed is where it lands.
-    start_form /    some children wrap the whole shell in a <form>; they are
-    end_form        opened and closed by the child, not here.
+{% comment %} Shell for home and the three bundle-name forms: one centred column,
+   content in cards, actions in the footer of the card they act on.
+   
+   There is no `aside`, so there is no source-order question to get
+   backwards - a single column meets a phone with the content first by
+   construction.
+   
+   Blocks:
+     breadcrumbs     the trail, above the heading
+     page_header     the page heading
+     middle_section  the page's cards
+     left_section    a secondary card *below* the main one. Still called
+                     `left_section` because three templates fill it; what
+                     changed is where it lands.
+     start_form /    some children wrap the whole shell in a <form>, opened
+     end_form        and closed by the child rather than here.
 {% endcomment %}
 {% block content %}
 <div class="mx-auto w-full max-w-3xl">

@@ -2,61 +2,33 @@
 {% load core_extras %}
 {% comment %} One NFT collection, built as an asset card.
 
-  Deliberately the same shell as `snippets/dynamic/asset.html`: `.fitem.mcard`,
-  a five-cell `.chead`, `--col` for the figure. A collection *is* a holding, and
-  giving it its own layout would break the one thing this design promises.
+  Context: coll (one account.nftcollections entry), nft_colors (collection name
+  -> colour slot), shown (rows before folding), index (this row's position).
 
-  Two cells differ in what they hold, not in where they are:
+  The same shell as `snippets/dynamic/asset.html`: `.fitem.mcard`, a five-cell
+  `.chead`, `--col` for the figure. The tile modifier is `.collection` and not
+  the prototype's `.nft`, which design 1 owns and pairs with the colour slot in
+  `.nft.cN` rules.
 
-  * the tile is the collection's initials rather than an asset icon, because a
-    collection has no logo of its own. The modifier is `.collection`, not the
-    prototype's `.nft`: design 1 owns `.nft` and pairs it with the colour slot
-    in `.nft.cN` rules, which were landing on this tile and setting a `--stripe`
-    nothing here consumes. Two meanings, one name, and one of them is not ours;
-  * `.cid-meta` carries the floor/estimate split as a two-part bar, which is
-    the one fact about a collection that a single figure cannot express. The
-    estimate is what the section totals; the floor is what a marketplace will
-    actually pay today, and the gap between them is the whole risk.
-
-  Contracts kept from design 1, all of them script hooks:
+  Script hooks kept from design 1:
 
     `id="f<slug>"` + `.fitem`   the filter, `checkOpened`, `pins.js`
     `.nfticon` + `data-path`    `address.js` builds the hover preview from it
                                 and hides them while filtering
     `.val` + `data-val`         every figure the currency switch recomputes
     `data-fallback`             `site.js` swaps in the placeholder on a 404
-
-  The thumbnails move to the top of the *opened* card, where design 1 keeps
-  them in the closed header. The header here is a five-cell grid with a fixed
-  money column, and a collection of sixty thumbnails would either overflow it or
-  squeeze the name to nothing. What replaces them as the closed row's glance
-  value is the tile and the floor bar, which say what the collection is and what
-  it is really worth.
-
-  Required context:
-    coll        one entry from account.nftcollections
-    nft_colors  collection name -> colour slot
-    shown       how many rows this section shows before folding
-    index       this row's zero-based position
 {% endcomment %}
 {% with slug=coll.name|slugify est=coll.value floor=coll|collection_floor %}
-{% comment %} **The request lives on the `<details>`, not on the div it fills.**
+{% comment %} **The request lives on the `<details>`, not on the div it fills**,
+   because htmx 4 has no `from:` modifier to reach outwards with. `<details>`
+   fires `toggle` on itself, including when `address.js` reopens a remembered
+   card by setting `open`, so a restored card fills itself with no extra
+   wiring.
 
-   It was `hx-trigger="toggle once from:closest details"` on the inner div, and
-   htmx 4 has no `from:` modifier - the string never bound, the toggle never
-   fired, and opening a collection fetched nothing at all. Three browser tests
-   caught it; nothing else could, because the markup is still valid HTML and the
-   card still opens.
-
-   Moved rather than respelled, so there is no modifier left to get wrong:
-   `<details>` fires `toggle` on itself, including when `address.js` reopens a
-   remembered card by setting `open`, so a restored card fills itself with no
-   extra wiring. Once per element, so closing and reopening costs nothing.
-
-   Outside the tag, not between its attributes: a Django comment there is legal
-   and renders away, but any HTML parser reading the template - the htmx upgrade
-   checker included - sees its words as attribute names.
-{% endcomment %}
+   This comment sits outside the tag rather than between its attributes: a
+   Django comment there is legal and renders away, but an HTML parser reading
+   the template - the htmx upgrade checker included - sees its words as
+   attribute names. {% endcomment %}
 <details id="f{{ slug }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
          data-sort-value="{{ coll.value }}"
          data-sort-amount="{{ coll.amount|default:0 }}"
@@ -69,15 +41,10 @@
          hx-swap="innerHTML"
          >
   <summary class="chead">
-    {% comment %} The grip, exactly as an asset's. This cell was empty and the
-       space it reserves was still there, so a collection header had an asset's
-       indent with nothing in it and nothing happened on hover -- the layout
-       promised a control the section did not have.
-
-       No pin, though. `pins.js` discovers a container from the controls inside
-       it and arranges what it finds, so a grip is enough to make collections
-       reorderable; the pinned band is about *positions* and a collection is not
-       one. {% endcomment %}
+    {% comment %} The grip, exactly as an asset's, but no pin: `pins.js`
+       discovers a container from the controls inside it, so a grip alone makes
+       collections reorderable, and the pinned band is about positions.
+    {% endcomment %}
     <button type="button"
             class="grip"
             data-drag="f{{ slug }}"
@@ -88,22 +55,13 @@
       </svg>
     </button>
 
-    {% comment %} The tile carries the first item in the collection rather than
-       the collection's initials. Initials were a stand-in for "a collection has
-       no logo of its own", and they are a poor one: four grey capitals tell a
-       reader nothing they cannot already read in the name beside them, so the
-       one place on the row reserved for recognition was spending itself on a
-       second copy of the name. The art is what a reader recognises a collection
-       by, and the first item is on the page anyway.
+    {% comment %} The tile carries the collection's first item, falling back to
+       its initials when that item has no thumbnail.
 
-       Not `.nfticon`: that class is design 1's contract and `address.js` both
-       hides it while filtering and builds a full-size hover preview from
-       `data-path`. A preview of the tile would fire on every pass of the
-       pointer down the section.
-
-       Initials remain the fallback for a collection whose first item has no
-       thumbnail -- and `data-fallback` covers the other case, a thumbnail the
-       CDN does not have, which without it renders as a broken-image glyph. {% endcomment %}
+       **Not `.nfticon`.** `address.js` hides that class while filtering and
+       builds a full-size hover preview from its `data-path`, which on the tile
+       would fire on every pass of the pointer down the section.
+    {% endcomment %}
     <span class="mono-tile collection{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
       {% with first=coll.nfts.0.nft %}
       {% if first.thumbnail %}<img src="{{ BASE_CDN_URL }}{{ first.thumbnail }}" alt="" class="collicon" loading="lazy" decoding="async" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />{% else %}{{ coll.name|collection_tile }}{% endif %}
@@ -118,18 +76,14 @@
       </span>
       <span class="cid-meta">
         {% comment %} Floor against estimate. `flex` rather than a width so the
-           two always fill the bar: a collection whose floor is most of its
-           estimate reads as solid, one where it is a sliver reads as mostly
-           hope. The `0.001` keeps a zero side from collapsing the flex
-           calculation, so an all-floor or no-floor collection still draws.
-        {% endcomment %}
+           two always fill the bar, and the `0.001` keeps a zero side from
+           collapsing the calculation. {% endcomment %}
         <span class="mix" title="Floor {{ floor|floatformat:'2g' }} of an estimated {{ est|floatformat:'2g' }} ALGO">
           <i class="mix-floor" style="flex: {{ floor|default:0.001 }}"></i>
           <i class="mix-rest" style="flex: {{ coll|collection_above_floor }}"></i>
         </span>
-        {% comment %} "floor 0.00" reads as a floor of nothing, which is a
-           different claim from no marketplace reporting one -- and the chip
-           beside the name has already said which this is. {% endcomment %}
+        {% comment %} "floor 0.00" would claim a floor of nothing, which is not
+           the same as no marketplace reporting one. {% endcomment %}
         {% if floor %}<span class="num">floor <span class="val" data-val="{{ floor }}">{{ floor|floatformat:'2g' }}</span></span>{% else %}<span class="num">no floor reported</span>{% endif %}
         <span class="num">{{ coll.nfts|length }} item{{ coll.nfts|length|pluralize }}</span>
       </span>
@@ -145,37 +99,24 @@
 
   <div class="cbody">
     <div class="cbody-inner">
-      {% comment %} The thumbnails, once, at the top of the open card. Design 1
-         puts them in the closed header; here the header is a five-cell grid
-         with a fixed money column and sixty thumbnails would either overflow it
-         or squeeze the name to nothing. {% endcomment %}
+      {% comment %} The thumbnails, at the top of the *open* card rather than in
+         the closed header as design 1 has them: the header is a five-cell grid
+         with a fixed money column. {% endcomment %}
       <div class="nft-strip">
         {% for row in coll.nfts %}
           <img id="t{{ row.nft.id }}" src="{{ BASE_CDN_URL }}{{ row.nft.thumbnail }}" alt="{{ row.nft.name }} thumbnail" class="nfticon" loading="lazy" decoding="async" data-path="{{ BASE_CDN_URL }}{{ row.nft.image }}" data-fallback="{{ BASE_CDN_URL }}/thumbnails/nftt.png" />
         {% endfor %}
       </div>
 
-      {% comment %} **Filled in on first open.** The payload carries every item
-         already, but without the listings and purchase history that only an
-         opened collection shows - fetched once, for the collection the reader
-         actually expanded, replacing what is here. The thumbnail strip above is
-         deliberately outside: its thumbnails are in the payload already.
+      {% comment %} **Empty until opened**, and filled by the `<details>`
+         request above. Rendering every item for every collection put 87.9% of
+         one real account's 22 MB page into markup a closed `<details>` never
+         shows, and the fetch then replaced it. The thumbnail strip stays
+         outside because its thumbnails are in the payload already.
 
-         `toggle once` rather than a click handler: `<details>` fires `toggle`
-         when it opens, including when `address.js` reopens a remembered card by
-         setting `open`, so a restored card fills itself with no extra wiring.
-         Once per element, so closing and reopening costs nothing - and a failed
-         fetch is retried by doing exactly that. {% endcomment %}
-      {% comment %} No class: it styles nothing, and `.cbody-inner` lays nothing
-         out, so an unstyled wrapper is invisible. A class here would have to be
-         declared in `input.css` or listed as intentional in
-         `test_dynamic_design_classes`, and inventing one to satisfy that is how
-         a stylesheet fills up with rules that exist only for a test. {% endcomment %}
-      {% comment %} **Empty until opened.** Writing these out for every
-         collection put 87.9% of one real account's 22 MB page into markup
-         nobody could see - a closed `<details>` renders none of it - and then
-         discarded it on open, when the fetch below replaced it. See
-         `snippets/nfts/collection.html` for the measurement. {% endcomment %}
+         The div carries no class on purpose: it styles nothing, and a class
+         would have to be declared in `input.css` or listed as intentional in
+         `test_dynamic_design_classes`. {% endcomment %}
       <div id="items-{{ slug }}">
         {% if defer %}<p>Loading items&hellip;</p>{% else %}{% for row in coll.nfts %}{% include "snippets/dynamic/nft.html" with row=row %}{% endfor %}{% endif %}
       </div>

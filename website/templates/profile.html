@@ -2,18 +2,11 @@
 {% load static %}
 {% load i18n %}
 {% load core_extras %}
-{% comment %}
-  Three things changed beyond styling, all of them defects rather than taste:
-
-  * `{{ field }}` was rendered BEFORE `{{ field.label_tag }}`. That was a
-    Materialize floating-label arrangement; without it the page read
-    "2EVGZ4... Address:" -- value first, label after. Labels come first now.
-  * the widgets in core/forms.py carry no class, so they rendered with no
-    border at all: the name fields were invisible, and only their labels
-    showed. The `.form-fields` scope in input.css styles bare widgets, which
-    is the same fix `.auth-form` already applied to allauth's.
-  * every control was a filled button, so Update carried no more weight than
-    Social. One primary per card now; everything else is quiet.
+{% comment %} The widgets in `core/forms.py` carry no class, so a bare widget is styled
+   by the `.form-fields` scope in `input.css` - the same fix `.auth-form`
+   applies to allauth's.
+   
+   One primary action per card: Update is what this page is for.
 {% endcomment %}
 {% block title %}Profile page - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}This is your profile page where you can change your profile data.{% endblock %}
@@ -63,9 +56,8 @@
         {% endif %}
       {% endfor %}
 
-      {% comment %}
-        Authorization state, permission and votes are facts about the address
-        above, so they sit with it rather than in a column of their own.
+      {% comment %} Authorization state, permission and votes are facts about the address
+         above, so they sit with it.
       {% endcomment %}
       <div class="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-base-300 pt-4 text-sm">
         {% if form.initial.address %}
@@ -119,9 +111,8 @@
   </section>
   {% endif %}
 
-  {% comment %}
-    One primary action. Update is what this page is for; the rest lead
-    elsewhere and are links, not buttons competing with it.
+  {% comment %} The rest lead elsewhere and are links, not buttons competing with
+     Update.
   {% endcomment %}
   <div class="flex flex-wrap items-center justify-between gap-4 rounded-box border border-base-300 bg-base-100 px-5 py-4">
     <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">

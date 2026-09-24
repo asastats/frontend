@@ -2,25 +2,15 @@
 {% load static %}
 {% comment %}
   Shell for the profile section: profile, account, API token, addresses and
-  settings. They are one thing a reader moves between, so they get one frame.
+  settings. One frame, because a reader moves between them.
 
-  What this replaces, and why. The profile pages inherited base_home's
-  three-column shape -- a breadcrumb rail on the left, content in the middle,
-  actions stacked on the right. On a profile page that produced two mostly
-  empty gutters, a ragged column of identical green pills for navigation, and
-  page actions sitting so far from the fields they operate on that the
-  relationship was invisible. Every control was the same weight, so nothing
-  read as the primary one.
+  A single centred column, a segmented sub-nav across the top, and content in
+  cards. The sub-nav is the same control as the Sign up / Log in pair in
+  `account/base_auth.html`, so the site has one navigation idiom rather than a
+  second invented here. Actions belong in the card footer beside what they act
+  on.
 
-  Instead: a single centred column, a segmented sub-nav across the top, and
-  content in cards. The sub-nav is deliberately the same control as the
-  Sign up / Log in pair in account/base_auth.html -- one navigation idiom for
-  the whole site rather than a second one invented here. Actions belong in the
-  card footer beside what they act on.
-
-  Blocks:
-    profile_title    the page heading
-    profile_content  cards
+  Blocks: profile_title, profile_content.
 {% endcomment %}
 {% block content %}
 <div class="mx-auto w-full max-w-3xl">
@@ -32,20 +22,18 @@
   <h1 class="mt-2 text-3xl font-semibold tracking-tight">{% block profile_title %}{% endblock %}</h1>
 
   {% comment %}
-    `aria-current="page"` marks the active entry, so the state is announced and
-    not only painted -- the same contract the auth tabs use, and the one
-    test_auth_pages asserts on.
+    `aria-current="page"` marks the active entry, the same contract the auth
+    tabs use and what `test_auth_pages` asserts on.
 
-    The active entry is read from the resolved url rather than declared by each
-    child. A child-declared marker is one more thing to keep in step, and the
-    failure mode is silent: copy a page, forget to change its marker, and two
-    tabs light up. The url is already the truth.
+    **The active entry is read from the resolved url, not declared by each
+    child.** A child-declared marker fails silently: copy a page, forget to
+    change its marker, and two tabs light up.
   {% endcomment %}
   <nav class="mt-6 flex flex-wrap gap-1 rounded-field bg-base-200 p-1" aria-label="Profile sections">
     {% comment %}
       Appearance is skipped below the Asastatser tier: the view redirects a
-      reader who cannot open it, so offering the tab would be a control whose
-      only outcome is being sent somewhere else.
+      reader who cannot open it, so the tab would be a control whose only
+      outcome is being sent somewhere else.
     {% endcomment %}
     {% for url_name, label in profile_sections %}
     {% if url_name != "profile_appearance" or user.profile.can_access_appearance_page %}

@@ -8,8 +8,8 @@
   <p>Connect an Ethereum-compatible wallet and prove control by signing a
     message. Nothing is sent on-chain and there is no fee.</p>
 
-  {# data-notice is styled by BOTH stylesheets, so this snippet needs no #}
-{# Materialize/DaisyUI variant and is shared by either base template.  #}
+{# data-notice is styled by the shared theme tokens, so this snippet is the #}
+{# one EVM container and both the authorize and link pages include it.      #}
   <div id="evm-app-error" data-notice="error" role="alert" style="display:none">
     No EVM wallet found. Install a browser wallet, or configure WalletConnect.
   </div>

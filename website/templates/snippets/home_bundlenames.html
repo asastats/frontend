@@ -1,29 +1,18 @@
 {% load core_extras %}
 {% comment %} One row per bundle.
 
-  The old card was four links to three destinations with nothing to tell them
-  apart: the name went to the evaluation, a line under it went to the historic
-  widget, and the entire box below -- addresses, size badge and all -- was a
-  fourth link to the edit form. A reader could not know where a click would take
-  them without watching the status bar.
+  The name is the row's one link - evaluate, which is what a reader came for -
+  and the two other destinations are named buttons at the end of the row.
+  Nothing else is clickable.
 
-  Now the name is the row's one obvious link (evaluate, which is what a reader
-  came for), and the two other destinations are named buttons at the end of the
-  row. Nothing else is clickable.
+  **The structure is a contract with `home.js`:**
 
-  The structure is a contract with `home.js`:
-
-    * each row is a **direct div child** of `.bundlenames` -- the sorter does
-      `$(".bundlenames").html($(this).children("div").sort(...))`, so a wrapper
-      here would leave it sorting one element;
+    * each row is a *direct div child* of `.bundlenames`, because the sorter
+      does `$(".bundlenames").html($(this).children("div").sort(...))` - a
+      wrapper here would leave it sorting one element;
     * the row keeps `.cardiv`, which the filter shows and hides;
     * `data-name` / `-addresses` / `-created` / `-modified` / `-size` are the
       sort keys *and* what the filter matches on.
-
-  The filter used to read `$(this).children().children().attr('title')` as well,
-  which was the literal string "Evaluate bundle" on every row -- so typing
-  "eval" showed everything and the title matched nothing a reader would type.
-  `home.js` matches on the data attributes only now.
 {% endcomment %}
 {% for bundlename in collection %}
 <div
@@ -39,9 +28,8 @@
       <div class="flex flex-wrap items-baseline gap-2">
         <a class="link link-hover font-medium" href="{% url 'bundle_name' bundlename.name %}" target="_blank"
            title="Evaluate {{ bundlename.name }}">{{ bundlename.name }}</a>
-        {% comment %} The count, said rather than shown. It was a bare number in
-           a badge floating at the card's top-right corner, which reads as an
-           index or a notification. {% endcomment %}
+        {% comment %} The count, said rather than shown: a bare number in a badge
+           reads as an index or a notification. {% endcomment %}
         <span class="text-xs tabular-nums text-base-content/60">{{ bundlename.size }} address{{ bundlename.size|pluralize:"es" }}</span>
       </div>
       <p class="mt-1 break-words text-sm text-base-content/60">{{ bundlename.addresses|short_addresses }}</p>
@@ -50,9 +38,8 @@
       {% endif %}
     </div>
 
-    {% comment %} The two secondary destinations, named. Ghost buttons rather
-       than links: they are actions on this row, and one filled control per
-       view already belongs to "Add bundle name". {% endcomment %}
+    {% comment %} The two secondary destinations, as ghost buttons: the one
+       filled control on this view belongs to "Add bundle name". {% endcomment %}
     <div class="flex flex-none flex-wrap items-center gap-1">
       {% if bundlename.can_access_historic_widget %}
       <a class="btn btn-ghost btn-xs" href="{% url 'historic' bundlename.bundle %}" target="_blank"
@@ -64,8 +51,8 @@
   </div>
 </div>
 {% empty %}
-{% comment %} An empty state that says what to do. The old page rendered
-   nothing at all here, so a new account met a heading, a gap, and a button.
+{% comment %} An empty state that says what to do, so a new account does not
+   meet a heading, a gap and a button.
 {% endcomment %}
 <div class="px-5 py-8 text-center">
   <p class="text-sm text-base-content/60">No bundles yet.</p>

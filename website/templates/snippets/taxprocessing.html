@@ -1,10 +1,6 @@
 {% load core_extras %}
-{% comment %}
-  Shown while the engine is still building the report. The heading was a bare
-  `<h4>` followed by a `<br>`, which under Tailwind's preflight is body text
-  followed by a blank line -- see the note in `taxfinished.html`.
-
-  `#back` is a `tax.js` hook.
+{% comment %} Shown while the engine is still building the report. `#back` is a `tax.js`
+   hook.
 {% endcomment %}
 <div class="mx-auto max-w-2xl text-center">
   <h4 class="text-xl font-semibold tracking-tight">Your CSV report is being processed&hellip;</h4>

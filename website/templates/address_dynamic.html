@@ -4,25 +4,20 @@
 {% load partials %}
 {% comment %} The dynamic address page: designs 2 and 3.
 
-   One template, two layouts. `compact` comes from the view, off the layout
-   registry, and adds a single class -- `.rows.cards` -- exactly as the
-   prototype builds its compact form. Two template files would duplicate every
-   asset row, venue group and chart in order to change a handful of grid rules.
+   One template, two layouts. `compact` comes from the view off the layout
+   registry and adds a single class, `.rows.cards`.
 
-   What makes this design the design: **one money column**. Asset headers,
-   venue subtotals, position rows and NFT lines all put their figure in a cell
-   `--col` wide at the same x, so a reader compares down the page rather than
-   across it. Break that alignment anywhere and the rest is decoration.
+   **One money column.** Asset headers, venue subtotals, position rows and NFT
+   lines all put their figure in a cell `--col` wide at the same x, so a reader
+   compares down the page rather than across it.
 
-   Charts here are inline SVG, not Chart.js. Design 1 keeps Chart.js and this
-   page does not load it. The reasons are in `frontend/docs/address_page_dom.rst`:
-   57 themes an SVG `fill` can follow and a canvas cannot, slices that are real
-   buttons sharing one filter state, and ~200 KB saved.
+   Charts are inline SVG and this page does not load Chart.js; see
+   `frontend/docs/address_page_dom.rst`.
 
-   Nothing per-reader may be rendered here beyond the layout itself. The cache
-   entry is keyed on `(address, layout)` and shared by every reader on that
-   layout, so the swap entry arrives as a separate non-cached partial, and the
-   pins and saved order live in the reader's own browser. See
+   **Nothing per-reader may be rendered here beyond the layout itself.** The
+   cache entry is keyed on `(address, layout)` and shared by every reader on
+   that layout, so the swap entry arrives as a separate non-cached partial and
+   the pins and saved order live in the reader's browser. See
    `core/tests/test_address_layout.py`.
 {% endcomment %}
 {% block title %}{{ url_value|short_address }} | {{ WEBSITE_NAME }}{% endblock %}
@@ -35,15 +30,13 @@
 {% endblock %}
 
 {% block content %}
-{% comment %} One scope class for the whole design. Every rule in the
-   dynamic block of `input.css` is written under it, so nothing here can
-   reach design 1's markup even by accident -- the two pages share a base
-   template and a stylesheet, and design 1 is meant to stay untouched.
-{% endcomment %}
+{% comment %} One scope class for the whole design: every rule in the dynamic
+   block of `input.css` is written under it, so nothing here reaches design 1's
+   markup, which shares this base template and stylesheet. {% endcomment %}
 <div class="dynamic-page">
 <div id="id-swap-entry-container" hx-get="{% url 'swap_entry' url_value %}" hx-trigger="load" hx-swap="innerHTML"></div>
-{% comment %} The same six payload blocks design 1 emits. The data is identical;
-   only the renderer changes -- `dynamic.js` draws them as SVG. {% endcomment %}
+{% comment %} The same six payload blocks design 1 emits; only the renderer
+   differs, `dynamic.js` drawing them as SVG. {% endcomment %}
 {{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
 
 {% with total=account.total band=account.total system=account.system_info account_info=account.account_info %}
@@ -52,47 +45,32 @@
   <div class="head-grid">
     <div class="total-block">
       <div class="eyebrow">Portfolio value</div>
-      {% comment %} The heading carries a label a screen reader can use, for the
-         same reason design 1's does: a figure announced with nothing saying
-         what it counts is not a heading.
+      {% comment %} **The two attributes belong on the h1, not on `.pricetip`.**
+         The live refresh replaces that span whole every block, so an attribute
+         inside it is gone after the first update. `data-totalnftfloor` would
+         then read empty, because the engine's re-price does not touch
+         `nft_values` at all; `data-holdings` is what the page was *rendered*
+         from, which the widget sends back with every poll so a differing
+         fingerprint can force a reload.
 
-         The unit goes *inside* `.pricetip`, not in a sibling span. `address.js`
-         overwrites this element's `innerHTML` wholesale when the currency
-         switches, and it writes the unit as part of the string -- a sibling
-         would survive that and read "1,881.51 USD ALGO". {% endcomment %}
-      {% comment %} **`data-totalnftfloor` sits on the h1, not on `.pricetip`.**
-         Everything left on the span is a figure a block can change, and the
-         live refresh replaces that span whole. NFT floors are not block
-         volatile - the engine's re-price does not touch `nft_values` at all -
-         so an attribute that rode along inside the span would be dropped on
-         the first update and the "NFT floor" total would read empty.
+         The unit goes *inside* `.pricetip` and not in a sibling span, because
+         `address.js` overwrites this element's `innerHTML` wholesale on the
+         currency switch and writes the unit as part of the string - a sibling
+         would survive and read "1,881.51 USD ALGO".
 
-         The two partials below are rendered twice: here, from `account.total`,
-         and once a block by the liverefresh widget, from the payload the
-         engine publishes. The payload's keys are spelled exactly like
-         `Total`'s fields so that `band` means the same thing either way -
-         there is no second rendering path, which is the point. {% endcomment %}
-      {% comment %} **`data-holdings` is what the page was rendered from, not
-         what is current.** The widget sends it back with every poll and the
-         engine's published fingerprint is compared against it; when they differ
-         the account has bought, sold or been airdropped something and the
-         update is a reload, because an out-of-band swap can only reach a row
-         this page already has.
-
-         On the h1 for the same reason as `data-totalnftfloor`: the span below
-         is replaced whole on every update, and an attribute inside it would be
-         gone after the first one. {% endcomment %}
+         The partials below are rendered twice: here from `account.total`, and
+         once a block from the engine's payload, whose keys are spelled like
+         `Total`'s fields so `band` means the same thing either way.
+      {% endcomment %}
       <h1 class="total" data-totalnftfloor="{{ consolidated.nftfloor }}"
           data-holdings="{{ live_holdings }}">
         <span class="sr-only">Total value:</span>
         {% partialdef bandtotal inline %}
         <span id="id-band-total" {% if oob %}hx-swap-oob="true" {% endif %}class="pricetip num cursor-default"
             {% comment %} **Quoted.** An unquoted attribute whose value renders
-               empty does not become blank - it swallows the next attribute as
-               its value. A payload without `pricealgo` made `data-pricealgo`
-               read "data-total=216.3" and `data-total` vanish entirely, so the
-               currency switch computed the total from `undefined`. Two figures
-               lost to one missing key. {% endcomment %}
+               empty swallows the next attribute as its value rather than
+               becoming blank, which costs two figures for one missing key.
+            {% endcomment %}
             data-price="{{ band.priceusdc }}" data-pricealgo="{{ band.pricealgo }}"
             data-total="{{ band.totalusdc }}" data-totalwnft="{{ band.total }}"
             data-totalnft="{{ band.nft }}"
@@ -115,19 +93,16 @@
       </div>
     </div>
     <div class="head-actions">
-      {% comment %} The same gates and the same URL names design 1 uses. These
-         are entitlement checks, not decoration: `export_capability` asks
-         whether the deployment offers it at all, and `historic_access` /
-         `export_access` whether this reader reaches it. Copied rather than
-         reinvented so the two designs cannot come to different conclusions
-         about who may download what.
+      {% comment %} **Entitlement checks, not decoration**, and copied from
+         design 1 rather than reinvented so the two designs cannot disagree
+         about who may download what: `export_capability` asks whether the
+         deployment offers it, `historic_access` and `export_access` whether
+         this reader reaches it.
 
-         `btn-outline` for the same reason design 1 uses it: a bare `.btn` here
-         fills with a colour within a few percent of the page background, so on
-         a dark theme these read as static text and a reader reported not being
-         able to find the CSV export at all. The filled `btn-primary` is kept
-         for the state that earns it -- a report built and not yet downloaded.
-      {% endcomment %}
+         `btn-outline` because a bare `.btn` fills with a colour within a few
+         percent of the page background, which on a dark theme reads as static
+         text. `btn-primary` is kept for the state that earns it: a report
+         built and not yet downloaded. {% endcomment %}
       {% if is_bundle %}
         {% with historic=bundle|historic_data %}
         {% if deployment_capabilities.permission|export_capability:historic.1 %}
@@ -155,10 +130,9 @@
           {% endif %}
         {% endif %}
       {% endif %}
-      {% comment %} Where the Dust Sweep entry lands -- see the note on the same
-         slot in `address.html`. It arrives in the `_swap_entry.html` partial,
-         because it is per-reader and this page's cache entry is not, and
-         `dustsweep.js` moves it here. {% endcomment %}
+      {% comment %} Where `dustsweep.js` moves the Dust Sweep entry to. It
+         arrives in `_swap_entry.html`, because it is per-reader and this
+         page's cache entry is not. {% endcomment %}
       <span id="id-dustsweep-slot"></span>
     </div>
   </div>
@@ -178,10 +152,8 @@
 
 {% include "snippets/dynamic/toolbar.html" %}
 
-{% comment %} Pinned positions. The band is rendered empty and hidden; the
-   reader's own browser fills it from `localStorage`. It cannot be rendered
-   server-side at all -- the entry is shared, and one reader's pins are not
-   another's. {% endcomment %}
+{% comment %} Rendered empty and hidden, and filled by the reader's own browser
+   from `localStorage`: this page's cache entry is shared. {% endcomment %}
 <section class="section pinned" id="pinned-section" hidden>
   <div class="section-head">
     <h2 class="eyebrow">Pinned</h2>
@@ -191,18 +163,16 @@
   <p class="band-note">Drag to reorder. A pin remembers the position, not the number.</p>
 </section>
 
-{% comment %} `data-initial` is how many rows show before "Show more", and how
-   many each press adds. Published from `ADDRESS_INITIAL_ASSETS` so the fold the
-   template renders and every fold `toolbar.js` renders afterwards are one rule
-   rather than two copies of it. {% endcomment %}
+{% comment %} `data-initial` is how many rows show before "Show more" and how
+   many each press adds, published so the template's fold and every fold
+   `toolbar.js` makes afterwards are one rule. {% endcomment %}
 <section class="section asasec" id="asa-section" data-initial="{{ ADDRESS_INITIAL_ASSETS }}">
   <div class="section-head">
     <h2 class="eyebrow">Assets</h2>
     <span class="count num">{{ account.asaitems|length }}</span>
   </div>
-  {% comment %} The two idioms, named once, above the list that uses them.
-     A reader meets `.out` and `.tdist` two hundred times on this page; telling
-     them apart by experiment is a poor use of anyone's afternoon. {% endcomment %}
+  {% comment %} The two link idioms, named once above the list that uses them
+     two hundred times. {% endcomment %}
   <p class="idioms">
     <span><b>A venue name</b> leaves the site.</span>
     <span><b>A dotted figure</b> opens what it is made of, here on the page.</span>
@@ -214,41 +184,30 @@
       {% include "snippets/dynamic/asset.html" with asaitem=asaitem colors=colors shown=shown index=forloop.counter0 %}
     {% endfor %}
   </div>
-  {% comment %} The fold control comes *directly* after the list it unfolds, and
-     that adjacency is a contract: `showmore.js` finds its container by looking
-     at the control wrapper's previous sibling. The venue list below was
-     originally between the two, which quietly pointed the control at the empty
-     venue container -- so pressing "Show 38 more assets" revealed nothing, and
-     every measurement of a folded row read zero. It degrades to the right
-     answer through a fallback, but a fallback is not where this belongs.
+  {% comment %} **The fold control must come directly after the list it
+     unfolds**: `showmore.js` finds its container from the control wrapper's
+     previous sibling. Anything between the two points it somewhere else.
   {% endcomment %}
   {% if account.asaitems|length > shown %}
     {% include "snippets/show_more.html" with hidden=account.asaitems|next_batch:shown noun="assets" %}
   {% endif %}
-  {% comment %} Where "Group: by venue" builds its list. Empty and hidden: the
-     venue cards are assembled in the browser by *moving* each `.pgroup` out of
-     its asset and into the venue that holds it, and moved back when the reader
-     switches away. Moving rather than copying is the whole design -- a copied
-     position would carry a second element with the same `data-pid`, and a pin
-     would then name two rows. It also means open breakdowns, bound handlers
-     and the position pins survive the switch, because they are the same nodes.
+  {% comment %} Where "Group: by venue" builds its list, empty and hidden.
 
-     Rendering the venue grouping server-side as a second list was the
-     alternative and is worse: it doubles a page that already carries 190
-     positions, and the two copies would drift the first time one of them was
-     edited.
+     **The venue cards are assembled by *moving* each `.pgroup`, never
+     copying.** A copy would carry a second element with the same `data-pid`
+     and a pin would name two rows; moving also means open breakdowns, bound
+     handlers and position pins survive the switch, because they are the same
+     nodes.
 
-     No `data-folding`: the load-more rule ranks assets by what they are worth,
-     and a venue is not an asset. The toolbar hides the control entirely while
-     this list is showing.
+     No `data-folding`: the load-more rule ranks assets by value and a venue is
+     not an asset, so the toolbar hides the control while this list shows.
   {% endcomment %}
   <div class="rows venue-rows" id="venue-list" hidden></div>
   {% endwith %}
 </section>
 
-{% comment %} The dynamic NFT section, not design 1's. Its collections are
-   asset cards -- same `.chead`, same `--col` -- so the money column runs to the
-   bottom of the page instead of stopping at the assets. {% endcomment %}
+{% comment %} The dynamic NFT section, not design 1's: its collections are asset
+   cards, so the money column runs to the bottom of the page. {% endcomment %}
 {% if account.nftcollections %}
 {% include "snippets/dynamic/nfts.html" with nftcollections=account.nftcollections nft_colors=nft_colors compact=compact %}
 {% endif %}
@@ -269,8 +228,8 @@
 <script src="{% static 'js/showmore.js' %}"></script>
 <script src="{% static 'js/pins.js' %}"></script>
 <script src="{% static 'js/dynamic.js' %}"></script>
-{% comment %} Last, and deliberately: `toolbar.js` re-bases the order `pins.js`
+{% comment %} **Last, deliberately.** `toolbar.js` re-bases the order `pins.js`
    captured and redraws the band `dynamic.js` charts from, so both have to have
-   run and taken their own snapshot of the served page first. {% endcomment %}
+   taken their own snapshot of the served page first. {% endcomment %}
 <script src="{% static 'js/toolbar.js' %}"></script>
 {% endblock %}

@@ -1,32 +1,19 @@
 {% comment %}
   Every Django message, rendered once for the whole site.
 
-  Before this, nine templates each rendered `messages` themselves and no two
-  agreed. Six of them used a bare `alert` with no tag branch at all, so a
-  failure and a success were the same neutral box; `export.html` put Django's
-  tag straight into `class` -- `class="success"`, which is not a DaisyUI class
-  -- and rendered plain unstyled list items. `base.html` rendered none, which
-  is why each page had to.
+  **Errors stay on the page; everything else is a dismissable toast.** An error
+  is usually long, sometimes carries `mark_safe` markup, and is the reason the
+  submit did not work. `warning` and `debug` are unused today and fall to the
+  toast branch; a warning meaning "this did not fully work" belongs with the
+  errors instead.
 
-  **Errors stay on the page. Everything else is a dismissable toast.**
-  An error is usually long, sometimes carries `mark_safe` markup, and is the
-  reason the submit did not work -- it has to stay put and be re-readable. A
-  "saved!" does not.
-
-  `warning` and `debug` are not used anywhere in the project today; both fall
-  to the toast branch. If a warning is ever added and it means "this did not
-  fully work", move it up to the inline branch with the errors.
-
-  The toast markup is rendered server-side rather than built in JavaScript, so
-  a message is still readable with scripting off -- only dismissal and the
-  auto-hide need `site.js`.
+  The toast markup is server-rendered, so a message is readable with scripting
+  off - only dismissal and the auto-hide need `site.js`.
 
   **Three tags are not rendered here.** The settings page posts with htmx and
-  `hx-select="#id-section-<name>"`, so htmx keeps that fragment of the response
-  and drops the rest -- this container with it. A confirmation rendered here
-  would be created, consumed and never seen. Those sections render their own,
-  from `snippets/messages_section.html`; this skips them so a full page load
-  does not show them twice.
+  `hx-select="#id-section-<name>"`, which keeps that fragment and drops this
+  container with the rest, so a confirmation rendered here would never be seen.
+  Those sections render their own from `snippets/messages_section.html`.
 {% endcomment %}
 {% comment %} Kept as a variable so the two templates cannot drift apart on a
    value one of them spells differently. {% endcomment %}

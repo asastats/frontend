@@ -3,41 +3,17 @@
 {% load partials %}
 {% comment %} One asset, in the dynamic designs.
 
-   A `<details>` rather than a button and a panel, as design 1 uses: the page
-   works with the script disabled, the open state is the browser's to remember,
-   and a screen reader is told it is a disclosure without being told so twice.
+   Context: asaitem (one account.asaitems entry), colors (asset id -> colour
+   slot), shown (rows before folding), index (this row's position).
 
-   The header is five rigid cells -- grip, tile, identity, value, pin -- and
-   the fourth is the money column, `--col` wide, the same width the venue
-   subtotals and every position row inside use. Below 620px they cannot all fit,
-   and the stylesheet drops to two rows with the value under the name; see the
-   media query in `input.css` for the measurement behind that number.
+   `.fitem` and the `f<id>` id are design 1's contract: `pins.js` uses
+   `closest('.fitem')`, `showmore.js` folds on `.fitem.folded`, and the ids key
+   a reader's saved arrangement across both designs.
 
-   `.fitem` and the `f<id>` id are design 1's contract, kept on purpose:
-   `pins.js` finds an entry with `closest('.fitem')`, `showmore.js` folds on
-   `.fitem.folded`, and the ids are what an arrangement is remembered against.
-   Reusing them is what lets a reader's saved order survive switching designs.
-
-   Required context:
-     asaitem   one entry from account.asaitems
-     colors    asset id -> colour slot map
-     shown     how many rows this section shows before folding
-     index     this row's zero-based position in the section
-{% endcomment %}
-{% comment %} The toolbar's keys, rendered rather than derived.
-
-   `toolbar.js` sorts, filters and re-cuts this list in the browser, and every
-   one of those needs a number or a string it can trust. Reading them out of
-   the rendered text would mean parsing "1,234.57" -- Django's thousands
-   separator is locale-dependent, and the visible figure is rounded, so a sort
-   would silently tie rows that differ. `data-val` already exists for the
-   currency switch for exactly this reason; these are the same idea for the
-   other three sorts.
-
-   `data-search` is the haystack. Deliberately *not* the card's `textContent`:
-   that includes the asset id, decimals, total supply and every provider link
-   in the closed body, so typing "6" would match most of the page. What a
-   reader means by filtering is the name and the ticker.
+   `data-sort-*` and `data-search` are `toolbar.js`'s keys, rendered rather
+   than read back out of the text: the visible figure is rounded and its
+   thousands separator is locale-dependent. `data-search` is the name and unit
+   only, not `textContent`, which would match on ids and supply figures.
 {% endcomment %}
 {% with asset=asaitem.asset asset_id=asaitem.asset.id value=asaitem.value amount=asaitem.amount decimals=asaitem.asset.decimals %}
 <details id="f{{ asset.id }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
@@ -47,15 +23,10 @@
          data-sort-positions="{{ asaitem.programs|length }}"
          data-search="{{ asset.name|default:'' }} {{ asset.unit|default:'' }}">
   <summary class="chead">
-    {% comment %} Reorder and pin: rendered at rest for everybody, set by the
-       reader's own browser. This page's cache entry is shared between readers
-       on the same layout, so the markup cannot know who is reading it.
-
-       Rendered as direct children of `.chead`, because each is a named grid
-       area -- a wrapper element would collapse both into one cell. There was a
-       shared `entry_controls.html` snippet that wrapped them; it was written
-       for design 1 back when the controls were going there, and nothing
-       included it once design 1 was restored, so it is gone.
+    {% comment %} Reorder and pin render at rest for everybody and are set by
+       the reader's own browser: this page's cache entry is shared across
+       readers on a layout. Both are direct children of `.chead` because each
+       is a named grid area, and a wrapper would collapse them into one cell.
     {% endcomment %}
     <button type="button"
             class="grip"
@@ -67,10 +38,9 @@
       </svg>
     </button>
 
-    {% comment %} The asset's icon, in the tile the prototype reserves for it.
-       Design 1's fallback attribute is kept: `site.js` swaps in the empty icon
-       when a CDN asset 404s, and without it a missing logo renders as a broken
-       image glyph. {% endcomment %}
+    {% comment %} `data-fallback` is what `site.js` swaps in when a CDN icon
+       404s; without it a missing logo renders as a broken image glyph.
+    {% endcomment %}
     <span class="mono-tile{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
       <img src="{{ asaitem|asa_icon }}" alt="" class="asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
     </span>
@@ -78,34 +48,16 @@
     <span class="cid">
       <span class="cid-top">
         <span class="cid-name">{{ asset.name|default:asset.unit }}</span>
-        {% comment %} **The unit is a sibling, not a child, and that is load
-           bearing.** This span is replaced whole once a block by the
-           liverefresh widget, from the engine's payload - so a unit nested
-           inside it would have to be reproduced in every fragment or be eaten
-           by the first swap. The band above has the same rule, for the same
-           reason: `bandtotal` keeps its unit *inside* precisely because
-           `address.js` overwrites it wholesale, and here the swap is the
-           other way round.
+        {% comment %} **The unit is a sibling of `q{{ asset_id }}`, not a
+           child.** The `q` span is replaced whole once a block by the
+           liverefresh widget, so a unit inside it would be eaten by the first
+           swap.
 
-           Separating it also means the fragment carries the number and
-           nothing else, and that the two layouts differ in what they render
-           rather than in what they address - the goal `fragments.html`
-           already states for values.
-
-           No class: the span inherits the styling of the cell it sits in, so
-           one would be a name that does nothing and still has to be declared
-           and de-collided. The id is what the fragment addresses. `q` for
-           quantity - `v` is the value, and `.amt` is taken: it is the value
-           span on a position and `pins.js` reads it.
-
-           **The unit stays bare text and must not be given `u unit`.** Those
-           two classes are not decoration: `paintUnits` in `toolbar.js` selects
-           `.dynamic-page .u.unit` and writes the *display currency* into every
-           one of them. Wrapping the asset's own unit in them put "0.1022 ALGO"
-           where "0.1022 g" belongs, on every row of every asset that is not
-           ALGO - shipped 2026-09-19 and reported off the live page within the
-           hour. A class here is a subscription to somebody else's behaviour,
-           and this cell wants none. {% endcomment %}
+           The unit also stays bare text and must not be given `u unit`:
+           `paintUnits` in `toolbar.js` selects `.dynamic-page .u.unit` and
+           writes the *display currency* into every one of them, which would
+           put "ALGO" where the asset's own ticker belongs.
+        {% endcomment %}
         <span class="cid-amt num">{% partialdef assetamount inline %}<span id="q{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}>{{ amount|amount_repr:decimals }}</span>{% endpartialdef assetamount %} {{ asset.unit }}</span>
       </span>
       <span class="cid-meta">
@@ -116,35 +68,24 @@
       </span>
     </span>
 
-    {% comment %} The money column. `data-val` carries the unvarnished figure --
-       the visible text is rounded, and the ALGO/USD switch must not recompute
+    {% comment %} The money column. `data-val` carries the unrounded figure;
+       the visible text is rounded and the ALGO/USD switch must not recompute
        from it. {% endcomment %}
     <span class="cval">
-      {% comment %} Rendered here from the row's own figure, and once a block by
-         the liverefresh widget from the engine's payload - which is why the
-         partial takes `asset_id` and `value` rather than reading `asaitem`.
-         There is no second copy of this markup to drift.
+      {% comment %} The partial takes `asset_id` and `value` rather than
+         reading `asaitem`, because the liverefresh widget renders it once a
+         block from the engine's payload.
 
-         **`data-sort-value` on the `<details>` above is deliberately not
-         updated.** Swapping the row itself would close it, discard the reader's
-         drag order and lose anything open inside, and re-sorting under somebody
-         mid-read is its own kind of rude.
-
-         It is no longer the stale sort key it was, though: `toolbar.js` sorts
-         by value on *this* span's `data-val`, which is the same unrounded
-         quantity and is swapped every block, falling back to the row attribute
-         only when the cell is missing or unreadable. So a sort after an hour of
-         updates agrees with the column beside it. {% endcomment %}
+         `data-sort-value` on the `<details>` above is deliberately left stale:
+         swapping the row would close it and discard the reader's drag order.
+         `toolbar.js` sorts on *this* span's `data-val` and falls back to the
+         row attribute only when the cell is missing. {% endcomment %}
       {% partialdef assetvalue inline %}
       <span id="v{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}class="v val" data-val="{{ value }}">{{ value|floatformat:'2g' }}</span>
       {% endpartialdef assetvalue %}
       <span class="u unit">ALGO</span>
     </span>
 
-    {% comment %} The prototype puts a dismiss control in this cell -- hide an
-       asset from the list. That is a separate feature and is not built; the
-       pin is, and it is what this design needs here, so the cell carries the
-       pin. {% endcomment %}
     <button type="button"
             class="pin"
             data-pin="f{{ asset.id }}"
@@ -159,44 +100,23 @@
 
   <div class="cbody">
     <div class="cbody-inner">
-      {% comment %} Facts about the asset itself, above the positions: they
-         describe the thing being held, not any one holding of it. {% endcomment %}
       <dl class="meta">
         <div><dt>Asset ID</dt><dd><a class="out" href="{% explorer_base %}asset/{{ asset.id }}" target="_blank" title="Open asset {{ asset.id }} in the explorer">{{ asset.id }}</a></dd></div>
         {% if asaitem.price %}<div><dt>Price</dt><dd class="num">{{ asaitem.price|floatformat:'-8g' }} ALGO</dd></div>{% endif %}
         {% if asset.decimals is not None %}<div><dt>Decimals</dt><dd class="num">{{ asset.decimals }}</dd></div>{% endif %}
-        {% comment %} `floatformat` and not `amount_repr`, which is what this
-           read until it was noticed being wrong by orders of magnitude against
-           the same asset in design 1.
-
-           `amount_repr` divides by `10 ** decimals`, and it is right
-           everywhere else in these templates because everywhere else is a
-           *holding* -- `asaitem.amount`, `prog.amount` -- which the chain
-           reports in base units. `total` is not: the serializer has already
-           scaled it, which is why ALGO arrives as 10,000,000,000 rather than
-           10**16. Dividing a second time turned ALGO's ten billion into ten
-           thousand. {% endcomment %}
+        {% comment %} `floatformat` and not `amount_repr`. Every other figure
+           in these templates is a *holding*, which the chain reports in base
+           units; `asset.total` arrives from the serializer already scaled, so
+           dividing by `10 ** decimals` a second time is wrong by that factor.
+        {% endcomment %}
         {% if asset.total %}<div><dt>Total supply</dt><dd class="num">{{ asset.total|floatformat:'g' }}</dd></div>{% endif %}
       </dl>
 
-      {% comment %} The Swap entry sits with the asset's own facts rather than
-         at the foot of the row: it acts on the asset, the reader has just read
-         what the asset is, and at the bottom it was below every position and
-         the links -- a scroll away from the thing it operates on.
-
-         The class and `data-from` are what matter: `swap.js` delegates a
-         document-level click to `.id-swap-swap-toggle` and opens the modal on
-         `data-from`. The `href` is the no-JS fallback it prevents.
-
-         **Design 1's inline panel is deliberately not copied.** It carries a
-         `swap-panel-<id>` div for `handleInlineSwapClick`, which reads
-         `data-swap-target` -- an attribute no template sets -- and is not
-         registered as a listener either. Only `handleSwapModalClick` is. The
-         panel is vestigial there and would be dead markup here.
-
-         Gated on `url_value` for the reason design 1 gates on it: a swap needs
-         the address whose holdings it spends, and a bundle page resolving to
-         several has no single one to name. {% endcomment %}
+      {% comment %} `swap.js` delegates a document-level click to
+         `.id-swap-swap-toggle` and opens the modal on `data-from`; the `href`
+         is the no-JS fallback it prevents. Gated on `url_value` because a swap
+         needs the one address whose holdings it spends, and a bundle page
+         resolving to several has none to name. {% endcomment %}
       {% if url_value %}
       <div class="swap-action-column">
         <a class="btn btn-primary btn-sm id-swap-swap-toggle"
@@ -207,55 +127,36 @@
       </div>
       {% endif %}
 
-      {% comment %} Positions, stacked under the venue holding them, each venue
-         carrying its own subtotal in the money column. A reader with the same
-         asset in four places is asking "how much of it is on Tinyman", and a
-         flat list makes them add it up themselves. See `program_groups`.
+      {% comment %} Positions stacked under the venue holding them, each with
+         its own subtotal in the money column. See `program_groups`.
 
-         **This is also the unit the live pass re-renders, which is why it is a
-         partial and why it carries an id.** A position opening or closing used
-         to reload the whole page, because a fragment reaches only elements that
-         already exist and the value fragments carry figures, not rows. What it
-         cannot be is a single `.position`: a group has a heading, a count and a
-         subtotal that only appears above two positions, so a row arriving
-         changes three things outside itself. Re-rendering the group is what
-         makes all of them right at once, from this markup rather than from a
-         second copy of it in JavaScript.
-      {% endcomment %}
+         **This whole block is the unit the live pass re-renders**, which is
+         why it is a partial with an id. It cannot be narrowed to one
+         `.position`: a row arriving or leaving also changes the group's
+         heading, its count and a subtotal that only appears above two
+         positions. {% endcomment %}
       {% partialdef programgroups inline %}
       <div class="program-groups" id="pg-f{{ asset.id }}"{% if oob %} hx-swap-oob="true"{% endif %}>
         {% for group in asaitem.programs|program_groups %}
-        {% comment %} `data-venue` is what "Group: by venue" collects on, and
-           `data-asset` is what a group has to say about itself once it has
-           been moved away from the asset that owns it -- in venue mode the
-           heading is the asset, not the venue. Both are rendered here rather
-           than read off the heading text, which carries a count and, for a
-           linked venue, an anchor. {% endcomment %}
+        {% comment %} "Group: by venue" collects on `data-venue` and names the
+           moved group by `data-asset`. Both are attributes rather than reads
+           of the heading text, which carries a count and sometimes an anchor.
+        {% endcomment %}
         <div class="pgroup" data-positions
              data-venue="{{ group.name|default:'Wallet balance' }}"
              data-asset="{{ asset.unit|default:asset.name }}">
           <div class="pgroup-head">
-            {% comment %} Two headings, one shown. Under its asset a group is
-               named by its venue; moved into a venue card by "Group by venue"
-               it has to be named by its *asset*, or the card is a column of
-               identical "Wallet balance" headings with no way to tell which
-               holding each one is.
-
-               Both are rendered and the stylesheet picks, keyed off the venue
-               card's own class -- so the switch cannot get out of step with
-               where the group actually sits, which a script writing the text
-               would eventually manage.
+            {% comment %} Two headings, one shown: under its asset a group is
+               named by its venue, and inside a venue card by its asset. Both
+               render and the stylesheet picks off the venue card's class, so
+               the choice cannot get out of step with where the group sits.
             {% endcomment %}
             <span class="pgroup-name">
               <span class="pgroup-venue">{% if group.url %}<a class="out" href="{% program_url group.url %}" target="_blank" title="Open {{ group.name }}">{{ group.name }}</a>{% else %}{{ group.name|default:"Wallet balance" }}{% endif %}</span>
               <span class="pgroup-asset">{{ asset.unit|default:asset.name }}</span>
-              {% comment %} The count, and the subtotal below it, are both about
-                 there being *several* positions. A group holding one had the
-                 same figure twice, three lines apart -- the subtotal beside the
-                 venue and the position's own value under it -- and they cannot
-                 differ, because with one position the subtotal is that
-                 position. So a group of one says neither, and the row beneath
-                 carries the figure alone. {% endcomment %}
+              {% comment %} A group of one shows neither the count nor the
+                 subtotal: with one position the subtotal is that position, so
+                 both would repeat the figure on the row below. {% endcomment %}
               {% if group.positions|length > 1 %}<span class="n">{{ group.positions|length }}</span>{% endif %}
             </span>
             {% if group.positions|length > 1 %}
@@ -268,11 +169,8 @@
           {% for prog in group.positions %}
             {% comment %} **Two numbers, because this loop restarts.** The
                counter is the fallback key for a position whose `pid` is
-               ambiguous, and positions are a loop inside a loop over program
-               groups - so an inner counter alone would give the first position
-               of every group the same `1`, and two ambiguous positions in
-               different groups would collide exactly as the shared `pid` did.
-               See `breakdown_key`. {% endcomment %}
+               ambiguous; an inner counter alone would give the first position
+               of every group the same `1`. See `breakdown_key`. {% endcomment %}
             {% include "snippets/dynamic/position.html" with prog=prog asset=asset counter=forloop.parentloop.counter|stringformat:"s"|add:"-"|add:forloop.counter|stringformat:"s" %}
           {% endfor %}
         </div>

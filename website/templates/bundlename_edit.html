@@ -6,10 +6,10 @@
 {% block keywords %}bundle name,edit bundle name,input{% endblock %}
 {% block page_header %}{{ bundlename.name }}{% endblock %}
 
-{% comment %} When it was made and last touched, and the one irreversible thing
-   that can be done to it. Deletion is in a section of its own, marked, at the
-   bottom -- the same treatment the account page gives deactivation, and for the
-   same reason: it was previously a red link three lines under Save. {% endcomment %}
+{% comment %} When it was made and last touched, and the one irreversible thing that
+   can be done to it. Deletion gets its own marked section at the bottom,
+   the same treatment the account page gives deactivation.
+{% endcomment %}
 {% block extra_bundlename_data %}
 <section class="mt-4 rounded-box border border-base-300 bg-base-100">
   <div class="flex flex-wrap gap-x-8 gap-y-2 px-5 py-4 text-sm">
