@@ -19,7 +19,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
 
-from config.routing import websocket_urlpatterns
+# noqa: E402 - after `get_asgi_application()` on purpose, per the note above:
+# routing imports consumers, and those import models.
+from config.routing import websocket_urlpatterns  # noqa: E402
 
 application = ProtocolTypeRouter(
     {

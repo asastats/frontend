@@ -20,7 +20,7 @@ the markup the templates produced is the markup a test reads. It also silences
 roughly 180 `Not Found` warnings per browser test, which were burying anything
 real in the captured log.
 
-**Prepended, not appended.** `config.urls` ends with `re_path(r"^", ...)`, which
+Prepended rather than appended: `config.urls` ends with `re_path(r"^", ...)`, which
 matches everything, so a route added after it is never reached.
 """
 

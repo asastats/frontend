@@ -2,13 +2,15 @@
 # 90 rather than black's own 88, which is the width this repository already
 # reads at. Set here so nobody has to remember a flag.
 line-length = 90
-# Captured payloads and fixture tables. Their long lines are single data
-# literals that black will not split and that hand-wrapping would only make
-# harder to diff against a fresh capture.
+# Captured payloads and fixture tables, whose long lines are single data
+# literals black will not split and hand-wrapping only makes harder to diff
+# against a fresh capture - and the vendored ANS SDK, which is somebody else's
+# code and should stay diffable against whatever it came from.
 extend-exclude = '''
 /(
     website/utils/tests/fixtures\.py
   | website/nameservice/xchain\.py
+  | website/nameservice/anssdk
 )/?$
 '''
 
@@ -31,3 +33,18 @@ skip_glob = ["*/migrations/*", "docs/*"]
 
 [tool.ruff]
 line-length = 90
+# The vendored ANS SDK and the two submodules are somebody else's code. Every
+# ruff finding in `nameservice/` is inside `anssdk/`, and fixing them would be
+# editing an upstream copy to satisfy a convention it never agreed to.
+extend-exclude = [
+    "website/nameservice/anssdk",
+    "website/permissiondapp",
+    "website/widgets",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Django's split-settings pattern is `from .base import *`, and every name a
+# per-environment module overrides then reads as possibly-undefined. Listing
+# them explicitly is the only alternative and it is a list nobody would keep
+# correct. F405 here means "defined in base.py", which is the arrangement.
+"website/config/settings/*.py" = ["F403", "F405"]

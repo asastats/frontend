@@ -143,10 +143,10 @@ Consumer never reached
 ^^^^^^^^^^^^^^^^^^^^^^
 
 The page renders but the consumer's ``connect`` never runs. If the browser's Network → WS
-tab shows nothing, the socket was never created client-side — confirm htmx loaded exactly
+tab shows nothing, the socket was never created client-side. Confirm htmx loaded exactly
 once (a second htmx core on the page silently drops ``ws-connect``) and that the
 ``ws-connect`` URL carries a real bundle. If instead the WS request shows a ``404``, the
-route is not registered — check the widget's ``routing.py`` is included and that
+route is not registered. Check the widget's ``routing.py`` is included and that
 ``runserver`` is serving ASGI/Daphne (``daphne`` listed above the staticfiles
 app in ``INSTALLED_APPS`` --- which this project registers as
 ``core.staticfiles.AsastatsStaticFilesConfig``, not by its Django name).
@@ -156,7 +156,7 @@ Handshake succeeds but the widget stays busy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A ``101 Switching Protocols`` means the consumer connected; if the widget then hangs, its
-first engine call is failing or blocking — read the server log. A ``403`` from the engine
+first engine call is failing or blocking; read the server log. A ``403`` from the engine
 on the initial evaluate usually means the bundle has no stored address count yet
 (processing writes it), while a connection error means the engine is not running or not
 reachable.
@@ -168,7 +168,7 @@ Timeout reading from Redis
 ``redis.exceptions.TimeoutError: Timeout reading from <host>`` in the consumer's receive
 loop is the Channels bus, not the app cache. Confirm the frontend and the engine target
 the same Redis host, port and database, and that ``channels``, ``channels_redis`` and
-``redis`` are pinned to a compatible set — a newer ``redis-py`` (RESP3) against an older
+``redis`` are pinned to a compatible set: a newer ``redis-py`` (RESP3) against an older
 ``channels_redis`` produces exactly this timeout.
 
 

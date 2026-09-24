@@ -120,13 +120,10 @@ EXPORT_TIERS_ADDRESSES_LIMIT = parse_export_limits(
 #: which the live server answers. The unit tests compare against
 #: `settings.BASE_CDN_URL` rather than a literal, so they follow this.
 #:
-#: **A 404 was assumed harmless here, and it is not.** The reasoning was that a
-#: 404 sets `img.complete` at once and no test asserts an icon *loaded*, only
-#: that the markup points somewhere. The second half is false:
-#: `static/js/csp-safe-handlers.js` listens for image `error` events and
-#: rewrites `src` to the element's `data-fallback`, so a 404 does not fail
-#: quietly - it replaces the icon's `src` with `empty.png`, under tests that
-#: read that `src` back. `SwapModalTest` asserting a USDC icon found it.
+#: **A 404 here is not harmless.** `static/js/csp-safe-handlers.js` listens for
+#: image `error` events and rewrites `src` to the element's `data-fallback`, so
+#: a missing icon does not fail quietly - it replaces the `src` with
+#: `empty.png`, under tests that read that `src` back.
 #:
 #: So the suite serves those paths itself; see `ROOT_URLCONF` below.
 BASE_CDN_URL = ""

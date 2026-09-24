@@ -3,12 +3,13 @@
 from pathlib import Path
 
 from dotenv import load_dotenv
-from redis import ConnectionPool
 
 load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
-
-from .base import *
+# After `load_dotenv`, and that is the whole point: `base` reads the
+# environment at import time, so anything imported before this line sees an
+# unpopulated one.
+from .base import *  # noqa: E402
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -59,8 +60,8 @@ DATABASES = {
 
 # # django_cprofile_middleware
 # # https://cfpb.github.io/consumerfinance.gov/profiling-django/#profiling-django
-# # http://127.0.0.1:8000/2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU?prof&sort=cumtime
-# # http://127.0.0.1:8000/2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU?prof&download
+# # <host>/<address>?prof&sort=cumtime
+# # <host>/<address>?prof&download
 
 # DJANGO_CPROFILE_MIDDLEWARE_REQUIRE_STAFF = False
 # MIDDLEWARE += [

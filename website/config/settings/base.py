@@ -26,7 +26,7 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 # permissiondapp is a submodule whose dapp/ modules import their siblings with bare
-# names (e.g. `from config import ...`), expecting dapp/ to be the import root — the
+# names (e.g. `from config import ...`), expecting dapp/ to be the import root: the
 # way the submodule runs under its own CI. Put dapp/ on sys.path so those imports
 # resolve when website imports permissiondapp.dapp.*, without editing the submodule.
 PERMISSIONDAPP_DAPP = BASE_DIR.parent / "permissiondapp" / "dapp"
@@ -270,9 +270,7 @@ STATIC_ROOT = BASE_DIR.parent.parent.parent / "static"
 # config/settings/production.py.
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
-    },
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
 
 DATA_PATH = BASE_DIR.parent.parent.parent / "data"
@@ -379,9 +377,7 @@ REST_FRAMEWORK = {
     # is the only way to kill one leaked credential without rotating the
     # signing key and taking every other token with it. See
     # `api.authentication`.
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "api.authentication.RevocableJWTAuthentication",
-    ),
+    "DEFAULT_AUTHENTICATION_CLASSES": ("api.authentication.RevocableJWTAuthentication",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_RATES": {
         "walletauth": "10/min",  # authorize (per user)
@@ -534,9 +530,7 @@ DEFAULT_THEMES_BY_SCHEME = {
     ],
 }
 
-DEFAULT_THEMES = [
-    theme for group in DEFAULT_THEMES_BY_SCHEME.values() for theme in group
-]
+DEFAULT_THEMES = [theme for group in DEFAULT_THEMES_BY_SCHEME.values() for theme in group]
 
 #: How many used themes the dropdown lists above the defaults. Small on
 #: purpose: the point is that the theme you just picked is where you left it,
@@ -594,16 +588,11 @@ API_TIER_ENFORCED = get_env_variable("API_TIER_ENFORCED", "") == "1"
 #: User ids that may use the API whatever tier they hold.
 #:
 #: **For credentials that cannot be rotated on our schedule.** The mobile app
-#: ships a long-lived bearer token inside a released binary: changing which
-#: account it names means an app release and a store review, so between deciding
-#: to enforce the tier gate and the new build reaching every phone, the app
-#: would simply stop working. Raising the account's `permission` instead would
-#: work and is blunt - it hands that account every paid *website* feature to
-#: solve an API problem.
+#: ships a long-lived bearer token inside a released binary, so changing which
+#: account it names costs an app release and a store review.
 #:
-#: Comma-separated ids, so it is set per deployment and reviewable in one line.
-#: Empty is the right default: an exemption nobody needs is an exemption nobody
-#: should be able to forget about.
+#: Comma-separated ids, reviewable in one line. Empty is the right default: an
+#: exemption nobody needs is one nobody should be able to forget about.
 API_TIER_EXEMPT_USER_IDS = frozenset(
     int(value)
     for value in get_env_variable("API_TIER_EXEMPT_USER_IDS", "").split(",")
@@ -612,12 +601,11 @@ API_TIER_EXEMPT_USER_IDS = frozenset(
 
 #: Whether an entitled API caller may ask for a page to be kept block-fresh.
 #:
-#: **Off by default, and it ships that way.** Everything else in `api/live.py`
-#: costs this process a Redis round trip; subscribing costs the *engine* a
-#: re-price every block, for as long as the caller keeps asking. There is no
-#: ramp - it begins the moment a Professional-or-above caller makes a request -
-#: so it is a switch somebody throws once the engine that publishes snapshots
-#: (`d5e318c`) is deployed and the list below is filled in.
+#: **Off by default, and it ships that way.** Subscribing costs the *engine* a
+#: re-price every block for as long as the caller keeps asking, and there is no
+#: ramp: it begins the moment a Professional-or-above caller makes a request.
+#: Throw it once the engine that publishes snapshots is deployed and the list
+#: below is filled in.
 API_LIVE_ENABLED = get_env_variable("API_LIVE_ENABLED", "") == "1"
 
 #: Accounts that are a whole population rather than a reader.
@@ -625,12 +613,11 @@ API_LIVE_ENABLED = get_env_variable("API_LIVE_ENABLED", "") == "1"
 #: **A per-account limit measures a person, and a shared token is not one.** The
 #: mobile app ships one baked credential for its entire installed base, so its
 #: account must never subscribe: it would put every address any phone user
-#: glanced at in front of the live pass, and spend one warm set of five between
-#: all of them. `WIDGETS_API_TOKEN`'s account is the same shape.
+#: glanced at in front of the live pass. `WIDGETS_API_TOKEN` is the same shape.
 #:
-#: Separate from `API_TIER_EXEMPT_USER_IDS`, which answers the opposite question
-#: - that list grants access these accounts would otherwise lose, this one
-#: withholds a cost they should never incur. An account can need both.
+#: Separate from `API_TIER_EXEMPT_USER_IDS`, which answers the opposite
+#: question: that list grants access these accounts would otherwise lose, this
+#: one withholds a cost they should never incur. An account can need both.
 #:
 #: **Fill this in before setting `API_LIVE_ENABLED=1`**, or the app subscribes.
 API_LIVE_SHARED_TOKEN_USER_IDS = frozenset(

@@ -273,7 +273,7 @@ The money column
 single value cell, and four different rows use it: the asset header
 (``.chead``), the program subtotal (``.pgroup-head``), the position row
 (``.position-row``) and the NFT line. Every figure on the page therefore sits at
-the same x, and a reader compares down the page instead of across it — which is
+the same x, and a reader compares down the page instead of across it, which is
 what lets four subtotals be *seen* to add up to the asset's figure without
 anyone doing arithmetic.
 
@@ -284,7 +284,7 @@ keeps.
 | Selector               | Required                                                           | Why                                                                                |
 +========================+====================================================================+====================================================================================+
 | ``.dynamic-page``      | wraps the whole page body                                          | Every dynamic rule in ``input.css`` is written under it, so none of them can       |
-|                        |                                                                    | reach design 1 — the two pages share a base template and a stylesheet              |
+|                        |                                                                    | reach design 1; the two pages share a base template and a stylesheet              |
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | ``.mcard``             | the asset entry; also carries ``.fitem`` and an ``f<asset id>`` id | ``.fitem`` and the id are design 1's contract, reused on purpose: ``pins.js``      |
 |                        |                                                                    | finds an entry by ``closest('.fitem')`` and an arrangement is remembered against   |
@@ -304,21 +304,21 @@ keeps.
 Two breakpoints, both measured rather than guessed. At **860px** ``--col``
 narrows to ``7rem``: the name still has room, but 8.5rem of value beside it
 starts pushing longer asset names into ellipsis. At **620px** ``--col`` becomes
-``auto`` and the header drops to two rows with the value beneath the name —
+``auto`` and the header drops to two rows with the value beneath the name,
 below that width the fixed cells alone (grip, tile, money column, pin, four
 gaps) leave the name under 90px, which is what made "STASIS EURO" break one word
 per line. The grip and the pin leave the flow there; a fixed money column is
 precisely what there is no longer room for, because there is one figure per row
 to read rather than a column of them to compare.
 
-The compact form — design 3
+The compact form: design 3
 """""""""""""""""""""""""""
 
 ``.rows.cards`` on the list, and nothing else. That single class is the entire
 difference between designs 2 and 3: the asset rows become a tile grid, the
 five-cell header collapses to a stack, and an opened tile takes the full width
-and gets its columns back. Everything inside an opened tile — the money column,
-the program groups, the position rows, the breakdown — is *literally the same
+and gets its columns back. Everything inside an opened tile (the money column,
+the program groups, the position rows, the breakdown) is *literally the same
 rules*. Two copies would drift, and the first sign of it would be a reader
 reporting a figure on one design that is missing from the other.
 
@@ -329,7 +329,7 @@ The allocation band
 
 "Where the money is": a stacked bar, five category figures, and the charts
 panel. All three are drawn from **one** call to
-``core_extras.allocation_bands``, so they cannot disagree — a reader who sees
+``core_extras.allocation_bands``, so they cannot disagree. A reader who sees
 the bar and the figures tell different stories has no way to know which lied.
 
 ``.allocation-bar``
@@ -353,7 +353,7 @@ the bar and the figures tell different stories has no way to know which lied.
 
    The segments and figures are **static elements, not buttons**, until the
    toolbar lands. In the prototype each is a control that filters the whole
-   page, and that is what they will become — but a button that does nothing when
+   page, and that is what they will become, but a button that does nothing when
    pressed is worse than a figure that never claimed it would. ``data-band`` is
    already on them to bind to.
 
@@ -372,14 +372,14 @@ shared with the JSON API, which must not grow a website-shaped key.
   the five categories. Note the asymmetry it has to absorb: ``consolidated`` is
   a ``utils.structs.Consolidated`` **namedtuple** while ``total`` is
   ``account.total``, a plain **dict**. Reading both with ``getattr`` silently
-  returns zero for the dict — which drew NFT at 0.00 on an address holding 79%
+  returns zero for the dict, which drew NFT at 0.00 on an address holding 79%
   of its value in them, with the other four shown summing to a tidy 100%.
   ``Consolidated``'s last field is also the NFT *floor*, not the holding.
 
 The position component
 ^^^^^^^^^^^^^^^^^^^^^^
 
-*Designs 2 and 3 only — the classic page uses ``snippets/asas/program.html``.*
+*Designs 2 and 3 only; the classic page uses ``snippets/asas/program.html``.*
 
 ``templates/snippets/dynamic/position.html`` renders one position. Its structure
 is a contract in both directions --- the scripts read it, and both designs
@@ -570,7 +570,7 @@ markup might be tempted to key on.
 Entry controls
 ^^^^^^^^^^^^^^
 
-*Designs 2 and 3 only — the classic page offers neither pin nor grip.*
+*Designs 2 and 3 only; the classic page offers neither pin nor grip.*
 
 The asset header renders the grip and the pin as **direct children** of
 ``.chead``, because each is a named grid area and a wrapper element would
