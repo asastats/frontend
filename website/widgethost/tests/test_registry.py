@@ -16,9 +16,7 @@ from widgethost.registry import (
 class TestWidgethostRegistryDiscoverManifests:
     """Testing class for :py:func:`widgethost.registry.discover_manifests`."""
 
-    def test_widgethost_registry_discover_manifests_functionality(
-        self, tmp_path, mocker
-    ):
+    def test_widgethost_registry_discover_manifests_functionality(self, tmp_path, mocker):
         widget_dir = tmp_path / "inhouse" / "historic"
         widget_dir.mkdir(parents=True)
         (widget_dir / "widget.toml").write_text("")
@@ -238,7 +236,8 @@ class TestWidgethostRegistrySwapEndpointUrls:
         taking the whole router down, for a URL nothing needs until a wallet
         rewrites a group.
         """
-        from django.urls import NoReverseMatch, reverse as real_reverse
+        from django.urls import NoReverseMatch
+        from django.urls import reverse as real_reverse
 
         def missing_reauthorize(name, *args, **kwargs):
             if name.endswith("_reauthorize"):

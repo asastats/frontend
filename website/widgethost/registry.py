@@ -81,9 +81,7 @@ def manifests_by_id(refresh=False):
     """
     global _manifests_by_id
     if _manifests_by_id is None or refresh:
-        _manifests_by_id = {
-            manifest.id: manifest for _, manifest in discover_manifests()
-        }
+        _manifests_by_id = {manifest.id: manifest for _, manifest in discover_manifests()}
     return _manifests_by_id
 
 
@@ -159,36 +157,17 @@ def swap_holdings_tmpl(router_id):
 def swap_endpoint_urls(router_id):
     """Return the engine-backed quote and group URLs a router needs, or ``{}``.
 
-    **Only the ASA Stats router has these**, and the difference is where the
-    quoting happens: every other router quotes in the browser against a vendor
-    SDK, while ours runs in our own engine, so the browser posts to us. That is
-    why there is nothing to return for the rest rather than an empty pair.
+    Only the ASA Stats router has these: every other router quotes in the
+    browser against a vendor SDK, while ours quotes in our own engine, so the
+    browser posts to us. Resolved by name, so a deployment without the widget
+    installed gets ``{}`` rather than a crash.
 
-    Resolved by name so a deployment without the widget installed gets ``{}``
-    instead of a crash -- `swap_routers` discovers routers from installed
-    manifests, and the preferred one can in principle name a widget whose URLs
-    are not routed.
-
-    Written because the address-page modal did not carry them at all. The
-    router's own shell page has always rendered `data-quote-url`, so the ASA
-    Stats router worked there and failed everywhere else with "this deployment
-    has no ASA Stats router endpoint" -- a message about configuration for what
-    was a missing two lines of context.
-
-    **The two required URLs are resolved apart from the optional one**, and
-    that separation is not cosmetic. `reauthorize` was added to this dict inside
-    the same `try`, and on a deployment whose widgets are a release behind -
-    which is every deployment for as long as it takes the second repository to
-    ship - resolving it raised `NoReverseMatch` and the `except` discarded
-    `quote_url` and `group_url` with it. The swap panel then rendered with no
-    endpoints at all and refused every quote with "this deployment has no ASA
-    Stats router endpoint": one optional feature taking the whole router down,
-    in production, for a URL nothing needs until a wallet rewrites a group.
-
-    So an absent `reauthorize` is ``""``, which is what the adapter already
-    reads as "report the divergence rather than fix it". Quote and group keep
-    the all-or-nothing behaviour, because a router missing those genuinely has
-    nothing to offer.
+    **The two required URLs are resolved apart from the optional one.** An
+    absent `reauthorize` is ``""``, which the adapter already reads as "report
+    the divergence rather than fix it"; quote and group keep the all-or-nothing
+    behaviour, because a router missing those has nothing to offer. Resolving
+    all three together means one optional URL can take the whole router down on
+    any deployment whose widgets are a release behind.
 
     :param router_id: the router key, e.g. ``"asastats"``
     :type router_id: str
@@ -218,24 +197,18 @@ def swap_endpoint_urls(router_id):
 def swap_sdk_static(router_id):
     """Return the router's SDK bundle static path, or "" when it ships none.
 
-    **Not every router has one.** The vendor routers quote in the browser
-    against their own SDK and ship it as ``<id>/<id>-sdk.bundle.js``; the ASA
-    Stats router quotes in our engine, so its adapter lives in ``swap/swap.js``
-    with the rest of the controller and there is no bundle to load. Same shape
-    as :func:`swap_endpoint_urls`, which returns ``{}`` for the routers that do
-    not need engine endpoints.
+    Not every router has one. The vendor routers ship theirs as
+    ``<id>/<id>-sdk.bundle.js``; the ASA Stats router quotes in our engine, so
+    its adapter lives in ``swap/swap.js`` and there is no bundle to load.
 
     **The template must not name a static file that does not exist.** Under
-    ``ManifestStaticFilesStorage`` -- production, and only production --
-    ``{% static %}`` *raises* for a path missing from ``staticfiles.json``, so
-    a router with no bundle turned the whole per-user partial into a 500: no
-    marker, no modal, no ``swap.js``, and a Swap button that fell through to
-    its no-JS ``href`` and navigated. Development uses a storage that returns
-    the URL and lets the browser 404 it, which is why nothing caught it.
+    ``ManifestStaticFilesStorage`` - production, and only production -
+    ``{% static %}`` *raises* for a path missing from ``staticfiles.json``, and
+    that raise takes the whole per-user partial with it.
 
-    Resolved by asking whether the file is actually there rather than by
-    listing the routers that have one, because a list is what goes stale the
-    next time a router is added.
+    Resolved by asking whether the file is there rather than by listing the
+    routers that have one, because a list goes stale the next time a router is
+    added.
 
     :param router_id: chosen swap-router widget id
     :type router_id: str

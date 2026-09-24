@@ -44,9 +44,7 @@ class TestNameServiceNfdV1Functions:
         algod_client.account_info.return_value = {"apps-local-state": state}
         returned = _app_id_from_logicsig(logic_sig, algod_client)
         assert returned == app_id
-        algod_client.account_info.assert_called_once_with(
-            logic_sig.address.return_value
-        )
+        algod_client.account_info.assert_called_once_with(logic_sig.address.return_value)
 
     # # _logicsig_from_name
     @pytest.mark.parametrize(
@@ -103,9 +101,7 @@ class TestNameServiceNfdV2Functions:
             for exception in ALGOD_EXCEPTIONS
         ],
     )
-    def test_nameservice_nfd_check_boxes_addresses_for_exception(
-        self, exception, mocker
-    ):
+    def test_nameservice_nfd_check_boxes_addresses_for_exception(self, exception, mocker):
         algod_client = mocker.MagicMock()
         v2_app_id = 88778506
         box = {"name": "di5jYUFsZ28uMC5hcw=="}
@@ -177,9 +173,7 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_box_by_name.assert_has_calls(calls, any_order=True)
         assert algod_client.application_box_by_name.call_count == 5
 
-    def test_nameservice_nfd_check_boxes_addresses_for_an_empty_caalgo_box(
-        self, mocker
-    ):
+    def test_nameservice_nfd_check_boxes_addresses_for_an_empty_caalgo_box(self, mocker):
         """A `u.caalgo` box whose value decodes to nothing contributes nothing.
 
         The single-address branch reads its box's value and decodes it straight
@@ -331,9 +325,7 @@ class TestNameServiceNfdCommonFunctions:
         ]
         key = "aS5vd25lci5h"
         _append_addresses_from_global_state_for_key(addresses, global_state, key)
-        assert addresses == [
-            "RSV2YCHXA7MWGFTX3WYI7TVGAS5W5XH5M7ZQVXPPRQ7DNTNW36OW2TRR6I"
-        ]
+        assert addresses == ["RSV2YCHXA7MWGFTX3WYI7TVGAS5W5XH5M7ZQVXPPRQ7DNTNW36OW2TRR6I"]
 
     def test_nameservice_nfd_append_addresses_from_global_state_for_key_is_a_set(
         self,
@@ -487,9 +479,7 @@ class TestNameServiceNfdCommonFunctions:
         mocked_app_box.assert_called_once_with(v2_app_id, algod_client)
         mocked_lsig.assert_not_called()
 
-    def test_nameservice_nfd_app_state_for_algo_name_for_non_existing_name(
-        self, mocker
-    ):
+    def test_nameservice_nfd_app_state_for_algo_name_for_non_existing_name(self, mocker):
         mocked_app_box = mocker.patch(
             "nameservice.nfd._app_state_from_box", return_value=[]
         )
@@ -597,9 +587,7 @@ class TestNameServiceNfdPublicFunctions:
             NFD_APP_ID, mocked_box.return_value
         )
 
-    def test_nameservice_nfd_nfd_app_id_from_algo_name_returns_0_for_no_app(
-        self, mocker
-    ):
+    def test_nameservice_nfd_nfd_app_id_from_algo_name_returns_0_for_no_app(self, mocker):
         name = "foobar.algo"
         algod_client = mocker.MagicMock()
         mocked_box = mocker.patch("nameservice.nfd._box_name_for_algo_name")
@@ -745,9 +733,7 @@ class TestNameServiceNfdPublicFunctions:
         mocked_boxes.assert_called_once_with(v2_app_id, algod_client)
         mocked_addresses.assert_called_once_with(app_state, mocked_boxes.return_value)
 
-    def test_nameservice_nfd_check_name_returns_address_for_uppercased_name(
-        self, mocker
-    ):
+    def test_nameservice_nfd_check_name_returns_address_for_uppercased_name(self, mocker):
         name = "FOOBAR.ALGO"
         algod_client = mocker.MagicMock()
         state = deepcopy(TESTING_NFD_ADDRESS_STATE)

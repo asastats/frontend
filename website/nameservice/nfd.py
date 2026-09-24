@@ -179,9 +179,7 @@ def _address_from_bytes_value(bytes_value):
     :yield: str
     """
     value = base64.b64decode(bytes_value)
-    for address in [
-        encode_address(value[i : i + 32]) for i in range(0, len(value), 32)
-    ]:
+    for address in [encode_address(value[i : i + 32]) for i in range(0, len(value), 32)]:
         yield address
 
 
@@ -201,9 +199,7 @@ def _append_addresses_from_global_state_for_key(addresses, global_state, key):
     """
     state = next((state for state in global_state if state.get("key") == key), [])
     if state:
-        for address in _address_from_bytes_value(
-            state.get("value", {}).get("bytes", "")
-        ):
+        for address in _address_from_bytes_value(state.get("value", {}).get("bytes", "")):
             if address not in addresses:
                 addresses.append(address)
 

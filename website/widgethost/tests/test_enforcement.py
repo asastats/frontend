@@ -19,9 +19,7 @@ class TestWidgethostEnforcementWidgetAccessMixin:
         mocker.patch("widgethost.enforcement.can_access", return_value=True)
         assert mixin.manifest_test_func(2) is True
 
-    def test_widgethost_enforcement_widget_access_mixin_denies_on_callback(
-        self, mocker
-    ):
+    def test_widgethost_enforcement_widget_access_mixin_denies_on_callback(self, mocker):
         mixin = self._mixin(mocker)
         mocker.patch("widgethost.enforcement.can_access", return_value=False)
         assert mixin.manifest_test_func(2) is False

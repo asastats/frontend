@@ -158,9 +158,7 @@ class TestWidgethostSwapViewsBaseSwapAssetsView:
         assert view.test_func() is True
         gate.assert_called_once_with(1)
 
-    def test_widgethost_swap_views_folks_assets_view_get_context_data_query(
-        self, mocker
-    ):
+    def test_widgethost_swap_views_folks_assets_view_get_context_data_query(self, mocker):
         view = BaseSwapAssetsView()
         manifest = mocker.MagicMock()
         engine_endpoints = "engine_endpoints"
@@ -177,9 +175,7 @@ class TestWidgethostSwapViewsBaseSwapAssetsView:
         assert context["query"] == "usdc"
         assert context["assets"] == assets
 
-    def test_widgethost_swap_views_folks_assets_view_get_context_data_empty(
-        self, mocker
-    ):
+    def test_widgethost_swap_views_folks_assets_view_get_context_data_empty(self, mocker):
         view = BaseSwapAssetsView()
         view.request = mocker.MagicMock()
         view.request.GET.get.return_value = "  "

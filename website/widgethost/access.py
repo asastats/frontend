@@ -1,7 +1,7 @@
 """User access checks for widgets, resolved by widget id via the registry.
 
 Lets the host (core models, template filters) ask whether a user may use a
-widget without importing that widget's modules — so a widget being absent yields
+widget without importing that widget's modules, so a widget being absent yields
 a denied result rather than an import error.
 """
 

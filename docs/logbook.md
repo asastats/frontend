@@ -611,3 +611,52 @@ the bootstrap path strands them.
 The xChain logicsig's own on-chain scheme is EIP-712, which matters when
 spending from the account. It does not matter here, because proving control of
 the EVM key is what proves control of the derived Algorand account.
+
+---
+
+## website/widgethost/registry.py
+
+### `swap_endpoint_urls`
+
+Written because the address-page modal did not carry these at all. The router's
+own shell page has always rendered `data-quote-url`, so the ASA Stats router
+worked there and failed everywhere else with "this deployment has no ASA Stats
+router endpoint" - a message about configuration for what was two missing lines
+of context.
+
+**Why the optional URL is resolved separately.** `reauthorize` was added to the
+dict inside the same `try`. On a deployment whose widgets are a release behind
+- which is every deployment for as long as the second repository takes to ship
+- resolving it raised `NoReverseMatch` and the `except` discarded `quote_url`
+and `group_url` with it. The swap panel then rendered with no endpoints and
+refused every quote: one optional feature taking the whole router down, in
+production, for a URL nothing needs until a wallet rewrites a group.
+
+### `swap_sdk_static`
+
+A router with no bundle turned the per-user partial into a 500 under
+`ManifestStaticFilesStorage`: no marker, no modal, no `swap.js`, and a Swap
+button that fell through to its no-JS `href` and navigated. Development uses a
+storage that returns the URL and lets the browser 404 it, which is why nothing
+caught it before production.
+
+---
+
+## website/nameservice/
+
+`anssdk/` is a vendored third-party SDK. It is excluded from black, isort and
+ruff: every finding in the package is inside it, and fixing them would be
+editing an upstream copy to satisfy a convention it never agreed to.
+
+`nfd.py`, `ans.py`, `main.py` and `xchain.py` carry no history worth moving -
+section markers and step comments only. `xchain.py` is excluded from black for
+the same reason as the fixture files: one line of it is a 2,598-character data
+literal.
+
+---
+
+## website/permissiondapp/ and website/widgets/
+
+Submodules, each with its own repository. `widgets/` gets its own logbook at
+`website/widgets/docs/logbook.md` rather than entries here; `permissiondapp/`
+is out of scope.
