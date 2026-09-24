@@ -73,7 +73,9 @@ class TestUtilsLayoutsRegistry:
         seen = {}
         for key, conf in ADDRESS_LAYOUTS.items():
             signature = (conf["template"], conf["compact"])
-            assert signature not in seen, f"{key} renders the same as {seen.get(signature)}"
+            assert (
+                signature not in seen
+            ), f"{key} renders the same as {seen.get(signature)}"
             seen[signature] = key
 
     @pytest.mark.parametrize("key", sorted(ADDRESS_LAYOUTS))

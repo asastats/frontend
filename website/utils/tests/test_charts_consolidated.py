@@ -1,6 +1,5 @@
 """Testing module for :py:mod:`utils.charts` module's cosolidated view functions."""
 
-from collections import namedtuple
 from unittest import mock
 
 import pytest
@@ -76,9 +75,7 @@ class TestUtilsChartConsolidatedFunctions:
         return elem
 
     # # _asa_chart_from_serialized_data
-    def test_utils_charts_asa_chart_from_serialized_data_passes_empty_list(
-        self, mocker
-    ):
+    def test_utils_charts_asa_chart_from_serialized_data_passes_empty_list(self, mocker):
         mocked_base = mocker.patch(
             "utils.charts._base_chart_data_from_serialized_data",
             return_value={},
@@ -206,9 +203,7 @@ class TestUtilsChartConsolidatedFunctions:
     ):
         # With val_check=False rows aren't filtered but sum is still 0.
         asaitems = [_asaitem(0, 1, "A"), _asaitem(0, 2, "B")]
-        assert (
-            _base_chart_data_from_serialized_data(asaitems, {}, val_check=False) == {}
-        )
+        assert _base_chart_data_from_serialized_data(asaitems, {}, val_check=False) == {}
 
     def test_utils_charts_base_data_from_serialized_returns_same_size_lists(self):
         asaitems = [
@@ -303,9 +298,7 @@ class TestUtilsChartConsolidatedFunctions:
             _nftcollection(100, "AlgoSkull"),
             _nftcollection(50, "Pixel Punks"),
         ]
-        _base_chart_data_from_serialized_data(
-            nftcollections, nft_colors, val_check=False
-        )
+        _base_chart_data_from_serialized_data(nftcollections, nft_colors, val_check=False)
         assert nft_colors == {"AlgoSkull": "0", "Pixel Punks": "1"}
 
     def test_utils_charts_base_data_from_serialized_collapses_tail_into_others_bucket(
@@ -341,15 +334,11 @@ class TestUtilsChartConsolidatedFunctions:
         assert len(returned["labels"]) == 3
 
     # # _consolidated_data_from_assets_data
-    def test_utils_charts_consolidated_data_from_assets_data_functionality(
-        self, mocker
-    ):
+    def test_utils_charts_consolidated_data_from_assets_data_functionality(self, mocker):
         assets_data = mocker.MagicMock()
         mocked_balance = mocker.patch("utils.charts._balance_totals_from_assets_data")
         mocked_staked = mocker.patch("utils.charts._staked_totals_from_assets_data")
-        mocked_liquidity = mocker.patch(
-            "utils.charts._liquidity_totals_from_assets_data"
-        )
+        mocked_liquidity = mocker.patch("utils.charts._liquidity_totals_from_assets_data")
         mocked_defi = mocker.patch("utils.charts._defi_totals_from_assets_data")
         returned = _consolidated_data_from_assets_data(assets_data)
         assert returned == Consolidated(
@@ -368,9 +357,7 @@ class TestUtilsChartConsolidatedFunctions:
         self, mocker
     ):
         serialized_data = mocker.MagicMock()
-        mocked_balance = mocker.patch(
-            "utils.charts._balance_totals_from_serialized_data"
-        )
+        mocked_balance = mocker.patch("utils.charts._balance_totals_from_serialized_data")
         mocked_staked = mocker.patch("utils.charts._staked_totals_from_serialized_data")
         mocked_liquidity = mocker.patch(
             "utils.charts._liquidity_totals_from_serialized_data"
@@ -503,9 +490,7 @@ class TestUtilsChartConsolidatedFunctions:
     ):
         consolidated = Consolidated({}, {}, {}, {}, ())
         assert (
-            _distribution_chart_data_from_serialized_data(
-                {"asaitems": []}, consolidated
-            )
+            _distribution_chart_data_from_serialized_data({"asaitems": []}, consolidated)
             == {}
         )
 
@@ -709,9 +694,7 @@ class TestUtilsChartConsolidatedFunctions:
             return_value=chart_data,
         )
         mocked_setup = mocker.patch("utils.charts._chart_setup")
-        returned = _nft_chart_from_serialized_data(
-            {"nftcollections": ["c"]}, nft_colors
-        )
+        returned = _nft_chart_from_serialized_data({"nftcollections": ["c"]}, nft_colors)
         assert returned == mocked_setup.return_value
         mocked_base.assert_called_once_with(
             ["c"], nft_colors, distinct_colors=DISTINCT_COLORS_2, val_check=False
@@ -921,7 +904,7 @@ class TestUtilsChartConsolidatedFunctions:
         total = _total_from_serialized_data({"total": None})
         assert total == Total(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0)
 
-    def test_utils_charts_total_from_serialized_data_handles_garbage_values_without_crashing(
+    def test_utils_charts_total_from_serialized_handles_garbage_values(
         self,
     ):
         # If the upstream cache somehow contains malformed data, fall back to 0

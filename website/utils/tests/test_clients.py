@@ -70,9 +70,7 @@ class TestUtilsClientsFunctions:
         assert client.search_transactions.call_count == 2
         mocked_sleep.assert_called_once_with(0.05)
 
-    def test_utils_clients_search_transactions_creates_client_when_omitted(
-        self, mocker
-    ):
+    def test_utils_clients_search_transactions_creates_client_when_omitted(self, mocker):
         mocked_instance = mocker.patch("utils.clients.indexer_instance")
         mocked_instance.return_value.search_transactions.return_value = {
             "transactions": [],

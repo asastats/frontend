@@ -252,22 +252,16 @@ def check_bundle_addresses(bundle):
 def canonical_bundle(value):
     """Return the hash the backend keys `value`'s bundle under.
 
-    **An old bookmark carries an old hash.** `bundle_from_addresses` became
-    sort-and-dedupe over the address set at some point, and visitors who saved
-    a bundle URL before that still arrive with the hash it produced then. Those
-    URLs keep working because :func:`check_bundle_addresses` is a cache lookup -
-    any hash ever stored resolves to its addresses, whichever algorithm minted
-    it - but the *backend* keys everything by the canonical hash it recomputes
-    from those addresses, so a legacy hash names nothing there.
+    **An old bookmark carries an old hash**, and the backend keys everything by
+    the canonical one it recomputes from the addresses - so a legacy hash names
+    nothing there. The URL still works because
+    :func:`check_bundle_addresses` is a cache lookup and any hash ever stored
+    resolves to its addresses.
 
-    Resolving through the cache rather than asking callers for `addresses` is
-    what keeps this a one-line change at each call site: the addresses are not
-    in scope at most of them, and threading them through would touch four
-    signatures to answer a question the cache already holds.
-
-    Idempotent by construction - a canonical hash resolves to the addresses
-    that produce it - so it is safe to apply on a path that may already be
-    canonical, and a single address or an unknown hash is returned untouched.
+    Resolved through the cache rather than from a caller's `addresses`, which
+    are not in scope at most call sites. Idempotent by construction, so it is
+    safe on a path that may already be canonical; a single address or an
+    unknown hash is returned untouched.
 
     :param value: address or bundle value as it appeared in the URL
     :type value: str
@@ -398,22 +392,16 @@ def nft_floor_price(nft):
     """Return an NFT's floor price, from either payload shape.
 
     **Two shapes exist on purpose.** `internal/accounts/<value>/` carries the
-    full `floor` listings, because the mobile app and third parties read it and
-    the expanded item shows the marketplace behind the price;
-    `internal/accounts/<value>/batched` carries `floor_price` alone, because the
-    closed page only ever needed the number and the listing around it was a
-    quarter of an NFT record's serialization cost.
+    full `floor` listings for the mobile app and third parties;
+    `internal/accounts/<value>/batched` carries `floor_price` alone, because
+    the listing around it was a quarter of an NFT record's serialization cost.
 
-    Reading both here rather than at each call site: the floor total feeds the
-    floor chart, the ratio and distribution charts, and a collection's floor
-    bar, and those disagreeing about where a price lives is precisely the class
-    of fault that shows up as two figures on one page that do not add up.
+    Read here rather than at each call site, because the floor total feeds four
+    different figures and those disagreeing about where a price lives shows up
+    as two numbers on one page that do not add up.
 
-    This returns the *price*; whether to multiply it by the item's amount is the
-    caller's business and the two callers differ - see
-    `utils.charts._nftfloor_totals_from_serialized_data`, which does, and
-    `core.templatetags.core_extras._collection_totals`, which does not. That
-    divergence predates the light payload and is not this function's to settle.
+    Returns the *price*. Whether to multiply by the item's amount is the
+    caller's business, and the two callers differ.
 
     :param nft: one ``row.nft`` from a collection's items
     :type nft: dict

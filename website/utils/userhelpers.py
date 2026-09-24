@@ -22,9 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 # # VALUES
-def _docs_positions_offset_and_length_pairs(
-    docs_data_size, start=MANDATORY_VALUES_SIZE
-):
+def _docs_positions_offset_and_length_pairs(docs_data_size, start=MANDATORY_VALUES_SIZE):
     """Return offset/position and size pairs for docs values with size `docs_data_size`
 
     :param docs_data_size: size of serialized docs values
@@ -205,9 +203,7 @@ def slugified_bundle_name(value, allow_unicode=False):
         value = unicodedata.normalize("NFKC", value)
     else:
         value = (
-            unicodedata.normalize("NFKD", value)
-            .encode("ascii", "ignore")
-            .decode("ascii")
+            unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
         )
     value = re.sub(r"[^\.\w\s-]", "", value)
     return re.sub(r"[-\s]+", "-", value).strip("-_")
@@ -267,12 +263,11 @@ def validate_address_or_algo_name_url_path(url_path):
 def liverefresh_terms(permission):
     """Return the live-refresh allowance `permission` carries, or None.
 
-    None means no limit, which is every tier from Asastatser up. The numbers are
-    the widget's to decide - it is the widget's feature and its manifest carries
-    the address bands - so this only converts them for the settings page, which
+    None means no limit, which is every tier from Asastatser up. The numbers
+    are the widget's to decide; this converts them for the settings page, which
     has no business importing a widget's internals for a label.
 
-    Returned as minutes because that is what a reader is shown; the widget keeps
+    Minutes because that is what a reader is shown, while the widget keeps
     seconds because that is what a poll charges.
 
     :param permission: the reader's permission integer

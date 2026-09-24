@@ -308,3 +308,91 @@ docstrings.
 ## website/api/structs.py, urls.py, data.py, widgets.py
 
 Nothing recorded beyond `page_key_from_addresses`, above.
+
+---
+
+## website/utils/layouts.py
+
+### Module
+
+The registry follows the same shape as :data:`EXPLORERS` and the swap-router
+discovery: joining the table is how a thing becomes selectable. The difference
+is that every other preference on the settings page is a single gate - you may
+choose an explorer or you may not - while layouts are handed out in stages.
+
+**Why a lapsed subscription loses the layout but keeps the explorer.** Every
+explorer is worth the same, so a saved one keeps applying; the layout *is* the
+subscription benefit, so it does not.
+
+### `layout_for_user`
+
+It used to return the key paired with a presentation modifier, from when the
+page was one template that varied by attribute. Callers now look up whichever
+of `layout_template` and `layout_compact` they need.
+
+### `locked_layouts`
+
+Naming the tier a locked layout needs is the same courtesy the explorer section
+pays by naming Intro.
+
+---
+
+## website/utils/charts.py
+
+### Module
+
+The six `for i, item in enumerate(rows)` loops each used to open with
+`if i == count - 1: break`, and every one was a no-op: `count` is the length of
+the list being iterated, so the loop ends on that index anyway, and the only
+statement the break skipped is already false at that index.
+
+It was not harmless. The loop could never end by exhaustion, and the guard
+above each one makes the list non-empty, so the exit arc was unreachable:
+coverage reported six partial branches no test could close, and a real gap in
+this file would have been indistinguishable from them.
+
+---
+
+## website/utils/helpers.py
+
+### `canonical_bundle`
+
+`bundle_from_addresses` became sort-and-dedupe over the address set at some
+point, and visitors who saved a bundle URL before that still arrive with the
+hash it produced then.
+
+Resolving through the cache rather than asking callers for `addresses` kept
+this to a one-line change at each call site; threading the addresses through
+would have touched four signatures to answer a question the cache already
+holds.
+
+---
+
+## website/utils/cache.py
+
+### `cached_live_holdings`
+
+This is the one fact both services agree on, which is why it keys the rendered
+address page as well as the widget's reload decision.
+
+### `nft_floor_price`
+
+Allo is the default explorer and the historical hard-coded provider.
+
+The two payload shapes are a deliberate split: the closed page only ever needed
+the number, and the listing around it was a quarter of an NFT record's
+serialization cost.
+
+Which caller multiplies the price by the item's amount diverges, and predates
+the light payload: `utils.charts._nftfloor_totals_from_serialized_data` does,
+`core.templatetags.core_extras._collection_totals` does not. Not this
+function's to settle.
+
+---
+
+## website/utils/userhelpers.py
+
+### `liverefresh_terms`
+
+The address bands belong to the widget's manifest. This exists only so the
+settings page can put a label on them without importing a widget's internals.

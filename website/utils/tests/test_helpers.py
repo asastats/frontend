@@ -202,9 +202,7 @@ class TestUtilsHelpersFunctions:
         )
         mocked_current.assert_called_once_with()
 
-    def test_utils_helpers_create_multiprocess_logger_initalizes_formatter(
-        self, mocker
-    ):
+    def test_utils_helpers_create_multiprocess_logger_initalizes_formatter(self, mocker):
         mocker.patch("utils.helpers.multiprocessing.get_logger")
         mocker.patch("utils.helpers.logging.FileHandler")
         process = mocker.MagicMock()
@@ -303,9 +301,7 @@ class TestUtilsHelpersFunctions:
     ):
         values = deepcopy(TESTING_VALUES_SMALL)
         app_codes = ["ff"]
-        assert (
-            message_for_app_code_in_values(values, app_codes, mocker.MagicMock()) == ""
-        )
+        assert message_for_app_code_in_values(values, app_codes, mocker.MagicMock()) == ""
 
     def test_utils_helpers_message_for_app_code_in_values_returns_empty_string_empty(
         self, mocker
@@ -315,9 +311,7 @@ class TestUtilsHelpersFunctions:
             [1, 520602904, 1, {}, 405.2525, ""],
         ]
         app_codes = ["ff", "foo"]
-        assert (
-            message_for_app_code_in_values(values, app_codes, mocker.MagicMock()) == ""
-        )
+        assert message_for_app_code_in_values(values, app_codes, mocker.MagicMock()) == ""
 
     def test_utils_helpers_message_for_app_code_in_values_returns_message(self, mocker):
         values = deepcopy(TESTING_VALUES_SMALL)
@@ -401,8 +395,7 @@ class TestUtilsHelpersGeneralPublicFunctions:
         with mock.patch("utils.helpers.hashlib.sha1") as mocked:
             returned = bundle_from_addresses(addresses)
             assert (
-                returned
-                == mocked.return_value.hexdigest.return_value.upper.return_value
+                returned == mocked.return_value.hexdigest.return_value.upper.return_value
             )
             mocked.assert_called_once_with(b"bar foo")
             mocked.return_value.hexdigest.assert_called_once_with()
@@ -455,9 +448,7 @@ class TestUtilsHelpersGeneralPublicFunctions:
         mock would pass whatever the function returned.
         """
         addresses = "FOO BAR"
-        mocker.patch(
-            "utils.helpers.check_bundle_addresses", return_value=addresses
-        )
+        mocker.patch("utils.helpers.check_bundle_addresses", return_value=addresses)
 
         assert canonical_bundle("0" * 40) == bundle_from_addresses(addresses)
 
@@ -469,25 +460,19 @@ class TestUtilsHelpersGeneralPublicFunctions:
         trap for the next caller.
         """
         addresses = "FOO BAR"
-        mocker.patch(
-            "utils.helpers.check_bundle_addresses", return_value=addresses
-        )
+        mocker.patch("utils.helpers.check_bundle_addresses", return_value=addresses)
         canonical = bundle_from_addresses(addresses)
 
         assert canonical_bundle(canonical) == canonical
 
-    def test_utils_helpers_canonical_bundle_leaves_a_single_address_alone(
-        self, mocker
-    ):
+    def test_utils_helpers_canonical_bundle_leaves_a_single_address_alone(self, mocker):
         """One address is not a bundle, and the cache holds nothing for it."""
         address = "A" * 58
         mocker.patch("utils.helpers.check_bundle_addresses", return_value="")
 
         assert canonical_bundle(address) == address
 
-    def test_utils_helpers_canonical_bundle_passes_an_unknown_hash_through(
-        self, mocker
-    ):
+    def test_utils_helpers_canonical_bundle_passes_an_unknown_hash_through(self, mocker):
         """An unknown bundle must not become something else.
 
         The cache answering with nothing is not a licence to invent a hash -
@@ -552,7 +537,7 @@ class TestUtilsHelpersGeneralPublicFunctions:
     # # load_transparency_reports
     def test_utils_helpers_load_transparency_reports_parsing_and_sorting(self, mocker):
         mocker.patch("os.path.exists", return_value=True)
-        # Mocking directory contents: mixing valid PDFs, invalid files, and out of order dates
+        # Valid PDFs, invalid files and out-of-order dates, mixed.
         mock_files = [
             "asastats-logo.png",
             "asastats-transparency-report-2024-05.pdf",
@@ -606,7 +591,7 @@ class TestUtilsHelpersGeneralPublicFunctions:
         # We patch 'random.choices' where it is imported/used in your module.
         # Assuming the function is defined in a module where 'import random' is used:
         with mock.patch("random.choices") as mock_choices:
-            # random.choices returns a list, so we mock it to return a list containing one banner
+            # `random.choices` returns a list, so the mock returns one too.
             mock_choices.return_value = [TEST_BANNERS[0]]
             result = weighted_randomized_banner(TEST_BANNERS)
             # Verify it was called with the exact weights we expect: [4, 2, 1]
@@ -658,16 +643,12 @@ class TestUtilsHelpersNftFloorPrice:
     def test_utils_helpers_nft_floor_price_takes_the_first_listing(self):
         """An item can be floored on several marketplaces; the first is the one
         every consumer reports."""
-        assert nft_floor_price(
-            {"floor": [{"price": "1.0"}, {"price": "99.0"}]}
-        ) == 1.0
+        assert nft_floor_price({"floor": [{"price": "1.0"}, {"price": "99.0"}]}) == 1.0
 
     def test_utils_helpers_nft_floor_price_prefers_the_light_field(self):
         """A payload carrying both is not a shape either endpoint emits, but if
         one ever did, the scalar is the one the light page renders."""
-        assert nft_floor_price(
-            {"floor_price": "5.0", "floor": [{"price": "9.0"}]}
-        ) == 5.0
+        assert nft_floor_price({"floor_price": "5.0", "floor": [{"price": "9.0"}]}) == 5.0
 
     @pytest.mark.parametrize(
         "nft",

@@ -88,6 +88,4 @@ ADDRESS_AND_ALGO_NAME_URL_PATH_ERROR = (
     "NFDomains .algo names are not allowed as bundle names"
 )
 
-BUNDLENAME_PUBLIC_HELP_TEXT = (
-    "Make bundle name unique and publicly accessible by anyone"
-)
+BUNDLENAME_PUBLIC_HELP_TEXT = "Make bundle name unique and publicly accessible by anyone"

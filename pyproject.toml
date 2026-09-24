@@ -1,0 +1,33 @@
+[tool.black]
+# 90 rather than black's own 88, which is the width this repository already
+# reads at. Set here so nobody has to remember a flag.
+line-length = 90
+# Captured payloads and fixture tables. Their long lines are single data
+# literals that black will not split and that hand-wrapping would only make
+# harder to diff against a fresh capture.
+extend-exclude = '''
+/(
+    website/utils/tests/fixtures\.py
+  | website/nameservice/xchain\.py
+)/?$
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 90
+known_first_party = [
+    "api",
+    "config",
+    "core",
+    "historic",
+    "nameservice",
+    "permissiondapp",
+    "utils",
+    "walletauth",
+    "widgethost",
+    "widgets",
+]
+skip_glob = ["*/migrations/*", "docs/*"]
+
+[tool.ruff]
+line-length = 90

@@ -1,16 +1,8 @@
 """Module containing chart creating functions.
 
-**On the six ``for i, item in enumerate(rows)`` loops below.** Each used to open
-with ``if i == count - 1: break``, and every one of those was a no-op: ``count``
-is the length of the very list being iterated, so the loop ends on that index
-anyway, and the only statement the break skipped -- ``if i < count - 2 and ...``
--- is already false when ``i == count - 1``.
-
-It was not harmless, though. Because the loop could then never end by
-exhaustion, and the guard above each one (``if not asasum > 0: return {}``)
-makes the list non-empty, the loop's exit arc was unreachable: coverage reported
-six partial branches that no test could ever close, and a real gap in this file
-would have been indistinguishable from them. Do not put the break back.
+**Do not put `if i == count - 1: break` back into the loops below.** It is a
+no-op that makes each loop's exit arc unreachable, so coverage reports partial
+branches no test can close and a real gap here would look the same as them.
 """
 
 from collections import defaultdict
@@ -650,9 +642,7 @@ def _consolidated_data_from_assets_data(assets_data):
     liquidity_values = _liquidity_totals_from_assets_data(assets_data)
     defi_values = _defi_totals_from_assets_data(assets_data)
 
-    return Consolidated(
-        balance_values, staked_values, liquidity_values, defi_values, ()
-    )
+    return Consolidated(balance_values, staked_values, liquidity_values, defi_values, ())
 
 
 def _consolidated_data_from_serialized_data(serialized_data):

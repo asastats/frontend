@@ -1,23 +1,16 @@
 """Module containing the address-page layout registry.
 
-A single table (:data:`ADDRESS_LAYOUTS`) maps a layout key to its display name,
-one-line summary, template, compact flag, and minimum subscription tier. Adding
-an entry there makes the layout selectable on the user settings page with no
-change here, the way an explorer becomes selectable by joining
-:data:`EXPLORERS` and a swap router by being discovered.
+:data:`ADDRESS_LAYOUTS` maps a layout key to its display name, one-line
+summary, template, compact flag and minimum subscription tier. Adding an entry
+there makes the layout selectable on the settings page with no change here.
 
-The one difference from the explorer registry is that entitlement varies *per
-entry*. Every other preference on that page is a single gate -- you may choose
-an explorer, or you may not -- while the layouts are handed out in stages, so
+Entitlement varies per entry, unlike every other preference on that page, so
 every function below that returns a layout takes the reader's permission value
 and answers for that reader.
 
-**Entitlement is re-checked on read**, unlike
-:meth:`Profile.preferred_explorer_or_default`. A saved explorer keeps applying
-after a subscription lapses because every explorer is worth the same; a saved
-layout does not, because the layout *is* the subscription benefit. A lapsed
-reader falls back to the default rather than keeping what they no longer pay
-for, and their choice is remembered for when they return.
+**Entitlement is re-checked on read**, unlike a saved explorer: the layout
+*is* the subscription benefit, so a lapsed reader falls back to the default
+while their choice is remembered for when they return.
 """
 
 from utils.constants.core import ADDRESS_LAYOUTS, DEFAULT_ADDRESS_LAYOUT
@@ -102,8 +95,7 @@ def locked_layouts(permission):
 
     The counterpart to :func:`layout_choices`. A reader offered two of four
     options is otherwise left to guess whether the rest exist, so the settings
-    page names them and the tier each one needs -- the same courtesy the
-    explorer section pays by naming Intro.
+    page names them and the tier each one needs.
 
     :param permission: the reader's permission value
     :type permission: int
@@ -138,9 +130,8 @@ def layout_template(layout):
     removed layout renders the default page rather than raising
     ``TemplateDoesNotExist`` at the top of a view.
 
-    Several layouts may name the same template -- the money column and its
-    compact form do -- so this is not an identity. Use the layout key itself
-    wherever one is needed, notably for the cache.
+    Several layouts may name the same template, so this is not an identity.
+    Use the layout key itself wherever one is needed, notably for the cache.
 
     :param layout: layout key
     :type layout: str
@@ -153,10 +144,9 @@ def layout_template(layout):
 def layout_compact(layout):
     """Return True if ``layout`` renders its template's dense form.
 
-    The second half of what a template needs: which page, and whether it is the
-    compact one. Kept apart from :func:`layout_template` rather than folded into
-    a single "variant" string because the template asks the two questions in
-    different places -- the view picks the file, the markup adds one class.
+    Kept apart from :func:`layout_template` rather than folded into a single
+    "variant" string, because the two are asked in different places: the view
+    picks the file, the markup adds one class.
 
     :param layout: layout key
     :type layout: str
@@ -169,24 +159,18 @@ def layout_compact(layout):
 def layout_for_user(user):
     """Return the layout key a page should render for ``user``.
 
-    The one entry point a view needs. Anonymous readers, and the rare user row
-    with no profile attached, get the default -- there is no preference to read
-    and no tier to check, so there is nothing to decide.
+    The one entry point a view needs. Anonymous readers and the rare user row
+    with no profile get the default: there is no preference to read and no tier
+    to check.
 
-    Takes the user rather than the profile so a caller does not have to know
-    which of those two cases it is in, and duck-types both so this module keeps
-    its independence from ``django.contrib.auth``.
+    Takes the user rather than the profile, and duck-types both, so a caller
+    need not know which case it is in and this module keeps its independence
+    from ``django.contrib.auth``.
 
-    ``None`` is accepted and means the same as anonymous. A request that never
-    passed through ``AuthenticationMiddleware`` has no ``user`` at all, and
-    "there is nobody to ask" and "the reader is nobody" have the same answer;
-    raising instead would turn a middleware ordering change into a 500 on the
-    busiest page on the site.
-
-    Returns the key alone. It used to return the key paired with a presentation
-    modifier, from when the page was one template that varied by attribute; the
-    caller now looks up whichever of :func:`layout_template` and
-    :func:`layout_compact` it actually needs.
+    ``None`` means the same as anonymous. A request that never passed through
+    ``AuthenticationMiddleware`` has no ``user`` at all, and raising there would
+    turn a middleware ordering change into a 500 on the busiest page on the
+    site.
 
     :param user: the request's user (may be anonymous)
     :type user: :class:`User` or :class:`AnonymousUser`
@@ -206,8 +190,8 @@ def layout_for_user(user):
 def layout_tier(layout):
     """Return the minimum tier name for ``layout``, or None if ungated.
 
-    Used to tell a reader below the line *which* tier unlocks what they are
-    looking at, the way the explorer section names Intro.
+    Used to tell a reader below the line which tier unlocks what they are
+    looking at.
 
     :param layout: layout key
     :type layout: str

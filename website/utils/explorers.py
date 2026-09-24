@@ -1,15 +1,12 @@
 """Module containing constants for blockchain explorer link providers.
 
-A single registry (:data:`EXPLORERS`) maps an explorer key to its display name,
-base URL, and per-entity path templates. Allo is the default and the historical
-hard-coded provider; adding an entry here makes the explorer selectable on the
-user settings page with no further code change, mirroring how a swap-router
-widget becomes selectable just by being discovered.
+:data:`EXPLORERS` maps an explorer key to its display name, base URL and
+per-entity path templates. Adding an entry makes the explorer selectable on
+the settings page with no further code change.
 
-The same table is intentionally duplicated on the backend (``engine``) so the
-closed-source group/transaction link builder can resolve a URL without importing
-frontend code -- the same one-way, no-shared-import arrangement already used for
-``SUBSCRIPTION_TIER_PERMISSIONS``.
+**The same table is duplicated in the engine on purpose**, so its link builder
+can resolve a URL without importing frontend code. One-way and no shared
+import, as ``SUBSCRIPTION_TIER_PERMISSIONS`` already is.
 """
 
 from utils.constants.core import DEFAULT_EXPLORER, EXPLORERS
@@ -38,9 +35,7 @@ def explorer_choices():
     """
     default = (DEFAULT_EXPLORER, EXPLORERS[DEFAULT_EXPLORER]["name"])
     others = sorted(
-        (key, conf["name"])
-        for key, conf in EXPLORERS.items()
-        if key != DEFAULT_EXPLORER
+        (key, conf["name"]) for key, conf in EXPLORERS.items() if key != DEFAULT_EXPLORER
     )
     return [default, *others]
 

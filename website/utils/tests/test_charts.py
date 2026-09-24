@@ -1,7 +1,6 @@
 """Testing module for :py:mod:`utils.charts` module."""
 
 import json
-from collections import namedtuple
 from copy import deepcopy
 from pathlib import Path
 from unittest import mock
@@ -9,7 +8,6 @@ from unittest import mock
 import pytest
 
 from utils.charts import (
-    _nftfloor_totals_from_serialized_data,
     _asa_chart,
     _asa_chart_from_assets_data,
     _assign_nftfloor_colors,
@@ -23,6 +21,7 @@ from utils.charts import (
     _distribution_setup,
     _nft_chart,
     _nft_chart_from_assets_data,
+    _nftfloor_totals_from_serialized_data,
     _ratio_chart,
     _ratio_chart_data,
     _total_from_serialized_data,
@@ -417,8 +416,7 @@ class TestUtilsChartFunctions:
             returned = _distribution_chart_data(TESTING_ASAS, values, consolidated_data)
         assert len(returned.get("labels")) == 4
         assert all(
-            len(returned.get("data").get(typ.lower())) == 4
-            for typ in DISTRIBUTION_COLORS
+            len(returned.get("data").get(typ.lower())) == 4 for typ in DISTRIBUTION_COLORS
         )
         assert returned.get("labels")[-1] == "others"
         assert sum(
@@ -487,8 +485,7 @@ class TestUtilsChartFunctions:
         assert isinstance(returned.get("data"), dict)
         assert len(returned.get("labels")) == 3
         assert all(
-            len(returned.get("data").get(typ.lower())) == 3
-            for typ in DISTRIBUTION_COLORS
+            len(returned.get("data").get(typ.lower())) == 3 for typ in DISTRIBUTION_COLORS
         )
 
     def test_utils_charts_distribution_chart_data_from_assets_data_returns_limited_size(
@@ -541,8 +538,7 @@ class TestUtilsChartFunctions:
             )
         assert len(returned.get("labels")) == 4
         assert all(
-            len(returned.get("data").get(typ.lower())) == 4
-            for typ in DISTRIBUTION_COLORS
+            len(returned.get("data").get(typ.lower())) == 4 for typ in DISTRIBUTION_COLORS
         )
         assert returned.get("labels")[-1] == "others"
         assert (
@@ -555,9 +551,7 @@ class TestUtilsChartFunctions:
         )
 
     # # _distribution_chart_from_assets_data
-    def test_utils_charts_distribution_chart_from_assets_data_functionality(
-        self, mocker
-    ):
+    def test_utils_charts_distribution_chart_from_assets_data_functionality(self, mocker):
         mocked_setup = mocker.patch("utils.charts._distribution_setup")
         mocked_distribution = mocker.patch(
             "utils.charts._distribution_chart_data_from_assets_data",

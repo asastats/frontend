@@ -45,7 +45,7 @@ class TestUtilsConstantsExplorersChoices:
 
 
 class TestUtilsConstantsExplorersLink:
-    """Testing class for :func:`explorer_link`, :func:`explorer_base`, :func:`explorer_name`."""
+    """Testing class for the three `explorer_*` helpers."""
 
     def test_utils_constants_explorers_link_address_for_allo(self):
         assert explorer_link("allo", "address", "ADDR") == (
@@ -70,9 +70,7 @@ class TestUtilsConstantsExplorersLink:
         assert explorer_link("bogus", "asset", 1) == "https://allo.info/asset/1"
 
     def test_utils_constants_explorers_link_unknown_entity_returns_base(self):
-        assert explorer_link("lora", "weird", "X") == (
-            "https://lora.algokit.io/mainnet/"
-        )
+        assert explorer_link("lora", "weird", "X") == ("https://lora.algokit.io/mainnet/")
 
     def test_utils_constants_explorers_base_for_algosurf(self):
         assert explorer_base("algosurf") == "https://algo.surf/"

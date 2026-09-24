@@ -153,9 +153,7 @@ class TestUserHelpersValuesFunctions:
         ]
 
     # # _values_offset_and_length_pairs
-    def test_utils_userhelpers_values_offset_and_length_pairs_functionality(
-        self, mocker
-    ):
+    def test_utils_userhelpers_values_offset_and_length_pairs_functionality(self, mocker):
         docs_data_size = mocker.MagicMock()
         starting = [(0, 8), (8, 1)]
         docs = [(48, 8), (56, 1)]
@@ -234,9 +232,7 @@ class TestUtilsUserHelpersFunctions:
         mocked_search.assert_has_calls(calls, any_order=True)
         assert mocked_search.call_count == 3
 
-    def test_utils_userhelpers_check_authorization_transaction_for_no_note(
-        self, mocker
-    ):
+    def test_utils_userhelpers_check_authorization_transaction_for_no_note(self, mocker):
         profile = mocker.MagicMock()
         address = "address"
         profile.address = address
@@ -472,9 +468,7 @@ class TestUtilsUserHelpersFunctions:
         assert is_system_reserved_url_path(url_path) is False
 
     # # user_display
-    def test_utils_userhelpers_user_display_calls_and_returns_profile_name(
-        self, mocker
-    ):
+    def test_utils_userhelpers_user_display_calls_and_returns_profile_name(self, mocker):
         user = mocker.MagicMock()
         returned = user_display(user)
         assert returned == user.profile.name
