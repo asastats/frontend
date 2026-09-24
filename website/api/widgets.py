@@ -23,6 +23,28 @@ class BearerAuth(requests.auth.AuthBase):
         return r
 
 
+def page_key_from_addresses(addresses):
+    """Return the key the engine's live pass publishes these addresses under.
+
+    The engine computes it from the addresses alone:
+    ``bundle_from_addresses(addresses) if " " in addresses else addresses``,
+    in ``utils.transmitters._live_page``. Anything reading `lvp:`, `lvh:`,
+    `lvn:` or storing a page to be matched against them has to compute the
+    same thing the same way, from the same input.
+
+    **Not the bundle from the URL.** A bundle hash naming one address is a real
+    page to visit, and the engine publishes it under that address rather than
+    under the hash - so a caller deriving the key from the path gets a key
+    nothing ever writes.
+
+    :param addresses: space separated collection of public Algorand addresses
+    :type addresses: str
+    :return: str
+    """
+    addresses = (addresses or "").strip()
+    return create_bundle(addresses) if " " in addresses else addresses
+
+
 def bundle_and_addresses_from_path(url_path, force_bundle=True):
     """Return bundle and Algorand addresses defined by provided `url_path`.
 

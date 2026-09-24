@@ -83,6 +83,16 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
+        # **Declared, because the root is WARNING and would drop it.** The live
+        # widget logs one line per reload decision, carrying both fingerprints
+        # that disagreed - a reader reported a page reloading seconds after it
+        # was opened and nothing recorded what the comparison saw. Diagnostic:
+        # drop this entry and the line goes quiet without a code change.
+        "widgets.inhouse.liverefresh": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 

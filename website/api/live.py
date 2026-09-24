@@ -44,8 +44,8 @@ import time
 from django.conf import settings
 
 from api.tiers import block_time
+from api.widgets import page_key_from_addresses
 from utils.clients import redis_instance
-from utils.helpers import bundle_from_addresses
 
 logger = logging.getLogger(__name__)
 
@@ -149,9 +149,16 @@ def page_key(value, addresses):
     """Return the key the engine publishes this page under.
 
     A bundle is keyed by its hash and a single address by itself, which is what
-    `_live_page` computes on the other side. Derived from `addresses` rather
-    than trusted from the path, because an old bookmark carries a pre-sort hash
-    - the same normalisation `api.main.fetch_and_serialize_account` does.
+    `_live_page` computes on the other side.
+
+    **Derived from the addresses whenever there are any**, because a bundle
+    hash naming one address is a page a reader can visit and the engine keys
+    it by that address rather than by the hash. Taking the path's value there
+    asked for a key nothing writes, and the caller silently never saw a
+    snapshot.
+
+    `value` is the answer only when the caller has no addresses to offer,
+    which is how a single-address request arrives.
 
     :param value: single address, or the bundle hash from the path
     :type value: str
@@ -159,7 +166,7 @@ def page_key(value, addresses):
     :type addresses: str
     :return: str
     """
-    return bundle_from_addresses(addresses) if " " in addresses else value
+    return page_key_from_addresses(addresses) or value
 
 
 def subscribe(value, addresses, user_pk, permission, client=None, now=None):
