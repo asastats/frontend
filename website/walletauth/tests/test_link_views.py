@@ -60,9 +60,7 @@ class TestWalletLinkNonceAPIView:
     @pytest.mark.django_db
     def test_link_nonce_rejects_invalid_address(self):
         user = make_user()
-        response = post(
-            WalletLinkNonceAPIView, {"address": "nope", "chain": "evm"}, user
-        )
+        response = post(WalletLinkNonceAPIView, {"address": "nope", "chain": "evm"}, user)
         assert response.status_code == 400
         assert not WalletNonce.objects.exists()
 
@@ -142,9 +140,7 @@ class TestWalletLinkVerifyAPIView:
     def test_link_verify_expired_nonce(self, mocker):
         user = make_user()
         evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "exp")
-        WalletNonce.objects.create(
-            user=user, address=evm_addr, nonce="exp", chain="evm"
-        )
+        WalletNonce.objects.create(user=user, address=evm_addr, nonce="exp", chain="evm")
         mocker.patch.object(WalletNonce, "is_expired", return_value=True)
         response = post(
             WalletLinkVerifyAPIView,
@@ -158,9 +154,7 @@ class TestWalletLinkVerifyAPIView:
     def test_link_verify_lost_race(self, mocker):
         user = make_user()
         evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "race")
-        WalletNonce.objects.create(
-            user=user, address=evm_addr, nonce="race", chain="evm"
-        )
+        WalletNonce.objects.create(user=user, address=evm_addr, nonce="race", chain="evm")
         mocker.patch.object(WalletNonce, "claim", return_value=False)
         response = post(
             WalletLinkVerifyAPIView,
@@ -290,9 +284,7 @@ class TestWalletLinkVerifyAPIView:
         user.profile.address = OLD_ALGORAND  # has a primary
         user.profile.save()
         evm_addr, sig = evm_sign(WALLET_CONNECT_NONCE_PREFIX + "cap")
-        WalletNonce.objects.create(
-            user=user, address=evm_addr, nonce="cap", chain="evm"
-        )
+        WalletNonce.objects.create(user=user, address=evm_addr, nonce="cap", chain="evm")
         with override_settings(MAX_SECONDARY_ADDRESSES=0):
             response = post(
                 WalletLinkVerifyAPIView,
@@ -349,9 +341,7 @@ class TestWalletLinkVerifyAPIView:
         user = make_user("claimer")
         user.profile.address = OLD_ALGORAND  # already has a primary
         user.profile.save()
-        WalletNonce.objects.create(
-            user=user, address=evm_addr, nonce="dup", chain="evm"
-        )
+        WalletNonce.objects.create(user=user, address=evm_addr, nonce="dup", chain="evm")
         response = post(
             WalletLinkVerifyAPIView,
             {"nonce": "dup", "chain": "evm", "signature": sig},

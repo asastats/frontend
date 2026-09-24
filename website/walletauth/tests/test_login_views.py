@@ -406,7 +406,7 @@ class TestWalletLoginVerifyAPIView:
     def test_login_verify_uses_safe_absolute_next_url_and_strips_whitespace(
         self, mocker
     ):
-        user = link_user()
+        link_user()
         WalletLoginNonce.objects.create(
             address=PROVEN, chain="algorand", nonce="n_safe2"
         )
@@ -434,7 +434,7 @@ class TestWalletLoginVerifyAPIView:
 
     @pytest.mark.django_db
     def test_login_verify_ignores_unsafe_external_next_url(self, mocker):
-        user = link_user()
+        link_user()
         WalletLoginNonce.objects.create(
             address=PROVEN, chain="algorand", nonce="n_safe3"
         )

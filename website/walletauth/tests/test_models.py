@@ -195,9 +195,7 @@ class TestWalletLoginNonce:
         deleted = WalletLoginNonce.purge_stale()
 
         assert deleted == 2
-        assert list(WalletLoginNonce.objects.values_list("nonce", flat=True)) == [
-            "fresh"
-        ]
+        assert list(WalletLoginNonce.objects.values_list("nonce", flat=True)) == ["fresh"]
 
     # # __str__
     @pytest.mark.django_db

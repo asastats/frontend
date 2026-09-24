@@ -34,9 +34,7 @@ class TestWalletAddressBackend:
     def test_backend_authenticate_returns_linked_user(self):
         user = make_linked_user()
         backend = WalletAddressBackend()
-        assert (
-            backend.authenticate(None, verified_wallet_address=LINKED_ADDRESS) == user
-        )
+        assert backend.authenticate(None, verified_wallet_address=LINKED_ADDRESS) == user
 
     @pytest.mark.django_db
     def test_backend_authenticate_none_without_address(self):

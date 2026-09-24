@@ -55,9 +55,7 @@ class TestReconcilePrimaryRegistry:
         primary_row(user.profile, ALGO_A)
         user.profile.address = ALGO_B
         user.profile.save()
-        assert not LinkedAddress.objects.filter(
-            address=ALGO_A, is_primary=True
-        ).exists()
+        assert not LinkedAddress.objects.filter(address=ALGO_A, is_primary=True).exists()
 
     @pytest.mark.django_db
     def test_same_address_save_keeps_primary(self):

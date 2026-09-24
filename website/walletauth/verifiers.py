@@ -42,11 +42,10 @@ class WalletProofVerifier:
     """Interface: prove that a signed challenge demonstrates control of an address.
 
     Subclasses implement :meth:`recover`, which validates a chain-specific proof
-    and returns the **proven Algorand address** that produced it (the signer's
-    own address for Algorand; the xChain-derived counterpart for EVM). The
-    shared :meth:`verify` wraps :meth:`recover` for the authorize flow, where the
-    expected address is already known; the login flow calls :meth:`recover`
-    directly and resolves the account from whatever address signed.
+    and returns the proven Algorand address that produced it. :meth:`verify`
+    wraps it for the authorize flow, where the expected address is already
+    known; the login flow calls :meth:`recover` directly and resolves the
+    account from whatever address signed.
     """
 
     def recover(self, *, nonce, prefix, payload):
@@ -173,9 +172,7 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
                 return None
         elif isinstance(stxn, PQSignedTransaction):
             if not self._pq_signature_ok(stxn, signed_b64=signed_b64):
-                logger.warning(
-                    "walletauth: PQ signature rejected for %s", _short(sender)
-                )
+                logger.warning("walletauth: PQ signature rejected for %s", _short(sender))
                 return None
         else:
             logger.warning(
@@ -344,16 +341,14 @@ class EvmXChainVerifier(WalletProofVerifier):
     """Recover an EVM signer from an EIP-191 ``personal_sign`` signature.
 
     The signature proves control of the EVM private key over the challenge
-    ``prefix+nonce``. :meth:`recover` returns the signer's EVM address
-    (lowercased so it matches the address the nonce was issued for); the
-    EVM -> Algorand mapping (the xChain logicsig account from
-    :func:`nameservice.xchain.check_evm_address`) is the resolver's concern,
-    not the verifier's. The shared :meth:`verify` (authorize) builds on this.
+        ``prefix+nonce``. :meth:`recover` returns the signer's EVM address,
+        lowercased so it matches the address the nonce was issued for; the
+        EVM to Algorand mapping is the resolver's concern, not the verifier's.
 
-    The logicsig's own on-chain scheme is EIP-712; that is only relevant when
-    spending from the xChain account. Proving control of the EVM key is what
-    proves control of the derived Algorand account, so a plain message
-    signature over our challenge is sufficient here.
+        **A plain message signature is sufficient here even though the logicsig's
+        own scheme is EIP-712.** That scheme matters when spending from the xChain
+        account; proving control of the EVM key is what proves control of the
+        derived Algorand account.
     """
 
     def recover(self, *, nonce, prefix, payload):
@@ -417,6 +412,4 @@ def _short(address):
     :return: truncated ``AAAAA..ZZZZZ`` form, or the input unchanged when short
     :rtype: str
     """
-    return (
-        f"{address[:5]}..{address[-5:]}" if address and len(address) > 10 else address
-    )
+    return f"{address[:5]}..{address[-5:]}" if address and len(address) > 10 else address

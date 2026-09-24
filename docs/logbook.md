@@ -552,3 +552,62 @@ all.
 lose things - an eviction, a flush, a failover. For a daily allowance that
 costs a reader one day; for a refilling bucket it would hand every key a fresh
 grant. The failure mode of the anti-abuse mechanism must not be the abuse.
+
+---
+
+## website/walletauth/crypto.py
+
+### Module
+
+Ported from the Rewards Suite's `utils.helpers.verify_signed_transaction`, with
+Falcon-1024 (`pqsig`) verification added. Two deliberate differences from that
+reference: the domain-separation prefix is named rather than written as a
+literal, and the caught exceptions are broadened because this is called
+straight from the verifier rather than from inside a view's blanket
+`try/except`.
+
+### `verify_pq_signed_transaction`
+
+**Why it asks a node instead of verifying locally.** The first implementation
+used `falcon_python.Falcon1024`, which is standard, *randomized* Falcon-1024.
+Algorand's post-quantum accounts use a deterministic variant, and Algorand's
+own `deterministic.h` records the three ways they differ on the wire: the
+deterministic signature drops the 40-byte nonce, adds a salt-version byte, and
+changes the header from `0x3A` to `0xBA`. No message preimage and no header
+fix-up bridges that - the verifier was running a different algorithm on an
+encoding missing a field it requires. `~/claude/post-quantum/FINDING-falcon-mismatch.md`
+has the working.
+
+There is no Python binding for the deterministic variant. There is a correct
+implementation in every algod node.
+
+**It also outlives this scheme.** The `pqsig` envelope is built to carry others
+- `f5`, Falcon-512, is defined and reserved - and a node-side check supports
+each the day the network does, with no new binding to build.
+
+The re-encoding diagnostic exists because this module has already taken the
+detour once: a mismatch between the bytes the wallet sent and the bytes the SDK
+re-encodes fails the signature, which reads as bad cryptography rather than as
+an encoding problem.
+
+---
+
+## website/walletauth/management.py
+
+### `is_bootstrap_promotion`
+
+The branch exists for accounts whose `Profile.address` predates the
+linked-address registry. Linking that same address creates a *non-primary* row,
+because `link_address` sees `Profile.address` already set - so the account has
+a proven address and no primary, and step-up can never be satisfied. Removing
+the bootstrap path strands them.
+
+---
+
+## website/walletauth/verifiers.py
+
+### `EvmXChainVerifier`
+
+The xChain logicsig's own on-chain scheme is EIP-712, which matters when
+spending from the account. It does not matter here, because proving control of
+the EVM key is what proves control of the derived Algorand account.

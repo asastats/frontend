@@ -139,9 +139,7 @@ class WalletVerifyAPIView(APIView):
 
         verifier = VERIFIERS.get(chain)
         if verifier is None:
-            return Response(
-                {"success": False, "error": "Unsupported chain"}, status=400
-            )
+            return Response({"success": False, "error": "Unsupported chain"}, status=400)
 
         try:
             nonce_obj = WalletNonce.objects.get(
@@ -177,9 +175,7 @@ class WalletVerifyAPIView(APIView):
 
         if not nonce_obj.claim():
             # A concurrent request already consumed this nonce.
-            return Response(
-                {"success": False, "error": "Nonce already used"}, status=400
-            )
+            return Response({"success": False, "error": "Nonce already used"}, status=400)
         try:
             with transaction.atomic():
                 refreshed = profile.update_authorized(

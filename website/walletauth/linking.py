@@ -13,7 +13,7 @@ from collections import namedtuple
 
 from django.utils import timezone
 
-from walletauth.addresses import canonical_for, max_secondary_addresses
+from walletauth.addresses import canonical_for
 from walletauth.models import LinkedAddress
 
 logger = logging.getLogger(__name__)

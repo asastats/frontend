@@ -127,8 +127,7 @@ class TestLinkAddress:
         assert result.is_primary is True
         assert LinkedAddress.objects.filter(canonical_address=ALGO_A).count() == 1
         assert (
-            LinkedAddress.objects.get(canonical_address=ALGO_A).authorized
-            == "tx1-again"
+            LinkedAddress.objects.get(canonical_address=ALGO_A).authorized == "tx1-again"
         )
 
     # # collision

@@ -128,9 +128,7 @@ class WalletLoginNonceAPIView(APIView):
         address = (request.data.get("address") or "").strip()
         chain = request.data.get("chain", "algorand")
         if chain not in VERIFIERS:
-            return Response(
-                {"success": False, "error": "Unsupported chain"}, status=400
-            )
+            return Response({"success": False, "error": "Unsupported chain"}, status=400)
         if not address or not is_valid_chain_address(chain, address):
             return Response(
                 {"success": False, "error": "Invalid or missing address"}, status=400
@@ -184,9 +182,7 @@ class WalletLoginVerifyAPIView(APIView):
 
         verifier = VERIFIERS.get(chain)
         if verifier is None:
-            return Response(
-                {"success": False, "error": "Unsupported chain"}, status=400
-            )
+            return Response({"success": False, "error": "Unsupported chain"}, status=400)
 
         try:
             proven = verifier.recover(
@@ -221,9 +217,7 @@ class WalletLoginVerifyAPIView(APIView):
         # Consume the proof atomically up front: a valid proof is strictly
         # single-use whether or not an account turns out to be linked.
         if not nonce_obj.claim():
-            return Response(
-                {"success": False, "error": "Nonce already used"}, status=400
-            )
+            return Response({"success": False, "error": "Nonce already used"}, status=400)
 
         # Resolve the account from the PROVEN address only.
         try:

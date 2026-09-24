@@ -54,19 +54,15 @@ def _normalized(chain, address):
 def is_bootstrap_promotion(profile, target):
     """Whether ``target`` may become primary / login-enabled without step-up.
 
-    Step-up exists to stop a stolen session escalating against an *existing*
-    primary; it cannot be satisfied before any primary exists. That strands
-    accounts whose legacy ``Profile.address`` predates the linked-address
-    registry: linking that same address creates a non-primary row (because
-    ``Profile.address`` is already set in :func:`link_address`), yet there is no
-    primary to sign with.
+    Step-up cannot be satisfied before any primary exists, which would strand
+    an account whose legacy ``Profile.address`` predates this registry.
 
-    Bootstrapping is allowed only when BOTH hold, so a stolen session cannot
-    promote an attacker's freshly linked wallet:
+    **Both conditions are required**, so a stolen session cannot promote an
+    attacker's freshly linked wallet:
 
     * the account has no current primary, and
-    * ``target`` is the address already authorized on the profile
-      (``Profile.address``) -- an address the account has already proven.
+    * ``target`` is the address already authorized on the profile, which the
+      account has therefore already proven.
 
     :param profile: the owning profile
     :type profile: core.models.Profile

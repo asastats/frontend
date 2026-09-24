@@ -239,9 +239,7 @@ class TestVerifyStepUp:
     def test_not_supported_bubbles_message(self, mocker):
         user = make_user()
         acct, sec = self._primary_with_nonce(user)
-        mocker.patch.object(
-            VERIFIERS["evm"], "recover", side_effect=NotSupported("nope")
-        )
+        mocker.patch.object(VERIFIERS["evm"], "recover", side_effect=NotSupported("nope"))
         err = verify_step_up(
             user=user,
             operation="set_login",

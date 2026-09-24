@@ -1,12 +1,11 @@
 """Testing module for :py:mod:`walletauth.verifiers` module."""
 
 import base64
-
-import pytest
 import os
 
-from algosdk.error import AlgodHTTPError
+import pytest
 from algosdk import account, encoding
+from algosdk.error import AlgodHTTPError
 from algosdk.transaction import (
     PaymentTxn,
     PQSig,
@@ -533,9 +532,7 @@ class TestAlgorandVerifierRemainingBranches:
 
         _secret, address = account.generate_account()
         envelope = SomeOtherEnvelope(make_self_payment(address, make_note()))
-        mocker.patch(
-            "walletauth.verifiers.msgpack_decode", return_value=envelope
-        )
+        mocker.patch("walletauth.verifiers.msgpack_decode", return_value=envelope)
         verifier = AlgorandSignedTxnVerifier(algod_factory=fake_algod())
 
         with caplog.at_level("WARNING"):

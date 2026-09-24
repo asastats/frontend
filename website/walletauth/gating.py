@@ -56,9 +56,9 @@ def linked_addresses_for_user(user, addresses):
         return set()
 
     owned = set()
-    for stored, canonical in LinkedAddress.objects.filter(
-        profile__user=user
-    ).values_list("address", "canonical_address"):
+    for stored, canonical in LinkedAddress.objects.filter(profile__user=user).values_list(
+        "address", "canonical_address"
+    ):
         owned.add(stored)
         owned.add(canonical)
 
@@ -74,20 +74,17 @@ def algorand_addresses_for_user(user):
     """Return every Algorand address connected to ``user``.
 
     Unlike :func:`linked_addresses_for_user` this takes no candidate list: the
-    caller is not asking "is this one mine" but "what do I hold, everywhere",
-    which is the question the router's fee tier is judged on -- the published
-    scale counts ASASTATS summed across every linked address, not the address
-    being swapped from.
+    question is "what do I hold, everywhere", which is what the router's fee
+    tier is judged on - the published scale counts ASASTATS summed across every
+    linked address, not the address being swapped from.
 
     **Canonical values, deliberately.** ``canonical_address`` is the Algorand
-    address in both cases: itself for a native connection, the lsig counterpart
-    for an EVM one. So an EVM wallet contributes the account that actually holds
-    assets on Algorand, and the caller never has to know which kind of
-    connection produced a row.
+    address either way: itself for a native connection, the lsig counterpart
+    for an EVM one. So an EVM wallet contributes the account that actually
+    holds assets, and the caller never has to know which kind of row it is.
 
-    Anonymous users hold nothing here: an empty set, and the caller's tier is
-    zero. That is correct rather than merely safe -- a discount is a property of
-    a profile, and there is no profile.
+    An anonymous user yields an empty set and a tier of zero. A discount is a
+    property of a profile, and there is no profile.
 
     :param user: the requesting user (anonymous yields an empty result)
     :type user: django.contrib.auth.models.User
@@ -99,9 +96,9 @@ def algorand_addresses_for_user(user):
 
     return {
         canonical
-        for canonical in LinkedAddress.objects.filter(
-            profile__user=user
-        ).values_list("canonical_address", flat=True)
+        for canonical in LinkedAddress.objects.filter(profile__user=user).values_list(
+            "canonical_address", flat=True
+        )
         if canonical and len(canonical) == ALGORAND_ADDRESS_LEN
     }
 

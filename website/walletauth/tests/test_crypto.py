@@ -4,8 +4,8 @@ import base64
 import os
 
 import pytest
-
 from algosdk import account, encoding
+from algosdk.error import AlgodHTTPError
 from algosdk.transaction import (
     PaymentTxn,
     PQSig,
@@ -14,7 +14,6 @@ from algosdk.transaction import (
     SuggestedParams,
 )
 
-from algosdk.error import AlgodHTTPError
 from walletauth.crypto import (
     FALCON_DET1024_SIG_MAXSIZE,
     verify_pq_signed_transaction,
@@ -190,9 +189,7 @@ class TestVerifyPQSignedTransaction:
         ),
         ids=("scheme", "salt", "pk_length", "sig_too_short", "sig_too_long"),
     )
-    def test_walletauth_crypto_pq_preflight_rejects_without_asking_the_node(
-        self, mutate
-    ):
+    def test_walletauth_crypto_pq_preflight_rejects_without_asking_the_node(self, mutate):
         """Malformed material is refused here, not turned into a round trip."""
         stxn = make_pq_signed()
         mutate(stxn)

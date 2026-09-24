@@ -104,9 +104,7 @@ class WalletLinkNonceAPIView(APIView):
         chain = request.data.get("chain", "evm")
 
         if chain not in LINKABLE_CHAINS:
-            return Response(
-                {"success": False, "error": "Unsupported chain"}, status=400
-            )
+            return Response({"success": False, "error": "Unsupported chain"}, status=400)
         if not address or not is_valid_chain_address(chain, address):
             return Response(
                 {"success": False, "error": "Invalid or missing address"}, status=400
@@ -153,15 +151,11 @@ class WalletLinkVerifyAPIView(APIView):
         if not nonce_str:
             return Response({"success": False, "error": "Missing nonce"}, status=400)
         if chain not in LINKABLE_CHAINS:
-            return Response(
-                {"success": False, "error": "Unsupported chain"}, status=400
-            )
+            return Response({"success": False, "error": "Unsupported chain"}, status=400)
 
         verifier = VERIFIERS.get(chain)
         if verifier is None:
-            return Response(
-                {"success": False, "error": "Unsupported chain"}, status=400
-            )
+            return Response({"success": False, "error": "Unsupported chain"}, status=400)
 
         try:
             proven = verifier.recover(
@@ -192,9 +186,7 @@ class WalletLinkVerifyAPIView(APIView):
         if nonce_obj.is_expired():
             return Response({"success": False, "error": "Nonce expired"}, status=400)
         if not nonce_obj.claim():
-            return Response(
-                {"success": False, "error": "Nonce already used"}, status=400
-            )
+            return Response({"success": False, "error": "Nonce already used"}, status=400)
 
         profile = request.user.profile
         try:

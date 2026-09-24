@@ -171,9 +171,7 @@ class TestWalletVerifyAPIView:
         assert row.authorized == "good"
 
     @pytest.mark.django_db
-    def test_walletauth_verifyview_rejects_address_held_by_another_account(
-        self, mocker
-    ):
+    def test_walletauth_verifyview_rejects_address_held_by_another_account(self, mocker):
         # Another account already owns this canonical address in the registry.
         other = user_model.objects.create(username="holder")
         LinkedAddress.objects.create(
@@ -201,9 +199,7 @@ class TestWalletVerifyAPIView:
         assert user.profile.authorized != "good"
 
     @pytest.mark.django_db
-    def test_walletauth_verifyview_authorizes_when_permission_refresh_fails(
-        self, mocker
-    ):
+    def test_walletauth_verifyview_authorizes_when_permission_refresh_fails(self, mocker):
         user = make_authorized_user()
         WalletNonce.objects.create(user=user, address=TEST_ADDRESS, nonce="good")
         mocker.patch.dict(
