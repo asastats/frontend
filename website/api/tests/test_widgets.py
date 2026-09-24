@@ -30,9 +30,7 @@ class TestApiWidgetsFunctions:
 
     # # bundle_and_addresses_from_path
     @pytest.mark.parametrize("url_path", [None, "", False, "0" * ADDRESS_LEN])
-    def test_api_widgets_bundle_and_addresses_from_path_for_error(
-        self, url_path, mocker
-    ):
+    def test_api_widgets_bundle_and_addresses_from_path_for_error(self, url_path, mocker):
         mocked_bundle = mocker.patch("api.widgets.create_bundle")
         mocked_check = mocker.patch("api.widgets.check_bundle_addresses")
         with pytest.raises(ValidationError):

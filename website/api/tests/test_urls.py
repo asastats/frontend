@@ -112,9 +112,7 @@ class TestApiUrls:
         root_url = self._url_from_pattern_list(root_pattern)
         assert isinstance(root_url, URLResolver)
         url = next(
-            url
-            for url in root_url.url_patterns
-            if url.name == "api_v2_address_entities"
+            url for url in root_url.url_patterns if url.name == "api_v2_address_entities"
         )
         assert str(url.pattern) == "entities/"
         assert url.lookup_str == "api.views.AddressEntities"
@@ -144,9 +142,7 @@ class TestApiUrls:
         root_url = self._url_from_pattern_list(root_pattern)
         assert isinstance(root_url, URLResolver)
         url = next(
-            url
-            for url in root_url.url_patterns
-            if url.name == "api_v2_bundle_asas_asset"
+            url for url in root_url.url_patterns if url.name == "api_v2_bundle_asas_asset"
         )
         assert str(url.pattern) == "asas/<int:id>/"
         assert url.lookup_str == "api.views.BundleViewAsasAsset"
@@ -168,9 +164,7 @@ class TestApiUrls:
         root_url = self._url_from_pattern_list(root_pattern)
         assert isinstance(root_url, URLResolver)
         url = next(
-            url
-            for url in root_url.url_patterns
-            if url.name == "api_v2_bundle_nfts_asset"
+            url for url in root_url.url_patterns if url.name == "api_v2_bundle_nfts_asset"
         )
         assert str(url.pattern) == "nfts/<int:id>/"
         assert url.lookup_str == "api.views.BundleViewNftsAsset"
@@ -300,9 +294,7 @@ class TestApiUrls:
         root_url = self._url_from_pattern_list(root_pattern)
         assert isinstance(root_url, URLResolver)
         url = next(
-            url
-            for url in root_url.url_patterns
-            if url.name == "api_v2_nfdname_entities"
+            url for url in root_url.url_patterns if url.name == "api_v2_nfdname_entities"
         )
         assert str(url.pattern) == "entities/"
         assert url.lookup_str == "api.views.NfdNameEntities"

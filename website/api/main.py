@@ -2,7 +2,6 @@
 
 from api import live
 from api.client import fetch_serialized_account
-from api.position_id import annotate_positions
 from api.helpers import (
     convert_account_values_to_usd,
     convert_asaitems_values_to_usd,
@@ -26,6 +25,7 @@ from api.helpers import (
     extract_nftitems_sale_type,
     extract_top_account_items,
 )
+from api.position_id import annotate_positions
 from utils.helpers import bundle_from_addresses
 
 
@@ -39,33 +39,20 @@ def account_entities(serialized_data):
     return extract_account_entities(serialized_data)
 
 
-def fetch_and_serialize_account(
-    value, addresses, light=False, permission=0, fresh=False
-):
+def fetch_and_serialize_account(value, addresses, light=False, permission=0, fresh=False):
     """Fetch and serialize an account for a single address or a bundle.
 
-    ``value`` is the URL path segment as the visitor supplied it — a single
-    address, or a bundle hash that may be an *ancient* (pre-sort) bookmark. For
-    bundles we recompute the canonical hash so the engine's ``bundle_from_addresses``
-    cross-check matches regardless of which historical hash they arrived with. A
-    single address is passed through unchanged.
+    ``value`` is the URL path segment as the visitor supplied it: a single
+    address, or a bundle hash that may be a pre-sort bookmark. A bundle is
+    re-hashed so the engine's ``bundle_from_addresses`` cross-check matches
+    whichever historical hash it arrived with; a single address is passed
+    through unchanged.
 
-    Every position is given its stable ``pid`` here, which is what makes this
-    the payload the *page* and the *API* agree on rather than two different
-    ones. ``AsaItemSerializer.to_representation`` also annotates, so a request
-    to ``/api/v2/`` gets the same ids either way -- the computation is pure and
-    idempotent, so doing it twice recomputes the same value.
-
-    It has to happen at this layer because the engine does not emit ``pid``: it
-    is the *website's* identifier for a position, built from what the position
-    is (see :mod:`api.position_id`). The address page consumes the engine's
-    payload directly and never touches the serializer, so before this call the
-    page rendered every position without an identity -- no ``data-pid``, and
-    therefore not one position-pin control on the whole page. `pins.js`, the
-    pinned band and the whole position-pinning feature were dead against the
-    real backend while passing every test, because the fixtures annotated
-    themselves. ``integration_tests/test_address_dynamic_integration.py`` is what
-    found it and is what keeps it found.
+    **Every position is given its stable ``pid`` here**, because the engine does
+    not emit one and the address page consumes the engine's payload directly
+    without ever touching the serializer. ``AsaItemSerializer`` annotates too,
+    so ``/api/v2/`` gets the same ids either way: the computation is pure and
+    idempotent. See :mod:`api.position_id`.
 
     :param value: single address, or the bundle hash
     :type value: str
@@ -309,9 +296,7 @@ def processed_nftitems(serialized_data, query_params):
     :type limit: str
     :return: dict
     """
-    nftitems = extract_nftitems_from_nftcollections(
-        serialized_data.get("nftcollections")
-    )
+    nftitems = extract_nftitems_from_nftcollections(serialized_data.get("nftcollections"))
 
     market = query_params.get("market")
     if market:

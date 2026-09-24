@@ -132,7 +132,8 @@ class TestApiTierAddressLimit:
         logged = mocker.patch("api.tiers.logger")
 
         enforce_address_limit(
-            self._request(mocker, TIERS["Asastatser"]), " ".join("A" * 58 for _ in range(7))
+            self._request(mocker, TIERS["Asastatser"]),
+            " ".join("A" * 58 for _ in range(7)),
         )
 
         assert logged.warning.called
@@ -140,7 +141,7 @@ class TestApiTierAddressLimit:
         assert 7 in reported and 5 in reported
 
     def test_api_tiers_enforcing_refuses_and_names_both_numbers(self, mocker, settings):
-        """"Too many addresses" sends a subscriber to a support thread; the
+        """ "Too many addresses" sends a subscriber to a support thread; the
         counts let them act without one."""
         from rest_framework.exceptions import ValidationError
 

@@ -1,33 +1,22 @@
 """What each subscription tier may ask of the API.
 
-**Two axes, and they are not the website's.** The `liverefresh` widget bands how
-many addresses a *reader* may watch in a browser - 1 / 1 / 5 / 20 - and those
-numbers describe a different product that happens to share the tier names.
-Conflating the two is a mistake this project has already made twice, once in the
-widget runbook and once in `live/API-TIERS.md`, so the numbers here are written
-out rather than imported from there.
-
     tier          addresses per request
     Asastatser              5
     Professional            5
     Cluster                20
 
-**Addresses per request is the cheap axis.** It bounds a response, not the
-engine: five addresses in one call cost one fetch rather than five, which is why
-the batched endpoint exists at all. The expensive axis is how many addresses a
-subscriber keeps *warm* - under the live pass a warm page is re-priced every
-block whether or not anyone reads it - and that is bounded separately where the
-subscription is made, not here.
+**These are not the `liverefresh` widget's bands.** That widget limits how many
+addresses a *reader* may watch in a browser, 1 / 1 / 5 / 20, and it is a
+different product that happens to share the tier names. The numbers here are
+written out rather than imported from there.
 
-**Freshness is in this table now, because something serves it.** It was taken
-out once - a `block_time` flag read by nothing and asserted by a test, which is
-how a later change comes to be written against a promise the code never kept -
-and the rule then was that it comes back when the promise is kept. It is:
-engine `d5e318c` publishes a full serialized account per block for pages an API
-caller has asked to keep warm, and `api/live.py` asks, reads and serves it.
+Addresses per request bounds a response, not the engine: five addresses in one
+call cost one fetch rather than five, which is why the batched endpoint exists.
+How many addresses a subscriber keeps *warm* is the expensive axis, and it is
+bounded where the subscription is made rather than here.
 
-So `block_time` here is read, by `api.live.wants_block_time`, and it is the one
-place that decides which tiers get it.
+`block_time` is read by `api.live.wants_block_time`, and this is the one place
+that decides which tiers get it.
 """
 
 import logging
@@ -40,10 +29,8 @@ from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 logger = logging.getLogger(__name__)
 
 #: Tier bands, richest first: the first one a permission clears is its own.
-#:
-#: Below Asastatser there is no band at all - `CanAccessApiPermission` has
-#: already refused, or is shadowing a refusal - so a caller reaching these
-#: limits has an entitlement by definition.
+#: Below Asastatser there is no band, because `CanAccessApiPermission` has
+#: already refused or is shadowing a refusal.
 API_TIER_BANDS = (
     (
         SUBSCRIPTION_TIER_PERMISSIONS["Cluster"],
@@ -55,19 +42,15 @@ API_TIER_BANDS = (
     ),
     (
         SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"],
-        # Five addresses, but the 60-second cached path it has always had.
-        # Professional's whole advantage over it is freshness - see DECIDED.md,
-        # where that is called out as deliberate rather than an oversight.
+        # Five addresses, on the 60-second cached path. Freshness is
+        # Professional's whole advantage over this tier.
         {"addresses": 5, "block_time": False},
     ),
 )
 
 #: What a caller gets who is past the permission gate but clears no band.
-#:
-#: Only reachable while the gate is shadowing - an unentitled caller is let
-#: through and still has to be given *some* answer. One address is the honest
-#: one: they are not paying for a bundle, and shadow mode is meant to show what
-#: enforcement would do rather than to hand out entitlements in the meantime.
+#: Reachable only while the gate is shadowing, and one address is the honest
+#: answer: they are not paying for a bundle.
 DEFAULT_BAND = {"addresses": 1, "block_time": False}
 
 
@@ -107,21 +90,14 @@ def block_time(permission):
 def enforce_address_limit(request, addresses):
     """Refuse a bundle wider than the caller's tier allows - once enforcing.
 
-    **Shadowed on exactly the same switch as the permission gate.** A limit that
-    started refusing the moment it was deployed would make `API_TIER_ENFORCED`
-    a half-truth: the tier check would be observing while the address check was
-    already turning people away, and the log written to answer "who breaks?"
-    would be missing the people who had already broken. So while shadowing this
-    reports and serves.
+    **Shadowed on the same switch as the permission gate.** A limit refusing
+    while the tier check only observes would make `API_TIER_ENFORCED` a
+    half-truth, and the log written to answer "who breaks?" would be missing
+    the people who had already broken. So while shadowing this reports and
+    serves.
 
-    Found by the existing integration tests, which build two- and three-address
-    bundles for a caller with no tier and started failing with 400 the moment
-    this was added - which is precisely what a real unentitled caller would have
-    experienced on deploy day.
-
-    A refusal names both numbers. "Too many addresses" sends a subscriber to a
-    support thread; "7 addresses, your tier allows 5" is something they can act
-    on without one.
+    A refusal names both numbers, so a subscriber can act on it without opening
+    a support thread.
 
     :param request: DRF request object
     :type request: :class:`rest_framework.request.Request`
@@ -129,10 +105,8 @@ def enforce_address_limit(request, addresses):
     :type addresses: str
     :raises ValidationError: when enforcing and the bundle is too wide
     """
-    # `request.user` is absent entirely on a bare WSGIRequest - no
-    # authentication middleware has run - and a tier limit must not be the thing
-    # that turns that into a 500. Absent reads as no entitlement, which the
-    # permission gate has already acted on.
+    # `request.user` is absent on a bare WSGIRequest, and a tier limit must not
+    # be what turns that into a 500. Absent reads as no entitlement.
     user = getattr(request, "user", None)
     profile = getattr(user, "profile", None)
     allowed = max_addresses(getattr(profile, "permission", 0) or 0)

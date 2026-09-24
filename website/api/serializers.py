@@ -267,11 +267,10 @@ class AsaItemProgramSerializer(Serializer):
     proxy = StringRelatedField(many=True)
     distribution = DistributionSerializer(many=True)
     linked = LinkedDataSerializer(many=True)
-    # Declared so the schema documents them, and read-only so DRF skips them
-    # rather than reaching into an instance that has no such attribute: a
-    # position is only identifiable together with its asset, and this
-    # serializer never sees one. :class:`AsaItemSerializer` fills in the real
-    # values afterwards. See :mod:`api.position_id`.
+    # Declared so the schema documents them, read-only so DRF does not reach
+    # into an instance that has no such attribute: a position is identifiable
+    # only together with its asset, which this serializer never sees.
+    # :class:`AsaItemSerializer` fills in the real values afterwards.
     pid = CharField(read_only=True, required=False)
     pid_ambiguous = BooleanField(read_only=True, required=False)
 
@@ -665,9 +664,7 @@ class AccountInfoSerializer(Serializer):
     :type AccountInfoSerializer.points: :class:`IntegerField`
     """
 
-    addresses = ListField(
-        child=CharField(min_length=ADDRESS_LEN, max_length=ADDRESS_LEN)
-    )
+    addresses = ListField(child=CharField(min_length=ADDRESS_LEN, max_length=ADDRESS_LEN))
     bundle = CharField(min_length=40, max_length=40)
     values_in = ChoiceField(choices=["ALGO", "USD"])
     online = BooleanField()

@@ -104,9 +104,7 @@ class TestApiViewsLiveSubscription:
 
         assert "X-ASAStats-Warm" not in view.get(request, bundle=API_EXAMPLE_BUNDLE1)
 
-    def test_api_views_a_request_with_no_user_does_not_raise_attributeerror(
-        self, mocker
-    ):
+    def test_api_views_a_request_with_no_user_does_not_raise_attributeerror(self, mocker):
         """**Second time this project has hit this exact thing.**
 
         `request.user` is absent entirely on a bare WSGIRequest - no

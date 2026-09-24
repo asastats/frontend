@@ -1,20 +1,9 @@
 """Authentication for the public API, with revocation a stateless JWT lacks.
 
-`rest_framework_simplejwt` verifies a token by signature and expiry alone, so
-a leaked credential stays valid until it expires. The only kill switch the
-library offers out of the box is rotating `SIMPLE_JWT_KEY`, which invalidates
-**every** token at once - `WIDGETS_API_TOKEN`, the token baked into the
-published mobile app, and every third-party integration - and is therefore
-unusable for the case it would actually be needed in.
-
-`token_blacklist` is the documented alternative and is the wrong shape here: it
-adds a table and a lookup per request, and by default covers *refresh* tokens
-rather than the access tokens that are in circulation.
-
-The move to `JWTAuthentication` already pays for a profile read on every API
-request, so comparing the token's `iat` against one nullable field on that
-profile buys instant, per-account revocation for an attribute read. See
-`Profile.api_tokens_valid_from`.
+`rest_framework_simplejwt` verifies a token by signature and expiry alone, so a
+leaked credential stays valid until it expires. Comparing the token's `iat`
+against `Profile.api_tokens_valid_from` buys per-account revocation for one
+attribute read, on a profile this path already loads.
 """
 
 from datetime import datetime, timezone
@@ -29,10 +18,9 @@ class RevocableJWTAuthentication(JWTAuthentication):
         """Return the token's user, unless the token has been revoked.
 
         **Refused as authentication, not as permission.** A revoked credential
-        is not a caller who may not do this - it is a caller we no longer
-        believe is who the token says. That distinction is the difference
-        between a 401 telling an integration to re-issue and a 403 telling it
-        to buy a subscription it already has.
+        is a caller we no longer believe is who the token says, so this is the
+        401 that tells an integration to re-issue rather than the 403 that
+        tells it to buy a subscription it already has.
 
         :param validated_token: the token simplejwt has already verified
         :type validated_token: :class:`rest_framework_simplejwt.tokens.Token`
@@ -47,11 +35,10 @@ class RevocableJWTAuthentication(JWTAuthentication):
         if cutoff is None:
             return user
 
-        # **A token that cannot prove when it was issued is refused once a
-        # cutoff exists.** Every token simplejwt mints carries `iat`, so this
-        # is unreachable in practice - and the safe direction for something
-        # unreachable is the one that fails closed, because the alternative
-        # would make omitting a claim a way around revocation.
+        # A token that cannot say when it was issued is refused once a cutoff
+        # exists. Every token simplejwt mints carries `iat`, so this is
+        # unreachable - and failing closed is the safe direction, because the
+        # alternative makes omitting a claim a way around revocation.
         issued = validated_token.payload.get("iat")
         if issued is None:
             raise self._revoked()

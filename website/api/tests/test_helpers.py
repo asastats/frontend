@@ -91,9 +91,7 @@ class TestApiHelpersUsdConversion:
         assert returned == [{"name": "a", "value": "9", "price": "9"}]
 
     # # convert_nftcollections_values_to_usd
-    def test_api_helpers_convert_nftcollections_values_to_usd_functionality(
-        self, mocker
-    ):
+    def test_api_helpers_convert_nftcollections_values_to_usd_functionality(self, mocker):
         mocker.patch("api.helpers._convert_algo_value_to_usd", return_value="9")
         mocked_items = mocker.patch(
             "api.helpers.convert_items_values_to_usd", return_value=["N"]
@@ -1896,9 +1894,7 @@ class TestApiHelpersExtractAccount:
             "foobar": "1",
         }
         mocked_asaitems = mocker.patch("api.helpers.extract_asaitems_headers")
-        mocked_nftcollections = mocker.patch(
-            "api.helpers.extract_nftcollections_headers"
-        )
+        mocked_nftcollections = mocker.patch("api.helpers.extract_nftcollections_headers")
         returned = extract_account_headers(serialized_data)
         assert returned == {
             "foo": "bar",
@@ -1963,9 +1959,7 @@ class TestApiHelpersExtractAccount:
             "nftcollections": [],
         }
 
-    def test_api_helpers_extract_top_account_items_for_only_nftcollections(
-        self, mocker
-    ):
+    def test_api_helpers_extract_top_account_items_for_only_nftcollections(self, mocker):
         asaitems = [
             {"value": "4", "amount": 1},
             {"value": "3", "amount": 1},
@@ -1998,9 +1992,7 @@ class TestApiHelpersExtractAccount:
             "nftcollections": nftcollections[:limit],
         }
 
-    def test_api_helpers_extract_top_account_items_for_account_without_nfts(
-        self, mocker
-    ):
+    def test_api_helpers_extract_top_account_items_for_account_without_nfts(self, mocker):
         asaitems = [
             {"value": "100", "amount": 1},
             {"value": "50", "amount": 1},
@@ -2083,9 +2075,7 @@ class TestApiHelpersValidation:
     def test_api_helpers_validate_address_raises_validationerror_for_no_valid_address(
         self, mocker
     ):
-        mocked_is_valid = mocker.patch(
-            "api.helpers.is_valid_address", return_value=False
-        )
+        mocked_is_valid = mocker.patch("api.helpers.is_valid_address", return_value=False)
         value = mocker.MagicMock()
         with pytest.raises(ValidationError) as exception:
             validate_address(value)
@@ -2096,9 +2086,7 @@ class TestApiHelpersValidation:
         mocked_is_valid.assert_called_once_with(value)
 
     def test_api_helpers_validate_address_functionality(self, mocker):
-        mocked_is_valid = mocker.patch(
-            "api.helpers.is_valid_address", return_value=True
-        )
+        mocked_is_valid = mocker.patch("api.helpers.is_valid_address", return_value=True)
         value = mocker.MagicMock()
         returned = validate_address(value)
         assert returned == value
@@ -2132,9 +2120,7 @@ class TestApiHelpersValidation:
         self, mocker
     ):
         mocked_address = mocker.patch("api.helpers.validate_address")
-        mocked_check = mocker.patch(
-            "api.helpers.check_bundle_addresses", return_value=""
-        )
+        mocked_check = mocker.patch("api.helpers.check_bundle_addresses", return_value="")
         value = API_EXAMPLE_BUNDLE1
         with pytest.raises(ValidationError) as exception:
             validate_bundle(value)

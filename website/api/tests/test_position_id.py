@@ -19,7 +19,10 @@ import pytest
 from api.position_id import PID_VERSION, annotate_positions, position_id
 
 SAMPLE_PATH = (
-    Path(__file__).parent.parent.parent / "utils" / "tests" / "sample_serialized_540A5.json"
+    Path(__file__).parent.parent.parent
+    / "utils"
+    / "tests"
+    / "sample_serialized_540A5.json"
 )
 
 #: What the real bundle currently yields. Written down so a change has to be a
@@ -87,7 +90,9 @@ class TestWhatIdentityIgnores:
         """
         plain = _program()
         routed = _program(
-            distribution=[{"value": "8.89", "amount": 1, "link": {"text": "Tinyman swap"}}]
+            distribution=[
+                {"value": "8.89", "amount": 1, "link": {"text": "Tinyman swap"}}
+            ]
         )
 
         assert position_id(0, plain) == position_id(0, routed)
@@ -372,8 +377,7 @@ class TestTheLivePassAgrees:
         return [
             link["id"]
             for link in (program.get("linked") or [])
-            if link.get("id") is not None
-            and link.get("text") in _IDENTIFYING_LINK_TEXTS
+            if link.get("id") is not None and link.get("text") in _IDENTIFYING_LINK_TEXTS
         ]
 
     def test_both_paths_agree_on_every_position_in_the_bundle(self, payload):
@@ -389,9 +393,9 @@ class TestTheLivePassAgrees:
                     asset_id, self._fields(program), self._link_ids(program)
                 )
 
-                assert from_fields == serialized, (
-                    f"asset {asset_id}: {from_fields} != {serialized}"
-                )
+                assert (
+                    from_fields == serialized
+                ), f"asset {asset_id}: {from_fields} != {serialized}"
                 compared += 1
 
         assert compared == EXPECTED_POSITIONS
@@ -442,9 +446,7 @@ class TestTheLivePassAgrees:
         url, which is what a wallet balance is."""
         from api.position_id import position_id, position_id_from_fields
 
-        program = _program(
-            type="Balance", name="Wallet balance", provider="", url=""
-        )
+        program = _program(type="Balance", name="Wallet balance", provider="", url="")
 
         assert position_id_from_fields(
             5, {"type": "Balance", "name": "Wallet balance"}

@@ -60,9 +60,7 @@ Nft = namedtuple(
 )
 NftCurrency = namedtuple("NftCurrency", ["amount", "asset"])
 NftListing = namedtuple("NftListing", ["price", "market", "link", "currency"])
-NftPurchase = namedtuple(
-    "NftPurchase", ["price", "market", "link", "epoch", "currency"]
-)
+NftPurchase = namedtuple("NftPurchase", ["price", "market", "link", "epoch", "currency"])
 NftTrait = namedtuple("NftTrait", ["name", "value"])
 NftUrl = namedtuple("NftUrl", ["typ", "url"])
 

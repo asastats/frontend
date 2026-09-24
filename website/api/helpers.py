@@ -114,11 +114,7 @@ def _convert_programs_values_to_usd(programs, pricealgo):
             **program,
             "value": _convert_algo_value_to_usd(program.get("value", 0), pricealgo),
             **(
-                {
-                    "linked": convert_items_values_to_usd(
-                        program.get("linked"), pricealgo
-                    )
-                }
+                {"linked": convert_items_values_to_usd(program.get("linked"), pricealgo)}
                 if program.get("linked")
                 else {}
             ),
@@ -270,9 +266,7 @@ def _filter_programs_by_program(program_slug, programs):
         program
         for program in programs
         if program.get("program", {}).get("name", "")
-        and _check_program_name(
-            program_slug, program.get("program", {}).get("name", "")
-        )
+        and _check_program_name(program_slug, program.get("program", {}).get("name", ""))
     ]
 
 
@@ -808,9 +802,7 @@ def extract_top_account_items(serialized_data, limit):
                 item for item in asaitems if float(item.get("value", 0)) > boundary
             ]
             nftcollections = [
-                item
-                for item in nftcollections
-                if float(item.get("value", 0)) > boundary
+                item for item in nftcollections if float(item.get("value", 0)) > boundary
             ]
 
     return {

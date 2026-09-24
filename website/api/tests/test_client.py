@@ -1,7 +1,6 @@
 """Testing module for :py:mod:`api.client` module."""
 
 import pytest
-
 import requests
 
 from api.client import (
@@ -14,8 +13,8 @@ from api.client import (
     fetch_account_holdings,
     fetch_asset_matches,
     fetch_capabilities,
-    fetch_price,
     fetch_collection_items,
+    fetch_price,
     fetch_serialized_account,
     reset_export,
     start_export,
@@ -195,9 +194,7 @@ class TestApiClientFunctions:
             params={"addresses": addresses},
         )
 
-    def test_api_client_fetch_serialized_account_states_the_readers_class(
-        self, mocker
-    ):
+    def test_api_client_fetch_serialized_account_states_the_readers_class(self, mocker):
         """**The class signal, and it is stated here rather than accepted.**
 
         This layer holds the deployment credential and is the only party that
@@ -252,9 +249,7 @@ class TestApiClientFunctions:
             "GET", f"/api/v2/internal/accounts/{value}/batched", params=None
         )
 
-    def test_api_client_fetch_serialized_account_light_keeps_the_addresses(
-        self, mocker
-    ):
+    def test_api_client_fetch_serialized_account_light_keeps_the_addresses(self, mocker):
         """A bundle hash is meaningless to the engine without them."""
         value, addresses = API_EXAMPLE_BUNDLE1, "FOO BAR"
         mocked_request = mocker.patch("api.client._request")
@@ -451,9 +446,7 @@ class TestApiClientFunctions:
         mocked_request = mocker.patch("api.client._request")
         returned = export_status(bundle)
         assert returned == mocked_request.return_value.json.return_value
-        mocked_request.assert_called_once_with(
-            "GET", f"/api/v2/exports/{bundle}/status/"
-        )
+        mocked_request.assert_called_once_with("GET", f"/api/v2/exports/{bundle}/status/")
 
     # # download_export
     def test_api_client_download_export_functionality(self, mocker):

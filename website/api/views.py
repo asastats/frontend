@@ -15,13 +15,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api import live
 from api.helpers import (
     validate_address,
     validate_bundle,
     validate_nfd_name,
     validate_raw_addresses,
 )
-from api import live
 from api.main import (
     account_entities,
     fetch_and_serialize_account,
@@ -33,10 +33,7 @@ from api.main import (
     processed_nftcollections,
     processed_nftitems,
 )
-from rest_framework.exceptions import ValidationError
-
 from api.permissions import CanAccessApiPermission
-from api.tiers import enforce_address_limit
 from api.serializers import (
     AsaItemSerializer,
     BundleHashFromAddressesSerializer,
@@ -48,6 +45,7 @@ from api.serializers import (
     NftItemSerializer,
     NftSaleTypeQuerySerializer,
 )
+from api.tiers import enforce_address_limit
 from utils.constants.api import API_GLOBAL_SETTINGS
 from utils.constants.apiv2 import (
     ACCOUNT_ASAS_ASSET_PARAMETERS,
@@ -91,15 +89,13 @@ logger = logging.getLogger(__name__)
 def _etag_for(serialized_data):
     """Return a strong ETag for this response body, or "" if it cannot be made.
 
-    Hashed over the *data* rather than the rendered bytes, because DRF renders
-    lazily and the renderer is deterministic for a given structure - so the two
-    are equivalent and this one is available before the response exists.
+    Hashed over the *data* rather than the rendered bytes: DRF renders lazily
+    and the renderer is deterministic for a given structure, so the two are
+    equivalent and this one exists before the response does.
 
-    `sort_keys` because a dict that iterates in a different order between
-    processes is the same answer, and an ETag that changed with worker identity
-    would never match. `default=str` because the payload carries Decimals, and a
-    body we cannot serialize is one we simply do not offer an ETag for - the
-    caller then gets the full response every time, which is what happens today.
+    `sort_keys` because an ETag that changed with worker identity would never
+    match. `default=str` because the payload carries Decimals, and a body that
+    cannot be serialized is one this offers no ETag for at all.
 
     :param serialized_data: the response body, before rendering
     :type serialized_data: dict or list
@@ -163,37 +159,24 @@ class BaseAddressView(APIView):
         # Bundle hash: resolve to the addresses the backend needs to fetch.
         addresses = "" if len(bundle) == ADDRESS_LEN else check_bundle_addresses(bundle)
 
-        # **Checked after the bundle resolves, because that is where the count
-        # becomes knowable.** A bundle arrives as a 40-character hash and says
-        # nothing about its width until Redis has been asked, so the limit
+        # Checked after the bundle resolves, because a 40-character hash says
+        # nothing about its width until Redis has been asked - so the limit
         # cannot live in a URL validator.
-        #
-        # A refusal names the numbers. "Too many addresses" sends a subscriber
-        # to a support thread; "12 addresses, your tier allows 5" is something
-        # they can act on without one.
         if addresses:
             enforce_address_limit(request, addresses)
 
-        # **Asking is what makes the page fresh, and it is the same call that
-        # bounds it.** Until the API wrote these keys a request cost the engine
-        # nothing per block, so a cap on API callers would have refused the
-        # heaviest of them for no saving - see `api/live.py`. Subscribing puts
-        # the page in front of the live pass *and* charges it to this caller's
-        # warm set; over the cap, `subscribe` returns False and the answer comes
-        # off the cached path exactly as it did before, rather than erroring.
-        #
-        # The snapshot lands one block later, so a caller's first request is
-        # always the cached one and every request after it is block-fresh.
-        # **`request.user` is absent entirely on a bare WSGIRequest** - no
-        # authentication middleware has run - and reaching for it directly is
-        # how a subscription becomes a 500. `enforce_address_limit` above
-        # learned this from a unit test; this is the same lesson two lines
-        # later. Absent reads as no entitlement, which is the cached path.
+        # **Asking is what makes the page fresh and is the same call that
+        # bounds it.** Subscribing puts the page in front of the live pass and
+        # charges it to this caller's warm set; over the cap `subscribe`
+        # returns False and the answer comes off the cached path rather than
+        # erroring. The snapshot lands one block later, so a caller's first
+        # request is always the cached one.
+        # `request.user` is absent on a bare WSGIRequest, and reaching for it
+        # directly is how a subscription becomes a 500. Absent reads as no
+        # entitlement, which is the cached path.
         user = getattr(request, "user", None)
         permission = getattr(getattr(user, "profile", None), "permission", 0)
-        fresh = live.subscribe(
-            bundle, addresses, getattr(user, "pk", None), permission
-        )
+        fresh = live.subscribe(bundle, addresses, getattr(user, "pk", None), permission)
 
         serialized_data = fetch_and_serialize_account(
             bundle, addresses, fresh=fresh
@@ -230,18 +213,13 @@ class BaseAddressView(APIView):
                 serialized_data, request.GET
             )  # noqa: F821
 
-        # **A bound on the caller who polls faster than blocks, and not a
-        # compression scheme.** A re-price moves some figure most blocks even
-        # when the total moves 0.0003%, so a block-rate poller still gets a
-        # changed body; what this collapses is the request made twice between
-        # re-prices. See `ANALYSIS-bandwidth-lever.md`, where the real lever
-        # turns out to be poll rate: 22x between block-rate and 60-second
-        # polling, against which no encoding trick competes.
+        # **A bound on the caller who polls faster than blocks**, not a
+        # compression scheme: a re-price moves some figure most blocks, so what
+        # this collapses is the request made twice between re-prices.
         #
-        # **Keyed on the body, not on the round**, which is how the original
-        # note framed it. The round advances every block whether or not this
-        # page changed, so a round ETag would report a change for a page that
-        # is byte-identical - the opposite of the point.
+        # Keyed on the body and not on the round. The round advances every
+        # block whether or not this page changed, so a round ETag would report
+        # a change for a page that is byte-identical.
         etag = _etag_for(serialized_data)
         if etag and request.headers.get("If-None-Match") == etag:
             response = Response(status=status.HTTP_304_NOT_MODIFIED)
@@ -249,28 +227,19 @@ class BaseAddressView(APIView):
             response = Response(serialized_data, status=status.HTTP_200_OK)
         if etag:
             response["ETag"] = etag
-        # **Says what the cap decided, without refusing anybody.**
-        # `NEXT-unified-budget.md` specified a 429 here, on the reasoning that a
-        # machine consumer wants a status code rather than stale data. Half
-        # right: refusing a caller who is *entitled* to this data and merely
-        # asked for more breadth than their plan keeps warm would turn a working
-        # integration into an outage, and downgrading freshness is the
-        # degradation that matches what was actually oversubscribed. So the
-        # answer is served and the fact is stated.
+        # **Says what the cap decided, without refusing anybody.** Downgrading
+        # freshness is the degradation that matches what was oversubscribed;
+        # refusing an entitled caller who merely asked for more breadth than
+        # their plan keeps warm would turn a working integration into an
+        # outage.
         #
-        # Only for tiers that were sold freshness - for everyone else there is
-        # nothing to report and the header would be noise.
+        # Only for tiers that were sold freshness, or the header is noise. It
+        # reports the *subscription* rather than this response's provenance, so
+        # the first request after subscribing is cached with `warm=1` - a
+        # transient that resolves itself, unlike being over the cap.
         #
-        # It reports the *subscription*, not this response's provenance: a page
-        # is not warm until a block has passed over it, so the first request
-        # after subscribing is cached with `warm=1`. That transient resolves
-        # itself; being over the cap does not, which is the thing worth telling
-        # a caller about.
-        #
-        # Set on a 304 as well as a 200, because the caller polling with
-        # `If-None-Match` is precisely the one who wants to know whether their
-        # pages are still warm, and losing the signal on exactly those requests
-        # would make it useless to them.
+        # Set on a 304 as well as a 200: the caller polling with
+        # `If-None-Match` is the one who wants to know.
         if live.wants_block_time(permission):
             response["X-ASAStats-Warm"] = "1" if fresh else "0"
         return response

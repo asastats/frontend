@@ -65,9 +65,7 @@ class TestApiSerializers:
     def test_api_serializer_has_all_fields_from_related_named_tuple(self, name):
         serializer = getattr(api.serializers, f"{name}Serializer")
         named_tuple = getattr(api.structs, name)
-        assert all(
-            field in serializer._declared_fields for field in named_tuple._fields
-        )
+        assert all(field in serializer._declared_fields for field in named_tuple._fields)
 
     @pytest.mark.parametrize("klass", _get_serializers())
     def test_api_serializer_assigns_valid_field_type(self, klass):
@@ -146,9 +144,7 @@ class TestApiSerializersRepresentation:
     # # AsaItemProgramSerializer
     def test_api_serializer_asaitemprogramserializer_omits_empty_values(self):
         program_struct = api.structs.AsaProgram(code="programcode")
-        struct = api.structs.AsaItemProgram(
-            program=program_struct, value=100.0, amount=5
-        )
+        struct = api.structs.AsaItemProgram(program=program_struct, value=100.0, amount=5)
         serializer = api.serializers.AsaItemProgramSerializer(struct)
         assert serializer.data == {
             "program": {"code": "programcode"},

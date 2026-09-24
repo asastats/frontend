@@ -9,6 +9,7 @@ from urllib.parse import quote
 
 import requests
 from django.conf import settings
+
 from utils.helpers import bundle_from_addresses, canonical_bundle
 
 
@@ -51,21 +52,13 @@ def _request(method, path, **kwargs):
             f"{settings.ASASTATS_API_URL!r} by concatenation"
         )
 
-    # **A backend that cannot be reached is a backend error.**
-    #
-    # Everything below raises `BackendError` and every caller catches it, but a
-    # *transport* failure - the engine down, a DNS miss, a read timeout - came
-    # out of `requests` as its own exception and went straight past all of them.
-    # Opening an NFT collection while the engine was restarting answered a 500
-    # rather than the "could not be loaded" the template already carries, and
-    # the same held for every other caller in this module.
-    #
-    # Wrapped here rather than at each call site because this is the one place
-    # that knows the request was ours, and because the alternative is every
-    # caller having to name a `requests` type to catch a condition the client is
-    # supposed to hide from them.
-    #
-    # `status_code` stays None: there was no response to have one.
+    # **A backend that cannot be reached is a `BackendError` like any other.**
+    # A transport failure came out of `requests` as its own exception and went
+    # past every caller's `except BackendError`. Wrapped here because this is
+    # the one place that knows the request was ours, and because the
+    # alternative is every caller naming a `requests` type to catch a condition
+    # the client is supposed to hide. `status_code` stays None: there was no
+    # response to have one.
     try:
         resp = requests.request(
             method,
@@ -158,9 +151,8 @@ def fetch_serialized_account(value, addresses="", light=False, permission=0):
     :type permission: int
     """
     # **Set here, never taken from the browser.** This layer holds the
-    # deployment credential and is the only party that knows who the reader is,
-    # which is exactly the trust `linked_addresses` already travels on. A value
-    # the page could edit would decide nothing, so it is not offered one.
+    # deployment credential and is the only party that knows who the reader is.
+    # A value the page could edit would decide nothing.
     params = {"addresses": addresses} if addresses else {}
     if permission:
         params["permission"] = permission
@@ -185,21 +177,12 @@ def fetch_collection_items(value, name, addresses=""):
     :param addresses: space-joined addresses for multi-address bundles
     :return: dict
     """
-    # **An old bookmark carries an old hash, and the engine re-derives.**
-    # `core.helpers.resolve_addresses` recomputes `bundle_from_addresses` over
-    # the addresses supplied and refuses the request when it does not match the
-    # hash in the path - which is every visitor who saved a bundle URL before
-    # the hash became sort-and-dedupe over the address set.
-    #
-    # `api.main.fetch_and_serialize_account` already normalises for exactly this
-    # reason, which is why the *page* renders for such a bookmark while this
-    # call 400s underneath it: 44 times in one day on a single page, once a
-    # minute, leaving a reader with an NFT collection that silently never
-    # filled.
-    #
-    # Keyed on a space rather than on the value's length, matching the account
-    # path: a single address is passed through untouched, and only a real
-    # multi-address bundle is re-hashed.
+    # **An old bookmark carries an old hash, and the engine re-derives.** It
+    # recomputes `bundle_from_addresses` over the addresses supplied and
+    # refuses the request when that does not match the hash in the path, so a
+    # bundle URL saved before the hash became sort-and-dedupe is re-hashed
+    # here. Keyed on a space rather than on length, matching the account path:
+    # a single address passes through untouched.
     if " " in addresses:
         value = bundle_from_addresses(addresses)
 
@@ -237,9 +220,7 @@ def export_status(bundle):
     Silent, and it costs a full CSV export every time a reader gives up and
     tries again.
     """
-    return _request(
-        "GET", f"/api/v2/exports/{canonical_bundle(bundle)}/status/"
-    ).json()
+    return _request("GET", f"/api/v2/exports/{canonical_bundle(bundle)}/status/").json()
 
 
 def download_export(bundle):
@@ -259,9 +240,7 @@ def reset_export(bundle):
     cost of not doing it is a delete that silently removes nothing, leaving the
     archive the reader asked to be rid of exactly where it was.
     """
-    return _request(
-        "DELETE", f"/api/v2/exports/{canonical_bundle(bundle)}/"
-    ).json()
+    return _request("DELETE", f"/api/v2/exports/{canonical_bundle(bundle)}/").json()
 
 
 def engine_request(scope, method, path, allowed_scopes, **kwargs):

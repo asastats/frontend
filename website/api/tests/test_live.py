@@ -72,9 +72,7 @@ class TestApiLiveSharedToken:
         assert live.subscribe(TEST_ADDRESS, "", 24, CLUSTER, client=client) is False
         client.zadd.assert_not_called()
 
-    def test_api_live_a_person_on_the_same_tier_still_subscribes(
-        self, settings, mocker
-    ):
+    def test_api_live_a_person_on_the_same_tier_still_subscribes(self, settings, mocker):
         """The exclusion is about the credential, not the entitlement."""
         settings.API_LIVE_SHARED_TOKEN_USER_IDS = frozenset({24})
         client = mocker.MagicMock()
@@ -178,9 +176,7 @@ class TestApiLivePageKey:
         bundle URLs are oldest.
         """
         addresses = f"{TEST_ADDRESS} {TEST_ADDRESS2}"
-        assert live.page_key("ancientbookmarkhash", addresses) != (
-            "ancientbookmarkhash"
-        )
+        assert live.page_key("ancientbookmarkhash", addresses) != ("ancientbookmarkhash")
         assert live.page_key("ancientbookmarkhash", addresses) == live.page_key(
             "", f"{TEST_ADDRESS2} {TEST_ADDRESS}"
         )
@@ -241,9 +237,7 @@ class TestApiLiveSubscribe:
 
         written = dict(call.args for call in client.zadd.call_args_list)
         assert written[live.SUBSCRIBED_KEY] == {addresses: 100.0}
-        assert written[live.API_WARM_KEY] == {
-            live.page_key("thehash", addresses): 100.0
-        }
+        assert written[live.API_WARM_KEY] == {live.page_key("thehash", addresses): 100.0}
 
     def test_api_live_subscribe_charges_the_addresses_not_the_page(self, mocker):
         """The warm set counts addresses, which is what makes it a union.
@@ -278,9 +272,7 @@ class TestApiLiveSubscribe:
         client = mocker.MagicMock()
         _warm(mocker, [])
 
-        assert (
-            live.subscribe(TEST_ADDRESS, "", 7, CLUSTER, client=client) is False
-        )
+        assert live.subscribe(TEST_ADDRESS, "", 7, CLUSTER, client=client) is False
         client.zadd.assert_not_called()
 
     def test_api_live_subscribe_survives_an_unreachable_redis(self, mocker):
@@ -312,9 +304,7 @@ class TestApiLiveSnapshot:
         lives in a key beside it rather than wrapped around this one."""
         client = self._published(mocker, {"total": {"total": 1.0}})
 
-        assert live.snapshot(TEST_ADDRESS, "", client=client) == {
-            "total": {"total": 1.0}
-        }
+        assert live.snapshot(TEST_ADDRESS, "", client=client) == {"total": {"total": 1.0}}
         client.mget.assert_called_once_with(
             f"{live.SNAPSHOT_PREFIX}:{TEST_ADDRESS}",
             f"{live.SNAPSHOT_HOLDINGS_PREFIX}:{TEST_ADDRESS}",

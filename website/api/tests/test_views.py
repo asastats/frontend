@@ -82,9 +82,7 @@ class BasePostView:
         # Setup request
         self.factory = APIRequestFactory()
         self.user = UserFactory(username="bob", email="bob@work.com")
-        self.request = self.factory.post(
-            "/api/v2/", {"addresses": API_EXAMPLE_ADDRESS1}
-        )
+        self.request = self.factory.post("/api/v2/", {"addresses": API_EXAMPLE_ADDRESS1})
         self.request.data = self.request.POST
 
 

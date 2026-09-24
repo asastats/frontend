@@ -22,6 +22,7 @@ from unittest import mock
 
 from django.conf import settings
 from django.urls import reverse
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
@@ -322,19 +323,34 @@ class LiveRefreshSettingTest(FunctionalTest):
         """A setting that does not survive a reload is a setting nobody trusts."""
         self._open(SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], "saver")
         section = self.browser.find_element(By.ID, "id-section-liverefresh")
-        section.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]').click()
+        checkbox = section.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
+        checkbox.click()
         section.find_element(By.ID, "id_save_liverefresh").click()
 
-        self.wait_until(
-            lambda: self.browser.find_element(
-                By.CSS_SELECTOR, "#id-section-liverefresh input[type='checkbox']"
-            ).is_selected()
-        )
+        # Wait for the HTMX swap to complete: the entire section is replaced
+        # (hx-swap="outerHTML"), so wait for the old section to go stale,
+        # then verify the new checkbox is checked.
+        self.wait_until(lambda: not _element_is_attached(section))
 
+        # Now find the new section and verify the checkbox is checked
+        new_section = self.browser.find_element(By.ID, "id-section-liverefresh")
+        new_checkbox = new_section.find_element(By.CSS_SELECTOR, 'input[type="checkbox"]')
+        assert new_checkbox.is_selected()
+
+        # Verify it persists after a full page reload
         self.browser.get(self.server_url + reverse("profile_settings"))
         assert self.browser.find_element(
             By.CSS_SELECTOR, "#id-section-liverefresh input[type='checkbox']"
         ).is_selected()
+
+
+def _element_is_attached(element):
+    """Return True if the element is still attached to the DOM."""
+    try:
+        element.is_enabled()  # Any WebDriver command will fail if stale
+        return True
+    except StaleElementReferenceException:
+        return False
 
 
 class LinkedAddressActionsTest(FunctionalTest):
