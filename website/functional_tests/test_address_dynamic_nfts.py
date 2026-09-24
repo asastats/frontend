@@ -260,8 +260,17 @@ class DynamicNftTest(FunctionalTest):
         self.sign_in()
         self.open_page()
 
-        item = self.browser.find_element(By.CSS_SELECTOR, "#nft-list .nft-body")
-        text = item.text.lower()
+        def nft_body_text():
+            elements = self.browser.find_elements(By.CSS_SELECTOR, "#nft-list .nft-body")
+            if not elements:
+                return ""
+            try:
+                return elements[0].text.lower()
+            except StaleElementReferenceException:
+                return ""
+
+        self.wait_until(lambda: "estimated" in nft_body_text())
+        text = nft_body_text()
 
         self.assertIn("estimated", text)
         self.assertIn("floor on", text)

@@ -1339,3 +1339,66 @@ describe("restoreDisplayChoices (after a live-poll swap)", () => {
     }).not.toThrow();
   });
 });
+
+describe('the refresh clock at load', function () {
+  /**
+   * Load a fresh copy of the module with the clock under the test's control.
+   *
+   * The suite's own `address` was required once at module scope, and the
+   * timer tests arm its clock in `beforeEach` before asserting anything - so
+   * what the clock reads on a page that has only just loaded is a thing this
+   * file could not previously see.
+   */
+  function freshModule() {
+    jest.resetModules();
+    jest.useFakeTimers();
+    return require('../static/js/address.js');
+  }
+
+  afterEach(function () {
+    jest.useRealTimers();
+    localStorage.setItem.mockClear();
+  });
+
+  it('is not already overdue when the page has just loaded', function () {
+    // **`initAddress` sets the clock and runs on `window.onload`**, after
+    // every image and font; the tick starts at DOM ready. A clock left at
+    // zero is an eternity overdue, so the first two quiet seconds reloaded a
+    // page the reader had only just opened. Reported on an 869 KB bundle that
+    // reloaded itself twenty-five seconds in, to a byte-identical copy.
+    var row = document.querySelector('.asasec .fitem');
+    row.id = 'row-under-test';
+    row.open = true;
+    localStorage.setItem('refresh', 'y');
+    var fresh = freshModule();
+    localStorage.setItem.mockClear();
+
+    // Past the settle window, so only the refresh clock can hold it back.
+    jest.advanceTimersByTime(3000);
+    fresh.timerIncrement();
+
+    var reloaded = localStorage.setItem.mock.calls.some(function (call) {
+      return call[0] === 'openasa';
+    });
+    expect(reloaded).toBe(false);
+  });
+
+  it('still reloads once the minute is up', function () {
+    // The guard above must not turn the refresh off, only stop it firing
+    // before its first minute.
+    var row = document.querySelector('.asasec .fitem');
+    row.id = 'row-under-test';
+    row.open = true;
+    localStorage.setItem('refresh', 'y');
+    var fresh = freshModule();
+    localStorage.setItem.mockClear();
+
+    jest.advanceTimersByTime(61000);
+    fresh.timerIncrement();
+
+    var reloaded = localStorage.setItem.mock.calls.some(function (call) {
+      return call[0] === 'openasa';
+    });
+    expect(reloaded).toBe(true);
+  });
+});

@@ -13,8 +13,22 @@
 var REFRESH_AFTER_MS = 60000;
 /** How still the reader has to be before a due refresh actually fires, in ms. */
 var SETTLE_MS = 2000;
-/** When the page last reloaded itself, as a timestamp. */
-var lastRefreshAt = 0;
+/**
+ * When the page last reloaded itself, as a timestamp.
+ *
+ * **Armed here rather than left at zero.** `initAddress` sets it, and that
+ * runs on `window.onload` - after every image, font and stylesheet. The tick
+ * starts at DOM ready, so on a slow page there was a window where the clock
+ * read zero, the refresh was already an eternity overdue, and the first two
+ * quiet seconds reloaded a page the reader had only just opened. On a heavy
+ * bundle that window is tens of seconds: one reloaded itself twenty-five
+ * seconds in, to a byte-identical copy of what was already on screen.
+ *
+ * The `#id-liverefresh` guard below cannot cover it, because the marker
+ * arrives in a non-cached partial later still - twenty seconds after the
+ * document on that same page.
+ */
+var lastRefreshAt = Date.now();
 /** When the reader last did anything, as a timestamp. */
 var lastActivityAt = 0;
 var chartDatasets = {};
