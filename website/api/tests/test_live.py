@@ -239,6 +239,42 @@ class TestApiLiveSubscribe:
         assert written[live.SUBSCRIBED_KEY] == {addresses: 100.0}
         assert written[live.API_WARM_KEY] == {live.page_key("thehash", addresses): 100.0}
 
+    def test_api_live_subscribe_refuses_a_bundle_that_did_not_resolve(self, mocker):
+        """A hash with no addresses must reach neither set.
+
+        `addresses` is empty for a single address *and* for a bundle nobody can
+        resolve, so `addresses or value` wrote the hash into `lvx` - where the
+        pass fetches it as an account and raises on every block. See
+        docs/logbook.md.
+        """
+        client = mocker.MagicMock()
+        _warm(mocker, [TEST_ADDRESS])
+
+        assert (
+            live.subscribe(
+                "6F50FC1B2C3D4E5F60718293A4B5C6D7E8F90A1B",
+                "",
+                7,
+                CLUSTER,
+                client=client,
+                now=100.0,
+            )
+            is False
+        )
+        client.zadd.assert_not_called()
+
+    def test_api_live_subscribe_still_takes_a_single_address(self, mocker):
+        """The guard above must not read a bare address as an unresolved hash."""
+        client = mocker.MagicMock()
+        _warm(mocker, [TEST_ADDRESS])
+
+        assert (
+            live.subscribe(TEST_ADDRESS, "", 7, CLUSTER, client=client, now=100.0) is True
+        )
+
+        written = dict(call.args for call in client.zadd.call_args_list)
+        assert written[live.SUBSCRIBED_KEY] == {TEST_ADDRESS: 100.0}
+
     def test_api_live_subscribe_charges_the_addresses_not_the_page(self, mocker):
         """The warm set counts addresses, which is what makes it a union.
 

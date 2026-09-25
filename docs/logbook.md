@@ -193,6 +193,33 @@ is the same decision in code: the API refuses rather than pushing another of
 the reader's pages out, because a machine consumer wants to be told, while the
 browser's half evicts because a tab going static beats an error nobody sees.
 
+**An unresolved bundle hash used to reach `lvx`, 2026-09-24.** `api/views.py`
+computes `addresses` as `"" if len(bundle) == ADDRESS_LEN else
+check_bundle_addresses(bundle)`, and `check_bundle_addresses` returns `""` on a
+cache miss — so a bundle hash nobody can resolve produces exactly the same
+falsy `addresses` a single-address request does, and `addresses or value` then
+fell through to `value`, which for a bundle request is the 40-character SHA-1
+hash. `enforce_address_limit` was skipped on that path too, being guarded by
+`if addresses:`.
+
+The engine's live pass then called `fetch_account("<40 hex>")` on it every
+block, which reached `box/reti.py:_box_name_for_address` and raised
+`WrongKeyLengthError: key length must be 58`. Two such members sat in `lvx`
+from somewhere between 09:28 and 11:11 on 2026-09-24 until this was fixed on
+2026-09-25.
+
+No reader saw a wrong figure — a page that raises falls back to the cached
+answer, which is the right answer for a bundle that does not resolve. The
+damage was noise: the liveserver's `appstransmitter` log went from ~330 KB per
+two-hour rotation to ~8 MB, 5,053 WARNING lines against 379 INFO lines, about
+96 MB a day of one repeated traceback, plus two wasted `fetch_account`
+attempts a block.
+
+Found by reading the liveserver logs, not by any alert. The tell was the page
+label: `_live_page` logs `addresses[:6]`, and `6F50FC` and `9F055C` both
+contain `0`, which is not in the base32 alphabet an Algorand address is written
+in. Every page that succeeded in the same file had a base32 label.
+
 ### `stamped_snapshot`
 
 Added 2026-09-23 for the live widget's regroup path, which re-renders one venue

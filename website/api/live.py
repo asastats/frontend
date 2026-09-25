@@ -26,6 +26,7 @@ the live pass is down would be worse than one serving data a minute old.
 import logging
 import time
 
+from algosdk.constants import ADDRESS_LEN
 from django.conf import settings
 
 from api.tiers import block_time
@@ -179,6 +180,12 @@ def subscribe(value, addresses, user_pk, permission, client=None, now=None):
     # Not a tier question: an account may be entitled twice over and still
     # must not subscribe.
     if is_shared_token(user_pk):
+        return False
+
+    # A bundle hash that did not resolve. `addresses` is falsy for a single
+    # address too, so without this `addresses or value` writes the hash into
+    # `lvx`, where the pass fetches it as an account. See docs/logbook.md.
+    if len(value) != ADDRESS_LEN and not addresses:
         return False
 
     warmset, manifest = _warm_set()
