@@ -127,9 +127,11 @@ def _check_boxes_addresses(v2_app_id, algod_client):
                         addresses.add(address)
 
             else:
-                address = base64.b64decode(response.get("value", "")).decode()
-                if address:
-                    addresses.add(address)
+                decoded = base64.b64decode(response.get("value", "")).decode()
+                if decoded:
+                    for address in decoded.split(","):
+                        if address:
+                            addresses.add(address)
 
     return list(addresses)
 

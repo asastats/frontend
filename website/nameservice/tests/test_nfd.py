@@ -192,6 +192,29 @@ class TestNameServiceNfdV2Functions:
 
         assert _check_boxes_addresses(v2_app_id, algod_client) == []
 
+    def test_nameservice_nfd_check_boxes_addresses_for_comma_separated_u_caalgo(
+        self, mocker
+    ):
+        """A `u.caalgo` box with comma-separated addresses parses both."""
+        import base64
+
+        algod_client = mocker.MagicMock()
+        v2_app_id = 88778506
+        comma_address = (
+            "5IGZPBWH6XCTGGWAER2W5Q4XXOJOHB4FUGWHLCSOG24GX4776ID2LPJVUQ,"
+            "WEYY7HZRQJBUVQCRVWBXLJAJR4ZMV4F2VRUT6P6QRYL4REDJKAVEHTKXKA"
+        )
+        encoded_value = base64.b64encode(comma_address.encode()).decode()
+        algod_client.application_boxes.return_value = {
+            "boxes": [{"name": "dS5jYWFsZ28="}]
+        }
+        algod_client.application_box_by_name.return_value = {"value": encoded_value}
+
+        result = _check_boxes_addresses(v2_app_id, algod_client)
+        assert len(result) == 2
+        assert "5IGZPBWH6XCTGGWAER2W5Q4XXOJOHB4FUGWHLCSOG24GX4776ID2LPJVUQ" in result
+        assert "WEYY7HZRQJBUVQCRVWBXLJAJR4ZMV4F2VRUT6P6QRYL4REDJKAVEHTKXKA" in result
+
     # # _app_state_from_box
     @pytest.mark.parametrize("v2_app_id", [0, None, False])
     def test_nameservice_nfd_app_state_from_box_returns_empty_list_for_no_app(
