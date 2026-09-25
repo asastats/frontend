@@ -34,6 +34,7 @@ from pathlib import Path
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.messages.storage.fallback import FallbackStorage
+
 # signed cookies rather than the database backend: nothing here needs a
 # database, and a rendering test that cannot run without one is a test
 # that stops running the moment PostgreSQL is unavailable.

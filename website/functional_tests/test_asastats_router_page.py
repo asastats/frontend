@@ -202,7 +202,7 @@ class AsastatsRouterSwapOptInTest(FunctionalTest):
     """
 
     FROM_ASSET = 31566704  # USDC, held
-    TO_ASSET = 393537671   # not held, so the swap has to opt in first
+    TO_ASSET = 393537671  # not held, so the swap has to opt in first
 
     def setUp(self):
         """Silence the capabilities call the shell's context processor makes.
@@ -377,9 +377,7 @@ class AsastatsRouterSwapOptInTest(FunctionalTest):
         # all three. `executeSwap` then returns without touching the status or
         # the button, which is indistinguishable from a click that never
         # landed and is the trap this test spent seven runs in.
-        self.find_elem_by_css(
-            "#id-swap-addresses details.swap-address summary"
-        ).click()
+        self.find_elem_by_css("#id-swap-addresses details.swap-address summary").click()
 
         # The holdings panel is lazy, so the source select is empty until it
         # arrives - and an empty source is one of the three things that makes
@@ -400,9 +398,7 @@ class AsastatsRouterSwapOptInTest(FunctionalTest):
         )
         search.send_keys("gold")
         option = self.wait_until(
-            lambda: self.browser.find_elements(
-                By.CSS_SELECTOR, ".id-swap-asset-option"
-            )
+            lambda: self.browser.find_elements(By.CSS_SELECTOR, ".id-swap-asset-option")
             and self.find_elem_by_css(".id-swap-asset-option")
         )
         option.click()

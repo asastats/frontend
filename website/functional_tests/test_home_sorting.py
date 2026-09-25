@@ -40,9 +40,7 @@ class HomeSortingAndFilteringTest(FunctionalTest):
         self.assertEqual(cards[1].get_attribute("data-name"), "Bundle-name-2")
         for card in cards:
             created = datetime.strptime(card.get_attribute("data-created"), date_format)
-            modified = datetime.strptime(
-                card.get_attribute("data-modified"), date_format
-            )
+            modified = datetime.strptime(card.get_attribute("data-modified"), date_format)
             self.assertGreaterEqual(modified, created)
             self.assertGreaterEqual(now, created)
             self.assertGreaterEqual(now, modified)

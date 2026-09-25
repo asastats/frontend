@@ -2,15 +2,15 @@
 # 90 rather than black's own 88, which is the width this repository already
 # reads at. Set here so nobody has to remember a flag.
 line-length = 90
-# Captured payloads and fixture tables, whose long lines are single data
-# literals black will not split and hand-wrapping only makes harder to diff
-# against a fresh capture - and the vendored ANS SDK, which is somebody else's
-# code and should stay diffable against whatever it came from.
+# Captured data, the vendored SDK, and the two submodules, which are separate
+# repositories. See docs/logbook.md.
 extend-exclude = '''
 /(
     website/utils/tests/fixtures\.py
   | website/nameservice/xchain\.py
   | website/nameservice/anssdk
+  | website/permissiondapp
+  | website/widgets
 )/?$
 '''
 
@@ -29,7 +29,14 @@ known_first_party = [
     "widgethost",
     "widgets",
 ]
-skip_glob = ["*/migrations/*", "docs/*"]
+# **`website/.isort.cfg` wins for everything under `website/`, not this.**
+# See docs/logbook.md.
+skip_glob = [
+    "*/migrations/*",
+    "docs/*",
+    "*/website/permissiondapp/*",
+    "*/website/widgets/*",
+]
 
 [tool.ruff]
 line-length = 90

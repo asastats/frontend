@@ -237,9 +237,7 @@ class DynamicRenderTest(TestCase):
         """
         found = re.search(r'data-holdings="([^"]*)"', self.html)
 
-        self.assertIsNotNone(
-            found, "the page carries no data-holdings attribute at all"
-        )
+        self.assertIsNotNone(found, "the page carries no data-holdings attribute at all")
         fingerprint = found.group(1)
         if fingerprint:
             self.assertRegex(

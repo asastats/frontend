@@ -88,7 +88,9 @@ class SubscriptionsPageTest(FunctionalTest):
 
         self.assertEqual(len(tops), 4)
         self.assertEqual(
-            len(set(tops)), 1, f"the SUBSCRIBE buttons are on {len(set(tops))} lines: {tops}"
+            len(set(tops)),
+            1,
+            f"the SUBSCRIBE buttons are on {len(set(tops))} lines: {tops}",
         )
 
     def test_the_card_descriptions_share_a_row(self):

@@ -93,11 +93,7 @@ def main():
     pairs.setdefault("asastats-dark", BRAND)
     pairs = {k: v for k, v in pairs.items() if k in themes}
 
-    wanted = {
-        family
-        for roles in pairs.values()
-        for family in roles.values()
-    }
+    wanted = {family for roles in pairs.values() for family in roles.values()}
     missing = sorted(f for f in wanted if slugify(f) not in files)
 
     lines = [

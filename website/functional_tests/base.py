@@ -283,9 +283,7 @@ class Setup(StaticLiveServerTestCase):
         elif self.headless_driver == "pyvirtualdisplay":
             from pyvirtualdisplay import Display
 
-            self.display = Display(
-                backend=HEADLESS_BACKEND, visible=0, size=(1600, 1280)
-            )
+            self.display = Display(backend=HEADLESS_BACKEND, visible=0, size=(1600, 1280))
 
         self.display.start()
         return None

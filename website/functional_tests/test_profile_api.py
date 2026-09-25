@@ -25,6 +25,7 @@ that tier lands on the subscriptions page instead. That is the reason
 
 from django.urls import reverse
 from selenium.webdriver.common.by import By
+
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 from .base import FunctionalTest
@@ -89,8 +90,7 @@ class ApiTokenPageTest(FunctionalTest):
             f"the API page raised{self.state['why']}",
         )
         labels = [
-            p.text.strip()
-            for p in self.browser.find_elements(By.CSS_SELECTOR, "main p")
+            p.text.strip() for p in self.browser.find_elements(By.CSS_SELECTOR, "main p")
         ]
         self.assertIn("Refresh token", labels)
         self.assertIn("Access token", labels)

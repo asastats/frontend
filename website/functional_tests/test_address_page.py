@@ -192,11 +192,7 @@ class AssetRowLayoutTest(FunctionalTest):
         widths = {self._computed(row, "borderLeftWidth") for row in rows}
         self.assertEqual(widths, {"4px"}, f"stripe widths: {widths}")
 
-        coloured = [
-            row
-            for row in rows
-            if "c" in (row.get_attribute("class") or "")
-        ]
+        coloured = [row for row in rows if "c" in (row.get_attribute("class") or "")]
         self.assertTrue(coloured, "no row carries a colour slot")
         greys = {self._computed(row, "borderLeftColor") for row in coloured}
         self.assertNotEqual(
@@ -381,9 +377,7 @@ class AssetRowLayoutTest(FunctionalTest):
         thumbnail = thumbnail[0]
 
         ActionChains(self.browser).move_to_element(thumbnail).perform()
-        self.wait_until(
-            lambda: self.browser.find_elements(By.ID, "id-nft-preview")
-        )
+        self.wait_until(lambda: self.browser.find_elements(By.ID, "id-nft-preview"))
         preview = self.browser.find_element(By.ID, "id-nft-preview")
 
         self.assertEqual(self._computed(preview, "position"), "absolute")
@@ -560,9 +554,7 @@ class SectionFoldingTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": 0}
         self._load()
 
-        button = self.browser.find_element(
-            By.CSS_SELECTOR, ".asasec [data-show-more]"
-        )
+        button = self.browser.find_element(By.CSS_SELECTOR, ".asasec [data-show-more]")
         batch = int(
             self.browser.find_element(By.CSS_SELECTOR, ".asasec").get_attribute(
                 "data-initial"
@@ -594,9 +586,7 @@ class SectionFoldingTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": 0}
         self._load()
 
-        button = self.browser.find_element(
-            By.CSS_SELECTOR, ".asasec [data-show-more]"
-        )
+        button = self.browser.find_element(By.CSS_SELECTOR, ".asasec [data-show-more]")
         rows = self._rows("asasec")
         _unfold(self.browser, ".asasec")
 
@@ -619,7 +609,7 @@ class SectionFoldingTest(FunctionalTest):
     def test_the_control_says_how_many_and_of_what(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
-        """"Show more" tells a reader nothing about whether it is worth a tap.
+        """ "Show more" tells a reader nothing about whether it is worth a tap.
 
         And the number it names has to be what the press *does*. It used to be
         the whole tail -- "Show 39 more assets" over a control that revealed
@@ -631,9 +621,7 @@ class SectionFoldingTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": 0}
         self._load()
 
-        button = self.browser.find_element(
-            By.CSS_SELECTOR, ".asasec [data-show-more]"
-        )
+        button = self.browser.find_element(By.CSS_SELECTOR, ".asasec [data-show-more]")
         before = len([row for row in self._rows("asasec") if row.is_displayed()])
         promised = int(button.text.split()[1])
         self.assertIn("assets", button.text)
@@ -703,8 +691,7 @@ class TotalTooltipKeyboardTest(FunctionalTest):
         # sees it perfectly well. Pressing Tab is also the thing being claimed.
         self.assertTrue(
             self._tab_to(total),
-            "the total is not reachable by tabbing, so its tooltip is "
-            "pointer-only",
+            "the total is not reachable by tabbing, so its tooltip is " "pointer-only",
         )
         # The assertion that matters, and the one this test did not make at
         # first: that focus *reveals* something. DaisyUI keys the reveal on
@@ -771,12 +758,8 @@ class TotalTooltipKeyboardTest(FunctionalTest):
         note = self.browser.find_element(By.ID, "id-total-tip")
         before = note.get_attribute("textContent")
 
-        self.browser.find_element(
-            By.CSS_SELECTOR, ".switch input[type=checkbox]"
-        ).click()
-        self.wait_until(
-            lambda: note.get_attribute("textContent") != before
-        )
+        self.browser.find_element(By.CSS_SELECTOR, ".switch input[type=checkbox]").click()
+        self.wait_until(lambda: note.get_attribute("textContent") != before)
 
         self.assertEqual(
             total.get_attribute("data-tip"),

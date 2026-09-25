@@ -136,9 +136,7 @@ class AlertsWebhookCrossProcessTest(LiveServerTestCase):
             # **The live server's own address.** `LiveServerTestCase` binds a
             # real port and serves the test database, so the engine posts at
             # this process and the rule it fires is the one created above.
-            "ALERTS_WEBHOOK_URL": (
-                f"{self.live_server_url}/widgets/alerts/repriced"
-            ),
+            "ALERTS_WEBHOOK_URL": (f"{self.live_server_url}/widgets/alerts/repriced"),
             "ALERTS_WEBHOOK_SECRET": WEBHOOK_SECRET,
         }
         completed = subprocess.run(
@@ -181,9 +179,7 @@ class AlertsWebhookCrossProcessTest(LiveServerTestCase):
         what any of it is.
         """
         self._rule()
-        self.redis.set(
-            f"lvp:{self.page}", msgpack.packb({"total": 90.0, "values": {}})
-        )
+        self.redis.set(f"lvp:{self.page}", msgpack.packb({"total": 90.0, "values": {}}))
 
         answer = self._run_engine("repriced", self.page)
 
@@ -200,9 +196,7 @@ class AlertsWebhookCrossProcessTest(LiveServerTestCase):
         is the only durable evidence that the far side did the work.
         """
         rule = self._rule()
-        self.redis.set(
-            f"lvp:{self.page}", msgpack.packb({"total": 90.0, "values": {}})
-        )
+        self.redis.set(f"lvp:{self.page}", msgpack.packb({"total": 90.0, "values": {}}))
 
         self._run_engine("repriced", self.page)
 
@@ -245,9 +239,7 @@ class AlertsWebhookCrossProcessTest(LiveServerTestCase):
         same call with the engine holding a secret the website does not.
         """
         self._rule()
-        self.redis.set(
-            f"lvp:{self.page}", msgpack.packb({"total": 90.0, "values": {}})
-        )
+        self.redis.set(f"lvp:{self.page}", msgpack.packb({"total": 90.0, "values": {}}))
 
         with override_settings(ALERTS_WEBHOOK_SECRET="something-else"):
             answer = self._run_engine("repriced", self.page)

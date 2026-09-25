@@ -99,9 +99,7 @@ class LinkAddressPageTest(FunctionalTest):
         self.assertFalse(notice.is_displayed())
         self.assertEqual("alert", notice.get_attribute("role"))
 
-        self.browser.execute_script(
-            "arguments[0].style.display = 'block';", notice
-        )
+        self.browser.execute_script("arguments[0].style.display = 'block';", notice)
         self.assertTrue(notice.is_displayed())
         self.assertIn("No EVM wallet found", notice.text)
 

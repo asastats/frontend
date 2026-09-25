@@ -1,10 +1,7 @@
 """Integration testing module for :py:mod:`api.views` module."""
 
-import uuid
-from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
-from utils.helpers import create_bundle
-from rest_framework_simplejwt.tokens import AccessToken
 import os
+import uuid
 from math import isclose
 
 import pytest
@@ -13,6 +10,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APIClient
+from rest_framework_simplejwt.tokens import AccessToken
 
 from api.data import (
     API_EXAMPLE_ADDRESS1,
@@ -23,8 +21,8 @@ from api.data import (
     API_EXAMPLE_BUNDLE2,
     API_EXAMPLE_NFD_NAME1,
 )
-from utils.helpers import check_bundle_addresses
-
+from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+from utils.helpers import check_bundle_addresses, create_bundle
 
 
 def user_for_widgets_token():
@@ -56,13 +54,12 @@ def user_for_widgets_token():
     )
     return user
 
+
 class TestSetup(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = user_for_widgets_token()
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {settings.WIDGETS_API_TOKEN}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {settings.WIDGETS_API_TOKEN}")
 
     def _test_all(self, response, **kwargs):
         if kwargs.get("address"):
@@ -79,9 +76,7 @@ class TestSetup(TestCase):
         assert response.data["system_info"] == {}
         self._test_total_values(response.data["total"])
         self._test_asaitems_sums(response.data["asaitems"])
-        self._test_asaitems_total_value(
-            response.data["asaitems"], response.data["total"]
-        )
+        self._test_asaitems_total_value(response.data["asaitems"], response.data["total"])
         self._test_nftcollections_sums(response.data["nftcollections"])
         self._test_nftcollections_total_value(
             response.data["nftcollections"], response.data["total"]
@@ -157,9 +152,7 @@ class TestSetup(TestCase):
     def _test_total_values(self, total):
         assert isclose(
             float(total.get("total")),
-            float(total.get("asa"))
-            + float(total.get("algo"))
-            + float(total.get("nft")),
+            float(total.get("asa")) + float(total.get("algo")) + float(total.get("nft")),
             rel_tol=0.01,
         )
         assert isclose(
@@ -369,17 +362,14 @@ class TestIntegrationApiTierAddressLimit(TestCase):
         everyone the address cap had already broken."""
         self._as("Asastatser")
 
-        assert (
-            self.client.get(f"/api/v2/{self.wide}/").status_code == status.HTTP_200_OK
-        )
+        assert self.client.get(f"/api/v2/{self.wide}/").status_code == status.HTTP_200_OK
 
     @override_settings(API_TIER_ENFORCED=True)
     def test_integration_api_a_bundle_within_the_tier_is_served(self):
         self._as("Asastatser")
 
         assert (
-            self.client.get(f"/api/v2/{self.narrow}/").status_code
-            == status.HTTP_200_OK
+            self.client.get(f"/api/v2/{self.narrow}/").status_code == status.HTTP_200_OK
         )
 
     @override_settings(API_TIER_ENFORCED=True)
@@ -388,6 +378,4 @@ class TestIntegrationApiTierAddressLimit(TestCase):
         makes this a tier limit rather than a validation rule."""
         self._as("Cluster")
 
-        assert (
-            self.client.get(f"/api/v2/{self.wide}/").status_code == status.HTTP_200_OK
-        )
+        assert self.client.get(f"/api/v2/{self.wide}/").status_code == status.HTTP_200_OK

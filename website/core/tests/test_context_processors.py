@@ -10,6 +10,7 @@ from django.urls import reverse
 
 import core.context_processors
 from api.client import BackendError
+
 # The navigation lists live on the module, not in Django settings: they are
 # structure rather than configuration, and nothing deploys differently.
 from core import context_processors as settings_module

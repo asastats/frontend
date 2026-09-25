@@ -279,8 +279,14 @@ class DustSweepPlannedLinesTest(FunctionalTest):
     PLAN = {
         "address": ADDRESS,
         "threshold_algo": 1.0,
-        "summary": {"close": 1, "forfeit": 0, "convert": 0, "recoverable": 100000,
-                    "prompts": 1, "unpriced": 0},
+        "summary": {
+            "close": 1,
+            "forfeit": 0,
+            "convert": 0,
+            "recoverable": 100000,
+            "prompts": 1,
+            "unpriced": 0,
+        },
         "holdings": [
             {
                 "asset": 31566704,
@@ -950,9 +956,7 @@ class DustSweepBundlePageEntryTest(AddressPageEngineMixin, FunctionalTest):
             self.browser.get(f"{self.server_url}/{self.BUNDLE}")
             self.find_elem_by_id("id-swap-entry-container")
             buttons = self.wait_until(
-                lambda: self.browser.find_elements(
-                    By.CSS_SELECTOR, ".id-dustsweep-open"
-                )
+                lambda: self.browser.find_elements(By.CSS_SELECTOR, ".id-dustsweep-open")
             )
             if connected:
                 self._connect(connected)
@@ -1014,7 +1018,7 @@ class DustSweepBundlePageEntryTest(AddressPageEngineMixin, FunctionalTest):
         assert not buttons[0].is_displayed()
 
     def test_a_reader_who_owns_none_of_the_bundle_is_offered_nothing(self):
-        """"If the connected address isn't in the bundle, no action is possible."."""
+        """ "If the connected address isn't in the bundle, no action is possible."."""
         self._link([self.THIRD], primary=self.THIRD)
         with mock.patch(
             "core.views.check_bundle_addresses",
@@ -1022,6 +1026,4 @@ class DustSweepBundlePageEntryTest(AddressPageEngineMixin, FunctionalTest):
         ):
             self.browser.get(f"{self.server_url}/{self.BUNDLE}")
             self.find_elem_by_id("id-swap-entry-container")
-            assert (
-                self.browser.find_elements(By.CSS_SELECTOR, ".id-dustsweep-open") == []
-            )
+            assert self.browser.find_elements(By.CSS_SELECTOR, ".id-dustsweep-open") == []

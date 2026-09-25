@@ -24,12 +24,13 @@ import json
 import os
 from unittest import mock
 
-from api.client import BackendError
-from api.position_id import annotate_positions
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
+
+from api.client import BackendError
+from api.position_id import annotate_positions
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 from .base import COOKIE_SEED_URL, FunctionalTest
@@ -161,7 +162,9 @@ class DynamicNftTest(FunctionalTest):
         self.open_page(collections=0)
 
         asset = self.browser.find_element(By.CSS_SELECTOR, "#asset-list > .fitem .chead")
-        collection = self.browser.find_element(By.CSS_SELECTOR, "#nft-list > .fitem .chead")
+        collection = self.browser.find_element(
+            By.CSS_SELECTOR, "#nft-list > .fitem .chead"
+        )
 
         self.assertEqual(
             asset.size["height"],
@@ -219,7 +222,7 @@ class DynamicNftTest(FunctionalTest):
     def test_a_collection_nobody_floors_says_so_rather_than_showing_zero(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):
-        """"floor 0.00" is a different claim from "no marketplace reports one"."""
+        """ "floor 0.00" is a different claim from "no marketplace reports one"."""
         mocked_fetch.return_value = _sample_payload()
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
@@ -539,9 +542,7 @@ class DynamicNftTest(FunctionalTest):
         )
         self.assertTrue(tiles, "the section rendered no collection tiles")
 
-        art = [
-            tile.find_elements(By.CSS_SELECTOR, "img.collicon") for tile in tiles
-        ]
+        art = [tile.find_elements(By.CSS_SELECTOR, "img.collicon") for tile in tiles]
         self.assertTrue(
             any(found for found in art),
             "not one collection tile carries the art of an item in it",
@@ -752,9 +753,9 @@ class DynamicNftLightPayloadTest(FunctionalTest):
             )
             for collection in payload["nftcollections"]
         ]
-        assert any(value > 0 for value in expected), (
-            "the fixture floors nothing, so this test could not fail"
-        )
+        assert any(
+            value > 0 for value in expected
+        ), "the fixture floors nothing, so this test could not fail"
         # Compared against the figure the payload holds, not merely "more than
         # zero": the template draws `{{ floor|default:0.001 }}`, so a collection
         # whose floor totalled nothing still renders a positive flex. Asserting
@@ -886,9 +887,7 @@ class DynamicNftExpandFetchTest(FunctionalTest):
         assert "MarketplaceFromTheFetch" not in self.browser.page_source
 
         self.expand_first()
-        self.wait_until(
-            lambda: "MarketplaceFromTheFetch" in self.browser.page_source
-        )
+        self.wait_until(lambda: "MarketplaceFromTheFetch" in self.browser.page_source)
         mocked_items.assert_called_once()
         assert mocked_items.call_args[0][1] == collection["name"]
 
@@ -931,6 +930,4 @@ class DynamicNftExpandFetchTest(FunctionalTest):
         self.sign_in()
         self.open_page()
         self.expand_first()
-        self.wait_until(
-            lambda: "could not be loaded" in self.browser.page_source
-        )
+        self.wait_until(lambda: "could not be loaded" in self.browser.page_source)

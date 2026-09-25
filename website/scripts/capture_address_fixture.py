@@ -21,8 +21,8 @@ per test.
 
 import json
 import os
-import re
 import pathlib
+import re
 import sys
 
 import django

@@ -43,10 +43,11 @@ import json
 import os
 from unittest import mock
 
-from api.position_id import annotate_positions
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from selenium.webdriver.common.by import By
+
+from api.position_id import annotate_positions
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 from .base import COOKIE_SEED_URL, FunctionalTest
@@ -477,9 +478,7 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
         self.assertTrue(subtotals, "the opened asset shows no venue subtotals")
         self.assertTrue(figures, "the opened asset shows no position figures")
 
-        edges = {
-            round(self.right_edge(cell)) for cell in list(subtotals) + list(figures)
-        }
+        edges = {round(self.right_edge(cell)) for cell in list(subtotals) + list(figures)}
         self.assertEqual(
             1,
             len(edges),
@@ -640,7 +639,9 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
         self._open_every_asset()
 
         band = self.browser.find_element(By.ID, "pinned-section")
-        self.assertFalse(band.is_displayed(), "the band showed before anything was pinned")
+        self.assertFalse(
+            band.is_displayed(), "the band showed before anything was pinned"
+        )
 
         pin = self.browser.find_element(By.CSS_SELECTOR, "[data-pin-position]")
         # Read the way `pins.js` reads it: off the `.position` wrapper, whose
@@ -658,7 +659,9 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
         self.assertEqual(1, len(cards), "the band did not take exactly one card")
         # The card names the position it came from, so the reader can tell what
         # they pinned without scrolling back to it.
-        self.assertEqual(label, cards[0].find_element(By.CSS_SELECTOR, ".position-label").text.strip())
+        self.assertEqual(
+            label, cards[0].find_element(By.CSS_SELECTOR, ".position-label").text.strip()
+        )
         self.assertEqual("1", self.browser.find_element(By.ID, "pin-count").text.strip())
         self.assertEqual("true", pin.get_attribute("aria-pressed"))
 
@@ -950,7 +953,9 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
             compared += 1
             with self.subTest(band=key):
                 self.assertAlmostEqual(
-                    width / drawn * 100, shares[key], delta=0.5,
+                    width / drawn * 100,
+                    shares[key],
+                    delta=0.5,
                     msg=f"{key}: bar {width / drawn * 100:.2f}% vs figure {shares[key]}%",
                 )
         self.assertGreater(compared, 1, "fewer than two bands were big enough to check")
@@ -984,9 +989,7 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
             "the breakdown control is indistinguishable from a plain figure",
         )
 
-        breakdown = self.browser.find_element(
-            By.ID, opener.get_attribute("data-distid")
-        )
+        breakdown = self.browser.find_element(By.ID, opener.get_attribute("data-distid"))
         self.assertFalse(breakdown.is_displayed())
         self.assertEqual("false", opener.get_attribute("aria-expanded"))
 
@@ -994,7 +997,6 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
 
         self.wait_until(lambda: breakdown.is_displayed())
         self.assertEqual("true", opener.get_attribute("aria-expanded"))
-
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
@@ -1058,7 +1060,9 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
             for element in self.browser.find_elements(By.CSS_SELECTOR, ".cid-amt")
             if element.text.strip()
         ]
-        self.assertGreater(len(amounts), 10, "no amounts rendered; the sweep proves nothing")
+        self.assertGreater(
+            len(amounts), 10, "no amounts rendered; the sweep proves nothing"
+        )
 
         offenders = []
         for text in amounts:
@@ -1142,7 +1146,9 @@ class DynamicCompactTest(MoneyPageMixin, FunctionalTest):
 
         self.assertTrue(tile.is_displayed(), "the asset icon is hidden on a closed tile")
         self.assertEqual("absolute", self.computed(tile, "position"))
-        self.assertEqual(22, round(tile.size["width"]), "the 38px tile would crowd the name")
+        self.assertEqual(
+            22, round(tile.size["width"]), "the 38px tile would crowd the name"
+        )
 
         # It costs the name nothing: the identity block still spans the card.
         name = card.find_element(By.CSS_SELECTOR, ".cid-name")
@@ -1191,6 +1197,4 @@ class DynamicCompactTest(MoneyPageMixin, FunctionalTest):
             if card.is_displayed()
         ]
         self.assertGreater(len(tops), 1, "one row proves nothing")
-        self.assertEqual(
-            len(set(tops)), len(tops), f"two assets shared a line: {tops}"
-        )
+        self.assertEqual(len(set(tops)), len(tops), f"two assets shared a line: {tops}")

@@ -29,6 +29,7 @@ Two faults found while rebuilding, both of which only a browser shows:
 
 from django.urls import reverse
 from selenium.webdriver.common.by import By
+
 from utils.tests.fixtures import TEST_ADDRESS, TEST_ADDRESS2, TEST_ADDRESS3
 
 from .base import FunctionalTest
@@ -106,7 +107,9 @@ class HomePageTest(FunctionalTest):
         """The old page rendered a heading, a gap and a button."""
         self.open_home()
 
-        self.assertIn("No bundles yet", self.browser.find_element(By.TAG_NAME, "main").text)
+        self.assertIn(
+            "No bundles yet", self.browser.find_element(By.TAG_NAME, "main").text
+        )
         self.assertTrue(self.browser.find_elements(By.ID, "id_add"))
 
     # -- the rows -----------------------------------------------------------
@@ -177,9 +180,7 @@ class HomePageTest(FunctionalTest):
 
         for row in self.rows():
             with self.subTest(row=row.get_attribute("data-name")):
-                self.assertEqual(
-                    [], row.find_elements(By.CSS_SELECTOR, "svg.identicon")
-                )
+                self.assertEqual([], row.find_elements(By.CSS_SELECTOR, "svg.identicon"))
 
     def test_the_address_count_is_said_rather_than_shown(self):
         """It was a bare number in a badge in the corner, which reads as an
@@ -435,9 +436,7 @@ class BundleNameFormTest(FunctionalTest):
         self.assertLess(addresses.size["height"], 200)
         # And the two fields read as the same kind of control, which a
         # browser-default text box beside a full-width textarea does not.
-        self.assertAlmostEqual(
-            name.size["width"], addresses.size["width"], delta=4
-        )
+        self.assertAlmostEqual(name.size["width"], addresses.size["width"], delta=4)
 
     def test_the_edit_page_offers_deletion_as_a_marked_step(self):
         """It was a red link three lines under Save.
@@ -475,17 +474,19 @@ class BundleNameFormTest(FunctionalTest):
 
         current = self.browser.find_elements(By.CSS_SELECTOR, '[aria-current="page"]')
         named = [
-            element.text.strip()
-            for element in current
-            if "Cold-storage" in element.text
+            element.text.strip() for element in current if "Cold-storage" in element.text
         ]
-        self.assertTrue(named, "no entry in the sibling list is marked as the current one")
+        self.assertTrue(
+            named, "no entry in the sibling list is marked as the current one"
+        )
 
     def test_the_sibling_list_is_absent_when_there_is_nowhere_to_go(self):
         self.add("Only one", TEST_ADDRESS)
         self.open_edit("Only one")
 
-        self.assertNotIn("Your bundles", self.browser.find_element(By.TAG_NAME, "main").text)
+        self.assertNotIn(
+            "Your bundles", self.browser.find_element(By.TAG_NAME, "main").text
+        )
 
     def test_deleting_asks_first_and_says_what_survives(self):
         """The one page whose whole purpose is to stop and ask."""
@@ -504,9 +505,7 @@ class BundleNameFormTest(FunctionalTest):
         # in second place.
         alerts = [
             element.text
-            for element in self.browser.find_elements(
-                By.CSS_SELECTOR, '[role="alert"]'
-            )
+            for element in self.browser.find_elements(By.CSS_SELECTOR, '[role="alert"]')
         ]
         self.assertTrue(
             any("cannot be undone" in text for text in alerts),

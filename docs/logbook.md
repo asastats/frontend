@@ -1689,3 +1689,49 @@ authorize and link pages, which is the part worth keeping.
 
 **`snippets/theme_icon.html`** — a half-filled circle reads as light/dark at that
 size, where a sun or moon would claim a state the control does not always have.
+
+---
+
+## pyproject.toml
+
+### `[tool.black] extend-exclude`
+
+`website/utils/tests/fixtures.py` and `website/nameservice/xchain.py` are
+captured payloads and fixture tables whose long lines are single data literals
+black will not split; hand-wrapping them only makes them harder to diff against
+a fresh capture. `website/nameservice/anssdk` is a vendored SDK and should stay
+diffable against whatever it came from.
+
+**The two submodules were added 2026-09-25.** Black picks its project root by
+walking up until it finds `.git`, and a submodule's `.git` is a *file* — which
+still counts — so given a path inside one it already re-roots there and reads
+that submodule's own config. The exclusion covers the other case: a run from
+this directory that walks into them, which would format them under this file's
+settings and produce a diff in a repository this one does not own.
+
+**This is also why `line-length = 90` had never applied inside the submodules.**
+Black fell back to its default 88 there. Measured: 30 of 120 widget files format
+differently at 88 than at 90. `widgets/pyproject.toml` now sets 90 explicitly,
+which is also what the standalone checkout at `~/dev/widgets` needs, since this
+file does not exist there. `permissiondapp/` carries no black config and is
+somebody else's code.
+
+### `[tool.isort]`
+
+**This block does not govern `website/`.** isort walks up from each file and
+stops at the first config it finds, so `website/.isort.cfg` wins for everything
+under it and this one is reached only for paths outside `website/`. Verified
+2026-09-25:
+
+    website/core/views.py            -> website/.isort.cfg
+    website/widgets/views.py         -> website/widgets/pyproject.toml
+    website/permissiondapp/dapp/...  -> website/permissiondapp/dapp/.isort.cfg
+
+The two disagree: `.isort.cfg` has `line_length=79`, no `profile`, and an empty
+`known_first_party`, against 90/black/ten packages here. The wrapping style
+matches anyway — `multi_line_output=3` plus `include_trailing_comma` is what
+`profile=black` sets — so the practical difference is only how early an import
+list wraps. Worth consolidating onto one file; not done.
+
+`website/.isort.cfg` already skipped `widgets/*` and `permissiondapp/*` before
+today. The globs here repeat that so the two cannot drift.

@@ -123,9 +123,7 @@ def _engine_backed():
     :return: list of (name, manifest)
     """
     return [
-        (name, _manifest(name))
-        for name in WIDGETS
-        if _manifest(name).engine_endpoints
+        (name, _manifest(name)) for name in WIDGETS if _manifest(name).engine_endpoints
     ]
 
 
@@ -177,9 +175,7 @@ class WidgetScopeGrantTest(TestCase):
                 continue
             checked.add(name)
             try:
-                matches = fetch_asset_matches(
-                    KNOWN_QUERY, manifest.engine_endpoints
-                )
+                matches = fetch_asset_matches(KNOWN_QUERY, manifest.engine_endpoints)
             except BackendError as error:
                 refused[name] = str(error)
                 continue
@@ -230,7 +226,9 @@ class WidgetScopeGrantTest(TestCase):
         """An excuse for a scope nothing declares any more is a note about a
         world that has moved on, and reads as coverage that does not exist."""
         declared = {
-            scope for _, manifest in _engine_backed() for scope in manifest.engine_endpoints
+            scope
+            for _, manifest in _engine_backed()
+            for scope in manifest.engine_endpoints
         }
 
         self.assertEqual(

@@ -81,7 +81,9 @@ class ProfileAccountHierarchyTest(FunctionalTest):
 
     def setUp(self):
         super().setUp()
-        self.create_cookie_and_go_to_index_page_tier("hierarchy@dwight.com", permission=100)
+        self.create_cookie_and_go_to_index_page_tier(
+            "hierarchy@dwight.com", permission=100
+        )
         self.browser.get(self.server_url + "/profile/account/")
 
     def _computed(self, element, prop):

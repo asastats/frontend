@@ -20,7 +20,6 @@ from api.data import (
 )
 
 
-
 def user_for_widgets_token():
     """Return a user the `WIDGETS_API_TOKEN` will actually resolve to.
 
@@ -50,6 +49,7 @@ def user_for_widgets_token():
     )
     return user
 
+
 class BaseView:
     """Base helper class for testing custom views."""
 
@@ -74,9 +74,7 @@ class TestSetup(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.user = user_for_widgets_token()
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {settings.WIDGETS_API_TOKEN}"
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {settings.WIDGETS_API_TOKEN}")
 
 
 class TestApiV2IntegrationRawPostJson(TestSetup):

@@ -19,7 +19,6 @@ class CustomAuthTest(FunctionalTest):
         with self.wait_for_page_load(timeout=5):
             self.browser.get(self.server_url + "/accounts/signup/")
 
-
         # He sees sign up header
         header = self.find_elem_by_tag("h3")
         self.assertIn("Sign up", header.text)
@@ -128,7 +127,6 @@ class CustomAuthTest(FunctionalTest):
         with self.wait_for_page_load(timeout=5):
             self.browser.get(self.server_url)
 
-
         # He sees login link and clicks it
         login = self.browser.find_element(By.XPATH, '//a[@href="#modalLogin"]')
         login.click()
@@ -217,12 +215,9 @@ class WalletHandoffTest(FunctionalTest):
         """Open the login dialog on the wallet tab, as a reader does."""
         self.browser.get(self.server_url)
         self.browser.find_element(By.XPATH, '//a[@href="#modalLogin"]').click()
-        self.browser.find_element(
-            By.XPATH, '//a[@href="#modal-tab-wallet"]'
-        ).click()
+        self.browser.find_element(By.XPATH, '//a[@href="#modal-tab-wallet"]').click()
         return self.wait_until(
-            lambda: self.find_elem_by_id("modalLogin").get_attribute("open")
-            is not None
+            lambda: self.find_elem_by_id("modalLogin").get_attribute("open") is not None
         )
 
     def _warm_the_sdk(self):
@@ -250,9 +245,7 @@ class WalletHandoffTest(FunctionalTest):
         )
 
     def _dialog_open(self):
-        return (
-            self.find_elem_by_id("modalLogin").get_attribute("open") is not None
-        )
+        return self.find_elem_by_id("modalLogin").get_attribute("open") is not None
 
     def test_the_dialog_steps_aside_when_a_connect_starts(self):
         self._open_wallet_tab()

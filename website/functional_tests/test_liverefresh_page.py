@@ -33,6 +33,7 @@ import msgpack
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from selenium.webdriver.common.by import By
+
 from utils.constants.core import LIVEREFRESH_POLL_SECONDS
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
@@ -127,9 +128,7 @@ class LiveRefreshTest(FunctionalTest):
     #: position tests rather than asserting against markup that cannot exist.
     RENDERS_POSITIONS = True
 
-    def _published(
-        self, values=None, holdings=RENDERED_FINGERPRINT, positions=None
-    ):
+    def _published(self, values=None, holdings=RENDERED_FINGERPRINT, positions=None):
         """Return a msgpack block as the engine's pass publishes one."""
         total = self.sample["total"]
         return msgpack.packb(
@@ -501,12 +500,15 @@ class LiveRefreshTest(FunctionalTest):
             timeout=15,
         )
 
-        assert self.browser.execute_script(
-            "var el = document.getElementById(arguments[0]);"
-            "var row = el && el.closest('.position');"
-            "return row && row.getAttribute('data-value');",
-            target,
-        ) == "1234.5"
+        assert (
+            self.browser.execute_script(
+                "var el = document.getElementById(arguments[0]);"
+                "var row = el && el.closest('.position');"
+                "return row && row.getAttribute('data-value');",
+                target,
+            )
+            == "1234.5"
+        )
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
@@ -720,9 +722,12 @@ class LiveRefreshTest(FunctionalTest):
             timeout=15,
         )
 
-        assert self.browser.execute_script(
-            "return document.getElementById('f' + arguments[0]).open;", asset_id
-        ) is True
+        assert (
+            self.browser.execute_script(
+                "return document.getElementById('f' + arguments[0]).open;", asset_id
+            )
+            is True
+        )
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
@@ -868,7 +873,11 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_a_spent_reader_is_handed_back_to_the_free_reload(
-        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis,
+        self,
+        mocked_fetch,
+        mocked_status,
+        mocked_capabilities,
+        mocked_redis,
         mocked_spend,
     ):
         """**The handover, which is the whole reason this is not a 204.**
@@ -911,7 +920,11 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_reader_is_shown_what_is_left(
-        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis,
+        self,
+        mocked_fetch,
+        mocked_status,
+        mocked_capabilities,
+        mocked_redis,
         mocked_spend,
     ):
         """**An allowance nobody can see is one that only ever surprises them.**

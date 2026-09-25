@@ -126,8 +126,7 @@ class TokenomicsPageTest(TestCase):
             f"{report['year']}-{report['month']}"
             for group in reports
             for report in group["months"]
-            if f"transparency-report-{report['year']}-{report['month']}.pdf"
-            not in html
+            if f"transparency-report-{report['year']}-{report['month']}.pdf" not in html
         ]
         self.assertEqual(
             missing,

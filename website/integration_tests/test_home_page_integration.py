@@ -25,7 +25,7 @@ single-address bundle takes a different branch in ``dispatch`` -- the url value
 
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
-from django.urls import reverse, resolve
+from django.urls import resolve, reverse
 
 from core.models import BundleName
 from utils.helpers import bundle_from_addresses, check_bundle_addresses
@@ -91,9 +91,7 @@ class BundleRoundTripTest(TestCase):
         page = self.client_page.get(reverse("home")).content.decode()
 
         self.assertIn(bundle.bundle, page, "home renders a hash the bundle does not have")
-        self.assertEqual(
-            bundle.bundle, bundle_from_addresses(f"{FIRST} {SECOND}")
-        )
+        self.assertEqual(bundle.bundle, bundle_from_addresses(f"{FIRST} {SECOND}"))
         self.assertEqual(
             sorted(check_bundle_addresses(bundle.bundle).split()),
             sorted([FIRST, SECOND]),
@@ -179,9 +177,7 @@ class BundleRoundTripTest(TestCase):
         """
         bundle = self._create()
 
-        response = self.client_page.get(
-            reverse("bundlename_edit", args=[bundle.name])
-        )
+        response = self.client_page.get(reverse("bundlename_edit", args=[bundle.name]))
 
         self.assertEqual(200, response.status_code)
         form = response.context["form"]

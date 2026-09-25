@@ -20,9 +20,9 @@ which control they exercise.
 
 from django.conf import settings
 from django.urls import reverse
+from selenium.webdriver.common.by import By
 
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
-from selenium.webdriver.common.by import By
 
 from .base import FunctionalTest
 
@@ -47,9 +47,7 @@ class AppearancePickerTest(FunctionalTest):
         )
 
     def _stamped_theme(self):
-        return self.browser.find_element(By.TAG_NAME, "html").get_attribute(
-            "data-theme"
-        )
+        return self.browser.find_element(By.TAG_NAME, "html").get_attribute("data-theme")
 
     def test_picker_offers_exactly_the_themes_settings_declares(self):
         """The picker is rendered from settings, so adding a theme is a
@@ -126,9 +124,9 @@ class AppearancePickerTest(FunctionalTest):
 
     def test_the_picker_closes_once_a_theme_is_chosen(self):
         radios = self._open_picker()
-        menu = self.browser.find_element(
-            By.CSS_SELECTOR, "#id-theme-list"
-        ).find_element(By.XPATH, "./ancestor::details")
+        menu = self.browser.find_element(By.CSS_SELECTOR, "#id-theme-list").find_element(
+            By.XPATH, "./ancestor::details"
+        )
         self.browser.execute_script(
             "arguments[0].dispatchEvent(new Event('change'));", radios[0]
         )
@@ -155,9 +153,7 @@ class AnonymousThemeSwitchTest(FunctionalTest):
         return self.browser.find_element(By.CSS_SELECTOR, "[data-theme-toggle]")
 
     def _stamped_theme(self):
-        return self.browser.find_element(By.TAG_NAME, "html").get_attribute(
-            "data-theme"
-        )
+        return self.browser.find_element(By.TAG_NAME, "html").get_attribute("data-theme")
 
     def test_a_signed_out_reader_gets_a_switch_and_no_theme_list(self):
         """The full list is a signed-in feature.
@@ -217,9 +213,7 @@ class AppearancePageTest(FunctionalTest):
         self.browser.get(self.server_url + reverse("profile_appearance"))
 
     def _stamped_theme(self):
-        return self.browser.find_element(By.TAG_NAME, "html").get_attribute(
-            "data-theme"
-        )
+        return self.browser.find_element(By.TAG_NAME, "html").get_attribute("data-theme")
 
     def test_a_signed_out_reader_is_sent_to_log_in(self):
         self.browser.get(self.server_url + reverse("profile_appearance"))
@@ -241,9 +235,7 @@ class AppearancePageTest(FunctionalTest):
             By.CSS_SELECTOR, f'#id-theme-list a[href="{reverse("profile_appearance")}"]'
         ).click()
 
-        self.wait_until(
-            lambda: reverse("profile_appearance") in self.browser.current_url
-        )
+        self.wait_until(lambda: reverse("profile_appearance") in self.browser.current_url)
 
     def test_every_offered_theme_has_a_swatch_that_renders_in_itself(self):
         """The page exists so the choice can be made by looking.
@@ -396,9 +388,10 @@ class AppearanceTypefaceTest(FunctionalTest):
         )
 
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "abyss"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "abyss"
         )
         self.assertEqual(self._stamped_typeface(), "nord")
 
@@ -411,9 +404,7 @@ class AppearanceTypefaceTest(FunctionalTest):
         self._unentitled()
 
         self.assertFalse(
-            self.browser.find_elements(
-                By.CSS_SELECTOR, 'input[name="typeface-choice"]'
-            ),
+            self.browser.find_elements(By.CSS_SELECTOR, 'input[name="typeface-choice"]'),
             "a typeface control was rendered below the tier",
         )
 
@@ -455,9 +446,10 @@ class AppearanceTypefaceTest(FunctionalTest):
         )
 
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "nord"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "nord"
         )
 
 
@@ -488,7 +480,7 @@ class AppearanceRecentThemesTest(FunctionalTest):
     def _choose(self, theme):
         self.browser.execute_script(
             "var r = document.querySelector("
-            "  \'#id-theme-list input[value=\"' + arguments[0] + '\"]\');"
+            "  '#id-theme-list input[value=\"' + arguments[0] + '\"]');"
             "r.checked = true; r.dispatchEvent(new Event('change'));",
             theme,
         )
@@ -524,9 +516,10 @@ class AppearanceRecentThemesTest(FunctionalTest):
 
         self._choose("dracula")
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "dracula"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "dracula"
         )
         # Not counted yet: nothing has been navigated away from.
         self.assertEqual(self._usage(), {})
@@ -540,9 +533,10 @@ class AppearanceRecentThemesTest(FunctionalTest):
         self._open_picker()
         self._choose("halloween")
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "halloween"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "halloween"
         )
 
         self._open_picker("faq")
@@ -555,9 +549,10 @@ class AppearanceRecentThemesTest(FunctionalTest):
         self._open_picker()
         self._choose("mocha")
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "mocha"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "mocha"
         )
 
         self._open_picker("faq")
@@ -578,9 +573,10 @@ class AppearanceRecentThemesTest(FunctionalTest):
         self._open_picker()
         self._choose("night")
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "night"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "night"
         )
 
         self._open_picker("faq")
@@ -595,25 +591,28 @@ class AppearanceRecentThemesTest(FunctionalTest):
         self._open_picker()
         self._choose("dracula")
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "dracula"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "dracula"
         )
         self._open_picker("faq")
         self._choose("asastats")
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "asastats"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "asastats"
         )
 
         self._open_picker("disclaimer")
         self._choose("dracula")
 
         self.wait_until(
-            lambda: self.browser.find_element(
-                By.TAG_NAME, "html"
-            ).get_attribute("data-theme") == "dracula"
+            lambda: self.browser.find_element(By.TAG_NAME, "html").get_attribute(
+                "data-theme"
+            )
+            == "dracula"
         )
 
 
@@ -705,28 +704,24 @@ class AppearanceTabsTest(FunctionalTest):
         dark = self.browser.find_element(By.ID, "id-tab-dark")
         self.browser.execute_script("arguments[0].click();", dark)
 
-        panels = self.browser.find_elements(By.CSS_SELECTOR, "#id-appearance-tabs > .tab-content")
+        panels = self.browser.find_elements(
+            By.CSS_SELECTOR, "#id-appearance-tabs > .tab-content"
+        )
         shown = [p for p in panels if p.is_displayed()]
 
         self.assertEqual(len(shown), 1, "exactly one panel should be visible")
         self.assertTrue(
-            shown[0].find_elements(
-                By.CSS_SELECTOR, "input[value='asastats-dark']"
-            ),
+            shown[0].find_elements(By.CSS_SELECTOR, "input[value='asastats-dark']"),
             "the Dark tab did not reveal the dark themes",
         )
 
     def test_light_leads_the_tabs(self):
         """The header dropdown lists Light before Dark; this must agree."""
-        tabs = self.browser.find_elements(
-            By.CSS_SELECTOR, "#id-appearance-tabs > .tab"
-        )
+        tabs = self.browser.find_elements(By.CSS_SELECTOR, "#id-appearance-tabs > .tab")
 
         # Below the Asastatser tier Fonts is a link rather than a radio, so it
         # carries its name as text instead of an aria-label. Either is the
         # accessible name; the order is what this pins.
-        names = [
-            (t.get_attribute("aria-label") or t.text).split()[0] for t in tabs
-        ]
+        names = [(t.get_attribute("aria-label") or t.text).split()[0] for t in tabs]
 
         self.assertEqual(names, ["Light", "Dark", "Fonts"])

@@ -13,8 +13,7 @@ class SitemapHtmlPageTest(FunctionalTest):
         # redesign -- so the assertion is that the headings exist, not what
         # they are made of.
         headings = [
-            h.text
-            for h in self.browser.find_elements(By.CSS_SELECTOR, "h1, h2, h3, h4")
+            h.text for h in self.browser.find_elements(By.CSS_SELECTOR, "h1, h2, h3, h4")
         ]
         self.assertIn("Public pages", headings)
         self.assertIn("Private pages", headings)
@@ -35,9 +34,7 @@ class SitemapHtmlPageTest(FunctionalTest):
         login = self.find_elem_by_link_text("User login")
         self.assertIn("/accounts/login/", login.get_attribute("href"))
         change_password = self.find_elem_by_link_text("Change your password")
-        self.assertIn(
-            "/accounts/password/change/", change_password.get_attribute("href")
-        )
+        self.assertIn("/accounts/password/change/", change_password.get_attribute("href"))
         reset_password = self.find_elem_by_link_text("Reset your password")
         self.assertIn("/accounts/password/reset/", reset_password.get_attribute("href"))
 
@@ -63,9 +60,7 @@ class SitemapStructureTest(FunctionalTest):
         self.assertEqual(len(sections), 2)
         self.assertNotIn("Change your password", self.browser.page_source)
 
-        self.create_cookie_and_go_to_index_page_tier(
-            "sitemap@example.com", permission=0
-        )
+        self.create_cookie_and_go_to_index_page_tier("sitemap@example.com", permission=0)
         self.browser.get(self.server_url + "/sitemap/")
         self.assertIn("Change your password", self.browser.page_source)
 

@@ -212,9 +212,7 @@ class AlertsRedisContractTest(TestCase):
         since we started watching", and the notification would look identical.
         """
         now = time.time()
-        _engine_writes_history(
-            self.redis, f"{HISTORY_KEY}:{self.page}", 100.0, now
-        )
+        _engine_writes_history(self.redis, f"{HISTORY_KEY}:{self.page}", 100.0, now)
 
         assert percent_move(self.page, 3600, 110.0, client=self.redis, now=now) is None
 
@@ -328,9 +326,7 @@ def _reader(email, permission=None):
     """Return a user at a tier that admits rules."""
     from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS  # noqa: PLC0415
 
-    user = get_user_model().objects.create_user(
-        username=email, email=email, password="x"
-    )
+    user = get_user_model().objects.create_user(username=email, email=email, password="x")
     profile = user.profile
     profile.permission = (
         SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
@@ -376,9 +372,7 @@ class AlertsWebhookEndToEndTest(TestCase):
         re-serialized dict would pass here and fail against the engine.
         """
         raw = json.dumps(body).encode()
-        digest = hmac.new(
-            WEBHOOK_SECRET.encode(), raw, hashlib.sha256
-        ).hexdigest()
+        digest = hmac.new(WEBHOOK_SECRET.encode(), raw, hashlib.sha256).hexdigest()
         # `SIGNATURE_HEADER` is already the `request.META` key the view reads,
         # not the wire name - so it is passed through as-is rather than
         # mangled into one.
@@ -404,9 +398,7 @@ class AlertsWebhookEndToEndTest(TestCase):
     def test_alerts_integration_a_repriced_page_fires_a_rule(self):
         """The live pass says "page X moved"; everything else is read here."""
         self._rule()
-        self.redis.set(
-            f"lvp:{self.page}", msgpack.packb({"total": 90.0, "values": {}})
-        )
+        self.redis.set(f"lvp:{self.page}", msgpack.packb({"total": 90.0, "values": {}}))
 
         response = self._post("alerts_repriced", {"page": self.page})
 
@@ -428,9 +420,7 @@ class AlertsWebhookEndToEndTest(TestCase):
             last_value="2",
         )
 
-        response = self._post(
-            "alerts_priced", {"prices": {str(self.asset_id): 0.5}}
-        )
+        response = self._post("alerts_priced", {"prices": {str(self.asset_id): 0.5}})
 
         assert response.status_code == 200
         assert response.json()["fired"] == 1

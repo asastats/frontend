@@ -30,11 +30,12 @@ import os
 import re
 from unittest import mock
 
-from api.position_id import annotate_positions
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+
+from api.position_id import annotate_positions
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 from .base import COOKIE_SEED_URL, FunctionalTest
@@ -154,7 +155,9 @@ class ToolbarTest(FunctionalTest):
         self.assertEqual([], self.javascript_errors())
         self.assertTrue(self.browser.find_element(By.ID, "toolbar").is_displayed())
         self.assertEqual("", self.status(), "an untouched page announced a filter")
-        self.assertTrue(self.browser.find_element(By.ID, "tb-reset").get_attribute("disabled"))
+        self.assertTrue(
+            self.browser.find_element(By.ID, "tb-reset").get_attribute("disabled")
+        )
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
@@ -375,9 +378,9 @@ class ToolbarTest(FunctionalTest):
         for selector in ("#tb-refresh", "#tb-nonft"):
             with self.subTest(control=selector):
                 self.assertEqual(
-                    self.browser.find_element(
-                        By.CSS_SELECTOR, selector
-                    ).get_attribute("aria-pressed"),
+                    self.browser.find_element(By.CSS_SELECTOR, selector).get_attribute(
+                        "aria-pressed"
+                    ),
                     "false",
                 )
                 resting = unhovered_style(selector)
@@ -552,9 +555,7 @@ class ToolbarTest(FunctionalTest):
 
         # cAlgo is worth 0.000042 ALGO on this address - one of nine holdings
         # under half a cent, which is what the old rule widened.
-        dust = self.browser.find_element(
-            By.CSS_SELECTOR, "#f2400334372 .cval .val"
-        )
+        dust = self.browser.find_element(By.CSS_SELECTOR, "#f2400334372 .cval .val")
         # `textContent`, not `.text`: this row is past the first batch and
         # therefore folded, and Selenium reads a hidden element as "".
         self.assertEqual("0.00", dust.get_attribute("textContent").strip())
@@ -576,8 +577,7 @@ class ToolbarTest(FunctionalTest):
                 wrong = [
                     text
                     for text in (
-                        figure.get_attribute("textContent").strip()
-                        for figure in figures
+                        figure.get_attribute("textContent").strip() for figure in figures
                     )
                     if not _TWO_DECIMALS.match(text)
                 ]
@@ -623,13 +623,13 @@ class ToolbarTest(FunctionalTest):
             "the figure zeroed itself, which reads as holding none",
         )
         self.assertEqual(width, segment.size["width"])
-        self.assertGreater(segment.size["width"], 0, "the segment cannot be pressed again")
+        self.assertGreater(
+            segment.size["width"], 0, "the segment cannot be pressed again"
+        )
         # Waited for rather than read straight after the press: the dim is a
         # 0.12s transition, so reading immediately catches it at full opacity
         # and reports a working control as broken.
-        self.wait_until(
-            lambda: float(segment.value_of_css_property("opacity")) < 1.0
-        )
+        self.wait_until(lambda: float(segment.value_of_css_property("opacity")) < 1.0)
 
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
@@ -646,7 +646,9 @@ class ToolbarTest(FunctionalTest):
 
         self.press('#allocation-bar [data-band="staked"]')
 
-        figure = self.browser.find_element(By.CSS_SELECTOR, '.figs .fig[data-band="staked"]')
+        figure = self.browser.find_element(
+            By.CSS_SELECTOR, '.figs .fig[data-band="staked"]'
+        )
         self.wait_until(lambda: figure.get_attribute("aria-pressed") == "false")
 
         figure.click()
@@ -801,7 +803,7 @@ class ToolbarTest(FunctionalTest):
         # Something well down the list, so a sort would move it if it could.
         rows = self.shown()
         target = rows[len(rows) // 2]
-        self.browser.find_element(By.CSS_SELECTOR, f'#{target} [data-pin]').click()
+        self.browser.find_element(By.CSS_SELECTOR, f"#{target} [data-pin]").click()
         self.wait_until(lambda: self.shown()[0] == target)
 
         self.press('#tb-sort [data-sort="name"]')
@@ -891,7 +893,9 @@ class ToolbarTest(FunctionalTest):
         self.press('#tb-group [data-group="venue"]')
 
         self.wait_until(lambda: self.shown("#venue-list > .fitem") != [])
-        self.assertTrue(self.browser.find_element(By.ID, "asset-list").get_attribute("hidden"))
+        self.assertTrue(
+            self.browser.find_element(By.ID, "asset-list").get_attribute("hidden")
+        )
         self.assertEqual(
             positions,
             len(self.browser.find_elements(By.CSS_SELECTOR, ".position")),
@@ -910,7 +914,9 @@ class ToolbarTest(FunctionalTest):
         self.press('#tb-group [data-group="asset"]')
 
         self.wait_until(lambda: self.shown() != [])
-        self.assertEqual(before, self._group_order(), "a group came back in the wrong place")
+        self.assertEqual(
+            before, self._group_order(), "a group came back in the wrong place"
+        )
         self.assertEqual([], self.javascript_errors())
 
     def _group_order(self):
@@ -973,17 +979,25 @@ class ToolbarTest(FunctionalTest):
         self.press('#tb-group [data-group="venue"]')
         self.press('.figs .fig[data-band="nft"]')
         self.wait_until(
-            lambda: not self.browser.find_element(By.ID, "tb-reset").get_attribute("disabled")
+            lambda: not self.browser.find_element(By.ID, "tb-reset").get_attribute(
+                "disabled"
+            )
         )
 
         self.press("#tb-reset")
 
         self.wait_until(lambda: self.shown() == served)
-        self.assertEqual("", self.browser.find_element(By.ID, "tb-q").get_attribute("value"))
-        self.assertTrue(self.browser.find_element(By.ID, "tb-reset").get_attribute("disabled"))
+        self.assertEqual(
+            "", self.browser.find_element(By.ID, "tb-q").get_attribute("value")
+        )
+        self.assertTrue(
+            self.browser.find_element(By.ID, "tb-reset").get_attribute("disabled")
+        )
         self.assertEqual("", self.status())
         self.assertTrue(
-            self.browser.find_element(By.CSS_SELECTOR, ".dynamic-page .nftsec").is_displayed()
+            self.browser.find_element(
+                By.CSS_SELECTOR, ".dynamic-page .nftsec"
+            ).is_displayed()
         )
         self.assertEqual([], self.javascript_errors())
 
@@ -1036,7 +1050,9 @@ class ToolbarTest(FunctionalTest):
         self.open_page()
 
         self.browser.execute_script("window.scrollTo(0, 2000);")
-        self.wait_until(lambda: self.browser.execute_script("return window.scrollY;") > 500)
+        self.wait_until(
+            lambda: self.browser.execute_script("return window.scrollY;") > 500
+        )
 
         toolbar = self.browser.find_element(By.ID, "toolbar")
         top = self.browser.execute_script(

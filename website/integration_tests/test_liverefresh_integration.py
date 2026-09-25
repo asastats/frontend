@@ -51,10 +51,10 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from redis import Redis
 
-from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
-from walletauth.models import LinkedAddress
 from api.live import API_WARM_KEY, SNAPSHOT_PREFIX, page_key, snapshot, subscribe
 from api.tiers import block_time
+from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+from walletauth.models import LinkedAddress
 from widgets.inhouse.liverefresh.views import PAID_KEY, PAYLOAD_PREFIX, SUBSCRIBED_KEY
 
 #: The database these tests own. See the module docstring.
@@ -104,9 +104,7 @@ def _engine_reads_subscriptions(client, key, now=None):
 
 def _reader(email, tier="Professional", linked=True):
     """Return a signed-up reader at `tier`, with ADDRESS linked."""
-    user = get_user_model().objects.create_user(
-        username=email, email=email, password="x"
-    )
+    user = get_user_model().objects.create_user(username=email, email=email, password="x")
     profile = user.profile
     profile.permission = SUBSCRIPTION_TIER_PERMISSIONS[tier]
     profile.address = ADDRESS
@@ -189,9 +187,9 @@ class LiveRefreshRedisContractTest(TestCase):
 
         response = self._poll(user)
 
-        assert response.status_code == 200, (
-            "the poll could not find the payload the pass published"
-        )
+        assert (
+            response.status_code == 200
+        ), "the poll could not find the payload the pass published"
 
     def test_liverefresh_integration_nothing_published_is_a_204(self):
         """**204 rather than an empty body**: htmx leaves the page alone, so a
@@ -282,9 +280,7 @@ class LiveRefreshRedisContractTest(TestCase):
         """
         self.redis.set(
             self.payload_key,
-            msgpack.packb(
-                {"total": 42.0, "priceusdc": 0.25, "values": {31566704: 7.25}}
-            ),
+            msgpack.packb({"total": 42.0, "priceusdc": 0.25, "values": {31566704: 7.25}}),
             ex=120,
         )
         user = _reader("lr-payload@example.com")
@@ -383,9 +379,12 @@ class ApiLiveWarmSetTest(TestCase):
         self.addCleanup(self.redis.zrem, SUBSCRIBED_KEY, addresses)
         self.addCleanup(self.redis.zrem, API_WARM_KEY, bundle)
 
-        assert subscribe(
-            ADDRESS, addresses, user.pk, user.profile.permission, client=self.redis
-        ) is True
+        assert (
+            subscribe(
+                ADDRESS, addresses, user.pk, user.profile.permission, client=self.redis
+            )
+            is True
+        )
 
         assert bundle != addresses, "a bundle key is not its address list"
         assert addresses in _engine_reads_subscriptions(self.redis, SUBSCRIBED_KEY)

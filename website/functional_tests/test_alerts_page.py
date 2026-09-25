@@ -231,14 +231,11 @@ class AddressPageMixin(AlertsReaderMixin):
         """
         self.open_address_page()
         self.wait_until(
-            lambda: self.browser.execute_script(
-                "return Boolean(window.asastatsAlerts);"
-            ),
+            lambda: self.browser.execute_script("return Boolean(window.asastatsAlerts);"),
             timeout=self.OPEN_TIMEOUT,
         )
         self.find_elem_by_css(".id-alerts-open").click()
         self.wait_until(self.dialog_is_open, timeout=self.OPEN_TIMEOUT)
-
 
 
 class AlertsModalTest(AlertsReaderMixin, FunctionalTest):
@@ -308,9 +305,11 @@ class AlertsModalTest(AlertsReaderMixin, FunctionalTest):
         left = self.find_elem_by_class("alerts-left")
         assert "0 of 5 left" in left.text
         assert "a larger plan" in left.text
-        assert left.find_element(By.CSS_SELECTOR, "a").get_attribute(
-            "href"
-        ).endswith("/subscriptions/")
+        assert (
+            left.find_element(By.CSS_SELECTOR, "a")
+            .get_attribute("href")
+            .endswith("/subscriptions/")
+        )
 
     def test_the_top_tier_is_not_sold_what_it_already_has(self):
         """A Cluster reader at their cap has the largest allowance sold.
@@ -730,9 +729,7 @@ class AlertsAddressPageEntryTest(AddressPageMixin, FunctionalTest):
 
         self.find_elem_by_css(".id-alerts-close").click()
 
-        self.wait_until(
-            lambda: not self.dialog_is_open(), timeout=self.OPEN_TIMEOUT
-        )
+        self.wait_until(lambda: not self.dialog_is_open(), timeout=self.OPEN_TIMEOUT)
 
     def test_an_anonymous_reader_gets_no_alerts_control_at_all(self):
         """Not an upgrade link either: there is nobody to upgrade."""

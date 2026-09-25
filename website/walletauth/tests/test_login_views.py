@@ -382,9 +382,7 @@ class TestWalletLoginVerifyAPIView:
     @pytest.mark.django_db
     def test_login_verify_uses_safe_relative_next_url(self, mocker):
         user = link_user()
-        WalletLoginNonce.objects.create(
-            address=PROVEN, chain="algorand", nonce="n_safe1"
-        )
+        WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="n_safe1")
         _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
         perform = mocker.patch(
             "walletauth.login_views._perform_login", return_value="/default-home/"
@@ -403,13 +401,9 @@ class TestWalletLoginVerifyAPIView:
         assert perform.call_args.args[1] == user
 
     @pytest.mark.django_db
-    def test_login_verify_uses_safe_absolute_next_url_and_strips_whitespace(
-        self, mocker
-    ):
+    def test_login_verify_uses_safe_absolute_next_url_and_strips_whitespace(self, mocker):
         link_user()
-        WalletLoginNonce.objects.create(
-            address=PROVEN, chain="algorand", nonce="n_safe2"
-        )
+        WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="n_safe2")
         _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
         mocker.patch(
             "walletauth.login_views._perform_login", return_value="/default-home/"
@@ -435,9 +429,7 @@ class TestWalletLoginVerifyAPIView:
     @pytest.mark.django_db
     def test_login_verify_ignores_unsafe_external_next_url(self, mocker):
         link_user()
-        WalletLoginNonce.objects.create(
-            address=PROVEN, chain="algorand", nonce="n_safe3"
-        )
+        WalletLoginNonce.objects.create(address=PROVEN, chain="algorand", nonce="n_safe3")
         _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
         mocker.patch(
             "walletauth.login_views._perform_login", return_value="/default-home/"

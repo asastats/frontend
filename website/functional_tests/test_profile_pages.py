@@ -76,16 +76,13 @@ class SignedInShellTest(FunctionalTest):
         # replaced. The live-server thread shares this process, so the patch
         # reaches the view.
         chain = mock.patch(
-            "core.permission_providers.permissiondapp."
-            "fetch_subscriptions_for_address",
+            "core.permission_providers.permissiondapp." "fetch_subscriptions_for_address",
             return_value=SUBSCRIPTION_FROM_CHAIN,
         )
         chain.start()
         self.addCleanup(chain.stop)
 
-        self.create_cookie_and_go_to_index_page_tier(
-            "shell@example.com", permission=100
-        )
+        self.create_cookie_and_go_to_index_page_tier("shell@example.com", permission=100)
 
     def test_every_signed_in_page_renders_its_header_and_breadcrumbs(self):
         for name in SIGNED_IN_PAGES:
@@ -185,9 +182,7 @@ class SettingsPageTest(FunctionalTest):
 
     def setUp(self):
         super().setUp()
-        self.create_cookie_and_go_to_index_page_tier(
-            "prefs@example.com", permission=100
-        )
+        self.create_cookie_and_go_to_index_page_tier("prefs@example.com", permission=100)
         self.browser.get(self.server_url + reverse("profile_settings"))
 
     def test_the_preference_selects_render(self):
@@ -446,7 +441,9 @@ class LinkedAddressActionsTest(FunctionalTest):
         """One filled button per view, and it is the reason people came."""
         filled = [
             control.text.strip()
-            for control in self.browser.find_elements(By.CSS_SELECTOR, "main .btn-primary")
+            for control in self.browser.find_elements(
+                By.CSS_SELECTOR, "main .btn-primary"
+            )
         ]
 
         self.assertEqual(["Add address"], filled)
@@ -461,9 +458,7 @@ class LinkedAddressActionsTest(FunctionalTest):
         row = self._row()
         self.assertIn("Disable login", self._classes(row))
 
-        row.find_element(
-            By.XPATH, ".//button[normalize-space()='Disable login']"
-        ).click()
+        row.find_element(By.XPATH, ".//button[normalize-space()='Disable login']").click()
 
         # Waited for in the DOM, not in the rendered text: the swapped-in rows
         # arrive as freshly closed `<details>`, so their controls are present
@@ -537,9 +532,7 @@ class FoldSizeSettingTest(FunctionalTest):
         )
 
     def _stamped(self, key):
-        return self.browser.find_element(By.TAG_NAME, "html").get_attribute(
-            f"data-{key}"
-        )
+        return self.browser.find_element(By.TAG_NAME, "html").get_attribute(f"data-{key}")
 
     def _choose(self, group, value):
         target = self.browser.find_element(

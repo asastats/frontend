@@ -185,8 +185,7 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         # ~35s on a Pi and passes; it only times out under full-suite load, so
         # the leash is long rather than the default 5s.
         self.wait_until(
-            lambda: self.find_elem_by_id("swap-modal").get_attribute("open")
-            is not None,
+            lambda: self.find_elem_by_id("swap-modal").get_attribute("open") is not None,
             timeout=30,
         )
         # The panel arrives by a second htmx request, gated on the linkage.
@@ -293,9 +292,7 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
 
         for leg in ("pay", "get"):
             with self.subTest(leg=leg):
-                slot = self.find_elem_by_css(
-                    f".swap-leg-{leg} .id-swap-leg-value"
-                )
+                slot = self.find_elem_by_css(f".swap-leg-{leg} .id-swap-leg-value")
                 self.assertEqual(slot.text, "")
 
     def test_without_a_wallet_the_button_says_what_is_missing(self):
@@ -487,8 +484,7 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
                 with self.subTest(width=width, chip=chip.text):
                     self.assertFalse(
                         self._overlaps(flip, chip),
-                        f"at {width}px the flip control covers "
-                        f"the {chip.text} chip",
+                        f"at {width}px the flip control covers " f"the {chip.text} chip",
                     )
 
     def _overlaps(self, one, other):
@@ -546,9 +542,7 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
                     "",
                     f"{selector} still shows the previous mode's quote",
                 )
-        self.assertEqual(
-            self.find_elem_by_css(".id-swap-out").get_attribute("value"), ""
-        )
+        self.assertEqual(self.find_elem_by_css(".id-swap-out").get_attribute("value"), "")
 
     def test_the_amount_field_moves_to_the_leg_it_belongs_to(self):
         """Sell fixes what you pay; Buy fixes what you receive."""
@@ -619,9 +613,7 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         self._click('.id-swap-slip-preset[data-slippage="1"]')
         # The header reads the new tolerance and the panel's hidden input, which
         # is what readQuoteParams actually quotes on, follows it.
-        self.wait_until(
-            lambda: self.find_elem_by_css(".id-swap-slip-value").text == "1%"
-        )
+        self.wait_until(lambda: self.find_elem_by_css(".id-swap-slip-value").text == "1%")
         self.assertEqual(
             self.find_elem_by_css(".id-swap-slippage").get_attribute("value"), "1"
         )
@@ -877,9 +869,7 @@ class SwapModalBundlePageTest(SwapPageMixin, FunctionalTest):
             self._connect(self.OTHER)
             self._open_modal()
 
-            self.wait_until(
-                lambda: self._spending_address() == self.OTHER, timeout=30
-            )
+            self.wait_until(lambda: self._spending_address() == self.OTHER, timeout=30)
 
 
 class SwapModalUnlinkedTest(FunctionalTest):
