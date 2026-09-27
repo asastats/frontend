@@ -1925,12 +1925,27 @@ class AlertsAllowanceTest(TestCase):
 
         self.assertEqual(_alerts_allowance(self.user), (25, 0))
 
-    def test_alerts_allowance_skips_the_query_below_the_tier(self):
-        """Zero rules allowed means the count is never shown, so asking for it
-        would be a query run and discarded on every address page."""
+    def test_alerts_allowance_gives_an_unsubscribed_reader_the_price_pair(self):
+        """**Two price-only rules since 2026-09-27**, so the control renders for
+        every authenticated reader rather than only for subscribers. What the
+        tier does not include is said in the modal's subject picker."""
         from core.views import _alerts_allowance
 
-        self.assertEqual(_alerts_allowance(self.user), (0, 0))
+        self.assertEqual(_alerts_allowance(self.user), (2, 0))
+
+    def test_alerts_allowance_skips_the_query_for_a_tier_that_keeps_none(self):
+        """Zero rules allowed means the count is never shown, so asking for it
+        would be a query run and discarded on every address page.
+
+        No authenticated tier keeps zero today, so the table is patched: the
+        branch is still what a future one lands on.
+        """
+        from core.views import _alerts_allowance
+
+        with mock.patch.dict(
+            "widgets.inhouse.alerts.tiers.ALERT_RULES_PER_TIER", {"Trial": 0}
+        ):
+            self.assertEqual(_alerts_allowance(self.user), (0, 0))
 
     def test_alerts_allowance_survives_a_widgets_repo_that_is_behind(self):
         """**The outage this exists to prevent.**

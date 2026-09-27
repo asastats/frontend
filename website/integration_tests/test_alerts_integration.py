@@ -304,6 +304,29 @@ class AlertsRedisContractTest(TestCase):
         assert publish_page(self.page, client=self.redis) is False
         assert self.page not in published_pages(client=self.redis)
 
+    def test_alerts_integration_a_price_rule_stays_out_of_the_population(self):
+        """**The two halves of the feature reach the engine by two routes.**
+
+        A price rule carries the address it was written from, and publishing on
+        that put the page in `lvr` - the engine's live pass then valued it every
+        block for ever to answer a question the periodic price task answers.
+        Against a real Redis, because the round trip is the contract.
+        """
+        user = _reader("priceonly@example.com")
+        AlertRule.objects.create(
+            user=user,
+            subject=Subject.ASA_PRICE,
+            direction=Direction.UP,
+            threshold="1",
+            asset_id=self.asset_id,
+            address=self.page,
+        )
+
+        assert publish_page(self.page, client=self.redis) is False
+        assert self.page not in published_pages(client=self.redis)
+        assert publish_assets(client=self.redis) == 1
+        assert published_assets(client=self.redis) == (self.asset_id,)
+
     def test_alerts_integration_a_priced_asset_reaches_the_task(self):
         """`lvra` is the only thing that puts an asset in front of the periodic
         price task, and `published_assets` decodes it back to integers - the

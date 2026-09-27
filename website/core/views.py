@@ -1752,8 +1752,9 @@ def _alerts_allowance(user):
     profile = getattr(user, "profile", None)
     allowed = rules_allowed(getattr(profile, "permission", 0))
     if not allowed:
-        # Below the tier: an unentitled reader is shown an upgrade link, so
-        # the count is never rendered and the query is skipped.
+        # A tier that keeps none is shown an upgrade link rather than a count,
+        # so the query is skipped. No authenticated tier keeps none since
+        # 2026-09-27; the branch is what a future one would land on.
         return 0, 0
     return allowed, AlertRule.objects.filter(user=user, active=True).count()
 

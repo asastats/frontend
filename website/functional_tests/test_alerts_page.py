@@ -276,6 +276,43 @@ class AlertsModalTest(AlertsReaderMixin, FunctionalTest):
             value for value, _ in Subject.choices
         ]
 
+    def test_a_price_only_tier_is_offered_only_the_price_subjects(self):
+        """**Filtered server-side, and the missing half is named.**
+
+        `alerts.js` mirrors the subject lists to decide which *fields* to show,
+        never which subjects a reader may pick, so the picker is the gate and it
+        has to be rendered short. A short list on its own reads as a small
+        feature: the note beside it is what turns the restriction into the thing
+        the subscription buys.
+        """
+        self.sign_in("alerts-priceonly@example.com", permission=INTRO)
+
+        self.open_modal_url()
+
+        options = self.find_elems_by_css(".alerts-subject option")
+        assert [option.get_attribute("value") for option in options] == [
+            Subject.ASA_PRICE,
+            Subject.ASA_PRICE_PERCENT,
+        ]
+        note = self.find_elem_by_class("alerts-tiernote")
+        assert "Portfolio alerts" in note.text
+        assert "subscriptions" in self.find_elem_by_css(
+            ".alerts-tiernote a"
+        ).get_attribute("href")
+
+    def test_a_paid_tier_is_told_how_many_pages_it_may_watch(self):
+        """**A second number, because it bounds a second cost.** A page with a
+        rule on it is valued every block for ever, so twenty-five rules on one
+        page cost what one does. A reader who only ever meets that cap as a
+        rejection experiences it as a bug.
+        """
+        self.sign_in("alerts-pages@example.com")
+
+        self.open_modal_url()
+
+        assert "0 of 1 portfolio page" in self.find_elem_by_class("alerts-pages").text
+        assert self.browser.find_elements(By.CSS_SELECTOR, ".alerts-tiernote") == []
+
     def test_the_remainder_is_shown_rather_than_the_total(self):
         """The template never subtracts - a second place doing that arithmetic
         is a second place to get it wrong."""
@@ -684,20 +721,38 @@ class AlertsAddressPageEntryTest(AddressPageMixin, FunctionalTest):
 
         assert self.find_elem_by_class("alerts-count").text == "1"
 
-    def test_below_the_tier_it_is_an_upgrade_link_not_a_dead_button(self):
-        """**A disabled control teaches a reader the feature is broken.**
+    def test_intro_gets_the_control_rather_than_an_upgrade_link(self):
+        """**The restriction moved from the control to the subject picker.**
 
-        Intro gets no rules, so the gate is real - but the answer to "you
-        cannot do this yet" is the page that sells it, not a button that does
-        nothing when pressed.
+        Intro kept no rules until 2026-09-27 and got a link to the plans. It now
+        keeps price rules, which cost nothing per reader, so it gets the real
+        button - see post-deploy/alerts-tier-analysis.md. What it does not get is
+        the portfolio half, and the picker is where that is said.
         """
         self.sign_in("alerts-intro@example.com", permission=INTRO)
 
         self.open_address_page()
 
-        upgrade = self.find_elem_by_css(".alerts-upgrade")
-        assert "subscriptions" in upgrade.get_attribute("href")
-        assert self.browser.find_elements(By.CSS_SELECTOR, ".id-alerts-open") == []
+        assert self.find_elem_by_css(".id-alerts-open") is not None
+        assert self.browser.find_elements(By.CSS_SELECTOR, ".alerts-upgrade") == []
+
+    def test_below_the_tier_it_is_an_upgrade_link_not_a_dead_button(self):
+        """**A disabled control teaches a reader the feature is broken.**
+
+        No authenticated tier keeps zero rules any more, so the table is patched
+        to reach the branch. It is still the right rendering for a tier that
+        keeps none, and nothing else would notice if the template lost it.
+        """
+        with mock.patch.dict(
+            "widgets.inhouse.alerts.tiers.ALERT_RULES_PER_TIER", {"Intro": 0}
+        ):
+            self.sign_in("alerts-nonefull@example.com", permission=INTRO)
+
+            self.open_address_page()
+
+            upgrade = self.find_elem_by_css(".alerts-upgrade")
+            assert "subscriptions" in upgrade.get_attribute("href")
+            assert self.browser.find_elements(By.CSS_SELECTOR, ".id-alerts-open") == []
 
     def test_at_the_limit_the_button_says_so_to_the_script(self):
         user = self.sign_in("alerts-entry-full@example.com")

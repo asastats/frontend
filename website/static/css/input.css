@@ -4433,7 +4433,18 @@
 
 .alerts-empty,
 .alerts-left,
+.alerts-pages,
 .alerts-full { font-size: 0.78rem; color: var(--alert-ink-3); }
+
+/* The half of the feature this tier does not have, said beside the picker the
+   options were filtered out of. Full width because it sits between two form
+   fields in a `flex-wrap` row. */
+.alerts-tiernote {
+  flex: 1 0 100%;
+  margin: -0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--alert-ink-3);
+}
 
 /* **Spent, rather than an error.** "0 of 5 left" is the state a paying reader
    is meant to reach, so the line steps up one level of ink to be noticed and
