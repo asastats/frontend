@@ -1,7 +1,6 @@
 ---
-# OpenResty on top of nginx: provides the Lua runtime for the global-bundle
-# feature. The nginx systemd service is overridden to run the OpenResty binary,
-# so the rest of the role (and other repos) keep using the `nginx` service.
+# OpenResty provides Lua runtime for global-bundle
+# docs/logbook.md#deployrolesnginxtaskssetup_openrestyyml
 - name: Ensure OpenResty dependency packages are installed
   ansible.builtin.apt:
     name:

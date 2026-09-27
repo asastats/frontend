@@ -27,28 +27,13 @@
   changed_when: "'No migrations to apply' not in projectsetup_migrate_command.stdout"
   tags: [project-setup, postgresql-create, run-project-scripts, update-project-code]
 
-# Minify our own JavaScript before collectstatic runs. static/build is placed
-# first in STATICFILES_DIRS in production, so collectstatic prefers the
-# minified copy over the readable source of the same name.
-#
-# **That preference is why a failed build is worse than no build.** static/build
-# is gitignored and survives between deploys, so a build that does not run
-# leaves the PREVIOUS release's JavaScript in place and collectstatic keeps
-# choosing it, over the source that was just pulled. The site then serves last
-# release's scripts and nothing anywhere reports a problem.
-#
-# This used to carry `failed_when: false`, which made exactly that outcome
-# invisible: no node, or no route to the npm registry for `npx esbuild`, and the
-# task reported ok while the deploy went green on stale code.
 - name: Check whether the static build script is present
   ansible.builtin.stat:
     path: "{{ site_path }}/source/{{ app_name }}/build-static.sh"
   register: projectsetup_build_static_script
   tags: [project-setup, run-project-scripts, update-project-code]
+  # See docs/logbook.md#deployrolesprojectsetuptasksproject_scriptsyml
 
-# The honest form of "ships readable sources, which is larger but correct":
-# that is only true once the stale build output is gone. Left in place it is
-# not a fallback, it is the bug above.
 - name: Drop stale minified assets when there is no script to rebuild them
   ansible.builtin.file:
     path: "{{ site_path }}/source/{{ app_name }}/static/build"
@@ -57,6 +42,7 @@
   become_user: "{{ webapp_user }}"
   when: not projectsetup_build_static_script.stat.exists
   tags: [project-setup, run-project-scripts, update-project-code]
+  # See docs/logbook.md#deployrolesprojectsetuptasksproject_scriptsyml
 
 - name: Build minified static assets
   ansible.builtin.shell: |
@@ -83,19 +69,6 @@
   when: projectsetup_build_static_script.stat.exists
   tags: [project-setup, run-project-scripts, update-project-code]
 
-# collectstatic must precede the gunicorn restart, not follow it: under
-# ManifestStaticFilesStorage `{% static %}` raises for anything missing from
-# staticfiles.json, so a worker serving pages before the manifest is written
-# returns 500s rather than merely unstyled pages.
-#
-# Deliberately no `--clear`: old hashed files should accumulate, so a reader
-# holding a page rendered by the previous release can still fetch its assets.
-#
-# This reported `changed` on every run too, and it was not its own fault:
-# collectstatic copies whatever is newer than its target, and the build above
-# used to rewrite all 17 minified files with fresh mtimes even when their
-# content was identical. Fixing the build to leave unchanged files alone is
-# what makes this task idempotent as well.
 - name: Run collectstatic management command
   ansible.builtin.shell: |
     set -o pipefail
@@ -108,6 +81,7 @@
   register: projectsetup_collectstatic_command
   changed_when: "'0 static files copied to' not in projectsetup_collectstatic_command.stdout"
   tags: [project-setup, run-project-scripts, update-project-code]
+  # See docs/logbook.md#deployrolesprojectsetuptasksproject_scriptsyml
 
 - name: Ensure SHELL variable is present in crontab
   ansible.builtin.cron:

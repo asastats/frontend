@@ -1,7 +1,6 @@
 ---
-# Django Channels via Daphne under Supervisor (the monorepo's approach,
-# modernized for contemporary Ansible + ansible-lint). Daphne serves ASGI on
-# tcp://127.0.0.1:8001; the nginx www block proxies websocket traffic to it.
+# Django Channels via Daphne under Supervisor
+# docs/logbook.md#deployroleswebsocketstasksmainyml
 - name: Ensure supervisor is installed
   ansible.builtin.apt:
     name: supervisor

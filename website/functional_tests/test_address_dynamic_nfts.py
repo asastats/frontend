@@ -264,13 +264,10 @@ class DynamicNftTest(FunctionalTest):
         self.open_page()
 
         def nft_body_text():
-            elements = self.browser.find_elements(By.CSS_SELECTOR, "#nft-list .nft-body")
-            if not elements:
-                return ""
-            try:
-                return elements[0].text.lower()
-            except StaleElementReferenceException:
-                return ""
+            return self.browser.execute_script(
+                "var bodies = document.querySelectorAll('#nft-list .nft-body');"
+                "return bodies.length ? bodies[0].textContent.trim().toLowerCase() : '';"
+            )
 
         self.wait_until(lambda: "estimated" in nft_body_text())
         text = nft_body_text()

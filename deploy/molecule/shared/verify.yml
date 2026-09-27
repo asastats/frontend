@@ -99,7 +99,8 @@
         fail_msg: "Collected static asset was not served by nginx."
         success_msg: "Static assets are served by nginx."
 
-    # ── Cross-repo coupling: the api.asastats.com drop-in must be includable ──
+    # Cross-repo coupling: api.asastats.com drop-in must be includable
+    # docs/logbook.md#deploymoleculesharedverifyyml
     - name: Read the nginx main configuration
       ansible.builtin.slurp:
         path: /etc/nginx/nginx.conf
@@ -126,7 +127,8 @@
         fail_msg: "nginx is not loading any sites-enabled drop-in; the api site would be ignored."
         success_msg: "nginx loads sites-enabled drop-ins (api site will be honored)."
 
-    # ── Request timings are logged ──────────────────────────────────────────
+    # Request timings are logged
+    # docs/logbook.md#deploymoleculesharedverifyyml
     - name: Assert the timed log format is defined and used
       ansible.builtin.assert:
         that:
@@ -146,13 +148,8 @@
       register: verify_log_line
       changed_when: false
 
-    # `is not none` rather than the bare filter: `regex_search` returns the
-    # matched *text*, and ansible-core 2.19 refuses a conditional that did not
-    # evaluate to a boolean -- so this failed on a line that matched perfectly
-    # well, reporting "Conditional result (True) was derived from value of type
-    # 'str'". A truthiness test would also be wrong in principle here, since a
-    # regex can match the empty string; this asks the only question that matters,
-    # which is whether it matched at all.
+    # regex_search returns text; ansible-core 2.19 needs boolean
+    # docs/logbook.md#deploymoleculesharedverifyyml
     - name: Assert the logged line actually carries the two timings
       ansible.builtin.assert:
         that:
@@ -164,7 +161,8 @@
           Line was: {{ verify_log_line.stdout }}
         success_msg: "Logged lines carry $request_time and $upstream_response_time."
 
-    # ── The live poll is served by ASGI, not by gunicorn ────────────────────
+    # Live poll served by ASGI, not gunicorn
+    # docs/logbook.md#deploymoleculesharedverifyyml
     - name: Assert the live poll routes to the ASGI upstream
       ansible.builtin.assert:
         that:
@@ -182,6 +180,7 @@
              | regex_search('location /widgets/liverefresh/[^}]*}')
              | default('', true) }}
 
+    # See docs/logbook.md#deploymoleculesharedverifyyml
     - name: Assert the poll is not rate limited
       ansible.builtin.assert:
         that:
@@ -193,6 +192,7 @@
           first draft of this block had exactly that, copied from the address page.
         success_msg: "The live poll is not rate limited."
 
+    # See docs/logbook.md#deploymoleculesharedverifyyml
     - name: Assert the poll reaches the ASGI upstream rather than gunicorn
       ansible.builtin.assert:
         that:
@@ -202,11 +202,9 @@
           gunicorn's blocking workers whatever the location says.
         success_msg: "The live poll proxies to the ASGI upstream."
 
-    # ── The unauthenticated-API throttle ────────────────────────────────────
-    # Three separate things have to hold, and each has its own way of being
-    # silently wrong: the zone has to exist, the limit has to be keyed so that
-    # a credential exempts it, and it must be scoped so the browser's wallet
-    # and schema paths are never caught.
+    # Unauthenticated-API throttle: the zone exists, the limit is keyed so a
+    # credential exempts it, and it is scoped to address-shaped paths only
+    # see docs/logbook.md#deploymoleculesharedverifyyml
     - name: Assert the unauthenticated-API rate limit zone is defined
       ansible.builtin.assert:
         that:
@@ -217,6 +215,7 @@
           unauthenticated API scraping would be unthrottled.
         success_msg: "The unauthenticated-API rate limit zone is defined."
 
+    # See docs/logbook.md#deploymoleculesharedverifyyml
     - name: Assert the throttle is scoped to address-shaped API paths only
       ansible.builtin.assert:
         that:
@@ -235,6 +234,7 @@
       changed_when: false
       loop: "{{ range(0, 12) | list }}"
 
+    # See docs/logbook.md#deploymoleculesharedverifyyml
     - name: Assert no wallet request was rate limited
       ansible.builtin.assert:
         that:

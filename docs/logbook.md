@@ -2437,3 +2437,169 @@ All seven pass it, before and after the repair — so nothing in this whole chan
 can have altered behaviour, which the jest suite agrees with at 1,573 passed and
 100% coverage on every module. The same check is what caught a duplicated
 `showLeft` listener in the widgets pass the day before; a reviewer's eye had not.
+
+## deploy/ — the 2026-09-27 comment pass
+
+Ten Ansible task files and Molecule plays carried their history inline: cross-repo
+dependencies, the bugs that shaped a task's ordering, and why a value is what it
+is. It moved here, each file keeping a one-line pointer.
+
+The sections below were written in a `deploy/docs/logbook.md` of their own and
+folded in on the same day. `deploy/` is not a separate repository — it is a
+directory of this one — so a second logbook inside it would have been a second
+place to look for the same kind of note, and the rule in `CLAUDE.md` names this
+file. Paths are therefore from the repository root, like every other section here.
+
+### 2026-09-27 — the pass's own artefacts, and where this logbook lives
+
+Four things were repaired the same day, in the pass that wrote the sections above.
+
+**Four pointers had landed inside `fail_msg` scalars** in
+`deploy/molecule/shared/verify.yml`. Under `fail_msg: >-` everything indented
+beneath is text, so a `#` line is part of the message an operator reads when the
+assertion fails, not a comment — one of them ended
+*"…copied from the address page. # See docs/logbook.md#…"*. They now sit above
+their task's `- name:`, where the file's other pointers are.
+
+**That is also how it was caught.** For a YAML pass the check is not "strip the
+comments and diff": it is *parse both versions and compare the data*. Nine files
+came out identical and the tenth differed in exactly those four strings. A line
+diff would have shown four added comment lines and looked correct.
+
+**Five of nine anchors did not resolve.** Three had lost a path component
+(`tasks`, `host`) and two were truncated at the underscore in a filename —
+`setup_site` to `setup`, `project_scripts` to `project`. A pointer that does not
+resolve is worse than none, because the reader concludes the note was never
+written. All ten now resolve; the check is to slug every `## ` heading here
+(lowercase, keep word characters, spaces and hyphens, drop the rest) and compare
+against every `docs/logbook.md#…` in `deploy/`.
+
+**Three comments sat at column zero** inside indented task lists, which is
+`yamllint`'s `comments-indentation`. With those indented and the long pointer lines
+wrapped, the pass adds no lint violation of any kind: 52 `line-length` against
+HEAD's 54, and the same four pre-existing `braces` warnings.
+
+**And this logbook is the frontend's, not a second one under `deploy/`.** The pass
+created `deploy/docs/logbook.md`; `deploy/` is a directory of this repository
+rather than a repository of its own, `CLAUDE.md` names this file, and a second
+logbook inside the same repo is a second place to look for the same kind of note.
+
+## deploy/roles/setuphost/tasks/prepare.yml
+
+### 2026-09-27 — Node.js/npm installation rationale
+
+`projectsetup` runs `build-static.sh`, which minifies this project's own JavaScript through `npx --yes esbuild`. So the deploy needs npx, and npx comes from npm.
+
+It was never installed. The live server has node because somebody put it there by hand, and the task that needs it carried `failed_when: false` until 31d1538 -- so on a host without node the build did nothing and the deploy went green on whatever static/build already held. A freshly provisioned host could not have built these assets at all, and molecule never said so.
+
+Ubuntu's `nodejs` is old (18.x on 24.04) and that is fine: nothing here runs node itself, it only needs npx to fetch and run a pinned esbuild.
+
+## deploy/roles/projectsetup/tasks/project_scripts.yml
+
+### 2026-09-27 — Static build and collectstatic ordering rationale
+
+**Block 1: Why minified assets must be built before collectstatic**
+
+Minify our own JavaScript before collectstatic runs. static/build is placed first in STATICFILES_DIRS in production, so collectstatic prefers the minified copy over the readable source of the same name.
+
+**That preference is why a failed build is worse than no build.** static/build is gitignored and survives between deploys, so a build that does not run leaves the PREVIOUS release's JavaScript in place and collectstatic keeps choosing it, over the source that was just pulled. The site then serves last release's scripts and nothing anywhere reports a problem.
+
+This used to carry `failed_when: false`, which made exactly that outcome invisible: no node, or no route to the npm registry for `npx esbuild`, and the task reported ok while the deploy went green on stale code.
+
+**Block 2: Why stale build output must be removed when no build script exists**
+
+The honest form of "ships readable sources, which is larger but correct": that is only true once the stale build output is gone. Left in place it is not a fallback, it is the bug above.
+
+**Block 3: Why collectstatic must precede gunicorn restart**
+
+collectstatic must precede the gunicorn restart, not follow it: under ManifestStaticFilesStorage `{% static %}` raises for anything missing from staticfiles.json, so a worker serving pages before the manifest is written returns 500s rather than merely unstyled pages.
+
+Deliberately no `--clear`: old hashed files should accumulate, so a reader holding a page rendered by the previous release can still fetch its assets.
+
+This reported `changed` on every run too, and it was not its own fault: collectstatic copies whatever is newer than its target, and the build above used to rewrite all 17 minified files with fresh mtimes even when their content was identical. Fixing the build to leave unchanged files alone is what makes this task idempotent as well.
+
+## deploy/roles/nginx/tasks/setup_site.yml
+
+### 2026-09-27 — ACME webroot and snippets shared with backend
+
+NOTE: the ACME webroot and the /etc/nginx/snippets (esp. ssl.conf) written below are shared: the backend's api.asastats.com site reuses them. Do not remove them even if www stops needing them.
+
+## deploy/roles/websockets/tasks/main.yml
+
+### 2026-09-27 — Django Channels/Daphne/Supervisor architecture
+
+Django Channels via Daphne under Supervisor (the monorepo's approach, modernized for contemporary Ansible + ansible-lint). Daphne serves ASGI on tcp://127.0.0.1:8001; the nginx www block proxies websocket traffic to it.
+
+## deploy/roles/websockets/handlers/main.yml
+
+### 2026-09-27 — Supervisor restart behavior
+
+Restarting the supervisor service rereads conf.d and (re)starts Daphne — covers both first-time adds and config changes. Supervisor manages only Daphne here.
+
+## deploy/roles/hardening/tasks/audit/usersrestrict.yml
+
+### 2026-09-27 — umask value for testing vs production
+
+NOTE set to 022 for testing purposes, 027 for production. Default umask is 022.
+
+## deploy/roles/nginx/tasks/setup_openresty.yml
+
+### 2026-09-27 — OpenResty/Lua runtime rationale
+
+OpenResty on top of nginx: provides the Lua runtime for the global-bundle feature. The nginx systemd service is overridden to run the OpenResty binary, so the rest of the role (and other repos) keep using the `nginx` service.
+
+## deploy/roles/hardening/tasks/audit/tiger.yml
+
+### 2026-09-27 — yaml-language-server schema directive
+
+yaml-language-server: $schema=none
+
+This directive tells the YAML language server not to validate this file against any schema, as Tiger's config format doesn't match standard Ansible schemas.
+
+## deploy/molecule/shared/verify.yml
+
+### 2026-09-27 — Cross-repo coupling and verification rationale
+
+**Block 1: Cross-repo nginx coupling (lines 102-115)**
+
+Cross-repo coupling: the api.asastats.com drop-in must be includable. The verify step checks that nginx.conf includes the sites-enabled drop-in directory so the backend's api.asastats.com server block is picked up.
+
+**Block 2: Request timings logged (lines 129-138)**
+
+The timed log format is defined and used so the access log carries request duration — worker contention cannot be measured from it otherwise.
+
+**Block 3: Logged line carries timings (lines 149-165)**
+
+The regex_search returns matched text, and ansible-core 2.19 refuses a conditional that did not evaluate to a boolean. A truthiness test would be wrong since a regex can match empty string. This asks whether it matched at all.
+
+**Block 4: Live poll served by ASGI not gunicorn (lines 167-176)**
+
+The live poll routes to the ASGI upstream. /widgets/liverefresh/ has no location of its own, so the poll falls through to /widgets/ and back onto gunicorn's blocking workers — 4.9% of all traffic, growing with readers rather than clicks.
+
+**Block 5: Poll not rate limited (lines 185-194)**
+
+The live poll's location carries no limit_req. zone=main is 4r/m and the poll runs every ~3s, so a limiter from that zone refuses it continuously — and error_page 503 would answer an htmx fragment with an HTML page. The first draft had exactly that, copied from the address page.
+
+**Block 6: Poll reaches ASGI upstream (lines 196-203)**
+
+The poll's location must proxy to channels-backend, not gunicorn's blocking workers.
+
+**Block 7: Unauthenticated-API throttle (lines 205-228)**
+
+Three things must hold: the zone exists, the limit is keyed so a credential exempts it, and it's scoped so browser's wallet and schema paths are never caught. The throttle must be scoped to address-shaped API paths only (^/api/v2/[A-Z2-7]{58}(/|$)). Applied to all of /api/, it throttles the browser's wallet login flow (/api/v2/wallet/nonce/, /verify/, /wallets/), which sends a session cookie and no Authorization header.
+
+## deploy/molecule/shared/converge.yml
+
+### 2026-09-27 — .env parsing quirks and dotenv handling rationale
+
+**Block 1: Shared .env.molecule is required (lines 31-46)**
+
+A host's real `.env.testing` / `.env.production` is legitimately absent here -- that is why the slurp above skips what is not there. But the shared defaults file is what makes provisioning possible at all, and a silent skip of THAT one surfaces 77 tasks later, as `migrate.sh` dying on a Django system check about SIMPLE_JWT_KEY being empty. Say it here, with the list of what did load, so the next reader is not diagnosing a Django error message to find a missing file.
+
+**Block 2: dotenv parsing differences (lines 61-84)**
+
+A dotenv file is not YAML, and two of the differences broke provisioning.
+
+**An inline comment is not part of the value.** `website/.env.example` writes `SIMPLE_JWT_KEY=                     # ROTATED -- never reuse ...` and parsed as `key: rest-of-line` that hands Django a signing key made of comment text.
+
+**An empty value means "not supplied", not "supplied as empty".** The example file leaves every secret blank on purpose and is loaded last, so with `combine()` taking the last definition of a key, its blanks won against `.env-example`'s real DATABASE_USER and against the values `.env.molecule` exists to provide. That is how the ci scenario came to run `psql -c "CREATE USER  WITH PASSWORD '' CREATEDB;"` So a blank fills a key nothing has defined yet, but never overrides one that is already set -- which is what makes the "first, so a real env file below overrides it" ordering above actually hold. Keys blank in every file are still defined, blank: `projectsetup`'s environment_file writes `KEY=` for them, and `get_env_variable` raises for an ABSENT key where it returns "" for an empty one.

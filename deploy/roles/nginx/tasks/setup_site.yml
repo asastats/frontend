@@ -13,9 +13,6 @@
   become: true
   tags: [nginx]
 
-# NOTE: the ACME webroot and the /etc/nginx/snippets (esp. ssl.conf) written
-# below are shared: the backend's api.asastats.com site reuses them. Do not
-# remove them even if www stops needing them.
 - name: Ensure Let's Encrypt challenge folders exist
   ansible.builtin.file:
     path: "{{ item }}"
@@ -29,6 +26,7 @@
     - /var/www/letsencrypt/.well-known/
     - /var/www/letsencrypt/.well-known/acme-challenge/
   tags: [letsencrypt, make-folders-letsencrypt]
+  # See docs/logbook.md#deployrolesnginxtaskssetup_siteyml
 
 - name: Ensure nginx snippets folder exists
   ansible.builtin.file:

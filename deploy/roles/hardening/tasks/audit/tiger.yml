@@ -1,4 +1,5 @@
 # yaml-language-server: $schema=none
+# docs/logbook.md#deployroleshardeningtasksaudittigeryml
 ---
 - name: Ensure Tiger security auditing tool is installed
   ansible.builtin.apt:

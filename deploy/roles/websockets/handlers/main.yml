@@ -1,6 +1,6 @@
 ---
-# Restarting the supervisor service rereads conf.d and (re)starts Daphne — covers
-# both first-time adds and config changes. Supervisor manages only Daphne here.
+# Supervisor restart rereads conf.d and (re)starts Daphne
+# docs/logbook.md#deployroleswebsocketshandlersmainyml
 - name: Reload daphne
   ansible.builtin.systemd:
     name: supervisor
