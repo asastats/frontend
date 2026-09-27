@@ -1,28 +1,10 @@
 /**
  * Unfolding the tail of a section, a batch at a time.
- *
- * Design 1's address page shows the first `ADDRESS_INITIAL_ASSETS` assets and
- * `ADDRESS_INITIAL_COLLECTIONS` collections, and each press of the control adds
- * that many again. The section publishes the number as `data-initial`, from the
- * same setting the template rendered the first fold from, so the two cannot
- * disagree about what one press is worth.
- *
- * This replaced a magnitude rule -- show the rows accounting for 99.5% of the
- * section's value, then reveal *all* of the rest in one press. Both halves read
- * as arbitrary from the outside: the first showed 33 rows on one address and 8
- * on the next with nothing on the page to explain the difference, and the second
- * made the control's own label untrue, promising "Show 39 more assets" and then
- * being a one-shot unfold rather than a load-more. The dynamic designs already
- * worked this way (`toolbar.js`), so this is the two designs agreeing.
- *
- * There is nothing to fetch, so there is no loading state, no failure state and
- * no request. The payload is in hand before the page renders, and a round trip
- * to reveal dust would cost more than the markup already does.
- *
- * The button owns the state in `aria-expanded`, and the stylesheet reads it to
- * pick which of the two labels shows. The script writes the *count* inside the
- * "show more" label and nothing else: which label is visible stays a function
- * of the attribute a screen reader already reads, so the two cannot disagree.
+ * Design 1: first ADDRESS_INITIAL_ASSETS/COLLECTIONS, each press adds batch.
+ * Section publishes data-initial from same setting template used.
+ * Replaced magnitude rule (99.5% then all at once): arbitrary from outside.
+ * No fetch/loading/failure state; payload in hand before render.
+ * Button owns state in aria-expanded; stylesheet reads it for labels.
  */
 (function () {
   "use strict";
@@ -42,11 +24,8 @@
 
   /**
    * Return the container of rows a control unfolds.
-   *
-   * The control sits after its container rather than inside it -- it is not one
-   * of the rows -- so this looks backwards from the wrapper it lives in rather
-   * than upwards from the button.
-   *
+   * Control sits after container; looks backwards from wrapper.
+   * Falls back to nearest section.
    * @param {Element} button - the show-more control.
    * @returns {Element|null} the container, or null if the markup changed.
    */
@@ -63,11 +42,7 @@
 
   /**
    * Return the rows a container folds.
-   *
-   * Its `.fitem` children only. A container may hold other things -- a heading
-   * arriving later, a note -- and counting those would shift the fold by
-   * however many of them there are.
-   *
+   * Only .fitem children; other things shift fold.
    * @param {Element} container - the `[data-folding]` element.
    * @returns {Element[]} the rows, in display order.
    */
@@ -79,15 +54,8 @@
 
   /**
    * Return how many rows one press reveals.
-   *
-   * Read off the *section* rather than off the folding container, because that
-   * is where the dynamic designs publish it and `toolbar.js` reads it from --
-   * one place for the number in both designs, so they cannot drift apart.
-   *
-   * Falls back to "all of them" when no section publishes a batch size, which
-   * is the pre-batching behaviour: a template that forgets the attribute keeps
-   * working rather than revealing one row per press.
-   *
+   * Read from section (dynamic designs publish it, toolbar.js reads it).
+   * Falls back to "all" when no section publishes batch size.
    * @param {Element} container - the `[data-folding]` element.
    * @param {number} total - how many rows it holds.
    * @returns {number} the batch size.
@@ -105,16 +73,8 @@
 
   /**
    * The reader's own fold size for a section, or NaN to use the server's.
-   *
-   * **Read from the same attribute the stylesheet reads.** `base.html` stamps
-   * it before paint from `localStorage`, the `html.prefold` rules act on it for
-   * the gap before this script runs, and this reads it afterwards. One value in
-   * one place: a script and a stylesheet disagreeing about how many rows are
-   * shown surfaces as a control offering to reveal rows already on screen.
-   *
-   * Which section it is comes from the section's own class, the same pair the
-   * stylesheet keys on - `.asasec` and `.nftsec` exist in both designs.
-   *
+   * Read from same attribute stylesheet reads (one value in one place).
+   * "all" = Infinity so Math.min works without magic constant.
    * @param {Element} section - the `[data-initial]` section, or null.
    * @returns {number} the reader's size, Infinity for all, or NaN if unset.
    */
@@ -131,7 +91,7 @@
 
   /**
    * Fold the tail, and put the next batch's size on the control.
-   *
+   * Everything showing = only "Show fewer" left.
    * @param {Element} container - the `[data-folding]` element.
    * @param {Element} button - its control.
    */
@@ -174,7 +134,7 @@
 
   /**
    * Act on one press: reveal another batch, or collapse back to the first.
-   *
+   * Press that never travels = click on grip, not drag.
    * @param {Element} button - the control that was pressed.
    */
   function toggle(button) {
@@ -195,30 +155,25 @@
 
   /**
    * Bind the delegated handler.
-   *
-   * Delegated from the document so a section arriving later needs no
-   * rebinding, and guarded so a second execution of this file -- which the
-   * page's htmx partials make possible -- does not toggle twice per click.
+   * Design 1 only (dynamic designs fold from toolbar).
+   * Delegated from document; guarded against double-bind.
+   * defaultPrevented stops second binding acting (silent failure).
    */
   function init() {
-    // Design 1 only. The dynamic designs fold from the toolbar, which also
-    // filters and sorts, and two handlers on one control would both act -- a
-    // batch revealed *and* the batch counted -- so the second press would have
-    // nothing left to do.
+    // Design 1 only (dynamic designs fold from toolbar).
     if (document.querySelector(".dynamic-page")) return;
     if (document.documentElement.hasAttribute(BOUND_ATTR)) return;
     document.documentElement.setAttribute(BOUND_ATTR, "");
 
+    // Every handler bails on already-handled event. Attribute stops second
+    // binding; this stops second binding acting twice.
     document.addEventListener("click", function (event) {
       var button = event.target.closest
         ? event.target.closest("[data-show-more]")
         : null;
       if (!button) return;
-      // Belt as well as braces. The attribute above stops a second *binding*;
-      // this stops a second binding that slipped past it from acting, because
-      // the failure mode is silent -- two handlers toggle and untoggle, and the
-      // button simply looks dead. `defaultPrevented` is the standard way to ask
-      // "has something already handled this", and the first handler sets it.
+      // Belt as well as braces. Attribute stops second *binding*;
+      // this stops second binding acting twice (silent failure).
       if (event.defaultPrevented) return;
       event.preventDefault();
       toggle(button);

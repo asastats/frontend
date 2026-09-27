@@ -1,5 +1,6 @@
 /**
  * @file website's browser side logic for consolidated view
+ * See logbook: why setTip copied from address.js (historic widget doesn't load address.js).
  * @author Ivica Paleka
  */
 
@@ -54,9 +55,7 @@ function mainConsolidated() {
 /**
  * Parse JSON script with provided name.
  * @function parseJsonScript
- *
  * @param {String} script Name of JSON script to parse from DOM
- *
  * @returns {Object}
  */
 function parseJsonScript(script) {
@@ -68,9 +67,7 @@ function parseJsonScript(script) {
 /**
  * Return legend list container element
  * @function getOrCreateLegendList
- *
  * @param {String} id
- *
  * @returns {Object}
  */
 function getOrCreateLegendList(id) {
@@ -141,12 +138,12 @@ var htmlLegendPlugin = {
 
 /**
  * Toggle provided legend item visibility
+ * Pie/doughnut = single dataset, visibility per item; else dataset visibility.
+ * chart.update() called.
  * @function toggleLegendVisibility
- *
  * @param {Object} chart
  * @param {Object} item
  * @param {String} type
- *
  */
 function toggleLegendVisibility(chart, item, type) {
   if (type === 'pie') {
@@ -161,10 +158,9 @@ function toggleLegendVisibility(chart, item, type) {
 
 /**
  * Update provided chart's dataset
+ * Total from filtered data; title updated with formatChartTotal.
  * @function updateChartData
- *
  * @param {Object} chart
- *
  */
 function updateChartData(chart) {
   var name = chart.canvas.id.split("-")[1];
@@ -180,8 +176,8 @@ function updateChartData(chart) {
 
 /**
  * Update distribution chart
+ * USD/ALGO conversion for distchart datasets (hcur key).
  * @function updateDistChart
- *
  */
 function updateDistChart() {
   var value = 0;
@@ -205,11 +201,10 @@ function updateDistChart() {
 
 /**
  * Handler for legend label click event
+ * Toggles visibility; pie charts update data.
  * @function legendClickHandler
- *
  * @param {Object} chart
  * @param {Object} item
- *
  * @returns {Object}
  */
 function legendClickHandler(chart, item) {
@@ -226,10 +221,9 @@ function legendClickHandler(chart, item) {
 
 /**
  * Calculate and return total for chart defined by provided name
+ * USD/ALGO conversion via hcur key.
  * @function totalChart
- *
  * @param {String} name
- *
  * @returns {Number}
  */
 function totalChart(name) {
@@ -265,11 +259,10 @@ function totalChart(name) {
 
 /**
  * Calculate and return filtered total for chart defined by provided name
+ * Sums visible legend items.
  * @function totalChartFiltered
- *
  * @param {Object} chart
  * @param {String} name
- *
  * @returns {Number}
  */
 function totalChartFiltered(chart, name) {
@@ -286,11 +279,10 @@ function totalChartFiltered(chart, name) {
 
 /**
  * Calculate and return formatted chart total value
+ * Uses totalChart/totalChartFiltered; hcur key for currency.
  * @function formatChartTotal
- *
  * @param {Object} chart
  * @param {String} name
- *
  * @returns {String}
  */
 function formatChartTotal(chart, name) {
@@ -318,30 +310,17 @@ function setTotalCharts() {
 
 /**
  * Give an element a tooltip carrying the given text.
+ * Copied from address.js; historic widget doesn't load address.js.
+ * data-tip for DaisyUI/.htip; wrote data-tooltip (Materialize) before.
+ * aria-describedby for screen reader (tooltip not announced).
  * @function setTip
- *
- * A copy of `address.js`'s, and it has to be a copy: this file is the one the
- * historic widget's page loads, and that page does not load address.js at all.
- * Calling across would be a `ReferenceError` on every "without NFTs" toggle --
- * which is exactly how the widget's own currency switch was broken, by a call
- * to a `setTotalCharts` that lived only on the site.
- *
- * `data-tip` is what displays the text: DaisyUI's `.tooltip` on the site, and
- * the widget's own `.htip` on the historic page. This wrote `data-tooltip`,
- * which is Materialize's and which nothing has read since the conversion, so
- * the total's tooltip never changed once the server had rendered it.
- *
- * The `aria-describedby` target is what a screen reader gets, since a tooltip
- * drawn with `content: attr(data-tip)` is not dependably announced.
- *
  * @param {Element} element element to give a tooltip to
  * @param {String} text the tooltip's text
- *
  */
 function setTip(element, text) {
   // The attribute goes on whatever actually draws the tooltip. On the site that
   // is a `.tooltip` wrapper around the figure -- DaisyUI reveals on
-  // `:has(:focus-visible)`, so the focusable element has to be *inside* it --
+  // `:has(focus-visible)`, so the focusable element has to be *inside* it --
   // and on the historic widget's page it is the figure itself, which carries
   // the widget's own `.htip`. `closest` covers both without either caller
   // having to know which page it is on.
@@ -357,9 +336,8 @@ function setTip(element, text) {
 
 /**
  * Set total value with or without NFTs based on user setting
- *
+ * Uses hcur/htotalnonft keys (distinct from site's cur/totalnonft).
  * @param {String} value
- *
  */
 function setTotalNoNft(value) {
   var elem = $(".pricetip")[0];
@@ -395,10 +373,9 @@ function setTotalNoNft(value) {
 
 /**
  * Calculate and return section's percentage of all assets
+ * USD/ALGO conversion via hcur/price.
  * @function percentDistAsset
- *
  * @param {Object} context
- *
  * @returns {String}
  */
 function percentDistAsset(context) {
@@ -420,10 +397,9 @@ function percentDistAsset(context) {
 
 /**
  * Calculate and return section's percentage of current asset
+ * USD/ALGO conversion via hcur/price.
  * @function percentDistSection
- *
  * @param {Object} context
- *
  * @returns {String}
  */
 function percentDistSection(context) {
@@ -445,10 +421,9 @@ function percentDistSection(context) {
 
 /**
  * Format and return section's value
+ * Uses hcur for currency.
  * @function valueDistSection
- *
  * @param {Object} context
- *
  * @returns {String}
  */
 function valueDistSection(context) {
@@ -459,11 +434,10 @@ function valueDistSection(context) {
 
 /**
  * Calculate and return asset/collection value in ALGO/USD
+ * Uses totalChart + hcur for currency.
  * @function valueSection
- *
  * @param {String} name
  * @param {Integer} index
- *
  * @returns {String}
  */
 function valueSection(name, index) {
@@ -475,8 +449,9 @@ function valueSection(name, index) {
 
 /**
  * Retrieve distribution chart data and assign them to chart.
+ * Canvas inside consolidated <details>; guard for absent section.
  * @function populateDistChart
- *
+ * @returns {boolean}
  */
 function populateDistChart() {
   var name = "distchart";
@@ -553,8 +528,9 @@ function populateDistChart() {
 
 /**
  * Retrieve charts data and assign them to charts.
+ * Only ratio/asachart/nftchart (floor charts removed).
  * @function populatePieCharts
- *
+ * @returns {boolean}
  */
 function populatePieCharts() {
   ["ratiochart", "asachart", "nftchart"].forEach(function (name) {
@@ -622,7 +598,9 @@ function populatePieCharts() {
 
 /**
  * Save charts visibility status
- *
+ * <details>.open is state; toggle fires after update.
+ * Old check read style.display (Materialize wrote inline).
+ * @param {Event} e
  */
 function onConsolidatedClick(e) {
   // `<details>.open` is the state, and it is already updated by the time
@@ -635,7 +613,7 @@ function onConsolidatedClick(e) {
 
 /**
  * Hide charts if last status was hidden
- *
+ * <details>.open is property; no instance to fetch/animate.
  */
 function checkConsolidated(value) {
   if (value === 'h') {
@@ -650,7 +628,7 @@ function checkConsolidated(value) {
 
 /**
  * Return true if provided element in inside visible area
- *
+ * undefined = not visible.
  * @param {jQuery} element
  */
 function isNotVisible(element) {
@@ -672,10 +650,9 @@ function isNotVisible(element) {
 
 /**
  * Scrolls browser so provided element could be seen
- *
+ * Animates to first third of screen; returns false if scrolled.
  * @param {jQuery} element
  * @param {Number} duration
- *
  */
 function scrollToView(element, duration) {
   if (isNotVisible(element)) {

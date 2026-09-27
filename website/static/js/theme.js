@@ -1,26 +1,9 @@
 /**
  * @file DaisyUI appearance picker
- * @author Ivica Paleka
- * @description Records the viewer's chosen theme and applies it to
- * `<html data-theme="...">`. The *first* application happens inline in the
- * document head, before the stylesheet paints, so there is no flash of the
- * default theme; this file only handles the picker itself and the writing.
- *
- * The theme is a client-side preference and is never sent to the server. The
- * list of themes offered comes from `settings.AVAILABLE_THEMES` via the
- * template, so this file never needs to know the names.
- *
- * Two controls share this file, because a signed-out reader gets a smaller
- * choice than a signed-in one:
- *
- *   * `[data-theme-toggle]` -- a plain light/dark switch, the only appearance
- *     control an anonymous reader sees. It flips between the two brand themes
- *     and nothing else;
- *   * `input[name=theme-dropdown]` -- the full list, for signed-in readers.
- *
- * The pair the toggle flips between is read from the button's own data
- * attributes rather than written here, so the brand theme names live in
- * settings and templates only.
+ * Theme applied inline in head (no flash); picker/writer only here.
+ * Theme never sent to server; themes from settings.AVAILABLE_THEMES.
+ * Two controls: toggle (signed-out), dropdown (signed-in).
+ * Toggle flips pair from button's data attrs.
  */
 (function () {
   "use strict";
@@ -51,15 +34,9 @@
 
   /**
    * Apply `typeface` to the document and remember it.
-   *
-   * The value is a pairing name, which happens to be a theme name: each theme
-   * brings a display and body face, and choosing a "typeface" is choosing to
-   * borrow another theme's pair. `[data-typeface]` is written after the theme
-   * blocks in the stylesheet, so it wins on source order.
-   *
-   * An empty value clears the override and returns the reader to whatever
-   * their theme brings, which is what the "Theme default" choice does.
-   *
+   * Value = pairing name = theme name (each theme has display/body face).
+   * data-typeface wins on source order (after theme blocks in stylesheet).
+   * Empty value clears override ("Theme default" choice).
    * @param {string} typeface - a pairing name, or "" to clear
    * @returns {boolean} whether anything was applied
    */
@@ -84,10 +61,7 @@
 
   /**
    * Wire the typeface picker, if this reader has one.
-   *
-   * The control is rendered only above a subscription tier, so on most pages
-   * there is nothing to wire and this does nothing.
-   *
+   * Control rendered only above subscription tier.
    * @param {Document|Element} [root=document] - subtree to wire
    * @returns {number} how many inputs were wired this call
    */
@@ -116,17 +90,10 @@
 
   /**
    * Wire the fold-size radios, so a choice applies and is remembered.
-   *
-   * **Written to the same `localStorage` keys the inline head script reads**,
-   * and stamped onto the document element here so the choice takes effect on
-   * the page the reader is looking at rather than on the next one. The address
-   * page's own scripts read the attribute, not the storage, so one value
-   * travels: storage across page loads, attribute within one.
-   *
-   * `data-fold-target` on the group names which key its radios write. One
-   * handler for both groups rather than one per section, because "assets" and
-   * "collections" differ only in the key.
-   *
+   * Written to same localStorage keys inline head script reads.
+   * Stamped on document element here so choice takes effect now, not next page.
+   * Address page scripts read attribute, not storage (one value travels).
+   * data-fold-target on group names which key its radios write.
    * @param {Document|Element} [root=document] - subtree to wire
    * @returns {number} how many inputs were wired this call
    */
@@ -162,16 +129,10 @@
 
   /**
    * Put every fold group back to the site's default, and forget the choice.
-   *
-   * **Not the same as pressing the default's own radio.** Every radio *stores*
-   * its value, and an address page reads storage in preference to the site's
-   * own setting - so choosing 20 pins 20, where choosing nothing follows
-   * `settings.ADDRESS_INITIAL_ASSETS` wherever it goes. Only removing the key
-   * returns a reader to the second state, and nothing else in the panel can.
-   *
-   * The attribute goes too, so the page being looked at changes with the press
-   * rather than on the next load - the same reason `applyFold` stamps it.
-   *
+   * Not same as pressing default's radio: every radio *stores* value.
+   * Address page reads storage over site default (choosing 20 pins 20).
+   * Only removing key returns reader to second state.
+   * Attribute goes too: page changes with press, not next load.
    * @param {Document|Element} [root=document] - subtree holding the groups
    * @returns {number} how many groups were reset
    */
@@ -220,7 +181,6 @@
 
   /**
    * Apply one fold size to the document and remember it.
-   *
    * @param {string} key - "fold-assets" or "fold-collections"
    * @param {string} value - a row count, or "all"
    * @returns {boolean} whether anything was applied
@@ -239,7 +199,6 @@
 
   /**
    * Return the theme currently applied, falling back to what was saved.
-   *
    * @returns {string} the active theme name, or "" when none is set
    */
   function currentTheme() {
@@ -254,13 +213,8 @@
 
   /**
    * Wire the signed-out light/dark switch.
-   *
-   * The button carries its own pair in `data-theme-light` / `data-theme-dark`,
-   * so this never hard-codes a brand theme name. Anything else that happens to
-   * be applied -- a theme saved while signed in, then signed out -- counts as
-   * "not the dark one", so the first click lands on dark rather than doing
-   * nothing.
-   *
+   * Button carries its own pair in data-theme-light/data-theme-dark.
+   * Anything else applied = "not dark", so first click = dark.
    * @param {Document|Element} [root=document] - subtree to wire
    * @returns {number} how many toggles were wired this call
    */
@@ -387,12 +341,8 @@
 
   /**
    * Fill the dropdown's Recent group from what this browser has used.
-   *
-   * Items are cloned from one the template already rendered, so the markup for
-   * a theme entry exists in exactly one place. A theme promoted into Recent is
-   * removed from the list below, because two radios sharing a name and a value
-   * are one control rendered twice -- they fight over which shows as chosen.
-   *
+   * Items cloned from template's rendered entry (markup in one place).
+   * Theme promoted into Recent removed from list below (two radios same name/value fight).
    * @param {Document|Element} [root=document] - subtree to fill
    * @returns {number} how many themes were promoted
    */

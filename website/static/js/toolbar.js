@@ -1,54 +1,11 @@
 /**
  * The dynamic toolbar: filtering, sorting, grouping and currency.
- *
  * Pass 2 of designs 2 and 3. Everything here acts on the page already in the
  * browser -- the whole payload is in the DOM, with sort keys, categories and
  * search text rendered onto the rows as data attributes -- so nothing fetches
  * and nothing waits. Filtering 190 positions is a class toggle.
- *
- * It also has to be that way. The address page is `cache_page`'d and its entry
- * is shared between every reader on the layout, so the server cannot know what
- * this reader has filtered to and must not render it. The state lives in their
- * browser under `view:<path>`, beside the pins and the saved order.
- *
- * ## One state, three drawings
- *
- * The allocation bar, the five category figures and the donuts are three
- * drawings of one set of numbers, and all three are wired to the same
- * `state.cats`. A reader who saw the bar and the figures disagree would have no
- * way to tell which one lied, so they are recomputed together, from the same
- * pass over the same rows, every time anything changes.
- *
- * ## The one figure that never moves
- *
- * The headline is what the address is worth. No filter, no search, no category
- * toggle may touch it: a reader who hides a category has not become poorer.
- * Everything below it is a subtotal and is free to respond. This file never
- * writes to `.total`.
- *
- * ## How it shares the page
- *
- * Three other scripts already own parts of this page, and the toolbar defers to
- * each rather than duplicating it:
- *
- *   `pins.js`     owns the *order*. Sorting does not reorder the DOM directly;
- *                 it hands `pins.rebase` a new baseline and lets pinning apply
- *                 on top, so a pinned row stays pinned through a sort.
- *   `showmore.js` owned the fold and no longer does here. It reveals a whole
- *                 tail in one press, which is design 1's rule; these designs
- *                 show a fixed first batch and add one batch per press, so it
- *                 stands down on `.dynamic-page` and this file folds instead.
- *   `dynamic.js`    owns the donuts. The toolbar hands it filtered slice data and
- *                 asks it to redraw.
- *
- * Currency is the exception, and deliberately: `address.js` has `setCurrency`,
- * and it is wrong for this page. It writes `innerHTML` including the unit into
- * every `span.val`, which on this markup destroys the nested `<span class="unit">`
- * inside a venue subtotal and leaves the asset header reading "253.74 ALGO
- * ALGO" -- the value cell has a *sibling* unit element. It also cannot reach a
- * breakdown control, which is a `<button>` rather than a span. `address.js` no
- * longer touches `.dynamic-page`; the writer here does, and it writes the number
- * only, leaving every unit element alone.
+ * See logbook: why toolbar exists, one state three drawings, headline never
+ * moves, how it shares page, currency exception
  */
 (function () {
   "use strict";
@@ -127,14 +84,9 @@
 
   /**
    * Read the stored view, falling back to the defaults field by field.
-   *
-   * Field by field rather than all-or-nothing: a stored view written by an
-   * older build is missing whatever has been added since, and discarding the
-   * whole thing would throw away a reader's currency because a sort key
-   * appeared. Each field is validated on its own terms, so a value that is no
-   * longer offered -- a removed sort, a category that stopped existing --
-   * falls back without disturbing the rest.
-   *
+   * Field by field rather than all-or-nothing.
+   * One try per read.
+   * Empty stored array = all categories off, not same as no array.
    * @returns {object} the view state.
    */
   function readView() {
@@ -205,10 +157,9 @@
 
   /**
    * Persist the view, or forget it once it is back to the default.
-   *
-   * Removing rather than storing the defaults keeps a reader who has reset from
-   * carrying a key that says nothing, and means "has this reader customised
-   * anything" is answerable without comparing objects.
+   * Removing rather than storing defaults keeps reset readers from carrying
+   * empty keys. Reader settings stored in their own keys
+   * (writing here too would give one setting two homes).
    */
   function writeView() {
     writeShared("ccy", state.ccy);
@@ -272,26 +223,7 @@
 
   /**
    * Format one ALGO figure in the current currency.
-   *
-   * **Exactly two decimals, always.** A money column has one shape, and every
-   * figure in it has to be readable against the one above without counting
-   * digits first.
-   *
-   * This used to widen anything under half a cent to *six* places, on the
-   * reasoning that "0.00" reads as nothing owed rather than as a small debt.
-   * The cure was worse: it put a six-decimal figure in a column of two-decimal
-   * ones, so a 0.004574 sat under a 1,284.02 and read as the larger number at
-   * a glance - and it did it for ordinary dust holdings, which are most of
-   * what is down there, not only for borrowings. The server has always
-   * rendered these cells with `floatformat:'2g'`, so the widening was also the
-   * one thing on the page that changed a figure between the HTML arriving and
-   * the first repaint.
-   *
-   * A holding worth less than a hundredth of an ALGO *is* "0.00" to a reader
-   * deciding anything, and the row still names the amount and the unit beside
-   * it. If the near-zero cases ever need distinguishing again, the answer is a
-   * "<0.01" treatment, which keeps the column's shape; it is not more digits.
-   *
+   * Exactly two decimals always (why not six for small values).
    * @param {number} algo - the figure, in ALGO.
    * @returns {string} the formatted number, with no unit.
    */
@@ -416,12 +348,7 @@
 
   /**
    * Apply the search to the NFT collections.
-   *
-   * The search only -- the category filter has nothing to say about a
-   * collection, which is the NFT band's own business and is a whole section
-   * rather than a category of position. A reader filtering for a collection's
-   * name is asking about the same page, so leaving that section untouched
-   * would show them every collection beside three matching assets.
+   * Search only; category filter has nothing to say about collections.
    */
   function filterCollections() {
     Array.prototype.forEach.call(
@@ -460,15 +387,7 @@
 
   /**
    * How many rows one press reveals: the reader's fold, or the server's.
-   *
-   * **Its own function because two callers need it and one of them is the
-   * label.** `fold` used to read `data-initial` directly to say "Show N more",
-   * while `limit` above preferred the reader's choice - so a reader who set
-   * collections to 20 saw twenty rows, pressed a control that said ten, and got
-   * twenty. The control was lying about itself in exactly the way the label's
-   * own comment says it must not, because the two numbers were derived twice
-   * from different places.
-   *
+   * Its own function: two callers need it, label was lying.
    * @param {Element} section - the section element.
    * @param {string} key - "asa" or "nft".
    * @returns {number} the batch size, or Infinity when the reader chose all.
@@ -487,17 +406,8 @@
 
   /**
    * The reader's own fold size for a section, or NaN to use the server's.
-   *
-   * **Read from the same attribute the CSS reads.** `base.html` stamps it
-   * before paint from `localStorage`, the stylesheet acts on it for the gap
-   * before this script runs, and this function acts on it afterwards. One
-   * value in one place: the alternative is the stylesheet and the script
-   * disagreeing about how many rows are shown, which shows up as a control
-   * offering to reveal rows that are already visible.
-   *
-   * `"all"` is `Infinity` rather than a large number, so `Math.min` against the
-   * row count does the right thing without a magic constant to outgrow.
-   *
+   * Read from same attribute CSS reads (one value in one place).
+   * "all" is Infinity so Math.min works without magic constant.
    * @param {string} key - "asa" or "nft".
    * @returns {number} the reader's size, Infinity for all, or NaN if unset.
    */
@@ -528,19 +438,7 @@
    */
   /**
    * The number this row sorts by, preferring the figure it is actually showing.
-   *
-   * **`data-sort-value` is the figure the page was rendered with and does not
-   * move.** The live refresh swaps the value *span* out of band on every block
-   * and deliberately leaves the row alone - swapping the row would close it,
-   * discard the reader's drag order and lose anything open inside. So after a
-   * while the two disagree, and sorting by value put the rows in an order that
-   * contradicted the column beside it.
-   *
-   * The span carries the same quantity - both are the unrounded value - so
-   * reading it costs nothing and is right whether the page is a minute or an
-   * hour old. `data-sort-value` stays as the fallback for a row whose value
-   * cell is missing, and for the three sorts that have no live equivalent.
-   *
+   * data-sort-value is served figure; live span has unrounded value.
    * @param {Element} row - one asset card.
    * @param {string} attribute - the data attribute this sort reads.
    * @returns {number}
@@ -578,9 +476,8 @@
     var pins = window.asastatsPins;
     var list = document.getElementById("asset-list");
     if (!pins || !list) return;
-    // The served order is the default sort, so restoring it is what "Reset"
-    // hands back -- and `rebase(parent, null)` is the only way to get it,
-    // because nothing else keeps a copy.
+    // Served order is default sort; restoring it is what "Reset" hands back
+    // rebase(parent, null) is the only way to get it.
     pins.rebase(list, isDefaultOrder() ? null : sorted);
     pins.apply(document);
   }
@@ -627,11 +524,9 @@
 
   /**
    * Fold one section's tail and put the count on its control.
-   *
-   * Shared by the two sections because they are the same rule applied to
-   * different lists -- and because a second copy is how the assets and the
-   * collections come to disagree about what "show more" means.
-   *
+   * Shared by two sections; same rule, different lists.
+   * Uses batchFor for label (label was lying before).
+   * Nothing folded = nothing to reveal; left in DOM for next keystroke.
    * @param {string} selector - the section's class selector.
    * @param {string} key - "asa" or "nft".
    * @param {Element[]} displayed - its rows, filtered, in display order.
@@ -673,9 +568,7 @@
 
   /**
    * Fold the NFT section, which the toolbar owns for the same reason.
-   *
-   * `showmore.js` is design 1's and reveals a section's whole tail in one
-   * press; these designs reveal a batch at a time, so it no longer binds here.
+   * showmore.js is design 1's; these designs reveal a batch at a time.
    */
   function paintCollections() {
     var list = document.getElementById("nft-list");
@@ -691,13 +584,9 @@
 
   /**
    * Redraw the subtotals every filtered figure feeds.
-   *
-   * Venue subtotals and asset headers are recomputed from the live positions
-   * rather than left at what the server rendered: a reader who has hidden
-   * Liquidity is shown an asset header that still counts it, and the numbers
-   * stop adding up down the column -- which is the one thing this design
-   * promises.
-   *
+   * Recomputes from live positions (hidden Liquidity showed in header).
+   * Subtotal over single row = row's own figure twice; template leaves out for
+   * one position, filter can take group down to one.
    * @param {object} view - the result of `evaluate`.
    */
   function paintFigures(view) {
@@ -749,14 +638,7 @@
 
   /**
    * Write a figure into an element without disturbing its unit.
-   *
-   * The reason this file has a currency writer of its own. Every value cell on
-   * this page pairs a number with a unit, and the unit is a separate element --
-   * a sibling in the asset header, a child in a venue subtotal. `innerHTML` on
-   * the value destroys or duplicates it. Only the number is written, and only
-   * into the first text node, so an element that holds `12.34 <span>ALGO</span>`
-   * keeps its span.
-   *
+   * Only number written, into first text node; preserves unit span.
    * @param {Element} element - the value element.
    * @param {number} algo - the figure, in ALGO.
    */
@@ -773,20 +655,9 @@
 
   /**
    * Write the headline, and the line under it.
-   *
-   * The one figure no *filter* may move -- a reader who hides a category has
-   * not become poorer -- but the currency is not a filter. It is the unit the
-   * whole page is denominated in, and a page whose every figure says USD above
-   * a total that says ALGO is not showing a total at all. That was the reading
-   * this file got wrong.
-   *
-   * "Total without NFTs" moves it legitimately, because it changes *what is
-   * being totalled* rather than how it is displayed. It is design 1's setting
-   * and design 1's storage key, so the two pages agree.
-   *
-   * `.pricetip`'s own data attributes carry both currencies and both totals, so
-   * nothing here recomputes from rendered text.
-   *
+   * Headline: no filter may move it; currency is not a filter.
+   * "Total without NFTs" changes what is totalled.
+   * pricetip carries both currencies/totals; no recompute from text.
    * @param {object} view - the result of `evaluate`.
    */
   function paintTotal(view) {
@@ -843,29 +714,8 @@
 
   /**
    * Say what the visible categories add up to.
-   *
-   * The headline is the whole address and does not move, which is right and
-   * also leaves a reader who has switched DeFi off with no way to see what the
-   * rest comes to. This is that number, and it appears only when it differs
-   * from the headline -- an unfiltered page does not need to be told that its
-   * total is its total.
-   *
-   * **"Unfiltered" is read off the state, not off the arithmetic.** It used to
-   * be inferred from the two figures differing, which is only the same question
-   * while the two agree about the address: `shown` is summed from the rows this
-   * page was rendered with, and `whole` comes from whatever the live pass last
-   * published. Those are two readers of the same account, and when they
-   * disagree -- a re-price that valued fewer positions, a reload suppressed by
-   * the cooldown, a resync still draining -- a page with nothing switched off
-   * announced "Showing 29.48 USD of 13.89 USD", which is not a filter and reads
-   * as the page having lost track of the money.
-   *
-   * Reported from production on 2026-09-18, and the engine side of it is real:
-   * the live pass published 304.55 and 143.46 ALGO for the same page within the
-   * hour. This element is not the place that surfaces it -- it exists to say
-   * what the *filters* left out, and it now says nothing when they left out
-   * nothing, whatever the two totals think.
-   *
+   * "Unfiltered" read off state, not arithmetic (showed 29.48 of 13.89).
+   * Reported 2026-09-18: live pass published 304.55 and 143.46 ALGO same hour.
    * @param {object} view - the result of `evaluate`.
    */
   function paintReadout(view) {
@@ -916,11 +766,8 @@
 
   /**
    * Redraw the band: the bar, the five figures, and the donuts.
-   *
-   * All three from `view.totals`, in one place, because they are three drawings
-   * of one set of numbers and a reader who sees them disagree has no way to
-   * know which one lied.
-   *
+   * All three from view.totals in one place (three drawings, one lie).
+   * NFT figure keeps served value; not a subtotal of position filter.
    * @param {object} view - the result of `evaluate`.
    */
   function paintBand(view) {
@@ -1003,15 +850,8 @@
 
   /**
    * Build the venue list by moving every `.pgroup` into the venue that holds it.
-   *
-   * Moved, never copied: a copy would put a second element on the page with the
-   * same `data-pid`, and a pin names a position by that id. Moving also keeps
-   * open breakdowns, bound handlers and the position pins working, because they
-   * are the same nodes -- `appendChild` on an element already in the document
-   * relocates it.
-   *
-   * Where each group came from is remembered on the group itself, so switching
-   * back is exact rather than reconstructed.
+   * Moved, never copied (copy would duplicate data-pid, pin uses id).
+   * Remembers origin on group for exact switch-back (index not sibling).
    */
   function toVenues() {
     var list = document.getElementById("venue-list");
@@ -1046,11 +886,7 @@
 
   /**
    * Build one venue card.
-   *
-   * `createElement` and `textContent` throughout: venue names come off the
-   * chain, and this is the one place on the page where markup could be
-   * smuggled in through one.
-   *
+   * createElement/textContent throughout (venue names from chain).
    * @param {string} venue - the venue's name.
    * @param {Element[]} groups - the `.pgroup` elements it holds.
    * @returns {Element} the card.
@@ -1117,16 +953,14 @@
 
   /**
    * Put every `.pgroup` back where the server rendered it, and drop the cards.
+   * Sorted by origin before moving (ascending index rebuilds sequence).
+   * Drops emptied cards, not whole list (wiping loses orphaned groups).
    */
   function toAssets() {
     var list = document.getElementById("venue-list");
     if (!list) return;
 
-    // Sorted by where each group belongs before any of them moves, so an asset
-    // holding four venues gets them back in the order the server ranked them
-    // rather than in whatever order the venue cards happened to be built.
-    // Appending in ascending index order rebuilds the sequence exactly, because
-    // `.program-groups` holds nothing but these.
+    // Sorted by origin before moving (ascending index rebuilds sequence).
     Array.prototype.slice
       .call(list.querySelectorAll(".pgroup"))
       .filter(function (group) {
@@ -1139,10 +973,7 @@
         group._asastatsHome.parent.appendChild(group);
       });
 
-    // The emptied cards, not the list's whole contents. Wiping the list would
-    // take a group that somehow has no remembered home with it -- and a
-    // position row deleted from the page is the worst thing this file could do,
-    // because the reader has no way to tell it was ever there.
+    // Old copy of group page now has twice.
     Array.prototype.slice
       .call(list.querySelectorAll("[data-venue-card]"))
       .forEach(function (card) {
@@ -1152,7 +983,7 @@
 
   /**
    * Show the list the current grouping calls for, and total the venue cards.
-   *
+   * Served text kept for switch-back (server's count, not ours).
    * @param {object} view - the result of `evaluate`.
    */
   function regroup() {
@@ -1167,10 +998,7 @@
     venueList.hidden = state.group !== "venue";
     assetList.classList.toggle(VENUE_CLASS, state.group === "venue");
 
-    // The section still called itself "Assets 76" over a list of venues. The
-    // served text is kept rather than rebuilt, so switching back restores
-    // exactly what the template rendered -- including a count that is the
-    // server's, not this script's arithmetic.
+    // Served text kept for switch-back (server's count, not ours).
     var heading = document.querySelector(".dynamic-page .asasec .section-head h2");
     var count = document.querySelector(".dynamic-page .asasec .section-head .count");
     if (!heading || !count) return;
@@ -1295,10 +1123,8 @@
 
   /**
    * Apply the whole state to the page.
-   *
-   * One function, called after every change. Partial updates are how a bar and
-   * a figure come to disagree, and the work is a few hundred class toggles --
-   * cheaper than the reasoning needed to skip any of it correctly.
+   * Structure first: regroup moves rows (regroup before evaluate).
+   * Partial updates cause bar/figure disagreement.
    */
   function render() {
     // Structure first, and that ordering is load-bearing. Switching to venues
@@ -1324,21 +1150,9 @@
 
   /**
    * Repaint the figures after the live poll swapped server-rendered ones in.
-   *
-   * **The poll ships what the server rendered, and the server does not know
-   * what this reader chose.** `lvp` is one payload per page, shared by
-   * everyone watching it, so it can only carry ALGO and the full total. The
-   * fragments replace the band and every changed figure - so a reader who
-   * picked USD watched it revert on the next block, and one who had turned
-   * NFTs out of the total watched them come back.
-   *
-   * The whole of `render` is deliberately not called: it `regroup`s, which
-   * moves position rows between cards. Doing that under a reader every three
-   * seconds would disturb what they were reading to fix how it is denominated.
-   * Only the paints that depend on the reader's currency and total mode run.
-   *
-   * Nothing happens while both are at their defaults, which is the common case
-   * and the one where the server's own rendering is already right.
+   * Poll ships server rendering; server doesn't know reader's choices.
+   * Full render not called: regroup moves rows, would disturb reader.
+   * Only currency/total-dependent paints run; defaults = server rendering already right.
    */
   function repaintAfterSwap() {
     // `state` holds the reader's settings; `evaluate` computes the figures the
@@ -1443,22 +1257,8 @@
 
   /**
    * Bind the toolbar.
-   *
-   * Bound to the two containers that own the controls -- the toolbar and the
-   * band -- rather than delegated from `document` the way `pins.js` and
-   * `showmore.js` are. Those two have to listen at the document because the
-   * controls they serve are on rows, and rows are moved, folded and reordered;
-   * these controls are on elements the server renders once and nothing
-   * replaces. Binding where the controls actually live means a handler dies
-   * with the element it belongs to, instead of outliving it and acting on a
-   * page it no longer describes.
-   *
-   * The guard goes on the toolbar itself for the same reason. A second
-   * execution finds the attribute and returns, so two sets of handlers cannot
-   * toggle a category on and straight back off -- silent, and
-   * indistinguishable from a dead control. And if the toolbar ever *is* swapped
-   * out by an htmx partial, the attribute goes with the old element and the
-   * next execution correctly binds the new one.
+   * Bound to toolbar/band, not document (controls on server-rendered elements).
+   * Guard on toolbar itself; htmx swap replaces toolbar, attribute goes with it.
    */
   function init() {
     var toolbar = document.querySelector(".dynamic-page #toolbar");

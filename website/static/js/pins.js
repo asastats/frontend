@@ -1,40 +1,10 @@
 /**
  * Arranging the address page: pinning entries, and reordering them.
- *
- * Both are the reader's own arrangement of one address or bundle, both are
- * remembered in their browser, and neither is ever sent to the server. That is
- * forced rather than chosen: the address page is `cache_page`'d and its entry is
- * shared between signed-in readers, so anything per-reader rendered into it
- * would be handed to whoever asked next. The markup therefore ships every
- * control at rest and this file sets the ones belonging to whoever is looking.
- * The layout preference is the counter-example: it *does* live on the server,
- * and it reaches the page by being part of the cache key rather than by being
- * fetched separately -- see `core/views.py:BaseAddressView.dispatch`. An
- * arrangement cannot go that way, because keying the cache on it would mean one
- * entry per reader.
- *
- * **Entries are moved in the DOM, not reordered with CSS `order`.** `order`
- * would be cheaper and would avoid a reflow, but it moves a row visually while
- * leaving it where it was for a screen reader and for keyboard navigation --
- * the precise fault the position component was rebuilt to remove. A row the
- * reader put first has to be first in both senses or it is not first.
- *
- * ## The model
- *
- * A section is laid out as **pinned entries, then the rest**. Two stores:
- *
- *   `pins:<path>`   ids in pin order, across both sections
- *   `order:<path>`  section key -> ids in the reader's order
- *
- * The server's order is captured once, before anything moves, and every render
- * is rebuilt from it. Rebuilding from the original rather than mutating in place
- * is what lets unpinning put a row back where it belongs instead of wherever it
- * happened to end up, and what keeps an entry that has appeared since the last
- * visit in its served position rather than at an arbitrary end.
- *
- * A drag is confined to its own group: a pinned row reorders among pinned rows,
- * an unpinned row among unpinned. Letting a row cross the boundary would mean
- * either silently pinning it or recording an order that the next render undoes.
+ * LocalStorage not server: cache_page'd page shares entry. The layout
+ * preference is the counter-example - it rides in the cache key instead; see
+ * core/views.py:BaseAddressView.dispatch.
+ * DOM not CSS order: order moves visually but not for a11y.
+ * Model: pins:/order: stores; server order captured once; drag confined to group.
  */
 (function () {
   "use strict";
@@ -52,16 +22,8 @@
 
   /**
    * Property holding a container's original order, and the binding marker.
-   *
-   * The served order is kept **on the container element**, not in a module-level
-   * Map, and the listeners are bound once per document rather than once per
-   * execution. Both are for the same reason: this script can run twice. It is a
-   * plain `<script>` today, but the address page already pulls one in through an
-   * htmx partial, and a second execution with module-scoped state would bind a
-   * second set of delegated handlers -- so a single arrow key would move a row
-   * twice, and each instance would consult its own idea of the served order.
-   *
-   * With the state on the DOM, a second execution is a no-op that re-applies.
+   * Served order on container, not module Map (script runs twice).
+   * Listeners bound once per document.
    */
   var SERVED_PROP = "_asastatsServedEntries";
   var BOUND_ATTR = "data-pins-bound";
@@ -69,17 +31,8 @@
   /**
    * The baseline `layout` arranges from, when something has replaced the
    * served one.
-   *
-   * The toolbar sorts this list. Sorting and pinning are the same operation
-   * applied twice -- both decide what order the rows are in -- so they cannot
-   * each own the DOM independently: whichever ran second would undo the first.
-   * Instead the toolbar hands its sorted order here and `layout` treats it as
-   * the order the page arrived in, floating pinned rows above it exactly as
-   * before.
-   *
-   * Kept apart from `SERVED_PROP` rather than overwriting it, because "what
-   * the server sent" is still needed: `rebase(parent, null)` restores it, which
-   * is what "Reset view" means, and there is no other copy of it anywhere.
+   * Toolbar sorts this list; sorting and pinning same op applied twice.
+   * Kept apart from SERVED_PROP: "what server sent" needed for rebase.
    */
   var BASELINE_PROP = "_asastatsBaselineEntries";
 
@@ -118,12 +71,8 @@
 
   /**
    * Read and parse a stored value, or return `fallback`.
-   *
-   * Anything unreadable -- absent, malformed, or written by a future version
-   * that stored a different shape -- is treated as nothing stored. A reader
-   * with corrupt state gets the page in the server's order, which is a
-   * perfectly good page rather than an error.
-   *
+   * Anything unreadable = nothing stored.
+   * Private browsing/full quota throw but not a reason to refuse rearrange.
    * @param {string} key - the localStorage key.
    * @param {Function} valid - predicate the parsed value must satisfy.
    * @param {*} fallback - returned when the value is missing or unusable.
@@ -147,11 +96,7 @@
 
   /**
    * Persist a value, silently tolerating a store that refuses.
-   *
-   * Private browsing and a full quota both throw, and neither is a reason to
-   * refuse to rearrange the page. The reader gets the arrangement they asked
-   * for and does not get it back tomorrow.
-   *
+   * Private browsing/full quota throw but not a reason to refuse rearrange.
    * @param {string} key - the localStorage key.
    * @param {*} value - JSON-serialisable value to store.
    */
@@ -263,11 +208,7 @@
 
   /**
    * Return `entries` sorted by `ids`, with anything unlisted keeping its place.
-   *
-   * An entry the reader has never moved, or one that has appeared since they
-   * last visited, stays where the server put it relative to its neighbours
-   * rather than being swept to either end.
-   *
+   * Unmoved entries stay at server position.
    * @param {Element[]} entries - entries in served order.
    * @param {string[]} ids - the reader's order, possibly partial or stale.
    * @returns {Element[]} entries in the reader's order.
@@ -309,12 +250,8 @@
 
   /**
    * Replace the order `parent` is arranged from, or restore the served one.
-   *
-   * Only entries the server actually sent are accepted, and every one of them
-   * has to appear: a caller that dropped a row would delete it from the page
-   * the next time `layout` ran, because `layout` rebuilds from this list. A
-   * sort reorders; it does not filter. Filtering is a class on the row.
-   *
+   * Only server-sent entries accepted; all must appear (dropped row = deleted).
+   * Sort reorders; does not filter. Filtering is a class on the row.
    * @param {Element} parent - the container to re-base.
    * @param {Element[]|null} entries - the new order, or null to restore.
    * @returns {boolean} true if the baseline changed.
@@ -342,11 +279,7 @@
 
   /**
    * Lay a container out: pinned entries first, then the rest.
-   *
-   * `appendChild` on an element already in the document moves it, so this is a
-   * reorder rather than a rebuild -- open `<details>`, bound handlers and
-   * scroll position all survive it.
-   *
+   * appendChild moves element in document (open details, handlers survive).
    * @param {Element} parent - the container to lay out.
    * @param {string[]} pinned - entry ids in pin order.
    * @param {object} order - section key to the reader's ordering.
@@ -403,12 +336,7 @@
 
   /**
    * Record the current DOM order of `parent` as the reader's order.
-   *
-   * Read back from the document rather than computed, so whatever the reader
-   * sees after a move is exactly what is stored. Both groups are written as one
-   * list: a row cannot cross the pinned boundary by dragging, so the list stays
-   * consistent with the pinned set that `layout` will re-split it by.
-   *
+   * Read back from document; pinned boundary not crossed by drag.
    * @param {Element} parent - the container whose order to record.
    */
   function remember(parent) {
@@ -430,11 +358,7 @@
 
   /**
    * Toggle one entry's pin and re-apply.
-   *
-   * A newly pinned entry goes to the *end* of the stored list, so it lands at
-   * the bottom of the pinned group rather than displacing what is already
-   * there. Pinning a second thing should not move the first.
-   *
+   * New pin goes to end of list (second pin doesn't move first).
    * @param {string} id - the entry id carried in `data-pin`.
    * @param {Document|Element} root - the subtree to re-arrange.
    */
@@ -482,24 +406,10 @@
 
   /**
    * Find the position a stored pin refers to.
-   *
-   * Most pids name exactly one row and this is a lookup. Some do not: where the
-   * payload carries nothing that tells two positions of the same program apart
-   * -- same asset, same type, same venue, same link -- they hash to the same
-   * pid, and the row is marked `data-pid-ambiguous`.
-   *
-   * For those, the stored **amount** breaks the tie. It is not part of the pid
-   * on purpose: hashing it in would change the id whenever the amount changed,
-   * which is the one property the id exists to have. Amount rather than value
-   * because value moves with the price on every load, while amount moves only
-   * when the reader actually stakes or unstakes -- so the witness is stable in
-   * exactly the situation the pin has to survive.
-   *
-   * An exact amount wins outright; otherwise the nearest. This can still pick
-   * the wrong row, but only if two positions of one program cross in magnitude
-   * between visits -- far narrower than an ordinal, which breaks on *any*
-   * reordering -- and the row says so via `data-pid-ambiguous`.
-   *
+   * Most pids = one row (lookup). Some don't: same asset/type/venue/link hash to same pid.
+   * Stored amount breaks tie; not in pid (would change id on amount change).
+   * Amount not value: value moves with price, amount only on stake/unstake.
+   * Exact amount wins; else nearest. Wrong row only if two positions cross magnitude.
    * @param {object} pin - `{pid, amount}` as stored.
    * @param {Document|Element} root - where to look.
    * @returns {Element|null} the matching position, or null if it is gone.
@@ -596,27 +506,10 @@
 
   /**
    * Fill the pinned band at the top of the page, if the design has one.
-   *
-   * The dynamic designs put pinned positions in their own band rather than
-   * only floating them within their venue. A position pinned from an asset the
-   * reader has to scroll to and open is otherwise pinned somewhere they cannot
-   * see, which is most of the value gone -- and in a venue holding one position
-   * there is no order for floating to change at all.
-   *
-   * The band holds **copies**, not the rows themselves. Moving a position out
-   * of its asset would take it away from the money column it is aligned to, and
-   * from the venue subtotal it contributes to; both are the reasons the number
-   * can be read at all.
-   *
-   * A pin whose position is not on the page any more keeps its card, marked
-   * `.stale`. Dropping it silently would tell the reader nothing about why the
-   * thing they pinned vanished -- and the position may simply be inside a
-   * folded tail rather than gone.
-   *
-   * Built with `createElement` and `textContent`. Card text is asset and venue
-   * names that came off the chain, and `innerHTML` here would be the one place
-   * on this page markup could be smuggled in.
-   *
+   * Dynamic designs: band not float (pinned position scrolled away).
+   * Band holds copies, not rows (moving loses money column/venue total).
+   * Stale cards kept, marked .stale (dropping loses why vanished).
+   * createElement/textContent (innerHTML = markup smuggling).
    * @param {Document|Element} root - the subtree being arranged.
    * @param {object[]} pins - the stored pins, in pin order.
    */
@@ -645,7 +538,6 @@
 
   /**
    * Build one card for the pinned band.
-   *
    * @param {object} pin - the stored pin.
    * @param {Element|null} position - the row it resolved to, if any.
    * @returns {Element} the card.
@@ -699,11 +591,8 @@
 
   /**
    * Toggle a position's pin.
-   *
-   * Identified by the control's own row rather than by the pid alone: two rows
-   * can share a pid, and the reader pressed one of them. The amount is captured
-   * from that row at pin time, which is what makes it the witness.
-   *
+   * Identified by control's row, not pid alone (two rows share pid).
+   * Amount captured at pin time = witness.
    * @param {Element} control - the pressed control.
    * @param {Document|Element} root - the subtree to re-arrange.
    */
@@ -739,10 +628,7 @@
 
   /**
    * Remove a pin by its identity, from the band's own control.
-   *
-   * By pid rather than by row, because the card in the band may have no row to
-   * point at -- unpinning a stale card is the main thing this is for.
-   *
+   * By pid, not row: card may have no row (stale card unpin).
    * @param {string} pid - the pinned position's identity.
    * @param {Document|Element} root - the subtree to re-arrange.
    */
@@ -759,11 +645,8 @@
 
   /**
    * Return the entries a given entry may be reordered among.
-   *
-   * Its own group, in document order: pinned rows move among pinned rows and
-   * unpinned among unpinned. Crossing the boundary would mean either silently
-   * pinning a row or recording an order the next render undoes.
-   *
+   * Own group in document order; pinned among pinned, unpinned among unpinned.
+   * Crossing boundary = silent pin or order undone next render.
    * @param {Element} entry - the entry being moved.
    * @returns {Element[]} its siblings in the same group, including itself.
    */
@@ -780,7 +663,7 @@
 
   /**
    * Move `entry` by `offset` places within its group, and remember the result.
-   *
+   * Insert after target when moving down, before when moving up.
    * @param {Element} entry - the entry to move.
    * @param {number} offset - places to move; negative is towards the top.
    * @returns {boolean} whether anything moved.
@@ -804,7 +687,6 @@
 
   /**
    * Move `entry` to the start or end of its group.
-   *
    * @param {Element} entry - the entry to move.
    * @param {boolean} toStart - true for the top of the group.
    * @returns {boolean} whether anything moved.
@@ -815,11 +697,7 @@
 
   /**
    * Announce a move for a reader who cannot see it happen.
-   *
-   * The grip's own label is rewritten rather than a separate live region: the
-   * control keeps focus across the move, so a screen reader re-reads it, and
-   * one element cannot drift out of step with another that does not exist.
-   *
+   * Grip's label rewritten, not live region (grip keeps focus).
    * @param {Element} grip - the control that was used.
    * @param {Element} entry - the entry it moved.
    */
@@ -834,12 +712,8 @@
 
   /**
    * Handle an arrow, Home or End press on a grip.
-   *
-   * The keyboard path is not a courtesy: a pointer drag is unusable without
-   * sight and awkward with a tremor, and this is the same operation.
-   *
+   * Keyboard path not courtesy: pointer drag unusable without sight.
    * @param {KeyboardEvent} event - the key event.
-   * @returns {void}
    */
   function onKeydown(event) {
     var grip = event.target.closest ? event.target.closest("[data-drag]") : null;
@@ -864,10 +738,7 @@
 
   /**
    * Begin a pointer drag.
-   *
-   * Pointer Events rather than HTML5 drag-and-drop: the latter does not fire on
-   * touch at all, so half the readers of this page could not use it.
-   *
+   * Pointer Events not HTML5 drag-and-drop: latter no touch support.
    * @param {PointerEvent} event - the pointerdown event.
    */
   function onPointerDown(event) {
@@ -892,10 +763,7 @@
 
   /**
    * Reorder live as the pointer moves.
-   *
-   * The row under the pointer is found by its midpoint rather than by
-   * `elementFromPoint`, which would return the dragged row itself.
-   *
+   * Row under pointer by midpoint, not elementFromPoint (returns dragged row).
    * @param {PointerEvent} event - the pointermove event.
    */
   function onPointerMove(event) {
@@ -926,7 +794,7 @@
 
   /**
    * End a pointer drag.
-   *
+   * See onPointerDown: capture may never have been taken.
    * @param {PointerEvent} event - the pointerup or pointercancel event.
    */
   function onPointerUp(event) {
@@ -947,16 +815,11 @@
 
   /**
    * Bind the delegated handlers and arrange the page.
-   *
-   * Delegated from the document so entries arriving later -- a filter redraw,
-   * an htmx swap -- need no rebinding.
+   * Delegated from document (entries arriving later need no rebinding).
    */
   function init() {
-    // Any of the three is reason enough to run: an asset list, a collection
-    // list and a position list are arranged independently, and a page carrying
-    // only one of them still has an arrangement to restore. `[data-drag]` is
-    // here because a section may be reorderable without being pinnable -- the
-    // NFT collections are.
+    // Any of the three is reason enough to run: asset list, collection
+    // list, position list arranged independently (NFT collections reorderable not pinnable).
     if (!document.querySelector("[data-pin], [data-drag], [data-pin-position]")) {
       return;
     }
@@ -967,11 +830,8 @@
     if (document.documentElement.hasAttribute(BOUND_ATTR)) return;
     document.documentElement.setAttribute(BOUND_ATTR, "");
 
-    // Every handler below bails on an already-handled event. The attribute
-    // above stops a second *binding*; this stops a second binding that slipped
-    // past it from acting twice, because the failure is silent -- one arrow key
-    // moves a row two places, and every single-test run passes. Same guard
-    // showmore.js uses, for the same reason.
+    // Every handler bails on already-handled event. Attribute stops second
+    // binding; this stops second binding acting twice.
     document.addEventListener("click", function (event) {
       var position = event.target.closest
         ? event.target.closest("[data-pin-position]")
@@ -998,8 +858,7 @@
     document.addEventListener("click", function (event) {
       var control = event.target.closest ? event.target.closest("[data-pin]") : null;
       if (!control || event.defaultPrevented) return;
-      // The controls sit inside a <summary>, so without this a click would also
-      // open or close the entry being arranged.
+      // Controls in <summary>, so click would also open/close entry.
       event.preventDefault();
       event.stopPropagation();
       toggle(control.getAttribute("data-pin"), document);

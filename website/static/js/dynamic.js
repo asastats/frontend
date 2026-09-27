@@ -1,28 +1,8 @@
 /**
  * @file Charts for the dynamic address designs, drawn as inline SVG.
- *
- * Design 1 keeps Chart.js. Designs 2 and 3 draw their own, for four reasons:
- *
- *   * **Theming.** The site ships 57 themes. An SVG `fill` can be a
- *     `var(--color-...)` and repaints itself when the theme changes; a canvas
- *     must be handed literal hex at draw time, which is why design 1's palette
- *     is hardcoded and why a theme switch cannot recolour its charts without
- *     re-reading computed styles and redrawing.
- *   * **Interaction.** A slice here is a real element with a `<title>`, so it
- *     can be hovered, focused and described. Canvas slices are pixels needing
- *     hit-testing and a separate event path -- which is exactly why
- *     `chartClick` is the function the selector contract lists as known-broken.
- *     Under SVG that bug class stops existing rather than being ported.
- *   * **Size.** Around 200 KB of Chart.js for five slices.
- *   * **Accessibility.** A canvas is opaque to a screen reader.
- *
- * The payload is unchanged: the same six `json_script` blocks design 1 emits,
- * in the same Chart.js-shaped `{labels, datasets: [{data, backgroundColor}]}`.
- * Only the renderer differs, so the JSON API and the website keep one source
- * of truth.
- *
- * Nothing is drawn until the reader opens the charts panel. Six donuts of SVG
- * is a great deal of markup to hand someone who never looks at it.
+ * Design 1 keeps Chart.js; designs 2/3 use SVG (theming, interaction,
+ * size, accessibility). Payload unchanged; only renderer differs.
+ * Drawn on first open; nothing drawn until charts panel opens.
  */
 (function () {
   "use strict";
@@ -72,7 +52,7 @@
 
   /**
    * Read and parse one `json_script` block.
-   *
+   * Malformed block costs its own chart, not whole panel.
    * @param {string} id - the element id.
    * @returns {Object|null} the parsed payload, or null if absent or malformed.
    */
@@ -89,20 +69,9 @@
 
   /**
    * Return the colour for one slice of a payload.
-   *
-   * Chart.js accepts `backgroundColor` as either an array -- one colour per
-   * label -- or a single string for the whole dataset, and the payloads use
-   * both. Indexing a string gives *characters*: `"#005a34"[1]` is `"0"`, which
-   * is not a colour, and the "Top assets" donut was drawn entirely in invalid
-   * fills because of it.
-   *
-   * A stacked payload has one colour per *category*, so no colour of its own
-   * for a per-label total. `palette` is the way out: the assets chart names the
-   * same labels and carries a colour for each, so a lookup by name gives the
-   * same asset the same colour in both charts. By name and not by index -- the
-   * two payloads happen to agree on order today, and a lookup that depends on
-   * that is a lookup that breaks silently.
-   *
+   * Chart.js: backgroundColor as array or string (indexing string = chars).
+   * Stacked payload: one colour per category; palette from assets chart.
+   * By name, not index: payloads agree on order today, but index lookup breaks silently.
    * @param {Array} sets - the payload's datasets.
    * @param {number} index - the label's position.
    * @param {string} label - the label itself.
@@ -120,13 +89,7 @@
 
   /**
    * Flatten a Chart.js-shaped payload into slices.
-   *
-   * **Stacked payloads are summed, not truncated.** `distchart` carries one
-   * dataset per allocation category -- Balance, Staked, Liquidity, DeFi -- and
-   * this used to read `datasets[0]` alone, so "Top assets" was really "top
-   * *wallet balances*": an asset held entirely in a liquidity pool was drawn as
-   * nothing, and the donut did not add up to the section it sat under.
-   *
+   * Stacked payloads summed, not truncated (distchart was top wallet balances).
    * @param {Object} data - `{labels, datasets: [{data, backgroundColor}]}`.
    * @param {Object} [palette] - label to colour, for stacked payloads.
    * @returns {Array} `[{label, value, color}]`, empty if there is nothing.
@@ -157,7 +120,7 @@
 
   /**
    * Return a label-to-colour map from a payload with per-label colours.
-   *
+   * Assets chart names every asset and carries colour.
    * @param {Object} data - a payload, or null.
    * @returns {Object} label to colour; empty when the payload has no array.
    */
@@ -208,7 +171,6 @@
 
   /**
    * Return the multiplier that turns a payload value into ALGO.
-   *
    * @param {Object} spec - one entry from `CHARTS`.
    * @returns {number} 1 for an amount, `whole / 100` for a share.
    */
@@ -230,13 +192,7 @@
 
   /**
    * Format one ALGO figure in the page's currency, with no unit.
-   *
-   * The rule is `toolbar.js`'s, deliberately - see `fmt` there for why it is
-   * exactly two decimals and why the previous widening rule was removed. The
-   * two must agree: a chart legend and the asset row it describes are the same
-   * figure, and a reader who sees them disagree has no way to tell which one
-   * is rounded.
-   *
+   * Rule is toolbar.js's (exactly two decimals, no widening for small values).
    * @param {number} algo - the figure, in ALGO.
    * @returns {string} the formatted number.
    */
@@ -251,7 +207,7 @@
 
   /**
    * Build one donut slice's path data, from `from` to `to` in turns.
-   *
+   * Full ring = two circles (SVG collapses 360° arc).
    * @param {number} from - start, in turns from twelve o'clock.
    * @param {number} to - end, in turns.
    * @returns {string} an SVG path `d` attribute.
@@ -267,9 +223,7 @@
       ];
     };
 
-    // A full ring cannot be one arc: SVG collapses a 360-degree arc to nothing,
-    // so a single-slice donut would render blank. Two circles wound in opposite
-    // directions, punched through with `fill-rule="evenodd"`, is the ring.
+    // Full ring = two circles (SVG collapses 360° arc).
     if (to - from >= 0.9999) {
       return (
         "M" + (CENTRE - OUTER) + " " + CENTRE +
@@ -296,7 +250,6 @@
 
   /**
    * Create an SVG element with attributes set.
-   *
    * @param {string} name - the tag name.
    * @param {Object} attrs - attribute name/value pairs.
    * @returns {Element} the new element.
@@ -311,7 +264,6 @@
 
   /**
    * Return the parts a chart is currently drawing.
-   *
    * @param {Array} parts - every slice.
    * @param {Object} crossed - label to true, for the ones crossed out.
    * @returns {Array} the ones still counted.
@@ -324,23 +276,9 @@
 
   /**
    * Draw a chart's donut, centre readout and legend into `wrap`.
-   *
-   * Separate from :func:`chart` because it runs again on every press of a
-   * legend key. Rebuilt rather than patched: a redraw is a dozen nodes, and the
-   * alternative is arcs, tooltips, the readout and the legend each carrying
-   * their own idea of what is showing.
-   *
-   * **The arcs re-normalise on what is left.** Crossing an asset out is the
-   * reader saying "and what does the rest look like" -- the same question
-   * design 1's chart answers, and the reason its legend is clickable at all.
-   * A ring that kept a gap where the crossed slice was would answer a different
-   * one.
-   *
-   * Built with `createElement` and `textContent`. Labels are asset and
-   * collection names that came off the chain, and a unit is whatever its
-   * creator typed -- the one place on this page where markup could be smuggled
-   * in.
-   *
+   * Separate from chart(): runs again on every legend press.
+   * Arcs re-normalise on what is left (crossing out = "what does rest look like").
+   * Built with createElement/textContent (labels from chain).
    * @param {Element} wrap - the chart element.
    * @param {string} title - the chart's heading.
    * @param {Array} parts - every slice, crossed or not.
@@ -452,11 +390,10 @@
 
   /**
    * Build one chart: a donut, its total and a legend that filters it.
-   *
+   * Separate from paint() because it runs again on every legend press.
    * @param {string} title - the chart's heading.
    * @param {Array} parts - `[{label, value, color}]`.
-   * @param {number} [scale] - multiplier turning a slice value into ALGO;
-   *   1 when the values are already amounts.
+   * @param {number} [scale] - multiplier turning a slice value into ALGO; 1 when values are amounts.
    * @returns {Element|null} the chart element, or null if there is nothing.
    */
   function chart(title, parts, scale) {
@@ -550,19 +487,11 @@
 
   /**
    * Redraw the allocation donut from the toolbar's filtered totals.
-   *
-   * The bar, the five figures and this chart are three drawings of one set of
-   * numbers, so when the toolbar filters a category out all three have to
-   * follow. The other charts are of the whole address and are deliberately left
-   * alone -- the same rule the headline follows: a reader who hides a category
-   * has not stopped holding it.
-   *
-   * The category colours come from the stylesheet's `--c-*` custom properties
-   * rather than from a table here, so the donut, the bar and the figures cannot
-   * end up painting the same category two different colours.
-   *
+   * Bar, five figures, this chart = three drawings of one set.
+   * Other charts = whole address; left alone (headline rule).
+   * Colours from CSS custom properties (donut/bar/figures same colour).
    * @param {object} totals - category key mapped to its filtered value.
-   * @param {number} summed - the magnitudes' sum; nothing is drawn at zero.
+   * @param {number} summed - the magnitudes' sum; nothing drawn at zero.
    * @param {string} unit - the currency the values are in, for the legend.
    */
   function redrawAllocation(totals, summed, unit) {
@@ -602,19 +531,9 @@
 
   /**
    * Open or close one position's breakdown.
-   *
-   * The third level of the page: what the figure in the money column is made
-   * of. `address.js` has a handler of the same name for design 1 and it does
-   * not work here -- it toggles a `hidden` *class*, while this design hides the
-   * panel with the `hidden` *attribute*, so the class went on and the panel
-   * stayed shut. The control looked exactly right, dotted and inviting, and did
-   * nothing; `functional_tests/test_address_dynamic_page.py` is what caught it.
-   * `address.js` no longer binds to `.dynamic-page .tdist` for that reason.
-   *
-   * The control is a real button carrying `aria-expanded`, so the state is set
-   * here too. Design 1's control is a span and has none, which is the other
-   * half of why the two cannot share a handler.
-   *
+   * Third level: what the money column figure is made of.
+   * address.js handler doesn't work here: toggles hidden class, this uses hidden attr.
+   * Control is real button with aria-expanded.
    * @param {Element} control - the pressed `.tdist` button.
    */
   function toggleBreakdown(control) {
@@ -627,27 +546,12 @@
 
   /**
    * Fill every "N ago" span in the NFT section.
-   *
-   * `.epoch` is design 1's contract and the dynamic section keeps it, but
-   * the *filling* could not be kept: `showTimes` is bound to
-   * `.nft.item-header` and looks for `.item-body` siblings, and this design has
-   * neither -- a collection is a `<details>` with a `.chead` and a `.cbody`. So
-   * the section rendered "Last purchase on Rand Gallery" with no indication of
-   * when, which reads as a rendering fault rather than as missing data.
-   * `functional_tests/test_address_dynamic_nfts.py` is what noticed.
-   *
-   * Filled once on load rather than when a collection opens. Design 1 defers it
-   * because its handler is per-collection; there is no handler here, and
-   * formatting sixty-five intervals is not work worth deferring.
-   *
-   * `timeEntry` is `address.js`'s, which this page loads first, and is used so
-   * the two designs word the same fact the same way. The fallback is a plain
-   * date rather than nothing: a reader who is told a purchase happened is owed
-   * when, and a script that failed to load is not their problem.
-   *
+   * .epoch is design 1's contract; dynamic section keeps it but filling lost.
+   * Filled once on load rather than when collection opens.
+   * timeEntry is address.js's; used so both designs word the same way.
+   * Fallback is plain date rather than nothing: reader owed when.
    * @param {Document|Element} root - the subtree to fill. Required: every
-   *   caller has one in hand, and a default would be a branch no test could
-   *   reach.
+   *   caller has one in hand, and a default would be a branch no test could reach.
    */
   function epochs(root) {
     var now = Date.now() / 1000;
@@ -666,11 +570,8 @@
 
   /**
    * Bind the breakdown controls.
-   *
-   * Delegated from the document, so the rows `pins.js` moves -- and any that
-   * arrive with an htmx partial -- need no rebinding. Guarded on the root
-   * element for the same reason `showmore.js` guards there: this file can run
-   * twice, and a second set of handlers would open and immediately close.
+   * Delegated from document (rows pins.js moves need no rebinding).
+   * Guarded on root element (file runs twice, second opens/closes immediately).
    */
   function breakdowns() {
     if (document.documentElement.hasAttribute(BREAKDOWN_ATTR)) return;
@@ -705,24 +606,10 @@
    */
   /**
    * Refill the epoch spans after an htmx swap brings new ones in.
-   *
-   * **Opening a collection fetches its items**, and the `.epoch` spans inside
-   * them arrive empty - they are rendered empty by design and filled from
-   * `data-epoch` here. `init` runs once at `DOMContentLoaded`, so every span on
-   * the page at load is filled and every span that arrives afterwards was not:
-   * a reader who opened a card saw "Last purchase on Rand Gallery" with no
-   * indication of when.
-   *
-   * **`document`, not the swapped region.** `epochs` selects
-   * `.dynamic-page .epoch[data-epoch]`, and that ancestor is *above* the
-   * swapped region rather than inside it - so a region-scoped query matches
-   * nothing. Re-running over the whole page is cheap and recomputes the
-   * relative times, which are stale by then anyway.
-   *
-   * `htmx:after:swap` on `document.body` is how the rest of this codebase
-   * listens - `address.js`, `toolbar.js`, `theme.js` and the alerts widget all
-   * do. Note the colons: htmx 4 renamed these events, and `htmx:afterSwap`
-   * silently never fires.
+   * Opening a collection fetches items; .epoch spans arrive empty.
+   * document, not swapped region (ancestor above swapped region).
+   * htmx:after:swap on document.body (address.js, toolbar.js do same).
+   * Note colons: htmx 4 renamed events; htmx:afterSwap silently never fires.
    */
   function watchSwaps() {
     if (document.documentElement.hasAttribute(EPOCH_SWAP_ATTR)) return;
@@ -732,6 +619,10 @@
     });
   }
 
+  /**
+   * Bind the charts panel and the breakdown controls.
+   * Charts drawn on first open, not on load (payload doesn't change).
+   */
   function init() {
     breakdowns();
     epochs(document);

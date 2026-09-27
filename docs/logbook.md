@@ -1762,3 +1762,678 @@ list wraps. Worth consolidating onto one file; not done.
 
 `website/.isort.cfg` already skipped `widgets/*` and `permissiondapp/*` before
 today. The globs here repeat that so the two cannot drift.
+
+---
+
+## website/static/js/address.js
+
+### Module
+
+**Why `lastRefreshAt` is armed at `Date.now()` rather than left at zero.** The tick starts at DOM ready, but `initAddress` runs on `window.onload` — after every image, font and stylesheet. On a slow page there was a window where the clock read zero, the refresh was already an eternity overdue, and the first two quiet seconds reloaded a page the reader had only just opened. On a heavy bundle that window is tens of seconds: one reloaded itself twenty-five seconds in, to a byte-identical copy of what was already on screen.
+
+The `#id-liverefresh` guard below cannot cover it, because the marker arrives in a non-cached partial later still — twenty seconds after the document on that same page.
+
+### `wireFetchedItems`
+
+**A collection's items are not on the page until the reader opens it.** They used to be: every collection wrote out every item, hidden inside a closed `<details>`, and the fetch on open replaced them. On one real account that was 87.9% of a 22 MB page — markup nobody could see, and 152,294 elements a browser had to lay out before the page would scroll.
+
+`deferImages` runs once, over the elements present at load, so items arriving later never had their `data-src` promoted to `src` and their art never appeared. That was already true of the design-2 layout, which has fetched on open all along; it is simply visible now that both layouts do.
+
+### `restoreDisplayChoices`
+
+**The live poll ships figures the server rendered, and the server does not know what the reader chose.** `lvp` is one payload per page, shared by everyone watching it, so it can only ever carry ALGO and the full total. The classic fragments swap the band, the `.pricetip` and every changed `span.val` — each one arriving as freshly rendered ALGO — so a reader who picked USD watched it revert on the next block, and one who had turned NFTs out of the total watched them come back.
+
+`setCurrency` and `setTotalNoNft` ran once, at load. That was true for as long as nothing rewrote a figure after load, which stopped being true when real-time refresh shipped.
+
+Only when the reader is away from the defaults: both functions walk every `span.val` on the page, and doing that three seconds apart on a long page for a reader who never left ALGO would be work with no effect. Both are design 1's — they return immediately on a dynamic page, where `toolbar.js` owns this and reads its own keys.
+
+### `mainAddress`
+
+**Why `toggle` fires on `<details>` and not on `<summary>`.** It fires for keyboard and programmatic opens too — which a click handler on the header would miss.
+
+**Why `.tdist` is scoped to exclude `.dynamic-page`.** The dynamic designs use the same `.tdist` idiom — dotted at rest, opens in place — but hide their panel with the `hidden` *attribute* and carry `aria-expanded` on a real button, neither of which this handler touches. Bound here as well, the two would fight: `dynamic.js` clears the attribute while this adds the `hidden` class, and the panel stays shut with both designs believing it opened.
+
+**Why `scroll wheel touchmove` all call `noteActivity`.** Scrolling is the interaction the guard exists for, and it is the one mousemove does not report: a wheel or a touch drag moves the page without moving the pointer.
+
+### `noteActivity`
+
+**This no longer resets the refresh clock, which is the whole change.** Bound to mousemove and keypress, restarting the count meant a reader who twitched once a minute was never refreshed at all — the reported "120 second delay", which was really "no refresh, ever, while you are at the keyboard". The due time is now fixed and only the *firing* waits for a quiet moment.
+
+### `timerIncrement`
+
+**Elapsed time, not a count of ticks.** The old version added one per second and compared against 60, which a browser breaks in two ways: it throttles a background tab's interval to roughly once a minute, so the counter advanced sixty times too slowly and a tab left open came back an hour stale; and it cannot notice time the machine spent asleep at all. A timestamp is immune to both, and it is what lets `refreshOnReturn` ask one question instead of keeping its own clock.
+
+**Due, but busy, defers rather than cancels.** A reader who is scrolling gets left alone — a reload mid-scroll throws the page out from under them — but the due time does not move, so the refresh happens the moment they settle rather than being pushed another minute away.
+
+**The clock moved backwards.** An NTP correction, a laptop waking with a corrected time, or the reader setting it by hand. Left alone, a stamp in the future makes `now - then` negative, which reads as "just now" forever: the refresh would defer for as long as the jump was, which can be hours. Start the minute again instead, with the reader counted as idle so a due refresh is not held back by an interaction that now appears not to have happened yet.
+
+**Disarmed: keep the clock with the reader.** Ticking the box does not immediately fire a refresh left over from however long it has been off.
+
+**The subscriber poll owns refreshing this page.** It swaps the figures that changed and leaves scroll position, open sections and filters alone; reloading on top of that would throw away the one thing it exists to preserve. The marker arrives in a non-cached partial after load, so this is asked every tick rather than once at startup.
+
+### `refreshOnReturn`
+
+**Asked as "how long since the last refresh", not "how long was it hidden".** The two agree in the ordinary case and differ in the one that matters — a tab hidden for thirty seconds when the clock already stood at forty-five has been stale for over a minute, and only the first question notices.
+
+### `setCurrency` / `setTotalNoNft`
+
+**Design 1 only.** This writes `innerHTML` — number *and* unit — into every `span.val`, which is right for design 1, where the unit is part of the value's own text. The dynamic designs pair each figure with a separate unit element: a sibling `.u.unit` in an asset header, a nested `<span class="unit">` in a venue subtotal. So this rewrote the header to "253.74 ALGO" beside a sibling still reading "ALGO", and destroyed the nested span in every subtotal — on every load, because it runs unconditionally with the stored currency. It also cannot reach a breakdown figure there at all, which is a `<button>` rather than a span.
+
+`toolbar.js` owns currency on that page and writes only the number.
+
+### `checkOpened`
+
+**The entries are `<details>` children of the section container, so the one to reopen is addressed by id and opened directly — no index into a widget's internal list.**
+
+**`.find()`, not `.children()`.** The rows are wrapped inside the section rather than being its direct children — the section carries a heading above them — so a child walk finds the heading and the wrapper and never reaches an entry. The remembered row then silently fails to reopen after a refresh.
+
+### `reloadPage`
+
+Reloads the page and reopens the same accordions by storing open section ids in localStorage before reload.
+
+### `setTotalNoNft`
+
+**Design 1 only, for the same reason `setCurrency` is.** This writes the headline's `innerHTML` — figure *and* unit — reading the currency from design 1's own global `cur` key. On the dynamic page that meant the total was written by design 1 on load and by nobody afterwards: a reader who had ever chosen USD anywhere got a USD headline in a fresh tab, and pressing USD in that page's own toolbar changed every figure except the one at the top. `toolbar.js` owns the headline there.
+
+### `nftShowTooltip`
+
+**Built as elements rather than an HTML string.** The old call handed `unsafeHTML` a concatenated `<img src='...'>`, so an engine-supplied path containing a quote could close the attribute and inject markup. Setting `.src` cannot do that whatever the value.
+
+### `setTip`
+
+**`data-tip` is the attribute DaisyUI's `.tooltip` reads.** This code wrote `data-tooltip`, which is Materialize's and which nothing on this site has read since the conversion — so the total's tooltip was correct as the server rendered it and then never changed again. Switch to USD and it still quoted the ALGO figure and the old rate.
+
+**`data-position` went the same way:** also Materialize's, also dead. DaisyUI places a tooltip with `tooltip-top`/`tooltip-bottom` classes, and design 1 asks for neither, so the writes are simply gone rather than translated.
+
+**An element that wants its tip *announced* points `aria-describedby` at a visually hidden span**, and this keeps that span in step: a tooltip drawn with `content: attr(data-tip)` is not dependably in the accessibility tree, so the hidden text is what a screen reader actually gets.
+
+**The attribute goes on whatever actually draws the tooltip.** On the site that is a `.tooltip` wrapper around the figure — DaisyUI reveals on `:has(:focus-visible)`, so the focusable element has to be *inside* it — and on the historic widget's page it is the figure itself, which carries the widget's own `.htip`. `closest` covers both without either caller having to know which page it is on.
+
+### `toggleDist`
+
+**Found by a stable attribute rather than by `.parent()`.** The control is the value span, and which element it sits directly inside is a layout decision — wrapping those lines in a block, which is what replacing a column of `<br>` tags means, would silently move the shadow onto the wrapper. Not `.closest(".asar")` either: `asar` is half of what this toggles, so the second click would no longer find the panel.
+
+---
+
+## website/static/js/toolbar.js
+
+### Module
+
+**Why the toolbar exists.** The address page is `cache_page`'d and its entry is shared between every reader on the layout, so the server cannot know what this reader has filtered to and must not render it. The state lives in their browser under `view:<path>`, beside the pins and the saved order.
+
+**One state, three drawings.** The allocation bar, the five category figures and the donuts are three drawings of one set of numbers, and all three are wired to the same `state.cats`. A reader who saw the bar and the figures disagree would have no way to tell which one lied, so they are recomputed together, from the same pass over the same rows, every time anything changes.
+
+**The one figure that never moves.** The headline is what the address is worth. No filter, no search, no category toggle may touch it: a reader who hides a category has not become poorer. Everything below it is a subtotal and is free to respond. This file never writes to `.total`.
+
+**How it shares the page.** Three other scripts already own parts of this page, and the toolbar defers to each rather than duplicating it:
+- `pins.js` owns the *order*. Sorting does not reorder the DOM directly; it hands `pins.rebase` a new baseline and lets pinning apply on top, so a pinned row stays pinned through a sort.
+- `showmore.js` owned the fold and no longer does here. It reveals a whole tail in one press, which is design 1's rule; these designs show a fixed first batch and add one batch per press, so it stands down on `.dynamic-page` and this file folds instead.
+- `dynamic.js` owns the donuts. The toolbar hands it filtered slice data and asks it to redraw.
+
+**Currency is the exception, and deliberately:** `address.js` has `setCurrency`, and it is wrong for this page. It writes `innerHTML` including the unit into every `span.val`, which on this markup destroys the nested `<span class="unit">` inside a venue subtotal and leaves the asset header reading "253.74 ALGO ALGO" — the value cell has a *sibling* unit element. It also cannot reach a breakdown control, which is a `<button>` rather than a span. `address.js` no longer touches `.dynamic-page`; the writer here does, and it writes the number only, leaving every unit element alone.
+
+### `readView`
+
+**Field by field rather than all-or-nothing.** A stored view written by an older build is missing whatever has been added since, and discarding the whole thing would throw away a reader's currency because a sort key appeared. Each field is validated on its own terms, so a value that is no longer offered — a removed sort, a category that stopped existing — falls back without disturbing the rest.
+
+**One try for every read.** A store that refuses one refuses them all — a private window, cleared site data, a browser set to block it — so a second catch further down would be a branch nothing can reach.
+
+**An empty stored array is a reader who switched every category off, and is not the same as no stored array at all.**
+
+### `writeView`
+
+**Removing rather than storing the defaults** keeps a reader who has reset from carrying a key that says nothing, and means "has this reader customised anything" is answerable without comparing objects.
+
+**The reader-level settings are stored under their own keys above;** writing them here too would give one setting two homes that can disagree.
+
+### `fmt`
+
+**Exactly two decimals, always.** A money column has one shape, and every figure in it has to be readable against the one above without counting digits first.
+
+This used to widen anything under half a cent to *six* places, on the reasoning that "0.00" reads as nothing owed rather than as a small debt. The cure was worse: it put a six-decimal figure in a column of two-decimal ones, so a 0.004574 sat under a 1,284.02 and read as the larger number at a glance — and it did it for ordinary dust holdings, which are most of what is down there, not only for borrowings. The server has always rendered these cells with `floatformat:'2g'`, so the widening was also the one thing on the page that changed a figure between the HTML arriving and the first repaint.
+
+A holding worth less than a hundredth of an ALGO *is* "0.00" to a reader deciding anything, and the row still names the amount and the unit beside it. If the near-zero cases ever need distinguishing again, the answer is a "<0.01" treatment, which keeps the column's shape; it is not more digits.
+
+### `evaluate`
+
+**One pass, producing everything the rest of the render needs:** which positions are live, which assets keep any, each asset's filtered value, and the four category totals the band draws. Computing these separately is how a bar and a figure come to disagree.
+
+**A position is live when its category is on *and* it matches the query, or its asset does** — typing an asset's ticker should not require every row inside it to repeat the ticker.
+
+**The category totals ignore the category filter**, and that is not an oversight. Two reasons, and the second is decisive. A figure reading "Liquidity 0.00" the moment it is switched off tells the reader they hold none, when what happened is that they hid it — the honest reading is the real number, dimmed. And a bar segment whose width went to zero would have no box to click, so the only way to switch a category back on would be the figure beside it: the control would disable itself. They respond to the search, which genuinely narrows what the address is being asked about.
+
+### `batchFor`
+
+**Its own function because two callers need it and one of them is the label.** `fold` used to read `data-initial` directly to say "Show N more", while `limit` above preferred the reader's choice — so a reader who set collections to 20 saw twenty rows, pressed a control that said ten, and got twenty. The control was lying about itself in exactly the way the label's own comment says it must not, because the two numbers were derived twice from different places.
+
+### `foldSize`
+
+**Read from the same attribute the CSS reads.** `base.html` stamps it before paint from `localStorage`, the stylesheet acts on it for the gap before this script runs, and this function acts on it afterwards. One value in one place: the alternative is the stylesheet and the script disagreeing about how many rows are shown, which shows up as a control offering to reveal rows already on screen.
+
+`"all"` is `Infinity` rather than a large number, so `Math.min` against the row count does the right thing without a magic constant to outgrow.
+
+### `sortNumber`
+
+**`data-sort-value` is the figure the page was rendered with and does not move.** The live refresh swaps the value *span* out of band on every block and deliberately leaves the row alone — swapping the row would close it, discard the reader's drag order and lose anything open inside. So after a while the two disagree, and sorting by value put the rows in an order that contradicted the column beside it.
+
+The span carries the same quantity — both are the unrounded value — so reading it costs nothing and is right whether the page is a minute or an hour old. `data-sort-value` stays as the fallback for a row whose value cell is missing, and for the three sorts that have no live equivalent.
+
+### `order`
+
+**Not applied to the DOM here.** `pins.js` owns the order: it floats pinned rows above the rest and applies any order the reader dragged, and if this file also called `appendChild` the two would each undo the other depending on which ran last. Instead the sorted list becomes the *baseline* it arranges from, and pinning still wins — which is right, because pinning is the reader saying "this one, whatever else is going on".
+
+Name sorts by the ticker and ties break on it too, so two assets worth exactly the same amount do not swap places between renders.
+
+**The served order is the default sort, so restoring it is what "Reset" hands back** — and `rebase(parent, null)` is the only way to get it, because nothing else keeps a copy.
+
+### `paintAssets`
+
+**Read back from the DOM rather than from `view.live`.** `pins.js` has just reordered, and the fold applies to the first N *as displayed*, which is not the order this function was handed.
+
+### `fold`
+
+**Shared by the two sections because they are the same rule applied to different lists** — and because a second copy is how the assets and the collections come to disagree about what "show more" means.
+
+**From `batchFor`, the same source `limit` folds by.** Reading `data-initial` here instead was how the label came to say ten over a control that revealed twenty.
+
+**Nothing folded means nothing to reveal.** Left in the document rather than removed, because the next keystroke may fold rows again.
+
+### `paintFigures`
+
+**Venue subtotals and asset headers are recomputed from the live positions rather than left at what the server rendered:** a reader who has hidden Liquidity is shown an asset header that still counts it, and the numbers stop adding up down the column — which is the one thing this design promises.
+
+**A subtotal over a single row is that row's own figure said twice, three lines apart, and the two cannot differ.** The template leaves it out for a group served with one position; a filter can take a bigger group down to one, so the same rule applies here.
+
+### `write`
+
+**The reason this file has a currency writer of its own.** Every value cell on this page pairs a number with a unit, and the unit is a separate element — a sibling in the asset header, a child in a venue subtotal. `innerHTML` on the value destroys or duplicates it. Only the number is written, and only into the first text node, so an element that holds `12.34 <span>ALGO</span>` keeps its span.
+
+### `paintTotal`
+
+**The one figure no *filter* may move** — a reader who hides a category has not become poorer — but the currency is not a filter. It is the unit the whole page is denominated in, and a page whose every figure says USD above a total that says ALGO is not showing a total at all. That was the reading this file got wrong.
+
+**"Total without NFTs" moves it legitimately**, because it changes *what is being totalled* rather than how it is displayed. It is design 1's setting and design 1's storage key, so the two pages agree.
+
+`.pricetip`'s own data attributes carry both currencies and both totals, so nothing here recomputes from rendered text.
+
+### `paintReadout`
+
+**"Unfiltered" is read off the state, not off the arithmetic.** It used to be inferred from the two figures differing, which is only the same question while the two agree about the address: `shown` is summed from the rows this page was rendered with, and `whole` comes from whatever the live pass last published. Those are two readers of the same account, and when they disagree — a re-price that valued fewer positions, a reload suppressed by the cooldown, a resync still draining — a page with nothing switched off announced "Showing 29.48 USD of 13.89 USD", which is not a filter and reads as the page having lost track of the money.
+
+Reported from production on 2026-09-18, and the engine side of it is real: the live pass published 304.55 and 143.46 ALGO for the same page within the hour. This element is not the place that surfaces it — it exists to say what the *filters* left out, and it now says nothing when they left out nothing, whatever the two totals think.
+
+### `paintBand`
+
+**Applied here rather than only where it is toggled,** so a reader who hid the collections and came back is not handed them again while the figure still reads "off". Every other part of the state is applied on every render; this one was not, and only a reload showed it.
+
+**The NFT figure keeps its served value:** it is not a subtotal of anything the position filter can reach.
+
+**All three from `view.totals`, in one place,** because they are three drawings of one set of numbers and a reader who sees them disagree has no way to know which one lied.
+
+### `toVenues`
+
+**Moved, never copied:** a copy would put a second element on the page with the same `data-pid`, and a pin names a position by that id. Moving also keeps open breakdowns, bound handlers and the position pins working, because they are the same nodes — `appendChild` on an element already in the document relocates it.
+
+**Where each group came from is remembered on the group itself,** so switching back is exact rather than reconstructed.
+
+**The *index* among its siblings, not the sibling itself.** A remembered `nextElementSibling` is only valid while that sibling is still where it was, and an asset holding four venues has all four moved away — so restoring the first one threw, because the node it was to be inserted before had itself been moved. An index survives its neighbours leaving and coming back.
+
+### `toAssets`
+
+**Sorted by where each group belongs before any of them moves,** so an asset holding four venues gets them back in the order the server ranked them rather than in whatever order the venue cards happened to be built. Appending in ascending index order rebuilds the sequence exactly, because `.program-groups` holds nothing but these.
+
+**The emptied cards, not the list's whole contents.** Wiping the list would take a group that somehow has no remembered home with it — and a position row deleted from the page is the worst thing this file could do, because the reader has no way to tell it was ever there.
+
+### `regroup`
+
+**The section still called itself "Assets 76" over a list of venues.** The served text is kept rather than rebuilt, so switching back restores exactly what the template rendered — including a count that is the server's, not this script's arithmetic.
+
+### `paintReadout`
+
+**"Unfiltered" is read off the state, not off the arithmetic.** It used to be inferred from the two figures differing, which is only the same question while the two agree about the address: `shown` is summed from the rows this page was rendered with, and `whole` comes from whatever the live pass last published. Those are two readers of the same account, and when they disagree — a re-price that valued fewer positions, a reload suppressed by the cooldown, a resync still draining — a page with nothing switched off announced "Showing 29.48 USD of 13.89 USD", which is not a filter and reads as the page having lost track of the money.
+
+Reported from production on 2026-09-18, and the engine side of it is real: the live pass published 304.55 and 143.46 ALGO for the same page within the hour. This element is not the place that surfaces it — it exists to say what the *filters* left out, and it now says nothing when they left out nothing, whatever the two totals think.
+
+### `render`
+
+**Structure first, and that ordering is load-bearing.** Switching to venues *moves* the position rows out of their asset cards, so anything that measured before the move would total an asset at zero and hide every card on the page — which is exactly what "Reset view" did until this ran first.
+
+### `paint`
+
+**The poll ships what the server rendered, and the server does not know what this reader chose.** `lvp` is one payload per page, shared by everyone watching it, so it can only carry ALGO and the full total. The fragments replace the band and every changed figure — so a reader who picked USD watched it revert on the next block, and one who had turned NFTs out of the total watched them come back.
+
+---
+
+## website/static/js/dynamic.js
+
+### Module
+
+**Why SVG not Chart.js.** Four reasons:
+1. **Theming.** The site ships 57 themes. An SVG `fill` can be a `var(--color-...)` and repaints itself when the theme changes; a canvas must be handed literal hex at draw time, which is why design 1's palette is hardcoded and why a theme switch cannot recolour its charts without re-reading computed styles and redrawing.
+2. **Interaction.** A slice here is a real element with a `<title>`, so it can be hovered, focused and described. Canvas slices are pixels needing hit-testing and a separate event path — which is exactly why `chartClick` is the function the selector contract lists as known-broken. Under SVG that bug class stops existing rather than being ported.
+3. **Size.** Around 200 KB of Chart.js for five slices.
+4. **Accessibility.** A canvas is opaque to a screen reader.
+
+**The payload is unchanged:** the same six `json_script` blocks design 1 emits, in the same Chart.js-shaped `{labels, datasets: [{data, backgroundColor}]}`. Only the renderer differs, so the JSON API and the website keep one source of truth.
+
+**Nothing is drawn until the reader opens the charts panel.** Six donuts of SVG is a great deal of markup to hand someone who never looks at it.
+
+### `CHARTS` order
+
+`nftfloorchart` is deliberately last: it is the least-asked question on the page, and a reader scanning left to right should meet the allocation and the top assets first.
+
+`total` names what the payload's percentages are a percentage *of*, read off the header's own data attributes in ALGO. Four of the five blocks carry shares rather than amounts — `"46.30882653"` means 46.3% of the assets, not 46.3 ALGO — and the legend was printing those bare, so a reader saw a column of figures in the same shape as every other figure on the page and none of them were money. `distchart` is the exception and says so.
+
+### `colorFor`
+
+**Chart.js accepts `backgroundColor` as either an array — one colour per label — or a single string for the whole dataset, and the payloads use both.** Indexing a string gives *characters*: `"#005a34"[1]` is `"0"`, which is not a colour, and the "Top assets" donut was drawn entirely in invalid fills because of it.
+
+**A stacked payload has one colour per *category*, so no colour of its own for a per-label total.** `palette` is the way out: the assets chart names the same labels and carries a colour for each, so a lookup by name gives the same asset the same colour in both charts. By name and not by index — the two payloads happen to agree on order today, and a lookup that depends on that is a lookup that breaks silently.
+
+### `slices`
+
+**Stacked payloads are summed, not truncated.** `distchart` carries one dataset per allocation category — Balance, Staked, Liquidity, DeFi — and this used to read `datasets[0]` alone, so "Top assets" was really "top *wallet balances*": an asset held entirely in a liquidity pool was drawn as nothing, and the donut did not add up to the section it sat under.
+
+### `palette`
+
+The assets chart is the only payload naming every asset *and* carrying a colour for each, so it is where a stacked payload borrows its colours.
+
+### `headline` / `whole` / `scaleFor`
+
+Reads the same header and attributes `toolbar.js` reads, so the charts and the rows cannot come to different conclusions about what the address is worth.
+
+### `money`
+
+**The rule is `toolbar.js`'s, deliberately.** The two must agree: a chart legend and the asset row it describes are the same figure, and a reader who sees them disagree has no way to tell which one is rounded.
+
+### `arc`
+
+**A full ring cannot be one arc:** SVG collapses a 360-degree arc to nothing, so a single-slice donut would render blank. Two circles wound in opposite directions, punched through with `fill-rule="evenodd"`, is the ring.
+
+### `paint`
+
+**Built with `createElement` and `textContent`.** Labels are asset and collection names that came off the chain, and a unit is whatever its creator typed — the one place on this page where markup could be smuggled in.
+
+**The arcs re-normalise on what is left.** Crossing an asset out is the reader saying "and what does the rest look like" — the same question design 1's chart answers, and the reason its legend is clickable at all. A ring that kept a gap where the crossed slice was would answer a different one.
+
+**The hole is where the figure goes.** Design 1 puts this total in the chart's title block; here the middle of the ring is both empty and exactly where a reader looks, and it is what makes crossing a slice out worth doing — the number moves.
+
+**A real button, because it does something.** It was a `<div>` carrying no affordance at all, which is half of why these charts read as pictures of design 1's rather than as the same control.
+
+### `toggleKey`
+
+**The redraw replaced the button that was pressed, so focus has to be put back on its replacement** or a keyboard reader is returned to the top of the document after every press. Matched by reading the attribute rather than by building a selector from it: a label is an asset name off the chain and may hold a quote.
+
+### `draw`
+
+**The assets chart is the only payload naming every asset *and* carrying a colour for each**, so it is where a stacked payload borrows its colours.
+
+**Which payload a chart was drawn from, so `redrawAllocation` can find the one it is allowed to replace.** Its heading is not the handle: that is copy, and copy changes.
+
+### `redrawAllocation`
+
+**The bar, the five figures and this chart are three drawings of one set of numbers,** so when the toolbar filters a category out all three have to follow. The other charts are of the whole address and are deliberately left alone — the same rule the headline follows: a reader who hides a category has not stopped holding it.
+
+**The category colours come from the stylesheet's `--c-*` custom properties rather than from a table here,** so the donut, the bar and the figures cannot end up painting the same category two different colours.
+
+### `toggleBreakdown`
+
+**The third level of the page:** what the figure in the money column is made of. `address.js` has a handler of the same name for design 1 and it does not work here — it toggles a `hidden` *class*, while this design hides the panel with the `hidden` *attribute*, so the class went on and the panel stayed shut. The control looked exactly right, dotted and inviting, and did nothing; `functional_tests/test_address_dynamic_page.py` is what caught it.
+
+**The control is a real button carrying `aria-expanded`,** so the state is set here too. Design 1's control is a span and has none, which is the other half of why the two cannot share a handler.
+
+### `epochs`
+
+**`.epoch` is design 1's contract and the dynamic section keeps it, but the *filling* could not be kept:** `showTimes` is bound to `.nft.item-header` and looks for `.item-body` siblings, and this design has neither — a collection is a `<details>` with a `.chead` and a `.cbody`. So the section rendered "Last purchase on Rand Gallery" with no indication of when, which reads as a rendering fault rather than as missing data. `functional_tests/test_address_dynamic_nfts.py` is what noticed.
+
+**Filled once on load rather than when a collection opens.** Design 1 defers it because its handler is per-collection; there is no handler here, and formatting sixty-five intervals is not work worth deferring.
+
+**`timeEntry` is `address.js`'s, which this page loads first,** and is used so the two designs word the same fact the same way. The fallback is a plain date rather than nothing: a reader who is told a purchase happened is owed when, and a script that failed to load is not their problem.
+
+### `breakdowns` / `watchSwaps`
+
+**Delegated from the document, so the rows `pins.js` moves — and any that arrive with an htmx partial — need no rebinding.** Guarded on the root element for the same reason `showmore.js` guards there: this file can run twice, and a second set of handlers would open and immediately close.
+
+**`document`, not the swapped region.** `epochs` selects `.dynamic-page .epoch[data-epoch]`, and that ancestor is *above* the swapped region rather than inside it — so a region-scoped query matches nothing. Re-running over the whole page is cheap and recomputes the relative times, which are stale by then anyway.
+
+**`htmx:after:swap` on `document.body` is how the rest of this codebase listens** — `address.js`, `toolbar.js`, `theme.js` and the alerts widget all do. Note the colons: htmx 4 renamed these events, and `htmx:afterSwap` silently never fires.
+
+### `init`
+
+**The charts are drawn on first open rather than on load, and only once.** The payload does not change while the page is open, so redrawing on every toggle would rebuild several hundred nodes to show the same picture.
+
+---
+
+## website/static/js/theme.js
+
+### Module
+
+**Why theme applied inline in head.** The first application happens inline in the document head, before the stylesheet paints, so there is no flash of the default theme; this file only handles the picker itself and the writing.
+
+**The theme is a client-side preference and is never sent to the server.** The list of themes offered comes from `settings.AVAILABLE_THEMES` via the template, so this file never needs to know the names.
+
+**Two controls share this file:** a signed-out reader gets a smaller choice than a signed-in one:
+- `[data-theme-toggle]` — a plain light/dark switch, the only appearance control an anonymous reader sees.
+- `input[name=theme-dropdown]` — the full list, for signed-in readers.
+
+**The pair the toggle flips between is read from the button's own data attributes** rather than written here, so the brand theme names live in settings and templates only.
+
+### `applyTheme` / `applyTypeface`
+
+**Written to the document element and to localStorage.** Private-browsing quota rules can refuse the write; the theme still applies for this page but will not survive a reload.
+
+### `wireFoldPicker` / `wireFoldReset`
+
+**Written to the same `localStorage` keys the inline head script reads**, and stamped onto the document element here so the choice takes effect on the page the reader is looking at rather than on the next one. The address page's own scripts read the attribute, not the storage, so one value travels: storage across page loads, attribute within one.
+
+**`data-fold-target` on the group names which key its radios write.** One handler for both groups rather than one per section, because "assets" and "collections" differ only in the key.
+
+### `resetFold`
+
+**Not the same as pressing the default's own radio.** Every radio *stores* its value, and an address page reads storage in preference to the site's own setting — so choosing 20 pins 20, where choosing nothing follows `settings.ADDRESS_INITIAL_ASSETS` wherever it goes. Only removing the key returns a reader to the second state, and nothing else in the panel can.
+
+**The attribute goes too,** so the page being looked at changes with the press rather than on the next load — the same reason `applyFold` stamps it.
+
+### `countThemeUse`
+
+**Counting at load time, deliberately.** The alternative is to count on the way out — `beforeunload` or `pagehide` — which is unreliable on mobile, where a tab is often killed without either firing.
+
+Counting at load time also gives the rule this exists for: flipping through swatches on the appearance page fires no page load, so browsing costs nothing, and the theme that survives a navigation is the one that scores. A reader who then visits ten more pages adds nothing further, which is why the count reads as "chosen and kept" rather than "page views".
+
+**Nothing here is sent to the server.** The theme is a client-side preference, so its tally belongs in the same place — a tally that synced while the theme did not would order the menu by a history this browser never had.
+
+### `wireRecentThemes`
+
+**Items are cloned from one the template already rendered,** so the markup for a theme entry exists in exactly one place. A theme promoted into Recent is removed from the list below, because two radios sharing a name and a value are one control rendered twice — they fight over which shows as chosen.
+
+### `selectSchemeTab`
+
+**The tabs are radio inputs with a fixed `checked` in the markup, so without this the page always opens on Dark** — and a reader on a light theme lands on a panel their theme is not in, with no sign that it is one tab away.
+
+### `wireThemePicker`
+
+**Idempotent, so it is safe to call again after an htmx swap replaces the header.** Guarded by a data flag rather than by removing listeners, which would need a reference the caller does not keep.
+
+**The header can be replaced by an htmx swap; re-tick and re-bind after one.**
+
+---
+
+## website/static/js/consolidated.js
+
+### Module
+
+**Why `setTip` copied from `address.js`.** This file is the one the historic widget's page loads, and that page does not load `address.js` at all. Calling across would be a `ReferenceError` on every "without NFTs" toggle — which is exactly how the widget's own currency switch was broken, by a call to a `setTotalCharts` that lived only on the site.
+
+**`data-tip` is what displays the text:** DaisyUI's `.tooltip` on the site, and the widget's own `.htip` on the historic page. This wrote `data-tooltip`, which is Materialize's and which nothing has read since the conversion, so the total's tooltip never changed once the server had rendered it.
+
+**The `aria-describedby` target is what a screen reader gets,** since a tooltip drawn with `content: attr(data-tip)` is not dependably announced.
+
+### `setTotalNoNft`
+
+This page uses `hcur`/`htotalnonft` keys, distinct from the site's `cur`/`totalnonft`, so the two designs keep independent settings.
+
+---
+
+## website/static/js/showmore.js
+
+### Module
+
+**Design 1's address page shows the first `ADDRESS_INITIAL_ASSETS` assets and `ADDRESS_INITIAL_COLLECTIONS` collections,** and each press of the control adds that many again. The section publishes the number as `data-initial`, from the same setting the template rendered the first fold from, so the two cannot disagree about what one press is worth.
+
+**This replaced a magnitude rule** — show the rows accounting for 99.5% of the section's value, then reveal *all* of the rest in one press. Both halves read as arbitrary from the outside: the first showed 33 rows on one address and 8 on the next with nothing on the page to explain the difference, and the second made the control's own label untrue, promising "Show 39 more assets" and then being a one-shot unfold rather than a load-more. The dynamic designs already worked this way (`toolbar.js`), so this is the two designs agreeing.
+
+**There is nothing to fetch,** so there is no loading state, no failure state and no request. The payload is in hand before the page renders, and a round trip to reveal dust would cost more than the markup already does.
+
+**The button owns the state in `aria-expanded`,** and the stylesheet reads it to pick which of the two labels shows. The script writes the *count* inside the "show more" label and nothing else: which label is visible stays a function of the attribute a screen reader already reads, so the two cannot disagree.
+
+### `containerFor`
+
+**The control sits after its container rather than inside it** — it is not one of the rows — so this looks backwards from the wrapper it lives in rather than upwards from the button.
+
+**Falls back to the nearest section,** so a wrapper added between the two degrades to "unfolds the right section" rather than to nothing at all.
+
+### `rows`
+
+**Its `.fitem` children only.** A container may hold other things — a heading arriving later, a note — and counting those would shift the fold by however many of them there are.
+
+### `batchSize`
+
+**Read off the *section* rather than off the folding container,** because that is where the dynamic designs publish it and `toolbar.js` reads it from — one place for the number in both designs, so they cannot drift apart.
+
+**Falls back to "all of them" when no section publishes a batch size,** which is the pre-batching behaviour: a template that forgets the attribute keeps working rather than revealing one row per press.
+
+### `foldSize`
+
+**Read from the same attribute the stylesheet reads.** `base.html` stamps it before paint from `localStorage`, the `html.prefold` rules act on it for the gap before this script runs, and this reads it afterwards. One value in one place: a script and a stylesheet disagreeing about how many rows are shown surfaces as a control offering to reveal rows already on screen.
+
+**Which section it is comes from the section's own class,** the same pair the stylesheet keys on - `.asasec` and `.nftsec` exist in both designs.
+
+### `paint`
+
+**Everything is showing, so the only thing left to offer is putting it back.** A reader who chose to see every row gets a control whose only remaining offer is "Show fewer", and pressing it would reveal the same rows again — the batch is already the whole list. The template renders the control from the *server's* fold, which does not know what the reader chose, so hiding it is this script's job. `toolbar.js` does the same for the dynamic designs.
+
+**The stylesheet's job is over the moment this runs.** `html.prefold` rules position rows by DOM index, which is right until something starts folding by a filtered index instead. This script does not filter, but it does own `.folded` from here on, and leaving both in force would mean two answers to one question. Dropped here rather than at load because, unlike the dynamic designs, nothing paints this page until a press: until then the stylesheet *is* the reader's fold.
+
+### `toggle`
+
+**A press that never travels is a click on the grip, not a drag.**
+
+### `init`
+
+**Design 1 only.** The dynamic designs fold from the toolbar, which also filters and sorts, and two handlers on one control would both act — a batch revealed *and* the batch counted — so the second press would have nothing left to do.
+
+**Delegated from the document so a section arriving later needs no rebinding,** and guarded so a second execution of this file — which the page's htmx partials make possible — does not toggle twice per click.
+
+**Belt as well as braces.** The attribute above stops a second *binding*; this stops a second binding that slipped past it from acting, because the failure mode is silent — two handlers toggle and untoggle, and the button simply looks dead. `defaultPrevented` is the standard way to ask "has something already handled this", and the first handler sets it.
+
+---
+
+## website/static/js/pins.js
+
+### Module
+
+**Why localStorage not server.** The address page is `cache_page`'d and its entry is shared between signed-in readers, so anything per-reader rendered into it would be handed to whoever asked next. The markup therefore ships every control at rest and this file sets the ones belonging to whoever is looking.
+
+**Why DOM not CSS `order`.** `order` would be cheaper and avoid a reflow, but it moves a row visually while leaving it where it was for a screen reader and for keyboard navigation — the precise fault the position component was rebuilt to remove. A row the reader put first has to be first in both senses or it is not first.
+
+### The model
+
+**A section is laid out as pinned entries, then the rest.** Two stores:
+- `pins:<path>` — ids in pin order, across both sections
+- `order:<path>` — section key -> ids in the reader's order
+
+The server's order is captured once, before anything moves, and every render is rebuilt from it. Rebuilding from the original rather than mutating in place is what lets unpinning put a row back where it belongs instead of wherever it happened to end up, and what keeps an entry that has appeared since the last visit in its served position rather than at an arbitrary end.
+
+**A drag is confined to its own group:** a pinned row reorders among pinned rows, an unpinned row among unpinned. Letting a row cross the boundary would mean either silently pinning it or recording an order that the next render undoes.
+
+### `SERVED_PROP` / `BOUND_ATTR`
+
+**The served order is kept on the container element, not in a module-level Map.** The listeners are bound once per document rather than once per execution. Both are for the same reason: this script can run twice. It is a plain `<script>` today, but the address page already pulls one in through an htmx partial, and a second execution with module-scoped state would bind a second set of delegated handlers — so a single arrow key would move a row twice, and each instance would consult its own idea of the served order.
+
+With the state on the DOM, a second execution is a no-op that re-applies.
+
+### `BASELINE_PROP`
+
+**The toolbar sorts this list.** Sorting and pinning are the same operation applied twice — both decide what order the rows are in — so they cannot each own the DOM independently: whichever ran second would undo the first. Instead the toolbar hands its sorted order here and `layout` treats it as the order the page arrived in, floating pinned rows above it exactly as before.
+
+Kept apart from `SERVED_PROP` rather than overwriting it, because "what the server sent" is still needed: `rebase(parent, null)` restores it, which is what "Reset view" means, and there is no other copy of it anywhere.
+
+### `load` / `save`
+
+**Anything unreadable is treated as nothing stored.** A reader with corrupt state gets the page in the server's order, which is a perfectly good page rather than an error.
+
+**Private browsing and a full quota both throw, and neither is a reason to refuse to rearrange the page.** The reader gets the arrangement they asked for and does not get it back tomorrow.
+
+### `arrange`
+
+**An entry the reader has never moved, or one that has appeared since they last visited, stays where the server put it relative to its neighbours rather than being swept to either end.**
+
+### `baseline` / `rebase`
+
+**The toolbar's sorted order when there is one, the served order otherwise.**
+
+**Only entries the server actually sent are accepted, and every one of them has to appear.** A caller that dropped a row would delete it from the page the next time `layout` ran, because `layout` rebuilds from this list. A sort reorders; it does not filter. Filtering is a class on the row.
+
+### `layout`
+
+**`appendChild` on an element already in the document moves it, so this is a reorder rather than a rebuild.** Open `<details>`, bound handlers and scroll position all survive it.
+
+### `remember`
+
+**Read back from the document rather than computed,** so whatever the reader sees after a move is exactly what is stored. Both groups are written as one list: a row cannot cross the pinned boundary by dragging, so the list stays consistent with the pinned set that `layout` will re-split it by.
+
+### `toggle`
+
+**A newly pinned entry goes to the *end* of the stored list, so it lands at the bottom of the pinned group rather than displacing what is already there.** Pinning a second thing should not move the first.
+
+### `readPositions` / `writePositions`
+
+**Each entry is `{pid, amount}`.** The amount is a *witness*, not part of the identity.
+
+### `resolve`
+
+**Most pids name exactly one row and this is a lookup.** Some do not: where the payload carries nothing that tells two positions of the same program apart — same asset, same type, same venue, same link — they hash to the same pid, and the row is marked `data-pid-ambiguous`.
+
+**For those, the stored amount breaks the tie.** It is not part of the pid on purpose: hashing it in would change the id whenever the amount changed, which is the one property the id exists to have. Amount rather than value because value moves with the price on every load, while amount moves only when the reader actually stakes or unstakes — so the witness is stable in exactly the situation the pin has to survive.
+
+**An exact amount wins outright; otherwise the nearest.** This can still pick the wrong row, but only if two positions of one program cross in magnitude between visits — far narrower than an ordinal, which breaks on *any* reordering — and the row says so via `data-pid-ambiguous`.
+
+### `layoutPositions`
+
+Lays out one asset's positions: pinned first, the rest as served.
+
+### `renderBand`
+
+**The dynamic designs put pinned positions in their own band rather than only floating them within their venue.** A position pinned from an asset the reader has to scroll to and open is otherwise pinned somewhere they cannot see, which is most of the value gone — and in a venue holding one position there is no order for floating to change at all.
+
+**The band holds copies, not the rows themselves.** Moving a position out of its asset would take it away from the money column it is aligned to, and from the venue subtotal it contributes to; both are the reasons the number can be read at all.
+
+**A pin whose position is not on the page any more keeps its card, marked `.stale`.** Dropping it silently would tell the reader nothing about why the thing they pinned vanished — and the position may simply be inside a folded tail rather than gone.
+
+**Built with `createElement` and `textContent`.** Card text is asset and venue names that came off the chain, and `innerHTML` here would be the one place on this page markup could be smuggled in.
+
+### `togglePosition`
+
+**Identified by the control's own row rather than by the pid alone:** two rows can share a pid, and the reader pressed one of them. The amount is captured from that row at pin time, which is what makes it the witness.
+
+### `unpinPosition`
+
+**By pid rather than by row,** because the card in the band may have no row to point at — unpinning a stale card is the main thing this is for.
+
+### `group`
+
+**Its own group, in document order:** pinned rows move among pinned rows and unpinned among unpinned. Crossing the boundary would mean either silently pinning a row or recording an order the next render undoes.
+
+### `move`
+
+**Insert *after* the target when moving down, before it when moving up** — otherwise a one-place move down lands back where it started.
+
+### `announce`
+
+**The grip's own label is rewritten rather than a separate live region:** the control keeps focus across the move, so a screen reader re-reads it, and one element cannot drift out of step with another that does not exist.
+
+### `onKeydown`
+
+**The keyboard path is not a courtesy:** a pointer drag is unusable without sight and awkward with a tremor, and this is the same operation.
+
+### `onPointerDown` / `onPointerMove` / `onPointerUp`
+
+**Pointer Events rather than HTML5 drag-and-drop:** the latter does not fire on touch at all, so half the readers of this page could not use it.
+
+**The row under the pointer is found by its midpoint rather than by `elementFromPoint`,** which would return the dragged row itself.
+
+**Capture keeps the gesture with the grip when the pointer outruns it,** which it will — the row moves only once the pointer passes a neighbour's edge.
+
+### `init`
+
+**Delegated from the document so entries arriving later — a filter redraw, an htmx swap — need no rebinding.**
+
+**Arrange first, so a second execution still picks up entries that arrived since the first** — it just does not bind a second set of handlers.
+
+**Every handler below bails on an already-handled event.** The attribute stops a second *binding*; this stops a second binding that slipped past it from acting twice, because the failure is silent — one arrow key moves a row twice, and every single-test run passes. Same guard `showmore.js` uses, for the same reason.
+
+**Bound before `[data-pin]` below because a card carries neither attribute,** but keeping the order explicit means a future card that carries both cannot toggle two pins with one click.
+
+---
+
+## website/static/js/showmore.js
+
+## website/core/views.py — `_alerts_allowance` and the alerts control (2026-09-27)
+
+The address page's alerts control keys on `alerts_entitled = allowed > 0`, which
+`_alerts_allowance` answers from the widget's `rules_allowed`. Nothing here
+changed when alerts opened to every authenticated reader — the table moved and the
+control followed, which is the point of reading the allowance rather than naming a
+tier.
+
+What did change is what the zero branch means. It used to be "below Asastatser",
+which was most readers; it is now "a tier that keeps none", which no authenticated
+tier is. The branch stays because a future table could land on it and because the
+`{% elif user.is_authenticated %}` upgrade link in `_swap_entry.html` is the right
+rendering for it — and both suites now reach it by patching
+`ALERT_RULES_PER_TIER`, since a reader can no longer be constructed who needs it.
+
+The tier reasoning and the measurements are in the widgets logbook under
+`inhouse/alerts/` and in `post-deploy/alerts-tier-analysis.md`.
+
+## website/static/css/input.css — `.alerts-tiernote`, `.alerts-pages`
+
+`.alerts-tiernote` is `flex: 1 0 100%` because it sits between two fields in the
+form's `flex-wrap` row; without it the sentence shares a line with the subject
+picker and wraps to two words a line. `.alerts-pages` joins the `.alerts-left`
+rule rather than getting its own: it is the same kind of line about a second
+quantity, and a second colour would imply a second meaning.
+
+## website/static/js/ — the comment compression, and what it broke (2026-09-27)
+
+Seven modules lost ~700 comment lines to the second pass: `address.js`,
+`consolidated.js`, `dynamic.js`, `pins.js`, `showmore.js`, `theme.js`,
+`toolbar.js`. The pass itself is sound — the material it removed was already filed
+here by the first one, which is why this file needed no additions — but it left
+four mechanical artefacts, all repaired the same day.
+
+**172 broken parentheticals.** 105 empty ` ()` and 67 `(: x)`: whatever was inside
+the parentheses was dropped and the punctuation stayed, giving lines like
+`* Toggles visibility; pie charts update data ().` and
+`* htmx:after:swap on document.body (: address.js, toolbar.js do same).` Every
+sentence read correctly with the parenthesis simply removed, so the repair needed
+no knowledge of what was lost.
+
+**26 summaries placed after a tag.** The pass wrote its one-line summaries over the
+blank separator lines inside docblocks, and where that blank sat *between* tags the
+summary landed there too — so `@param {Object} item` acquired the description
+"Toggles visibility; pie charts update data" and the function had none. JSDoc reads
+text following a tag as part of that tag. 20 in `consolidated.js`, 6 in
+`address.js`.
+
+Three cases were deliberately left alone, and the distinction is worth keeping:
+prose after `@file` **is** the file's description and is conventional; a
+continuation line (`*   more text`, two spaces or more) belongs to the tag above
+it; and `toolbar.js`'s paragraph after `@returns` is byte-identical to HEAD, so it
+is this codebase's existing style rather than damage.
+
+**7 docblocks opened at column zero** inside the four modules that wrap themselves
+in an IIFE, with their bodies still indented three. HEAD has none, so the pass
+dropped the indent on the opening line only.
+
+**One pointer lost outright.** `pins.js` had named
+`core/views.py:BaseAddressView.dispatch` as the counter-example to its own rule —
+the layout preference *does* live on the server, reaching the page through the
+cache key rather than a fetch. That was in neither logbook and is restored to the
+module header.
+
+### The check that found all of it
+
+For a comment-only pass, strip every comment and blank line from both versions and
+diff what is left; it must be empty.
+
+```sh
+git show HEAD:<file> | grep -vE "^\s*(//|\*|/\*)" | grep -v "^\s*$" > /tmp/a
+grep -vE "^\s*(//|\*|/\*)" <file> | grep -v "^\s*$" > /tmp/b
+diff /tmp/a /tmp/b
+```
+
+All seven pass it, before and after the repair — so nothing in this whole change
+can have altered behaviour, which the jest suite agrees with at 1,573 passed and
+100% coverage on every module. The same check is what caught a duplicated
+`showLeft` listener in the widgets pass the day before; a reviewer's eye had not.

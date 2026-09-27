@@ -1,33 +1,17 @@
 /**
  * @file website's browser side logic address page functions
+ * See logbook: why lastRefreshAt armed at Date.now(), why wireFetchedItems exists,
+ * why restoreDisplayChoices exists, why setCurrency/setTotalNoNft return early
+ * for dynamic-page, why timerIncrement uses elapsed time, why noteActivity no
+ * longer resets clock, why refreshOnReturn asks "since last refresh"
  * @author Ivica Paleka
  */
-
-/*
-* * * * * * * * * * * * * * * * * * * * * * * * * * *
-* SECTION: Initialization
-* * * * * * * * * * * * * * * * * * * * * * * * * * *
-*/
 
 /** How long after the last refresh the next one is due, in ms. */
 var REFRESH_AFTER_MS = 60000;
 /** How still the reader has to be before a due refresh actually fires, in ms. */
 var SETTLE_MS = 2000;
-/**
- * When the page last reloaded itself, as a timestamp.
- *
- * **Armed here rather than left at zero.** `initAddress` sets it, and that
- * runs on `window.onload` - after every image, font and stylesheet. The tick
- * starts at DOM ready, so on a slow page there was a window where the clock
- * read zero, the refresh was already an eternity overdue, and the first two
- * quiet seconds reloaded a page the reader had only just opened. On a heavy
- * bundle that window is tens of seconds: one reloaded itself twenty-five
- * seconds in, to a byte-identical copy of what was already on screen.
- *
- * The `#id-liverefresh` guard below cannot cover it, because the marker
- * arrives in a non-cached partial later still - twenty seconds after the
- * document on that same page.
- */
+/** When the page last reloaded itself, as a timestamp. Armed at Date.now() (). */
 var lastRefreshAt = Date.now();
 /** When the reader last did anything, as a timestamp. */
 var lastActivityAt = 0;
@@ -63,20 +47,8 @@ function initAddress() {
 
 /**
  * Defer the images in content htmx swapped in after page load.
- *
- * **A collection's items are not on the page until the reader opens it.** They
- * used to be: every collection wrote out every item, hidden inside a closed
- * `<details>`, and the fetch on open replaced them. On one real account that
- * was 87.9% of a 22 MB page - markup nobody could see, and 152,294 elements a
- * browser had to lay out before the page would scroll.
- *
- * `deferImages` runs once, over the elements present at load, so items arriving
- * later never had their `data-src` promoted to `src` and their art never
- * appeared. That was already true of the design-2 layout, which has fetched on
- * open all along; it is simply visible now that both layouts do.
- *
+ * See logbook: why wireFetchedItems exists (deferred NFT images from htmx swaps).
  * @function wireFetchedItems
- *
  */
 function wireFetchedItems() {
   document.body.addEventListener("htmx:after:swap", function (event) {
@@ -92,27 +64,8 @@ function wireFetchedItems() {
 
 /**
  * Put the reader's currency and total mode back after a swap replaced them.
- *
- * **The live poll ships figures the server rendered, and the server does not
- * know what the reader chose.** `lvp` is one payload per page, shared by
- * everyone watching it, so it can only ever carry ALGO and the full total. The
- * classic fragments swap the band, the `.pricetip` and every changed
- * `span.val` - each one arriving as freshly rendered ALGO - so a reader who
- * picked USD watched it revert on the next block, and one who had turned NFTs
- * out of the total watched them come back.
- *
- * `setCurrency` and `setTotalNoNft` ran once, at load. That was true for as
- * long as nothing rewrote a figure after load, which stopped being true when
- * real-time refresh shipped.
- *
- * Only when the reader is away from the defaults: both functions walk every
- * `span.val` on the page, and doing that three seconds apart on a long page for
- * a reader who never left ALGO would be work with no effect. Both are design 1's
- * - they return immediately on a dynamic page, where `toolbar.js` owns this and
- * reads its own keys.
- *
+ * See logbook: why restoreDisplayChoices exists (live poll reverts choices).
  * @function restoreDisplayChoices
- *
  */
 function restoreDisplayChoices() {
   var code = localStorage.getItem('cur') || 'ALGO';
@@ -136,8 +89,9 @@ window.onload = initAddress;
 
 /**
  * Main function
+ * See logbook: why toggle on details not summary, why .tdist scoped to exclude dynamic-page,
+ * why scroll wheel touchmove all call noteActivity
  * @function mainAddress
- *
  */
 function mainAddress() {
   // The accordions are native <details> elements now, and the tooltips are
@@ -155,12 +109,7 @@ function mainAddress() {
   $(".totalnonft").find("input[type=checkbox]").on("change", toggleTotalNoNft);
   $(".price").on("click", togglePrice);
   $(".unitprice").on("click", toggleUnitPrice);
-  // Design 1's breakdown controls only. The dynamic designs use the same
-  // `.tdist` idiom -- dotted at rest, opens in place -- but hide their panel
-  // with the `hidden` *attribute* and carry `aria-expanded` on a real button,
-  // neither of which this handler touches. Bound here as well, the two would
-  // fight: `dynamic.js` clears the attribute while this adds the `hidden` class,
-  // and the panel stays shut with both designs believing it opened.
+  // See logbook: why .tdist scoped to exclude dynamic-page (fights with dynamic.js)
   $(".tdist").not(".dynamic-page .tdist").on("click", toggleDist);
   $(window).on("scroll", toggleScrollToTopButton);
   $("#scroll-to-top").on("click", scrollToTop);
@@ -176,19 +125,13 @@ function mainAddress() {
   $(".nft.item-header").on("click", showTimes);
   $(".token.item-header").on("click", showExpiry);
   $(".nfticon").on("mouseover", nftShowTooltip);
-  // Leaving the thumbnail closes it, which is what the Materialize tooltip
-  // did. Without this the preview stays on screen until something else is
-  // clicked, so moving down a long collection leaves one hanging over the
-  // rows below. The click binding stays: it dismisses the preview without
-  // moving the pointer off the thumbnail that opened it.
+  // See logbook: why click dismisses preview (Materialize tooltip behavior)
   $(".nfticon").on("mouseleave", nftHideTooltip);
   $(".nfticon").on("click", nftHideTooltip);
   setInterval(timerIncrement, 1000);
   $(this).mousemove(noteActivity);
   $(this).keypress(noteActivity);
-  // Scrolling is the interaction the guard exists for, and it is the one
-  // mousemove does not report: a wheel or a touch drag moves the page without
-  // moving the pointer.
+  // See logbook: why scroll wheel touchmove all call noteActivity (scroll not reported by mousemove)
   $(this).on('scroll wheel touchmove', noteActivity);
   document.addEventListener('visibilitychange', refreshOnReturn);
 }
@@ -595,11 +538,7 @@ function totalChart(name) {
   } else if (name == "nftchart") {
     total = $(".pricetip")[0].dataset.totalnft;
   } else if (name == "nftfloorchart") {
-    // **Found by the attribute, not by its element.** The two designs put it
-    // in different places - design 1 leaves it on `.pricetip`, the dynamic
-    // page hoists it to the h1 so it survives the live refresh replacing that
-    // span - and this file is shared by both. Asking for the attribute asks
-    // the only question that has the same answer on either page.
+    // See logbook: found by attribute, not element (two designs, different places)
     total = document.querySelector("[data-totalnftfloor]").dataset.totalnftfloor;
   }
 
@@ -1022,7 +961,7 @@ function nftHideTooltip(elem) {
 
 /**
  * Show NFT preview upon hovering on its thumbnail
- *
+ * Built as elements, not HTML string (unsafeHTML injection risk).
  * @param {jQuery} elem
  *
  */
@@ -1198,34 +1137,14 @@ function dec6(num) {
 
 /**
  * Give an element a tooltip carrying the given text.
+ * data-tip for DaisyUI/.htip; wrote data-tooltip (Materialize) before.
+ * aria-describedby for screen reader (tooltip not announced).
  * @function setTip
- *
- * `data-tip` is the attribute DaisyUI's `.tooltip` reads. This code wrote
- * `data-tooltip`, which is Materialize's and which nothing on this site has
- * read since the conversion -- so the total's tooltip was correct as the server
- * rendered it and then never changed again. Switch to USD and it still quoted
- * the ALGO figure and the old rate.
- *
- * `data-position` went the same way: also Materialize's, also dead. DaisyUI
- * places a tooltip with `tooltip-top`/`tooltip-bottom` classes, and design 1
- * asks for neither, so the writes are simply gone rather than translated.
- *
- * An element that wants its tip *announced* points `aria-describedby` at a
- * visually hidden span, and this keeps that span in step: a tooltip drawn with
- * `content: attr(data-tip)` is not dependably in the accessibility tree, so the
- * hidden text is what a screen reader actually gets.
- *
  * @param {Element} element element to give a tooltip to
  * @param {String} text the tooltip's text
- *
  */
 function setTip(element, text) {
-  // The attribute goes on whatever actually draws the tooltip. On the site that
-  // is a `.tooltip` wrapper around the figure -- DaisyUI reveals on
-  // `:has(:focus-visible)`, so the focusable element has to be *inside* it --
-  // and on the historic widget's page it is the figure itself, which carries
-  // the widget's own `.htip`. `closest` covers both without either caller
-  // having to know which page it is on.
+  // Attribute goes on element that draws tooltip.
   var host = element.closest(".tooltip") || element;
   host.dataset.tip = text;
   var describedBy = element.getAttribute("aria-describedby");
@@ -1238,22 +1157,11 @@ function setTip(element, text) {
 
 /**
  * Calculate and set currency values based on provided currency code
- *
+ * See logbook: why setCurrency/setTotalNoNft return early for dynamic-page
  * @param {String} code
- *
  */
 function setCurrency(code) {
-  // Design 1 only. This writes `innerHTML` -- number *and* unit -- into every
-  // `span.val`, which is right for design 1, where the unit is part of the
-  // value's own text. The dynamic designs pair each figure with a separate
-  // unit element: a sibling `.u.unit` in an asset header, a nested
-  // `<span class="unit">` in a venue subtotal. So this rewrote the header to
-  // "253.74 ALGO" beside a sibling still reading "ALGO", and destroyed the
-  // nested span in every subtotal -- on every load, because it runs
-  // unconditionally with the stored currency. It also cannot reach a breakdown
-  // figure there at all, which is a `<button>` rather than a span.
-  //
-  // `toolbar.js` owns currency on that page and writes only the number.
+  // Design 1 only; toolbar.js owns currency on dynamic-page
   if (document.querySelector(".dynamic-page")) return;
   var price = $(".pricetip")[0].dataset.price;
   var pricealgo = $(".pricetip")[0].dataset.pricealgo;
@@ -1319,7 +1227,7 @@ function toggleCurrency() {
 
 /**
  * Switch visibility of the ASA distribution section
- *
+ * See logbook: why hidden class toggle, why stable attribute not parent
  * @param {jQuery} event Triggered click event object
  *
  */
@@ -1358,21 +1266,15 @@ function toggleTotalNoNft() {
 
 /**
  * Check if a section entry should be reopened
- *
+ * Entries are <details> children; addressed by id, not index.
+ * .find() not .children(): rows wrapped in section.
  * @param {String} section
- *
  */
 function checkOpened(section) {
   var id = localStorage.getItem("open" + section) || ''
   if (id != '') {
-    // The entries are <details> children of the section container, so the one
-    // to reopen is addressed by id and opened directly -- no index into a
-    // widget's internal list.
-    // `.find()`, not `.children()`: the rows are wrapped inside the section
-    // rather than being its direct children -- the section carries a heading
-    // above them -- so a child walk finds the heading and the wrapper and
-    // never reaches an entry. The remembered row then silently fails to
-    // reopen after a refresh.
+    // Entries are <details> children; addressed by id, not index.
+    // .find() not .children(): rows wrapped in section.
     $('.' + section + 'sec').find('.fitem').each(function () {
       if ($(this).attr("id") == id) {
         this.open = true;
@@ -1386,7 +1288,7 @@ function checkOpened(section) {
 
 /**
  * Reload page and reopen the same accordions
- *
+ * Stores open section ids in localStorage before reload.
  */
 function reloadPage() {
   $('.asasec').find('.fitem[open]').each(function () {
@@ -1401,12 +1303,7 @@ function reloadPage() {
 
 /**
  * Record that the reader just did something.
- *
- * **This no longer resets the refresh clock**, which is the whole change.
- * Bound to mousemove and keypress, restarting the count meant a reader who
- * twitched once a minute was never refreshed at all - the reported "120 second
- * delay", which was really "no refresh, ever, while you are at the keyboard".
- * The due time is now fixed and only the *firing* waits for a quiet moment.
+ * No longer resets the refresh clock (fixed time, firing waits).
  */
 function noteActivity() {
   lastActivityAt = Date.now();
@@ -1426,18 +1323,11 @@ function setRefresh(value) {
 
 /**
  * Set total value with or without NFTs based on user setting
- *
+ * Design 1 only; toolbar.js owns total on dynamic-page.
  * @param {String} value
- *
  */
 function setTotalNoNft(value) {
-  // Design 1 only, for the same reason `setCurrency` is. This writes the
-  // headline's `innerHTML` -- figure *and* unit -- reading the currency from
-  // design 1's own global `cur` key. On the dynamic page that meant the
-  // total was written by design 1 on load and by nobody afterwards: a reader
-  // who had ever chosen USD anywhere got a USD headline in a fresh tab, and
-  // pressing USD in that page's own toolbar changed every figure except the
-  // one at the top. `toolbar.js` owns the headline there.
+  // Design 1 only; toolbar.js owns total on dynamic-page
   if (document.querySelector(".dynamic-page")) return;
   var price = $(".pricetip")[0].dataset.price;
   var pricealgo = $(".pricetip")[0].dataset.pricealgo;
