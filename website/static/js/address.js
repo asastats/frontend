@@ -70,9 +70,7 @@ function wireFetchedItems() {
 function restoreDisplayChoices() {
   var code = localStorage.getItem('cur') || 'ALGO';
   var nonft = localStorage.getItem('totalnonft') || '';
-  if (code !== 'ALGO') {
-    setCurrency(code);
-  }
+  setCurrency(code);
   if (nonft) {
     setTotalNoNft(nonft);
   }
@@ -1163,9 +1161,11 @@ function setTip(element, text) {
 function setCurrency(code) {
   // Design 1 only; toolbar.js owns currency on dynamic-page
   if (document.querySelector(".dynamic-page")) return;
-  var price = $(".pricetip")[0].dataset.price;
-  var pricealgo = $(".pricetip")[0].dataset.pricealgo;
-  var total = $(".pricetip")[0].dataset.total;
+  var pricetip = $(".pricetip")[0];
+  if (!pricetip) return;
+  var price = pricetip.dataset.price;
+  var pricealgo = pricetip.dataset.pricealgo;
+  var total = pricetip.dataset.total;
   if (code == 'USD') {
     $(".pricetip").each(function () {
       setTip(this, cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)");
@@ -1329,15 +1329,17 @@ function setRefresh(value) {
 function setTotalNoNft(value) {
   // Design 1 only; toolbar.js owns total on dynamic-page
   if (document.querySelector(".dynamic-page")) return;
-  var price = $(".pricetip")[0].dataset.price;
-  var pricealgo = $(".pricetip")[0].dataset.pricealgo;
-  var totalwnft = $(".pricetip")[0].dataset.totalwnft;
-  var totalnft = $(".pricetip")[0].dataset.totalnft;
+  var pricetip = $(".pricetip")[0];
+  if (!pricetip) return;
+  var price = pricetip.dataset.price;
+  var pricealgo = pricetip.dataset.pricealgo;
+  var totalwnft = pricetip.dataset.totalwnft;
+  var totalnft = pricetip.dataset.totalnft;
 
   var code = localStorage.getItem('cur') || 'ALGO';
   var total = value === 'y' ? (totalwnft - totalnft) / price : totalwnft / price;
 
-  $(".pricetip")[0].dataset.total = total;
+  pricetip.dataset.total = total;
 
   if (code == 'USD') {
     $(".pricetip").each(function () {
