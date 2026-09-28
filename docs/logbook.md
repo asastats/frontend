@@ -2603,3 +2603,84 @@ A dotenv file is not YAML, and two of the differences broke provisioning.
 **An inline comment is not part of the value.** `website/.env.example` writes `SIMPLE_JWT_KEY=                     # ROTATED -- never reuse ...` and parsed as `key: rest-of-line` that hands Django a signing key made of comment text.
 
 **An empty value means "not supplied", not "supplied as empty".** The example file leaves every secret blank on purpose and is loaded last, so with `combine()` taking the last definition of a key, its blanks won against `.env-example`'s real DATABASE_USER and against the values `.env.molecule` exists to provide. That is how the ci scenario came to run `psql -c "CREATE USER  WITH PASSWORD '' CREATEDB;"` So a blank fills a key nothing has defined yet, but never overrides one that is already set -- which is what makes the "first, so a real env file below overrides it" ordering above actually hold. Keys blank in every file are still defined, blank: `projectsetup`'s environment_file writes `KEY=` for them, and `get_env_variable` raises for an ABSENT key where it returns "" for an empty one.
+
+## The marker's gate was not the poll's gate (2026-09-28)
+
+File: `website/core/views.py`, `SwapEntryView.get_context_data`.
+
+Reported as three separate things by a reader on a new free account, all one
+defect:
+
+1. no allowance badge,
+2. the sixty-second reload stopped working too,
+3. `asgi.log` filling with tracebacks — **263 of them, 9,468 of the file's 9,973
+   lines, 95%**, every one a `PermissionDenied` on
+   `GET /widgets/liverefresh/OGRUN…`.
+
+### The chain
+
+`SwapEntryView` rendered the `#id-liverefresh` marker on two conditions: the tier
+allows it and the reader asked for it. `LiveRefreshView.test_func` applies a
+**third** — the free band is `linked_only`, so `is_linked_to_user` must hold for
+every address on the page.
+
+`address.js:1395` stands its own sixty-second reload down whenever the marker is
+present, on the grounds that "the subscriber poll owns refreshing this page". So
+for a free reader on an address they had not connected:
+
+* the marker was rendered, so the reload stood down,
+* the poll was refused 403 on every tick, so nothing replaced it,
+* the page had **no refresh at all**, which is worse than either mechanism alone,
+* and each refusal wrote a 35-line traceback.
+
+The reader saw a page that had quietly stopped updating and no explanation. The
+allowance badge was the symptom they noticed, and it was never the problem:
+`showLeft` is driven by the poll's `HX-Trigger`, so a refused poll means no badge
+by construction.
+
+### The fix
+
+`_can_poll_liverefresh` asks the question the poll asks, and the marker is
+withheld when the answer is no — so the sixty-second reload stays in place and
+nothing is refused. Failing that way round is deliberate: a skew between the two
+repos costs the reader real-time refresh and leaves the reload, rather than taking
+both.
+
+Imported inside the function for `_alerts_allowance`'s reason; a module-level
+`from widgets...` in `core.views` took the whole site down on 2026-09-20.
+
+**Only the free band is `linked_only`.** Intro is metered too but keyed on the
+*reader* rather than the address, so it needs no connected address and its marker
+is unchanged — I got that wrong first and a subtest caught it. Asastatser and up
+are unmetered and unaffected.
+
+### What this does not fix, on purpose
+
+* **The poll still hammers a permanent refusal.** 767 requests in 85 minutes
+  against a 403 that cannot change. `stop()` exists and is called for the spent
+  allowance and the hidden tab; nothing handles an error status. After this change
+  a free reader on an unlinked address never starts a poll at all, so the flood is
+  gone — but a tier lapsing mid-session would still produce it.
+
+  **Correction, same day: closed.** `liverefresh.js` now stands down on a 4xx —
+  see "A refused poll stands down (2026-09-28)" in the widgets logbook.
+* **Nothing tells the reader** that real-time refresh wants a connected address.
+  The settings page says it, conditionally on the same `linked_only` flag; the
+  address page says nothing. That is copy and a possible UI change.
+
+### Two more findings from the same logs, recorded here because they are related
+
+**The Cluster subscriber's "Internal server error" tab title** was nginx's, not
+Django's: `website/templates/500.html` is titled exactly *"Internal server error"*
+and `site_server_block.conf:29` maps `error_page 500 502 504` to it. So a 502 or
+504 from a dead or slow upstream produces that page and leaves **no trace in any
+Django log** — which is why there are zero 5xx in `asgi.log` and zero "Internal
+server error" in `website_log.txt` for that day. Gone on F5 because the upstream
+came back. Two candidates already measured: the three `asastats.com.socket failed`
+at 08:27:36, and a 504 from the `created_apps` stalls, one of which is already
+known to have killed a worker.
+
+**`asgi.log` was a year in one unrotated file** (25/Sep/2025 → 28/Sep/2026, 8 MB)
+until it was rotated on 2026-09-28. That is why month-old exceptions in it read as
+current in an earlier check; dating every line before reporting it is the lesson,
+and the file being 95% one reader's refusals is what rotation alone does not fix.

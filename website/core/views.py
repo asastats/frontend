@@ -103,7 +103,7 @@ from utils.userhelpers import (
     check_authorization_transaction,
     liverefresh_terms,
 )
-from walletauth.gating import linked_addresses_for_user
+from walletauth.gating import is_linked_to_user, linked_addresses_for_user
 from widgethost.registry import (
     swap_client_cfg,
     swap_endpoint_urls,
@@ -1725,6 +1725,34 @@ class NftCollectionItemsView(TemplateView):
         return context
 
 
+def _can_poll_liverefresh(user, addresses):
+    """Return whether `user` would actually be allowed to poll `addresses`.
+
+    **The marker's gate has to be the poll's gate.** Rendering the marker makes
+    `address.js` stand down its sixty-second reload, so a marker the poll then
+    refuses leaves the page with no refresh at all. See docs/logbook.md.
+
+    Imported inside the function for `_alerts_allowance`'s reason; a skew costs
+    the reader real-time refresh and leaves the reload in place, which is the
+    safe direction to fail.
+
+    :param user: the authenticated reader
+    :param addresses: the page's addresses
+    :type addresses: list
+    :return: Boolean
+    """
+    try:
+        from widgets.inhouse.liverefresh.allowance import requires_linked_address
+    except ImportError as error:  # noqa: BLE001 - see `_alerts_allowance`
+        logger.warning("real-time refresh unavailable: %s", error)
+        return False
+
+    profile = getattr(user, "profile", None)
+    if not requires_linked_address(getattr(profile, "permission", 0) or 0):
+        return True
+    return all(is_linked_to_user(user, address) for address in addresses)
+
+
 def _alerts_allowance(user):
     """Return (allowed, kept) alert rules for `user`, or (0, 0).
 
@@ -1808,10 +1836,15 @@ class SwapEntryView(TemplateView):
         # Both halves are required: the tier has to allow it and the reader has
         # to have asked for it. Either missing leaves the free 60-second reload.
         profile = getattr(user, "profile", None)
+        # **Three halves, not two.** The tier has to allow it, the reader has to
+        # have asked for it, and the poll has to be one this reader would not be
+        # refused - because rendering the marker stands the reload down. See
+        # docs/logbook.md.
         if (
             profile is not None
             and profile.live_refresh
             and profile.can_access_live_refresh(len(addresses))
+            and _can_poll_liverefresh(user, addresses)
         ):
             context["liverefresh_url"] = reverse("liverefresh", args=[value])
             context["liverefresh_interval"] = LIVEREFRESH_POLL_SECONDS

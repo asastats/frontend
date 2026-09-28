@@ -1106,3 +1106,51 @@ class LiveRefreshClassicTest(LiveRefreshTest):
             ),
             timeout=15,
         )
+
+    @mock.patch(
+        "widgets.inhouse.liverefresh.views.LiveRefreshView.test_func",
+        return_value=False,
+    )
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_refused_poll_is_handed_back_to_the_free_reload(
+        self,
+        mocked_fetch,
+        mocked_status,
+        mocked_capabilities,
+        mocked_redis,
+        mocked_refuse,
+    ):
+        """**Against real htmx and a real 403, because jest cannot prove this.**
+
+        The unit tests fire `htmx:response:error` with a detail *this file*
+        chose, so they check the handler and nothing about the event. Two things
+        only a browser settles: that htmx 4 spells it `htmx:response:error` and
+        not `htmx:responseError`, and that it dispatches on the element that
+        issued the request - so `event.target === marker` is the right scope.
+        Both are the shape of the three htmx 4 no-ops already in the logbook.
+
+        The refusal is permanent, so the poll stands down and the page goes back
+        to reloading every sixty seconds. No notice: this is not the reader's
+        allowance running out, it is a page they were never going to be served.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis()
+
+        self.sign_in(live_refresh=True, permission=ASASTATSER)
+        self.open_page()
+        assert self.browser.find_elements(By.ID, "id-liverefresh") != []
+        self.arm()
+
+        self.wait_until(
+            lambda: self.browser.find_elements(By.ID, "id-liverefresh") == [],
+            timeout=15,
+        )
+
+        # Silent: the spent-allowance notice belongs to a different failure.
+        notice = self.browser.find_element(By.ID, "id-liverefresh-spent")
+        assert not notice.is_displayed()

@@ -1442,11 +1442,14 @@ class SwapEntryViewTest(TestCase):
         for live_refresh, permission, expected in (
             (False, SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], False),
             (False, 0, False),
-            # Below Asastatser the marker is rendered now: the allowance is
-            # spent per poll rather than withheld at the gate, and a reader with
-            # no marker could never spend it.
+            # Intro is metered but **reader**-keyed, so it needs no linked
+            # address and the marker is rendered.
             (True, SUBSCRIPTION_TIER_PERMISSIONS["Intro"], True),
-            (True, 0, True),
+            # **The free band is the only `linked_only` one**, and this address
+            # is not linked - so the marker is withheld and the sixty-second
+            # reload stays in place. See
+            # `test_swap_entry_liverefresh_needs_a_linked_address`.
+            (True, 0, False),
             (True, SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"], True),
         ):
             with self.subTest(live_refresh=live_refresh, permission=permission):
@@ -1460,6 +1463,36 @@ class SwapEntryViewTest(TestCase):
                     self.assertContains(response, "id-liverefresh")
                 else:
                     self.assertNotContains(response, "id-liverefresh")
+
+    def test_swap_entry_liverefresh_needs_a_linked_address(self):
+        """**The marker's gate has to be the poll's gate.**
+
+        Rendering the marker makes `address.js` stand its own sixty-second
+        reload down, so a marker the poll then refuses leaves the page with *no*
+        refresh at all - which is what a new account saw on 2026-09-28, along
+        with 263 tracebacks filling asgi.log, 95% of the file.
+
+        The free and Intro bands are `linked_only`, so the same question the poll
+        asks is asked here. Asastatser and up are unaffected: they are unmetered
+        and their band does not require it.
+        """
+        from walletauth.models import LinkedAddress
+
+        self._login()
+        profile = self.user.profile
+        profile.live_refresh = True
+        profile.permission = 0
+        profile.save()
+
+        self.assertNotContains(self.client.get(self.url), "id-liverefresh")
+
+        LinkedAddress.objects.create(
+            profile=profile,
+            address=self.address,
+            canonical_address=self.address,
+        )
+
+        self.assertContains(self.client.get(self.url), "id-liverefresh")
 
     def test_swap_entry_liverefresh_is_absent_for_anonymous(self):
         """No profile, no opt-in, and nothing to poll on somebody's behalf."""
