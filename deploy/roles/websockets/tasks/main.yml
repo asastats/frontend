@@ -26,3 +26,13 @@
   become: true
   notify: "Reload daphne"
   tags: [channels, daphne]
+
+- name: Install logrotate config for asgi.log
+  ansible.builtin.template:
+    src: asgi-logrotate
+    dest: "/etc/logrotate.d/daphne-{{ env_name }}-asgi"
+    owner: root
+    group: root
+    mode: "0644"
+  become: true
+  tags: [channels, daphne, logrotate]

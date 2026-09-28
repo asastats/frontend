@@ -1,0 +1,13 @@
+{{ site_path }}/logs/asgi.log {
+    weekly
+    missingok
+    rotate 15
+    compress
+    delaycompress
+    notifempty
+    create 0640 {{ webapp_user }} {{ webapp_group }}
+    sharedscripts
+    postrotate
+        supervisorctl -c /etc/supervisor/supervisord.conf signal HUP daphne-{{ env_name }}:* > /dev/null 2>&1 || true
+    endscript
+}
