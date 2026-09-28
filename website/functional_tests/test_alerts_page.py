@@ -197,6 +197,23 @@ class AddressPageMixin(AlertsReaderMixin):
             subject,
         )
 
+    def _hidden(self, selector):
+        """Whether `selector` is currently hidden, read fresh each time.
+
+        **Polled rather than sampled.** The modal opens and syncs its fields on
+        a swap, and the page it opens over is swapping fragments of its own -
+        live refresh re-renders every block. Reading the attribute once, in the
+        instant after dispatching `change`, passes alone and fails in a class,
+        which is the shape of every flaky browser test ever written.
+        """
+        elements = self.browser.find_elements(By.CSS_SELECTOR, selector)
+        return bool(elements) and bool(elements[0].get_attribute("hidden"))
+
+    def _wait_hidden(self, selector, hidden=True):
+        self.wait_until(
+            lambda: self._hidden(selector) is hidden, timeout=self.OPEN_TIMEOUT
+        )
+
     def fill_form(self, subject="total_value", threshold="100", asset_id=None):
         """Complete the form the way a reader would, then leave it ready to save.
 
@@ -411,23 +428,6 @@ class AlertsFieldsTest(AddressPageMixin, FunctionalTest):
     the address page, which is where `alerts.js` is loaded.
     """
 
-    def _hidden(self, selector):
-        """Whether `selector` is currently hidden, read fresh each time.
-
-        **Polled rather than sampled.** The modal opens and syncs its fields on
-        a swap, and the page it opens over is swapping fragments of its own -
-        live refresh re-renders every block. Reading the attribute once, in the
-        instant after dispatching `change`, passes alone and fails in a class,
-        which is the shape of every flaky browser test ever written.
-        """
-        elements = self.browser.find_elements(By.CSS_SELECTOR, selector)
-        return bool(elements) and bool(elements[0].get_attribute("hidden"))
-
-    def _wait_hidden(self, selector, hidden=True):
-        self.wait_until(
-            lambda: self._hidden(selector) is hidden, timeout=self.OPEN_TIMEOUT
-        )
-
     def test_a_portfolio_subject_asks_for_neither_asset_nor_period(self):
         self.sign_in("alerts-fields-total@example.com")
         self.open_modal_from_button()
@@ -496,6 +496,67 @@ class AlertsWritingTest(AddressPageMixin, FunctionalTest):
         self.wait_until(
             lambda: "Portfolio total" in self.text_for(".alerts-rule-text"),
             timeout=self.OPEN_TIMEOUT,
+        )
+
+    def test_writing_a_rule_on_algo_is_accepted(self):
+        """**Asset id 0 is ALGO**, and the form refused it: a truth test on the
+        id read the one asset every reader holds as no asset at all, so the save
+        came back "Choose an asset to watch" on a rule that named one. Reported
+        from the running site. See docs/logbook.md."""
+        self.sign_in("alerts-algo@example.com")
+        self.open_modal_from_button()
+        self.fill_form(subject="asa_total", threshold="100", asset_id="0")
+
+        self.save_form()
+
+        self.wait_until(
+            lambda: "Choose an asset" not in self.text_for(".alerts-panel"),
+            timeout=self.OPEN_TIMEOUT,
+        )
+        self.wait_until(
+            lambda: "holding" in self.text_for(".alerts-rule-text"),
+            timeout=self.OPEN_TIMEOUT,
+        )
+
+    def test_the_asset_picker_covers_the_modal(self):
+        """**Covering the card is the whole fix**, as the swap modal's picker
+        does: a result list inside a sheet cannot move the form behind it,
+        whatever its length. It used to be an inline block inside the scrolling
+        panel, which measured 87px of a 521px card and pushed the rest of the
+        form down as results arrived.
+
+        Asserted as "the picker's box is the card's box" rather than "inside
+        it": the shell clips its overflow, so an inline picker never leaves the
+        card either and a containment test passes for both. See docs/logbook.md.
+
+        The close button is checked here because the sheet covers the button
+        that opened it, so it is the only way back.
+        """
+        self.sign_in("alerts-picker@example.com")
+        self.open_modal_from_button()
+        self.choose_subject("asa_total")
+        self._wait_hidden(".alerts-asset-field", hidden=False)
+
+        self.find_elem_by_css(".id-alerts-assetbtn").click()
+
+        self.wait_until(
+            lambda: self._covers(".alerts-picker", ".alerts-shell"),
+            timeout=self.OPEN_TIMEOUT,
+        )
+        self.find_elem_by_css(".id-alerts-picker-close").click()
+        self._wait_hidden(".alerts-picker")
+
+    def _covers(self, sheet, card):
+        """Whether `sheet` occupies the whole of `card`, to the pixel."""
+        return self.browser.execute_script(
+            "var i = document.querySelector(arguments[0]);"
+            "var o = document.querySelector(arguments[1]);"
+            "if (!i || !o || i.hidden) return false;"
+            "var a = i.getBoundingClientRect(), b = o.getBoundingClientRect();"
+            "return Math.abs(a.top - b.top) <= 1 && Math.abs(a.bottom - b.bottom) <= 1"
+            "  && Math.abs(a.left - b.left) <= 1 && Math.abs(a.right - b.right) <= 1;",
+            sheet,
+            card,
         )
 
     def test_writing_a_rule_spends_one_of_the_allowance(self):

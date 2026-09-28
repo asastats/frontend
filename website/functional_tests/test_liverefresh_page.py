@@ -1018,3 +1018,91 @@ class LiveRefreshClassicTest(LiveRefreshTest):
             "var el = document.querySelector('#id-band-classic .pricetip');"
             "return el && el.textContent.trim();"
         )
+
+    @mock.patch("widgets.inhouse.liverefresh.views.spend")
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_badge_lands_beside_the_classic_control(
+        self,
+        mocked_fetch,
+        mocked_status,
+        mocked_capabilities,
+        mocked_redis,
+        mocked_spend,
+    ):
+        """**Beside the control, on the layout that has a metered allowance.**
+
+        `showLeft` looked only for `tb-refresh`, which is the dynamic toolbar's
+        id - and Dynamic needs Intro, so every reader the badge is *for* was on
+        classic and saw it up in the swap-entry container instead, nowhere near
+        the Auto-refresh box. Reported by a reader who could not find it.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": INTRO}
+        mocked_redis.return_value = self._redis()
+        mocked_spend.return_value = 7080.0
+
+        self.sign_in(live_refresh=True, permission=INTRO)
+        self.open_page()
+        self.arm()
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var b = document.getElementById('id-liverefresh-left');"
+                "return !!b && !b.hidden"
+                "  && !!b.parentNode.classList"
+                "  && b.parentNode.classList.contains('refresh');"
+            ),
+            timeout=15,
+        )
+
+    @mock.patch("widgets.inhouse.liverefresh.views.spend")
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_on_page_checkbox_is_what_arms_it(
+        self,
+        mocked_fetch,
+        mocked_status,
+        mocked_capabilities,
+        mocked_redis,
+        mocked_spend,
+    ):
+        """**Two switches, and only one of them is in Settings.**
+
+        The settings switch grants the entitlement; this checkbox is what writes
+        `localStorage.refresh` and so what `armed()` reads. Every other test here
+        calls `arm()`, which sets that key directly - so nothing covered the one
+        step a reader has to find for themselves, and a reader who flipped the
+        settings switch got no live refresh and no badge.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": INTRO}
+        mocked_redis.return_value = self._redis()
+        mocked_spend.return_value = 7080.0
+
+        self.sign_in(live_refresh=True, permission=INTRO)
+        self.open_page()
+
+        self.browser.find_element(
+            By.CSS_SELECTOR, ".refresh input[type=checkbox]"
+        ).click()
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return (localStorage.getItem('refresh') || '') === 'y';"
+            ),
+            timeout=15,
+        )
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var b = document.getElementById('id-liverefresh-left');"
+                "return !!b && !b.hidden && b.textContent.indexOf('left') > -1;"
+            ),
+            timeout=15,
+        )
