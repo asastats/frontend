@@ -1154,3 +1154,58 @@ class LiveRefreshClassicTest(LiveRefreshTest):
         # Silent: the spent-allowance notice belongs to a different failure.
         notice = self.browser.find_element(By.ID, "id-liverefresh-spent")
         assert not notice.is_displayed()
+
+    @mock.patch("widgets.inhouse.liverefresh.views.spend")
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_toolbar_row_shares_one_centre_line(
+        self,
+        mocked_fetch,
+        mocked_status,
+        mocked_capabilities,
+        mocked_redis,
+        mocked_spend,
+    ):
+        """**Four controls on one line, and they were on three.**
+
+        `.totalnonft`, `.refresh` and `.switch` were plain blocks holding an
+        `inline-flex` label, so each label sat at the top of a line box taller
+        than itself - and how much taller depended on what the label held. The
+        row centres the blocks; the labels inside them then disagreed. Measured
+        before the fix: labels at 1379, the ALGO/USD switch at 1382, the
+        allowance badge at 1385. Reported from a screenshot.
+
+        The wrappers are flex now, so there is no line-box slack to be
+        top-aligned against.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": INTRO}
+        mocked_redis.return_value = self._redis()
+        mocked_spend.return_value = 7080.0
+
+        self.sign_in(live_refresh=True, permission=INTRO)
+        self.open_page()
+        self.arm()
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var b = document.getElementById('id-liverefresh-left');"
+                "return !!b && !b.hidden;"
+            ),
+            timeout=15,
+        )
+
+        centres = self.browser.execute_script(
+            "return ['.totalnonft label', '.refresh label',"
+            "        '#id-liverefresh-left', '.switch label'].map(function (s) {"
+            "  var e = document.querySelector(s);"
+            "  if (!e) return null;"
+            "  var r = e.getBoundingClientRect();"
+            "  return Math.round(r.top + r.height / 2);"
+            "});"
+        )
+
+        assert None not in centres, centres
+        assert max(centres) - min(centres) <= 1, centres

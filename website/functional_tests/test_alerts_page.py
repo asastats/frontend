@@ -853,3 +853,40 @@ class AlertsAddressPageEntryTest(AddressPageMixin, FunctionalTest):
         self.find_elem_by_id("id-swap-entry-container")
 
         assert self.browser.find_elements(By.CSS_SELECTOR, "#id-alerts") == []
+
+    def test_the_button_sits_level_with_the_row_it_joined(self):
+        """**The row centres a flex item's margin box, not its border box.**
+
+        `#id-dustsweep-slot` is `display: contents`, so both widget toolbars
+        become direct flex items of the action row. `.dustsweep-toolbar` had its
+        margin reset for that and `.alerts-toolbar` did not, so its 0.5rem bottom
+        margin lifted the button half of that above everything beside it -
+        reported from a screenshot, measured at 3px.
+
+        **Asserted on the margin and on the row, not against a neighbour.** The
+        first version of this compared the button to a peer button and passed
+        with the defect still in, because this page renders no other action
+        button and there was nothing to compare with. A test that cannot fail is
+        worse than none.
+        """
+        self.sign_in("alerts-level@example.com")
+
+        self.open_address_page()
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var t = document.getElementById('id-alerts');"
+                "return !!(t && !t.hidden);"
+            ),
+            timeout=self.OPEN_TIMEOUT,
+        )
+        margin = self.browser.execute_script(
+            "var t = document.getElementById('id-alerts');"
+            "return getComputedStyle(t).marginBottom;"
+        )
+
+        # **The rule rather than the rendering.** Comparing boxes needs a second
+        # element to compare with, and the slot is `display: contents` so it has
+        # no box of its own to measure against either. The margin is what was
+        # wrong and what the reset fixes; the 3px a reader saw follows from it.
+        assert margin == "0px", margin

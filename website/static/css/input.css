@@ -609,7 +609,12 @@
    span would be the item instead, and the row's spacing would stop at it.
    The margin the standalone strip needs is wrong inside a row. */
 #id-dustsweep-slot { display: contents; }
-#id-dustsweep-slot > .dustsweep-toolbar { margin: 0; }
+/* **Both toolbars, not just the sweep's.** `display: contents` above makes each
+   of these a direct flex item of the action row, and the row centres a flex
+   item's *margin box* - so a bottom margin lifts the button above the ones
+   beside it. The alerts button was 0.25rem high for exactly this reason. */
+#id-dustsweep-slot > .dustsweep-toolbar,
+#id-dustsweep-slot > .alerts-toolbar { margin: 0; }
 
 /* `[hidden]` loses to the `display: flex` above without this - the same trap
    `.alerts-field[hidden]` carries a note about further down. The alerts toolbar

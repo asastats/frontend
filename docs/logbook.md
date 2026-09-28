@@ -2684,3 +2684,74 @@ known to have killed a worker.
 until it was rotated on 2026-09-28. That is why month-old exceptions in it read as
 current in an earlier check; dating every line before reporting it is the lesson,
 and the file being 95% one reader's refusals is what rotation alone does not fix.
+
+## Two rows that did not line up (2026-09-28)
+
+Files: `website/templates/address.html`, `website/static/css/input.css`.
+
+Both reported from screenshots of the deployed classic layout. They look like one
+problem and are two, with nothing in common but the symptom.
+
+### The action row: a margin the reset forgot
+
+`input.css` already knew about this shape:
+
+```css
+#id-dustsweep-slot { display: contents; }
+#id-dustsweep-slot > .dustsweep-toolbar { margin: 0; }
+```
+
+`display: contents` takes the slot span out of the box tree, so **both** widget
+toolbars inside it become direct flex items of the action row. Both carry
+`margin: 0 0 0.5rem` from the shared `.dustsweep-toolbar, .alerts-toolbar` rule —
+and the reset named only one of them.
+
+`items-center` centres a flex item's **margin box**, not its border box, so a
+0.5rem bottom margin lifts the button 0.25rem above everything beside it. That is
+the Alerts button sitting high. `placeToolbar` appends `#id-alerts` into the same
+slot, so it inherited the trap the sweep's own rule was written to escape.
+
+### The toolbar: three blocks, three different line boxes
+
+`.totalnonft`, `.refresh` and `.switch` are plain `<div>`s holding an
+`inline-flex` label. A block's line box is taller than an inline-flex label
+inside it, and *how much* taller depends on what the label holds — a
+`checkbox-sm` and text, or a `toggle-sm` and text, or (since the badge moved
+here) a badge as well. Each label sat at the top of its own line box, the row
+centred the blocks, and the labels then disagreed with each other.
+
+Measured in the browser, midpoints:
+
+| | before | after |
+|---|---|---|
+| Total without NFTs | 1379 | 1374 |
+| Auto-refresh | 1379 | 1374 |
+| allowance badge | **1385** | 1374 |
+| ALGO/USD | **1382** | 1374 |
+
+So it was the badge 6px low and the switch 3px low, against two labels that
+agreed with each other by coincidence — both hold a `checkbox-sm`.
+
+The wrappers are `flex items-center` now, which removes the line-box slack
+entirely rather than nudging anything. `.refresh` also takes `gap-2`, because
+`showLeft` inserts the badge as a sibling of the label and a flex gap is what
+spaces them. The class names stay first in the attribute: `address.js` reads
+`.refresh`, `.switch` and `.totalnonft` as hooks.
+
+**The badge was mine**, added earlier the same day; the misalignment of the other
+three was not, and predates it.
+
+### A test that could not fail, again
+
+The first version of the action-row test compared the Alerts button's centre to a
+peer button's. It passed with the defect still in place, because that page renders
+no other action button and there was nothing to compare against — the second time
+in one day I wrote an assertion whose premise the fixture did not supply (see the
+alerts picker, where containment passed for both shapes).
+
+It now reads `getComputedStyle(...).marginBottom` and asserts `0px`: the rule
+rather than the rendering. Measuring boxes needed a second element, and the slot
+is `display: contents` so it has no box to measure against either. The toolbar
+test *can* be geometric, because it has four elements that must agree — it
+asserts their centres span at most 1px, and fails `[1371, 1371, 1377, 1374]`
+without the fix.
