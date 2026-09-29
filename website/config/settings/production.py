@@ -1,5 +1,7 @@
 """Django settings module used in production."""
 
+import socket
+
 from .base import *
 
 DEBUG = False
@@ -38,10 +40,18 @@ CACHES = {
             "PASSWORD": f"{REDIS_AUTH}",
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
-                "socket_timeout": 5,      # Increase from default
-                "socket_connect_timeout": 5,
-                "retry_on_timeout": True,
                 "max_connections": 50,
+                "retry_on_timeout": True,
+                # Socket timeouts
+                "socket_timeout": 5.0,
+                "socket_connect_timeout": 5.0,
+                # TCP Keep-Alive settings
+                "socket_keepalive": True,
+                "socket_keepalive_options": {
+                    socket.TCP_KEEPIDLE: 60,
+                    socket.TCP_KEEPINTVL: 10,
+                    socket.TCP_KEEPCNT: 3,
+                },
             },
         },
         "KEY_PREFIX": "website",

@@ -132,3 +132,26 @@ BASE_CDN_URL = ""
 #: with a real pixel, so nothing 404s and the fallback handler stays asleep.
 #: See `config/urls_automated_tests.py` for why this cannot simply be appended.
 ROOT_URLCONF = "config.urls_automated_tests"
+
+
+class ProductionCacheConfigTests:
+    """The production CACHES settings must include CONNECTION_POOL_KWARGS with
+    socket_keepalive enabled, so occasional Redis timeouts (port 6380) do not
+    become Internal Server Errors.
+
+    Asserted here rather than in production.py itself: automated_tests is the
+    only settings file the suite loads (via pytest.ini), and production is not
+    imported directly.
+    """
+
+    def test_pool_kwargs_has_socket_keepalive(self):
+        from django.conf import settings
+        pool = settings.CACHES["default"]["OPTIONS"]["CONNECTION_POOL_KWARGS"]
+        assert pool.get("socket_keepalive") is True
+        assert pool.get("retry_on_timeout") is True
+        assert pool.get("timeout") == 20
+
+    def test_pool_keepalive_options_present(self):
+        from django.conf import settings
+        opts = settings.CACHES["default"]["OPTIONS"]["CONNECTION_POOL_KWARGS"]
+        assert "socket_keepalive_options" in opts
