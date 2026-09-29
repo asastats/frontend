@@ -2010,3 +2010,89 @@ class AlertsAllowanceTest(TestCase):
                 _alerts_allowance(self.user)
 
         self.assertIn("alerts control unavailable", captured.output[0])
+
+
+class CanPollLiverefreshTest(TestCase):
+    """Testing class for :py:func:`core.views._can_poll_liverefresh`.
+
+    **The marker's gate has to be the poll's gate.** Rendering the marker makes
+    `address.js` stand down its sixty-second reload, so a marker the poll then
+    refuses leaves the page with no refresh at all. See docs/logbook.md.
+
+    Imported inside the function for `_alerts_allowance`'s reason; a skew costs
+    the reader real-time refresh and leaves the reload in place, which is the
+    safe direction to fail.
+    """
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="canpoll@example.com", email="canpoll@example.com", password="x"
+        )
+        self.addresses = [TEST_ADDRESS, TEST_ADDRESS2, TEST_ADDRESS3]
+
+    def test_can_poll_liverefresh_returns_true_when_no_linked_address_required(self):
+        """When the tier doesn't require linked addresses, polling is allowed."""
+        from core.views import _can_poll_liverefresh
+        from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+
+        profile = self.user.profile
+        profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
+        profile.save()
+
+        self.assertTrue(_can_poll_liverefresh(self.user, self.addresses))
+
+    def test_can_poll_liverefresh_returns_true_when_all_addresses_linked(self):
+        """When the tier requires linked addresses and all are linked, polling is allowed."""
+        from core.views import _can_poll_liverefresh
+        from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+
+        profile = self.user.profile
+        # Use permission=0 (free tier) which has linked_only=True
+        profile.permission = 0
+        profile.save()
+
+        with mock.patch("core.views.is_linked_to_user", return_value=True):
+            self.assertTrue(_can_poll_liverefresh(self.user, self.addresses))
+
+    def test_can_poll_liverefresh_returns_false_when_some_addresses_unlinked(self):
+        """When the tier requires linked addresses and some are unlinked, polling is denied."""
+        from core.views import _can_poll_liverefresh
+        from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+
+        profile = self.user.profile
+        # Use permission=0 (free tier) which has linked_only=True
+        profile.permission = 0
+        profile.save()
+
+        with mock.patch("walletauth.gating.is_linked_to_user", side_effect=[True, False, True]):
+            self.assertFalse(_can_poll_liverefresh(self.user, self.addresses))
+
+    def test_can_poll_liverefresh_survives_a_widgets_repo_that_is_behind(self):
+        """**The outage this exists to prevent.**
+
+        With the widget unimportable the reader loses the liverefresh marker
+        and nothing else - rather than every page on the site returning 500.
+        """
+        from core.views import _can_poll_liverefresh
+        from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+
+        profile = self.user.profile
+        profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Professional"]
+        profile.save()
+
+        # `None` in sys.modules is what makes `from ... import ...` raise
+        # ImportError, which is the shape a half-synced checkout produces.
+        with mock.patch.dict("sys.modules", {"widgets.inhouse.liverefresh.allowance": None}):
+            self.assertFalse(_can_poll_liverefresh(self.user, self.addresses))
+
+    def test_can_poll_liverefresh_says_so_in_the_log(self):
+        """A liverefresh marker vanishing silently is a bug report rather than a log line.
+        The warning is how the skew is diagnosed instead of guessed at.
+        """
+        from core.views import _can_poll_liverefresh
+
+        with mock.patch.dict("sys.modules", {"widgets.inhouse.liverefresh.allowance": None}):
+            with self.assertLogs("core.views", level="WARNING") as captured:
+                _can_poll_liverefresh(self.user, self.addresses)
+
+        self.assertIn("real-time refresh unavailable", captured.output[0])
