@@ -37,6 +37,12 @@ CACHES = {
         "OPTIONS": {
             "PASSWORD": f"{REDIS_AUTH}",
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "CONNECTION_POOL_KWARGS": {
+                "socket_timeout": 5,      # Increase from default
+                "socket_connect_timeout": 5,
+                "retry_on_timeout": True,
+                "max_connections": 50,
+            },
         },
         "KEY_PREFIX": "website",
     }
