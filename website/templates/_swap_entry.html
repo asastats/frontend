@@ -63,41 +63,22 @@
 {# holder's key; watching a total or a price needs nothing but a reader. The   #}
 {# gate is the tier, and below it this is a link rather than a disabled        #}
 {# button, because a dead control teaches a reader the feature is broken.      #}
+{% include "alerts/_toolbar.html" %}
 {% if alerts_entitled %}
+<span id="id-alerts-count-poll"
+      hx-get="{% url 'alerts_count' alerts_bundle %}"
+      hx-trigger="every 30s"
+      hx-target="#id-alerts"
+      hx-swap="outerHTML"
+      aria-hidden="true"></span>
 {# Hidden until `placeToolbar` moves it into the action row beside Sweep dust, #}
 {# or the browser paints it in the wrong row first and the reader watches it   #}
 {# jump. Safe because this branch is the one that loads `alerts.js`, without   #}
 {# which the control does nothing anyway.                                      #}
-<div id="id-alerts" class="alerts-toolbar" hidden
-     data-bundle="{{ alerts_bundle }}"
-     data-rules-left="{{ alerts_left }}">
-  {# Fetches the modal rather than carrying it: the rule list changes as it #}
-  {# is edited, so loading it on press is smaller and fresher.              #}
-  <button type="button" class="alerts-open id-alerts-open"
-          hx-get="{% url 'alerts' alerts_bundle %}"
-          hx-target="#id-alerts-modal-slot"
-          hx-swap="innerHTML"
-          {% if alerts_left == 0 %}data-at-limit="true"{% endif %}>
-    Alerts
-    {# **Always rendered, hidden at zero**, so `alerts.js` can update it    #}
-    {# after a create or a delete without building the element. The panel   #}
-    {# swap replaces the modal's contents only, and this badge is out here. #}
-    <span class="badge badge-sm alerts-count"
-          {% if not alerts_kept %}hidden{% endif %}>{{ alerts_kept }}</span>
-  </button>
-</div>
 {# The dialog lands here, outside the toolbar so the flex row does not reserve #}
 {# space for something that is display:none until it is asked for.             #}
 <div id="id-alerts-modal-slot"></div>
 <script src="{% static 'alerts/alerts.js' %}"></script>
-{% elif user.is_authenticated %}
-<div id="id-alerts" class="alerts-toolbar">
-  <a href="{% url 'subscriptions' %}" class="alerts-upgrade"
-     title="Alerts are available from the Asastatser tier">
-    Alerts
-    <span class="badge badge-outline badge-xs ml-2">Asastatser</span>
-  </a>
-</div>
 {% endif %}
 
 {# Real-time refresh, rendered only when the tier allows it *and* the reader   #}

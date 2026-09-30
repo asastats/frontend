@@ -1424,6 +1424,20 @@ class SwapEntryViewTest(TestCase):
         response = self.client.get(self.url)
         self.assertNotContains(response, "id-swap-enabled")
 
+    def test_swap_entry_alert_count_poll_stays_outside_the_moved_toolbar(self):
+        self._login()
+        self.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        self.user.profile.save()
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, 'id="id-alerts-count-poll"')
+        self.assertContains(
+            response,
+            f'hx-get="{reverse("alerts_count", args=[self.address])}"',
+        )
+        self.assertContains(response, 'hx-target="#id-alerts"')
+
     def test_swap_entry_liverefresh_needs_the_tier_and_the_opt_in(self):
         """**Both halves, and neither implies the other.**
 

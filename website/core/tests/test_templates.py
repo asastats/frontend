@@ -133,6 +133,14 @@ class FooterLinksTest(TestCase):
 
         self.assertNotIn("#modalLogin", footer)
 
+    def test_core_footer_offers_logout_to_a_signed_in_reader(self):
+        self._sign_in()
+
+        footer = self._footer(self.client.get(self.url))
+
+        self.assertIn(reverse("account_logout"), footer)
+        self.assertIn("Log out", footer)
+
     def test_core_footer_offers_home_only_where_it_works(self):
         """`home` redirects a signed-out visitor, so offering it bounces them."""
         anonymous = self._footer(self.client.get(self.url))
@@ -142,11 +150,10 @@ class FooterLinksTest(TestCase):
         self.assertIn(reverse("home"), self._footer(self.client.get(self.url)))
 
     def test_core_footer_account_link_keeps_one_slot(self):
-        """Log in and Home are the same affordance, so they share a place.
+        """The account action stays first and Home follows the site map.
 
-        Gating them into different columns made the footer rearrange itself on
-        sign-in: Home appeared in Product while Log in vanished from About, so
-        two columns changed length for what is one link.
+        Home is useful only to signed-in readers, but it belongs with the map
+        after Sitemap rather than replacing the account action.
         """
         anonymous = self._columns(self.client.get(self.url))
         self._sign_in()
@@ -158,5 +165,11 @@ class FooterLinksTest(TestCase):
             "the Product column changes with the reader",
         )
         self.assertEqual(anonymous["About"][0], "Log in")
-        self.assertEqual(signed_in["About"][0], "Home")
-        self.assertEqual(anonymous["About"][1:], signed_in["About"][1:])
+        self.assertEqual(
+            signed_in["About"],
+            ["Log out", "About", "Privacy", "Disclaimer", "Sitemap", "Home"],
+        )
+        self.assertEqual(
+            anonymous["About"],
+            ["Log in", "About", "Privacy", "Disclaimer", "Sitemap"],
+        )

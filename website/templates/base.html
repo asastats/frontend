@@ -200,13 +200,8 @@
         <div>
           <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">About</h2>
           <ul class="mt-3 space-y-2 text-sm">
-            {% comment %}
-              One slot for the same affordance: the way to your own portfolio.
-              `home` redirects a signed-out visitor, which is why it cannot
-              simply always be here.
-            {% endcomment %}
             {% if user.is_authenticated %}
-            <li><a class="link link-hover" href="{% url 'home' %}">Home</a></li>
+            <li><a class="link link-hover" href="{% url 'account_logout' %}">Log out</a></li>
             {% else %}
             <li><a class="link link-hover" href="#modalLogin">Log in</a></li>
             {% endif %}
@@ -214,6 +209,9 @@
             <li><a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a></li>
             <li><a class="link link-hover" href="{% url 'disclaimer' %}">Disclaimer</a></li>
             <li><a class="link link-hover" href="{% url 'sitemap' %}">Sitemap</a></li>
+            {% if user.is_authenticated %}
+            <li><a class="link link-hover" href="{% url 'home' %}">Home</a></li>
+            {% endif %}
           </ul>
         </div>
 
