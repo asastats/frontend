@@ -122,3 +122,42 @@ The ``redis`` role is provisioned unconditionally by ``deploy/site_playbook.yml`
 takes from ``REDIS_PORT_LOCAL`` and defaults to 6380. The separate port is the
 point: on a host that also runs the closed backend, 6379 is that backend's
 replica and is read-only, and the app writes to its cache on every miss.
+
+Restart Daphne workers
+----------------------
+
+You should add a shell function to your ``~/.bashrc`` to restart the Daphne
+workers one at a time, so that live refresh keeps working in open browsers.
+It waits for each worker to come back before moving on to the next.
+
+.. code-block:: bash
+  :caption: ~/.bashrc
+
+  # Rolling restart of the Daphne workers, one at a time
+  asgi-restart() {
+    local n p sock i ready
+    sudo supervisorctl status 'asgi:*'
+    for n in 0 1 2 3; do
+      p="asgi:asgi$n"
+      sock="/var/www/asastats.com/run/daphne$n.sock"
+      sudo supervisorctl restart "$p" || return 1
+
+      ready=0
+      for i in $(seq 1 30); do
+        if sudo supervisorctl status "$p" | grep -q RUNNING && [ -S "$sock" ]; then
+          ready=1
+          break
+        fi
+        sleep 1
+      done
+
+      if [ "$ready" -ne 1 ]; then
+        echo "$p did not come back within 30s; stopping the rollout" >&2
+        sudo supervisorctl status "$p"
+        return 1
+      fi
+      sudo supervisorctl status "$p"
+    done
+  }
+
+  alias asgi-status="sudo supervisorctl status 'asgi:*'"

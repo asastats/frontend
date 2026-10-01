@@ -1228,6 +1228,42 @@ class LiveRefreshClassicTest(LiveRefreshTest):
         assert None not in centres, centres
         assert max(centres) - min(centres) <= 1, centres
 
+    @mock.patch("widgets.inhouse.liverefresh.views.spend")
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_refresh_tooltip_reflects_the_regime(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis, mocked_spend
+    ):
+        """Live mode shows real-time text; spent/free shows the minute reload."""
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis()
+
+        self.sign_in(live_refresh=True, permission=ASASTATSER)
+        self.open_page()
+        self.arm()
+        live_title = self.browser.execute_script(
+            "var el = document.getElementById('tb-refresh') || document.querySelector('.refresh label');"
+            "return el ? el.getAttribute('title') : '';"
+        )
+        assert "real time" in live_title
+
+        mocked_spend.return_value = -1.0
+        # Trigger spent via next poll response - the page removes the marker.
+        # We assert by checking the tooltip after handBack takes effect.
+        self.wait_until(
+            lambda: not self.browser.find_elements(By.ID, "id-liverefresh"),
+            timeout=30,
+        )
+        free_title = self.browser.execute_script(
+            "var el = document.getElementById('tb-refresh') || document.querySelector('.refresh label');"
+            "return el ? el.getAttribute('title') : '';"
+        )
+        assert "once a minute" in free_title
+
 # Pre-existing browser-integration failures: Selenium timeouts.
 # The server-side mock and wrap work (verified by TestLiveRefreshTimeoutWrap);
 # these require a fully live browser + service which is unavailable in this env.
