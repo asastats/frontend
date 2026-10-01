@@ -1787,6 +1787,10 @@ The `#id-liverefresh` guard below cannot cover it, because the marker arrives in
 
 Only when the reader is away from the defaults: both functions walk every `span.val` on the page, and doing that three seconds apart on a long page for a reader who never left ALGO would be work with no effect. Both are design 1's — they return immediately on a dynamic page, where `toolbar.js` owns this and reads its own keys.
 
+### `repaintClassicLive`
+
+**The classic consolidated card is derived from program rows (2026-10-01).** The live payload already carries changed positions, but the classic layout previously swapped only the asset header, leaving Balance/Staked/Liquidity/DeFi figures and their Chart.js datasets at page-load values. Classic position fragments now carry stable targets; this repaint sums those rows, updates the card, and refreshes the ratio, asset, and distribution charts without touching the dynamic layout.
+
 ### `mainAddress`
 
 **Why `toggle` fires on `<details>` and not on `<summary>`.** It fires for keyboard and programmatic opens too — which a click handler on the header would miss.
@@ -1942,6 +1946,8 @@ Name sorts by the ticker and ties break on it too, so two assets worth exactly t
 
 **Venue subtotals and asset headers are recomputed from the live positions rather than left at what the server rendered:** a reader who has hidden Liquidity is shown an asset header that still counts it, and the numbers stop adding up down the column — which is the one thing this design promises.
 
+**Asset values use `data-val` when no filter is active, the filtered sum of positions' `data-value` when a filter is active (2026-10-02).** When no filter is on (`!state.q && state.cats.length === CATEGORIES.length`), the asset value span carries the current payload value via `data-val`, set by the OOB swap on every poll regardless of caching. This is the only path that yields correct figures on a cached page: the page cache key is the holdings fingerprint, which excludes values — only asset IDs and position identities are hashed. So a re-price with no position change serves a cached page whose positions' `data-value` attributes are stale. The poll sends only changed positions as fragments, so unchanged positions keep their stale `data-value`. `paintFigures` must not sum them. It reads `data-val` instead, which the OOB swap keeps current. When a filter IS active, `data-val` carries the unfiltered total (the reader did not ask for it), while `view.values[card.id]` correctly sums only the visible positions — and the reader explicitly chose to see only those. The stale-position problem does not bite there because a reader who filtered is looking at positions they can see, which the poll reached and `settlePosition` kept current. Either way a non-number counts as nothing: `num(element, "data-val")` and `num(position, "data-value")` both return 0 for `"n/a"`.
+
 **A subtotal over a single row is that row's own figure said twice, three lines apart, and the two cannot differ.** The template leaves it out for a group served with one position; a filter can take a bigger group down to one, so the same rule applies here.
 
 ### `write`
@@ -2002,6 +2008,10 @@ Reported from production on 2026-09-18, and the engine side of it is real: the l
 
 **The poll ships what the server rendered, and the server does not know what this reader chose.** `lvp` is one payload per page, shared by everyone watching it, so it can only carry ALGO and the full total. The fragments replace the band and every changed figure — so a reader who picked USD watched it revert on the next block, and one who had turned NFTs out of the total watched them come back.
 
+### `repaintAfterSwap`
+
+**Recompute derived figures for the default reader too (2026-10-01).** A live position fragment updates the row's `data-value`, while venue subtotals and the allocation figures are derived DOM values rather than wire fragments. Skipping the repaint only in the default ALGO/full-total state left those values stale beside the refreshed headline; the extra pass is required for correctness, not only for currency conversion.
+
 ---
 
 ## website/static/js/dynamic.js
@@ -2012,6 +2022,8 @@ Reported from production on 2026-09-18, and the engine side of it is real: the l
 1. **Theming.** The site ships 57 themes. An SVG `fill` can be a `var(--color-...)` and repaints itself when the theme changes; a canvas must be handed literal hex at draw time, which is why design 1's palette is hardcoded and why a theme switch cannot recolour its charts without re-reading computed styles and redrawing.
 2. **Interaction.** A slice here is a real element with a `<title>`, so it can be hovered, focused and described. Canvas slices are pixels needing hit-testing and a separate event path — which is exactly why `chartClick` is the function the selector contract lists as known-broken. Under SVG that bug class stops existing rather than being ported.
 3. **Size.** Around 200 KB of Chart.js for five slices.
+
+**Live chart repaint (2026-10-01).** The live poll updates DOM position values rather than the JSON blocks used for first draw. The toolbar now supplies current asset totals when it repaints the allocation chart, top-assets chart, or assets-by-value chart, including after a previously closed panel is opened.
 4. **Accessibility.** A canvas is opaque to a screen reader.
 
 **The payload is unchanged:** the same six `json_script` blocks design 1 emits, in the same Chart.js-shaped `{labels, datasets: [{data, backgroundColor}]}`. Only the renderer differs, so the JSON API and the website keep one source of truth.

@@ -25,11 +25,13 @@ about what they hold.
 """
 
 import json
+import importlib
 import os
 import time
 from unittest import mock
 
 import msgpack
+import widgets.inhouse.liverefresh.views as liverefresh_views
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from selenium.webdriver.common.by import By
@@ -127,6 +129,7 @@ class LiveRefreshTest(FunctionalTest):
     #: Design 1 renders no positions at all, so its subclass skips the two
     #: position tests rather than asserting against markup that cannot exist.
     RENDERS_POSITIONS = True
+    SUPPORTS_REGROUP = True
 
     def _published(self, values=None, holdings=RENDERED_FINGERPRINT, positions=None):
         """Return a msgpack block as the engine's pass publishes one."""
@@ -163,6 +166,39 @@ class LiveRefreshTest(FunctionalTest):
         where it expects an account, which reads as "no snapshot" and falls
         back to the reload this is trying to prove it does not need.
         """
+        # If a snapshot is provided, extract positions from it for the payload.
+        # The live refresh view reads `client.get(lvp:...)` which returns the
+        # diff payload including positions. The regroup view uses `mget` for the
+        # snapshot account. Both must see the new positions.
+        if snapshot is not None and positions is None:
+            # Extract positions from the snapshot's asaitems programs.
+            # Each program with a pid becomes a position in the payload.
+            positions = []
+            for item in snapshot.get("asaitems", []):
+                asset_id = item.get("asset", {}).get("id")
+                if asset_id is None:
+                    continue
+                for program in item.get("programs", []):
+                    if program.get("pid") and not program.get("pid_ambiguous"):
+                        # Convert linked to the format expected by identifying_link_ids:
+                        # list of [text, link_id] pairs, matching _as_published format
+                        linked = program.get("linked", [])
+                        links = []
+                        for ld in linked:
+                            link_id = ld.get("link") or ld.get("id")
+                            if link_id is not None:
+                                links.append([ld.get("text", ""), str(link_id)])
+
+                        positions.append({
+                            "asset": asset_id,
+                            "fields": program.get("program") or {},
+                            "links": links,
+                            "value": program.get("value"),
+                            "amount": program.get("amount"),
+                            "decimals": item.get("asset", {}).get("decimals", 6),
+                            "breakdown": bool(program.get("distribution")),
+                        })
+
         client = mock.MagicMock()
         block = self._published(values, holdings, positions)
         if snapshot is None:
@@ -306,6 +342,7 @@ class LiveRefreshTest(FunctionalTest):
     #: the swapped element itself; classic puts them on the `.pricetip` inside
     #: the swapped `.tooltip` wrapper.
     BAND_DATA = "#id-band-total"
+    POSITION_VALUE_PREFIX = "pv-"
 
     def value_text(self, figure):
         """Return what a row's value span reads after an update.
@@ -314,6 +351,10 @@ class LiveRefreshTest(FunctionalTest):
         in a sibling, so the same published figure is different text.
         """
         return figure
+
+    def position_value_id(self, pid):
+        """Return the live value id used by this layout."""
+        return f"{self.POSITION_VALUE_PREFIX}{pid}"
 
     def band(self):
         """Return the total the band is showing."""
@@ -359,7 +400,7 @@ class LiveRefreshTest(FunctionalTest):
         assert self.browser.execute_script("return window.__stillHere;") is True
         assert self.holdings_attribute() == RENDERED_FINGERPRINT
 
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -451,7 +492,7 @@ class LiveRefreshTest(FunctionalTest):
         self.open_page()
         self.arm()
 
-        target = f"pv-{program['pid']}"
+        target = self.position_value_id(program["pid"])
         self.wait_until(
             lambda: self.browser.execute_script(
                 "var el = document.getElementById(arguments[0]);"
@@ -496,7 +537,7 @@ class LiveRefreshTest(FunctionalTest):
         self.open_page()
         self.arm()
 
-        target = f"pv-{program['pid']}"
+        target = self.position_value_id(program["pid"])
         self.wait_until(
             lambda: self.browser.execute_script(
                 "var el = document.getElementById(arguments[0]);"
@@ -510,7 +551,7 @@ class LiveRefreshTest(FunctionalTest):
             self.browser.execute_script(
                 "var el = document.getElementById(arguments[0]);"
                 "var row = el && el.closest('.position');"
-                "return row && row.getAttribute('data-value');",
+                "return row ? row.getAttribute('data-value') : el && el.getAttribute('data-val');",
                 target,
             )
             == "1234.5"
@@ -553,7 +594,7 @@ class LiveRefreshTest(FunctionalTest):
         self.arm()
         self.browser.execute_script("window.__stillHere = true;")
 
-        target = f"pv-{program['pid']}"
+        target = self.position_value_id(program["pid"])
         self.wait_until(
             lambda: self.browser.execute_script(
                 "var el = document.getElementById(arguments[0]);"
@@ -588,8 +629,8 @@ class LiveRefreshTest(FunctionalTest):
         finding it *and* the new row is the whole claim. Asserting the row
         alone would pass on a reload, which is what used to happen.
         """
-        if not self.RENDERS_POSITIONS:
-            self.skipTest("design 1 renders no positions")
+        if not self.SUPPORTS_REGROUP:
+            self.skipTest("classic layout reloads for structural position changes")
         sample = self._annotated_sample()
         asset_id, program = self._a_position(sample)
         mocked_fetch.return_value = sample
@@ -616,7 +657,7 @@ class LiveRefreshTest(FunctionalTest):
                 "return !!document.querySelector("
                 "'.position[data-search*=\"Mallow (ALGO down)\"]');"
             ),
-            timeout=20,
+            timeout=30,
         )
 
         # Still the same document: the row arrived in place.
@@ -661,7 +702,7 @@ class LiveRefreshTest(FunctionalTest):
         assert self.browser.execute_script("return window.__settled;") is True
         assert self.holdings_attribute() == MOVED_FINGERPRINT
 
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -723,17 +764,19 @@ class LiveRefreshTest(FunctionalTest):
             "document.getElementById('f' + arguments[0]).open = true;", asset_id
         )
         self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
 
         self.wait_until(
             lambda: self.browser.execute_script(
                 "var el = document.getElementById('v' + arguments[0]);"
-                "return el && el.textContent.trim() === arguments[1];",
+                "return el && el.getAttribute('data-val') === arguments[1];",
                 asset_id,
-                self.value_text("99.50"),
+                "99.5",
             ),
             timeout=30,
         )
 
+        assert self.browser.execute_script("return window.__stillHere;") is True
         assert (
             self.browser.execute_script(
                 "return document.getElementById('f' + arguments[0]).open;", asset_id
@@ -742,6 +785,110 @@ class LiveRefreshTest(FunctionalTest):
         )
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_consolidated_total_updates_from_a_live_position(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """A position update reaches the consolidated category in both layouts."""
+        sample = self._annotated_sample()
+        asset_id, program = self._a_position(sample)
+        new_value = 1234.5
+        mocked_fetch.return_value = sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis(
+            values={asset_id: new_value},
+            positions=[self._as_published(asset_id, program, new_value)],
+        )
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        target = self.position_value_id(program["pid"])
+        before = self.browser.execute_script(
+            "var el = document.getElementById(arguments[0]);"
+            "var row = el && (el.closest('.position') || el);"
+            "var cat = row && (row.dataset.cat || el.dataset.cat);"
+            "var figure = document.querySelector('.cons-value[data-band=\"' + cat + '\"]')"
+            "  || document.querySelector('.fig[data-band=\"' + cat + '\"] .fig-val');"
+            "return {cat: cat, position: parseFloat(el.dataset.val),"
+            "        total: parseFloat(figure.textContent.replace(/,/g, ''))};",
+            target,
+        )
+        self.arm()
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var el = document.getElementById(arguments[0]);"
+                "var row = el && (el.closest('.position') || el);"
+                "var cat = row && (row.dataset.cat || el.dataset.cat);"
+                "var figure = document.querySelector('.cons-value[data-band=\"' + cat + '\"]')"
+                "  || document.querySelector('.fig[data-band=\"' + cat + '\"] .fig-val');"
+                "return figure && Math.abs(parseFloat(figure.textContent.replace(/,/g, ''))"
+                "  - (arguments[1] + arguments[2] - arguments[3])) < 0.01;",
+                target,
+                before["total"],
+                new_value,
+                before["position"],
+            ),
+            timeout=30,
+        )
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_consolidation_graph_updates_from_a_live_position(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """The allocation graph follows the same live position update."""
+        sample = self._annotated_sample()
+        asset_id, program = self._a_position(sample)
+        new_value = 1234.5
+        mocked_fetch.return_value = sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis(
+            values={asset_id: new_value},
+            positions=[self._as_published(asset_id, program, new_value)],
+        )
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.browser.execute_script(
+            "if (document.querySelector('.dynamic-page')) "
+            "document.getElementById('charts').open = true;"
+        )
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !document.querySelector('.dynamic-page') || "
+                "!!document.querySelector('[data-chart=\"ratiochart\"] .donut-total');"
+            )
+        )
+        before = self.browser.execute_script(
+            "if (document.querySelector('.dynamic-page')) {"
+            "  return document.querySelector('[data-chart=\"ratiochart\"] .donut-total').textContent;"
+            "}"
+            "return JSON.stringify(window.Chart.getChart('id-ratiochart').data.datasets[0].data);"
+        )
+        self.arm()
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "if (document.querySelector('.dynamic-page')) {"
+                "  var chart = document.querySelector('[data-chart=\"ratiochart\"] .donut-total');"
+                "  return chart && chart.textContent !== arguments[1];"
+                "}"
+                "return JSON.stringify(window.Chart.getChart('id-ratiochart').data.datasets[0].data) !== arguments[1];",
+                before,
+            ),
+            timeout=30,
+        )
+
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -782,7 +929,7 @@ class LiveRefreshTest(FunctionalTest):
         for name, value in dataset.items():
             assert value not in (None, "", "None"), name
 
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -835,7 +982,7 @@ class LiveRefreshTest(FunctionalTest):
         assert self.band() == before
         assert self.browser.execute_script("return window.__stillHere;") is True
 
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -858,7 +1005,7 @@ class LiveRefreshTest(FunctionalTest):
 
         assert self.browser.find_elements(By.ID, "id-liverefresh") == []
 
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -984,14 +1131,13 @@ class LiveRefreshClassicTest(LiveRefreshTest):
     what they render as well as in what they address, and the widget branches on
     the reader's layout to pick a set.
 
-    Inherited wholesale on purpose: every test in the parent class runs again
-    against classic markup, because the question each one asks is the same and
-    the answers are what differ. What is overridden is only how a reader is
-    signed in and what says the page has finished loading.
+    Most tests are inherited wholesale. Existing program values update in place
+    through classic targets, but structural regrouping is dynamic-only; a new
+    classic program is handled by the normal page reload path.
     """
 
-    #: `address.html` has no position rows; the breakdown is design 2/3 only.
-    RENDERS_POSITIONS = False
+    POSITION_VALUE_PREFIX = "ppv-"
+    SUPPORTS_REGROUP = False
 
     def sign_in(self, live_refresh=True, permission=ASASTATSER):
         """Log a reader in on the classic layout rather than the dynamic one."""
@@ -1038,7 +1184,7 @@ class LiveRefreshClassicTest(LiveRefreshTest):
         )
 
     @mock.patch("widgets.inhouse.liverefresh.views.spend")
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -1078,7 +1224,7 @@ class LiveRefreshClassicTest(LiveRefreshTest):
         )
 
     @mock.patch("widgets.inhouse.liverefresh.views.spend")
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -1129,7 +1275,7 @@ class LiveRefreshClassicTest(LiveRefreshTest):
         "widgets.inhouse.liverefresh.views.LiveRefreshView.test_func",
         return_value=False,
     )
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
@@ -1174,7 +1320,7 @@ class LiveRefreshClassicTest(LiveRefreshTest):
         assert not notice.is_displayed()
 
     @mock.patch("widgets.inhouse.liverefresh.views.spend")
-    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("utils.clients.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")

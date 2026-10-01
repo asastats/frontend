@@ -58,6 +58,7 @@ function wireFetchedItems() {
     }
     deferImages(target.getElementsByClassName('nft'));
     restoreDisplayChoices();
+    repaintClassicLive();
   });
 }
 
@@ -485,6 +486,249 @@ function updateDistChart() {
   }
   chart.update();
 };
+
+
+/**
+ * Read asset totals from rendered rows (#f* cards with data-val on #v*).
+ * @returns {Object} asset key -> total value
+ */
+function readAssetValues() {
+  var assets = {};
+  document.querySelectorAll(".asasec details.fitem[id^='f']").forEach(function (card) {
+    var id = card.id.slice(1);
+    var unit = card.querySelector(".itemleft .unit");
+    var value = document.getElementById("v" + id);
+    if (!unit || !value) return;
+    var key = unit.textContent.trim().toLowerCase();
+    assets[key] = parseFloat(value.getAttribute("data-val")) || 0;
+  });
+  return assets;
+}
+
+/**
+ * Initialize category buckets for each asset.
+ * @param {Object} assets - asset key -> total value
+ * @returns {Object} asset key -> { balance, staked, liquidity, defi }
+ */
+function initCategoryBuckets(assets) {
+  var categories = {};
+  Object.keys(assets).forEach(function (key) {
+    categories[key] = { balance: 0, staked: 0, liquidity: 0, defi: 0 };
+  });
+  return categories;
+}
+
+/**
+ * Read program-value elements and add to category buckets.
+ * @param {Object} categories - asset key -> { balance, staked, liquidity, defi }
+ * @returns {Object} updated categories
+ */
+function readProgramValues(categories) {
+  document.querySelectorAll(".asasec .program-value[data-cat]").forEach(function (value) {
+    var key = (value.getAttribute("data-asset") || "");
+    var card = document.getElementById("f" + key);
+    var unit = card && card.querySelector(".itemleft .unit");
+    var category = value.getAttribute("data-cat");
+    if (!unit || !categories[unit.textContent.trim().toLowerCase()]) return;
+    if (categories[unit.textContent.trim().toLowerCase()][category] === undefined) return;
+    categories[unit.textContent.trim().toLowerCase()][category] +=
+      parseFloat(value.getAttribute("data-val")) || 0;
+  });
+  return categories;
+}
+
+/**
+ * Return live classic asset and allocation values from the rendered rows.
+ * Two-pass: first collect asset totals from #v* elements,
+ * then accumulate program-value elements into category buckets.
+ * @returns {Object} { assets: {...}, categories: {...} }
+ */
+function classicLiveValues() {
+  var assets = readAssetValues();
+  var categories = initCategoryBuckets(assets);
+  categories = readProgramValues(categories);
+  return { assets: assets, categories: categories };
+}
+
+
+/**
+ * Update classic consolidated figures and charts after a live swap.
+ * Early return on dynamic-page (toolbar.js owns charts there).
+ * Reads live values from rendered rows, computes totals, and updates:
+ *  - header data-attributes and displayed figures
+ *  - consolidated JSON block
+ *  - ratio chart (allocation)
+ *  - asa chart (assets by value, with "others" slice)
+ *  - distribution chart (stacked, with "others" slice, currency conversion)
+ */
+function repaintClassicLive() {
+  if (document.querySelector(".dynamic-page")) return;
+  var header = document.getElementById("id-cons-header");
+  if (!header) return;
+
+  var live = classicLiveValues();
+  var totals = computeCategoryTotals(live);
+
+  updateHeaderFigures(header, totals);
+  updateConsolidatedData(totals);
+  updateRatioChart(totals);
+  updateAsaChart(live);
+  updateDistributionChart(live);
+}
+
+/**
+ * Sum category totals across all assets from live data.
+ * @param {Object} live - { assets: {...}, categories: {...} }
+ * @returns {Object} { balance, staked, liquidity, defi }
+ */
+function computeCategoryTotals(live) {
+  var totals = { balance: 0, staked: 0, liquidity: 0, defi: 0 };
+  Object.keys(live.categories).forEach(function (asset) {
+    Object.keys(totals).forEach(function (category) {
+      totals[category] += live.categories[asset][category];
+    });
+  });
+  return totals;
+}
+
+/**
+ * Update header data-attributes and visible figures for each category.
+ * @param {Element} header - #id-cons-header element
+ * @param {Object} totals - { balance, staked, liquidity, defi }
+ */
+function updateHeaderFigures(header, totals) {
+  var code = localStorage.getItem("cur") || "ALGO";
+  var price = parseFloat(document.querySelector(".pricetip").dataset.price) || 1;
+
+  Object.keys(totals).forEach(function (category) {
+    header.setAttribute("data-" + category, totals[category]);
+    var figure = header.querySelector('.cons-value[data-band="' + category + '"]');
+    if (!figure) return;
+    figure.setAttribute("data-val", totals[category]);
+    var displayValue = code === "USD" ? totals[category] / price : totals[category];
+    figure.textContent = cur(displayValue) + " " + code;
+  });
+}
+
+/**
+ * Update the consolidated JSON block with new category totals.
+ * @param {Object} totals - { balance, staked, liquidity, defi }
+ */
+function updateConsolidatedData(totals) {
+  var consolidated = document.getElementById("consolidated");
+  if (!consolidated) return;
+  var stored = JSON.parse(consolidated.textContent);
+  ["balance", "staked", "liquidity", "defi"].forEach(function (category, index) {
+    stored[index] = totals[category];
+  });
+  consolidated.textContent = JSON.stringify(stored);
+}
+
+/**
+ * Update the ratio (allocation) chart with new category totals.
+ * Includes NFT in the total. Handles zero-total edge case.
+ * @param {Object} totals - { balance, staked, liquidity, defi }
+ */
+function updateRatioChart(totals) {
+  var ratio = chartDatasets.ratiochart;
+  var nft = parseFloat(document.querySelector(".pricetip").dataset.totalnft) || 0;
+  var ratioTotal = nft + Object.keys(totals).reduce(function (sum, category) {
+    return sum + totals[category];
+  }, 0);
+
+  if (!ratio || !ratio.datasets || !ratio.datasets[0]) return;
+
+  ratio.datasets[0].data = ratio.labels.map(function (label) {
+    var category = String(label).toLowerCase();
+    var value = category === "nft" ? nft : totals[category] || 0;
+    return ratioTotal ? String(100 * value / ratioTotal) : "0";
+  });
+
+  var ratioChart = Chart.getChart("id-ratiochart");
+  if (ratioChart) {
+    ratioChart.data.datasets[0].data = ratio.datasets[0].data.slice();
+    ratioChart.titleBlock.options.text = formatChartTotal(ratioChart, "ratiochart");
+    ratioChart.update();
+  }
+}
+
+/**
+ * Update the ASA (assets by value) chart with live asset values.
+ * Computes "others" slice as remainder. Handles zero-total edge case.
+ * @param {Object} live - { assets: {...}, categories: {...} }
+ */
+function updateAsaChart(live) {
+  var asachart = chartDatasets.asachart;
+  var assetTotal = Object.keys(live.assets).reduce(function (sum, asset) {
+    return sum + Math.max(live.assets[asset], 0);
+  }, 0);
+
+  if (!asachart || !asachart.datasets || !asachart.datasets[0]) return;
+
+  var named = 0;
+  asachart.datasets[0].data = asachart.labels.map(function (label) {
+    var key = String(label).toLowerCase();
+    if (key === "others") return "0";
+    var value = Math.max(live.assets[key] || 0, 0);
+    named += value;
+    return assetTotal ? String(100 * value / assetTotal) : "0";
+  });
+  asachart.datasets[0].data = asachart.labels.map(function (label, index) {
+    if (String(label).toLowerCase() !== "others") return asachart.datasets[0].data[index];
+    return assetTotal ? String(100 * Math.max(assetTotal - named, 0) / assetTotal) : "0";
+  });
+
+  var asaChart = Chart.getChart("id-asachart");
+  if (asaChart) {
+    asaChart.data.datasets[0].data = asachart.datasets[0].data.slice();
+    asaChart.titleBlock.options.text = formatChartTotal(asaChart, "asachart");
+    asaChart.update();
+  }
+}
+
+/**
+ * Update the distribution (stacked) chart with live category data.
+ * Computes "others" slice per dataset. Applies currency conversion if USD.
+ * @param {Object} live - { assets: {...}, categories: {...} }
+ */
+function updateDistributionChart(live) {
+  var distribution = chartDatasets.distchart;
+  if (!distribution || !distribution.datasets) return;
+
+  distribution.datasets.forEach(function (dataset) {
+    var category = String(dataset.label || "").toLowerCase();
+    var listed = 0;
+    dataset.data = distribution.labels.map(function (label) {
+      var key = String(label).toLowerCase();
+      if (key === "others") return "0";
+      var value = (live.categories[key] || {})[category] || 0;
+      listed += value;
+      return String(value);
+    });
+    dataset.data = distribution.labels.map(function (label, index) {
+      if (String(label).toLowerCase() !== "others") return dataset.data[index];
+      var total = Object.keys(live.categories).reduce(function (sum, asset) {
+        /* istanbul ignore next */
+        return sum + ((live.categories[asset] || {})[category] || 0);
+      }, 0);
+      return String(total - listed);
+    });
+  });
+
+  var distributionChart = Chart.getChart("id-distchart");
+  if (!distributionChart) return;
+
+  var price = parseFloat(document.querySelector(".pricetip").dataset.price) || 1;
+  var isUSD = localStorage.getItem("cur") === "USD";
+
+  distributionChart.data.datasets.forEach(function (dataset, index) {
+    var source = distribution.datasets[index].data;
+    dataset.data = source.map(function (value) {
+      return String(isUSD ? parseFloat(value) / price : value);
+    });
+  });
+  distributionChart.update();
+}
 
 
 /**
@@ -1471,5 +1715,17 @@ if (typeof exports !== 'undefined') {
     totalChart,
     toggleScrollToTopButton,
     scrollToTop,
+    classicLiveValues,
+    repaintClassicLive,
+    chartDatasets,
+    computeCategoryTotals,
+    updateHeaderFigures,
+    updateConsolidatedData,
+    updateRatioChart,
+    updateAsaChart,
+    updateDistributionChart,
+    readAssetValues,
+    initCategoryBuckets,
+    readProgramValues,
   };
 }

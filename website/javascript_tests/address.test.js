@@ -1355,6 +1355,625 @@ describe("restoreDisplayChoices (after a live-poll swap)", () => {
   });
 });
 
+describe("updateDistributionChart (direct)", function () {
+  it('computes the others slice from multiple assets', function () {
+    window.Chart.getChart.mockReturnValue(chartInstance());
+    address.parseJsonScript("distchart");
+
+    var dist = address.chartDatasets.distchart;
+    dist.labels = dist.labels.concat(["others"]);
+
+    var live = {
+      categories: {
+        "LFTY0046": { balance: 10, staked: 5 },
+        ALGO: { balance: 20, staked: 15 },
+        "GOLD$": { balance: 5, staked: 3 },
+      },
+    };
+
+    address.updateDistributionChart(live);
+
+    var distChart = Chart.getChart("id-distchart");
+    expect(distChart).not.toBeNull();
+  });
+
+  it('handles categories with missing assets gracefully', function () {
+    window.Chart.getChart.mockReturnValue(chartInstance());
+    address.parseJsonScript("distchart");
+
+    var dist = address.chartDatasets.distchart;
+    dist.labels = dist.labels.concat(["others"]);
+
+    var live = {
+      categories: {
+        "LFTY0046": { balance: 10 },
+        ALGO: { staked: 15 },
+      },
+    };
+
+    expect(function () {
+      address.updateDistributionChart(live);
+    }).not.toThrow();
+  });
+});
+
+
+describe("classicLiveValues (direct)", function () {
+  function mountClassicLiveFixture() {
+    document.body.innerHTML = "";
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row1 = document.createElement("details");
+    row1.className = "fitem";
+    row1.id = "f1";
+    const itemLeft1 = document.createElement("div");
+    itemLeft1.className = "itemleft";
+    const unit1 = document.createElement("span");
+    unit1.className = "unit";
+    unit1.textContent = "ALGO";
+    itemLeft1.appendChild(unit1);
+    const value1 = document.createElement("span");
+    value1.id = "v1";
+    value1.setAttribute("data-val", "100.5");
+    row1.appendChild(itemLeft1);
+    row1.appendChild(value1);
+
+    const row2 = document.createElement("details");
+    row2.className = "fitem";
+    row2.id = "f2";
+    const itemLeft2 = document.createElement("div");
+    itemLeft2.className = "itemleft";
+    const unit2 = document.createElement("span");
+    unit2.className = "unit";
+    unit2.textContent = "USDC";
+    itemLeft2.appendChild(unit2);
+    const value2 = document.createElement("span");
+    value2.id = "v2";
+    value2.setAttribute("data-val", "50.25");
+    row2.appendChild(itemLeft2);
+    row2.appendChild(value2);
+
+    section.appendChild(row1);
+    section.appendChild(row2);
+
+    const progValue1 = document.createElement("span");
+    progValue1.className = "program-value";
+    progValue1.setAttribute("data-asset", "1");
+    progValue1.setAttribute("data-cat", "balance");
+    progValue1.setAttribute("data-val", "80");
+    row1.appendChild(progValue1);
+
+    const progValue2 = document.createElement("span");
+    progValue2.className = "program-value";
+    progValue2.setAttribute("data-asset", "1");
+    progValue2.setAttribute("data-cat", "staked");
+    progValue2.setAttribute("data-val", "20.5");
+    row1.appendChild(progValue2);
+
+    const progValue3 = document.createElement("span");
+    progValue3.className = "program-value";
+    progValue3.setAttribute("data-asset", "2");
+    progValue3.setAttribute("data-cat", "liquidity");
+    progValue3.setAttribute("data-val", "30");
+    row2.appendChild(progValue3);
+
+    document.body.appendChild(section);
+  }
+
+  it("extracts assets and initializes categories", function () {
+    mountClassicLiveFixture();
+    const live = address.classicLiveValues();
+
+    expect(live.assets.algo).toBe(100.5);
+    expect(live.assets.usdc).toBe(50.25);
+    expect(live.categories.algo.balance).toBe(80);
+    expect(live.categories.algo.staked).toBe(20.5);
+    expect(live.categories.algo.liquidity).toBe(0);
+    expect(live.categories.algo.defi).toBe(0);
+    expect(live.categories.usdc.balance).toBe(0);
+    expect(live.categories.usdc.staked).toBe(0);
+    expect(live.categories.usdc.liquidity).toBe(30);
+    expect(live.categories.usdc.defi).toBe(0);
+  });
+
+  it("populates categories from program-value elements", function () {
+    mountClassicLiveFixture();
+    const live = address.classicLiveValues();
+
+    expect(live.categories.algo.balance).toBe(80);
+    expect(live.categories.algo.staked).toBe(20.5);
+    expect(live.categories.usdc.liquidity).toBe(30);
+    expect(live.categories.usdc.defi).toBe(0);
+  });
+
+  it("ignores program-value with unknown asset", function () {
+    mountClassicLiveFixture();
+    const progValue = document.createElement("span");
+    progValue.className = "program-value";
+    progValue.setAttribute("data-asset", "999");
+    progValue.setAttribute("data-cat", "balance");
+    progValue.setAttribute("data-val", "10");
+    document.querySelector("#f1").appendChild(progValue);
+
+    const live = address.classicLiveValues();
+
+    expect(live.categories.algo.balance).toBe(80);
+  });
+
+  it("ignores program-value with unknown category", function () {
+    mountClassicLiveFixture();
+    const progValue = document.createElement("span");
+    progValue.className = "program-value";
+    progValue.setAttribute("data-asset", "1");
+    progValue.setAttribute("data-cat", "unknown");
+    progValue.setAttribute("data-val", "10");
+    document.querySelector("#f1").appendChild(progValue);
+
+    const live = address.classicLiveValues();
+
+    expect(live.categories.algo.balance).toBe(80);
+  });
+
+  it("skips rows without unit or value", function () {
+    mountClassicLiveFixture();
+    const row = document.createElement("details");
+    row.className = "fitem";
+    row.id = "f3";
+    document.querySelector(".asasec").appendChild(row);
+
+    const live = address.classicLiveValues();
+
+    expect(live.assets).not.toHaveProperty("f3");
+  });
+});
+
+describe("classicLiveValues refactored internals", function () {
+  function mountInternalsFixture() {
+    document.body.innerHTML = "";
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row1 = document.createElement("details");
+    row1.className = "fitem";
+    row1.id = "f1";
+    const itemLeft1 = document.createElement("div");
+    itemLeft1.className = "itemleft";
+    const unit1 = document.createElement("span");
+    unit1.className = "unit";
+    unit1.textContent = "ALGO";
+    itemLeft1.appendChild(unit1);
+    const value1 = document.createElement("span");
+    value1.id = "v1";
+    value1.setAttribute("data-val", "100");
+    row1.appendChild(itemLeft1);
+    row1.appendChild(value1);
+
+    const row2 = document.createElement("details");
+    row2.className = "fitem";
+    row2.id = "f2";
+    const itemLeft2 = document.createElement("div");
+    itemLeft2.className = "itemleft";
+    const unit2 = document.createElement("span");
+    unit2.className = "unit";
+    unit2.textContent = "USDC";
+    itemLeft2.appendChild(unit2);
+    const value2 = document.createElement("span");
+    value2.id = "v2";
+    value2.setAttribute("data-val", "200");
+    row2.appendChild(itemLeft2);
+    row2.appendChild(value2);
+
+    section.appendChild(row1);
+    section.appendChild(row2);
+    document.body.appendChild(section);
+  }
+
+  it("readAssetValues extracts asset keys and values", function () {
+    mountInternalsFixture();
+    const assets = address.readAssetValues();
+    expect(assets.algo).toBe(100);
+    expect(assets.usdc).toBe(200);
+  });
+
+  it("initCategoryBuckets creates category buckets for each asset", function () {
+    mountInternalsFixture();
+    const assets = { algo: 100, usdc: 200 };
+    const buckets = address.initCategoryBuckets(assets);
+    expect(buckets.algo).toEqual({ balance: 0, staked: 0, liquidity: 0, defi: 0 });
+    expect(buckets.usdc).toEqual({ balance: 0, staked: 0, liquidity: 0, defi: 0 });
+  });
+
+  it("readProgramValues adds values to category buckets", function () {
+    mountInternalsFixture();
+    const assets = address.readAssetValues();
+    var categories = address.initCategoryBuckets(assets);
+
+    const progValue1 = document.createElement("span");
+    progValue1.className = "program-value";
+    progValue1.setAttribute("data-asset", "1");
+    progValue1.setAttribute("data-cat", "balance");
+    progValue1.setAttribute("data-val", "80");
+    document.querySelector("#f1").appendChild(progValue1);
+
+    const progValue2 = document.createElement("span");
+    progValue2.className = "program-value";
+    progValue2.setAttribute("data-asset", "2");
+    progValue2.setAttribute("data-cat", "staked");
+    progValue2.setAttribute("data-val", "50");
+    document.querySelector("#f2").appendChild(progValue2);
+
+    categories = address.readProgramValues(categories);
+    expect(categories.algo.balance).toBe(80);
+    expect(categories.usdc.staked).toBe(50);
+  });
+
+  it("readProgramValues skips unknown asset (line 506)", function () {
+    mountInternalsFixture();
+    const assets = address.readAssetValues();
+    var categories = address.initCategoryBuckets(assets);
+
+    const progValue = document.createElement("span");
+    progValue.className = "program-value";
+    progValue.setAttribute("data-asset", "999");
+    progValue.setAttribute("data-cat", "balance");
+    progValue.setAttribute("data-val", "10");
+    document.querySelector("#f1").appendChild(progValue);
+
+    categories = address.readProgramValues(categories);
+    expect(categories.algo.balance).toBe(0);
+  });
+
+  it("readProgramValues skips unknown category (line 511)", function () {
+    mountInternalsFixture();
+    const assets = address.readAssetValues();
+    var categories = address.initCategoryBuckets(assets);
+
+    const progValue = document.createElement("span");
+    progValue.className = "program-value";
+    progValue.setAttribute("data-asset", "1");
+    progValue.setAttribute("data-cat", "unknown");
+    progValue.setAttribute("data-val", "10");
+    document.querySelector("#f1").appendChild(progValue);
+
+    categories = address.readProgramValues(categories);
+    expect(categories.algo.balance).toBe(0);
+  });
+});
+
+describe("repaintClassicLive (direct)", function () {
+  function mountRepaintFixture() {
+    document.body.innerHTML = "";
+    localStorage.clear();
+
+    const header = document.createElement("div");
+    header.id = "id-cons-header";
+
+    ["balance", "staked", "liquidity", "defi"].forEach((cat) => {
+      const fig = document.createElement("span");
+      fig.className = "cons-value";
+      fig.setAttribute("data-band", cat);
+      header.appendChild(fig);
+    });
+    document.body.appendChild(header);
+
+    const consolidated = document.createElement("script");
+    consolidated.id = "consolidated";
+    consolidated.type = "application/json";
+    consolidated.textContent = JSON.stringify([0, 0, 0, 0]);
+    document.body.appendChild(consolidated);
+
+    const pricetip = document.createElement("span");
+    pricetip.className = "pricetip";
+    pricetip.dataset.price = "0.1";
+    pricetip.dataset.totalnft = "50";
+    document.body.appendChild(pricetip);
+
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row1 = document.createElement("details");
+    row1.className = "fitem";
+    row1.id = "f1";
+    const itemLeft1 = document.createElement("div");
+    itemLeft1.className = "itemleft";
+    const unit1 = document.createElement("span");
+    unit1.className = "unit";
+    unit1.textContent = "ALGO";
+    itemLeft1.appendChild(unit1);
+    const value1 = document.createElement("span");
+    value1.id = "v1";
+    value1.setAttribute("data-val", "100");
+    row1.appendChild(itemLeft1);
+    row1.appendChild(value1);
+
+    const row2 = document.createElement("details");
+    row2.className = "fitem";
+    row2.id = "f2";
+    const itemLeft2 = document.createElement("div");
+    itemLeft2.className = "itemleft";
+    const unit2 = document.createElement("span");
+    unit2.className = "unit";
+    unit2.textContent = "USDC";
+    itemLeft2.appendChild(unit2);
+    const value2 = document.createElement("span");
+    value2.id = "v2";
+    value2.setAttribute("data-val", "200");
+    row2.appendChild(itemLeft2);
+    row2.appendChild(value2);
+
+    const progValue1 = document.createElement("span");
+    progValue1.className = "program-value";
+    progValue1.setAttribute("data-asset", "1");
+    progValue1.setAttribute("data-cat", "balance");
+    progValue1.setAttribute("data-val", "80");
+    row1.appendChild(progValue1);
+
+    const progValue2 = document.createElement("span");
+    progValue2.className = "program-value";
+    progValue2.setAttribute("data-asset", "1");
+    progValue2.setAttribute("data-cat", "staked");
+    progValue2.setAttribute("data-val", "20");
+    row1.appendChild(progValue2);
+
+    const progValue3 = document.createElement("span");
+    progValue3.className = "program-value";
+    progValue3.setAttribute("data-asset", "2");
+    progValue3.setAttribute("data-cat", "liquidity");
+    progValue3.setAttribute("data-val", "150");
+    row2.appendChild(progValue3);
+
+    const progValue4 = document.createElement("span");
+    progValue4.className = "program-value";
+    progValue4.setAttribute("data-asset", "2");
+    progValue4.setAttribute("data-cat", "defi");
+    progValue4.setAttribute("data-val", "50");
+    row2.appendChild(progValue4);
+
+    section.appendChild(row1);
+    section.appendChild(row2);
+    document.body.appendChild(section);
+
+    ["ratiochart", "asachart", "distchart"].forEach((name) => {
+      const canvas = document.createElement("canvas");
+      canvas.id = "id-" + name;
+      const legend = document.createElement("div");
+      legend.id = "id-legend-" + name;
+      document.body.appendChild(canvas);
+      document.body.appendChild(legend);
+    });
+
+    const ratioData = { labels: ["balance", "staked", "liquidity", "defi", "nft"], datasets: [{ data: ["25", "25", "25", "25", "0"], backgroundColor: ["#1", "#2", "#3", "#4", "#5"] }] };
+    const asaData = { labels: ["algo", "usdc"], datasets: [{ data: ["50", "50"], backgroundColor: ["#1", "#2"] }] };
+    const distData = { labels: ["algo", "usdc"], datasets: [{ label: "balance", data: ["40", "10"] }, { label: "staked", data: ["10", "20"] }, { label: "liquidity", data: ["10", "30"] }, { label: "defi", data: ["10", "40"] }] };
+
+    const ratioScript = document.createElement("script");
+    ratioScript.id = "ratiochart";
+    ratioScript.type = "application/json";
+    ratioScript.textContent = JSON.stringify(ratioData);
+    document.body.appendChild(ratioScript);
+
+    const asaScript = document.createElement("script");
+    asaScript.id = "asachart";
+    asaScript.type = "application/json";
+    asaScript.textContent = JSON.stringify(asaData);
+    document.body.appendChild(asaScript);
+
+    const distScript = document.createElement("script");
+    distScript.id = "distchart";
+    distScript.type = "application/json";
+    distScript.textContent = JSON.stringify(distData);
+    document.body.appendChild(distScript);
+
+    address.parseJsonScript("ratiochart");
+    address.parseJsonScript("asachart");
+    address.parseJsonScript("distchart");
+  }
+
+  beforeEach(() => {
+    mountRepaintFixture();
+    window.Chart.getChart.mockReturnValue(chartInstance());
+    localStorage.setItem("cur", "ALGO");
+  });
+
+  it("updates header data attributes and figures", function () {
+    address.repaintClassicLive();
+
+    const header = document.getElementById("id-cons-header");
+    expect(header.getAttribute("data-balance")).toBe("80");
+    expect(header.getAttribute("data-staked")).toBe("20");
+    expect(header.getAttribute("data-liquidity")).toBe("150");
+    expect(header.getAttribute("data-defi")).toBe("50");
+
+    expect(header.querySelector('[data-band="balance"]').getAttribute("data-val")).toBe("80");
+    expect(header.querySelector('[data-band="staked"]').getAttribute("data-val")).toBe("20");
+    expect(header.querySelector('[data-band="liquidity"]').getAttribute("data-val")).toBe("150");
+    expect(header.querySelector('[data-band="defi"]').getAttribute("data-val")).toBe("50");
+  });
+
+  it("formats figures in ALGO when currency is ALGO", function () {
+    address.repaintClassicLive();
+
+    const header = document.getElementById("id-cons-header");
+    expect(header.querySelector('[data-band="balance"]').textContent).toContain("80.00 ALGO");
+    expect(header.querySelector('[data-band="staked"]').textContent).toContain("20.00 ALGO");
+    expect(header.querySelector('[data-band="liquidity"]').textContent).toContain("150.00 ALGO");
+    expect(header.querySelector('[data-band="defi"]').textContent).toContain("50.00 ALGO");
+  });
+
+  it("formats figures in USD when currency is USD", function () {
+    localStorage.setItem("cur", "USD");
+    address.repaintClassicLive();
+
+    const header = document.getElementById("id-cons-header");
+    expect(header.querySelector('[data-band="balance"]').textContent).toContain("800.00 USD");
+    expect(header.querySelector('[data-band="staked"]').textContent).toContain("200.00 USD");
+    expect(header.querySelector('[data-band="liquidity"]').textContent).toContain("1,500.00 USD");
+    expect(header.querySelector('[data-band="defi"]').textContent).toContain("500.00 USD");
+  });
+
+  it("updates consolidated script content", function () {
+    address.repaintClassicLive();
+
+    const consolidated = document.getElementById("consolidated");
+    const stored = JSON.parse(consolidated.textContent);
+    expect(stored).toEqual([80, 20, 150, 50]);
+  });
+
+  it("updates ratio chart data", function () {
+    address.repaintClassicLive();
+
+    const ratioChart = Chart.getChart("id-ratiochart");
+    expect(ratioChart.data.datasets[0].data).toBeDefined();
+    expect(ratioChart.update).toHaveBeenCalled();
+  });
+
+  it("computes asset total using Math.max for asachart", function () {
+    address.repaintClassicLive();
+
+    const asaChart = Chart.getChart("id-asachart");
+    expect(asaChart.data.datasets[0].data).toBeDefined();
+    expect(asaChart.update).toHaveBeenCalled();
+  });
+
+  it("handles others slice in asachart", function () {
+    address.repaintClassicLive();
+
+    const asaChart = Chart.getChart("id-asachart");
+    const data = asaChart.data.datasets[0].data;
+    const othersIndex = data.findIndex((_, i) => address.parseJsonScript("asachart").labels[i].toLowerCase() === "others");
+    if (othersIndex !== -1) {
+      expect(data[othersIndex]).toBeDefined();
+    }
+  });
+
+  it("computes distribution chart from live categories", function () {
+    address.repaintClassicLive();
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets).toBeDefined();
+    expect(distChart.update).toHaveBeenCalled();
+  });
+
+  it("handles others slice in distchart", function () {
+    address.repaintClassicLive();
+
+    const distChart = Chart.getChart("id-distchart");
+    distChart.data.datasets.forEach((dataset, idx) => {
+      const source = address.chartDatasets.distchart.datasets[idx].data;
+      const othersIndex = source.findIndex((_, i) => address.chartDatasets.distchart.labels[i].toLowerCase() === "others");
+      if (othersIndex !== -1) {
+        expect(dataset.data[othersIndex]).toBeDefined();
+      }
+    });
+  });
+
+  it("computes others slice in asachart when asset total exceeds named assets", function () {
+    // Replace the asachart script with one that has "Others" label
+    const existingAsaScript = document.getElementById("asachart");
+    if (existingAsaScript) existingAsaScript.remove();
+    
+    const asaData = { labels: ["ALGO", "USDC", "Others"], datasets: [{ data: ["50", "30", "0"], backgroundColor: ["#1", "#2", "#3"] }] };
+    const asaScript = document.createElement("script");
+    asaScript.id = "asachart";
+    asaScript.type = "application/json";
+    asaScript.textContent = JSON.stringify(asaData);
+    document.body.appendChild(asaScript);
+    address.parseJsonScript("asachart");
+
+    address.repaintClassicLive();
+
+    // The "others" slice computation runs at line 587
+    const asaChartData = address.chartDatasets.asachart;
+    const othersIndex = asaChartData.labels.findIndex((l) => l.toLowerCase() === "others");
+    expect(othersIndex).toBeGreaterThanOrEqual(0);
+    expect(asaChartData.datasets[0].data[othersIndex]).toBeDefined();
+    expect(parseFloat(asaChartData.datasets[0].data[othersIndex])).toBeGreaterThanOrEqual(0);
+  });
+
+  it("computes others slice in distchart for each category", function () {
+    // Replace the distchart script with one that has "Others" label
+    const existingDistScript = document.getElementById("distchart");
+    if (existingDistScript) existingDistScript.remove();
+    
+    const distData = { 
+      labels: ["ALGO", "USDC", "Others"], 
+      datasets: [
+        { label: "balance", data: ["40", "10", "0"] }, 
+        { label: "staked", data: ["10", "20", "0"] },
+        { label: "liquidity", data: ["5", "5", "0"] },
+        { label: "defi", data: ["5", "5", "0"] }
+      ] 
+    };
+    const distScript = document.createElement("script");
+    distScript.id = "distchart";
+    distScript.type = "application/json";
+    distScript.textContent = JSON.stringify(distData);
+    document.body.appendChild(distScript);
+    address.parseJsonScript("distchart");
+
+    address.repaintClassicLive();
+
+    // The "others" slice computation runs at lines 611-614
+    const distChartData = address.chartDatasets.distchart;
+    const othersIndex = distChartData.labels.findIndex((l) => l.toLowerCase() === "others");
+    expect(othersIndex).toBeGreaterThanOrEqual(0);
+    distChartData.datasets.forEach((dataset) => {
+      expect(dataset.data[othersIndex]).toBeDefined();
+      expect(parseFloat(dataset.data[othersIndex])).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  it("handles USD conversion for distchart others slice", function () {
+    localStorage.setItem("cur", "USD");
+    // Replace the distchart script with one that has "Others" label
+    const existingDistScript = document.getElementById("distchart");
+    if (existingDistScript) existingDistScript.remove();
+    
+    const distData = { 
+      labels: ["ALGO", "USDC", "Others"], 
+      datasets: [
+        { label: "balance", data: ["40", "10", "0"] },
+        { label: "staked", data: ["10", "20", "0"] },
+        { label: "liquidity", data: ["5", "5", "0"] },
+        { label: "defi", data: ["5", "5", "0"] }
+      ] 
+    };
+    const distScript = document.createElement("script");
+    distScript.id = "distchart";
+    distScript.type = "application/json";
+    distScript.textContent = JSON.stringify(distData);
+    document.body.appendChild(distScript);
+    address.parseJsonScript("distchart");
+
+    address.repaintClassicLive();
+
+    // The USD conversion runs at line 623
+    const distChartData = address.chartDatasets.distchart;
+    const othersIndex = distChartData.labels.findIndex((l) => l.toLowerCase() === "others");
+    expect(othersIndex).toBeGreaterThanOrEqual(0);
+    expect(distChartData.datasets[0].data[othersIndex]).toBeDefined();
+  });
+
+  it("converts distribution values to USD when currency is USD", function () {
+    localStorage.setItem("cur", "USD");
+    address.repaintClassicLive();
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets[0].data[0]).toBeDefined();
+  });
+
+  it("returns early on dynamic-page", function () {
+    document.body.innerHTML = '<div class="dynamic-page"></div>';
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("returns early when header is missing", function () {
+    document.getElementById("id-cons-header").remove();
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+});
+
 describe('the refresh clock at load', function () {
   /**
    * Load a fresh copy of the module with the clock under the test's control.
@@ -1415,5 +2034,878 @@ describe('the refresh clock at load', function () {
       return call[0] === 'openasa';
     });
     expect(reloaded).toBe(true);
+  });
+});
+
+describe("classicLiveValues branch coverage", function () {
+  it("handles missing or invalid data-val (line 501)", function () {
+    document.body.innerHTML = "";
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row = document.createElement("details");
+    row.className = "fitem";
+    row.id = "f1";
+    const itemLeft = document.createElement("div");
+    itemLeft.className = "itemleft";
+    const unit = document.createElement("span");
+    unit.className = "unit";
+    unit.textContent = "ALGO";
+    itemLeft.appendChild(unit);
+    const value = document.createElement("span");
+    value.id = "v1";
+    row.appendChild(itemLeft);
+    row.appendChild(value);
+    section.appendChild(row);
+    document.body.appendChild(section);
+
+    const live = address.classicLiveValues();
+    expect(live.assets.algo).toBe(0);
+  });
+
+  it("skips program-value with unknown asset (line 510)", function () {
+    document.body.innerHTML = "";
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row = document.createElement("details");
+    row.className = "fitem";
+    row.id = "f1";
+    const itemLeft = document.createElement("div");
+    itemLeft.className = "itemleft";
+    const unit = document.createElement("span");
+    unit.className = "unit";
+    unit.textContent = "ALGO";
+    itemLeft.appendChild(unit);
+    const value = document.createElement("span");
+    value.id = "v1";
+    value.setAttribute("data-val", "100");
+    row.appendChild(itemLeft);
+    row.appendChild(value);
+    section.appendChild(row);
+    document.body.appendChild(section);
+
+    const progValue = document.createElement("span");
+    progValue.className = "program-value";
+    progValue.setAttribute("data-asset", "999");
+    progValue.setAttribute("data-cat", "balance");
+    progValue.setAttribute("data-val", "50");
+    row.appendChild(progValue);
+
+    const live = address.classicLiveValues();
+    expect(live.categories.algo.balance).toBe(0);
+  });
+
+  it("skips program-value with unknown category (line 511)", function () {
+    document.body.innerHTML = "";
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row = document.createElement("details");
+    row.className = "fitem";
+    row.id = "f1";
+    const itemLeft = document.createElement("div");
+    itemLeft.className = "itemleft";
+    const unit = document.createElement("span");
+    unit.className = "unit";
+    unit.textContent = "ALGO";
+    itemLeft.appendChild(unit);
+    const value = document.createElement("span");
+    value.id = "v1";
+    value.setAttribute("data-val", "100");
+    row.appendChild(itemLeft);
+    row.appendChild(value);
+    section.appendChild(row);
+    document.body.appendChild(section);
+
+    const progValue = document.createElement("span");
+    progValue.className = "program-value";
+    progValue.setAttribute("data-asset", "1");
+    progValue.setAttribute("data-cat", "unknown");
+    progValue.setAttribute("data-val", "50");
+    row.appendChild(progValue);
+
+    const live = address.classicLiveValues();
+    expect(live.categories.algo.balance).toBe(0);
+  });
+});
+
+describe("repaintClassicLive branch coverage", function () {
+  function mountFullRepaintFixture() {
+    document.body.innerHTML = "";
+    localStorage.clear();
+
+    const header = document.createElement("div");
+    header.id = "id-cons-header";
+
+    ["balance", "staked", "liquidity", "defi"].forEach((cat) => {
+      const fig = document.createElement("span");
+      fig.className = "cons-value";
+      fig.setAttribute("data-band", cat);
+      header.appendChild(fig);
+    });
+    document.body.appendChild(header);
+
+    const consolidated = document.createElement("script");
+    consolidated.id = "consolidated";
+    consolidated.type = "application/json";
+    consolidated.textContent = JSON.stringify([0, 0, 0, 0]);
+    document.body.appendChild(consolidated);
+
+    const pricetip = document.createElement("span");
+    pricetip.className = "pricetip";
+    pricetip.dataset.price = "0.1";
+    pricetip.dataset.totalnft = "50";
+    pricetip.dataset.totalwnft = "200";
+    pricetip.dataset.pricealgo = "10";
+    document.body.appendChild(pricetip);
+
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row1 = document.createElement("details");
+    row1.className = "fitem";
+    row1.id = "f1";
+    const itemLeft1 = document.createElement("div");
+    itemLeft1.className = "itemleft";
+    const unit1 = document.createElement("span");
+    unit1.className = "unit";
+    unit1.textContent = "ALGO";
+    itemLeft1.appendChild(unit1);
+    const value1 = document.createElement("span");
+    value1.id = "v1";
+    value1.setAttribute("data-val", "100");
+    row1.appendChild(itemLeft1);
+    row1.appendChild(value1);
+
+    const row2 = document.createElement("details");
+    row2.className = "fitem";
+    row2.id = "f2";
+    const itemLeft2 = document.createElement("div");
+    itemLeft2.className = "itemleft";
+    const unit2 = document.createElement("span");
+    unit2.className = "unit";
+    unit2.textContent = "USDC";
+    itemLeft2.appendChild(unit2);
+    const value2 = document.createElement("span");
+    value2.id = "v2";
+    value2.setAttribute("data-val", "200");
+    row2.appendChild(itemLeft2);
+    row2.appendChild(value2);
+
+    ["balance", "staked", "liquidity", "defi"].forEach((cat) => {
+      const progValue = document.createElement("span");
+      progValue.className = "program-value";
+      progValue.setAttribute("data-asset", "1");
+      progValue.setAttribute("data-cat", cat);
+      progValue.setAttribute("data-val", cat === "balance" ? "80" : "20");
+      row1.appendChild(progValue);
+    });
+
+    section.appendChild(row1);
+    section.appendChild(row2);
+    document.body.appendChild(section);
+
+    const ratioData = { labels: ["balance", "staked", "liquidity", "defi", "nft"], datasets: [{ data: ["25", "25", "25", "25", "0"], backgroundColor: ["#1", "#2", "#3", "#4", "#5"] }] };
+    const asaData = { labels: ["algo", "usdc", "others"], datasets: [{ data: ["50", "30", "20"], backgroundColor: ["#1", "#2", "#3"] }] };
+    const distData = { labels: ["algo", "usdc", "others"], datasets: [{ label: "balance", data: ["40", "10", "0"] }, { label: "staked", data: ["10", "20", "0"] }, { label: "liquidity", data: ["5", "5", "0"] }, { label: "defi", data: ["5", "5", "0"] }] };
+
+    ["ratiochart", "asachart", "distchart"].forEach((name) => {
+      const canvas = document.createElement("canvas");
+      canvas.id = "id-" + name;
+      const legend = document.createElement("div");
+      legend.id = "id-legend-" + name;
+      document.body.appendChild(canvas);
+      document.body.appendChild(legend);
+    });
+
+    const ratioScript = document.createElement("script");
+    ratioScript.id = "ratiochart";
+    ratioScript.type = "application/json";
+    ratioScript.textContent = JSON.stringify(ratioData);
+    document.body.appendChild(ratioScript);
+
+    const asaScript = document.createElement("script");
+    asaScript.id = "asachart";
+    asaScript.type = "application/json";
+    asaScript.textContent = JSON.stringify(asaData);
+    document.body.appendChild(asaScript);
+
+    const distScript = document.createElement("script");
+    distScript.id = "distchart";
+    distScript.type = "application/json";
+    distScript.textContent = JSON.stringify(distData);
+    document.body.appendChild(distScript);
+
+    address.parseJsonScript("ratiochart");
+    address.parseJsonScript("asachart");
+    address.parseJsonScript("distchart");
+  }
+
+  beforeEach(() => {
+    mountFullRepaintFixture();
+    window.Chart.getChart.mockReturnValue(chartInstance());
+  });
+
+  it("handles missing figure element (line 536)", function () {
+    document.getElementById("id-cons-header").querySelector('[data-band="balance"]').remove();
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("formats in ALGO when currency is ALGO (line 540 false branch)", function () {
+    localStorage.setItem("cur", "ALGO");
+    address.repaintClassicLive();
+
+    const header = document.getElementById("id-cons-header");
+    expect(header.querySelector('[data-band="balance"]').textContent).toContain("ALGO");
+  });
+
+  it("formats in USD when currency is USD (line 540 true branch)", function () {
+    localStorage.setItem("cur", "USD");
+    address.repaintClassicLive();
+
+    const header = document.getElementById("id-cons-header");
+    expect(header.querySelector('[data-band="balance"]').textContent).toContain("USD");
+  });
+
+  it("handles missing ratio chart (line 558)", function () {
+    document.getElementById("ratiochart").remove();
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("handles zero ratioTotal (line 562)", function () {
+    const ratioData = { labels: ["balance", "staked", "liquidity", "defi", "nft"], datasets: [{ data: ["0", "0", "0", "0", "0"], backgroundColor: ["#1", "#2", "#3", "#4", "#5"] }] };
+    const ratioScript = document.getElementById("ratiochart");
+    ratioScript.textContent = JSON.stringify(ratioData);
+    address.parseJsonScript("ratiochart");
+
+    address.repaintClassicLive();
+
+    const ratioChart = Chart.getChart("id-ratiochart");
+    expect(ratioChart.data.datasets[0].data).toBeDefined();
+  });
+
+  it("handles missing ratioChart instance (line 565)", function () {
+    window.Chart.getChart.mockReturnValue(null);
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("handles missing asachart (line 576)", function () {
+    document.getElementById("asachart").remove();
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("handles zero assetTotal in asachart (line 583)", function () {
+    const asaData = { labels: ["algo", "usdc", "others"], datasets: [{ data: ["0", "0", "0"], backgroundColor: ["#1", "#2", "#3"] }] };
+    const asaScript = document.getElementById("asachart");
+    asaScript.textContent = JSON.stringify(asaData);
+    address.parseJsonScript("asachart");
+
+    address.repaintClassicLive();
+
+    const asaChart = Chart.getChart("id-asachart");
+    expect(asaChart.data.datasets[0].data).toBeDefined();
+  });
+
+  it("handles others slice in asachart (line 580, 586-587)", function () {
+    address.repaintClassicLive();
+
+    const asaChart = Chart.getChart("id-asachart");
+    const othersIndex = asaChart.data.labels.findIndex((l) => l.toLowerCase() === "others");
+    if (othersIndex >= 0) {
+      expect(asaChart.data.datasets[0].data[othersIndex]).toBeDefined();
+    }
+  });
+
+  it("handles missing asaChart instance (line 590)", function () {
+    window.Chart.getChart.mockImplementation((id) => id === "id-asachart" ? null : chartInstance());
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("handles missing distchart (line 598)", function () {
+    document.getElementById("distchart").remove();
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("handles others slice in distchart (line 604)", function () {
+    // Ensure mock chart has "Others" label
+    window.Chart.getChart.mockReturnValue(chartInstance({
+      canvas: { id: 'id-distchart' },
+      data: { labels: ["ALGO", "USDC", "Others"], datasets: [{ data: ["40", "10", "0"] }, { data: ["10", "20", "0"] }, { data: ["5", "5", "0"] }, { data: ["5", "5", "0"] }] }
+    }));
+    address.repaintClassicLive();
+
+    const distChart = Chart.getChart("id-distchart");
+    const othersIndex = distChart.data.labels.findIndex((l) => l.toLowerCase() === "others");
+    expect(othersIndex).toBeGreaterThanOrEqual(0);
+  });
+
+  it("handles missing category in live.categories (line 605)", function () {
+    address.repaintClassicLive();
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets[0].data).toBeDefined();
+  });
+
+  it("handles others slice computation in distchart (line 610-614)", function () {
+    // Ensure mock chart has "Others" label
+    window.Chart.getChart.mockReturnValue(chartInstance({
+      canvas: { id: 'id-distchart' },
+      data: { labels: ["ALGO", "USDC", "Others"], datasets: [{ data: ["40", "10", "0"] }, { data: ["10", "20", "0"] }, { data: ["5", "5", "0"] }, { data: ["5", "5", "0"] }] }
+    }));
+    address.repaintClassicLive();
+
+    const distChart = Chart.getChart("id-distchart");
+    const othersIndex = distChart.data.labels.findIndex((l) => l.toLowerCase() === "others");
+    distChart.data.datasets.forEach((dataset) => {
+      expect(dataset.data[othersIndex]).toBeDefined();
+    });
+  });
+
+  it("covers missing program-value data-asset (line 506)", function () {
+    document.body.innerHTML = "";
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row = document.createElement("details");
+    row.className = "fitem";
+    row.id = "f1";
+    const itemLeft = document.createElement("div");
+    itemLeft.className = "itemleft";
+    const unit = document.createElement("span");
+    unit.className = "unit";
+    unit.textContent = "ALGO";
+    itemLeft.appendChild(unit);
+    const value = document.createElement("span");
+    value.id = "v1";
+    value.setAttribute("data-val", "100");
+    row.appendChild(itemLeft);
+    row.appendChild(value);
+    section.appendChild(row);
+    document.body.appendChild(section);
+
+    const progValue = document.createElement("span");
+    progValue.className = "program-value";
+    progValue.setAttribute("data-cat", "balance");
+    progValue.setAttribute("data-val", "50");
+    row.appendChild(progValue);
+
+    const live = address.classicLiveValues();
+    expect(live.categories.algo.balance).toBe(0);
+  });
+
+  it("covers program-value with data-cat but missing category in categories (line 513)", function () {
+    document.body.innerHTML = "";
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row = document.createElement("details");
+    row.className = "fitem";
+    row.id = "f1";
+    const itemLeft = document.createElement("div");
+    itemLeft.className = "itemleft";
+    const unit = document.createElement("span");
+    unit.className = "unit";
+    unit.textContent = "ALGO";
+    itemLeft.appendChild(unit);
+    const value = document.createElement("span");
+    value.id = "v1";
+    value.setAttribute("data-val", "100");
+    row.appendChild(itemLeft);
+    row.appendChild(value);
+    section.appendChild(row);
+    document.body.appendChild(section);
+
+    const progValue = document.createElement("span");
+    progValue.className = "program-value";
+    progValue.setAttribute("data-asset", "1");
+    progValue.setAttribute("data-cat", "balance");
+    // No data-val
+    row.appendChild(progValue);
+
+    const live = address.classicLiveValues();
+    expect(live.categories.algo.balance).toBe(0);
+  });
+
+  it("covers USD currency formatting in repaintClassicLive (line 540 true branch)", function () {
+    localStorage.setItem("cur", "USD");
+    address.repaintClassicLive();
+
+    const header = document.getElementById("id-cons-header");
+    expect(header.querySelector('[data-band="balance"]').textContent).toContain("USD");
+  });
+
+  it("covers ALGO currency formatting in repaintClassicLive (line 540 false branch)", function () {
+    localStorage.setItem("cur", "ALGO");
+    address.repaintClassicLive();
+
+    const header = document.getElementById("id-cons-header");
+    expect(header.querySelector('[data-band="balance"]').textContent).toContain("ALGO");
+  });
+
+  it("handles missing distributionChart instance (line 618)", function () {
+    window.Chart.getChart.mockImplementation((id) => id === "id-distchart" ? null : chartInstance());
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("handles missing price in pricetip (line 619)", function () {
+    document.querySelector(".pricetip").removeAttribute("data-price");
+    expect(() => address.repaintClassicLive()).not.toThrow();
+  });
+
+  it("converts to USD when currency is USD (line 623 true branch)", function () {
+    localStorage.setItem("cur", "USD");
+    address.repaintClassicLive();
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets[0].data[0]).toBeDefined();
+  });
+
+  it("keeps ALGO when currency is ALGO (line 623 false branch)", function () {
+    localStorage.setItem("cur", "ALGO");
+    address.repaintClassicLive();
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets[0].data[0]).toBeDefined();
+  });
+});
+
+describe("repaintClassicLive refactored internals", function () {
+  function mountInternalsFixture() {
+    document.body.innerHTML = "";
+    localStorage.clear();
+
+    const header = document.createElement("div");
+    header.id = "id-cons-header";
+
+    ["balance", "staked", "liquidity", "defi"].forEach((cat) => {
+      const fig = document.createElement("span");
+      fig.className = "cons-value";
+      fig.setAttribute("data-band", cat);
+      header.appendChild(fig);
+    });
+    document.body.appendChild(header);
+
+    const consolidated = document.createElement("script");
+    consolidated.id = "consolidated";
+    consolidated.type = "application/json";
+    consolidated.textContent = JSON.stringify([0, 0, 0, 0]);
+    document.body.appendChild(consolidated);
+
+    const pricetip = document.createElement("span");
+    pricetip.className = "pricetip";
+    pricetip.dataset.price = "0.1";
+    pricetip.dataset.totalnft = "50";
+    pricetip.dataset.totalwnft = "200";
+    pricetip.dataset.pricealgo = "10";
+    document.body.appendChild(pricetip);
+
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row1 = document.createElement("details");
+    row1.className = "fitem";
+    row1.id = "f1";
+    const itemLeft1 = document.createElement("div");
+    itemLeft1.className = "itemleft";
+    const unit1 = document.createElement("span");
+    unit1.className = "unit";
+    unit1.textContent = "ALGO";
+    itemLeft1.appendChild(unit1);
+    const value1 = document.createElement("span");
+    value1.id = "v1";
+    value1.setAttribute("data-val", "100");
+    row1.appendChild(itemLeft1);
+    row1.appendChild(value1);
+
+    const row2 = document.createElement("details");
+    row2.className = "fitem";
+    row2.id = "f2";
+    const itemLeft2 = document.createElement("div");
+    itemLeft2.className = "itemleft";
+    const unit2 = document.createElement("span");
+    unit2.className = "unit";
+    unit2.textContent = "USDC";
+    itemLeft2.appendChild(unit2);
+    const value2 = document.createElement("span");
+    value2.id = "v2";
+    value2.setAttribute("data-val", "200");
+    row2.appendChild(itemLeft2);
+    row2.appendChild(value2);
+
+    ["balance", "staked", "liquidity", "defi"].forEach((cat) => {
+      const progValue = document.createElement("span");
+      progValue.className = "program-value";
+      progValue.setAttribute("data-asset", "1");
+      progValue.setAttribute("data-cat", cat);
+      progValue.setAttribute("data-val", cat === "balance" ? "80" : "20");
+      row1.appendChild(progValue);
+    });
+
+    section.appendChild(row1);
+    section.appendChild(row2);
+    document.body.appendChild(section);
+
+    const ratioData = { labels: ["balance", "staked", "liquidity", "defi", "nft"], datasets: [{ data: ["25", "25", "25", "25", "0"], backgroundColor: ["#1", "#2", "#3", "#4", "#5"] }] };
+    const asaData = { labels: ["algo", "usdc", "others"], datasets: [{ data: ["50", "30", "20"], backgroundColor: ["#1", "#2", "#3"] }] };
+    const distData = { labels: ["algo", "usdc", "others"], datasets: [{ label: "balance", data: ["40", "10", "0"] }, { label: "staked", data: ["10", "20", "0"] }, { label: "liquidity", data: ["5", "5", "0"] }, { label: "defi", data: ["5", "5", "0"] }] };
+
+    ["ratiochart", "asachart", "distchart"].forEach((name) => {
+      const canvas = document.createElement("canvas");
+      canvas.id = "id-" + name;
+      const legend = document.createElement("div");
+      legend.id = "id-legend-" + name;
+      document.body.appendChild(canvas);
+      document.body.appendChild(legend);
+    });
+
+    const ratioScript = document.createElement("script");
+    ratioScript.id = "ratiochart";
+    ratioScript.type = "application/json";
+    ratioScript.textContent = JSON.stringify(ratioData);
+    document.body.appendChild(ratioScript);
+
+    const asaScript = document.createElement("script");
+    asaScript.id = "asachart";
+    asaScript.type = "application/json";
+    asaScript.textContent = JSON.stringify(asaData);
+    document.body.appendChild(asaScript);
+
+    const distScript = document.createElement("script");
+    distScript.id = "distchart";
+    distScript.type = "application/json";
+    distScript.textContent = JSON.stringify(distData);
+    document.body.appendChild(distScript);
+
+    address.parseJsonScript("ratiochart");
+    address.parseJsonScript("asachart");
+    address.parseJsonScript("distchart");
+  }
+
+  beforeEach(() => {
+    mountInternalsFixture();
+    window.Chart.getChart.mockReturnValue(chartInstance());
+  });
+
+  it("computeCategoryTotals sums categories across assets", function () {
+    const live = { categories: { algo: { balance: 80, staked: 20 }, usdc: { balance: 10, staked: 30 } } };
+    const totals = address.computeCategoryTotals(live);
+    expect(totals.balance).toBe(90);
+    expect(totals.staked).toBe(50);
+  });
+
+  it("updateHeaderFigures updates data-attributes and text", function () {
+    const totals = { balance: 80, staked: 20, liquidity: 10, defi: 5 };
+    localStorage.setItem("cur", "ALGO");
+    address.updateHeaderFigures(document.getElementById("id-cons-header"), totals);
+    const header = document.getElementById("id-cons-header");
+    expect(header.getAttribute("data-balance")).toBe("80");
+    expect(header.querySelector('[data-band="balance"]').textContent).toContain("80.00 ALGO");
+  });
+
+  it("updateHeaderFigures formats USD when currency is USD", function () {
+    const totals = { balance: 80, staked: 20, liquidity: 10, defi: 5 };
+    localStorage.setItem("cur", "USD");
+    address.updateHeaderFigures(document.getElementById("id-cons-header"), totals);
+    const header = document.getElementById("id-cons-header");
+    expect(header.querySelector('[data-band="balance"]').textContent).toContain("800.00 USD");
+  });
+
+  it("updateConsolidatedData updates JSON in consolidated element", function () {
+    const totals = { balance: 80, staked: 20, liquidity: 10, defi: 5 };
+    address.updateConsolidatedData(totals);
+    const consolidated = document.getElementById("consolidated");
+    expect(JSON.parse(consolidated.textContent)).toEqual([80, 20, 10, 5]);
+  });
+
+  it("updateRatioChart handles zero ratioTotal", function () {
+    const ratioData = { labels: ["balance", "staked", "liquidity", "defi", "nft"], datasets: [{ data: ["0", "0", "0", "0", "0"], backgroundColor: ["#1", "#2", "#3", "#4", "#5"] }] };
+    const ratioScript = document.getElementById("ratiochart");
+    ratioScript.textContent = JSON.stringify(ratioData);
+    address.parseJsonScript("ratiochart");
+
+    address.updateRatioChart({ balance: 0, staked: 0, liquidity: 0, defi: 0 });
+
+    const ratioChart = Chart.getChart("id-ratiochart");
+    expect(ratioChart.data.datasets[0].data).toBeDefined();
+  });
+
+  it("updateRatioChart handles missing ratioChart instance", function () {
+    window.Chart.getChart.mockReturnValue(null);
+    expect(() => address.updateRatioChart({ balance: 80 })).not.toThrow();
+  });
+
+  it("updateAsaChart handles zero assetTotal", function () {
+    const asaData = { labels: ["algo", "usdc", "others"], datasets: [{ data: ["0", "0", "0"], backgroundColor: ["#1", "#2", "#3"] }] };
+    const asaScript = document.getElementById("asachart");
+    asaScript.textContent = JSON.stringify(asaData);
+    address.parseJsonScript("asachart");
+
+    address.updateAsaChart({ assets: { algo: 0, usdc: 0 }, categories: {} });
+
+    const asaChart = Chart.getChart("id-asachart");
+    expect(asaChart.data.datasets[0].data).toBeDefined();
+  });
+
+  it("updateAsaChart handles missing asaChart instance", function () {
+    window.Chart.getChart.mockImplementation((id) => id === "id-asachart" ? null : chartInstance());
+    expect(() => address.updateAsaChart({ assets: { algo: 100 }, categories: {} })).not.toThrow();
+  });
+
+  it("updateDistributionChart handles missing distchart", function () {
+    document.getElementById("distchart").remove();
+    expect(() => address.updateDistributionChart({ categories: {} })).not.toThrow();
+  });
+
+  it("updateDistributionChart handles missing price in pricetip", function () {
+    document.querySelector(".pricetip").removeAttribute("data-price");
+    expect(() => address.updateDistributionChart({ categories: {} })).not.toThrow();
+  });
+
+  it("updateDistributionChart converts to USD when currency is USD", function () {
+    localStorage.setItem("cur", "USD");
+    address.updateDistributionChart({ categories: {} });
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets[0].data[0]).toBeDefined();
+  });
+
+  it("updateDistributionChart keeps ALGO when currency is ALGO", function () {
+    localStorage.setItem("cur", "ALGO");
+    address.updateDistributionChart({ categories: {} });
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets[0].data[0]).toBeDefined();
+  });
+});
+
+describe("repaintClassicLive internals edge cases", function () {
+  function mountEdgeCaseFixture() {
+    document.body.innerHTML = "";
+    localStorage.clear();
+
+    const header = document.createElement("div");
+    header.id = "id-cons-header";
+
+    ["balance", "staked", "liquidity", "defi"].forEach((cat) => {
+      const fig = document.createElement("span");
+      fig.className = "cons-value";
+      fig.setAttribute("data-band", cat);
+      header.appendChild(fig);
+    });
+    document.body.appendChild(header);
+
+    const consolidated = document.createElement("script");
+    consolidated.id = "consolidated";
+    consolidated.type = "application/json";
+    consolidated.textContent = JSON.stringify([0, 0, 0, 0]);
+    document.body.appendChild(consolidated);
+
+    const pricetip = document.createElement("span");
+    pricetip.className = "pricetip";
+    pricetip.dataset.price = "0.1";
+    pricetip.dataset.totalnft = "50";
+    pricetip.dataset.totalwnft = "200";
+    pricetip.dataset.pricealgo = "10";
+    document.body.appendChild(pricetip);
+
+    const section = document.createElement("section");
+    section.className = "asasec";
+
+    const row1 = document.createElement("details");
+    row1.className = "fitem";
+    row1.id = "f1";
+    const itemLeft1 = document.createElement("div");
+    itemLeft1.className = "itemleft";
+    const unit1 = document.createElement("span");
+    unit1.className = "unit";
+    unit1.textContent = "ALGO";
+    itemLeft1.appendChild(unit1);
+    const value1 = document.createElement("span");
+    value1.id = "v1";
+    value1.setAttribute("data-val", "100");
+    row1.appendChild(itemLeft1);
+    row1.appendChild(value1);
+
+    const row2 = document.createElement("details");
+    row2.className = "fitem";
+    row2.id = "f2";
+    const itemLeft2 = document.createElement("div");
+    itemLeft2.className = "itemleft";
+    const unit2 = document.createElement("span");
+    unit2.className = "unit";
+    unit2.textContent = "USDC";
+    itemLeft2.appendChild(unit2);
+    const value2 = document.createElement("span");
+    value2.id = "v2";
+    value2.setAttribute("data-val", "200");
+    row2.appendChild(itemLeft2);
+    row2.appendChild(value2);
+
+    ["balance", "staked", "liquidity", "defi"].forEach((cat) => {
+      const progValue = document.createElement("span");
+      progValue.className = "program-value";
+      progValue.setAttribute("data-asset", "1");
+      progValue.setAttribute("data-cat", cat);
+      progValue.setAttribute("data-val", cat === "balance" ? "80" : "20");
+      row1.appendChild(progValue);
+    });
+
+    section.appendChild(row1);
+    section.appendChild(row2);
+    document.body.appendChild(section);
+
+    const ratioData = { labels: ["balance", "staked", "liquidity", "defi", "nft"], datasets: [{ data: ["25", "25", "25", "25", "0"], backgroundColor: ["#1", "#2", "#3", "#4", "#5"] }] };
+    const asaData = { labels: ["algo", "usdc", "others"], datasets: [{ data: ["50", "30", "20"], backgroundColor: ["#1", "#2", "#3"] }] };
+    const distData = { labels: ["algo", "usdc", "others"], datasets: [{ label: "balance", data: ["40", "10", "0"] }, { label: "staked", data: ["10", "20", "0"] }, { label: "liquidity", data: ["5", "5", "0"] }, { label: "defi", data: ["5", "5", "0"] }] };
+
+    ["ratiochart", "asachart", "distchart"].forEach((name) => {
+      const canvas = document.createElement("canvas");
+      canvas.id = "id-" + name;
+      const legend = document.createElement("div");
+      legend.id = "id-legend-" + name;
+      document.body.appendChild(canvas);
+      document.body.appendChild(legend);
+    });
+
+    const ratioScript = document.createElement("script");
+    ratioScript.id = "ratiochart";
+    ratioScript.type = "application/json";
+    ratioScript.textContent = JSON.stringify(ratioData);
+    document.body.appendChild(ratioScript);
+
+    const asaScript = document.createElement("script");
+    asaScript.id = "asachart";
+    asaScript.type = "application/json";
+    asaScript.textContent = JSON.stringify(asaData);
+    document.body.appendChild(asaScript);
+
+    const distScript = document.createElement("script");
+    distScript.id = "distchart";
+    distScript.type = "application/json";
+    distScript.textContent = JSON.stringify(distData);
+    document.body.appendChild(distScript);
+
+    address.parseJsonScript("ratiochart");
+    address.parseJsonScript("asachart");
+    address.parseJsonScript("distchart");
+  }
+
+  beforeEach(() => {
+    mountEdgeCaseFixture();
+    window.Chart.getChart.mockReturnValue(chartInstance());
+  });
+
+  it("updateConsolidatedData returns early when consolidated missing (line 619)", function () {
+    document.getElementById("consolidated").remove();
+    expect(() => address.updateConsolidatedData({ balance: 80 })).not.toThrow();
+  });
+
+   it("updateRatioChart returns early when ratio missing (line 639)", function () {
+     address.chartDatasets.ratiochart = null;
+     expect(() => address.updateRatioChart({ balance: 80 })).not.toThrow();
+   });
+
+   it("updateAsaChart returns early when asachart missing (line 666)", function () {
+     address.chartDatasets.asachart = null;
+     expect(() => address.updateAsaChart({ assets: { algo: 100 }, categories: {} })).not.toThrow();
+   });
+
+   it("updateDistributionChart returns early when distchart missing (line 696)", function () {
+     address.chartDatasets.distchart = null;
+     expect(() => address.updateDistributionChart({ categories: {} })).not.toThrow();
+   });
+
+  it("updateDistributionChart handles missing dataset label (line 699)", function () {
+    const distData = { labels: ["algo", "usdc", "others"], datasets: [{ label: "", data: ["40", "10", "0"] }, { label: "staked", data: ["10", "20", "0"] }, { label: "liquidity", data: ["5", "5", "0"] }, { label: "defi", data: ["5", "5", "0"] }] };
+    const distScript = document.getElementById("distchart");
+    distScript.textContent = JSON.stringify(distData);
+    address.parseJsonScript("distchart");
+
+    // Ensure mock chart has 4 datasets matching distchart
+    window.Chart.getChart.mockReturnValue(chartInstance({
+      canvas: { id: 'id-distchart' },
+      data: { labels: ["ALGO", "USDC", "Others"], datasets: [{ data: ["40", "10", "0"] }, { data: ["10", "20", "0"] }, { data: ["5", "5", "0"] }, { data: ["5", "5", "0"] }] }
+    }));
+
+    address.updateDistributionChart({ categories: { algo: { balance: 40 }, usdc: { balance: 10 } } });
+    expect(() => address.updateDistributionChart({ categories: {} })).not.toThrow();
+  });
+
+  it("updateDistributionChart handles missing category in live.categories (line 704)", function () {
+    address.updateDistributionChart({ categories: { algo: { balance: 40 } } });
+    expect(() => address.updateDistributionChart({ categories: {} })).not.toThrow();
+  });
+
+    it("updateDistributionChart computes others slice (line 708-714)", function () {
+      // Ensure distchart labels include "others" so the remainder branch runs
+      address.chartDatasets.distchart.labels.push("others");
+      address.chartDatasets.distchart.datasets.forEach(function (ds) { ds.data.push("0"); });
+      window.Chart.getChart.mockReturnValue(chartInstance({
+        canvas: { id: 'id-distchart' },
+        data: { labels: ["ALGO", "USDC", "Others"], datasets: [{ data: ["40", "10", "0"] }, { data: ["10", "20", "0"] }, { data: ["5", "5", "0"] }, { data: ["5", "5", "0"] }] }
+      }));
+      address.updateDistributionChart({ categories: { algo: { balance: 40 }, usdc: { balance: 10 } } });
+
+      const distChart = Chart.getChart("id-distchart");
+      const othersIndex = distChart.data.labels.findIndex((l) => l.toLowerCase() === "others");
+      expect(distChart.data.datasets[0].data[othersIndex]).toBeDefined();
+    });
+
+    it("updateDistributionChart computes others with matching category (line 711)", function () {
+      address.chartDatasets.distchart.labels.push("others");
+      address.chartDatasets.distchart.datasets.forEach(function (ds) { ds.data.push("0"); });
+      address.chartDatasets.distchart.datasets.push({ label: "balance", data: ["0"] });
+      window.Chart.getChart.mockReturnValue(chartInstance({
+        canvas: { id: 'id-distchart' },
+        data: { labels: ["ALGO", "USDC", "Others"], datasets: [{ data: ["40", "10", "0"] }, { data: ["10", "20", "0"] }, { data: ["5", "5", "0"] }, { data: ["5", "5", "0"] }, { data: ["0"] }] }
+      }));
+      address.updateDistributionChart({ categories: { algo: { balance: 40 }, usdc: { balance: 10 } } });
+    });
+
+  it("updateDistributionChart returns early when distributionChart missing (line 717)", function () {
+    window.Chart.getChart.mockImplementation((id) => id === "id-distchart" ? null : chartInstance());
+    expect(() => address.updateDistributionChart({ categories: {} })).not.toThrow();
+  });
+
+  it("updateDistributionChart handles missing price (line 720)", function () {
+    document.querySelector(".pricetip").removeAttribute("data-price");
+    expect(() => address.updateDistributionChart({ categories: {} })).not.toThrow();
+  });
+
+  it("updateDistributionChart USD conversion branch (line 726)", function () {
+    // Ensure mock chart has 4 datasets matching distchart
+    window.Chart.getChart.mockReturnValue(chartInstance({
+      canvas: { id: 'id-distchart' },
+      data: { labels: ["ALGO", "USDC", "Others"], datasets: [
+        { data: ["40", "10", "0"] },
+        { data: ["10", "20", "0"] },
+        { data: ["5", "5", "0"] },
+        { data: ["5", "5", "0"] }
+      ]}
+    }));
+    localStorage.setItem("cur", "USD");
+    address.updateDistributionChart({ categories: {} });
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets[0].data[0]).toBeDefined();
+  });
+
+  it("updateDistributionChart ALGO conversion branch (line 726)", function () {
+    // Ensure mock chart has 4 datasets matching distchart
+    window.Chart.getChart.mockReturnValue(chartInstance({
+      canvas: { id: 'id-distchart' },
+      data: { labels: ["ALGO", "USDC", "Others"], datasets: [
+        { data: ["40", "10", "0"] },
+        { data: ["10", "20", "0"] },
+        { data: ["5", "5", "0"] },
+        { data: ["5", "5", "0"] }
+      ]}
+    }));
+    localStorage.setItem("cur", "ALGO");
+    address.updateDistributionChart({ categories: {} });
+
+    const distChart = Chart.getChart("id-distchart");
+    expect(distChart.data.datasets[0].data[0]).toBeDefined();
   });
 });

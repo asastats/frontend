@@ -1156,3 +1156,245 @@ describe("dating the NFT purchases", () => {
     expect(second.textContent).toBe("6 days ago");
   });
 });
+
+describe("redrawLive", () => {
+  function openPanelWithCharts() {
+    const { panel, grid } = mountPanel();
+    mountPayload("asachart", chartData(["ALGO", "USDC", "Others"], [60, 30, 10], ["#1", "#2", "#3"]));
+    mountPayload("distchart", chartData(["ALGO", "USDC"], [70, 30], ["#1", "#2"]));
+    const money = load();
+    money.init();
+    panel.open = true;
+    panel.dispatchEvent(new window.Event("toggle"));
+    return { grid, money };
+  }
+
+  test("redraws asachart with live asset values", () => {
+    const { grid, money } = openPanelWithCharts();
+
+    money.redrawLive({ algo: 100, usdc: 50 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    expect(chart).not.toBeNull();
+    expect(chart.querySelector(".donut-total").textContent).toBe("150.00");
+    const titles = [...chart.querySelectorAll("title")].map((t) => t.textContent);
+    expect(titles).toEqual(["ALGO — 66.7%", "USDC — 33.3%"]);
+  });
+
+  test("redraws distchart with live asset values", () => {
+    const { grid, money } = openPanelWithCharts();
+
+    money.redrawLive({ algo: 100, usdc: 50 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="distchart"]');
+    expect(chart).not.toBeNull();
+    expect(chart.querySelector(".donut-total").textContent).toBe("150.00");
+  });
+
+  test("computes others slice from remaining total", () => {
+    const { grid, money } = openPanelWithCharts();
+
+    money.redrawLive({ algo: 80, usdc: 40, other: 30 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    const othersTitle = [...chart.querySelectorAll("title")].find((t) =>
+      t.textContent.startsWith("Others")
+    );
+    expect(othersTitle).toBeDefined();
+  });
+
+  test("converts asachart values to percentages", () => {
+    const { grid, money } = openPanelWithCharts();
+
+    money.redrawLive({ algo: 50, usdc: 50 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    const titles = [...chart.querySelectorAll("title")].map((t) => t.textContent);
+    expect(titles).toEqual(["ALGO — 50.0%", "USDC — 50.0%"]);
+  });
+
+  test("uses scale 1 for distchart (absolute values)", () => {
+    const { grid, money } = openPanelWithCharts();
+
+    money.redrawLive({ algo: 100, usdc: 50 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="distchart"]');
+    expect(chart.querySelector(".donut-total").textContent).toBe("150.00");
+  });
+
+  test("records unit on the redrawn chart", () => {
+    const { grid, money } = openPanelWithCharts();
+
+    money.redrawLive({ algo: 100 }, "USD");
+
+    const asaChart = grid.querySelector('[data-chart="asachart"]');
+    expect(asaChart.getAttribute("data-unit")).toBe("USD");
+    const distChart = grid.querySelector('[data-chart="distchart"]');
+    expect(distChart.getAttribute("data-unit")).toBe("USD");
+  });
+
+  test("does nothing when chart not drawn yet", () => {
+    const money = load();
+    money.init();
+
+    expect(() => money.redrawLive({ algo: 100 }, "ALGO")).not.toThrow();
+  });
+
+  test("does nothing when chart element missing _asastatsParts", () => {
+    const { grid, money } = openPanelWithCharts();
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    delete chart._asastatsParts;
+
+    expect(() => money.redrawLive({ algo: 100 }, "ALGO")).not.toThrow();
+  });
+
+  test("handles missing asset gracefully", () => {
+    const { grid, money } = openPanelWithCharts();
+
+    money.redrawLive({ unknown: 100 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    expect(chart.querySelector(".donut-total").textContent).toBe("100.00");
+  });
+
+  test("negative values are clamped to zero for display", () => {
+    const { grid, money } = openPanelWithCharts();
+
+    money.redrawLive({ algo: 100, usdc: -50 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    expect(chart.querySelector(".donut-total").textContent).toBe("100.00");
+  });
+});
+
+describe("init calls toolbar.repaintCharts", () => {
+  test("calls repaintCharts on toolbar when panel opens", () => {
+    const { panel, grid } = mountPanel();
+    panel.open = true;
+    mountPayload("ratiochart", chartData(["Balance", "Staked"], [60, 40], ["#1", "#2"]));
+    const repaintCharts = jest.fn();
+    window.asastatsToolbar = { repaintCharts };
+    const money = load();
+    money.init();
+
+    expect(repaintCharts).toHaveBeenCalled();
+  });
+
+  test("does not call repaintCharts when toolbar not available", () => {
+    const { panel, grid } = mountPanel();
+    panel.open = true;
+    mountPayload("ratiochart", chartData(["Balance"], [1], ["#1"]));
+    delete window.asastatsToolbar;
+    const money = load();
+
+    expect(() => money.init()).not.toThrow();
+  });
+
+  test("does not call repaintCharts when panel is closed", () => {
+    const { panel, grid } = mountPanel();
+    panel.open = false;
+    mountPayload("ratiochart", chartData(["Balance"], [1], ["#1"]));
+    const repaintCharts = jest.fn();
+    window.asastatsToolbar = { repaintCharts };
+    const money = load();
+    money.init();
+
+    expect(repaintCharts).not.toHaveBeenCalled();
+  });
+});
+
+describe("redrawLive covers others slice and data-unit", () => {
+  function openPanelWithAsaAndDist() {
+    const { panel, grid } = mountPanel();
+    mountPayload("asachart", chartData(["ALGO", "USDC", "Others"], [60, 30, 10], ["#1", "#2", "#3"]));
+    mountPayload("distchart", chartData(["ALGO", "USDC", "Others"], [70, 20, 10], ["#1", "#2", "#3"]));
+    const money = load();
+    money.init();
+    panel.open = true;
+    panel.dispatchEvent(new window.Event("toggle"));
+    return { grid, money };
+  }
+
+  test("computes others slice as percentage in asachart", () => {
+    const { grid, money } = openPanelWithAsaAndDist();
+
+    money.redrawLive({ algo: 80, usdc: 50 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    const othersIndex = 2;
+    expect(chart.querySelectorAll("path")).toHaveLength(2);
+    expect(chart.querySelector(".donut-total").textContent).toBe("130.00");
+  });
+
+  test("records data-unit attribute on redrawn chart", () => {
+    const { grid, money } = openPanelWithAsaAndDist();
+
+    money.redrawLive({ algo: 100, usdc: 50 }, "USD");
+
+    const asaChart = grid.querySelector('[data-chart="asachart"]');
+    expect(asaChart.getAttribute("data-unit")).toBe("USD");
+    const distChart = grid.querySelector('[data-chart="distchart"]');
+    expect(distChart.getAttribute("data-unit")).toBe("USD");
+  });
+
+  test("converts asachart values to percentages for others slice", () => {
+    const { grid, money } = openPanelWithAsaAndDist();
+
+    money.redrawLive({ algo: 50, usdc: 50, other: 50 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    const titles = [...chart.querySelectorAll("title")].map((t) => t.textContent);
+    expect(titles.some((t) => t.includes("Others"))).toBe(true);
+  });
+});
+
+describe("redrawLive branch coverage", () => {
+  function openPanelWithAsaAndDist() {
+    const { panel, grid } = mountPanel();
+    mountPayload("asachart", chartData(["ALGO", "USDC", "Others"], [60, 30, 10], ["#1", "#2", "#3"]));
+    mountPayload("distchart", chartData(["ALGO", "USDC", "Others"], [70, 20, 10], ["#1", "#2", "#3"]));
+    const money = load();
+    money.init();
+    panel.open = true;
+    panel.dispatchEvent(new window.Event("toggle"));
+    return { grid, money };
+  }
+
+  test("handles zero total in asachart (line 554)", () => {
+    const { grid, money } = openPanelWithAsaAndDist();
+
+    money.redrawLive({ algo: 0, usdc: 0 }, "ALGO");
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    expect(chart.querySelector(".donut-total").textContent).toBe("0.00");
+  });
+
+  test("handles missing unit parameter (line 566)", () => {
+    const { grid, money } = openPanelWithAsaAndDist();
+
+    money.redrawLive({ algo: 100, usdc: 50 }, "");
+
+    const asaChart = grid.querySelector('[data-chart="asachart"]');
+    expect(asaChart.hasAttribute("data-unit")).toBe(false);
+    const distChart = grid.querySelector('[data-chart="distchart"]');
+    expect(distChart.hasAttribute("data-unit")).toBe(false);
+  });
+
+  test("handles undefined unit parameter (line 566)", () => {
+    const { grid, money } = openPanelWithAsaAndDist();
+
+    money.redrawLive({ algo: 100, usdc: 50 }, undefined);
+
+    const asaChart = grid.querySelector('[data-chart="asachart"]');
+    expect(asaChart.hasAttribute("data-unit")).toBe(false);
+  });
+
+  test("handles null unit parameter (line 566)", () => {
+    const { grid, money } = openPanelWithAsaAndDist();
+
+    money.redrawLive({ algo: 100, usdc: 50 }, null);
+
+    const asaChart = grid.querySelector('[data-chart="asachart"]');
+    expect(asaChart.hasAttribute("data-unit")).toBe(false);
+  });
+});

@@ -161,27 +161,27 @@
       <div class="grid grid-cols-2 gap-4 text-center sm:grid-cols-3 xl:grid-cols-6">
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Balance</span>
-          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.balance }}">{{ consolidated.balance|floatformat:"2g" }} ALGO</span>
+           <span class="cons-value val font-medium tooltip-bottom" data-band="balance" data-val="{{ consolidated.balance }}">{{ consolidated.balance|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Staked</span>
-          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.staked }}">{{ consolidated.staked|floatformat:"2g" }} ALGO</span>
+           <span class="cons-value val font-medium tooltip-bottom" data-band="staked" data-val="{{ consolidated.staked }}">{{ consolidated.staked|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">Liquidity</span>
-          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.liquidity }}">{{ consolidated.liquidity|floatformat:"2g" }} ALGO</span>
+           <span class="cons-value val font-medium tooltip-bottom" data-band="liquidity" data-val="{{ consolidated.liquidity }}">{{ consolidated.liquidity|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">DeFi</span>
-          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.defi }}">{{ consolidated.defi|floatformat:"2g" }} ALGO</span>
+           <span class="cons-value val font-medium tooltip-bottom" data-band="defi" data-val="{{ consolidated.defi }}">{{ consolidated.defi|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT estimated</span>
-          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ total.nft }}">{{ total.nft|floatformat:"2g" }} ALGO</span>
+           <span class="cons-value val font-medium tooltip-bottom" data-band="nft" data-val="{{ total.nft }}">{{ total.nft|floatformat:"2g" }} ALGO</span>
         </div>
         <div class="cons">
           <span class="cons-text block text-xs uppercase tracking-wide opacity-60">NFT floor</span>
-          <span class="cons-value val font-medium tooltip-bottom" data-val="{{ consolidated.nftfloor }}">{{ consolidated.nftfloor|floatformat:"2g" }} ALGO</span>
+           <span class="cons-value val font-medium tooltip-bottom" data-band="nftfloor" data-val="{{ consolidated.nftfloor }}">{{ consolidated.nftfloor|floatformat:"2g" }} ALGO</span>
         </div>
       </div>
       <p class="cons-expand mt-3 text-center text-xs opacity-50 group-open:hidden">Click totals to show charts</p>

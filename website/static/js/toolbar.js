@@ -61,9 +61,6 @@
     more: { asa: 0, nft: 0 },
   };
 
-  /** Defaults for the reader-level settings, which "Reset view" does not touch. */
-  var SHARED_DEFAULTS = { ccy: "ALGO", nonft: false, refresh: false };
-
   var state = null;
 
   // -- storage --------------------------------------------------------------
@@ -308,12 +305,14 @@
     var rows = assets();
     var found = {};
     var values = {};
+    var allValues = {};
     var kept = {};
     var totals = { balance: 0, staked: 0, liquidity: 0, defi: 0 };
 
     rows.forEach(function (card) {
       found[card.id] = matches(card);
       values[card.id] = 0;
+      allValues[card.id] = 0;
       kept[card.id] = 0;
     });
 
@@ -323,6 +322,9 @@
       var hit = found[owner] || matches(position);
       var on = hit && state.cats.indexOf(category) !== -1;
       position.classList.toggle(HIDDEN_CLASS, !on);
+      if (allValues[owner] !== undefined) {
+        allValues[owner] += num(position, "data-value");
+      }
 
       // Totalled on the search alone: see the note above about why the band
       // reports what the reader holds rather than what is on screen.
@@ -343,7 +345,7 @@
 
     filterCollections();
 
-    return { rows: rows, live: live, values: values, totals: totals };
+    return { rows: rows, live: live, values: values, allValues: allValues, totals: totals };
   }
 
   /**
@@ -590,9 +592,10 @@
    * @param {object} view - the result of `evaluate`.
    */
   function paintFigures(view) {
+    var unfiltered = !state.q && state.cats.length === CATEGORIES.length;
     assets().forEach(function (card) {
       var value = card.querySelector(".cval .val");
-      if (value) write(value, view.values[card.id]);
+      if (value) write(value, unfiltered ? num(value, "data-val") : view.values[card.id]);
     });
 
     groups().forEach(function (group) {
@@ -817,7 +820,7 @@
       }
     );
 
-    redrawCharts(totals, summed);
+    redrawCharts(totals, summed, view);
   }
 
   /**
@@ -839,11 +842,19 @@
    * @param {object} totals - the five category totals.
    * @param {number} summed - their magnitudes' sum.
    */
-  function redrawCharts(totals, summed) {
+  function redrawCharts(totals, summed, view) {
     var dynamic = window.asastatsDynamic;
     var panel = document.getElementById("charts");
     if (!dynamic || !dynamic.redrawAllocation || !panel || !panel.open) return;
     dynamic.redrawAllocation(totals, summed, state.ccy);
+    if (dynamic.redrawLive && view) {
+      var assets = {};
+      view.rows.forEach(function (card) {
+        var label = card.getAttribute("data-sort-name");
+        if (label) assets[label.toLowerCase()] = view.allValues[card.id] || 0;
+      });
+      dynamic.redrawLive(assets, state.ccy);
+    }
   }
 
   // -- grouping by venue ----------------------------------------------------
@@ -1152,14 +1163,9 @@
    * Repaint the figures after the live poll swapped server-rendered ones in.
    * Poll ships server rendering; server doesn't know reader's choices.
    * Full render not called: regroup moves rows, would disturb reader.
-   * Only currency/total-dependent paints run; defaults = server rendering already right.
    */
   function repaintAfterSwap() {
-    // `state` holds the reader's settings; `evaluate` computes the figures the
-    // paints consume. They are not the same object and the paints need the
-    // second - `paintFigures` reads `view.values`, which a settings view does
-    // not carry.
-    if (!state || (state.ccy === SHARED_DEFAULTS.ccy && !state.nonft)) {
+    if (!state) {
       return;
     }
     var view = evaluate();
@@ -1167,6 +1173,12 @@
     paintUnits();
     paintTotal(view);
     paintBand(view);
+  }
+
+  /** Repaint the open charts after dynamic.js draws them for the first time. */
+  function repaintCharts() {
+    /* istanbul ignore next */
+    if (state) paintBand(evaluate());
   }
 
   // -- events ---------------------------------------------------------------
@@ -1335,9 +1347,11 @@
     limit: limit,
     fmt: fmt,
     paintTotal: paintTotal,
+    paintBand: paintBand,
     repaintAfterSwap: repaintAfterSwap,
     paintReadout: paintReadout,
     paintCollections: paintCollections,
+    repaintCharts: repaintCharts,
     write: write,
     toVenues: toVenues,
     regroup: regroup,

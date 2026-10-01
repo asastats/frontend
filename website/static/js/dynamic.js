@@ -529,6 +529,45 @@
     existing.parentNode.replaceChild(replacement, existing);
   }
 
+  /** Refresh the ASA charts from live asset totals without applying filters. */
+  function redrawLive(assetValues, unit) {
+    ["asachart", "distchart"].forEach(function (name) {
+      var existing = document.querySelector('[data-chart="' + name + '"]');
+      if (!existing || !existing._asastatsParts) return;
+
+      var total = Object.keys(assetValues).reduce(function (sum, label) {
+        return sum + Math.max(assetValues[label], 0);
+      }, 0);
+      var listed = 0;
+      var parts = existing._asastatsParts.map(function (part) {
+        var label = part.label.toLowerCase();
+        if (label === "others") return { label: part.label, value: 0, color: part.color };
+        var value = Math.max(assetValues[label] || 0, 0);
+        listed += value;
+        return { label: part.label, value: value, color: part.color };
+      });
+      parts = parts.map(function (part) {
+        if (part.label.toLowerCase() === "others") {
+          part.value = Math.max(total - listed, 0);
+        }
+        if (name === "asachart") {
+          part.value = total ? (100 * part.value) / total : 0;
+        }
+        return part;
+      });
+
+      var replacement = chart(
+        existing._asastatsTitle,
+        parts,
+        name === "asachart" ? total / 100 : 1
+      );
+      if (!replacement) return;
+      replacement.setAttribute("data-chart", name);
+      if (unit) replacement.setAttribute("data-unit", unit);
+      existing.parentNode.replaceChild(replacement, existing);
+    });
+  }
+
   /**
    * Open or close one position's breakdown.
    * Third level: what the money column figure is made of.
@@ -600,9 +639,8 @@
   /**
    * Bind the charts panel and the breakdown controls.
    *
-   * The charts are drawn on first open rather than on load, and only once: the
-   * payload does not change while the page is open, so redrawing on every
-   * toggle would rebuild several hundred nodes to show the same picture.
+   * The charts are drawn on first open rather than on load. Live refresh asks
+   * the toolbar to repaint the allocation chart after that first draw.
    */
   /**
    * Refill the epoch spans after an htmx swap brings new ones in.
@@ -619,10 +657,7 @@
     });
   }
 
-  /**
-   * Bind the charts panel and the breakdown controls.
-   * Charts drawn on first open, not on load (payload doesn't change).
-   */
+  /** Bind the charts panel and the breakdown controls. */
   function init() {
     breakdowns();
     epochs(document);
@@ -635,9 +670,16 @@
 
     // A `<details>` that arrives open -- restored by the browser, or opened
     // before this ran -- has no toggle coming.
-    if (panel.open) draw(grid);
+    var openCharts = function () {
+      draw(grid);
+      var toolbar = window.asastatsToolbar;
+      if (toolbar && typeof toolbar.repaintCharts === "function") {
+        toolbar.repaintCharts();
+      }
+    };
+    if (panel.open) openCharts();
     panel.addEventListener("toggle", function () {
-      if (panel.open) draw(grid);
+      if (panel.open) openCharts();
     });
   }
 
@@ -668,5 +710,6 @@
     toggleBreakdown: toggleBreakdown,
     epochs: epochs,
     redrawAllocation: redrawAllocation,
+    redrawLive: redrawLive,
   };
 })();

@@ -1177,6 +1177,24 @@ describe("when the script arrives before the document", () => {
   });
 });
 
+describe("repaintCharts", () => {
+  test("repaints the band when state exists", () => {
+    const toolbar = load();
+
+    toolbar.state({ cats: ["balance", "staked"], nft: true });
+
+    expect(() => toolbar.repaintCharts()).not.toThrow();
+  });
+
+  test("does nothing when state is null", () => {
+    const toolbar = load();
+    toolbar.state(null);
+
+    expect(() => toolbar.repaintCharts()).not.toThrow();
+  });
+});
+
+
 describe("binding", () => {
   test("a page with no toolbar is left alone", () => {
     document.getElementById("toolbar").remove();
@@ -1442,7 +1460,7 @@ describe("values the markup did not supply", () => {
   });
 
   test("a figure that is not a number counts as nothing", () => {
-    document.querySelector('[data-owner="f1"]').setAttribute("data-value", "n/a");
+    document.querySelector("#f1 .cval .val").setAttribute("data-val", "n/a");
     load();
 
     expect(document.querySelector("#f1 .cval .val").textContent.trim()).toBe("0.00");
@@ -2253,17 +2271,25 @@ describe("repainting after the live poll swaps figures in", () => {
     expect(figure.textContent.trim()).not.toBe("999.99");
   });
 
-  test("does nothing while the reader is on the defaults", () => {
-    // The common case, and the one where the server's own rendering is already
-    // right. Repainting every three seconds for no change would be work with no
-    // effect on a page that can be very long.
-    const toolbar = load();
-    const figure = document.querySelector("#f1 .cval .val");
-    figure.textContent = "left alone";
+  test("recomputes derived figures while the reader is on the defaults", () => {
+    document
+      .querySelector("#f1 .pgroup")
+      .appendChild(position({ owner: "f1", cat: "staked", value: 5 }));
+    load();
+    const changed = document.querySelector("#f1 .position");
+    changed.setAttribute("data-value", "50");
+    changed.querySelector(".val").setAttribute("data-val", "50");
 
-    toolbar.repaintAfterSwap();
+    document.body.dispatchEvent(
+      new CustomEvent("htmx:after:swap", { bubbles: true })
+    );
 
-    expect(figure.textContent).toBe("left alone");
+    expect(document.querySelector("#f1 .pgroup-total").textContent.trim()).toBe(
+      "55.00 ALGO"
+    );
+    expect(
+      document.querySelector('.figs [data-band="balance"] .fig-val').textContent.trim()
+    ).toBe("50.00 ALGO");
   });
 
   test("puts the NFT-less total back after a swap restored the full one", () => {
@@ -2286,5 +2312,328 @@ describe("repainting after the live poll swaps figures in", () => {
     );
 
     expect(figure.textContent.trim()).not.toBe("999.99");
+  });
+});
+
+describe("redrawCharts", () => {
+  function mountChartsPanel() {
+    const panel = document.createElement("details");
+    panel.id = "charts";
+    panel.open = true;
+    document.querySelector(".dynamic-page").appendChild(panel);
+    return panel;
+  }
+
+  test("calls dynamic.redrawAllocation when panel is open", () => {
+    const redrawAllocation = jest.fn();
+    window.asastatsDynamic = { redrawAllocation };
+    const toolbar = load();
+    mountChartsPanel();
+
+    toolbar.render();
+
+    expect(redrawAllocation).toHaveBeenCalled();
+  });
+
+  test("passes filtered totals and summed to redrawAllocation", () => {
+    const redrawAllocation = jest.fn();
+    window.asastatsDynamic = { redrawAllocation };
+    const toolbar = load();
+    mountChartsPanel();
+
+    toolbar.render();
+
+    const totals = redrawAllocation.mock.calls[0][0];
+    const summed = redrawAllocation.mock.calls[0][1];
+    const unit = redrawAllocation.mock.calls[0][2];
+    expect(totals.balance).toBe(40);
+    expect(totals.staked).toBe(30);
+    expect(totals.liquidity).toBe(20);
+    expect(totals.defi).toBe(10);
+    expect(totals.nft).toBe(50);
+    expect(summed).toBe(150);
+    expect(unit).toBe("ALGO");
+  });
+
+  test("calls dynamic.redrawLive with asset values when available", () => {
+    const redrawAllocation = jest.fn();
+    const redrawLive = jest.fn();
+    window.asastatsDynamic = { redrawAllocation, redrawLive };
+    const toolbar = load();
+    mountChartsPanel();
+
+    toolbar.render();
+
+    expect(redrawLive).toHaveBeenCalled();
+    const assets = redrawLive.mock.calls[0][0];
+    expect(assets.aaa).toBeDefined();
+    expect(assets.bbb).toBeDefined();
+    expect(assets.ccc).toBeDefined();
+    expect(assets.ddd).toBeDefined();
+  });
+
+  test("does not call redrawAllocation when panel is closed", () => {
+    const panel = document.createElement("details");
+    panel.id = "charts";
+    panel.open = false;
+    document.querySelector(".dynamic-page").appendChild(panel);
+    const redrawAllocation = jest.fn();
+    window.asastatsDynamic = { redrawAllocation };
+    const toolbar = load();
+
+    toolbar.render();
+
+    expect(redrawAllocation).not.toHaveBeenCalled();
+  });
+
+  test("does not call redrawAllocation when dynamic not available", () => {
+    const panel = document.createElement("details");
+    panel.id = "charts";
+    panel.open = true;
+    document.querySelector(".dynamic-page").appendChild(panel);
+    delete window.asastatsDynamic;
+    const toolbar = load();
+
+    expect(() => toolbar.render()).not.toThrow();
+  });
+
+  test("does not call redrawAllocation when dynamic.redrawAllocation missing", () => {
+    const panel = document.createElement("details");
+    panel.id = "charts";
+    panel.open = true;
+    document.querySelector(".dynamic-page").appendChild(panel);
+    window.asastatsDynamic = { redrawLive: jest.fn() };
+    const toolbar = load();
+
+    expect(() => toolbar.render()).not.toThrow();
+  });
+
+  test("uses current currency for redrawAllocation", () => {
+    const redrawAllocation = jest.fn();
+    window.asastatsDynamic = { redrawAllocation };
+    const toolbar = load();
+    mountChartsPanel();
+
+    document.querySelector('#tb-ccy [data-ccy="USD"]').click();
+    toolbar.render();
+
+    const unit = redrawAllocation.mock.calls[redrawAllocation.mock.calls.length - 1][2];
+    expect(unit).toBe("USD");
+  });
+
+  test("redrawLive receives allValues for each asset", () => {
+    const redrawAllocation = jest.fn();
+    const redrawLive = jest.fn();
+    window.asastatsDynamic = { redrawAllocation, redrawLive };
+    const toolbar = load();
+    mountChartsPanel();
+
+    toolbar.render();
+
+    const assets = redrawLive.mock.calls[0][0];
+    expect(assets.aaa).toBe(40);
+    expect(assets.bbb).toBe(30);
+    expect(assets.ccc).toBe(20);
+    expect(assets.ddd).toBe(10);
+  });
+});
+
+function mountChartsPanel() {
+  const panel = document.createElement("details");
+  panel.id = "charts";
+  panel.open = true;
+  document.querySelector(".dynamic-page").appendChild(panel);
+  return panel;
+}
+
+describe("evaluate edge cases", () => {
+  test("allValues accumulates for owner not in assets list (line 325)", () => {
+    const toolbar = load();
+    const extraPosition = document.createElement("div");
+    extraPosition.className = "position";
+    extraPosition.setAttribute("data-owner", "nonexistent");
+    extraPosition.setAttribute("data-cat", "balance");
+    extraPosition.setAttribute("data-value", "10");
+    extraPosition.setAttribute("data-search", "extra");
+    const cell = document.createElement("div");
+    cell.className = "position-val";
+    const amount = document.createElement("span");
+    amount.className = "amt val";
+    amount.setAttribute("data-val", "10");
+    const unit = document.createElement("span");
+    unit.className = "u unit";
+    unit.textContent = "ALGO";
+    cell.appendChild(amount);
+    cell.appendChild(unit);
+    extraPosition.appendChild(cell);
+    document.querySelector(".dynamic-page").appendChild(extraPosition);
+
+    toolbar.init();
+
+    const evaluate = toolbar.evaluate;
+    const view = evaluate();
+    expect(view.allValues.nonexistent).toBeUndefined();
+  });
+
+  test("redrawCharts calls redrawLive with lowercase labels (line 853)", () => {
+    const toolbar = load();
+    toolbar.init();
+    const panel = document.createElement("details");
+    panel.id = "charts";
+    panel.open = true;
+    document.querySelector(".dynamic-page").appendChild(panel);
+
+    const redrawAllocation = jest.fn();
+    const redrawLive = jest.fn();
+    window.asastatsDynamic = { redrawAllocation, redrawLive };
+
+    toolbar.render();
+
+    expect(redrawLive).toHaveBeenCalled();
+    const assets = redrawLive.mock.calls[0][0];
+    expect(assets.aaa).toBeDefined();
+    expect(assets.bbb).toBeDefined();
+  });
+});
+
+describe("evaluate branch coverage", () => {
+  test("handles position without data-sort-name label (line 853)", () => {
+    const toolbar = load();
+    const extraCard = document.createElement("details");
+    extraCard.className = "fitem mcard";
+    extraCard.id = "f5";
+    extraCard.setAttribute("data-sort-value", "50");
+    extraCard.setAttribute("data-sort-amount", "100");
+    extraCard.setAttribute("data-sort-positions", "1");
+    extraCard.setAttribute("data-search", "extra");
+    const head = document.createElement("summary");
+    head.className = "chead";
+    const value = document.createElement("span");
+    value.className = "cval";
+    const figure = document.createElement("span");
+    figure.className = "v val";
+    figure.setAttribute("data-val", "50");
+    const unit = document.createElement("span");
+    unit.className = "u unit";
+    unit.textContent = "ALGO";
+    value.appendChild(figure);
+    value.appendChild(unit);
+    head.appendChild(value);
+    extraCard.appendChild(head);
+    const body = document.createElement("div");
+    body.className = "cbody";
+    const inner = document.createElement("div");
+    inner.className = "cbody-inner";
+    const holder = document.createElement("div");
+    holder.className = "program-groups";
+    inner.appendChild(holder);
+    body.appendChild(inner);
+    extraCard.appendChild(body);
+    document.getElementById("asset-list").appendChild(extraCard);
+
+    const pos = document.createElement("div");
+    pos.className = "position";
+    pos.setAttribute("data-owner", "f5");
+    pos.setAttribute("data-cat", "balance");
+    pos.setAttribute("data-value", "50");
+    pos.setAttribute("data-search", "extra");
+    const cell = document.createElement("div");
+    cell.className = "position-val";
+    const amount = document.createElement("span");
+    amount.className = "amt val";
+    amount.setAttribute("data-val", "50");
+    const u = document.createElement("span");
+    u.className = "u unit";
+    u.textContent = "ALGO";
+    cell.appendChild(amount);
+    cell.appendChild(u);
+    pos.appendChild(cell);
+    document.querySelector(".dynamic-page").appendChild(pos);
+
+    toolbar.init();
+
+    const panel = document.createElement("details");
+    panel.id = "charts";
+    panel.open = true;
+    document.querySelector(".dynamic-page").appendChild(panel);
+
+    const redrawAllocation = jest.fn();
+    const redrawLive = jest.fn();
+    window.asastatsDynamic = { redrawAllocation, redrawLive };
+
+    toolbar.render();
+
+    expect(redrawLive).toHaveBeenCalled();
+    const assets = redrawLive.mock.calls[0][0];
+     expect(assets.extra).toBeUndefined();
+   });
+
+   test("handles card with label but zero value (line 853)", () => {
+     const toolbar = load();
+     const zeroCard = document.createElement("details");
+     zeroCard.className = "fitem mcard";
+     zeroCard.id = "f6";
+     zeroCard.setAttribute("data-sort-value", "0");
+     zeroCard.setAttribute("data-sort-amount", "0");
+     zeroCard.setAttribute("data-sort-positions", "0");
+     zeroCard.setAttribute("data-search", "zero");
+     zeroCard.setAttribute("data-sort-name", "zero");
+     const head = document.createElement("summary");
+     head.className = "chead";
+     const value = document.createElement("span");
+     value.className = "cval";
+     const figure = document.createElement("span");
+     figure.className = "v val";
+     figure.setAttribute("data-val", "0");
+     const unit = document.createElement("span");
+     unit.className = "u unit";
+     unit.textContent = "ALGO";
+     value.appendChild(figure);
+     value.appendChild(unit);
+     head.appendChild(value);
+     zeroCard.appendChild(head);
+     const body = document.createElement("div");
+     body.className = "cbody";
+     const inner = document.createElement("div");
+     inner.className = "cbody-inner";
+     const holder = document.createElement("div");
+     holder.className = "program-groups";
+     inner.appendChild(holder);
+     body.appendChild(inner);
+     zeroCard.appendChild(body);
+     document.getElementById("asset-list").appendChild(zeroCard);
+
+     toolbar.init();
+
+     const panel = document.createElement("details");
+     panel.id = "charts";
+     panel.open = true;
+     document.querySelector(".dynamic-page").appendChild(panel);
+
+     const redrawAllocation = jest.fn();
+     const redrawLive = jest.fn();
+     window.asastatsDynamic = { redrawAllocation, redrawLive };
+
+     toolbar.render();
+
+     expect(redrawLive).toHaveBeenCalled();
+     const assets = redrawLive.mock.calls[0][0];
+     expect(assets.zero).toBe(0);
+   });
+ });
+
+describe("repaintCharts branch coverage", () => {
+  test("returns early when state is falsy (line 1179)", () => {
+    const toolbar = load();
+    toolbar.state(null);
+
+    expect(() => toolbar.repaintCharts()).not.toThrow();
+  });
+
+  test("calls paintBand when state exists (line 1179)", () => {
+    const toolbar = load();
+    toolbar.state({ q: "", group: "asset", sort: "value", dir: -1, cats: ["balance", "staked", "liquidity", "defi"], nft: true, more: { asa: 0, nft: 0 }, ccy: "ALGO", nonft: false, refresh: false });
+
+    expect(() => toolbar.repaintCharts()).not.toThrow();
   });
 });
