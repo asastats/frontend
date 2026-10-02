@@ -2767,3 +2767,17 @@ is `display: contents` so it has no box to measure against either. The toolbar
 test *can* be geometric, because it has four elements that must agree — it
 asserts their centres span at most 1px, and fails `[1371, 1371, 1377, 1374]`
 without the fix.
+
+## website/templates/snippets/asas/program.html — no `ppv-` id for an ambiguous position (2026-10-02)
+
+Two positions on one asset that describe themselves identically share a `pid`
+(`api/position_id.py`): in the reference bundle these are two Cometa stakes on
+ASASTATS, two Gora.fi delegations, and three Lofty AMM amounts. The engine never
+publishes those (`_asset_positions` drops them), and the dynamic layout already
+renders them without an id (`pambig`). Classic still gave each one
+`id="ppv-<pid>"`, so the page had duplicate ids. The values involved were
+cents, so this was not the cause of the consolidated view drifting from the
+total. That cause was the engine diffing against a per-process copy, plus tabs
+missing payloads: see the engine and widgets logbooks, same date. The ids now
+check `pid_ambiguous` as well. The `data-cat`/`data-val` that
+`repaintClassicLive` sums are unchanged.

@@ -62,12 +62,12 @@
         <div class="asar order-2 space-y-1 text-right" data-program-panel>
           <div>
             {% if prog.value|is_negative %}
-               <span class="text-error">(<span {% if prog.pid %}id="ppv-{{ prog.pid }}" {% endif %}class="val program-value text-error{% if has_breakdown %} tdist cursor-pointer{% endif %}"
+               <span class="text-error">(<span {% if prog.pid and not prog.pid_ambiguous %}id="ppv-{{ prog.pid }}" {% endif %}class="val program-value text-error{% if has_breakdown %} tdist cursor-pointer{% endif %}"
                    data-asset="{{ asset.id }}" data-cat="{{ prog|position_band }}"
                   {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
                   data-val="{{ prog.value }}">{{ prog.value|abs_value|floatformat:'2g' }} ALGO</span>)</span>
             {% else %}
-               <span {% if prog.pid %}id="ppv-{{ prog.pid }}" {% endif %}class="val program-value font-medium{% if has_breakdown %} tdist cursor-pointer{% endif %}"
+               <span {% if prog.pid and not prog.pid_ambiguous %}id="ppv-{{ prog.pid }}" {% endif %}class="val program-value font-medium{% if has_breakdown %} tdist cursor-pointer{% endif %}"
                    data-asset="{{ asset.id }}" data-cat="{{ prog|position_band }}"
                   {% if has_breakdown %}data-distid="d-{{ distid_base }}-{{ asset.id }}"{% endif %}
                   data-val="{{ prog.value }}">{{ prog.value|floatformat:'2g' }} ALGO</span>
