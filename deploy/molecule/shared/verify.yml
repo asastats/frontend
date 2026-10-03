@@ -226,6 +226,53 @@
           /verify/, /wallets/), which sends a session cookie and no Authorization header.
         success_msg: "The unauthenticated-API throttle is scoped to address-shaped paths."
 
+    # Address-page limit reaches the location that serves /<address>
+    # see docs/logbook.md#deploymoleculesharedverifyyml
+    - name: Assert zone=main is keyed on address-shaped paths
+      ansible.builtin.assert:
+        that:
+          - "'map $uri $main_limit_key' in verify_nginx_dump.stdout"
+          - "'limit_req_zone $main_limit_key zone=main' in verify_nginx_dump.stdout"
+        fail_msg: >-
+          zone=main is not keyed by $main_limit_key. Keyed on the client address
+          alone, the slug location would throttle every page it serves.
+        success_msg: "zone=main is keyed on address-shaped paths."
+
+    - name: Extract the slug location block
+      ansible.builtin.set_fact:
+        verify_slug_block: >-
+          {{ verify_nginx_dump.stdout
+             | regex_search('location ~\\* \\^/\\(\\[A-Za-z0-9\\._-\\]\\+\\)/\\?\\$ \\{[^}]*')
+             | default('', true) }}
+
+    - name: Assert the slug location carries the address-page limit
+      ansible.builtin.assert:
+        that:
+          - "'limit_req zone=main' in verify_slug_block"
+        fail_msg: >-
+          The slug location is the first regex to match /<address> and /<hash>,
+          so without zone=main there those pages are never limited; on
+          2026-10-03 one client fetched 760 of them in two minutes.
+        success_msg: "The slug location carries the address-page limit."
+
+    - name: Fetch a non-address single-segment path rapidly
+      ansible.builtin.uri:
+        url: "http://localhost/home"
+        status_code: [200, 301, 302, 404, 500, 502]
+        follow_redirects: none
+      register: verify_other_unthrottled
+      changed_when: false
+      loop: "{{ range(0, 12) | list }}"
+
+    - name: Assert no other single-segment path was throttled
+      ansible.builtin.assert:
+        that:
+          - verify_other_unthrottled.results | selectattr('status', 'equalto', 503) | list | length == 0
+        fail_msg: >-
+          /home was refused: zone=main is limiting paths that are not addresses,
+          such as the service worker and every page the slug location serves.
+        success_msg: "Paths that are not addresses or hashes are not throttled."
+
     - name: Fetch a wallet endpoint repeatedly to prove it is not throttled
       ansible.builtin.uri:
         url: "http://localhost/api/v2/wallet/wallets/"

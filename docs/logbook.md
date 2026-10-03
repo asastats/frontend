@@ -2871,3 +2871,116 @@ total) came out 0. It now reads `.dynamic-page [data-totalnftfloor]`, the rule
 `address.js` already uses. The test helper had put the attribute on `.pricetip`,
 matching the code instead of the template, so it could not catch this; it now
 mounts the h1 as the template renders it.
+
+## deploy/roles/nginx/templates/site_http_block.conf, site_server_block.conf
+
+### 2026-10-03: a page limit that actually applies to address and bundle pages
+
+On 2026-10-03, 01:13–01:27 local, one client (85.137.253.193, Chrome/72) fetched
+760 address pages, peaking at 54 in one second (01:26:14). Its own responses
+queued to ~3 s, it abandoned 62, the site made 1,537 internal API calls for it
+in two minutes, and seven of the engine's `/widgets/alerts/repriced`
+notifications timed out at their 2 s limit (the day's other 23,866: p50 12 ms).
+
+The address location already carried `limit_req zone=main burst=5` (4r/m), but
+it never ran: the slug location `^/([A-Za-z0-9._-]+)/?$` sits above it and also
+matches `/<address>` and `/<hash>`, and nginx uses the first matching regex. It
+hands them to `@fallback`, which has no limit. Not one address or hash page got a
+503 that day.
+
+The new zone `pages` is keyed by `$page_limit_key`: the client address for a
+58-character address or 40-character hash path, empty for everything else, and
+an empty key is exempt from `limit_req`. The slug location also serves the
+service worker, `/home`, `/profile` and bundle slugs; a plain limit there would
+throttle normal browsing. A slug that resolves to a hash is internally redirected
+by Lua; nginx applies `limit_req` once per request, so it is not counted twice.
+
+Sizing: a Cluster subscriber may follow 20 addresses, one per tab. Opening or
+restoring 20 tabs is 20 page loads in a second or two, so `burst=30 nodelay`;
+20 tabs on the plain 60-second reload are 20 a minute, so `rate=30r/m`. The live
+poll goes to `/widgets/liverefresh/` and API callers to `/api/v2/...`, neither
+of which this zone touches. Visitors sharing one IP (office, VPN, carrier NAT)
+share the limit, which is a further reason it is generous. Against the scraper it
+would have refused everything after the first 30 pages and then allowed one page
+every 2 s.
+
+The old `zone=main` line on the address location is left in place; it is
+unreachable for these paths today.
+
+## deploy/molecule/shared/verify.yml
+
+### 2026-10-03: page limit checks
+
+The page-limit assertions check that the `pages` zone and its URI-keyed map
+exist, that the limit sits in the slug location (the one that actually serves
+addresses; see the nginx templates entry of the same date), that 35 rapid
+requests for one address get at least one 503, and that 35 rapid requests for
+`/home` get none.
+
+## deploy/roles/nginx/templates/site_http_block.conf, site_server_block.conf
+
+### 2026-10-03 (later): two page zones, by session cookie
+
+Split the page limit by whether the request carries a `sessionid` cookie
+(Django's default name; `SESSION_COOKIE_NAME` is not set):
+
+- without one, `pages_anon`: 6r/m, burst 10, nodelay. Enough for a logged-out
+  reader's once-a-minute reload plus some clicking; a scraper is refused after
+  about 10 pages.
+- with one, `pages`: 30r/m, burst 30, nodelay, unchanged from the entry above
+  (20 Cluster tabs at once; up to 20 saved bundles is the ceiling of every tier,
+  `engine/utils/constants/users.py`).
+
+nginx cannot tell a real session from a made-up cookie or a free account from a
+subscriber; a scraper sending any `sessionid` gets the generous zone, which is
+still a ceiling. Tier rules, such as the free reader's one bundle a minute, can
+only be enforced in Django, where the user is known.
+
+`$page_path` marks address and hash paths; two maps over
+`"$page_path:$cookie_sessionid"` give each zone the client address only in its
+own case, so each request is counted in exactly one zone. Live refresh is not
+affected: polls go to `/widgets/liverefresh/`, and its `HX-Refresh` reload
+happens once per change of a page's asset set.
+
+### 2026-10-03 (later still): one zone, lower, for everyone
+
+**Correction to the entry above:** the session-cookie split is withdrawn. Anyone
+who has just logged in has a session, so the generous zone protected nothing;
+and refreshing many pages is live refresh's job, not repeated page loads.
+
+Now one zone, `pages`, per client IP whoever is logged in: 6r/m (one page every
+10 s), burst 20, nodelay. The burst lets a Cluster reader open their 20 addresses
+in tabs at once; after that, loads come back one every 10 s. A free reader's
+once-a-minute reload is well inside it; live refresh polls are not counted, and
+its `HX-Refresh` reload happens only when a page's asset set changes. Against the
+01:25 scraper this refuses everything after the 21st page.
+
+### 2026-10-03 (final): the original limit, made to apply
+
+**Correction to the three entries above:** the `pages` zone and its numbers are
+withdrawn. The original rule stands, `zone=main`, 4r/m per IP, burst 5 without
+`nodelay` (extra requests queue at 15 s intervals; beyond 5 queued they get the
+503 page). The defect was only where it sat: on the address location, which no
+`/<address>` or `/<hash>` request reaches, because the slug location above it
+matches them first. It applied only to longer paths that begin with an address.
+
+Now `zone=main` is keyed by `$main_limit_key`, the client address when `$uri`
+matches the address location's own pattern and empty otherwise, and the slug
+location carries `limit_req zone=main burst=5` too. The address location behaves
+as before (its paths always match the key); the slug location limits only
+address and hash pages, so the service worker, `/home`, `/profile` and bundle
+slugs stay unlimited. One shared zone, so a page counts once whichever location
+serves it.
+
+Accepted cost: a reader opening many address tabs at once gets the first, five
+more over ~75 s, and the 503 page for the rest. Keeping pages current is live
+refresh's job (polls go to `/widgets/liverefresh/`, not counted).
+
+## deploy/molecule/shared/verify.yml
+
+### 2026-10-03 (final): address-page limit checks
+
+The `pages` checks above are replaced by: `zone=main` keyed by `$main_limit_key`,
+the slug location carrying `zone=main`, and 12 rapid requests for `/home` never
+refused. No timed check of the address limit itself: without `nodelay` each
+queued request waits 15 s, so proving a refusal takes over a minute.
