@@ -90,15 +90,16 @@
   /**
    * Flatten a Chart.js-shaped payload into slices.
    * Stacked payloads summed, not truncated (distchart was top wallet balances).
-   * @param {Object} data - `{labels, datasets: [{data, backgroundColor}]}`.
+   * @param {Object} data - `{labels, datasets: [{data, backgroundColor}], ids?}`.
    * @param {Object} [palette] - label to colour, for stacked payloads.
-   * @returns {Array} `[{label, value, color}]`, empty if there is nothing.
+   * @returns {Array} `[{label, value, color, id}]`, empty if there is nothing.
    */
   function slices(data, palette) {
     if (!data || !data.labels || !data.datasets || !data.datasets.length) {
       return [];
     }
     var sets = data.datasets;
+    var ids = Array.isArray(data.ids) ? data.ids : [];
     return data.labels
       .map(function (label, index) {
         var value = 0;
@@ -109,6 +110,8 @@
           label: String(label),
           value: value,
           color: colorFor(sets, index, String(label), palette),
+          // units are not unique (two TINYs on one bundle); ids are
+          id: ids[index] === undefined ? null : ids[index],
         };
       })
       .filter(function (slice) {
@@ -165,7 +168,12 @@
     if (of === "everything") return headline("totalwnft");
     if (of === "assets") return headline("totalwnft") - headline("totalnft");
     if (of === "nft") return headline("totalnft");
-    if (of === "nftfloor") return headline("totalnftfloor");
+    if (of === "nftfloor") {
+      // on the h1, not `.pricetip`: the live refresh replaces that span whole
+      var floor = document.querySelector(".dynamic-page [data-totalnftfloor]");
+      var value = floor ? parseFloat(floor.getAttribute("data-totalnftfloor")) : NaN;
+      return isFinite(value) ? value : 0;
+    }
     return 0;
   }
 
@@ -529,22 +537,33 @@
     existing.parentNode.replaceChild(replacement, existing);
   }
 
-  /** Refresh the ASA charts from live asset totals without applying filters. */
-  function redrawLive(assetValues, unit) {
+  /**
+   * Refresh the ASA charts from live asset totals without applying filters.
+   * @param {Object} assetValues - lower-cased unit to ALGO, for slices with no id.
+   * @param {string} unit - the page's currency.
+   * @param {Object} [byId] - asset id to ALGO; used for every slice that has an id.
+   */
+  function redrawLive(assetValues, unit, byId) {
     ["asachart", "distchart"].forEach(function (name) {
       var existing = document.querySelector('[data-chart="' + name + '"]');
       if (!existing || !existing._asastatsParts) return;
 
-      var total = Object.keys(assetValues).reduce(function (sum, label) {
-        return sum + Math.max(assetValues[label], 0);
+      var source = byId || assetValues;
+      var total = Object.keys(source).reduce(function (sum, key) {
+        return sum + Math.max(source[key], 0);
       }, 0);
       var listed = 0;
       var parts = existing._asastatsParts.map(function (part) {
         var label = part.label.toLowerCase();
-        if (label === "others") return { label: part.label, value: 0, color: part.color };
-        var value = Math.max(assetValues[label] || 0, 0);
+        if (label === "others") {
+          return { label: part.label, value: 0, color: part.color, id: part.id };
+        }
+        var value =
+          byId && part.id !== null
+            ? Math.max(byId[part.id] || 0, 0)
+            : Math.max(assetValues[label] || 0, 0);
         listed += value;
-        return { label: part.label, value: value, color: part.color };
+        return { label: part.label, value: value, color: part.color, id: part.id };
       });
       parts = parts.map(function (part) {
         if (part.label.toLowerCase() === "others") {

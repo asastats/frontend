@@ -551,8 +551,10 @@ class TestBaseAddressViewIntegration:
         assert context["bundle"] == BUNDLE_ADDRESSES.split(" ")
 
         # Charts came out structurally valid (not just MagicMocks).
-        assert set(context["asachart"].keys()) == {"labels", "datasets"}
-        assert set(context["nftchart"].keys()) == {"labels", "datasets"}
+        assert set(context["asachart"].keys()) == {"labels", "datasets", "ids"}
+        assert len(context["asachart"]["ids"]) == len(context["asachart"]["labels"])
+        assert set(context["nftchart"].keys()) == {"labels", "datasets", "ids"}
+        assert len(context["distchart"]["ids"]) == len(context["distchart"]["labels"])
         # Distribution chart: one dataset per segment.
         assert len(context["distchart"]["datasets"]) == len(DISTRIBUTION_COLORS)
         # Ratio chart: balance/staked/liquidity/defi + NFT.

@@ -197,7 +197,7 @@ def _base_chart_data_from_assets_data(
     return {"labels": labels, "data": data, "colors": colors}
 
 
-def _chart_setup(label, labels=[], data=[], colors=[]):
+def _chart_setup(label, labels=[], data=[], colors=[], ids=None):
     """Return chart data populated from provided arguments.
 
     :param label: chart's main label
@@ -210,7 +210,7 @@ def _chart_setup(label, labels=[], data=[], colors=[]):
     :type colors: list
     :return: dict
     """
-    return {
+    chart = {
         "labels": labels,
         "datasets": [
             {
@@ -222,6 +222,10 @@ def _chart_setup(label, labels=[], data=[], colors=[]):
             }
         ],
     }
+    if ids is not None:
+        # asset id per label, None for "others": units are not unique, ids are
+        chart["ids"] = ids
+    return chart
 
 
 def _distribution_chart(asas, values, consolidated_data):
@@ -394,7 +398,7 @@ def _distribution_chart_from_assets_data(assets_data, consolidated_data):
     )
 
 
-def _distribution_setup(labels=[], data={}):
+def _distribution_setup(labels=[], data={}, ids=None):
     """Return distribution chart data populated from provided arguments.
 
     :param labels: collection of chart elements names
@@ -403,7 +407,7 @@ def _distribution_setup(labels=[], data={}):
     :type data: dict
     :return: dict
     """
-    return {
+    chart = {
         "labels": labels,
         "datasets": [
             {
@@ -416,6 +420,9 @@ def _distribution_setup(labels=[], data={}):
             for typ, color in DISTRIBUTION_COLORS.items()
         ],
     }
+    if ids is not None:
+        chart["ids"] = ids
+    return chart
 
 
 def _nft_chart(nft_values, nft_colors, label="NFT data"):
@@ -597,6 +604,7 @@ def _base_chart_data_from_serialized_data(
     colors = []
     count = len(rows)
 
+    ids = []
     for i, item in enumerate(rows):
         is_nft_collection = "asset" not in item
         if is_nft_collection:
@@ -608,6 +616,7 @@ def _base_chart_data_from_serialized_data(
 
         value = float(item.get("value", 0))
         labels.append(unit)
+        ids.append(key)
         data.append(floatformat(100 * (value / asasum), 8))
         colors.append(distinct_colors[i])
         asa_colors[key] = str(i)
@@ -615,11 +624,12 @@ def _base_chart_data_from_serialized_data(
 
         if i < count - 2 and (total > limit or i > PIE_CHART_MAXIMUM_ITEMS - 2):
             labels.append("others")
+            ids.append(None)
             data.append(floatformat(100 * ((asasum - total) / asasum), 8))
             colors.append(ASASTATS_COLOR_OTHERS)
             break
 
-    return {"labels": labels, "data": data, "colors": colors}
+    return {"labels": labels, "data": data, "colors": colors, "ids": ids}
 
 
 def _consolidated_data_from_assets_data(assets_data):
@@ -784,9 +794,11 @@ def _distribution_chart_data_from_serialized_data(serialized_data, consolidated_
     segments = [name.lower() for name in DISTRIBUTION_COLORS]
     count = len(rows)
 
+    ids = []
     for i, item in enumerate(rows):
         asset_id = item.get("asset", {}).get("id")
         labels.append(_unit_for_asaitem(item))
+        ids.append(asset_id)
         for segment in segments:
             data[segment].append(
                 floatformat(getattr(consolidated_data, segment).get(asset_id, 0), 8)
@@ -795,6 +807,7 @@ def _distribution_chart_data_from_serialized_data(serialized_data, consolidated_
 
         if i < count - 2 and (total > limit or i > PIE_CHART_MAXIMUM_ITEMS - 2):
             labels.append("others")
+            ids.append(None)
             for segment in segments:
                 segment_total = sum(
                     getattr(consolidated_data, segment).get(
@@ -805,7 +818,7 @@ def _distribution_chart_data_from_serialized_data(serialized_data, consolidated_
                 data[segment].append(floatformat(segment_total, 8))
             break
 
-    return {"labels": labels, "data": data}
+    return {"labels": labels, "data": data, "ids": ids}
 
 
 def _distribution_chart_from_serialized_data(serialized_data, consolidated_data):

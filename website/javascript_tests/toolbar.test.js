@@ -2421,6 +2421,25 @@ describe("redrawCharts", () => {
     expect(unit).toBe("USD");
   });
 
+  test("redrawLive also receives the values by asset id", () => {
+    // units repeat across assets (two TINYs on one bundle); card ids do not
+    const redrawAllocation = jest.fn();
+    const redrawLive = jest.fn();
+    window.asastatsDynamic = { redrawAllocation, redrawLive };
+    const toolbar = load();
+    mountChartsPanel();
+
+    toolbar.render();
+
+    const byId = redrawLive.mock.calls[0][2];
+    const cards = [...document.querySelectorAll(".dynamic-page details.fitem")].filter(
+      (card) => /^f\d+$/.test(card.id)
+    );
+    expect(cards.length).toBeGreaterThan(0);
+    cards.forEach((card) => expect(byId).toHaveProperty(card.id.slice(1)));
+    expect(Object.values(byId).sort((a, b) => a - b)).toEqual([10, 20, 30, 40]);
+  });
+
   test("redrawLive receives allValues for each asset", () => {
     const redrawAllocation = jest.fn();
     const redrawLive = jest.fn();

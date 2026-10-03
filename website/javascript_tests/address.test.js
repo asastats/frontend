@@ -1461,6 +1461,43 @@ describe("classicLiveValues (direct)", function () {
     document.body.appendChild(section);
   }
 
+  it("also reads values and categories by asset id", function () {
+    document.body.innerHTML = "";
+    const section = document.createElement("section");
+    section.className = "asasec";
+    [
+      ["2200000000", "30400", "defi", "30240"],
+      ["378382099", "0.07", "balance", "0.07"],
+    ].forEach(([id, value, category, programValue]) => {
+      const row = document.createElement("details");
+      row.className = "fitem";
+      row.id = "f" + id;
+      const left = document.createElement("div");
+      left.className = "itemleft";
+      const unit = document.createElement("span");
+      unit.className = "unit";
+      unit.textContent = "TINY";
+      left.appendChild(unit);
+      const total = document.createElement("span");
+      total.id = "v" + id;
+      total.setAttribute("data-val", value);
+      const program = document.createElement("span");
+      program.className = "program-value";
+      program.setAttribute("data-asset", id);
+      program.setAttribute("data-cat", category);
+      program.setAttribute("data-val", programValue);
+      row.append(left, total, program);
+      section.appendChild(row);
+    });
+    document.body.appendChild(section);
+
+    const live = address.classicLiveValues();
+
+    expect(live.byId).toEqual({ 2200000000: 30400, 378382099: 0.07 });
+    expect(live.categoriesById["2200000000"].defi).toBe(30240);
+    expect(live.categoriesById["378382099"].balance).toBe(0.07);
+  });
+
   it("extracts assets and initializes categories", function () {
     mountClassicLiveFixture();
     const live = address.classicLiveValues();
@@ -2645,6 +2682,49 @@ describe("repaintClassicLive refactored internals", function () {
 
     const asaChart = Chart.getChart("id-asachart");
     expect(asaChart.data.datasets[0].data).toBeDefined();
+  });
+
+  it("updateAsaChart keeps two assets sharing a unit apart by id", function () {
+    // On a real bundle the current TINY (~30,400 ALGO) and the old Tinyman v1
+    // TINY (0.07 ALGO) share a unit; keyed by unit the slice read 0.07.
+    address.chartDatasets.asachart = {
+      labels: ["TINY", "TINY"],
+      ids: [2200000000, 378382099],
+      datasets: [{ data: ["50", "50"], backgroundColor: ["#1", "#2"] }],
+    };
+
+    address.updateAsaChart({
+      assets: { tiny: 0.07 },
+      categories: {},
+      byId: { 2200000000: 30400, 378382099: 0.07 },
+      categoriesById: {},
+    });
+
+    const [big, small] = address.chartDatasets.asachart.datasets[0].data.map(parseFloat);
+    expect(big).toBeCloseTo((100 * 30400) / 30400.07, 6);
+    expect(small).toBeCloseTo((100 * 0.07) / 30400.07, 6);
+  });
+
+  it("updateDistributionChart reads categories by id when the payload has ids", function () {
+    window.Chart.getChart.mockImplementation((id) => (id === "id-distchart" ? null : chartInstance()));
+    address.chartDatasets.distchart = {
+      labels: ["TINY", "TINY", "others"],
+      ids: [2200000000, 378382099, null],
+      datasets: [{ label: "Defi", data: ["0", "0", "0"] }],
+    };
+
+    address.updateDistributionChart({
+      assets: {},
+      categories: { tiny: { defi: 0 } },
+      byId: {},
+      categoriesById: {
+        2200000000: { defi: 30240 },
+        378382099: { defi: 0 },
+        5: { defi: 10 },
+      },
+    });
+
+    expect(address.chartDatasets.distchart.datasets[0].data).toEqual(["30240", "0", "10"]);
   });
 
   it("updateAsaChart handles missing asaChart instance", function () {

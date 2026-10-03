@@ -2833,3 +2833,41 @@ Made safe to do by the widgets' 2026-10-03 change that moved the live-refresh
 per-tab state out of the session: a poll no longer saves the session, so this
 is not a database write every 3 s per tab. The weekly `clearsessions` cron now
 has rows to clear.
+
+## website/utils/charts.py, static/js/{dynamic,toolbar,address}.js — chart slices keyed by asset id (2026-10-03)
+
+Found going through the screenshot CSVs of 2026-10-03: the dynamic layout's
+"Top assets" and "Assets by value" charts summed to 419,868 ALGO where the
+assets (total without NFTs) were 451,973, about 32,100 short on every capture.
+Unit names are not unique. On bundle `E8C829B8...` the current TINY
+(2200000000, ~30,400 ALGO, mostly locked in governance) and the old Tinyman v1
+TINY (378382099, 0.07 ALGO) share "TINY", and two assets share "UNIT"
+(thousands of ALGO against ~4). The live redraw looked values up by lower-cased
+unit (`toolbar.js` `redrawCharts`, `dynamic.js` `redrawLive`), so the small
+asset overwrote the big one: the chart showed TINY at 0.08 and UNIT at 4.11.
+
+The classic layout's `repaintClassicLive` keyed values the same way
+(`readAssetValues`, `readProgramValues`), so its slices were wrong too. It never
+showed in a total because classic computes a pie's title from the page total
+(`totalChart`), not from its slices.
+
+Now `_base_chart_data_from_serialized_data` and
+`_distribution_chart_data_from_serialized_data` send `ids` beside `labels` (the
+asset id per slice, null for "others"; collection names on the NFT chart).
+`slices` carries them, `redrawLive` takes a by-id map, which `toolbar.js` builds
+from the card ids (`f<asset id>`), and classic adds `readAssetValuesById` /
+`readProgramValuesById` with `sliceValue` choosing by id when the payload has
+ids. A payload without ids (a page cached before this) uses the unit lookup as
+before.
+
+## website/static/js/dynamic.js — the NFT floor chart read its total from the wrong element (2026-10-03)
+
+The dynamic layout's "NFT floor value" chart showed 0.00 for every collection
+and in total, while the classic page showed ~297,000 ALGO for the same bundle.
+`address_dynamic.html` puts `data-totalnftfloor` on the h1, because the live
+refresh replaces `.pricetip` whole every block. `whole("nftfloor")` still read
+it off `.pricetip`, so it got 0, and every slice (a percentage times that
+total) came out 0. It now reads `.dynamic-page [data-totalnftfloor]`, the rule
+`address.js` already uses. The test helper had put the attribute on `.pricetip`,
+matching the code instead of the template, so it could not catch this; it now
+mounts the h1 as the template renders it.

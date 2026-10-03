@@ -113,8 +113,8 @@ describe("reading a payload", () => {
     const { slices } = load();
 
     expect(slices(chartData(["A", "B"], [3, 7], ["#111", "#222"]))).toEqual([
-      { label: "A", value: 3, color: "#111" },
-      { label: "B", value: 7, color: "#222" },
+      { label: "A", value: 3, color: "#111", id: null },
+      { label: "B", value: 7, color: "#222", id: null },
     ]);
   });
 
@@ -245,16 +245,39 @@ describe("what a payload's numbers mean", () => {
   function mountHeader({ total = 1000, nft = 200, floor = 150, rate = 0.25 } = {}) {
     const page = document.createElement("div");
     page.className = "dynamic-page";
+    // as `address_dynamic.html` renders it: the floor on the h1, the rest on
+    // the `.pricetip` inside it, which the live refresh replaces whole
+    const h1 = document.createElement("h1");
+    h1.className = "total";
+    h1.setAttribute("data-totalnftfloor", String(floor));
     const head = document.createElement("span");
     head.className = "pricetip";
     head.setAttribute("data-totalwnft", String(total));
     head.setAttribute("data-totalnft", String(nft));
-    head.setAttribute("data-totalnftfloor", String(floor));
     head.setAttribute("data-pricealgo", String(rate));
-    page.appendChild(head);
+    h1.appendChild(head);
+    page.appendChild(h1);
     document.body.appendChild(page);
     return head;
   }
+
+  test("the floor total is read off the h1, where the template puts it", () => {
+    // It used to be read off `.pricetip`, which carries no such attribute on the
+    // real page: the NFT floor chart drew 0.00 for every collection.
+    mountHeader({ floor: 297493.92 });
+    const { whole } = load();
+
+    expect(whole("nftfloor")).toBe(297493.92);
+  });
+
+  test("no floor total on the page is zero, not NaN", () => {
+    const page = document.createElement("div");
+    page.className = "dynamic-page";
+    document.body.appendChild(page);
+    const { whole } = load();
+
+    expect(whole("nftfloor")).toBe(0);
+  });
 
   test("the assets chart is of everything that is not an NFT", () => {
     mountHeader({ total: 1000, nft: 200 });
@@ -449,7 +472,7 @@ describe("a stacked payload", () => {
     const { slices } = load();
 
     expect(slices({ labels: ["A"], datasets: [null, { data: [3] }] })).toEqual([
-      { label: "A", value: 3, color: "currentColor" },
+      { label: "A", value: 3, color: "currentColor", id: null },
     ]);
   });
 });
@@ -785,7 +808,7 @@ describe("payload shapes that are not charts", () => {
     const { slices } = load();
 
     expect(slices({ labels: ["A"], datasets: [{ data: [5] }] })).toEqual([
-      { label: "A", value: 5, color: "currentColor" },
+      { label: "A", value: 5, color: "currentColor", id: null },
     ]);
   });
 
@@ -1179,6 +1202,49 @@ describe("redrawLive", () => {
     expect(chart.querySelector(".donut-total").textContent).toBe("150.00");
     const titles = [...chart.querySelectorAll("title")].map((t) => t.textContent);
     expect(titles).toEqual(["ALGO — 66.7%", "USDC — 33.3%"]);
+  });
+
+  test("two assets sharing a unit each keep their own live value", () => {
+    // On a real bundle the current TINY (~30,400 ALGO) and the old Tinyman v1
+    // TINY (0.07 ALGO) share a unit; keyed by unit the chart showed 0.08.
+    const { panel, grid } = mountPanel();
+    const data = chartData(["TINY", "TINY"], [99, 1], ["#1", "#2"]);
+    data.ids = [2200000000, 378382099];
+    mountPayload("asachart", data);
+    const money = load();
+    money.init();
+    panel.open = true;
+    panel.dispatchEvent(new window.Event("toggle"));
+
+    money.redrawLive({ tiny: 0.07 }, "ALGO", { 2200000000: 30400, 378382099: 0.07 });
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    expect(chart.querySelector(".donut-total").textContent).toBe("30,400.07");
+    const titles = [...chart.querySelectorAll("title")].map((t) => t.textContent);
+    expect(titles).toEqual(["TINY — 100.0%", "TINY — 0.0%"]);
+  });
+
+  test("an asset no longer on the page counts as nothing", () => {
+    const { panel, grid } = mountPanel();
+    const data = chartData(["TINY", "GONE"], [50, 50], ["#1", "#2"]);
+    data.ids = [2200000000, 999];
+    mountPayload("asachart", data);
+    const money = load();
+    money.init();
+    panel.open = true;
+    panel.dispatchEvent(new window.Event("toggle"));
+
+    money.redrawLive({}, "ALGO", { 2200000000: 10 });
+
+    const chart = grid.querySelector('[data-chart="asachart"]');
+    expect(chart.querySelector(".donut-total").textContent).toBe("10.00");
+  });
+
+  test("slices carry the payload's asset ids", () => {
+    const data = chartData(["TINY", "others"], [99, 1], ["#1", "#2"]);
+    data.ids = [2200000000, null];
+
+    expect(load().slices(data).map((slice) => slice.id)).toEqual([2200000000, null]);
   });
 
   test("redraws distchart with live asset values", () => {

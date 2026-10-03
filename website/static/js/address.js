@@ -547,7 +547,62 @@ function classicLiveValues() {
   var assets = readAssetValues();
   var categories = initCategoryBuckets(assets);
   categories = readProgramValues(categories);
-  return { assets: assets, categories: categories };
+  var byId = readAssetValuesById();
+  return {
+    assets: assets,
+    categories: categories,
+    byId: byId,
+    categoriesById: readProgramValuesById(byId),
+  };
+}
+
+/**
+ * Read asset totals keyed by asset id: units repeat across assets, ids do not.
+ * @returns {Object} asset id -> total value
+ */
+function readAssetValuesById() {
+  var assets = {};
+  document.querySelectorAll(".asasec details.fitem[id^='f']").forEach(function (card) {
+    var id = card.id.slice(1);
+    var value = document.getElementById("v" + id);
+    if (!value) return;
+    assets[id] = parseFloat(value.getAttribute("data-val")) || 0;
+  });
+  return assets;
+}
+
+/**
+ * Sum program values into category buckets keyed by asset id.
+ * @param {Object} byId - asset id -> total value, for the assets on the page
+ * @returns {Object} asset id -> { balance, staked, liquidity, defi }
+ */
+function readProgramValuesById(byId) {
+  var categories = {};
+  Object.keys(byId).forEach(function (id) {
+    categories[id] = { balance: 0, staked: 0, liquidity: 0, defi: 0 };
+  });
+  document.querySelectorAll(".asasec .program-value[data-cat]").forEach(function (value) {
+    var bucket = categories[value.getAttribute("data-asset") || ""];
+    var category = value.getAttribute("data-cat");
+    if (!bucket || bucket[category] === undefined) return;
+    bucket[category] += parseFloat(value.getAttribute("data-val")) || 0;
+  });
+  return categories;
+}
+
+/**
+ * Return the live value behind one chart slice: by asset id when the payload
+ * carries ids, by lower-cased unit otherwise.
+ * @param {Object} payload - a chart payload, `{labels, ids?}`
+ * @param {number} index - the slice
+ * @param {Object} byId - values by asset id
+ * @param {Object} byUnit - values by lower-cased unit
+ * @returns {*} the value, or undefined
+ */
+function sliceValue(payload, index, byId, byUnit) {
+  var ids = Array.isArray(payload.ids) ? payload.ids : null;
+  if (ids && ids[index] !== null && ids[index] !== undefined) return byId[ids[index]];
+  return byUnit[String(payload.labels[index]).toLowerCase()];
 }
 
 
@@ -659,17 +714,18 @@ function updateRatioChart(totals) {
  */
 function updateAsaChart(live) {
   var asachart = chartDatasets.asachart;
-  var assetTotal = Object.keys(live.assets).reduce(function (sum, asset) {
-    return sum + Math.max(live.assets[asset], 0);
+  var source = asachart && Array.isArray(asachart.ids) ? live.byId : live.assets;
+  var assetTotal = Object.keys(source).reduce(function (sum, asset) {
+    return sum + Math.max(source[asset], 0);
   }, 0);
 
   if (!asachart || !asachart.datasets || !asachart.datasets[0]) return;
 
   var named = 0;
-  asachart.datasets[0].data = asachart.labels.map(function (label) {
+  asachart.datasets[0].data = asachart.labels.map(function (label, index) {
     var key = String(label).toLowerCase();
     if (key === "others") return "0";
-    var value = Math.max(live.assets[key] || 0, 0);
+    var value = Math.max(sliceValue(asachart, index, live.byId, live.assets) || 0, 0);
     named += value;
     return assetTotal ? String(100 * value / assetTotal) : "0";
   });
@@ -695,21 +751,25 @@ function updateDistributionChart(live) {
   var distribution = chartDatasets.distchart;
   if (!distribution || !distribution.datasets) return;
 
+  var buckets = Array.isArray(distribution.ids) ? live.categoriesById : live.categories;
   distribution.datasets.forEach(function (dataset) {
     var category = String(dataset.label || "").toLowerCase();
     var listed = 0;
-    dataset.data = distribution.labels.map(function (label) {
+    dataset.data = distribution.labels.map(function (label, index) {
       var key = String(label).toLowerCase();
       if (key === "others") return "0";
-      var value = (live.categories[key] || {})[category] || 0;
+      var value =
+        (sliceValue(distribution, index, live.categoriesById, live.categories) || {})[
+          category
+        ] || 0;
       listed += value;
       return String(value);
     });
     dataset.data = distribution.labels.map(function (label, index) {
       if (String(label).toLowerCase() !== "others") return dataset.data[index];
-      var total = Object.keys(live.categories).reduce(function (sum, asset) {
+      var total = Object.keys(buckets).reduce(function (sum, asset) {
         /* istanbul ignore next */
-        return sum + ((live.categories[asset] || {})[category] || 0);
+        return sum + ((buckets[asset] || {})[category] || 0);
       }, 0);
       return String(total - listed);
     });

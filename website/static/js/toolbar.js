@@ -849,11 +849,14 @@
     dynamic.redrawAllocation(totals, summed, state.ccy);
     if (dynamic.redrawLive && view) {
       var assets = {};
+      var byId = {};
       view.rows.forEach(function (card) {
         var label = card.getAttribute("data-sort-name");
         if (label) assets[label.toLowerCase()] = view.allValues[card.id] || 0;
+        // the card is `f<asset id>`; two assets can share a unit, never an id
+        byId[card.id.slice(1)] = view.allValues[card.id] || 0;
       });
-      dynamic.redrawLive(assets, state.ccy);
+      dynamic.redrawLive(assets, state.ccy, byId);
     }
   }
 

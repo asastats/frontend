@@ -867,7 +867,8 @@ class TestSerializedChartsAgainstSamplePayload:
 
         # Both charts have the _chart_setup shape.
         for chart in (asachart, nftchart):
-            assert set(chart.keys()) == {"labels", "datasets"}
+            assert set(chart.keys()) == {"labels", "datasets", "ids"}
+            assert len(chart["ids"]) == len(chart["labels"])
             assert len(chart["datasets"]) == 1
             ds = chart["datasets"][0]
             assert set(ds.keys()) == {
@@ -1035,3 +1036,65 @@ class TestUtilsChartsFloorTotalsAcrossPayloads:
             )
         )
         assert totals["Unfloored"] == 0
+
+
+class TestChartsCarryAssetIds:
+    """Units are not unique: on a real bundle the current TINY (~30,400 ALGO) and
+    the old Tinyman v1 TINY (0.07 ALGO) share one, and a live redraw keyed by
+    unit showed TINY at 0.08. Each slice carries its asset id."""
+
+    @staticmethod
+    def _item(asset_id, unit, value):
+        return {
+            "asset": {"id": asset_id, "unit": unit, "name": unit},
+            "value": str(value),
+            "programs": [],
+        }
+
+    def test_two_assets_sharing_a_unit_keep_their_own_ids(self):
+        from utils.charts import _base_chart_data_from_serialized_data
+
+        chart = _base_chart_data_from_serialized_data(
+            [self._item(2200000000, "TINY", 30400), self._item(378382099, "TINY", 0.07)],
+            {},
+        )
+
+        assert chart["labels"] == ["TINY", "TINY"]
+        assert chart["ids"] == [2200000000, 378382099]
+
+    def test_others_has_no_id(self, mocker):
+        from utils.charts import _base_chart_data_from_serialized_data
+
+        mocker.patch("utils.charts.PIE_CHART_MAXIMUM_ITEMS", 2)
+        chart = _base_chart_data_from_serialized_data(
+            [
+                self._item(1, "A", 40),
+                self._item(2, "B", 30),
+                self._item(3, "C", 20),
+                self._item(4, "D", 10),
+            ],
+            {},
+        )
+
+        assert chart["labels"][-1] == "others"
+        assert chart["ids"][-1] is None
+        assert len(chart["ids"]) == len(chart["labels"])
+
+    def test_the_distribution_chart_carries_ids_too(self):
+        from utils.charts import _distribution_chart_from_serialized_data
+        from utils.structs import Consolidated
+
+        consolidated = Consolidated(
+            {2200000000: 1.0, 378382099: 0.07}, {}, {}, {2200000000: 30399.0}, {}
+        )
+        chart = _distribution_chart_from_serialized_data(
+            {
+                "asaitems": [
+                    self._item(2200000000, "TINY", 30400),
+                    self._item(378382099, "TINY", 0.07),
+                ]
+            },
+            consolidated,
+        )
+
+        assert chart["ids"] == [2200000000, 378382099]
