@@ -2781,3 +2781,55 @@ total. That cause was the engine diffing against a per-process copy, plus tabs
 missing payloads: see the engine and widgets logbooks, same date. The ids now
 check `pid_ambiguous` as well. The `data-cat`/`data-val` that
 `repaintClassicLive` sums are unchanged.
+
+## website/core/helpers.py — `may_view_bundle`: who may open a bundle of more than 5 addresses (2026-10-03)
+
+Reported 2026-10-03: a logged-out reader opened the 13-address bundle
+`E8C829B8...` and the page even kept reloading. The free limit is 5
+(`MAX_BUNDLE_SIZE`), but it was only ever applied when a bundle is *made*: a
+typed bundle is cut to 5 in `addresses_from_raw`, and a saved bundle name is
+capped per tier by `Profile.bundle_size_limit`. Any bundle hash already in the
+cache resolved and rendered for whoever asked.
+
+Rule, inferred from how bundles come to exist (a bundle over 5 addresses can
+only be a saved bundle name): it opens for the name's owner, for anyone when a
+**public** name points at it (public names are globally unique, made to be
+shared), and for staff. The hash is recomputed from the resolved addresses
+(`bundle_from_addresses`), so an old bookmarked hash is judged by the bundle
+it names. Only bundles over 5 cost a query.
+
+Applied where nothing else gates the data: the address page
+(`BaseAddressView.dispatch`, before its cache), the export (`ExportView.dispatch`,
+which the export POST passes through too), and the NFT collection fragment
+(`NftCollectionItemsView`, 404). Left alone on purpose: `SwapEntryView` and
+`SwapSourceRedirectView` already require login and act only on addresses linked
+to the reader; widgets pass `WidgetAccessMixin`'s per-tier size bands; the API
+has its own tiers. A refused page goes to the index with
+`BUNDLE_NOT_VIEWABLE_ERROR`.
+
+## website/core/sessions.py — sessions in the database as well as the cache (2026-10-03)
+
+Reported 2026-10-03: a reader found themselves logged out after a deploy (see
+`consolidated/LOGOUT-CHECK.md` in the workspace). Sessions lived only in Redis
+(`django.contrib.sessions.backends.cache`). That engine treats a failed or
+missed cache read as "no session", and `SessionMiddleware` then deletes the
+cookie, so one Redis hiccup on one request logs the reader out for good.
+Redis was ruled out as full (`noeviction`, 0 evicted, 20 MB), so the exact
+moment stays unknown; the fragility does not.
+
+Now `cached_db` (`SESSION_ENGINE = "core.sessions"` in production): reads come
+from the cache, and on a miss or a failed read from `django_session`; saves go to
+both. Django 5.2's `cached_db` already logs and carries on when the cache write
+fails. Two overrides, each with a test that fails without it:
+
+- `cache_key_prefix` is the cache-only engine's (`django.contrib.sessions.cache`),
+  so every session that existed before the switch is still found; with
+  `cached_db`'s own prefix the deploy would log everyone out once.
+- `save` creates the database row when an update finds none: a session from the
+  cache-only days has no row, and the plain engine raises `UpdateError`, which
+  the middleware turns into a 400.
+
+Made safe to do by the widgets' 2026-10-03 change that moved the live-refresh
+per-tab state out of the session: a poll no longer saves the session, so this
+is not a database write every 3 s per tab. The weekly `clearsessions` cron now
+has rows to clear.

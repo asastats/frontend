@@ -53,6 +53,7 @@ from core.forms import (
 from core.helpers import (
     check_export_status,
     check_forbidden_addresses,
+    may_view_bundle,
     prepare_tax_context,
     reset_export,
     start_export,
@@ -81,6 +82,7 @@ from utils.constants.core import (
     DEFAULT_ADDRESS_LAYOUT,
     LIVEREFRESH_HIDDEN_GRACE_SECONDS,
     LIVEREFRESH_POLL_SECONDS,
+    MAX_BUNDLE_SIZE,
 )
 from utils.constants.nameservice import NAME_SERVICE_MULTIPLE
 from utils.constants.users import (
@@ -88,6 +90,7 @@ from utils.constants.users import (
     AUTHORIZATION_TRANSACTION_ERROR_MESSAGE,
     BUNDLE_NAME_DELETED_MESSAGE,
     BUNDLE_NAME_NOT_FOUND_ERROR,
+    BUNDLE_NOT_VIEWABLE_ERROR,
 )
 from utils.helpers import (
     check_algorand_address,
@@ -322,6 +325,12 @@ class NameServiceView(BaseNameServiceView):
         return render(self.request, "index.html", {"form": form})
 
 
+def _bundle_not_viewable(request):
+    """Send a reader who may not view a large bundle back to the index, told why."""
+    messages.error(request, BUNDLE_NOT_VIEWABLE_ERROR.format(MAX_BUNDLE_SIZE))
+    return redirect("index")
+
+
 @method_decorator(csrf_protect, name="dispatch")
 class BaseAddressView(TemplateView):
     """View for presenting account data.
@@ -419,6 +428,8 @@ class BaseAddressView(TemplateView):
                 return redirect("index")
 
             check_forbidden_addresses(self.addresses)
+            if not may_view_bundle(getattr(request, "user", None), self.addresses):
+                return _bundle_not_viewable(request)
 
         self.layout = layout_for_user(getattr(request, "user", None))
         self.live_holdings = self._live_holdings(url_value)
@@ -716,6 +727,9 @@ class ExportView(FormView):
             addresses = check_bundle_addresses(url_value)
             if addresses == "":
                 return redirect("index")
+
+            if not may_view_bundle(getattr(request, "user", None), addresses):
+                return _bundle_not_viewable(request)
 
             bundle = create_bundle(addresses)
             if bundle != url_value:
@@ -1699,6 +1713,8 @@ class NftCollectionItemsView(TemplateView):
         addresses = (
             url_value if len(url_value) > 50 else check_bundle_addresses(url_value)
         )
+        if not may_view_bundle(getattr(self.request, "user", None), addresses):
+            raise Http404
 
         # `None` and `""` are different questions: the NFTs belonging to no
         # collection are a collection the page renders like any other, and the

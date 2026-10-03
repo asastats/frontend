@@ -26,7 +26,11 @@ from utils.constants.users import (
     PUBLIC_BUNDLE_ADDRESSES_LIMIT_HELP_TEXT,
     PUBLIC_BUNDLE_ADDRESSES_NOT_ALLOWED_HELP_TEXT,
 )
-from utils.helpers import check_algorand_address, check_bundle_addresses
+from utils.helpers import (
+    bundle_from_addresses,
+    check_algorand_address,
+    check_bundle_addresses,
+)
 
 
 ## RAW PARSING
@@ -102,6 +106,31 @@ def addresses_from_raw(raw, address_data="", max_bundle_size=MAX_BUNDLE_SIZE):
         return " ".join(address for address in set(bundle) if address)
 
     raise ValidationError(INVALID_ADDRESS_TEXT)
+
+
+def may_view_bundle(user, addresses):
+    """Return whether `user` may view the bundle made of `addresses`.
+
+    Up to `MAX_BUNDLE_SIZE` addresses anyone may, as anyone can type them; a
+    larger bundle only exists as a saved bundle name, so it opens for its owner,
+    for anyone when a public name points at it, and for staff.
+
+    :param user: the requesting user, anonymous included
+    :type user: :class:`django.contrib.auth.models.User`
+    :param addresses: space separated Algorand addresses
+    :type addresses: str
+    :return: Boolean
+    """
+    if len(addresses.split()) <= MAX_BUNDLE_SIZE or getattr(user, "is_staff", False):
+        return True
+
+    names = BundleName.objects.filter(bundle=bundle_from_addresses(addresses))
+    if names.filter(public=True).exists():
+        return True
+
+    return bool(getattr(user, "is_authenticated", False)) and (
+        names.filter(profile__user=user).exists()
+    )
 
 
 def check_forbidden_addresses(value):

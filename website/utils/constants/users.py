@@ -71,6 +71,10 @@ PUBLIC_BUNDLE_ADDRESSES_NOT_ALLOWED_HELP_TEXT = (
 )
 
 BUNDLE_NAME_NOT_FOUND_ERROR = "Bundle name not found!"
+BUNDLE_NOT_VIEWABLE_ERROR = (
+    "A bundle of more than {} addresses can be viewed by its owner, "
+    "or by anyone once the owner makes it public."
+)
 
 BUNDLE_NAME_DELETED_MESSAGE = "Bundle name has been deleted"
 
