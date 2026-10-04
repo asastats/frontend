@@ -95,8 +95,8 @@
     {% endwith %}
   {% endfor %}
   </div>
-  {% if asaitems|length > shown %}
-    {% include "snippets/show_more.html" with hidden=asaitems|next_batch:shown noun="assets" %}
+  {% if asaitems %}
+    {% include "snippets/show_more.html" with hidden=asaitems|next_batch:shown noun="assets" hide=asaitems|length_is_at_most:shown %}
   {% endif %}
   {% endwith %}
 </div>

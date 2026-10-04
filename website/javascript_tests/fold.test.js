@@ -33,7 +33,7 @@ function run(file) {
 }
 
 /** A section with `count` rows, folded at `initial` the way the server does. */
-function section(kind, count, initial) {
+function section(kind, count, initial, hide = false) {
   const cls = kind === "nft" ? "nftsec" : "asasec";
   const rows = [];
   for (let i = 0; i < count; i += 1) {
@@ -44,7 +44,7 @@ function section(kind, count, initial) {
   return `
     <div class="${cls} section-list" data-initial="${initial}">
       <div data-folding>${rows.join("")}</div>
-      <div class="mt-3">
+      <div class="mt-3"${hide ? " hidden" : ""}>
         <button type="button" class="show-more" data-show-more
                 data-noun="${kind === "nft" ? "collections" : "assets"}"
                 aria-expanded="false">
@@ -152,6 +152,33 @@ describe("the fold size a reader chose", () => {
       expect(() =>
         window.asastatsShowMore.paint(container, button)
       ).not.toThrow();
+    });
+
+    it("shows a control served hidden when the reader's fold hides rows", () => {
+      // XFO53H… on 2026-10-04: 16 assets, a fold of 10, and no way to the rest.
+      document.body.innerHTML = section("asa", 16, 20, true);
+      document.documentElement.setAttribute("data-fold-assets", "10");
+      run("showmore.js");
+
+      expect(visible()).toBe(10);
+      const button = document.querySelector(".show-more");
+      expect(button.parentNode.hidden).toBe(false);
+      expect(button.querySelector(".show-more-open").textContent).toBe(
+        "Show 6 more assets"
+      );
+
+      press();
+
+      expect(visible()).toBe(16);
+    });
+
+    it("keeps it hidden when the reader's fold covers the section", () => {
+      document.body.innerHTML = section("asa", 16, 20, true);
+      document.documentElement.setAttribute("data-fold-assets", "50");
+      run("showmore.js");
+
+      expect(visible()).toBe(16);
+      expect(document.querySelector(".show-more").parentNode.hidden).toBe(true);
     });
 
     it("leaves `prefold` alone until something is pressed", () => {

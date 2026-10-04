@@ -759,6 +759,19 @@ def next_batch(rows, shown):
 
 
 @register.filter
+def length_is_at_most(rows, shown):
+    """Return whether the server's fold leaves none of ``rows`` folded.
+
+    :param rows: the section's rows
+    :type rows: list
+    :param shown: the server's fold size
+    :type shown: int
+    :return: bool
+    """
+    return beyond(rows, shown) == 0
+
+
+@register.filter
 def holdings_amount(asaitem):
     """Return an asaitem's holding as a plain number, for sorting on.
 

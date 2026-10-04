@@ -324,8 +324,14 @@ class TestFoldedRows:
         assert page.select("[data-folding]"), "no section opted into folding"
 
     def test_a_section_with_a_control_has_folded_rows(self, page):
-        """And the converse: a control with nothing to reveal is a dead button."""
+        """And the converse: a control with nothing to reveal is a dead button.
+
+        Served hidden is the exception: the scripts show it when the reader's
+        own fold size folds rows the server's fold did not.
+        """
         for control in page.select("[data-show-more]"):
+            if control.parent.has_attr("hidden"):
+                continue
             section = control.find_parent(class_="section-list")
 
             assert section is not None, "a show-more control outside any section"

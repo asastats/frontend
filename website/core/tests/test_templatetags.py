@@ -26,6 +26,7 @@ from core.templatetags.core_extras import (
     is_distribution,
     is_negative,
     list_item,
+    length_is_at_most,
     next_batch,
     program_url,
     program_url_title,
@@ -873,6 +874,15 @@ class TestCoreExtrasFoldCounts:
 
     def test_core_extras_next_batch_of_nothing_is_zero(self):
         assert next_batch([], 20) == 0
+
+    def test_core_extras_length_is_at_most_a_short_section(self):
+        assert length_is_at_most(list(range(16)), 20) is True
+
+    def test_core_extras_length_is_at_most_an_exact_section(self):
+        assert length_is_at_most(list(range(20)), 20) is True
+
+    def test_core_extras_length_is_at_most_a_longer_section(self):
+        assert length_is_at_most(list(range(21)), 20) is False
 
     @pytest.mark.parametrize("shown", [None, "", "twenty"])
     def test_core_extras_next_batch_survives_a_missing_batch_size(self, shown):

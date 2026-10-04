@@ -1652,6 +1652,24 @@ describe("the load-more rule", () => {
     }
   });
 
+  test("a control served hidden appears when the reader's fold hides rows", () => {
+    // XFO53H… on 2026-10-04: the server's fold covered all 16 assets, so it
+    // served the control hidden; the reader's fold of 10 left six unreachable.
+    document.querySelector(".asasec").setAttribute("data-initial", "10");
+    document.querySelector(".asasec [data-show-more]").parentNode.hidden = true;
+    document.documentElement.setAttribute("data-fold-assets", "1");
+    try {
+      load();
+
+      expect(unfolded()).toEqual(["f1"]);
+      expect(
+        document.querySelector(".asasec [data-show-more]").parentNode.hidden
+      ).toBe(false);
+    } finally {
+      document.documentElement.removeAttribute("data-fold-assets");
+    }
+  });
+
   test("the label promises only what the press delivers", () => {
     // "Show 56 more" over a control that reveals twenty is a lie the reader
     // finds out about by pressing it.

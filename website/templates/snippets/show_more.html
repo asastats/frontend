@@ -17,8 +17,11 @@
    scripts rewrite the count inside `.show-more-open` and read the noun off
    `data-noun` - the alternative is a plural hardcoded in two JavaScript
    files, which is how "1 more collections" gets shipped.
+
+   `hide`: served hidden when the server's fold leaves nothing folded; the
+   scripts unhide it when the reader's own fold size does. See docs/logbook.md.
 {% endcomment %}
-<div class="mt-3 text-center">
+<div class="mt-3 text-center"{% if hide %} hidden{% endif %}>
   <button type="button" class="btn btn-ghost btn-sm show-more" data-show-more
           data-noun="{{ noun }}" aria-expanded="false">
     <span class="show-more-open">Show {{ hidden }} more {{ noun }}</span>

@@ -119,16 +119,17 @@
     // the whole list. The template renders the control from the *server's*
     // fold, which does not know what the reader chose, so hiding it is this
     // script's job. `toolbar.js` does the same for the dynamic designs.
+    // Likewise a list no longer than one batch: nothing to fold or put back.
     if (button.parentNode) {
-      button.parentNode.hidden = batch === Infinity;
+      button.parentNode.hidden = batch === Infinity || entries.length <= batch;
     }
     // **The stylesheet's job is over the moment this runs.** `html.prefold`
     // rules position rows by DOM index, which is right until something starts
     // folding by a filtered index instead. This script does not filter, but it
     // does own `.folded` from here on, and leaving both in force would mean two
-    // answers to one question. Dropped here rather than at load because, unlike
-    // the dynamic designs, nothing paints this page until a press: until then
-    // the stylesheet *is* the reader's fold.
+    // answers to one question. Dropped here rather than at load: without a
+    // reader's fold nothing paints until a press, and until then the stylesheet
+    // *is* the fold; with one, `init` paints by that same size.
     document.documentElement.classList.remove("prefold");
   }
 
@@ -178,6 +179,18 @@
       event.preventDefault();
       toggle(button);
     });
+
+    // The reader's own fold size: fold by it now, so a control the server
+    // served hidden appears when that fold hides rows. See docs/logbook.md.
+    Array.prototype.forEach.call(
+      document.querySelectorAll("[data-show-more]"),
+      function (button) {
+        var container = containerFor(button);
+        if (container && !isNaN(foldSize(container.closest("[data-initial]")))) {
+          paint(container, button);
+        }
+      }
+    );
   }
 
   if (document.readyState === "loading") {

@@ -3035,3 +3035,33 @@ after it was opened and nothing recorded what the comparison saw. Re-enabled at
 INFO for the 2026-10-03 deploy; in the 20 hours to 2026-10-04 11:26 it wrote
 nothing, and its warnings reach the root logger without it. To diagnose reloads
 again, add it back with `"level": "DEBUG"` and `"propagate": False`.
+
+## website/templates/snippets/show_more.html (and its four call sites)
+
+### 2026-10-04: a short section with a small reader fold had no way to its tail
+
+Reported on XFO53HG2F4DHBHMYVN7D2RGFWOZFUZQ3V6KNIDBQAMLEX7RSD5OFPVGIUE in the
+dynamic layout: the asset list stopped at BONK, ten rows, and six assets were
+unreachable (A200, PHEZZIES, $Poof, INUMOO, xMcRib and the negative ALGO row,
+-519.91: a 330.54 balance against an 850.50 Al Goanna borrow). It looked like a
+negative-value bug; it was the fold. The reader's stored fold size was 10
+(`<html data-fold-assets="10">`), so `toolbar.js` folded after ten, but the
+templates rendered "Show more" only when a section held more rows than the
+server's fold (`ADDRESS_INITIAL_ASSETS` = 20). With 16 assets there was no
+control at all. Same in the classic layout (where `html.prefold` folds by the
+reader's size before any script runs) and in both NFT sections.
+
+Now the control is rendered whenever a section has rows, with its wrapper
+`hidden` when the server's fold leaves nothing folded
+(`length_is_at_most`). `toolbar.js` already set the wrapper's `hidden` from its
+own fold on every render. `showmore.js` now paints at load when the reader has a
+fold size, so the control appears when that fold hides rows, and hides the
+control when the list is no longer than one batch.
+
+## website/static/js/showmore.js
+
+### 2026-10-04: paints at load when the reader chose a fold size
+
+See the `show_more.html` entry of the same date. Without a stored fold size it
+still paints nothing until a press, so `html.prefold` stays in force exactly as
+before.

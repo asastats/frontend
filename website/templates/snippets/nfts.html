@@ -25,8 +25,8 @@
     {% include "snippets/nfts/collection.html" with coll=coll nft_colors=nft_colors index=forloop.counter0 shown=shown defer=nftcollections|defer_items %}
   {% endfor %}
   </div>
-  {% if nftcollections|length > shown %}
-    {% include "snippets/show_more.html" with hidden=nftcollections|next_batch:shown noun="collections" %}
+  {% if nftcollections %}
+    {% include "snippets/show_more.html" with hidden=nftcollections|next_batch:shown noun="collections" hide=nftcollections|length_is_at_most:shown %}
   {% endif %}
   {% endwith %}
 </div>

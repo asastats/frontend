@@ -29,8 +29,8 @@
   </div>
   {% comment %} **Directly after the list it unfolds**: `showmore.js` finds
      its container from the control wrapper's previous sibling. {% endcomment %}
-  {% if nftcollections|length > shown %}
-    {% include "snippets/show_more.html" with hidden=nftcollections|next_batch:shown noun="collections" %}
+  {% if nftcollections %}
+    {% include "snippets/show_more.html" with hidden=nftcollections|next_batch:shown noun="collections" hide=nftcollections|length_is_at_most:shown %}
   {% endif %}
   {% endwith %}
 </section>

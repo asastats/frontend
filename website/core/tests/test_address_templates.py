@@ -699,6 +699,21 @@ class TestTheLoadMoreControlKeepsItsPromise:
                     f"while publishing a batch of {batch}"
                 )
 
+    def test_a_short_section_still_serves_a_hidden_control(self, sample_payload):
+        """A reader's fold size below the server's folds rows the server did not.
+
+        XFO53H… on 2026-10-04: 16 assets, a fold of 10, and no control, so six
+        assets could not be reached. The scripts unhide this one.
+        """
+        short = dict(sample_payload, asaitems=sample_payload["asaitems"][:16])
+        for template in self.TEMPLATES:
+            page = self._page(template, short)
+            control = page.select_one(".asasec [data-show-more]")
+
+            assert control is not None, f"{template} serves no asset control"
+            assert control.parent.has_attr("hidden"), template
+            assert not page.select(".asasec .fitem.folded"), template
+
     def test_the_label_promises_one_batch_and_not_the_whole_tail(self, sample_payload):
         """The defect, in one assertion.
 
@@ -707,7 +722,13 @@ class TestTheLoadMoreControlKeepsItsPromise:
         because the label is the thing the reader is owed.
         """
         for template in self.TEMPLATES:
-            controls = self._page(template, sample_payload).select("[data-show-more]")
+            controls = [
+                control
+                for control in self._page(template, sample_payload).select(
+                    "[data-show-more]"
+                )
+                if not control.parent.has_attr("hidden")
+            ]
 
             assert controls, f"{template} renders no load-more control"
             for control in controls:

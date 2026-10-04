@@ -188,8 +188,8 @@
      unfolds**: `showmore.js` finds its container from the control wrapper's
      previous sibling. Anything between the two points it somewhere else.
   {% endcomment %}
-  {% if account.asaitems|length > shown %}
-    {% include "snippets/show_more.html" with hidden=account.asaitems|next_batch:shown noun="assets" %}
+  {% if account.asaitems %}
+    {% include "snippets/show_more.html" with hidden=account.asaitems|next_batch:shown noun="assets" hide=account.asaitems|length_is_at_most:shown %}
   {% endif %}
   {% comment %} Where "Group: by venue" builds its list, empty and hidden.
 
