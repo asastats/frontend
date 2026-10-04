@@ -2,6 +2,7 @@
 
 import pytest
 from django.contrib.sessions.backends.cache import SessionStore as CacheOnlyStore
+from django.contrib.sessions.backends.cached_db import SessionStore as CachedDbStore
 from django.contrib.sessions.models import Session
 from django.core.cache import caches
 
@@ -57,3 +58,29 @@ class TestSessionStore:
 
         assert Session.objects.filter(session_key=session.session_key).exists()
         assert caches["default"].get(session.cache_key)["a"] == 1
+
+    def test_a_row_another_request_created_meanwhile_is_updated(self, mocker):
+        """The update finds no row, the create then finds one: save over it."""
+        key = _cache_only_session(_auth_user_id="7")
+        session = SessionStore(key)
+        session["seen"] = True
+        real_save = CachedDbStore.save
+        attempts = []
+
+        def racing_save(store, must_create=False):
+            attempts.append(must_create)
+            if must_create:
+                Session.objects.create(
+                    session_key=key,
+                    session_data=store.encode({"_auth_user_id": "7"}),
+                    expire_date=store.get_expiry_date(),
+                )
+            return real_save(store, must_create=must_create)
+
+        mocker.patch.object(CachedDbStore, "save", autospec=True, side_effect=racing_save)
+
+        session.save()
+
+        assert attempts == [False, True, False]
+        row = Session.objects.get(session_key=key)
+        assert session.decode(row.session_data) == {"_auth_user_id": "7", "seen": True}

@@ -49,7 +49,7 @@
       {% if nft.last_purchase %}
         <div class="space-y-0.5 text-xs">
           <div>Last purchase: <span class="val font-medium" data-val="{{ nft.last_purchase.price }}">{{ nft.last_purchase.price|floatformat:'2g' }} ALGO</span></div>
-          <div class="flex flex-wrap items-baseline gap-x-2 text-base-content/70">
+          <div class="text-base-content/70">
             <span class="epoch" data-epoch="{{ nft.last_purchase.epoch }}"></span>
             <a class="link link-hover" href="{{ nft.last_purchase.link }}" target="_blank" title="Show purchase in Allo">{{ nft.last_purchase.market.name }}</a>
           </div>
@@ -58,7 +58,7 @@
       {% if nft.max_purchase and nft.max_purchase.price > nft.last_purchase.price %}
         <div class="space-y-0.5 text-xs">
           <div>Max purchase: <span class="val font-medium" data-val="{{ nft.max_purchase.price }}">{{ nft.max_purchase.price|floatformat:'2g' }} ALGO</span></div>
-          <div class="flex flex-wrap items-baseline gap-x-2 text-base-content/70">
+          <div class="text-base-content/70">
             <span class="epoch" data-epoch="{{ nft.max_purchase.epoch }}"></span>
             <a class="link link-hover" href="{{ nft.max_purchase.link }}" target="_blank" title="Show purchase in Allo">{{ nft.max_purchase.market.name }}</a>
           </div>

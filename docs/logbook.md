@@ -3065,3 +3065,22 @@ control when the list is no longer than one batch.
 See the `show_more.html` entry of the same date. Without a stored fold size it
 still paints nothing until a press, so `html.prefold` stays in force exactly as
 before.
+
+---
+
+## website/templates/snippets/nfts/item.html
+
+### 2026-10-04: purchase market links right-aligned, inline rather than flex
+
+The "Last purchase" and "Max purchase" market links sat at the left edge of a
+right-aligned column while the "Floor price" link sat under its amount. The
+cause was the row they live in: a `flex flex-wrap` container, and flex items
+ignore `text-align`, so the column's `md:text-right` never reached them. The
+row is now a plain block like the floor's, so it inherits the alignment.
+`showTimes` already ends the epoch text with `" ago on "`, so the template's
+whitespace is all the gap the link needs.
+
+`md:justify-end` on the flex row was the other fix and was not taken: the class
+is not in the committed `static/css/style.tw.css`, and a fresh build of that
+file did not reproduce the committed one byte for byte, so adding a class would
+have meant shipping an unexplained stylesheet diff with a two-line template fix.
