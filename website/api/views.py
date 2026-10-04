@@ -32,6 +32,7 @@ from api.main import (
     processed_asaitems,
     processed_nftcollections,
     processed_nftitems,
+    resolved_nft_links,
 )
 from api.permissions import CanAccessApiPermission
 from api.serializers import (
@@ -178,8 +179,8 @@ class BaseAddressView(APIView):
         permission = getattr(getattr(user, "profile", None), "permission", 0)
         fresh = live.subscribe(bundle, addresses, getattr(user, "pk", None), permission)
 
-        serialized_data = fetch_and_serialize_account(
-            bundle, addresses, fresh=fresh
+        serialized_data = resolved_nft_links(
+            fetch_and_serialize_account(bundle, addresses, fresh=fresh)
         )  # noqa: F821
 
         if asset_id is True:

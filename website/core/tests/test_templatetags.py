@@ -24,6 +24,7 @@ from core.templatetags.core_extras import (
     integer_comma,
     invert_price,
     is_distribution,
+    is_escrow_link,
     is_negative,
     list_item,
     length_is_at_most,
@@ -800,9 +801,40 @@ class TestCoreExtrasExplorerTags:
 
     def test_program_url_unsupported_entity_returns_as_is(self):
         context = {}
-        # Our function only looks for 'address=' and 'application='
-        unsupported = "asset=123456"
+        unsupported = "block=123456"
         assert program_url(context, unsupported) == unsupported
+
+    def test_program_url_asset_returns_explorer_link(self):
+        assert program_url({}, "asset=123456") == "https://allo.info/asset/123456"
+
+    def test_program_url_group_is_url_encoded_for_allo(self):
+        assert program_url({}, "group=iFF1+ZL/E1=") == (
+            "https://allo.info/tx/group/iFF1%2BZL%2FE1%3D"
+        )
+
+    def test_program_url_group_is_raw_for_pera(self, mocker):
+        context = {"request": self._request(mocker, authenticated=True, explorer="pera")}
+        assert program_url(context, "group=iFF1+ZL/E1=") == (
+            "https://explorer.perawallet.app/tx-group/iFF1+ZL/E1=/"
+        )
+
+    def test_program_url_group_falls_back_to_default_for_lora(self, mocker):
+        context = {"request": self._request(mocker, authenticated=True, explorer="lora")}
+        assert program_url(context, "group=G1=") == "https://allo.info/tx/group/G1%3D"
+
+    def test_program_url_transaction_uses_viewer_explorer(self, mocker):
+        context = {"request": self._request(mocker, authenticated=True, explorer="lora")}
+        assert program_url(context, "transaction=TXID") == (
+            "https://lora.algokit.io/mainnet/transaction/TXID"
+        )
+
+    def test_is_escrow_link_filter(self):
+        assert is_escrow_link("application=678788407") is True
+        assert is_escrow_link("address=" + "A" * 58) is True
+        assert is_escrow_link("asset=1") is True
+        assert is_escrow_link("group=G1=") is False
+        assert is_escrow_link("https://exa.market/asset/1") is False
+        assert is_escrow_link(None) is False
 
     def test_program_url_empty_string_returns_as_is(self):
         context = {}

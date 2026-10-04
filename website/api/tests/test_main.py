@@ -541,3 +541,41 @@ class TestApiMainClassSignal:
         fetch_and_serialize_account(value, value)
 
         assert mocked_fetch.call_args.kwargs["permission"] == 0
+
+
+class TestApiMainResolvedNftLinks:
+    """Testing class for :func:`api.main.resolved_nft_links`."""
+
+    def _payload(self):
+        nft = {
+            "id": 1,
+            "listings": [{"price": "1", "link": "application=678788407"}],
+            "floor": [{"price": "2", "link": "https://exa.market/asset/1"}],
+            "last_purchase": {"price": "3", "link": "group=a/b+c="},
+            "max_purchase": {"price": "4", "link": "transaction=TXID"},
+        }
+        return {"total": {}, "nftcollections": [{"name": "c", "nfts": [{"nft": nft}]}]}
+
+    def test_api_main_resolved_nft_links_resolves_to_default_explorer(self):
+        from api.main import resolved_nft_links
+
+        nft = resolved_nft_links(self._payload())["nftcollections"][0]["nfts"][0]["nft"]
+        assert nft["listings"][0]["link"] == "https://allo.info/application/678788407"
+        assert nft["floor"][0]["link"] == "https://exa.market/asset/1"
+        assert nft["last_purchase"]["link"] == "https://allo.info/tx/group/a%2Fb%2Bc%3D"
+        assert nft["max_purchase"]["link"] == "https://allo.info/tx/TXID"
+
+    def test_api_main_resolved_nft_links_leaves_input_untouched(self):
+        from api.main import resolved_nft_links
+
+        payload = self._payload()
+        resolved_nft_links(payload)
+        nft = payload["nftcollections"][0]["nfts"][0]["nft"]
+        assert nft["listings"][0]["link"] == "application=678788407"
+        assert nft["last_purchase"]["link"] == "group=a/b+c="
+
+    def test_api_main_resolved_nft_links_without_collections(self):
+        from api.main import resolved_nft_links
+
+        payload = {"total": {}}
+        assert resolved_nft_links(payload) is payload

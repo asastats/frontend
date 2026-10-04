@@ -33,6 +33,13 @@ from api.views import (
 pytestmark = pytest.mark.django_db
 
 
+@pytest.fixture(autouse=True)
+def _passthrough_nft_links(request, mocker):
+    """Let view tests compare the fetched payload by identity."""
+    if not request.node.name.endswith("_resolves_nft_links"):
+        mocker.patch("api.views.resolved_nft_links", side_effect=lambda data: data)
+
+
 class UserFactory(DjangoModelFactory):
     username = Sequence("testuser{}".format)
     email = Sequence("testuser{}@company.com".format)
@@ -444,6 +451,26 @@ class TestApiV2BaseAddressView(BaseView):
         mocked_processed_nftcollections.assert_not_called()
         mocked_filtered_nft.assert_not_called()
         mocked_entities.assert_not_called()
+
+    def test_api_v2_baseaddressview_get_resolves_nft_links(self, mocker):
+        self.request = self.factory.get(f"/api/v2/{API_EXAMPLE_BUNDLE1}")
+        view = self.setup_view(BaseAddressView(), self.request)
+        force_authenticate(self.request, user=self.user)
+        nft = {"id": 1, "last_purchase": {"price": "1", "link": "group=G="}}
+        serialized_data = {"nftcollections": [{"nfts": [{"nft": nft}]}]}
+        mocker.patch(
+            "api.views.fetch_and_serialize_account", return_value=serialized_data
+        )
+        mocked_processed_account = mocker.patch(
+            "api.views.processed_account", side_effect=lambda data, _: data
+        )
+        mocker.patch("api.views.check_bundle_addresses", return_value="")
+        response = view.get(self.request, bundle=API_EXAMPLE_BUNDLE1)
+        assert response.status_code == status.HTTP_200_OK
+        resolved = mocked_processed_account.call_args[0][0]
+        assert resolved["nftcollections"][0]["nfts"][0]["nft"]["last_purchase"][
+            "link"
+        ] == ("https://allo.info/tx/group/G%3D")
 
 
 class TestApiV2AddressView(BaseView):

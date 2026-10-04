@@ -3084,3 +3084,68 @@ whitespace is all the gap the link needs.
 is not in the committed `static/css/style.tw.css`, and a fresh build of that
 file did not reproduce the committed one byte for byte, so adding a class would
 have meant shipping an unexplained stylesheet diff with a two-line template fix.
+
+---
+
+## website/utils/explorers.py — engine markers resolved per viewer (2026-10-04)
+
+### `parse_marker`, `marker_link`, `is_escrow_marker`
+
+The engine sends some links as `"{entity}={value}"` markers instead of URLs so
+the reader's chosen explorer can be applied here: `application=` and `address=`
+(deprecated programs, and since this date abandoned NFT markets' escrows),
+`asset=`, `transaction=` and `group=` (NFT purchases). Before this only
+`application=` and `address=` were understood, by `program_url` alone.
+
+`group` is in the `EXPLORERS` table only for Allo (`tx/group/{quoted}`) and Pera
+(`tx-group/{value}/`). Lora and Algo Surf address a group page by block round as
+well as id, which the engine's purchase record does not carry, so `marker_link`
+sends their readers to the default explorer for that one entity rather than to
+a page that cannot load. Allo answers 404 for a raw group id containing `/` and
+200 for the URL-encoded one (checked 2026-10-04); Pera is behind a Cloudflare
+challenge from here, so its raw form follows the links Pera itself publishes.
+That difference is why templates may use `{quoted}` as well as `{value}`.
+
+The module docstring's claim that the table is duplicated in the engine was not
+true on this date: the engine has no copy, which is why it sends markers.
+
+## website/api/main.py
+
+### `resolved_nft_links` (2026-10-04)
+
+The address page renders the engine payload directly and resolves markers per
+viewer in the templates. The JSON API returns the same payload, and its NFT
+`link` fields were full URLs before markers existed, so the API view resolves
+them against the default explorer to keep that contract. It copies only what it
+changes, because the payload may be a cached object shared with other requests.
+ASA program URLs are not touched: those were already sent to API callers as
+`application=` markers before this, and changing them is a separate decision.
+
+## website/templates/snippets/nfts/item.html, website/templates/snippets/dynamic/nft.html
+
+### 2026-10-04: listing, floor and purchase links through `program_url`
+
+"Escrowed by" used to be decided by `'AB2' in market.name`. It is now decided by
+the link itself (`is_escrow_link`), so any market added to the engine's
+`ABANDONED_NFT_MARKETS` is labelled without a template change. The purchase
+links' tooltip said "Show purchase in Allo"; it no longer names an explorer.
+
+## website/utils/explorers.py
+
+### Module docstring corrected (2026-10-04)
+
+It said the explorer table was duplicated in the engine so the engine could
+build explorer URLs itself. The engine has no copy and sends markers instead
+(see `parse_marker` above), so the docstring now says that. Recorded here
+because the earlier entry on this date calls the old wording out as untrue.
+
+## website/templates/snippets/dynamic/nft.html
+
+### 2026-10-04: an escrowed listing's price is "escrowed at", not "asking"
+
+The price stays on the page because the escrow is a contract anyone can still
+fill without the market's website, so it is what the owner is exposed to and
+the reason they might cancel. "Asking" implied a working market, so the
+qualifier changes for escrow links only. Hiding the price was considered and
+rejected for that reason; a tooltip saying so was judged unnecessary. The
+classic layout already reads "Escrowed by <market>: <price>".

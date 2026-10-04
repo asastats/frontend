@@ -83,3 +83,49 @@ class TestUtilsConstantsExplorersLink:
 
     def test_utils_constants_explorers_name_for_pera(self):
         assert explorer_name("pera") == "Pera Explorer"
+
+
+class TestUtilsExplorersMarkers:
+    """Testing class for engine explorer markers."""
+
+    def test_utils_explorers_parse_marker_for_each_entity(self):
+        from utils.explorers import parse_marker
+
+        assert parse_marker("application=1") == ("application", "1")
+        assert parse_marker("asset=2") == ("asset", "2")
+        assert parse_marker("address=ADDR") == ("address", "ADDR")
+        assert parse_marker("transaction=TX") == ("transaction", "TX")
+        assert parse_marker("group=a/b+c=") == ("group", "a/b+c=")
+
+    def test_utils_explorers_parse_marker_rejects_non_markers(self):
+        from utils.explorers import parse_marker
+
+        assert parse_marker("https://exa.market/asset/1") is None
+        assert parse_marker("application=abc") is None
+        assert parse_marker("asset=abc") is None
+        assert parse_marker(None) is None
+
+    def test_utils_explorers_marker_link_keeps_urls(self):
+        from utils.explorers import marker_link
+
+        assert marker_link("pera", "https://exa.market/") == "https://exa.market/"
+
+    def test_utils_explorers_marker_link_group_per_explorer(self):
+        from utils.explorers import marker_link
+
+        assert marker_link("allo", "group=a/b+c=") == (
+            "https://allo.info/tx/group/a%2Fb%2Bc%3D"
+        )
+        assert marker_link("pera", "group=a/b+c=") == (
+            "https://explorer.perawallet.app/tx-group/a/b+c=/"
+        )
+        assert marker_link("algosurf", "group=G=") == "https://allo.info/tx/group/G%3D"
+
+    def test_utils_explorers_is_escrow_marker(self):
+        from utils.explorers import is_escrow_marker
+
+        assert is_escrow_marker("application=1") is True
+        assert is_escrow_marker("address=ADDR") is True
+        assert is_escrow_marker("asset=1") is True
+        assert is_escrow_marker("transaction=TX") is False
+        assert is_escrow_marker("https://allo.info/asset/1") is False

@@ -200,6 +200,7 @@ MAINNET_GENESIS_ID = "mainnet-v1.0"
 MAINNET_GENESIS_HASH = "wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8="
 
 DEFAULT_EXPLORER = "allo"
+# `group` only where the page needs no block round; `{quoted}` is URL-encoded.
 EXPLORERS = {
     "allo": {
         "name": "Allo",
@@ -208,6 +209,7 @@ EXPLORERS = {
         "asset": "asset/{value}",
         "transaction": "tx/{value}",
         "application": "application/{value}",
+        "group": "tx/group/{quoted}",
     },
     "lora": {
         "name": "Lora",
@@ -224,6 +226,7 @@ EXPLORERS = {
         "asset": "asset/{value}",
         "transaction": "tx/{value}",
         "application": "application/{value}",
+        "group": "tx-group/{value}/",
     },
     "algosurf": {
         "name": "Algo Surf",

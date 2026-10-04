@@ -26,6 +26,8 @@ from api.helpers import (
     extract_top_account_items,
 )
 from api.position_id import annotate_positions
+from utils.constants.core import DEFAULT_EXPLORER
+from utils.explorers import marker_link
 from utils.helpers import bundle_from_addresses
 
 
@@ -37,6 +39,57 @@ def account_entities(serialized_data):
     :return: list
     """
     return extract_account_entities(serialized_data)
+
+
+def _resolved_nft(nft):
+    """Return a copy of `nft` whose market and purchase links are full URLs.
+
+    :param nft: serialized NFT
+    :type nft: dict
+    :return: dict
+    """
+    resolved = dict(nft)
+    for key in ("listings", "floor"):
+        if nft.get(key):
+            resolved[key] = [
+                {**entry, "link": marker_link(DEFAULT_EXPLORER, entry.get("link"))}
+                for entry in nft[key]
+            ]
+    for key in ("last_purchase", "max_purchase"):
+        if nft.get(key):
+            resolved[key] = {
+                **nft[key],
+                "link": marker_link(DEFAULT_EXPLORER, nft[key].get("link")),
+            }
+    return resolved
+
+
+def resolved_nft_links(serialized_data):
+    """Return `serialized_data` with NFT explorer markers resolved to URLs.
+
+    The address page resolves them per viewer; API callers get the default
+    explorer. Copies what it changes, as the payload may be a shared cache.
+
+    :param serialized_data: the engine's payload
+    :type serialized_data: dict
+    :return: dict
+    """
+    if not serialized_data.get("nftcollections"):
+        return serialized_data
+
+    return {
+        **serialized_data,
+        "nftcollections": [
+            {
+                **collection,
+                "nfts": [
+                    {**row, "nft": _resolved_nft(row["nft"])} if row.get("nft") else row
+                    for row in collection.get("nfts") or []
+                ],
+            }
+            for collection in serialized_data["nftcollections"]
+        ],
+    }
 
 
 def fetch_and_serialize_account(value, addresses, light=False, permission=0, fresh=False):

@@ -614,31 +614,22 @@ def program_url(context, program_url):
 
     :param context: the template context (carries the viewer)
     :type context: dict
-    :param program_url: fuklly formated URL or an explorer failback
+    :param program_url: fully formatted URL or an explorer marker
     :type program_url: str
-    :var entity: blockchain entity kind
-    :type entity: str
-    :var prefix: currently processed entity's identifier
-    :type prefix: str
-    :var value: address or application id
-    :type value: str
     :return: str
     """
-    if not isinstance(program_url, str):
-        return program_url
+    return explorer_constants.marker_link(_viewer_explorer(context, ""), program_url)
 
-    for entity in ("address", "application"):
-        prefix = f"{entity}="
-        if program_url.startswith(prefix):
-            value = program_url[len(prefix) :]
-            if entity == "application" and not value.isnumeric():
-                return program_url
 
-            return explorer_constants.explorer_link(
-                _viewer_explorer(context, ""), entity, value
-            )
+@register.filter
+def is_escrow_link(link):
+    """Return True if an NFT listing `link` is an abandoned market's escrow.
 
-    return program_url
+    :param link: listing URL or explorer marker
+    :type link: str
+    :return: bool
+    """
+    return explorer_constants.is_escrow_marker(link)
 
 
 @register.filter

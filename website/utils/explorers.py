@@ -4,12 +4,17 @@
 per-entity path templates. Adding an entry makes the explorer selectable on
 the settings page with no further code change.
 
-**The same table is duplicated in the engine on purpose**, so its link builder
-can resolve a URL without importing frontend code. One-way and no shared
-import, as ``SUBSCRIPTION_TIER_PERMISSIONS`` already is.
+The engine has no copy of the table: it sends ``"{entity}={value}"`` markers,
+resolved here by :func:`marker_link`.
 """
 
+from urllib.parse import quote
+
 from utils.constants.core import DEFAULT_EXPLORER, EXPLORERS
+
+#: Entities the engine may send as an ``"{entity}={value}"`` marker in place of
+#: a URL. The ids in the first two must be numeric.
+MARKER_ENTITIES = ("application", "asset", "address", "transaction", "group")
 
 
 def normalized_explorer(explorer):
@@ -100,4 +105,58 @@ def explorer_link(explorer, entity, value):
     template = conf.get(entity)
     if template is None:
         return conf["base"]
-    return conf["base"] + template.format(value=value)
+    return conf["base"] + template.format(value=value, quoted=quote(str(value), safe=""))
+
+
+def parse_marker(link):
+    """Return ``(entity, value)`` for an engine explorer marker, else None.
+
+    :param link: URL or ``"{entity}={value}"`` marker
+    :type link: str
+    :return: tuple or None
+    """
+    if not isinstance(link, str):
+        return None
+
+    for entity in MARKER_ENTITIES:
+        prefix = f"{entity}="
+        if link.startswith(prefix):
+            value = link[len(prefix) :]
+            if entity in ("application", "asset") and not value.isnumeric():
+                return None
+            return entity, value
+
+    return None
+
+
+def marker_link(explorer, link):
+    """Return ``link`` resolved against ``explorer`` if it is a marker.
+
+    An explorer without a page for the entity falls back to the default one:
+    Lora and Algo Surf address a group by block round, which markers lack.
+
+    :param explorer: explorer key
+    :type explorer: str
+    :param link: URL or ``"{entity}={value}"`` marker
+    :type link: str
+    :return: str
+    """
+    parsed = parse_marker(link)
+    if parsed is None:
+        return link
+
+    entity, value = parsed
+    if entity not in EXPLORERS[normalized_explorer(explorer)]:
+        explorer = DEFAULT_EXPLORER
+    return explorer_link(explorer, entity, value)
+
+
+def is_escrow_marker(link):
+    """Return True if ``link`` points at where an abandoned market holds an NFT.
+
+    :param link: URL or ``"{entity}={value}"`` marker
+    :type link: str
+    :return: bool
+    """
+    parsed = parse_marker(link)
+    return parsed is not None and parsed[0] in ("application", "asset", "address")
