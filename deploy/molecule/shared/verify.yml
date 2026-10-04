@@ -248,12 +248,32 @@
     - name: Assert the slug location carries the address-page limit
       ansible.builtin.assert:
         that:
-          - "'limit_req zone=main' in verify_slug_block"
+          - "'limit_req zone=main burst=5 nodelay' in verify_slug_block"
         fail_msg: >-
           The slug location is the first regex to match /<address> and /<hash>,
           so without zone=main there those pages are never limited; on
           2026-10-03 one client fetched 760 of them in two minutes.
         success_msg: "The slug location carries the address-page limit."
+
+    - name: Fetch one address page rapidly past the burst
+      ansible.builtin.uri:
+        url: "http://localhost/2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
+        status_code: [200, 301, 302, 404, 500, 502, 503]
+        follow_redirects: none
+      register: verify_page_throttled
+      changed_when: false
+      loop: "{{ range(0, 8) | list }}"
+
+    - name: Assert loads past the burst are refused, not queued
+      ansible.builtin.assert:
+        that:
+          - verify_page_throttled.results | selectattr('status', 'equalto', 503) | list | length > 0
+          - verify_page_throttled.results | map(attribute='elapsed') | max < 5
+        fail_msg: >-
+          8 rapid loads of one address page were never refused, or one waited:
+          without nodelay a load past the rate queues ~15 s, and on 2026-10-04
+          readers abandoned 63 pages waiting in that queue.
+        success_msg: "Address pages past the burst get an immediate 503."
 
     - name: Fetch a non-address single-segment path rapidly
       ansible.builtin.uri:

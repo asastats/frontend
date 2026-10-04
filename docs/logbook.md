@@ -2984,3 +2984,54 @@ The `pages` checks above are replaced by: `zone=main` keyed by `$main_limit_key`
 the slug location carrying `zone=main`, and 12 rapid requests for `/home` never
 refused. No timed check of the address limit itself: without `nodelay` each
 queued request waits 15 s, so proving a refusal takes over a minute.
+
+### 2026-10-03: a zone's key cannot change on a reload
+
+Applied by hand on the liveserver, the change above did nothing after
+`systemctl reload openresty`: nginx refuses to reuse the shared-memory zone
+`main` with a different key (`$binary_remote_addr` -> `$main_limit_key`), so the
+master rejects the new configuration and keeps the old one, while the reload
+command still reports success (`nginx -t` passes; the refusal is only in
+error.log). A restart applies it. The role's handler restarts, so Ansible is not
+affected; any manual change of a `limit_req_zone` key needs a restart.
+
+## deploy/roles/nginx/templates/site_server_block.conf
+
+### 2026-10-04: `nodelay` on the address-page limit
+
+Without `nodelay`, a request over 4r/m waits in nginx for the next slot (~15 s)
+before reaching Django. In the 14 hours after the limit started applying
+(2026-10-03 21:26 → 2026-10-04 11:25) that hurt readers, not scrapers: phone
+browsers often send a page twice and abandon the first after ~0.4 s, so the
+reader's real request waited ~15 s (99.186.37.203 at 21:55:12 local, 14.8 s;
+174.172.46.39 at 03:24 and 03:54; 105.119.10.100 gave up four times at 22:15–22:16
+and was served after 28 s and 38 s). A Google Sheet fetching ~10 addresses kept
+hitting Google's ~29 s timeout. 63 address-page requests were abandoned while
+queued (upstream `-`).
+
+`burst=5 nodelay` keeps the same rate and the same burst: requests within the
+burst are served at once, anything over gets the 503 page immediately. Scrapers
+are unaffected either way (85.137.253.193 got 2 of 2,434 at 23:44–23:54).
+
+A reload applies it; only a change of a zone's key needs a restart (entry of
+2026-10-03 above).
+
+## deploy/molecule/shared/verify.yml
+
+### 2026-10-04: address-page limit, behaviour
+
+With `nodelay` a refusal is immediate, so the limit is now tested by behaviour as
+well: 8 rapid loads of one address page must include a 503, and none may take
+5 s (a queued request would take ~15 s).
+
+## website/config/settings/production.py
+
+### 2026-10-04: `widgets.inhouse.liverefresh` logger removed
+
+The entry was declared because the root logger is WARNING and would drop the live
+widget's INFO/DEBUG lines: one line per reload decision, carrying both holdings
+fingerprints that disagreed, added when a reader reported a page reloading seconds
+after it was opened and nothing recorded what the comparison saw. Re-enabled at
+INFO for the 2026-10-03 deploy; in the 20 hours to 2026-10-04 11:26 it wrote
+nothing, and its warnings reach the root logger without it. To diagnose reloads
+again, add it back with `"level": "DEBUG"` and `"propagate": False`.
