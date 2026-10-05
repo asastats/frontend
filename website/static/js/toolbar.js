@@ -301,6 +301,53 @@
     });
   }
 
+  // `#tb-allnft`: collection card id -> text of items the page did not render.
+  // Not part of the stored view; a reload starts it off again.
+  var nftIndex = null;
+  var allNft = false;
+
+  /**
+   * Turn the all-collections search on or off, fetching its index the first time.
+   *
+   * @param {Element} button - `#tb-allnft`, carrying the index URL.
+   * @returns {Promise|undefined} the fetch, the first time only.
+   */
+  function toggleAllNft(button) {
+    if (button.getAttribute("aria-busy") === "true") return undefined;
+    if (nftIndex) {
+      allNft = !allNft;
+      render();
+      return undefined;
+    }
+
+    button.setAttribute("aria-busy", "true");
+    return window
+      .fetch(button.getAttribute("data-url"), {
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      })
+      .then(function (response) {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json();
+      })
+      .then(function (index) {
+        nftIndex = index || {};
+        allNft = true;
+        render();
+      })
+      .catch(function () {
+        button.title = "Could not load the collections' items; press to try again";
+      })
+      .then(function () {
+        button.removeAttribute("aria-busy");
+      });
+  }
+
+  /** @returns {string} the index text for a collection card, when switched on. */
+  function indexText(card) {
+    return allNft && nftIndex ? nftIndex[card.id] || "" : "";
+  }
+
   var CARD_ROWS = ".pgroup, .position, .program-groups";
   var COLLECTION_ROWS = ".nft-body";
 
@@ -444,7 +491,9 @@
             anyItem = anyItem || hit;
           }
         );
-        card.classList.toggle(HIDDEN_CLASS, !(whole || anyItem));
+        // the index stands in for items not rendered; it never unhides one
+        var indexed = !whole && !anyItem && matchesText(own + " " + indexText(card));
+        card.classList.toggle(HIDDEN_CLASS, !(whole || anyItem || indexed));
       }
     );
   }
@@ -1177,7 +1226,10 @@
     }
 
     var reset = document.getElementById("tb-reset");
-    if (reset) reset.disabled = isDefault();
+    if (reset) reset.disabled = isDefault() && !allNft;
+
+    var all = document.getElementById("tb-allnft");
+    if (all) all.setAttribute("aria-pressed", allNft ? "true" : "false");
 
     var status = document.getElementById("tb-status");
     if (status) {
@@ -1335,6 +1387,12 @@
       return true;
     }
 
+    var allButton = target.closest("#tb-allnft");
+    if (allButton) {
+      toggleAllNft(allButton);
+      return true;
+    }
+
     if (target.closest("#tb-reset")) {
       reset();
       return true;
@@ -1357,6 +1415,7 @@
     state.cats = DEFAULTS.cats.slice();
     state.nft = DEFAULTS.nft;
     state.more = { asa: 0, nft: 0 };
+    allNft = false;
     render();
   }
 
@@ -1451,6 +1510,7 @@
     paintVenues: paintVenues,
     toAssets: toAssets,
     toggleCategory: toggleCategory,
+    toggleAllNft: toggleAllNft,
     isDefault: isDefault,
     state: function (next) {
       if (next) state = next;

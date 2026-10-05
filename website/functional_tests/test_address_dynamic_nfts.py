@@ -928,3 +928,89 @@ class DynamicNftExpandFetchTest(FunctionalTest):
         self.open_page()
         self.expand_first()
         self.wait_until(lambda: "could not be loaded" in self.browser.page_source)
+
+
+def _many_collections_payload(count=105):
+    """The sample payload with `count` collections, past the item fold."""
+    import copy
+
+    payload = _sample_payload()
+    template = payload["nftcollections"][1]
+    collections = []
+    for index in range(count):
+        collection = copy.deepcopy(template)
+        collection["name"] = f"Deferred {index:03d}"
+        nft = collection["nfts"][0]["nft"]
+        nft["id"] = 900_000_000 + index
+        nft["name"] = f"Plain item {index}"
+        nft["unit"] = f"PLN{index}"
+        collections.append(collection)
+    collections[-1]["nfts"][0]["nft"]["name"] = "Needlegem 104"
+    payload["nftcollections"] = collections
+    return payload
+
+
+class DynamicNftManyCollectionsTest(FunctionalTest):
+    """An account past ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS (100)."""
+
+    # borrowed rather than inherited, which would run every test above again
+    sign_in = DynamicNftTest.sign_in
+    open_page = DynamicNftTest.open_page
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
+    def visible_collections(self):
+        return [
+            card.get_attribute("id")
+            for card in self.browser.find_elements(By.CSS_SELECTOR, "#nft-list > .fitem")
+            if card.is_displayed()
+        ]
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_all_collections_button_finds_an_nft_nobody_opened(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """The page and the index are the same payload, so one mock serves both."""
+        mocked_fetch.return_value = _many_collections_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page(collections=0)
+
+        # Past the fold nothing inside a collection is rendered yet.
+        self.assertEqual(
+            0, len(self.browser.find_elements(By.CSS_SELECTOR, "#nft-list .nft-body"))
+        )
+        button = self.browser.find_element(By.ID, "tb-allnft")
+        self.assertEqual("false", button.get_attribute("aria-pressed"))
+
+        self.browser.find_element(By.ID, "tb-q").send_keys("needlegem")
+        self.wait_until(lambda: self.visible_collections() == [])
+
+        button.click()
+
+        self.wait_until(lambda: self.visible_collections() == ["fdeferred-104"])
+        self.assertEqual("true", button.get_attribute("aria-pressed"))
+
+        # Pressed again, the page is back to what it has rendered.
+        button.click()
+        self.wait_until(lambda: self.visible_collections() == [])
+        self.assertEqual([], self.javascript_errors())
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_an_account_under_the_fold_has_no_button(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        self.sign_in()
+        self.open_page(collections=0)
+
+        self.assertEqual([], self.browser.find_elements(By.ID, "tb-allnft"))

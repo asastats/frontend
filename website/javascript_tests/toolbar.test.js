@@ -2810,3 +2810,141 @@ describe("the search reads what the page shows", () => {
     expect(visible()).toEqual([]);
   });
 });
+
+describe("searching inside every collection", () => {
+  /**
+   * Past ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS a collection's items are not on
+   * the page until it is opened, so `#tb-allnft` fetches their text instead.
+   */
+  const INDEX = { fn1: "brave #1 brv1 101", fn2: "puffin #77 puf77 202" };
+
+  function button() {
+    const all = document.createElement("button");
+    all.id = "tb-allnft";
+    all.className = "ghost tb-toggle";
+    all.setAttribute("aria-pressed", "false");
+    all.setAttribute("data-url", "/nft-search/ADDR/");
+    document.getElementById("toolbar").appendChild(all);
+    return all;
+  }
+
+  function respond(ok, body) {
+    window.fetch = jest.fn(() =>
+      Promise.resolve({ ok, status: ok ? 200 : 503, json: () => Promise.resolve(body) })
+    );
+  }
+
+  function type(value) {
+    const field = document.getElementById("tb-q");
+    field.value = value;
+    field.dispatchEvent(new window.Event("input"));
+  }
+
+  function collections() {
+    return Array.prototype.slice
+      .call(document.querySelectorAll("#nft-list > .fitem"))
+      .filter((el) => !el.classList.contains("tb-hidden"))
+      .map((el) => el.id);
+  }
+
+  afterEach(() => {
+    delete window.fetch;
+  });
+
+  test("an unrendered NFT is found only once the button is pressed", async () => {
+    const all = button();
+    respond(true, INDEX);
+    const toolbar = load();
+    type("puf77");
+    expect(collections()).toEqual([]);
+
+    await toolbar.toggleAllNft(all);
+
+    expect(window.fetch).toHaveBeenCalledWith("/nft-search/ADDR/", expect.any(Object));
+    expect(collections()).toEqual(["fn2"]);
+    expect(all.getAttribute("aria-pressed")).toBe("true");
+  });
+
+  test("a second press switches it off without fetching again", async () => {
+    const all = button();
+    respond(true, INDEX);
+    const toolbar = load();
+    type("puf77");
+    await toolbar.toggleAllNft(all);
+
+    all.click();
+
+    expect(window.fetch).toHaveBeenCalledTimes(1);
+    expect(collections()).toEqual([]);
+    expect(all.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  test("the index never unhides a rendered item that does not match", async () => {
+    const all = button();
+    const holder = document.createElement("div");
+    ["Puffin #12", "Puffin #13"].forEach((name) => {
+      const item = document.createElement("div");
+      item.className = "fitem nft-body";
+      item.textContent = name;
+      holder.appendChild(item);
+    });
+    document.getElementById("fn2").appendChild(holder);
+    respond(true, INDEX);
+    const toolbar = load();
+    await toolbar.toggleAllNft(all);
+
+    type("#13");
+
+    const items = Array.from(holder.children).map((el) =>
+      el.classList.contains("tb-hidden")
+    );
+    expect(items).toEqual([true, false]);
+  });
+
+  test("a failed fetch leaves it off and lets the reader try again", async () => {
+    const all = button();
+    respond(false, {});
+    const toolbar = load();
+
+    await toolbar.toggleAllNft(all);
+
+    expect(all.getAttribute("aria-pressed")).toBe("false");
+    expect(all.hasAttribute("aria-busy")).toBe(false);
+    expect(all.title).toMatch(/try again/);
+  });
+
+  test("a press while the fetch is running is ignored", () => {
+    const all = button();
+    window.fetch = jest.fn(() => new Promise(() => {}));
+    const toolbar = load();
+
+    toolbar.toggleAllNft(all);
+    expect(toolbar.toggleAllNft(all)).toBeUndefined();
+
+    expect(window.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  test("Reset view switches it off and is enabled while it is on", async () => {
+    const all = button();
+    respond(true, INDEX);
+    const toolbar = load();
+    await toolbar.toggleAllNft(all);
+    expect(document.getElementById("tb-reset").disabled).toBe(false);
+
+    document.getElementById("tb-reset").click();
+
+    expect(all.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  test("an empty index body is treated as no items rather than failing", async () => {
+    const all = button();
+    respond(true, null);
+    const toolbar = load();
+    type("puf77");
+
+    await toolbar.toggleAllNft(all);
+
+    expect(all.getAttribute("aria-pressed")).toBe("true");
+    expect(collections()).toEqual([]);
+  });
+});

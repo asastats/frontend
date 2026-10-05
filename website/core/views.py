@@ -17,9 +17,11 @@ from django.http import (
     HttpResponse,
     HttpResponseRedirect,
     HttpResponseServerError,
+    JsonResponse,
 )
 from django.shortcuts import redirect, render
 from django.template import loader
+from django.template.defaultfilters import slugify
 from django.urls import reverse, reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -1739,6 +1741,69 @@ class NftCollectionItemsView(TemplateView):
             )
             context["coll"] = None
         return context
+
+
+def nft_search_index(collections):
+    """Return each collection's item names, units, titles and ids as one string.
+
+    Keyed by the collection card's id, ``f`` + the slug the templates build.
+
+    :param collections: the payload's ``nftcollections``
+    :type collections: list
+    :return: dict
+    """
+    index = {}
+    for coll in collections:
+        words = []
+        for row in coll.get("nfts") or ():
+            nft = row.get("nft") or {}
+            words.extend(
+                str(nft.get(key))
+                for key in ("name", "unit", "title", "id")
+                if nft.get(key) not in (None, "")
+            )
+        index[f"f{slugify(coll.get('name'))}"] = " ".join(words).lower()
+    return index
+
+
+class NftSearchIndexView(View):
+    """Every collection's item text, for a toolbar search past the item fold.
+
+    Asked for only by the dynamic page's "all collections" button, which renders
+    when items are left to the fetch-on-open (``defer_items``). Same checks and
+    same light payload as the page, which the engine has just cached.
+    """
+
+    def get(self, request, *args, **kwargs):
+        """Return the index as JSON, or an empty one when the engine is down.
+
+        :param request: Django request object
+        :type request: :class:`django.http.HttpRequest`
+        :var url_value: address or bundle value from the URL
+        :type url_value: str
+        :return: :class:`django.http.JsonResponse`
+        """
+        url_value = args[0].upper()
+        check_forbidden_addresses(url_value)
+        addresses = (
+            url_value if len(url_value) > 50 else check_bundle_addresses(url_value)
+        )
+        user = getattr(request, "user", None)
+        if not may_view_bundle(user, addresses):
+            raise Http404
+
+        profile = getattr(user, "profile", None)
+        try:
+            account = fetch_and_serialize_account(
+                url_value,
+                addresses,
+                light=True,
+                permission=getattr(profile, "permission", 0) or 0,
+            )
+        except BackendError as error:
+            logger.warning("NFT search index unavailable for %s: %s", url_value, error)
+            return JsonResponse({}, status=503)
+        return JsonResponse(nft_search_index(account.get("nftcollections") or []))
 
 
 def _can_poll_liverefresh(user, addresses):

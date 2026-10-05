@@ -3200,3 +3200,30 @@ for "tinyman," and found nothing; commas are stripped from terms here.
 ("ALGO", "estimated", "floor", "asking") match every row. Above 100 collections
 the items are not rendered until opened, so neither layout can find an NFT
 inside an unopened collection.
+
+### 2026-10-05: "All collections" - searching items the page did not render
+
+Past `ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS` (100) a collection's items arrive
+only when it is opened, so the text search above cannot see them. Loading every
+collection's markup was rejected: that is the page the threshold exists to
+prevent. Embedding the items' text in every such page was rejected too: about
+40 bytes per NFT, ~280 KB for a 7,002-NFT account, paid by every reader whether
+they search or not.
+
+Instead `#tb-allnft`, rendered only when `defer_items` is true, fetches
+`core.views.NftSearchIndexView` on its first press: per collection card id, the
+lowercased names, units, titles and ids of its items. It reads the same light
+payload the page was built from, which the engine keeps in Redis under its own
+key (`InternalAccountBatchedView`), so the press costs a cache read rather than
+an evaluation. The text is appended to a collection's own for the
+collection-level decision only - it never unhides a rendered item that does not
+match. Not stored with the view: a reload starts it off, because a remembered
+"on" would refetch on every page load. "Reset view" turns it off. A failed fetch
+(503 from the view when the engine is down) leaves it off, with a title saying
+the press can be repeated.
+
+The key must equal the card's `id="f{{ coll.name|slugify }}"`; the view uses
+the same `slugify` filter function, and `core/tests/test_nft_search_index.py`
+renders the template to hold the two together, a `None` name included.
+`functional_tests/test_address_dynamic_nfts.py` drives it on a payload of 105
+collections.

@@ -1,8 +1,10 @@
+{% load core_extras %}
 {% comment %} The dynamic toolbar for designs 2 and 3.
 
   Everything here acts on the page already in the browser: the sort keys and
   categories are rendered onto the rows as data attributes (see
-  `snippets/dynamic/asset.html` and `position.html`), so nothing fetches.
+  `snippets/dynamic/asset.html` and `position.html`), so nothing fetches -
+  except `#tb-allnft`, which asks for the text of items not rendered yet.
 
   **Every control ships in its default state**, and `toolbar.js` applies the
   reader's own on load. This page's cache entry is shared by everyone on the
@@ -20,6 +22,12 @@
       <input id="tb-q" type="search" autocomplete="off" aria-labelledby="tb-q-label"
              placeholder="Filter assets, venues, pairs…">
     </label>
+    {% if account.nftcollections|defer_items %}
+    {# `toolbar.js` binds `#tb-allnft` and fetches `data-url` on the first press #}
+    <button class="ghost tb-toggle" id="tb-allnft" type="button" aria-pressed="false"
+            data-url="{% url 'nft_search_index' url_value %}"
+            title="Also search the NFTs inside collections that are not open">All collections</button>
+    {% endif %}
 
     <span class="tb-label" id="tb-group-label">Group</span>
     <div class="seg" id="tb-group" role="group" aria-labelledby="tb-group-label">

@@ -125,6 +125,11 @@ urlpatterns = [
         name="nft_collection_items",
     ),
     re_path(
+        r"^nft-search/(\w{40}|\w{58})/$",
+        core_views.NftSearchIndexView.as_view(),
+        name="nft_search_index",
+    ),
+    re_path(
         r"^swap/(\w{40}|\w{58})/(\d+)/$",
         core_views.SwapSourceRedirectView.as_view(),
         name="swap_source",

@@ -276,6 +276,11 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.NftCollectionItemsView"
         assert url.name == "nft_collection_items"
 
+    def test_core_urls_nft_search_index(self):
+        url = self._url_from_pattern(r"^nft-search/(\w{40}|\w{58})/$")
+        assert url.lookup_str == "core.views.NftSearchIndexView"
+        assert url.name == "nft_search_index"
+
     def test_core_urls_service_worker_is_served_from_the_root(self):
         """**Root, not /static/, and this is the test that keeps it there.**
 
@@ -290,7 +295,7 @@ class TestCoreUrls:
         assert url.name == "alerts_service_worker"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 42
+        assert len(urls.urlpatterns) == 43
 
 
 class RootAssetUrlTest(TestCase):
