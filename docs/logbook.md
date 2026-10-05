@@ -3227,3 +3227,22 @@ the same `slugify` filter function, and `core/tests/test_nft_search_index.py`
 renders the template to hold the two together, a `None` name included.
 `functional_tests/test_address_dynamic_nfts.py` drives it on a payload of 105
 collections.
+
+## website/templates/snippets/asas/program.html, website/templates/snippets/dynamic/position.html
+
+### 2026-10-05: a farm link shows the share of the LP token held there
+
+The engine now sends `share` (percentage, 2 places) and `amount` (this asset's
+part) on each LP farm's linked entry; see the engine logbook under
+`core/interpretation.py`. Both layouts show "Alpha Arcade stake 91.44%
+(0.1078 USDC)". `share_repr` (`core/templatetags/core_extras.py`) prints
+"<0.01%" for a share that rounded to 0.00, so a real stake never reads as 0%.
+
+Classic already printed a linked `amount` in the asset's unit; it only gained
+the share. The dynamic layout prints the amount **only together with a share**,
+because the consensus participation "Expiry" entry also carries an `amount` that
+is not a holding, and the dynamic layout never printed linked amounts before.
+
+The share changes only when the user stakes or unstakes, so the live refresh,
+which swaps values by `pid` and doesn't re-render linked lines, doesn't need to
+carry it. The next full fetch does.

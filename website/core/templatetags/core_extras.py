@@ -241,6 +241,24 @@ def amount_repr(amount, decimals):
 
 
 @register.filter
+def share_repr(share):
+    """Return linked data's `share` percentage as text, "<0.01%" for a tiny one.
+
+    :param share: percentage with two decimal places
+    :type share: str or float
+    :var number: share as a number
+    :type number: float
+    :return: str
+    """
+    try:
+        number = float(share)
+    except (ValueError, TypeError):
+        return ""
+
+    return "<0.01%" if number < 0.01 else f"{number:.2f}%"
+
+
+@register.filter
 def is_distribution(name):
     """Return True if provided name represents a distributed pool.
 

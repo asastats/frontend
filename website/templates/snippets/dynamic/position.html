@@ -85,6 +85,7 @@
         {% if ld.text != "Source LP token" %}
         <span>
           {% if ld.link %}<a class="out" href="{{ ld.link }}" target="_blank" title="{{ ld.text }}">{{ ld.text }}</a>{% else %}{{ ld.text }}{% endif %}
+          {% with share=ld.share|share_repr %}{% if share %}<span class="num">{{ share }}</span>{% if ld.amount %} (<span class="num">{{ ld.amount|amount_repr:pdecimals }}</span> {{ punit }}){% endif %}{% endif %}{% endwith %}
           {% if ld.value %}<span class="num">{{ ld.value|floatformat:'-6g' }}{% if ld.info %} {{ ld.info }}{% endif %}</span>{% endif %}
         </span>
         {% endif %}

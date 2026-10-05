@@ -215,6 +215,8 @@ class LinkedDataSerializer(Serializer):
     :type LinkedDataSerializer.info: str
     :var LinkedDataSerializer.id: unique identifier for linked data
     :type LinkedDataSerializer.id: str
+    :var LinkedDataSerializer.share: percentage of the source token held there
+    :type LinkedDataSerializer.share: :class:`DecimalField`
     """
 
     provider = ProviderSerializer()
@@ -225,6 +227,7 @@ class LinkedDataSerializer(Serializer):
     balance = IntegerField()
     info = CharField()
     id = IntegerField()
+    share = DecimalField(max_digits=5, decimal_places=2)
 
     def to_representation(self, instance):
         """Return collection of non-empty field-value pairs.

@@ -32,6 +32,7 @@ from core.templatetags.core_extras import (
     program_url,
     program_url_title,
     provider_icon,
+    share_repr,
     short_address,
     short_addresses,
     split_by_space,
@@ -237,6 +238,23 @@ class TestFilters:
         decimals = TESTING_ASAS[asset[1]].decimals
         returned = amount_repr(asset[2], decimals)
         assert returned == result
+
+    @pytest.mark.parametrize(
+        "share,result",
+        [
+            ("91.44", "91.44%"),
+            (91.44, "91.44%"),
+            ("100.00", "100.00%"),
+            (60.0, "60.00%"),
+            ("0.01", "0.01%"),
+            ("0.00", "<0.01%"),
+            (0.0, "<0.01%"),
+            (None, ""),
+            ("", ""),
+        ],
+    )
+    def test_filters_share_repr_returns_percentage_text(self, share, result):
+        assert share_repr(share) == result
 
     def test_filters_amount_repr_returns_zero_for_valueerror(self):
         returned = amount_repr(5, ())

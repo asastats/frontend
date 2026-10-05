@@ -152,6 +152,7 @@ class TestApiStructsNamedTuples:
             "balance",
             "info",
             "id",
+            "share",
         )
 
     def test_api_structs_linkeddata_defaults(self):
@@ -164,6 +165,7 @@ class TestApiStructsNamedTuples:
             "balance": None,
             "info": None,
             "id": None,
+            "share": None,
         }
 
     # # Provider

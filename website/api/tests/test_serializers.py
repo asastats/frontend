@@ -138,8 +138,24 @@ class TestApiSerializersRepresentation:
                 "balance",
                 "info",
                 "id",
+                "share",
             )
         )
+
+    def test_api_serializer_linkeddataserializer_for_share(self):
+        struct = api.structs.LinkedData(
+            text="Alpha Arcade stake",
+            link="https://www.alphaarcade.com/stake",
+            amount=107825,
+            share=91.44,
+        )
+        serializer = api.serializers.LinkedDataSerializer(struct)
+        assert serializer.data == {
+            "text": "Alpha Arcade stake",
+            "link": "https://www.alphaarcade.com/stake",
+            "amount": 107825,
+            "share": "91.44",
+        }
 
     # # AsaItemProgramSerializer
     def test_api_serializer_asaitemprogramserializer_omits_empty_values(self):

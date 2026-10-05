@@ -91,6 +91,7 @@
               {% else %}
                 {{ ld.text }}
               {% endif %}
+              {% with share=ld.share|share_repr %}{% if share %} {{ share }}{% endif %}{% endwith %}
               {% if ld.value %}: {{ ld.value|floatformat:'-6g' }}{% if ld.info %} {{ ld.info }}{% endif %}{% endif %}
               {% if ld.amount %} ({{ ld.amount|amount_repr:decimals }} {{ asset.unit }}){% endif %}
             </div>

@@ -26,8 +26,8 @@ Distribution = namedtuple("Distribution", ["value", "amount", "link"])
 DistributionLink = namedtuple("DistributionLink", ["provider", "text", "url"])
 LinkedData = namedtuple(
     "LinkedData",
-    ["provider", "text", "link", "value", "amount", "balance", "info", "id"],
-    defaults=[None, "text", None, None, None, None, None, None],
+    ["provider", "text", "link", "value", "amount", "balance", "info", "id", "share"],
+    defaults=[None, "text", None, None, None, None, None, None, None],
 )
 Provider = namedtuple("Provider", ["name", "info"], defaults=["Unknown", None])
 
