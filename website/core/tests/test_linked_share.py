@@ -43,22 +43,26 @@ def _text(html):
     return re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", "", html)))
 
 
-def _classic(prog, asset=ASSET):
-    return _text(
-        render_to_string(
-            "snippets/asas/program.html",
-            {"asset": asset, "prog": prog, "decimals": asset["decimals"]},
-        )
+def _classic_raw(prog, asset=ASSET):
+    return render_to_string(
+        "snippets/asas/program.html",
+        {"asset": asset, "prog": prog, "decimals": asset["decimals"]},
     )
+
+
+def _dynamic_raw(prog, asset=ASSET):
+    return render_to_string(
+        "snippets/dynamic/position.html",
+        {"asset": asset, "prog": prog, "counter": "1-1"},
+    )
+
+
+def _classic(prog, asset=ASSET):
+    return _text(_classic_raw(prog, asset))
 
 
 def _dynamic(prog, asset=ASSET):
-    return _text(
-        render_to_string(
-            "snippets/dynamic/position.html",
-            {"asset": asset, "prog": prog, "counter": "1-1"},
-        )
-    )
+    return _text(_dynamic_raw(prog, asset))
 
 
 class TestLinkedShare:
@@ -84,3 +88,19 @@ class TestLinkedShare:
         """The consensus "Expiry" entry carries an amount that is not a holding."""
         expiry = {"text": "Expiry", "amount": 51234567, "info": "in 10 days"}
         assert "51.234567" not in _dynamic(_prog(expiry))
+
+    def test_application_marker_becomes_an_explorer_link(self):
+        cdp = {
+            "text": "CompX CDP",
+            "link": "application=2965407870",
+            "amount": 2500000,
+            "share": "40.00",
+        }
+        for html in (_classic_raw(_prog(cdp)), _dynamic_raw(_prog(cdp))):
+            assert 'href="application=' not in html
+            assert re.search(r'href="https://[^"]+2965407870[^"]*"', html)
+            assert "CompX CDP 40.00% (2.5000 USDC)" in _text(html)
+
+    def test_plain_link_is_kept(self):
+        for html in (_classic_raw(_prog(FARM)), _dynamic_raw(_prog(FARM))):
+            assert 'href="https://www.alphaarcade.com/stake"' in html

@@ -130,6 +130,32 @@ class SwapPageMixin:
             "document.querySelector(arguments[0]).click();", selector
         )
 
+    def _open_swap_toggle(self, from_asset):
+        """Click a row's Swap until swap.js takes it, and wait for the modal.
+
+        The toggle's no-JS `href` is held off, so an early click is a no-op.
+        See docs/logbook.md.
+        """
+        self.browser.execute_script(
+            "document.addEventListener('click', function (ev) {"
+            "  if (ev.target.closest && ev.target.closest('.id-swap-swap-toggle'))"
+            "    ev.preventDefault();"
+            "}, true);"
+        )
+
+        def opened():
+            modal = self.browser.find_elements(By.ID, "swap-modal")
+            if modal and modal[0].get_attribute("open") is not None:
+                return True
+            self.browser.execute_script(
+                "var toggle = document.querySelector"
+                "('.id-swap-swap-toggle[data-from=\"%s\"]');"
+                "if (toggle) toggle.click();" % from_asset
+            )
+            return False
+
+        self.wait_until(opened, timeout=30)
+
 
 @override_settings(
     # The address page is cache_page'd. A shared local-memory cache would let one
@@ -174,20 +200,11 @@ class SwapModalTest(SwapPageMixin, FunctionalTest):
         self._disarm_icon_fallback()
         # htmx delivers the per-user marker, the modal and the controller.
         self.find_elem_by_id("id-swap-enabled")
-        self.browser.execute_script(
-            "document.querySelector"
-            "('.id-swap-swap-toggle[data-from=\"%s\"]').click();" % from_asset
-        )
-        # It is a native <dialog> now, opened with showModal(): the `open`
-        # attribute is the browser's own record that it is on the top layer.
         # The address page is the heaviest on the site -- charts, the asset
         # accordion, then an htmx panel load. Run on its own this test takes
         # ~35s on a Pi and passes; it only times out under full-suite load, so
         # the leash is long rather than the default 5s.
-        self.wait_until(
-            lambda: self.find_elem_by_id("swap-modal").get_attribute("open") is not None,
-            timeout=30,
-        )
+        self._open_swap_toggle(from_asset)
         # The panel arrives by a second htmx request, gated on the linkage.
         form = self.find_elem_by_css(".id-swap-panel .id-swap-form")
         # Presence only means the HTML landed; bindPanel runs after the swap, so
@@ -774,15 +791,7 @@ class SwapModalBundlePageTest(SwapPageMixin, FunctionalTest):
 
     def _open_modal(self, from_asset="0"):
         """Click a row's Swap the way a reader does, and wait for the panel."""
-        self.browser.execute_script(
-            "document.querySelector"
-            "('.id-swap-swap-toggle[data-from=\"%s\"]').click();" % from_asset
-        )
-        self.wait_until(
-            lambda: self.browser.find_element(By.ID, "swap-modal").get_attribute("open")
-            is not None,
-            timeout=30,
-        )
+        self._open_swap_toggle(from_asset)
         return self.wait_until(
             lambda: self.browser.find_elements(By.CSS_SELECTOR, self.FORM),
             timeout=30,

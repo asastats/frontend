@@ -87,7 +87,7 @@
             {% if ld.text != "Source LP token" %}
             <div class="text-sm text-base-content/70">
               {% if ld.link %}
-                <a class="link link-hover" href="{{ ld.link }}" target="_blank" title="{{ ld.text }}">{{ ld.text }}</a>
+                <a class="link link-hover" href="{% program_url ld.link %}" target="_blank" title="{{ ld.text }}">{{ ld.text }}</a>
               {% else %}
                 {{ ld.text }}
               {% endif %}

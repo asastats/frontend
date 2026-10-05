@@ -3246,3 +3246,41 @@ is not a holding, and the dynamic layout never printed linked amounts before.
 The share changes only when the user stakes or unstakes, so the live refresh,
 which swaps values by `pid` and doesn't re-render linked lines, doesn't need to
 carry it. The next full fetch does.
+
+### 2026-10-05: linked links go through `program_url`
+
+dualSTAKE positions (engine `37fd030`) send linked lines for the platforms that
+hold the token. A CompX staking or CompX CDP line links to `application=<id>`,
+the same explorer marker the position's own program URL uses. Both layouts now
+pass `ld.link` through `{% program_url %}`, which resolves a marker against the
+viewer's explorer and returns any other link unchanged. Before this, linked
+links were printed raw, which was fine only because none of them was a marker.
+
+## website/functional_tests/test_swap_widget.py
+
+### 2026-10-06: `_open_swap_toggle` — clicking Swap before swap.js has bound
+
+`SwapModalBundlePageTest.test_the_modal_spends_from_the_connected_account`
+failed about half the time, alone or in the full suite, with ADDRESS where
+OTHER was expected.
+
+**It was never the account logic.** A `sessionStorage` log that survives
+reloads showed the page unloading 30–110 ms after the test's click, with no
+htmx request in between. `performance.timeOrigin` changed across the click, and
+on the new page `window.asastatsSwap` was gone (`activeAddress()` null), so the
+controller correctly fell back to the server's guess. The cause: htmx delivers
+the marker, the modal and `swap.js` together, and the test clicked as soon as
+the marker appeared. When `swap.js` had not run yet, there was no delegated
+listener to `preventDefault`, so the click followed the toggle's no-JS `href`
+and navigated away, losing the wallet stub `_connect` had published.
+
+Suspected first and ruled out: live refresh's `HX-Refresh` (no Redis is
+reachable in this environment, and no htmx request preceded the unload) and
+`address.js`'s reload timer (60 s against a 12 s test).
+
+The fix is in the test, and both modal helpers share it. A capture-phase
+listener cancels the toggle's default action, which only matters before
+`swap.js` binds since its handler cancels it anyway. Then the click repeats
+until the `<dialog>` reports `open`. A click that arrives early is now a no-op
+instead of a navigation. 8/8 passes of the test alone after the change, against
+roughly half before; the module passed twice in full.
