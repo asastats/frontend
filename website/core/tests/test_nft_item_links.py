@@ -76,3 +76,15 @@ def test_dynamic_nft_escrowed_listing_is_not_called_an_ask():
     html = render_to_string("snippets/dynamic/nft.html", {"row": _row()})
     assert html.count('<small class="qualifier">escrowed at</small>') == 1
     assert html.count('<small class="qualifier">asking</small>') == 1
+
+
+def test_dynamic_nft_listing_chip_keeps_its_space_through_minification():
+    from core.middleware import CustomMinifyHtmlMiddleware
+    import minify_html
+
+    html = minify_html.minify(
+        render_to_string("snippets/dynamic/nft.html", {"row": _row()}),
+        **CustomMinifyHtmlMiddleware.minify_args,
+    )
+    assert "escrowed</span>\xa0<a" in html
+    assert "listed</span>\xa0<a" in html

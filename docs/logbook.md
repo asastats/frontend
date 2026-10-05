@@ -3149,3 +3149,54 @@ the reason they might cancel. "Asking" implied a working market, so the
 qualifier changes for escrow links only. Hiding the price was considered and
 rejected for that reason; a tooltip saying so was judged unnecessary. The
 classic layout already reads "Escrowed by <market>: <price>".
+
+### 2026-10-05: `&nbsp;` between the listing chip and its link
+
+The chip read "ESCROWEDescrowed by Algogems" in production and looked right in
+development. `CustomMinifyHtmlMiddleware` (production only; development removes
+it) runs `minify-html`, which deletes whitespace between two tags - the
+template's newline, a typed space and `&#32;` alike - while keeping a space that
+touches text, which is why the classic layout's "Escrowed by <a>" is unharmed.
+`&nbsp;` survives as U+00A0. The "listed" chip had the same missing gap before
+escrows existed. `core/tests/test_nft_item_links.py` runs the middleware's own
+arguments over the rendered snippet so a plain space cannot come back unnoticed.
+
+## website/static/js/toolbar.js
+
+### 2026-10-05: the search reads the page's text, as design 1's does
+
+**What changed.** The dynamic layout matched a hand-picked `data-search` label
+per row: name and unit for an asset, type/name/code/unit for a position, the
+name alone for a collection. Design 1's `#filter` (`address.js`,
+`getNodesThatContain`) matches any text in a row, so the dynamic page could not
+find an asset id, a venue named only in a group heading, a provider, or any NFT
+inside a collection. Measured on three accounts that day: the labels came to
+1.7-2.4 KB per page against 23-219 KB of text on it (WXIVD: 89 collections, 640
+NFTs, all rendered because it is under `ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS`).
+
+**How it reads.** `haystack` walks an element's text once, joins text nodes
+with spaces so a word cannot run into the next, keeps `data-search` too (it
+carries a program's type and code, which are not always shown), skips
+`script`/`style`/`template`, and caches the lowercased string in a `WeakMap`.
+`repaintAfterSwap` replaces the map, because every htmx swap - a collection's
+items arriving, the live pass re-rendering an asset's program groups - goes
+through it; an element swapped in is a new key and would miss anyway. Typing
+then costs one `indexOf` per term per row over strings already built.
+
+**The asset/position rule is kept.** A card's own text excludes its groups and
+positions; a position is searched as card text + its group heading + its own
+text. So "USDC" still shows every USDC position, and "USDC Tinyman" shows only
+the Tinyman one. Collections work the same way over their `.nft-body` items:
+a collection whose own text matches keeps every item, otherwise only matching
+items show and the collection goes if none do - the behaviour design 1 has
+through `showMatchedNodes`.
+
+**Query parsing copied from design 1**, with one fix. Words split on spaces, or
+on commas when there are more commas than spaces, and every word must match.
+Design 1 kept a trailing comma on a space-split word, so "tinyman, ccc" looked
+for "tinyman," and found nothing; commas are stripped from terms here.
+
+**Known and shared with design 1:** label words that appear on every row
+("ALGO", "estimated", "floor", "asking") match every row. Above 100 collections
+the items are not rendered until opened, so neither layout can find an NFT
+inside an unopened collection.

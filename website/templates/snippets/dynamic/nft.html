@@ -88,8 +88,8 @@
     {% for listing in nft.listings %}
     <div class="nft-line">
       <div class="k">
-        <span class="state-chip listed">{% if listing.link|is_escrow_link %}escrowed{% else %}listed{% endif %}</span>
-        <a class="out" href="{% program_url listing.link %}" target="_blank" title="{% if listing.link|is_escrow_link %}Show escrow in {% explorer_name %}{% else %}{{ listing.market.name }} link to NFT{% endif %}">{% if listing.link|is_escrow_link %}escrowed by{% else %}your ask on{% endif %} {{ listing.market.name }}</a>
+        {# &nbsp;: minify-html drops a plain space between two tags #}
+        <span class="state-chip listed">{% if listing.link|is_escrow_link %}escrowed{% else %}listed{% endif %}</span>&nbsp;<a class="out" href="{% program_url listing.link %}" target="_blank" title="{% if listing.link|is_escrow_link %}Show escrow in {% explorer_name %}{% else %}{{ listing.market.name }} link to NFT{% endif %}">{% if listing.link|is_escrow_link %}escrowed by{% else %}your ask on{% endif %} {{ listing.market.name }}</a>
       </div>
       <div class="position-val">
         <span class="amt val" data-val="{{ listing.price }}">{{ listing.price|floatformat:'2g' }}</span>

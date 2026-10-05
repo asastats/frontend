@@ -1295,13 +1295,18 @@ describe("a page missing the parts it can do without", () => {
     expect(toolbar.fmt(40)).toBe("0.00");
   });
 
-  test("a row with no search text is simply never a match", () => {
+  test("a row with no search attribute is still matched by what it shows", () => {
     document.querySelector('[data-owner="f1"]').removeAttribute("data-search");
     document.getElementById("f1").removeAttribute("data-search");
     load();
     const field = document.getElementById("tb-q");
 
     field.value = "aaa";
+    field.dispatchEvent(new window.Event("input"));
+
+    expect(visible()).toEqual(["f1"]);
+
+    field.value = "zzzz";
     field.dispatchEvent(new window.Event("input"));
 
     expect(visible()).toEqual([]);
@@ -2672,5 +2677,136 @@ describe("repaintCharts branch coverage", () => {
     toolbar.state({ q: "", group: "asset", sort: "value", dir: -1, cats: ["balance", "staked", "liquidity", "defi"], nft: true, more: { asa: 0, nft: 0 }, ccy: "ALGO", nonft: false, refresh: false });
 
     expect(() => toolbar.repaintCharts()).not.toThrow();
+  });
+});
+
+describe("the search reads what the page shows", () => {
+  /**
+   * Design 1's filter matched any text in a row; this one matched a short
+   * `data-search` label, so an asset id, a venue named only in a heading or
+   * an NFT inside a collection could not be found. These pin the parity.
+   */
+  function type(value) {
+    const field = document.getElementById("tb-q");
+    field.value = value;
+    field.dispatchEvent(new window.Event("input"));
+  }
+
+  function hidden(element) {
+    return element.classList.contains("tb-hidden");
+  }
+
+  /** Add rendered NFT items to collection `id`. */
+  function items(id, names) {
+    const collection = document.getElementById(id);
+    const holder = document.createElement("div");
+    names.forEach((name, index) => {
+      const item = document.createElement("div");
+      item.className = "fitem nft-body";
+      item.id = `${id}-${index}`;
+      item.textContent = name;
+      holder.appendChild(item);
+    });
+    collection.appendChild(holder);
+    return Array.prototype.slice.call(holder.children);
+  }
+
+  test("text only the card body carries, such as the asset id, matches", () => {
+    const meta = document.createElement("dd");
+    meta.textContent = "31566704";
+    document.querySelector("#f3 .cbody-inner").prepend(meta);
+    load();
+
+    type("31566704");
+
+    expect(visible()).toEqual(["f3"]);
+  });
+
+  test("a position matches on its own visible text", () => {
+    const row = document.querySelector('[data-owner="f4"]');
+    row.appendChild(document.createTextNode("Folks lending pool"));
+    load();
+
+    type("lending");
+
+    expect(visible()).toEqual(["f4"]);
+    expect(hidden(row)).toBe(false);
+  });
+
+  test("a venue named only in the group heading reaches its positions", () => {
+    load();
+
+    type("wallet balance");
+
+    expect(visible()).toEqual(["f1"]);
+  });
+
+  test("every word must match, as in design 1", () => {
+    load();
+
+    type("bbb tinyman");
+    expect(visible()).toEqual(["f2"]);
+
+    type("aaa tinyman");
+    expect(visible()).toEqual([]);
+  });
+
+  test("commas split the query when there are more of them than spaces", () => {
+    load();
+
+    type("tinyman,ccc");
+
+    expect(visible()).toEqual(["f3"]);
+  });
+
+  test("a stray comma after a word does not stop it matching", () => {
+    load();
+
+    type("tinyman, ccc");
+
+    expect(visible()).toEqual(["f3"]);
+  });
+
+  test("an NFT's name finds its collection and hides its other items", () => {
+    const [first, second] = items("fn2", ["Puffin #12", "Puffin #13"]);
+    load();
+
+    type("#13");
+
+    expect(hidden(document.getElementById("fn1"))).toBe(true);
+    expect(hidden(document.getElementById("fn2"))).toBe(false);
+    expect(hidden(first)).toBe(true);
+    expect(hidden(second)).toBe(false);
+  });
+
+  test("a collection's own name keeps every item it has", () => {
+    const rendered = items("fn2", ["Puffin #12", "Puffin #13"]);
+    load();
+
+    type("poppin");
+
+    expect(rendered.map(hidden)).toEqual([false, false]);
+  });
+
+  test("text a swap brings in is searched after the repaint", () => {
+    const toolbar = load();
+    type("#77");
+    expect(hidden(document.getElementById("fn1"))).toBe(true);
+
+    items("fn1", ["Brave #77"]);
+    toolbar.repaintAfterSwap();
+
+    expect(hidden(document.getElementById("fn1"))).toBe(false);
+  });
+
+  test("script and style text is never matched", () => {
+    const script = document.createElement("script");
+    script.textContent = "var secretword = 1;";
+    document.querySelector("#f2 .cbody-inner").appendChild(script);
+    load();
+
+    type("secretword");
+
+    expect(visible()).toEqual([]);
   });
 });

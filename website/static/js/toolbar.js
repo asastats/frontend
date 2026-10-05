@@ -234,15 +234,89 @@
 
   // -- the filter -----------------------------------------------------------
 
+  // Lowercased text per element, read once; `repaintAfterSwap` drops it all.
+  var haystacks = new WeakMap();
+
   /**
-   * @param {Element} element - a row carrying `data-search`.
-   * @returns {boolean} true if it matches the current query.
+   * Return an element's `data-search` and visible text, minus `skip` subtrees.
+   *
+   * @param {Element} element - the row to read.
+   * @param {string} skip - selector for descendants that are rows of their own.
+   * @returns {string} lowercased text, one space between text nodes.
    */
-  function matches(element) {
+  function haystack(element, skip) {
+    if (!element) return "";
+    var cached = haystacks.get(element);
+    if (cached !== undefined) return cached;
+
+    var parts = [element.getAttribute("data-search") || ""];
+    var walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function (node) {
+          if (node.nodeType !== 1) return NodeFilter.FILTER_ACCEPT;
+          if (/^(SCRIPT|STYLE|TEMPLATE)$/.test(node.tagName)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return skip && node.matches(skip)
+            ? NodeFilter.FILTER_REJECT
+            : NodeFilter.FILTER_SKIP;
+        },
+      }
+    );
+    while (walker.nextNode()) parts.push(walker.currentNode.nodeValue);
+
+    cached = parts.join(" ").replace(/\s+/g, " ").toLowerCase();
+    haystacks.set(element, cached);
+    return cached;
+  }
+
+  /**
+   * Split the query as design 1's filter does: on spaces, or on commas when
+   * there are more of those, so "rand gallery, exa" is two phrases.
+   *
+   * @returns {string[]} the terms, every one of which must match.
+   */
+  function terms() {
+    var parts = state.q.split(" ");
+    var commas = state.q.split(",");
+    if (commas.length > parts.length) parts = commas;
+    return parts
+      .map(function (part) {
+        // design 1 searched "tinyman," with its comma and found nothing
+        return part.replace(/,/g, "").trim();
+      })
+      .filter(Boolean);
+  }
+
+  /**
+   * @param {string} text - a haystack, or several joined.
+   * @returns {boolean} true if every term of the current query is in it.
+   */
+  function matchesText(text) {
     if (!state.q) return true;
-    return (element.getAttribute("data-search") || "")
-      .toLowerCase()
-      .indexOf(state.q) !== -1;
+    return terms().every(function (term) {
+      return text.indexOf(term) !== -1;
+    });
+  }
+
+  var CARD_ROWS = ".pgroup, .position, .program-groups";
+  var COLLECTION_ROWS = ".nft-body";
+
+  /** @returns {string} an asset card's own text, without its positions. */
+  function cardText(card) {
+    return haystack(card, CARD_ROWS);
+  }
+
+  /** @returns {string} a position's text with its venue heading and asset. */
+  function positionText(position) {
+    var group = position.closest(".pgroup");
+    return [
+      cardText(document.getElementById(position.getAttribute("data-owner"))),
+      haystack(group ? group.querySelector(".pgroup-head") : null, ""),
+      haystack(position, ""),
+    ].join(" ");
   }
 
   /**
@@ -310,7 +384,7 @@
     var totals = { balance: 0, staked: 0, liquidity: 0, defi: 0 };
 
     rows.forEach(function (card) {
-      found[card.id] = matches(card);
+      found[card.id] = matchesText(cardText(card));
       values[card.id] = 0;
       allValues[card.id] = 0;
       kept[card.id] = 0;
@@ -319,7 +393,7 @@
     positions().forEach(function (position) {
       var owner = position.getAttribute("data-owner");
       var category = position.getAttribute("data-cat") || "defi";
-      var hit = found[owner] || matches(position);
+      var hit = found[owner] || matchesText(positionText(position));
       var on = hit && state.cats.indexOf(category) !== -1;
       position.classList.toggle(HIDDEN_CLASS, !on);
       if (allValues[owner] !== undefined) {
@@ -349,14 +423,28 @@
   }
 
   /**
-   * Apply the search to the NFT collections.
+   * Apply the search to the NFT collections and the items rendered in them.
    * Search only; category filter has nothing to say about collections.
+   *
+   * A collection whose own text matches keeps every item, as an asset keeps
+   * its positions; otherwise it shows only matching items, and goes if none do.
    */
   function filterCollections() {
     Array.prototype.forEach.call(
       document.querySelectorAll(".dynamic-page .nftsec .rows > .fitem"),
       function (card) {
-        card.classList.toggle(HIDDEN_CLASS, !matches(card));
+        var own = haystack(card, COLLECTION_ROWS);
+        var whole = matchesText(own);
+        var anyItem = false;
+        Array.prototype.forEach.call(
+          card.querySelectorAll(COLLECTION_ROWS),
+          function (item) {
+            var hit = whole || matchesText(own + " " + haystack(item, ""));
+            item.classList.toggle(HIDDEN_CLASS, !hit);
+            anyItem = anyItem || hit;
+          }
+        );
+        card.classList.toggle(HIDDEN_CLASS, !(whole || anyItem));
       }
     );
   }
@@ -1171,6 +1259,8 @@
     if (!state) {
       return;
     }
+    // a swap may have filled a collection or re-rendered positions
+    haystacks = new WeakMap();
     var view = evaluate();
     paintFigures(view);
     paintUnits();
