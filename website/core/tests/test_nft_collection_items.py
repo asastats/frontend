@@ -166,3 +166,37 @@ class TestNftCollectionItemsPartial:
             {"coll": {"nfts": [item]}, "item_template": NFT_ITEM_TEMPLATES[layout]},
         )
         assert "Rand" in html
+
+
+class TestNftCollectionItemsSwap:
+    """What keeps an opened card from flashing when its items arrive."""
+
+    @pytest.mark.parametrize("layout", sorted(NFT_ITEM_TEMPLATES))
+    def test_fetched_items_carry_their_art_in_src(self, layout):
+        """The art is on screen already; a placeholder `src` blinked it out."""
+        item = TestNftCollectionItemsPartial()._item()
+        item["nft"]["image"] = "/art/505.png"
+        html = render_to_string(
+            "_nft_collection_items.html",
+            {"coll": {"nfts": [item]}, "item_template": NFT_ITEM_TEMPLATES[layout]},
+        )
+        assert 'src="/art/505.png" data-src="/art/505.png"' in html
+
+    @pytest.mark.parametrize("layout", sorted(set(NFT_ITEM_TEMPLATES.values())))
+    def test_page_rendered_items_still_defer_their_art(self, layout):
+        """`deferImages` loads these after the page; only fetched items skip it."""
+        item = TestNftCollectionItemsPartial()._item()
+        item["nft"]["image"] = "/art/505.png"
+        html = render_to_string(layout, {"row": item})
+        assert 'nft.png" data-src="/art/505.png"' in html
+
+    @pytest.mark.parametrize(
+        "template",
+        ["snippets/nfts/collection.html", "snippets/dynamic/collection.html"],
+    )
+    def test_the_card_morphs_its_items_rather_than_replacing_them(self, template):
+        html = render_to_string(
+            template,
+            {"coll": {"name": "Goannas", "nfts": []}, "url_value": ADDRESS},
+        )
+        assert 'hx-swap="innerMorph"' in html

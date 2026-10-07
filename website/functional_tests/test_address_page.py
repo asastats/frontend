@@ -655,6 +655,84 @@ class SectionFoldingTest(FunctionalTest):
             "unfolding the assets also unfolded the collections",
         )
 
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_filtering_hides_the_control_and_clearing_keeps_the_fold(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """A control offering "10 more" under a one-row filter revealed rows
+        the filter was hiding, and clearing the filter unfolded everything."""
+        payload = _sample_payload()
+        mocked_fetch.return_value = payload
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self._load()
+        before = sum(row.is_displayed() for row in self._rows("nftsec"))
+        control = self.browser.find_element(By.CSS_SELECTOR, ".nftsec [data-show-more]")
+        self.assertTrue(control.is_displayed(), "the sample folds no collections")
+
+        field = self.browser.find_element(By.ID, "filter")
+        field.send_keys(payload["nftcollections"][30]["name"].split()[0])
+        field.send_keys(Keys.ENTER)
+        self.wait_until(lambda: not control.is_displayed())
+
+        field.clear()
+        field.send_keys(Keys.ENTER)
+        self.wait_until(lambda: control.is_displayed())
+        self.assertEqual(sum(row.is_displayed() for row in self._rows("nftsec")), before)
+
+    @mock.patch("core.views.fetch_collection_items")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_opening_a_collection_keeps_the_items_it_shows(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_items
+    ):
+        """The fetch used to replace every rendered item, art and all, with
+        copies whose art was the placeholder until `deferImages` ran again."""
+        payload = _sample_payload()
+        mocked_fetch.return_value = payload
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        index, coll = next(
+            (i, c) for i, c in enumerate(payload["nftcollections"]) if c["nfts"]
+        )
+        fetched = json.loads(json.dumps(coll))
+        fetched["nfts"][0]["nft"]["last_purchase"] = {
+            "price": "7.0",
+            "epoch": 1725000000,
+            "market": {"name": "Rand"},
+            "link": "https://y",
+        }
+        mocked_items.return_value = fetched
+        self._load()
+
+        self.browser.execute_script(
+            "var card = document.querySelectorAll('.nftsec [data-folding] > .fitem')"
+            "  [arguments[0]];"
+            "card.querySelectorAll('img.nft').forEach(function (img) {"
+            "  img.__rendered = true; });"
+            "card.open = true;",
+            index,
+        )
+        state = (
+            "var card = document.querySelectorAll('.nftsec [data-folding] > .fitem')"
+            "  [arguments[0]];"
+            "var imgs = Array.from(card.querySelectorAll('img.nft'));"
+            "var epoch = card.querySelector('span.epoch');"
+            "return {epoch: epoch ? epoch.textContent : '',"
+            "  kept: imgs.every(function (img) { return img.__rendered; }),"
+            "  art: imgs.every(function (img) {"
+            "    return img.getAttribute('src') === img.getAttribute('data-src'); })};"
+        )
+        self.wait_until(
+            lambda: "ago" in self.browser.execute_script(state, index)["epoch"]
+        )
+        result = self.browser.execute_script(state, index)
+        self.assertTrue(result["kept"], "the fetch replaced the rendered art")
+        self.assertTrue(result["art"], "an image fell back to its placeholder")
+
 
 class TotalTooltipKeyboardTest(FunctionalTest):
     """The headline figure's tooltip, reached without a pointer.

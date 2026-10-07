@@ -57,6 +57,10 @@ function wireFetchedItems() {
       return;
     }
     deferImages(target.getElementsByClassName('nft'));
+    // Opening fetches the items after `showTimes` ran; dynamic.js fills its own.
+    if (!document.querySelector(".dynamic-page")) {
+      fillEpochs($(target));
+    }
     restoreDisplayChoices();
     repaintClassicLive();
   });
@@ -274,11 +278,14 @@ function filterChange(evt) {
   var keys = [13, 32, 44, 108, 188];
   if (keys.indexOf(evt.keyCode) > -1) {
     var filter = $("#filter").val();
+    // See logbook: why the fold controls hide while filtering, and why the
+    // reset clears inline display instead of calling .show() (keeps the fold).
+    var controls = $("[data-show-more]").parent();
     if (filter == "") {
-      $(".fitem").show();
-      $(".section-list").show();
-      $(".nfticon").show();
+      $(".fitem, .section-list, .nfticon").css("display", "");
+      controls.css("display", "");
     } else {
+      controls.hide();
       var matches = [];
       var array = filter.split(" ");
       if (filter.split(",").length > array.length)
@@ -1363,9 +1370,21 @@ function showExpiry(elem) {
  *
  */
 function showTimes(elem) {
+  fillEpochs($(this).siblings(".item-body"));
+}
+
+
+/**
+ * Write how long ago each purchase inside provided element happened
+ * @function fillEpochs
+ *
+ * @param {jQuery} root Element whose `span.epoch` children are filled
+ *
+ */
+function fillEpochs(root) {
   var interval;
   var now = Date.now();
-  $(this).siblings(".item-body").find("span.epoch").each(function () {
+  root.find("span.epoch").each(function () {
     interval = now / 1000 - parseInt(this.dataset.epoch);
     this.innerHTML = timeEntry(interval) + " ago on ";
   });
@@ -1763,6 +1782,8 @@ if (typeof exports !== 'undefined') {
     populatePieCharts,
     scrollToView,
     showTimes,
+    fillEpochs,
+    filterChange,
     setTip,
     setCurrency,
     setTotalNoNft,

@@ -15,12 +15,13 @@
    htmx 4 has no `from:` modifier, so `from:closest details` never bound and
    opening a collection fetched nothing. The comment sits outside the tag
    rather than between its attributes, for the reason `profile_addresses.html`
-   gives. {% endcomment %}
+   gives. `innerMorph`, not `innerHTML`: it keeps the items already on screen
+   (see docs/logbook.md). {% endcomment %}
 <details id="f{{ coll.name|slugify }}" class="fitem group overflow-hidden rounded-box border border-base-300 bg-base-100{% if shown and index >= shown %} folded{% endif %}"
          hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}"
          hx-trigger="toggle once"
          hx-target="#items-{{ coll.name|slugify }}"
-         hx-swap="innerHTML">
+         hx-swap="innerMorph">
   <summary class="nft item-header cursor-pointer list-none p-3{% with slot=nft_colors|dict_get:coll.name %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
     {% comment %}
       What you hold, the thumbnails, what it is worth - stacked in one grid

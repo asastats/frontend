@@ -28,7 +28,7 @@
 
     <div class="order-first md:order-none">
       {% with primary_url=nft.urls.0 secondary_url=nft.urls.1 %}
-      <a href="{% if primary_url.typ == 'Vault' or primary_url.typ == 'Locked' %}{{ secondary_url.url }}{% else %}{{ primary_url.url }}{% endif %}" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="{% static 'nft.png' %}" data-src="{{ BASE_CDN_URL }}{{ nft.image }}" alt="{{ nft.name }} link" class="nft mx-auto h-auto max-w-full rounded-box transition hover:shadow-md" /></a>
+      <a href="{% if primary_url.typ == 'Vault' or primary_url.typ == 'Locked' %}{{ secondary_url.url }}{% else %}{{ primary_url.url }}{% endif %}" target="_blank" rel="noopener" title="View original NFT through an IPFS gateway"><img src="{% if fetched %}{{ BASE_CDN_URL }}{{ nft.image }}{% else %}{% static 'nft.png' %}{% endif %}" data-src="{{ BASE_CDN_URL }}{{ nft.image }}" alt="{{ nft.name }} link" class="nft mx-auto h-auto max-w-full rounded-box transition hover:shadow-md" /></a>
       {% endwith %}
     </div>
 

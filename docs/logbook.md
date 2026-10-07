@@ -3284,3 +3284,86 @@ listener cancels the toggle's default action, which only matters before
 until the `<dialog>` reports `open`. A click that arrives early is now a no-op
 instead of a navigation. 8/8 passes of the test alone after the change, against
 roughly half before; the module passed twice in full.
+
+## website/static/js/address.js
+
+### 2026-10-07: `filterChange` hides the load-more controls and clears inline display on reset
+
+Reported: in the classic layout, a filter that left one NFT collection on screen
+still offered "Show 10 more collections", and pressing it seemed to work while
+showing nothing until the filter was erased.
+
+Measured in headless Chrome on the 55-collection sample (fold of 10):
+
+- With the filter active, every press moved ten more rows out of `.folded`
+  (45 → 35 → 25 → 15 folded) and the label stayed "Show 10 more". The filter
+  had hidden those rows with inline `display: none`, so nothing appeared.
+  `showmore.js` folds by DOM index and knows nothing about the filter.
+- Erasing the filter showed **all 55** collections with 15 still `.folded`.
+  `$(".fitem").show()` writes an inline `display` whenever the computed value is
+  `none`, which is the case for every folded row. The inline style beats the
+  `[data-folding] .fitem.folded` rule, so the fold was gone, the control still
+  read "Show 10 more", and "Show fewer" could not put anything back.
+
+Now the control wrappers (`[data-show-more]`'s parent) are hidden while a filter
+is active, and the reset clears the inline `display` on `.fitem`,
+`.section-list` and `.nfticon` instead of calling `.show()`. That hands each row
+back to the stylesheet, so a folded row stays folded and the control's state is
+exactly what it was before filtering. A filter still finds and shows a match in
+the folded tail, because the inline `display` it sets outranks `.folded`, as it
+did before. Nothing hides `.nfticon` or `.section-list` by default (no
+stylesheet rule, no inline style in any template), so clearing their inline
+display is the same as showing them.
+
+Hiding was chosen over making `showmore.js` count filtered rows: during a
+filter every match is already visible, so the control has nothing to offer.
+The dynamic layouts are untouched; `toolbar.js` folds by filtered index there.
+
+### 2026-10-07: `wireFetchedItems` fills the purchase times; `fillEpochs` split out of `showTimes`
+
+`showTimes` runs on the summary click, and the items a collection fetches on
+open arrive later with empty `span.epoch`, so the classic layout showed "Last
+purchase … Rand" with no time at all. Measured: all three epoch spans of an
+opened card were `""` after the swap. The swap handler now fills the spans
+inside the swapped target, except on a `.dynamic-page`, where `dynamic.js`
+(`watchSwaps`) fills them in its own format.
+
+## website/templates/snippets/nfts/collection.html, website/templates/snippets/dynamic/collection.html, website/templates/_nft_collection_items.html, website/templates/snippets/nfts/item.html, website/templates/snippets/dynamic/nft.html
+
+### 2026-10-07: opening a collection morphs its items in; fetched items carry their art in `src`
+
+Reported: in both layouts, opening a collection for the first time made that
+section glitch, "like a sudden refresh".
+
+Below `ADDRESS_DEFER_ITEMS_ABOVE_COLLECTIONS` every collection's items are
+already on the page, and `deferImages` has promoted their `data-src` at load.
+Opening the card fires `hx-get` and the response replaced the body with
+`innerHTML`. Measured with a MutationObserver: every item and every `<img>` was
+a new node, each inserted with `src=".../static/nft.png"` and switched back to
+the art by `deferImages` in the after-swap handler. In between, each image
+showed the placeholder: a 256×256 icon in the dynamic layout's square box, and
+an unsized image in the classic layout, so the card also changed height.
+
+Two changes, each needed:
+
+- `hx-swap="innerMorph"` (built into htmx 4) instead of `innerHTML`. Items are
+  matched by their `id` (the NFT id), so the ones already on screen are kept and
+  only the listing and purchase lines the light payload lacks are added.
+- `_nft_collection_items.html` includes the item template with `fetched=True`,
+  and both item templates then render `src` as the art itself. Deferring exists
+  to keep the full images out of the initial page load, and a fragment fetched
+  after load has nothing to defer. Without this, morph would faithfully copy the
+  placeholder `src` onto the kept `<img>`. `data-src` stays: `deferImages` and
+  the selector contract (`img.nft[data-src]`) still rely on it.
+
+After: both layouts keep every item and `<img>` node, `src` never leaves the
+art, and the purchase line appears in place. Above the threshold the body is
+"Loading items…", which morph replaces like `innerHTML` did, but the art now
+arrives in `src`.
+
+Not fixed here, observed while measuring: under a SQLite stand-in for the test
+database (the local Postgres credentials in `website/.env` were rejected), the
+first authenticated page load deleted the session cookie, so the fragment and
+any reload rendered for an anonymous reader. The three "survives a reload"
+dynamic tests fail the same way on unchanged code under that setup, so this was
+not confirmed on Postgres and is probably an artifact of the stand-in.

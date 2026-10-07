@@ -17,9 +17,11 @@
    
    Context: coll (one account.nftcollections entry, or None on failure),
    item_template (the layout's item template).
+   `fetched=True` makes the items render their art in `src`, not the
+   placeholder, which the morph would otherwise copy over the art.
 {% endcomment %}
 {% for row in coll.nfts %}
-  {% include item_template with row=row %}
+  {% include item_template with row=row fetched=True %}
 {% empty %}
   {% comment %} Either the fetch failed or the collection really is empty. Saying so beats
      a blank body that reads as "this holds nothing", and the reader can retry

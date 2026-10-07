@@ -588,6 +588,60 @@ describe("filterChange", function () {
 });
 
 
+describe("filterChange and the load-more controls", function () {
+  // The classic filter hides rows with inline `display` while the fold hides
+  // them with `.folded`; the two used to fight. See docs/logbook.md.
+  function mount() {
+    document.body.innerHTML =
+      '<input id="filter">' +
+      '<div class="nftsec section-list" data-initial="1">' +
+      '  <div data-folding>' +
+      '    <details id="falpha" class="fitem"><summary>alpha</summary></details>' +
+      '    <details id="fbeta" class="fitem folded"><summary>beta</summary></details>' +
+      '  </div>' +
+      '  <div id="control"><button data-show-more data-noun="collections"' +
+      '    aria-expanded="false"></button></div>' +
+      '</div>';
+  }
+
+  function apply(text) {
+    $("#filter").val(text);
+    address.filterChange({ keyCode: 13 });
+  }
+
+  it('hides the control while a filter is active', function () {
+    mount();
+    apply("beta");
+    expect(document.getElementById("control").style.display).toBe("none");
+  });
+
+  it('brings the control back when the filter is cleared', function () {
+    mount();
+    apply("beta");
+    apply("");
+    expect(document.getElementById("control").style.display).toBe("");
+  });
+
+  it('shows a match from the folded tail while filtering', function () {
+    mount();
+    apply("beta");
+    expect(document.getElementById("fbeta").style.display).not.toBe("none");
+    expect(document.getElementById("falpha").style.display).toBe("none");
+  });
+
+  it('leaves folded rows to the fold once the filter is cleared', function () {
+    // `.show()` wrote an inline display that outranked `.folded`, so clearing
+    // a filter unfolded the whole section.
+    mount();
+    apply("beta");
+    apply("");
+    expect(document.getElementById("fbeta").style.display).toBe("");
+    expect(document.getElementById("fbeta").classList.contains("folded")).toBe(true);
+    expect(document.getElementById("falpha").style.display).toBe("");
+  });
+});
+
+
 describe("wireFetchedItems (htmx:after:swap)", function () {
   // **A collection's items are not on the page until the reader opens it.**
   // They used to be: every collection wrote out every item, hidden inside a
@@ -608,6 +662,33 @@ describe("wireFetchedItems (htmx:after:swap)", function () {
     );
 
     expect(document.querySelector("img.nft").src).toContain("/late.png");
+  });
+
+  it('fills the purchase times in the items it swapped in', function () {
+    // `showTimes` runs on the click, before the fetched items arrive.
+    window.onload();
+    var epoch = Math.floor(Date.now() / 1000) - 7200;
+    document.body.innerHTML =
+      '<div id="swapped"><span class="epoch" data-epoch="' + epoch + '"></span></div>';
+
+    document.getElementById("swapped").dispatchEvent(
+      new CustomEvent("htmx:after:swap", { bubbles: true })
+    );
+
+    expect(document.querySelector("span.epoch").textContent).toContain("ago on");
+  });
+
+  it('leaves the purchase times to dynamic.js on a dynamic page', function () {
+    window.onload();
+    document.body.innerHTML =
+      '<div class="dynamic-page"><div id="swapped">' +
+      '<span class="epoch" data-epoch="1700000000"></span></div></div>';
+
+    document.getElementById("swapped").dispatchEvent(
+      new CustomEvent("htmx:after:swap", { bubbles: true })
+    );
+
+    expect(document.querySelector("span.epoch").textContent).toBe("");
   });
 
   it('leaves an event with no usable target alone', function () {

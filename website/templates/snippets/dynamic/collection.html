@@ -28,7 +28,8 @@
    This comment sits outside the tag rather than between its attributes: a
    Django comment there is legal and renders away, but an HTML parser reading
    the template - the htmx upgrade checker included - sees its words as
-   attribute names. {% endcomment %}
+   attribute names. `innerMorph`, not `innerHTML`: it keeps the items already
+   on screen (see docs/logbook.md). {% endcomment %}
 <details id="f{{ slug }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
          data-sort-value="{{ coll.value }}"
          data-sort-amount="{{ coll.amount|default:0 }}"
@@ -38,7 +39,7 @@
          hx-get="{% url 'nft_collection_items' url_value %}?name={{ coll.name|urlencode }}"
          hx-trigger="toggle once"
          hx-target="#items-{{ slug }}"
-         hx-swap="innerHTML"
+         hx-swap="innerMorph"
          >
   <summary class="chead">
     {% comment %} The grip, exactly as an asset's, but no pin: `pins.js`

@@ -32,7 +32,7 @@
      href="{% if primary.typ == 'Vault' or primary.typ == 'Locked' %}{{ secondary.url }}{% else %}{{ primary.url }}{% endif %}"
      target="_blank" rel="noopener"
      title="View the original through an IPFS gateway">
-    <img src="{% static 'nft.png' %}" data-src="{{ BASE_CDN_URL }}{{ nft.image }}"
+    <img src="{% if fetched %}{{ BASE_CDN_URL }}{{ nft.image }}{% else %}{% static 'nft.png' %}{% endif %}" data-src="{{ BASE_CDN_URL }}{{ nft.image }}"
          data-fallback="{{ BASE_CDN_URL }}/thumbnails/nft.png"
          alt="{{ nft.name }}" class="nft" />
   </a>
