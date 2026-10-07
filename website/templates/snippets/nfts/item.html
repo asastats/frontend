@@ -41,8 +41,12 @@
       {% if nft.listings %}
         {% for ls in nft.listings %}
           <div class="text-xs">
+            {% if ls.link|is_claim_link %}
+            <a class="link link-hover" href="{{ ls.link }}" target="_blank" title="Claim the NFT from your {{ ls.market.name }} offer wallet">Claim on {{ ls.market.name }}</a>
+            {% else %}
             {% if ls.link|is_escrow_link %}Escrowed by {% else %}Listed at {% endif %}<a class="link link-hover" href="{% program_url ls.link %}" target="_blank" title="{% if ls.link|is_escrow_link %}Show escrow in {% explorer_name %}{% else %}{{ ls.market.name }} link to NFT{% endif %}">{{ ls.market.name }}</a>:
             <span class="val font-medium" data-val="{{ ls.price }}">{{ ls.price|floatformat:'2g' }} ALGO</span>
+            {% endif %}
           </div>
         {% endfor %}
       {% endif %}

@@ -3367,3 +3367,16 @@ first authenticated page load deleted the session cookie, so the fragment and
 any reload rendered for an anonymous reader. The three "survives a reload"
 dynamic tests fail the same way on unchanged code under that setup, so this was
 not confirmed on Postgres and is probably an artifact of the stand-in.
+
+## website/core/templatetags/core_extras.py, website/templates/snippets/nfts/item.html, website/templates/snippets/dynamic/nft.html
+
+### `is_claim_link` - an NFT waiting to be claimed (2026-10-07)
+
+The engine now lists an NFT that waits in the owner's Downbad offer wallet
+(an accepted offer, not yet claimed) among the owner's listings, with the
+link `https://www.downbad.farm/me?tab=offers`. `is_claim_link` recognises that
+exact URL (`CLAIM_LINKS`, kept in step with the engine's `DOWNBAD_CLAIM_URL`),
+and both NFT templates render it as "Claim on Downbad" with no price: there is
+no ask, and the price the engine sends is 0. A listing has no field saying
+what kind it is (`NftListing` is price, market, link, currency), which is why
+the link carries it, as it does for escrow markers.

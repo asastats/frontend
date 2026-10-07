@@ -17,6 +17,10 @@ from utils.helpers import bundle_from_addresses, nft_floor_price
 
 register = Library()
 
+#: what the engine sends as an NFT listing's link when the NFT waits to be
+#: claimed (engine's `DOWNBAD_CLAIM_URL`); keep the two in step
+CLAIM_LINKS = ("https://www.downbad.farm/me?tab=offers",)
+
 
 @register.filter
 def dict_get(mapping, key):
@@ -637,6 +641,17 @@ def program_url(context, program_url):
     :return: str
     """
     return explorer_constants.marker_link(_viewer_explorer(context, ""), program_url)
+
+
+@register.filter
+def is_claim_link(link):
+    """Return True if an NFT listing `link` is where its owner claims the NFT.
+
+    :param link: listing URL or explorer marker
+    :type link: str
+    :return: bool
+    """
+    return link in CLAIM_LINKS
 
 
 @register.filter

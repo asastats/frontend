@@ -86,6 +86,17 @@
     {% endif %}
 
     {% for listing in nft.listings %}
+    {% if listing.link|is_claim_link %}
+    <div class="nft-line">
+      <div class="k">
+        <span class="state-chip listed">claim</span>&nbsp;<a class="out" href="{{ listing.link }}" target="_blank" title="Claim the NFT from your {{ listing.market.name }} offer wallet">claim on {{ listing.market.name }}</a>
+      </div>
+      <div class="position-val">
+        <small class="qualifier">accepted offer</small>
+      </div>
+    </div>
+    {% endif %}
+    {% if not listing.link|is_claim_link %}
     <div class="nft-line">
       <div class="k">
         {# &nbsp;: minify-html drops a plain space between two tags #}
@@ -97,6 +108,7 @@
         <small class="qualifier">{% if listing.link|is_escrow_link %}escrowed at{% else %}asking{% endif %}</small>
       </div>
     </div>
+    {% endif %}
     {% endfor %}
 
     {% if nft.last_purchase %}

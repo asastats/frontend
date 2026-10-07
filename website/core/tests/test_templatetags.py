@@ -24,6 +24,7 @@ from core.templatetags.core_extras import (
     integer_comma,
     invert_price,
     is_distribution,
+    is_claim_link,
     is_escrow_link,
     is_negative,
     list_item,
@@ -853,6 +854,28 @@ class TestCoreExtrasExplorerTags:
         assert is_escrow_link("group=G1=") is False
         assert is_escrow_link("https://exa.market/asset/1") is False
         assert is_escrow_link(None) is False
+
+    def test_is_claim_link_filter(self):
+        assert is_claim_link("https://www.downbad.farm/me?tab=offers") is True
+        assert is_claim_link("https://www.downbad.farm/asset/1") is False
+        assert is_claim_link("application=678788407") is False
+        assert is_claim_link(None) is False
+
+    def test_a_claim_listing_renders_as_a_claim_link_without_a_price(self):
+        from django.template.loader import render_to_string
+
+        listing = {
+            "price": "0",
+            "market": {"name": "Downbad"},
+            "link": "https://www.downbad.farm/me?tab=offers",
+        }
+        html = render_to_string(
+            "snippets/nfts/item.html",
+            {"row": {"nft": {"id": 1, "name": "NFT", "listings": [listing]}, "price": 1}},
+        )
+        assert "Claim on Downbad" in html
+        assert 'href="https://www.downbad.farm/me?tab=offers"' in html
+        assert "Listed at" not in html
 
     def test_program_url_empty_string_returns_as_is(self):
         context = {}
