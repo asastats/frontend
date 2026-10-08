@@ -1,0 +1,10 @@
+{% load partials %}
+{% comment %} One row of the live log: text carrying its own name, newest first.
+   See docs/logbook.md. {% endcomment %}
+{% partialdef livelogfloor inline %}
+<li class="livelog-row"{% if oob %} hx-swap-oob="afterbegin:#id-livelog-list"{% endif %}>
+  <span class="livelog-what">Floor of {{ event.name|default:"a collection you hold" }} from {{ event.old|floatformat:"2g" }} to {{ event.new|floatformat:"2g" }} ALGO</span>
+  <span class="livelog-value num{% if event.algo < 0 %} neg{% endif %}">{% if event.algo > 0 %}+{% endif %}{{ event.algo|floatformat:"2g" }} ALGO</span>
+  <span class="livelog-held">{{ event.held }} held</span>
+</li>
+{% endpartialdef livelogfloor %}

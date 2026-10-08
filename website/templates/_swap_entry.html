@@ -118,5 +118,16 @@
     </p>
   </div>
 </div>
+{% comment %} The live log: hidden until a watch starts, then moved beside the
+   charts by `liverefresh.js`. Per-reader, so not in the cached page. {% endcomment %}
+<details id="id-livelog" class="livelog" hidden>
+  <summary>
+    <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+    <span>Live log</span>
+    <span class="charts-hint">what changed on this address while it is watched</span>
+  </summary>
+  <ol id="id-livelog-list" class="livelog-list"></ol>
+  <p class="livelog-empty">Nothing has changed since you started watching.</p>
+</details>
 <script src="{% static 'liverefresh/liverefresh.js' %}"></script>
 {% endif %}

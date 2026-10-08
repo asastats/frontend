@@ -3134,6 +3134,85 @@
 
 .dynamic-page .chart { min-width: 0; }
 
+/* ---- live log ------------------------------------------------------------- */
+/* Beside the charts from 1024px, below them before. `charts-row` is made by
+   `liverefresh.js` when a watch starts, so there is no row without a watch. */
+.dynamic-page .charts-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .dynamic-page .charts-row {
+    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+    align-items: start;
+  }
+}
+
+.dynamic-page .livelog {
+  margin-top: 1rem;
+  border-top: 1px solid var(--color-base-300);
+  padding-top: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .dynamic-page .livelog { margin-top: 0; }
+}
+
+.dynamic-page .livelog > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+}
+
+.dynamic-page .livelog > summary::-webkit-details-marker { display: none; }
+
+.dynamic-page .livelog > summary:hover { color: var(--color-base-content); }
+
+.dynamic-page .livelog[open] > summary .chev { transform: rotate(90deg); }
+
+.dynamic-page .livelog-list {
+  margin-top: 0.75rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  font-size: 0.8rem;
+}
+
+.dynamic-page .livelog-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--color-base-300);
+}
+
+.dynamic-page .livelog-what { min-width: 0; overflow-wrap: anywhere; }
+
+.dynamic-page .livelog-value { text-align: right; white-space: nowrap; }
+
+.dynamic-page .livelog-held {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* Shown until the first row arrives; `:empty` is the list's own state. */
+.dynamic-page .livelog-list:not(:empty) ~ .livelog-empty { display: none; }
+
+.dynamic-page .livelog-empty {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
 .dynamic-page .chart h4 {
   font-size: 0.65rem;
   font-weight: 600;
