@@ -6,7 +6,7 @@
    the two cannot drift. A row is text carrying its own name, because the list
    it lands in is always there. See docs/logbook.md. {% endcomment %}
 {% partialdef livelogevent inline %}
-<li class="livelog-row">{% if event.kind == "floor" %}
+<li class="livelog-row"{% if event.round and event.kind %} data-key="{{ event.round }}|{{ event.kind }}|{{ event.asset|default:'' }}|{{ event.name|default:'' }}"{% endif %}>{% if event.kind == "floor" %}
   <span class="livelog-what">Floor of {{ event.name|default:"a collection you hold" }} from {{ event.old|floatformat:"2g" }} to {{ event.new|floatformat:"2g" }} ALGO</span>
   <span class="livelog-value num{% if event.algo < 0 %} neg{% endif %}">{% if event.algo > 0 %}+{% endif %}{{ event.algo|floatformat:"2g" }} ALGO</span>
   <span class="livelog-held">{{ event.held }} held</span>
@@ -21,6 +21,10 @@
 {% elif event.kind == "price" %}
   <span class="livelog-what">ALGO price {{ event.old|floatformat:"3" }} to {{ event.new|floatformat:"3" }} USD</span>
   <span class="livelog-value num{% if event.pct < 0 %} neg{% endif %}">{% if event.pct > 0 %}+{% endif %}{{ event.pct|floatformat:"1" }}%</span>
+{% elif event.kind == "online" %}
+  <span class="livelog-what">Account went online</span>
+{% elif event.kind == "offline" %}
+  <span class="livelog-what">Account went offline</span>
 {% endif %}
 </li>
 {% endpartialdef livelogevent %}

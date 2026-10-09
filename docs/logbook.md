@@ -3380,3 +3380,12 @@ and both NFT templates render it as "Claim on Downbad" with no price: there is
 no ask, and the price the engine sends is 0. A listing has no field saying
 what kind it is (`NftListing` is price, market, link, currency), which is why
 the link carries it, as it does for escrow markers.
+
+## website/templates/snippets/dynamic/livelog.html - live log deduplication key (2026-10-09)
+
+The livelog template renders each row with `data-key="{{ event.round }}|{{ event.kind }}|{{ event.asset }}|{{ event.name }}"`.
+This key identifies a row uniquely on a page and is used to deduplicate rows that
+arrive from multiple sources on page reload: server-rendered backlog, saved
+sessionStorage rows, and the first poll. Gap rows (unread updates counter) have no
+key and are never deduplicated. The key is saved with each row in sessionStorage
+and restored on page load to prevent duplicates.
