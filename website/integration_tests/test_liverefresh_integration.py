@@ -534,6 +534,63 @@ class LiveLogRedisContractTest(TestCase):
         assert 'id="id-livelog-list"' in body
         assert "Bought Coin" in body
 
+    def test_liverefresh_integration_the_newest_rows_render_and_their_seq_with_them(self):
+        """**The newest payload is rendered, not left to the first poll.**
+
+        A block lands about every 2.8 s and the first poll comes 3 s after
+        load, so a payload left to it was usually replaced before it was asked
+        for. The shell names its `seq`, and the first poll asks only after it.
+        """
+        bought = {"kind": "asset_in", "round": 41234570, "asset": 31566704, "name": "Coin", "value": 7.5}
+        online = {"kind": "online", "round": 41234571}
+        latest = _block(9, [bought, online])
+        self._latest(latest)
+        self._backlog(latest, _block(8))
+        user = _dynamic_reader("ll-newest@example.com")
+        user.profile.live_refresh = True
+        user.profile.save()
+        self.client.force_login(user)
+
+        body = self.client.get(reverse("swap_entry", args=[ADDRESS])).content.decode()
+
+        assert 'data-log-seq="9"' in body
+        assert '<li class="livelog-row" data-key="9.0">' in body
+        assert "Bought Coin" in body
+        assert "Account went online" in body
+        # newest first: the online row came after the purchase in the block
+        assert body.index("Account went online") < body.index("Bought Coin")
+
+        url = reverse("liverefresh", args=[ADDRESS]) + "?logsince=9"
+        response = self.client.get(url, HTTP_HX_REQUEST="true")
+        assert "Bought Coin" not in response.content.decode()
+
+    def test_liverefresh_integration_a_transfer_is_a_row_live_and_on_load(self):
+        """**What the account's own transactions moved, as the engine publishes it.**"""
+        sent = {
+            "kind": "transfer",
+            "round": 41234572,
+            "asset": 0,
+            "name": "ALGO",
+            "amount": -2_500_000,
+            "decimals": 6,
+            "algo": -2.5,
+            "usd": -0.5,
+        }
+        latest = _block(12, [sent])
+        self._latest(latest)
+        self._backlog(latest)
+        user = _dynamic_reader("ll-transfer@example.com")
+
+        live = self._poll(user).content.decode()
+
+        assert "Sent 2.5000 ALGO" in live
+        assert "-2.50 ALGO" in live
+        user.profile.live_refresh = True
+        user.profile.save()
+        loaded = self.client.get(reverse("swap_entry", args=[ADDRESS])).content.decode()
+        assert '<li class="livelog-row" data-key="12.0">' in loaded
+        assert "Sent 2.5000 ALGO" in loaded
+
     def test_liverefresh_integration_an_nft_bought_is_restored_on_load(self):
         """An NFT purchase reloads the page like an asset does, so it restores the
         same way: the row is in the backlog, and the shell renders it."""

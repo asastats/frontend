@@ -915,7 +915,7 @@ class LiveRefreshTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         client = self._redis(holdings=MOVED_FINGERPRINT)
         client.lrange.return_value = [
-            # the newest payload, which the restore leaves to the first poll
+            # a newer payload with no events of its own
             msgpack.packb({"events": []}),
             msgpack.packb(
                 {
@@ -973,7 +973,7 @@ class LiveRefreshTest(FunctionalTest):
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         client = self._redis(holdings=MOVED_FINGERPRINT)
         client.lrange.return_value = [
-            # the newest payload, which the restore leaves to the first poll
+            # a newer payload with no events of its own
             msgpack.packb({"events": []}),
             msgpack.packb(
                 {
@@ -1012,6 +1012,67 @@ class LiveRefreshTest(FunctionalTest):
         )
         assert len(rows) == 1
         assert "Bought an NFT from Pixel Punks" in rows[0]
+
+    def _log_rows(self):
+        """Return the live log's rows as the reader reads them, top first."""
+        return self.browser.execute_script(
+            "return Array.from(document.querySelectorAll("
+            "'#id-livelog-list .livelog-row')).map(function (row) {"
+            "return row.textContent.replace(/\\s+/g, ' ').trim();});"
+        )
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_newest_rows_survive_a_newer_block_and_a_reload_once_each(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**Rendered at seq 8, polled at seq 9, then F5: two rows, once each.**
+
+        The page renders the backlog up to seq 8, whose block bought Coin. By
+        the first poll the engine has published seq 9, with a price row. A row
+        of seq 8 must not be lost to it, and after F5 neither row may be doubled
+        by the restore or by the first poll repeating seq 9.
+        """
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        bought = {
+            "kind": "asset_in",
+            "round": 64595872,
+            "asset": 31566704,
+            "name": "Coin",
+            "value": 7.5,
+        }
+        price = {"kind": "price", "round": 64595873, "old": 0.2, "new": 0.21, "pct": 5.0}
+        block = msgpack.unpackb(self._published())
+        client = self._redis()
+        client.get.return_value = msgpack.packb(dict(block, seq=9, events=[price]))
+        client.lrange.return_value = [
+            msgpack.packb(dict(block, seq=8, events=[bought])),
+            msgpack.packb(dict(block, seq=7)),
+        ]
+        mocked_redis.return_value = client
+
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.wait_until(lambda: len(self._log_rows()) == 2, timeout=30)
+        rows = self._log_rows()
+        assert "ALGO price" in rows[0]
+        assert "Bought Coin" in rows[1]
+
+        # the same address loaded again, in the same tab: an F5
+        self.open_page()
+        # one more poll after the reload, which answers seq 9 again
+        polled = client.get.call_count
+        self.wait_until(lambda: client.get.call_count > polled + 1, timeout=30)
+        rows = self._log_rows()
+        assert len(rows) == 2, rows
+        assert "ALGO price" in rows[0]
+        assert "Bought Coin" in rows[1]
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")

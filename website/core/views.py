@@ -1932,7 +1932,7 @@ class SwapEntryView(TemplateView):
             context["liverefresh_interval"] = LIVEREFRESH_POLL_SECONDS
             context["liverefresh_grace"] = LIVEREFRESH_HIDDEN_GRACE_SECONDS
             # Restores the log across a reload; see `recent_log_events`.
-            context["livelog_events"] = recent_log_events(value)
+            context["livelog_events"], context["livelog_seq"] = recent_log_events(value)
         # Alerts are about watching rather than signing, so unlike the swap
         # and the sweep they are not gated on a linked address. The tier bands
         # how many rules may be kept rather than whether the control appears:

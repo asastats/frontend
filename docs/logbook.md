@@ -3389,3 +3389,26 @@ arrive from multiple sources on page reload: server-rendered backlog, saved
 sessionStorage rows, and the first poll. Gap rows (unread updates counter) have no
 key and are never deduplicated. The key is saved with each row in sessionStorage
 and restored on page load to prevent duplicates.
+
+**Correction, 2026-10-09.** The key above (`round|kind|asset|name`) did not
+identify a row uniquely. Two same-named positions opened in one round got the
+same key, and so did floor moves, which carry `collection`, not `asset`. Since
+2026-10-09 `data-key` is the event's `id`, `<seq>.<index>`, assigned in the
+widget's `_events_of`. See the widgets logbook,
+`inhouse/liverefresh - the log cursor, ids and the event-kind filter`.
+
+## website/templates/_swap_entry.html - `data-log-seq` on the live log shell (2026-10-09)
+
+The shell carries the newest backlog `seq` its rows were rendered from.
+`liverefresh.js` reads it and sends it as `logsince` on polls until the first
+`since`. Without it, the first poll could not tell which events the page already
+had. See the widgets logbook for why the newest payload is now rendered and not
+left to the first poll.
+
+## website/templates/snippets/dynamic/livelog.html - the `transfer` row (2026-10-09)
+
+The partial loads `core_extras` for `amount_repr` and `abs_value`. The sign is
+in the verb (Sent / Received), so the amount is shown unsigned. The ALGO worth
+keeps its sign. The address and the USD figure share the `livelog-held` second
+line, so the row needed no new CSS. See the widgets logbook, `inhouse/liverefresh
+- the transfer row`.

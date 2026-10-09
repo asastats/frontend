@@ -1,4 +1,4 @@
-{% load partials %}
+{% load partials core_extras %}
 {% comment %} One row of the live log, for any event kind the engine publishes.
 
    The same partial renders a row that arrives live (inside the wrapper in
@@ -6,7 +6,7 @@
    the two cannot drift. A row is text carrying its own name, because the list
    it lands in is always there. See docs/logbook.md. {% endcomment %}
 {% partialdef livelogevent inline %}
-<li class="livelog-row"{% if event.round and event.kind %} data-key="{{ event.round }}|{{ event.kind }}|{{ event.asset|default:'' }}|{{ event.name|default:'' }}"{% endif %}>{% if event.kind == "floor" %}
+<li class="livelog-row"{% if event.id %} data-key="{{ event.id }}"{% endif %}>{% if event.kind == "floor" %}
   <span class="livelog-what">Floor of {{ event.name|default:"a collection you hold" }} from {{ event.old|floatformat:"2g" }} to {{ event.new|floatformat:"2g" }} ALGO</span>
   <span class="livelog-value num{% if event.algo < 0 %} neg{% endif %}">{% if event.algo > 0 %}+{% endif %}{{ event.algo|floatformat:"2g" }} ALGO</span>
   <span class="livelog-held">{{ event.held }} held</span>
@@ -25,6 +25,10 @@
   <span class="livelog-what">Account went online</span>
 {% elif event.kind == "offline" %}
   <span class="livelog-what">Account went offline</span>
+{% elif event.kind == "transfer" %}
+  <span class="livelog-what">{% if event.amount < 0 %}Sent{% else %}Received{% endif %} {% if event.name and event.decimals is not None %}{{ event.amount|abs_value|amount_repr:event.decimals }} {% endif %}{{ event.name|default:"an asset" }}</span>
+  {% if event.algo is not None %}<span class="livelog-value num{% if event.algo < 0 %} neg{% endif %}">{% if event.algo > 0 %}+{% endif %}{{ event.algo|floatformat:"2g" }} ALGO</span>{% endif %}
+  {% if event.address or event.usd is not None %}<span class="livelog-held">{% if event.address %}{{ event.address|slice:":5" }}…{{ event.address|slice:"-5:" }}{% endif %}{% if event.address and event.usd is not None %} · {% endif %}{% if event.usd is not None %}{% if event.usd > 0 %}+{% endif %}{{ event.usd|floatformat:"2g" }} USD{% endif %}</span>{% endif %}
 {% endif %}
 </li>
 {% endpartialdef livelogevent %}
