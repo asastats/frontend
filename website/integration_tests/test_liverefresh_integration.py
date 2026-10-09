@@ -572,6 +572,18 @@ class LiveLogRedisContractTest(TestCase):
         assert "ALGO price 0.214 to 0.222 USD" in restored.content.decode()
         assert "ALGO price 0.214 to 0.222 USD" in live.content.decode()
 
+    def test_liverefresh_integration_a_gap_longer_than_the_backlog_is_said(self):
+        """**The backlog holds the last twenty, so a reader further behind has
+        updates it can no longer be given. The log says how many.**"""
+        latest = _block(8)
+        self._latest(latest)
+        self._backlog(latest, _block(7))
+        user = _dynamic_reader("ll-gap@example.com")
+
+        response = self._poll(user, since=1)
+
+        assert "5 updates not received" in response.content.decode()
+
     def test_liverefresh_integration_the_classic_layout_gets_log_rows(self):
         """The classic layout has the log too, below the consolidated box."""
         block = _block(1, [FLOOR_MOVE])

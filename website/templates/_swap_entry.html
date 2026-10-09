@@ -124,6 +124,7 @@
   <summary>
     <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
     <span>Live log</span>
+    <span id="id-livelog-unread" class="badge badge-sm" hidden></span>
     <span class="charts-hint">what changed on this address while it is watched</span>
   </summary>
   <ol id="id-livelog-list" class="livelog-list">{% for event in livelog_events %}{% include "snippets/dynamic/livelog.html#livelogevent" with event=event %}{% endfor %}</ol>

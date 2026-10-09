@@ -1063,6 +1063,52 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_row_the_folded_log_has_not_shown_is_counted_and_then_cleared(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**A folded log still tells the reader something arrived.** The summary
+        counts the rows; opening the log shows them and clears the count."""
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        with_move = self._published(events=[FLOOR_MOVE])
+        quiet = self._published()
+        pending = [with_move]
+
+        def published(key, *args, **kwargs):
+            if not str(key).startswith("lvp:"):
+                return None
+            return pending.pop(0) if pending else quiet
+
+        client = self._redis()
+        client.get.side_effect = published
+        mocked_redis.return_value = client
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var b = document.getElementById('id-livelog-unread');"
+                "return !!b && !b.hidden && b.textContent === '1 new';"
+            ),
+            timeout=30,
+        )
+
+        self.browser.find_element(By.CSS_SELECTOR, "#id-livelog > summary").click()
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return document.getElementById('id-livelog-unread').hidden === true;"
+            ),
+            timeout=10,
+        )
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_live_log_is_folded_and_hidden_until_the_reader_watches(
         self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
     ):

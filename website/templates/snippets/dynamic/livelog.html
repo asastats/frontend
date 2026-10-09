@@ -24,3 +24,6 @@
 {% endif %}
 </li>
 {% endpartialdef livelogevent %}
+{% partialdef livelogegap inline %}
+<li class="livelog-row livelog-gap">{{ count }} update{{ count|pluralize }} not received</li>
+{% endpartialdef livelogegap %}
