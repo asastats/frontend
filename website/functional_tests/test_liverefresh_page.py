@@ -148,7 +148,6 @@ class LiveRefreshTest(FunctionalTest):
     RENDERS_POSITIONS = True
     SUPPORTS_REGROUP = True
     #: The live log is dynamic-only; the classic layout has no charts to sit beside.
-    RENDERS_LOG = True
     #: The charts panel the log sits beside on the dynamic layout.
     HAS_CHARTS = True
     #: The class of the element the log is moved into on this layout.
@@ -706,8 +705,6 @@ class LiveRefreshTest(FunctionalTest):
         the row arrives as a swap beside the charts. The move is published once,
         so exactly one row appears.
         """
-        if not self.RENDERS_LOG:
-            self.skipTest("the live log is dynamic-only")
         mocked_fetch.return_value = self.sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
@@ -778,8 +775,6 @@ class LiveRefreshTest(FunctionalTest):
         the row arrives as a swap beside the charts. The move is published once,
         so exactly one row appears.
         """
-        if not self.RENDERS_LOG:
-            self.skipTest("the live log is dynamic-only")
         mocked_fetch.return_value = self.sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
@@ -849,8 +844,6 @@ class LiveRefreshTest(FunctionalTest):
         and the log names it once. The event is attached to the one block that
         carried the change, so later polls do not repeat it.
         """
-        if not self.RENDERS_LOG:
-            self.skipTest("the live log is not on this layout")
         if not self.SUPPORTS_REGROUP:
             self.skipTest("classic reloads for a new position rather than regrouping")
         sample = self._annotated_sample()
@@ -917,13 +910,13 @@ class LiveRefreshTest(FunctionalTest):
         the purchase reaches the page except what the page renders on load. That
         is the engine's backlog, read back into the shell.
         """
-        if not self.RENDERS_LOG:
-            self.skipTest("the live log is dynamic-only")
         mocked_fetch.return_value = self.sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         client = self._redis(holdings=MOVED_FINGERPRINT)
         client.lrange.return_value = [
+            # the newest payload, which the restore leaves to the first poll
+            msgpack.packb({"events": []}),
             msgpack.packb(
                 {
                     "events": [
@@ -975,13 +968,13 @@ class LiveRefreshTest(FunctionalTest):
         the purchase reaches the page except what the page renders on load. That
         is the engine's backlog, read back into the shell.
         """
-        if not self.RENDERS_LOG:
-            self.skipTest("the live log is dynamic-only")
         mocked_fetch.return_value = self.sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
         client = self._redis(holdings=MOVED_FINGERPRINT)
         client.lrange.return_value = [
+            # the newest payload, which the restore leaves to the first poll
+            msgpack.packb({"events": []}),
             msgpack.packb(
                 {
                     "events": [
@@ -1115,8 +1108,6 @@ class LiveRefreshTest(FunctionalTest):
         """**Nothing shows until there is a watch to report on.** The log is
         folded at the start, and stays hidden while Auto-refresh is off, then
         appears on the next tick once it is turned on - without a reload."""
-        if not self.RENDERS_LOG:
-            self.skipTest("the live log is dynamic-only")
         mocked_fetch.return_value = self.sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
@@ -1621,7 +1612,6 @@ class LiveRefreshClassicTest(LiveRefreshTest):
 
     POSITION_VALUE_PREFIX = "ppv-"
     SUPPORTS_REGROUP = False
-    RENDERS_LOG = True
     HAS_CHARTS = False
     LOG_HOME = "livelog-section"
 

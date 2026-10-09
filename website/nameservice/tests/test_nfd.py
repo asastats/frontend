@@ -4,7 +4,6 @@ import base64
 from copy import deepcopy
 from urllib.error import HTTPError
 
-import base64
 import pytest
 
 from nameservice.nfd import (
@@ -233,7 +232,6 @@ class TestNameServiceNfdV2Functions:
         self, mocker
     ):
         """A `u.caalgo` box with comma-separated addresses parses both."""
-        import base64
 
         algod_client = mocker.MagicMock()
         v2_app_id = 88778506

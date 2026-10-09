@@ -327,7 +327,7 @@ FLOOR_MOVE = {
 
 
 def _dynamic_reader(email):
-    """Return a reader on the dynamic layout, which is the only one with a log."""
+    """Return a reader on the dynamic layout, the one the charts-side log was built for."""
     user = _reader(email)
     user.profile.preferred_layout = "dynamic"
     user.profile.save()
@@ -442,6 +442,7 @@ class LiveLogRedisContractTest(TestCase):
 
         response = self._poll(user, since=8)
 
+        assert response.status_code == 200
         assert "Floor of Pixel" not in response.content.decode()
 
     def test_liverefresh_integration_a_move_is_sent_when_the_total_has_not_moved(self):
@@ -560,7 +561,7 @@ class LiveLogRedisContractTest(TestCase):
         price = {"kind": "price", "round": 41234572, "old": 0.214, "new": 0.2215, "pct": 3.5}
         block = _block(12, [price])
         self._latest(block)
-        self._backlog(block)
+        self._backlog(block, _block(11, [price]))
         user = _dynamic_reader("ll-price@example.com")
         user.profile.live_refresh = True
         user.profile.save()
