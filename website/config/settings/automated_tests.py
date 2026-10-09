@@ -133,6 +133,12 @@ BASE_CDN_URL = ""
 #: See `config/urls_automated_tests.py` for why this cannot simply be appended.
 ROOT_URLCONF = "config.urls_automated_tests"
 
+# The engine reads database 0 of the same Redis, and its live pass fetches
+# every address in the watch and rule sets. A test that stores a bundle or a
+# rule on database 0 hands the engine a placeholder to fetch on every block.
+# Database 15 is the one the integration suite already owns.
+REDIS_DB = 15
+
 
 class ProductionCacheConfigTests:
     """The production CACHES settings must include CONNECTION_POOL_KWARGS with
