@@ -572,8 +572,8 @@ class LiveLogRedisContractTest(TestCase):
         assert "ALGO price 0.214 to 0.222 USD" in restored.content.decode()
         assert "ALGO price 0.214 to 0.222 USD" in live.content.decode()
 
-    def test_liverefresh_integration_the_classic_layout_gets_no_log_rows(self):
-        """The classic layout has no log to write to, so a row is not sent."""
+    def test_liverefresh_integration_the_classic_layout_gets_log_rows(self):
+        """The classic layout has the log too, below the consolidated box."""
         block = _block(1, [FLOOR_MOVE])
         self._latest(block)
         self._backlog(block)
@@ -583,7 +583,7 @@ class LiveLogRedisContractTest(TestCase):
 
         response = self._poll(user)
 
-        assert "Floor of Pixel" not in response.content.decode()
+        assert "Floor of Pixel" in response.content.decode()
 
 
 @override_settings(

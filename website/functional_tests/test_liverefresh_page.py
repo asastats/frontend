@@ -149,6 +149,10 @@ class LiveRefreshTest(FunctionalTest):
     SUPPORTS_REGROUP = True
     #: The live log is dynamic-only; the classic layout has no charts to sit beside.
     RENDERS_LOG = True
+    #: The charts panel the log sits beside on the dynamic layout.
+    HAS_CHARTS = True
+    #: The class of the element the log is moved into on this layout.
+    LOG_HOME = "charts-row"
 
     def _published(
         self, values=None, holdings=RENDERED_FINGERPRINT, positions=None, events=None
@@ -746,11 +750,18 @@ class LiveRefreshTest(FunctionalTest):
         assert (
             self.browser.execute_script(
                 "var log = document.getElementById('id-livelog');"
-                "return !log.hidden && log.parentNode.className === 'charts-row' "
-                "&& log.parentNode.contains(document.getElementById('charts'));"
+                f"return !log.hidden && log.parentNode.className === '{self.LOG_HOME}';"
             )
             is True
         )
+        if self.HAS_CHARTS:
+            assert (
+                self.browser.execute_script(
+                    "return document.getElementById('charts').parentNode.contains("
+                    "document.getElementById('id-livelog'));"
+                )
+                is True
+            )
         assert self.browser.execute_script("return window.__stillHere;") is True
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
@@ -811,11 +822,18 @@ class LiveRefreshTest(FunctionalTest):
         assert (
             self.browser.execute_script(
                 "var log = document.getElementById('id-livelog');"
-                "return !log.hidden && log.parentNode.className === 'charts-row' "
-                "&& log.parentNode.contains(document.getElementById('charts'));"
+                f"return !log.hidden && log.parentNode.className === '{self.LOG_HOME}';"
             )
             is True
         )
+        if self.HAS_CHARTS:
+            assert (
+                self.browser.execute_script(
+                    "return document.getElementById('charts').parentNode.contains("
+                    "document.getElementById('id-livelog'));"
+                )
+                is True
+            )
         assert self.browser.execute_script("return window.__stillHere;") is True
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
@@ -832,7 +850,9 @@ class LiveRefreshTest(FunctionalTest):
         carried the change, so later polls do not repeat it.
         """
         if not self.RENDERS_LOG:
-            self.skipTest("the live log is dynamic-only")
+            self.skipTest("the live log is not on this layout")
+        if not self.SUPPORTS_REGROUP:
+            self.skipTest("classic reloads for a new position rather than regrouping")
         sample = self._annotated_sample()
         asset_id, _program = self._a_position(sample)
         mocked_fetch.return_value = sample
@@ -999,6 +1019,45 @@ class LiveRefreshTest(FunctionalTest):
         )
         assert len(rows) == 1
         assert "Bought an NFT from Pixel Punks" in rows[0]
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_charts_and_the_live_log_share_a_top_edge(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**Beside the charts, not above or below them.** Each panel's summary
+        starts at the same height, and the log is to the right of the charts on
+        a wide screen. Measured, because the two carried different margins and
+        the log sat higher than the charts it stood beside."""
+        if not self.HAS_CHARTS:
+            self.skipTest("this layout has no charts panel to sit beside")
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis()
+        self.browser.set_window_size(1280, 900)
+
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var log = document.getElementById('id-livelog');"
+                "return !!log && !log.hidden;"
+            ),
+            timeout=30,
+        )
+
+        tops = self.browser.execute_script(
+            "var charts = document.querySelector('#charts > summary').getBoundingClientRect();"
+            "var log = document.querySelector('#id-livelog > summary').getBoundingClientRect();"
+            "return {charts: charts.top, log: log.top, logLeft: log.left, chartsLeft: charts.left};"
+        )
+        assert abs(tops["charts"] - tops["log"]) <= 1
+        assert tops["logLeft"] > tops["chartsLeft"]
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
@@ -1516,7 +1575,9 @@ class LiveRefreshClassicTest(LiveRefreshTest):
 
     POSITION_VALUE_PREFIX = "ppv-"
     SUPPORTS_REGROUP = False
-    RENDERS_LOG = False
+    RENDERS_LOG = True
+    HAS_CHARTS = False
+    LOG_HOME = "livelog-section"
 
     def sign_in(self, live_refresh=True, permission=ASASTATSER):
         """Log a reader in on the classic layout rather than the dynamic one."""
@@ -1788,6 +1849,48 @@ class LiveRefreshClassicTest(LiveRefreshTest):
             "return el ? el.getAttribute('title') : '';"
         )
         assert "once a minute" in free_title
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_live_log_sits_right_aligned_below_the_consolidated_header(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**The classic log is a section under the consolidated box, not a
+        panel inside it.** It sits below `#id-cons-header`, its right edge lines
+        up with the box's right edge, and it is hidden until the reader turns
+        Auto-refresh on. Inside the details it would vanish when the box is
+        folded, so it is a sibling of it."""
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis()
+        self.browser.set_window_size(1280, 900)
+
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var log = document.getElementById('id-livelog');"
+                "return !!log && !log.hidden;"
+            ),
+            timeout=30,
+        )
+
+        geometry = self.browser.execute_script(
+            "var log = document.getElementById('id-livelog');"
+            "var header = document.getElementById('id-cons-header').getBoundingClientRect();"
+            "var box = document.getElementById('id-cons').getBoundingClientRect();"
+            "var r = log.getBoundingClientRect();"
+            "return {parent: log.parentNode.className, top: r.top, right: r.right,"
+            " headerBottom: header.bottom, boxRight: box.right};"
+        )
+        assert geometry["parent"] == "livelog-section"
+        assert geometry["top"] >= geometry["headerBottom"] - 1
+        assert abs(geometry["right"] - geometry["boxRight"]) <= 2
 
 # Pre-existing browser-integration failures: Selenium timeouts.
 # The server-side mock and wrap work (verified by TestLiveRefreshTimeoutWrap);

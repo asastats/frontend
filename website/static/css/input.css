@@ -3150,17 +3150,17 @@
   }
 }
 
-.dynamic-page .livelog {
+.livelog {
   margin-top: 1rem;
   border-top: 1px solid var(--color-base-300);
   padding-top: 0.75rem;
 }
 
 @media (min-width: 1024px) {
-  .dynamic-page .livelog { margin-top: 0; }
+  .livelog { margin-top: 0; }
 }
 
-.dynamic-page .livelog > summary {
+.livelog > summary {
   cursor: pointer;
   list-style: none;
   display: flex;
@@ -3171,13 +3171,13 @@
   color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
 }
 
-.dynamic-page .livelog > summary::-webkit-details-marker { display: none; }
+.livelog > summary::-webkit-details-marker { display: none; }
 
-.dynamic-page .livelog > summary:hover { color: var(--color-base-content); }
+.livelog > summary:hover { color: var(--color-base-content); }
 
-.dynamic-page .livelog[open] > summary .chev { transform: rotate(90deg); }
+.livelog[open] > summary .chev { transform: rotate(90deg); }
 
-.dynamic-page .livelog-list {
+.livelog-list {
   margin-top: 0.75rem;
   max-height: 24rem;
   overflow-y: auto;
@@ -3186,7 +3186,7 @@
   font-size: 0.8rem;
 }
 
-.dynamic-page .livelog-row {
+.livelog-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.15rem 0.5rem;
@@ -3194,23 +3194,47 @@
   border-bottom: 1px solid var(--color-base-300);
 }
 
-.dynamic-page .livelog-what { min-width: 0; overflow-wrap: anywhere; }
+.livelog-what { min-width: 0; overflow-wrap: anywhere; }
 
-.dynamic-page .livelog-value { text-align: right; white-space: nowrap; }
+.livelog-value { text-align: right; white-space: nowrap; }
 
-.dynamic-page .livelog-held {
+.livelog-held {
   grid-column: 1 / -1;
   font-size: 0.72rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
 /* Shown until the first row arrives; `:empty` is the list's own state. */
-.dynamic-page .livelog-list:not(:empty) ~ .livelog-empty { display: none; }
+.livelog-list:not(:empty) ~ .livelog-empty { display: none; }
 
-.dynamic-page .livelog-empty {
+.livelog-empty {
   margin-top: 0.75rem;
   font-size: 0.78rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* The two panels share a top edge on the wide grid. Each carried its own top
+   margin, so the log sat higher than the charts beside it. The row supplies the
+   spacing now. */
+.dynamic-page .charts-row > .chart-panel,
+.dynamic-page .charts-row > .livelog {
+  margin-top: 0;
+}
+
+/* Classic: the log sits below the consolidated box, right aligned, in a card. */
+.livelog-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.livelog-section > .livelog {
+  width: 100%;
+  max-width: 28rem;
+  margin-top: 0;
+  border: 1px solid var(--color-base-300);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
 }
 
 .dynamic-page .chart h4 {
