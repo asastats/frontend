@@ -555,6 +555,23 @@ class LiveLogRedisContractTest(TestCase):
 
         assert "Bought an NFT from Pixel Punks" in response.content.decode()
 
+    def test_liverefresh_integration_a_price_row_is_written_and_restored(self):
+        """**A price row is a row of the log like any other, live and on reload.**"""
+        price = {"kind": "price", "round": 41234572, "old": 0.214, "new": 0.2215, "pct": 3.5}
+        block = _block(12, [price])
+        self._latest(block)
+        self._backlog(block)
+        user = _dynamic_reader("ll-price@example.com")
+        user.profile.live_refresh = True
+        user.profile.save()
+        self.client.force_login(user)
+
+        restored = self.client.get(reverse("swap_entry", args=[ADDRESS]))
+        live = self._poll(user, since=11)
+
+        assert "ALGO price 0.214 to 0.222 USD" in restored.content.decode()
+        assert "ALGO price 0.214 to 0.222 USD" in live.content.decode()
+
     def test_liverefresh_integration_the_classic_layout_gets_no_log_rows(self):
         """The classic layout has no log to write to, so a row is not sent."""
         block = _block(1, [FLOOR_MOVE])

@@ -18,6 +18,9 @@
   {% if event.kind == "asset_in" %}<span class="livelog-value num">{{ event.value|floatformat:"2g" }} ALGO</span>{% endif %}
 {% elif event.kind == "nft_in" or event.kind == "nft_out" %}
   <span class="livelog-what">{% if event.kind == "nft_in" %}Bought{% else %}Sold{% endif %} an NFT from {{ event.name|default:"a collection" }}</span>
+{% elif event.kind == "price" %}
+  <span class="livelog-what">ALGO price {{ event.old|floatformat:"3" }} to {{ event.new|floatformat:"3" }} USD</span>
+  <span class="livelog-value num{% if event.pct < 0 %} neg{% endif %}">{% if event.pct > 0 %}+{% endif %}{{ event.pct|floatformat:"1" }}%</span>
 {% endif %}
 </li>
 {% endpartialdef livelogevent %}

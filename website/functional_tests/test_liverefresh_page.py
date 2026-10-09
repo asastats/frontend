@@ -100,6 +100,10 @@ FLOOR_MOVE = {
 }
 
 
+#: An ALGO price move past the threshold, as the engine publishes it.
+PRICE_MOVE = {"kind": "price", "round": 64595872, "old": 0.214, "new": 0.2215, "pct": 3.5}
+
+
 class LiveRefreshTest(FunctionalTest):
     """A subscriber watching the page keep up with the chain."""
 
@@ -738,6 +742,71 @@ class LiveRefreshTest(FunctionalTest):
         assert len(rows) == 1
         assert "Floor of Pixel from 2.00 to 2.50 ALGO" in rows[0]
         assert "+1.50 ALGO" in rows[0]
+        # Beside the charts, and still the same document.
+        assert (
+            self.browser.execute_script(
+                "var log = document.getElementById('id-livelog');"
+                "return !log.hidden && log.parentNode.className === 'charts-row' "
+                "&& log.parentNode.contains(document.getElementById('charts'));"
+            )
+            is True
+        )
+        assert self.browser.execute_script("return window.__stillHere;") is True
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_price_move_lands_in_the_live_log_without_reloading(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**A floor move is a row, and the page keeps its place for it.**
+
+        The collection's floor changed, so a holding of it is worth something
+        else, but nothing was bought or sold. The fingerprint is the same, so
+        the row arrives as a swap beside the charts. The move is published once,
+        so exactly one row appears.
+        """
+        if not self.RENDERS_LOG:
+            self.skipTest("the live log is dynamic-only")
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        with_move = self._published(events=[PRICE_MOVE])
+        quiet = self._published()
+        pending = [with_move]
+
+        def published(key, *args, **kwargs):
+            # Only the payload key answers with a block: the poll reads other keys too.
+            if not str(key).startswith("lvp:"):
+                return None
+            return pending.pop(0) if pending else quiet
+
+        client = self._redis()
+        client.get.side_effect = published
+        mocked_redis.return_value = client
+
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!document.querySelector('#id-livelog-list .livelog-row');"
+            ),
+            timeout=30,
+        )
+
+        rows = self.browser.execute_script(
+            "return Array.from(document.querySelectorAll("
+            "'#id-livelog-list .livelog-row')).map(function (row) {"
+            "return row.textContent.replace(/\\s+/g, ' ').trim();});"
+        )
+        assert len(rows) == 1
+        assert "ALGO price 0.214 to 0.222 USD" in rows[0]
+        assert "+3.5%" in rows[0]
         # Beside the charts, and still the same document.
         assert (
             self.browser.execute_script(
