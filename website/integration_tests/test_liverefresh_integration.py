@@ -55,7 +55,12 @@ from api.live import API_WARM_KEY, SNAPSHOT_PREFIX, page_key, snapshot, subscrib
 from api.tiers import block_time
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 from walletauth.models import LinkedAddress
-from widgets.inhouse.liverefresh.views import PAID_KEY, PAYLOAD_PREFIX, SUBSCRIBED_KEY
+from widgets.inhouse.liverefresh.views import (
+    BACKLOG_PREFIX,
+    PAID_KEY,
+    PAYLOAD_PREFIX,
+    SUBSCRIBED_KEY,
+)
 
 #: The database these tests own. See the module docstring.
 TEST_REDIS_DB = 15
@@ -305,6 +310,263 @@ class LiveRefreshRedisContractTest(TestCase):
         response = self._poll(user)
 
         assert response.status_code == 204
+
+
+#: A floor move on one collection the account holds, as the engine's
+#: `_floor_events` makes it for the block that carries it.
+FLOOR_MOVE = {
+    "kind": "floor",
+    "round": 41234567,
+    "collection": "coll-a",
+    "name": "Pixel",
+    "old": 2.0,
+    "new": 2.5,
+    "held": 3,
+    "algo": 1.5,
+}
+
+
+def _dynamic_reader(email):
+    """Return a reader on the dynamic layout, which is the only one with a log."""
+    user = _reader(email)
+    user.profile.preferred_layout = "dynamic"
+    user.profile.save()
+    return user
+
+
+def _block(seq, events=(), total=1234.5):
+    """Return one payload as the engine's pass publishes it, msgpack packed."""
+    return msgpack.packb(
+        {
+            "seq": seq,
+            "total": total,
+            "priceusdc": 0.25,
+            "values": {},
+            "events": list(events),
+        }
+    )
+
+
+@override_settings(REDIS_DB=TEST_REDIS_DB)
+class LiveLogRedisContractTest(TestCase):
+    """Floor-move events for the live log, against a real server.
+
+    The engine writes the latest payload under `lvp:{page}` and the last
+    twenty under `lvl:{page}`, newest first. The widget reads both, so a row
+    reaches a tab that is at the latest block and also one that missed it.
+    """
+
+    def setUp(self):
+        """Note what is here, so afterwards only what these tests added is removed."""
+        super().setUp()
+        self.redis = _client()
+        self.payload_key = f"{PAYLOAD_PREFIX}:{ADDRESS}"
+        self.backlog_key = f"{BACKLOG_PREFIX}:{ADDRESS}"
+        self.redis.zrem(SUBSCRIBED_KEY, ADDRESS)
+        self.redis.zrem(PAID_KEY, ADDRESS)
+        # The same snapshot cleanup as LiveRefreshRedisContractTest, for the
+        # same reason: one poll writes more keys than these tests name.
+        self.before = set(self.redis.scan_iter(count=1000))
+        self.addCleanup(self._forget)
+        self.client = Client()
+
+    def _forget(self):
+        """Remove the members these tests added and every key they created."""
+        self.redis.zrem(SUBSCRIBED_KEY, ADDRESS)
+        self.redis.zrem(PAID_KEY, ADDRESS)
+        added = set(self.redis.scan_iter(count=1000)) - self.before
+        if added:
+            self.redis.delete(*added)
+
+    def _latest(self, block):
+        """Publish `block` as the newest payload for the address."""
+        self.redis.set(self.payload_key, block, ex=120)
+
+    def _backlog(self, *newest_first):
+        """Publish the backlog the engine keeps, newest first."""
+        self.redis.delete(self.backlog_key)
+        if newest_first:
+            self.redis.rpush(self.backlog_key, *newest_first)
+
+    def _poll(self, user, since=None):
+        """Serve one poll as the widget would, optionally from a given `seq`."""
+        self.client.force_login(user)
+        url = reverse("liverefresh", args=[ADDRESS])
+        if since is not None:
+            url += f"?since={since}"
+        return self.client.get(url, HTTP_HX_REQUEST="true")
+
+    def test_liverefresh_integration_a_floor_move_is_written_as_a_log_row(self):
+        """The row an engine block carries reaches the reader as an
+        out-of-band row at the top of the log."""
+        block = _block(1, [FLOOR_MOVE])
+        self._latest(block)
+        self._backlog(block)
+        user = _dynamic_reader("ll-row@example.com")
+
+        response = self._poll(user)
+
+        body = response.content.decode()
+        assert response.status_code == 200
+        assert 'id="id-livelog-list" hx-swap-oob="afterbegin"' in body
+        assert "Floor of Pixel from 2.00 to 2.50 ALGO" in body
+        assert "+1.50 ALGO" in body
+
+    def test_liverefresh_integration_a_tab_that_missed_the_block_still_gets_the_row(
+        self,
+    ):
+        """**The block with the move was skipped, and the tab must not lose it.**
+
+        The tab last applied seq 6. Seq 7 carried the move and seq 8 came after
+        it, so the catch-up has to find seq 7 in the backlog and fold its row in.
+        """
+        latest = _block(8)
+        self._latest(latest)
+        self._backlog(latest, _block(7, [FLOOR_MOVE]), _block(6))
+        user = _dynamic_reader("ll-missed@example.com")
+
+        response = self._poll(user, since=6)
+
+        assert response.status_code == 200
+        assert "Floor of Pixel from 2.00 to 2.50 ALGO" in response.content.decode()
+
+    def test_liverefresh_integration_a_tab_at_the_block_is_not_sent_the_row_again(
+        self,
+    ):
+        """**A row is written once.** A tab that already applied the block that
+        carried it gets the band and nothing for the log."""
+        block = _block(8, [FLOOR_MOVE])
+        self._latest(block)
+        self._backlog(block)
+        user = _dynamic_reader("ll-again@example.com")
+
+        response = self._poll(user, since=8)
+
+        assert "Floor of Pixel" not in response.content.decode()
+
+    def test_liverefresh_integration_a_move_is_sent_when_the_total_has_not_moved(self):
+        """**An event is news even when the account's total did not move.** A
+        floor can change what a holding is worth without changing the total,
+        so a 204 here would drop the row."""
+        user = _dynamic_reader("ll-total@example.com")
+        self._latest(_block(1))
+        self._backlog(_block(1))
+        self._poll(user)
+
+        block = _block(2, [FLOOR_MOVE])
+        self._latest(block)
+        self._backlog(block, _block(1))
+        response = self._poll(user, since=1)
+
+        assert response.status_code == 200
+        assert "Floor of Pixel" in response.content.decode()
+
+    def test_liverefresh_integration_a_position_opened_is_written_as_a_log_row(self):
+        """A position the engine saw open reaches the reader by name."""
+        opened = {
+            "kind": "position_open",
+            "round": 41234568,
+            "asset": 31566704,
+            "name": "Mallow (ALGO down)",
+            "provider": "Mallow",
+            "value": 22.0,
+        }
+        block = _block(1, [opened])
+        self._latest(block)
+        self._backlog(block)
+        user = _dynamic_reader("ll-open@example.com")
+
+        response = self._poll(user)
+
+        body = response.content.decode()
+        assert "Opened Mallow (ALGO down) on Mallow" in body
+        assert "+22.00 ALGO" in body
+
+    def test_liverefresh_integration_a_position_closed_reaches_a_tab_that_missed_it(
+        self,
+    ):
+        """**A close is named from the baseline, so a tab that skipped the block
+        still sees which position went.**"""
+        closed = {
+            "kind": "position_close",
+            "round": 41234569,
+            "asset": 31566704,
+            "name": "Mallow (ALGO down)",
+            "provider": "Mallow",
+            "value": 0.0,
+        }
+        latest = _block(4)
+        self._latest(latest)
+        self._backlog(latest, _block(3, [closed]), _block(2))
+        user = _dynamic_reader("ll-closed@example.com")
+
+        response = self._poll(user, since=2)
+
+        assert "Closed Mallow (ALGO down) on Mallow" in response.content.decode()
+
+    def test_liverefresh_integration_a_reload_restores_the_recent_rows(self):
+        """**An asset bought reloads the page, and the reload must not lose its row.**
+
+        The poll answers the holdings change with a reload and no body. The page
+        that loads again renders its shell from the backlog the engine kept, so
+        the row the reload was for is still there.
+        """
+        bought = {
+            "kind": "asset_in",
+            "round": 41234570,
+            "asset": 31566704,
+            "name": "Coin",
+            "value": 7.5,
+        }
+        latest = _block(9)
+        self._latest(latest)
+        self._backlog(latest, _block(8, [bought]))
+        user = _dynamic_reader("ll-restore@example.com")
+        user.profile.live_refresh = True
+        user.profile.save()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("swap_entry", args=[ADDRESS]))
+
+        body = response.content.decode()
+        assert response.status_code == 200
+        assert 'id="id-livelog-list"' in body
+        assert "Bought Coin" in body
+
+    def test_liverefresh_integration_an_nft_bought_is_restored_on_load(self):
+        """An NFT purchase reloads the page like an asset does, so it restores the
+        same way: the row is in the backlog, and the shell renders it."""
+        bought = {
+            "kind": "nft_in",
+            "round": 41234571,
+            "asset": 901,
+            "name": "Pixel Punks",
+            "value": 0.0,
+        }
+        latest = _block(11)
+        self._latest(latest)
+        self._backlog(latest, _block(10, [bought]))
+        user = _dynamic_reader("ll-nft@example.com")
+        user.profile.live_refresh = True
+        user.profile.save()
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("swap_entry", args=[ADDRESS]))
+
+        assert "Bought an NFT from Pixel Punks" in response.content.decode()
+
+    def test_liverefresh_integration_the_classic_layout_gets_no_log_rows(self):
+        """The classic layout has no log to write to, so a row is not sent."""
+        block = _block(1, [FLOOR_MOVE])
+        self._latest(block)
+        self._backlog(block)
+        user = _reader("ll-classic@example.com")
+        user.profile.preferred_layout = "classic"
+        user.profile.save()
+
+        response = self._poll(user)
+
+        assert "Floor of Pixel" not in response.content.decode()
 
 
 @override_settings(

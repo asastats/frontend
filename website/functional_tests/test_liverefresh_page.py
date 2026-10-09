@@ -87,6 +87,19 @@ def _sample_payload():
         return json.load(sample_file)
 
 
+#: A floor move on a collection the sample account holds.
+FLOOR_MOVE = {
+    "kind": "floor",
+    "round": 64595872,
+    "collection": "coll-a",
+    "name": "Pixel",
+    "old": 2.0,
+    "new": 2.5,
+    "held": 3,
+    "algo": 1.5,
+}
+
+
 class LiveRefreshTest(FunctionalTest):
     """A subscriber watching the page keep up with the chain."""
 
@@ -130,8 +143,12 @@ class LiveRefreshTest(FunctionalTest):
     #: position tests rather than asserting against markup that cannot exist.
     RENDERS_POSITIONS = True
     SUPPORTS_REGROUP = True
+    #: The live log is dynamic-only; the classic layout has no charts to sit beside.
+    RENDERS_LOG = True
 
-    def _published(self, values=None, holdings=RENDERED_FINGERPRINT, positions=None):
+    def _published(
+        self, values=None, holdings=RENDERED_FINGERPRINT, positions=None, events=None
+    ):
         """Return a msgpack block as the engine's pass publishes one."""
         total = self.sample["total"]
         return msgpack.packb(
@@ -146,6 +163,7 @@ class LiveRefreshTest(FunctionalTest):
                 "pricealgo": total["pricealgo"],
                 "values": values or {},
                 "positions": positions or [],
+                "events": list(events or ()),
                 "round": 64595872,
             }
         )
@@ -156,6 +174,7 @@ class LiveRefreshTest(FunctionalTest):
         holdings=RENDERED_FINGERPRINT,
         positions=None,
         snapshot=None,
+        events=None,
     ):
         """A client that answers with one published block and records the beat.
 
@@ -200,7 +219,7 @@ class LiveRefreshTest(FunctionalTest):
                         })
 
         client = mock.MagicMock()
-        block = self._published(values, holdings, positions)
+        block = self._published(values, holdings, positions, events)
         if snapshot is None:
             client.get.return_value = block
             return client
@@ -664,6 +683,296 @@ class LiveRefreshTest(FunctionalTest):
         assert self.browser.execute_script("return window.__stillHere;") is True
         # And the page has caught up, so it stops asking for the same regroup.
         assert self.holdings_attribute() == REGROUPED_FINGERPRINT
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_floor_move_lands_in_the_live_log_without_reloading(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**A floor move is a row, and the page keeps its place for it.**
+
+        The collection's floor changed, so a holding of it is worth something
+        else, but nothing was bought or sold. The fingerprint is the same, so
+        the row arrives as a swap beside the charts. The move is published once,
+        so exactly one row appears.
+        """
+        if not self.RENDERS_LOG:
+            self.skipTest("the live log is dynamic-only")
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        with_move = self._published(events=[FLOOR_MOVE])
+        quiet = self._published()
+        pending = [with_move]
+
+        def published(key, *args, **kwargs):
+            # Only the payload key answers with a block: the poll reads other keys too.
+            if not str(key).startswith("lvp:"):
+                return None
+            return pending.pop(0) if pending else quiet
+
+        client = self._redis()
+        client.get.side_effect = published
+        mocked_redis.return_value = client
+
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!document.querySelector('#id-livelog-list .livelog-row');"
+            ),
+            timeout=30,
+        )
+
+        rows = self.browser.execute_script(
+            "return Array.from(document.querySelectorAll("
+            "'#id-livelog-list .livelog-row')).map(function (row) {"
+            "return row.textContent.replace(/\\s+/g, ' ').trim();});"
+        )
+        assert len(rows) == 1
+        assert "Floor of Pixel from 2.00 to 2.50 ALGO" in rows[0]
+        assert "+1.50 ALGO" in rows[0]
+        # Beside the charts, and still the same document.
+        assert (
+            self.browser.execute_script(
+                "var log = document.getElementById('id-livelog');"
+                "return !log.hidden && log.parentNode.className === 'charts-row' "
+                "&& log.parentNode.contains(document.getElementById('charts'));"
+            )
+            is True
+        )
+        assert self.browser.execute_script("return window.__stillHere;") is True
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_position_opened_lands_in_the_live_log_without_reloading(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**A new position is a row as well as a row of figures.**
+
+        The position arrives in place (the regroup path, as in the test above),
+        and the log names it once. The event is attached to the one block that
+        carried the change, so later polls do not repeat it.
+        """
+        if not self.RENDERS_LOG:
+            self.skipTest("the live log is dynamic-only")
+        sample = self._annotated_sample()
+        asset_id, _program = self._a_position(sample)
+        mocked_fetch.return_value = sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+
+        opened = self._opened_position(sample, asset_id)
+        client = self._redis(holdings=REGROUPED_FINGERPRINT, snapshot=opened)
+        with_event = msgpack.unpackb(client.get.return_value, strict_map_key=False)
+        with_event["events"] = [
+            {
+                "kind": "position_open",
+                "round": 64595872,
+                "asset": asset_id,
+                "name": "Mallow (ALGO down)",
+                "provider": "Mallow",
+                "value": 22.0,
+            }
+        ]
+        quiet = client.get.return_value
+        pending = [msgpack.packb(with_event)]
+
+        def published(key, *args, **kwargs):
+            if not str(key).startswith("lvp:"):
+                return None
+            return pending.pop(0) if pending else quiet
+
+        client.get.side_effect = published
+        mocked_redis.return_value = client
+        self._rendered_fingerprint(RENDERED_FINGERPRINT_SPLIT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+        self.browser.execute_script("window.__stillHere = true;")
+
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!document.querySelector('#id-livelog-list .livelog-row');"
+            ),
+            timeout=30,
+        )
+        rows = self.browser.execute_script(
+            "return Array.from(document.querySelectorAll("
+            "'#id-livelog-list .livelog-row')).map(function (row) {"
+            "return row.textContent.replace(/\\s+/g, ' ').trim();});"
+        )
+        assert len(rows) == 1
+        assert "Opened Mallow (ALGO down) on Mallow" in rows[0]
+        assert self.browser.execute_script("return window.__stillHere;") is True
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_an_asset_bought_reloads_and_its_row_is_still_there(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**A holding that changed reloads the page, and the reload keeps the row.**
+
+        The poll answers the change with a reload and no body, so nothing about
+        the purchase reaches the page except what the page renders on load. That
+        is the engine's backlog, read back into the shell.
+        """
+        if not self.RENDERS_LOG:
+            self.skipTest("the live log is dynamic-only")
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        client = self._redis(holdings=MOVED_FINGERPRINT)
+        client.lrange.return_value = [
+            msgpack.packb(
+                {
+                    "events": [
+                        {
+                            "kind": "asset_in",
+                            "round": 64595872,
+                            "asset": 31566704,
+                            "name": "Coin",
+                            "value": 7.5,
+                        }
+                    ]
+                }
+            )
+        ]
+        mocked_redis.return_value = client
+        self._rendered_fingerprint(RENDERED_FINGERPRINT, MOVED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+
+        self.wait_until(
+            lambda: self.holdings_attribute() == MOVED_FINGERPRINT, timeout=60
+        )
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!document.querySelector('#id-livelog-list .livelog-row');"
+            ),
+            timeout=30,
+        )
+        rows = self.browser.execute_script(
+            "return Array.from(document.querySelectorAll("
+            "'#id-livelog-list .livelog-row')).map(function (row) {"
+            "return row.textContent.replace(/\\s+/g, ' ').trim();});"
+        )
+        assert len(rows) == 1
+        assert "Bought Coin" in rows[0]
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_an_nft_bought_reloads_and_its_row_is_still_there(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**An NFT bought reloads the page the same way an asset does, and keeps its row.**
+
+        The poll answers the change with a reload and no body, so nothing about
+        the purchase reaches the page except what the page renders on load. That
+        is the engine's backlog, read back into the shell.
+        """
+        if not self.RENDERS_LOG:
+            self.skipTest("the live log is dynamic-only")
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        client = self._redis(holdings=MOVED_FINGERPRINT)
+        client.lrange.return_value = [
+            msgpack.packb(
+                {
+                    "events": [
+                        {
+                            "kind": "nft_in",
+                            "round": 64595872,
+                            "asset": 901,
+                            "name": "Pixel Punks",
+                            "value": 0.0,
+                        }
+                    ]
+                }
+            )
+        ]
+        mocked_redis.return_value = client
+        self._rendered_fingerprint(RENDERED_FINGERPRINT, MOVED_FINGERPRINT)
+
+        self.sign_in()
+        self.open_page()
+        self.arm()
+
+        self.wait_until(
+            lambda: self.holdings_attribute() == MOVED_FINGERPRINT, timeout=60
+        )
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "return !!document.querySelector('#id-livelog-list .livelog-row');"
+            ),
+            timeout=30,
+        )
+        rows = self.browser.execute_script(
+            "return Array.from(document.querySelectorAll("
+            "'#id-livelog-list .livelog-row')).map(function (row) {"
+            "return row.textContent.replace(/\\s+/g, ' ').trim();});"
+        )
+        assert len(rows) == 1
+        assert "Bought an NFT from Pixel Punks" in rows[0]
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_live_log_is_folded_and_hidden_until_the_reader_watches(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**Nothing shows until there is a watch to report on.** The log is
+        folded at the start, and stays hidden while Auto-refresh is off, then
+        appears on the next tick once it is turned on - without a reload."""
+        if not self.RENDERS_LOG:
+            self.skipTest("the live log is dynamic-only")
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        mocked_redis.return_value = self._redis()
+
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+        self.sign_in()
+        self.open_page()
+
+        state = self.browser.execute_script(
+            "var log = document.getElementById('id-livelog');"
+            "return log ? {hidden: log.hidden, open: log.open} : null;"
+        )
+        assert state == {"hidden": True, "open": False}
+
+        self.arm()
+        self.wait_until(
+            lambda: self.browser.execute_script(
+                "var log = document.getElementById('id-livelog');"
+                "return !!log && !log.hidden;"
+            ),
+            timeout=30,
+        )
+        # Revealed, and still folded: the reader opens it on purpose.
+        assert (
+            self.browser.execute_script(
+                "return document.getElementById('id-livelog').open;"
+            )
+            is False
+        )
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")
@@ -1138,6 +1447,7 @@ class LiveRefreshClassicTest(LiveRefreshTest):
 
     POSITION_VALUE_PREFIX = "ppv-"
     SUPPORTS_REGROUP = False
+    RENDERS_LOG = False
 
     def sign_in(self, live_refresh=True, permission=ASASTATSER):
         """Log a reader in on the classic layout rather than the dynamic one."""

@@ -1,10 +1,23 @@
 {% load partials %}
-{% comment %} One row of the live log: text carrying its own name, newest first.
-   See docs/logbook.md. {% endcomment %}
-{% partialdef livelogfloor inline %}
-<li class="livelog-row"{% if oob %} hx-swap-oob="afterbegin:#id-livelog-list"{% endif %}>
+{% comment %} One row of the live log, for any event kind the engine publishes.
+
+   The same partial renders a row that arrives live (inside the wrapper in
+   `fragments.html`) and one restored on page load (in `_swap_entry.html`), so
+   the two cannot drift. A row is text carrying its own name, because the list
+   it lands in is always there. See docs/logbook.md. {% endcomment %}
+{% partialdef livelogevent inline %}
+<li class="livelog-row">{% if event.kind == "floor" %}
   <span class="livelog-what">Floor of {{ event.name|default:"a collection you hold" }} from {{ event.old|floatformat:"2g" }} to {{ event.new|floatformat:"2g" }} ALGO</span>
   <span class="livelog-value num{% if event.algo < 0 %} neg{% endif %}">{% if event.algo > 0 %}+{% endif %}{{ event.algo|floatformat:"2g" }} ALGO</span>
   <span class="livelog-held">{{ event.held }} held</span>
+{% elif event.kind == "position_open" or event.kind == "position_close" %}
+  <span class="livelog-what">{% if event.kind == "position_open" %}Opened{% else %}Closed{% endif %} {{ event.name|default:"a position" }}{% if event.provider %} on {{ event.provider }}{% endif %}</span>
+  {% if event.kind == "position_open" %}<span class="livelog-value num">+{{ event.value|floatformat:"2g" }} ALGO</span>{% endif %}
+{% elif event.kind == "asset_in" or event.kind == "asset_out" %}
+  <span class="livelog-what">{% if event.kind == "asset_in" %}Bought{% else %}Sold{% endif %} {{ event.name|default:"an asset" }}</span>
+  {% if event.kind == "asset_in" %}<span class="livelog-value num">{{ event.value|floatformat:"2g" }} ALGO</span>{% endif %}
+{% elif event.kind == "nft_in" or event.kind == "nft_out" %}
+  <span class="livelog-what">{% if event.kind == "nft_in" %}Bought{% else %}Sold{% endif %} an NFT from {{ event.name|default:"a collection" }}</span>
+{% endif %}
 </li>
-{% endpartialdef livelogfloor %}
+{% endpartialdef livelogevent %}

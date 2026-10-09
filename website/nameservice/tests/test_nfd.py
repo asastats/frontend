@@ -1,8 +1,10 @@
 """Testing module for :py:mod:`nameservice.nfd` module."""
 
+import base64
 from copy import deepcopy
 from urllib.error import HTTPError
 
+import base64
 import pytest
 
 from nameservice.nfd import (
@@ -113,6 +115,41 @@ class TestNameServiceNfdV2Functions:
         algod_client.application_box_by_name.assert_called_once_with(
             v2_app_id, b"v.caAlgo.0.as"
         )
+
+    def test_nameservice_nfd_check_boxes_addresses_skips_blank_and_pool_addresses(
+        self, mocker
+    ):
+        """A caAlgo entry that is empty, or one of the zero-address pool
+        placeholders, is not an address a name points at."""
+        algod_client = mocker.MagicMock()
+        algod_client.application_boxes.return_value = {
+            "boxes": [{"name": "di5jYUFsZ28uMC5hcw=="}]
+        }
+        algod_client.application_box_by_name.return_value = {"value": "x"}
+        mocker.patch(
+            "nameservice.nfd._address_from_bytes_value",
+            return_value=["", "AAAAAPOOLPLACEHOLDER", "REALADDRESS"],
+        )
+
+        returned = _check_boxes_addresses(88778506, algod_client)
+
+        assert returned == ["REALADDRESS"]
+
+    def test_nameservice_nfd_check_boxes_addresses_skips_empty_list_entries(
+        self, mocker
+    ):
+        """A comma list with a doubled comma has an empty entry in the middle."""
+        algod_client = mocker.MagicMock()
+        algod_client.application_boxes.return_value = {
+            "boxes": [{"name": "dS5jYWFsZ28uMC5hcw=="}]
+        }
+        algod_client.application_box_by_name.return_value = {
+            "value": base64.b64encode(b"ADDRONE,,ADDRTWO").decode()
+        }
+
+        returned = _check_boxes_addresses(88778506, algod_client)
+
+        assert sorted(returned) == ["ADDRONE", "ADDRTWO"]
 
     def test_nameservice_nfd_check_boxes_addresses_functionality(self, mocker):
         algod_client = mocker.MagicMock()

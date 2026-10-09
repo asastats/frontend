@@ -67,6 +67,17 @@ class TestApiViewsEtagFor:
 class TestApiViewsConditionalGet:
     """The 304 path as a request sees it."""
 
+    def test_api_views_a_response_with_no_etag_carries_no_etag_header(self, mocker):
+        """When the body cannot be hashed the reader gets the full response, and
+        no ETag header to echo back."""
+        view, request = self._view(mocker, {"total": {"total": 1}})
+        mocker.patch("api.views._etag_for", return_value="")
+
+        response = view.get(request, bundle=API_EXAMPLE_BUNDLE1)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert not response.has_header("ETag")
+
     def _view(self, mocker, serialized, headers=None, user=None):
         factory = APIRequestFactory()
         request = factory.get(f"/api/v2/{API_EXAMPLE_BUNDLE1}", headers=headers or {})

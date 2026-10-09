@@ -36,6 +36,19 @@ class TestApMainFunctions:
             mocked_bundle.return_value, addresses, light=False, permission=0
         )
 
+    def test_api_main_fetch_and_serialize_account_serves_a_fresh_snapshot(self, mocker):
+        """A live snapshot answers the request, and the engine is not asked."""
+        snapshot = {"asaitems": [{"asset": {"id": 1}, "programs": []}]}
+        mocker.patch("api.main.live.snapshot", return_value=snapshot)
+        mocked_fetch = mocker.patch("api.main.fetch_serialized_account")
+        mocked_annotate = mocker.patch("api.main.annotate_positions")
+
+        returned = fetch_and_serialize_account(API_EXAMPLE_ADDRESS1, API_EXAMPLE_ADDRESS1, fresh=True)
+
+        assert returned is snapshot
+        mocked_fetch.assert_not_called()
+        mocked_annotate.assert_called_once_with(1, [])
+
     def test_api_main_fetch_and_serialize_account_for_single_address(self, mocker):
         value = API_EXAMPLE_ADDRESS1
         mocked_bundle = mocker.patch("api.main.bundle_from_addresses")

@@ -109,6 +109,7 @@ from utils.userhelpers import (
     liverefresh_terms,
 )
 from walletauth.gating import is_linked_to_user, linked_addresses_for_user
+from widgets.inhouse.liverefresh.views import recent_log_events
 from widgethost.registry import (
     swap_client_cfg,
     swap_endpoint_urls,
@@ -1930,6 +1931,8 @@ class SwapEntryView(TemplateView):
             context["liverefresh_url"] = reverse("liverefresh", args=[value])
             context["liverefresh_interval"] = LIVEREFRESH_POLL_SECONDS
             context["liverefresh_grace"] = LIVEREFRESH_HIDDEN_GRACE_SECONDS
+            # Restores the log across a reload; see `recent_log_events`.
+            context["livelog_events"] = recent_log_events(value)
         # Alerts are about watching rather than signing, so unlike the swap
         # and the sweep they are not gated on a linked address. The tier bands
         # how many rules may be kept rather than whether the control appears:

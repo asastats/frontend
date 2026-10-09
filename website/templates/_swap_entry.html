@@ -126,7 +126,7 @@
     <span>Live log</span>
     <span class="charts-hint">what changed on this address while it is watched</span>
   </summary>
-  <ol id="id-livelog-list" class="livelog-list"></ol>
+  <ol id="id-livelog-list" class="livelog-list">{% for event in livelog_events %}{% include "snippets/dynamic/livelog.html#livelogevent" with event=event %}{% endfor %}</ol>
   <p class="livelog-empty">Nothing has changed since you started watching.</p>
 </details>
 <script src="{% static 'liverefresh/liverefresh.js' %}"></script>
