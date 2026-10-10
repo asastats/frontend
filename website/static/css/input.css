@@ -4843,6 +4843,14 @@
   cursor: pointer;
 }
 
+/* The account's count, on its own line: the button speaks for this browser. */
+.alerts-enable-count {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+}
+
 /* `role="status"`, so a screen reader hears the outcome. Four things can each
    say no and the reader is told which; this is where that lands. */
 .alerts-enable-state {

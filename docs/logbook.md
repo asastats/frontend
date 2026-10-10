@@ -3459,3 +3459,10 @@ line, so the row needed no new CSS. See the widgets logbook, `inhouse/liverefres
   `inhouse/alerts/templates/alerts/_panel.html`). The form's dividing rule moved
   from its top to its bottom, and `.alerts-full`, which stands in for the form
   at the limit, takes the same rule.
+
+## website/static/css/input.css - `.alerts-enable-count` (2026-10-10)
+
+- The account's browser count, on its own line under the enable button. The
+  button now speaks only for this browser (widgets logbook, `alerts.js`
+  `checkBrowser`). The browser test `AlertsThisBrowserTest` overrides the VAPID
+  settings, because without them the enable block is not rendered.

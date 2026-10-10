@@ -30,7 +30,7 @@ from selenium.webdriver.common.by import By
 
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 from walletauth.models import LinkedAddress
-from widgets.inhouse.alerts.models import AlertRule, Direction, Subject
+from widgets.inhouse.alerts.models import AlertRule, Direction, PushSubscription, Subject
 
 from .base import COOKIE_SEED_URL, FunctionalTest
 
@@ -674,6 +674,28 @@ class AlertsPushControlTest(AlertsReaderMixin, FunctionalTest):
         assert enable.get_attribute("data-vapid-key") is not None
         assert "VAPID_PRIVATE_KEY" not in source
         assert "vapid_private" not in source.lower()
+
+
+@override_settings(VAPID_PRIVATE_KEY="test-private", VAPID_ADMIN_EMAIL="mailto:test@example.com")
+class AlertsThisBrowserTest(AddressPageMixin, FunctionalTest):
+    """Alerts are per browser, so "on" is this browser's answer, not the account's."""
+
+    def test_another_browser_on_the_account_leaves_this_one_off(self):
+        """Reported: Firefox subscribed; Chromium and Vivaldi then said "on"."""
+        user = self.sign_in("alerts-otherbrowser@example.com")
+        PushSubscription.objects.create(
+            user=user, endpoint="https://push.example/firefox", p256dh="p", auth="a"
+        )
+
+        self.open_modal_from_button()
+        # `checkBrowser` runs on open; give its promise a moment to settle.
+        self.browser.execute_script("return new Promise(r => setTimeout(r, 500));")
+
+        button = self.find_elem_by_css(".alerts-enable-btn")
+        assert button.text == "Notify this browser"
+        assert self.find_elem_by_css(".alerts-enable-count").text == (
+            "Alerts go to 1 browser on your account."
+        )
 
 
 class AlertsAddressPageEntryTest(AddressPageMixin, FunctionalTest):
