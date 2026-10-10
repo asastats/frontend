@@ -1072,6 +1072,36 @@ class DynamicStructureTest(MoneyPageMixin, FunctionalTest):
 
         self.assertEqual([], offenders, "these amounts show more than four decimals")
 
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_the_online_chip_sits_level_with_the_addresses(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """Its middle is the address pills' middle, not their top."""
+        payload = _sample_payload()
+        payload["account_info"]["online"] = True
+        mocked_fetch.return_value = payload
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+
+        self._sign_in()
+        self.open_address()
+
+        chip = self.browser.find_element(By.CSS_SELECTOR, ".total-sub .state-chip")
+        pill = chip.find_element(By.XPATH, "preceding-sibling::a[1]")
+        # The text's box, not the chip's: a stretched chip is level, its word is not.
+        middle, expected = self.browser.execute_script(
+            "const range = document.createRange();"
+            "range.selectNodeContents(arguments[0]);"
+            "const t = range.getBoundingClientRect();"
+            "const p = arguments[1].getBoundingClientRect();"
+            "return [t.top + t.height / 2, p.top + p.height / 2];",
+            chip,
+            pill,
+        )
+        self.assertAlmostEqual(expected, middle, delta=1.5)
+
 
 class DynamicCompactTest(MoneyPageMixin, FunctionalTest):
     """Design 3: the same template, one class, a different list.

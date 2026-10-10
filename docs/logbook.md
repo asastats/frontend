@@ -3442,3 +3442,13 @@ line, so the row needed no new CSS. See the widgets logbook, `inhouse/liverefres
   decimals it reads "an asset", as the transfer row does.
 - Position rows name the pool when there is one ("Closed Liquidity, Tinyman2 LP
   TALGO-TINY"), and say "×2" when one row stands for several instances.
+
+## website/static/css/input.css - `.total-sub .state-chip` (2026-10-10)
+
+- The "Online" chip in the dynamic page's header sat about 3px above the address
+  pills next to it. `.total-sub` is a flex row, which stretches every item to
+  the tallest pill. The chip's word is smaller than the pills', so it rode at
+  the top of its stretched box. `align-self: center` sizes the chip to its word
+  and centres it. The browser test
+  `test_the_online_chip_sits_level_with_the_addresses` measures the word's
+  middle against the neighbouring pill's middle.

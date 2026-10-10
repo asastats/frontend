@@ -2935,6 +2935,8 @@
   text-decoration: none;
 }
 
+.dynamic-page .total-sub .state-chip { align-self: center; }
+
 .dynamic-page .addr:hover {
   border-color: color-mix(in oklab, var(--color-base-content) 30%, transparent);
 }
