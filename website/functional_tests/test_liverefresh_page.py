@@ -1078,6 +1078,50 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
+    def test_a_row_shows_its_time_and_follows_the_page_currency(
+        self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
+    ):
+        """**The figure in the page's currency, and the time in the reader's clock.**"""
+        mocked_fetch.return_value = self.sample
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": ASASTATSER}
+        floor = dict(FLOOR_MOVE, usd=0.3, ts=1791615649)
+        block = msgpack.unpackb(self._published())
+        client = self._redis()
+        client.get.return_value = msgpack.packb(dict(block, seq=8))
+        client.lrange.return_value = [msgpack.packb(dict(block, seq=8, events=[floor]))]
+        mocked_redis.return_value = client
+
+        self._rendered_fingerprint(RENDERED_FINGERPRINT)
+        self.sign_in()
+        self.open_page()
+        self.browser.execute_script("localStorage.setItem('cur', 'ALGO');")
+        # the browser is shared: a USD left behind would re-render the next test
+        self.addCleanup(
+            self.browser.execute_script, "localStorage.setItem('cur', 'ALGO');"
+        )
+        self.arm()
+        self.wait_until(lambda: len(self._log_rows()) == 1, timeout=30)
+
+        def shown():
+            return self.browser.execute_script(
+                "return Array.from(document.querySelectorAll('#id-livelog-list .livelog-value'))"
+                ".filter(function (el) { return getComputedStyle(el).display !== 'none'; })"
+                ".map(function (el) { return el.textContent.trim(); });"
+            )
+
+        self.wait_until(lambda: self.browser.execute_script(
+            "return document.querySelector('#id-livelog-list .livelog-time').textContent !== '';"
+        ), timeout=10)
+        assert shown() == ["+1.50 ALGO"]
+        # the page's own control writes `cur`; the log follows on the next click
+        self.browser.execute_script("localStorage.setItem('cur', 'USD'); document.body.click();")
+        self.wait_until(lambda: shown() == ["+0.30 USD"], timeout=10)
+
+    @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
     def test_the_charts_and_the_live_log_share_a_top_edge(
         self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
     ):

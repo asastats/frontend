@@ -3412,3 +3412,20 @@ in the verb (Sent / Received), so the amount is shown unsigned. The ALGO worth
 keeps its sign. The address and the USD figure share the `livelog-held` second
 line, so the row needed no new CSS. See the widgets logbook, `inhouse/liverefresh
 - the transfer row`.
+
+## website/templates/snippets/dynamic/livelog.html - time cell, figures in both currencies, asset price row (2026-10-10)
+
+- Every row starts with `<time class="livelog-time">`, and the grid is now
+  time | what | figure (`input.css`). The second line spans from the second
+  column.
+- `livelogfigure` renders a figure in ALGO, plus in USD when the event
+  carries `usd`, as `livelog-algo` / `livelog-usd` twins. The page's currency
+  decides which one shows (see the widgets logbook). A `with` variable missing
+  from the event arrives as `""`, not `None`, so the partial tests
+  `usd or usd == 0`. With `is not None`, a row from before USD figures
+  rendered an empty " USD" span.
+- `asset_price` rows carry `data-basis`. Prices use `floatformat:'-8g'`, the
+  ASA section's own format for a price.
+- `_swap_entry.html`: the CSV copy button. `style.tw.css` is rebuilt from
+  `input.css`; a rebuild of the previous `input.css` reproduced the committed
+  file exactly, so the rebuilt file differs only by these rules.

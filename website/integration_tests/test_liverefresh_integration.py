@@ -554,6 +554,7 @@ class LiveLogRedisContractTest(TestCase):
         body = self.client.get(reverse("swap_entry", args=[ADDRESS])).content.decode()
 
         assert 'data-log-seq="9"' in body
+        assert 'id="id-livelog-copy"' in body
         assert '<li class="livelog-row" data-key="9.0">' in body
         assert "Bought Coin" in body
         assert "Account went online" in body

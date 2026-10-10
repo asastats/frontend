@@ -126,6 +126,8 @@
     <span>Live log</span>
     <span id="id-livelog-unread" class="badge badge-sm" hidden></span>
     <span class="charts-hint">what changed on this address while it is watched</span>
+    {# not `.copy`: site.js binds that class to copy the previous element #}
+    <button type="button" id="id-livelog-copy" class="livelog-copy" title="Copy the log as CSV" aria-label="Copy the log as CSV">&#128203;</button>
   </summary>
   <ol id="id-livelog-list" class="livelog-list">{% for event in livelog_events %}{% include "snippets/dynamic/livelog.html#livelogevent" with event=event %}{% endfor %}</ol>
   <p class="livelog-empty">Nothing has changed since you started watching.</p>

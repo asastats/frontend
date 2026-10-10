@@ -3188,7 +3188,8 @@
 
 .livelog-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  /* time | what | figure; a hidden currency twin takes no cell */
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.15rem 0.5rem;
   padding: 0.4rem 0;
   border-bottom: 1px solid var(--color-base-300);
@@ -3198,10 +3199,38 @@
 
 .livelog-value { text-align: right; white-space: nowrap; }
 
+.livelog-time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
 .livelog-held {
-  grid-column: 1 / -1;
+  grid-column: 2 / -1;
   font-size: 0.72rem;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
+}
+
+/* One currency at a time, the page's (`data-cur`, set by liverefresh.js). */
+#id-livelog[data-cur="USD"] .livelog-algo,
+#id-livelog:not([data-cur="USD"]) .livelog-usd,
+#id-livelog[data-cur="USD"] .livelog-row[data-basis="algo"],
+#id-livelog:not([data-cur="USD"]) .livelog-row[data-basis="usd"] {
+  display: none;
+}
+
+/* The page's `.copy` look; its own class, see _swap_entry.html. */
+.livelog-copy {
+  margin-left: auto;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.12s ease;
+}
+
+.livelog-copy:hover,
+.livelog-copy:active,
+.livelog-copy.copied {
+  opacity: 1;
 }
 
 /* Shown until the first row arrives; `:empty` is the list's own state. */

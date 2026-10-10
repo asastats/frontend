@@ -6,32 +6,42 @@
    the two cannot drift. A row is text carrying its own name, because the list
    it lands in is always there. See docs/logbook.md. {% endcomment %}
 {% partialdef livelogevent inline %}
-<li class="livelog-row"{% if event.id %} data-key="{{ event.id }}"{% endif %}>{% if event.kind == "floor" %}
+<li class="livelog-row"{% if event.id %} data-key="{{ event.id }}"{% endif %}{% if event.basis %} data-basis="{{ event.basis }}"{% endif %}><time class="livelog-time"{% if event.ts %} data-ts="{{ event.ts }}"{% endif %}></time>{% if event.kind == "floor" %}
   <span class="livelog-what">Floor of {{ event.name|default:"a collection you hold" }} from {{ event.old|floatformat:"2g" }} to {{ event.new|floatformat:"2g" }} ALGO</span>
-  <span class="livelog-value num{% if event.algo < 0 %} neg{% endif %}">{% if event.algo > 0 %}+{% endif %}{{ event.algo|floatformat:"2g" }} ALGO</span>
+  {% with algo=event.algo usd=event.usd signed=True %}{% partial livelogfigure %}{% endwith %}
   <span class="livelog-held">{{ event.held }} held</span>
 {% elif event.kind == "position_open" or event.kind == "position_close" %}
   <span class="livelog-what">{% if event.kind == "position_open" %}Opened{% else %}Closed{% endif %} {{ event.name|default:"a position" }}{% if event.provider %} on {{ event.provider }}{% endif %}</span>
-  {% if event.kind == "position_open" %}<span class="livelog-value num">+{{ event.value|floatformat:"2g" }} ALGO</span>{% endif %}
+  {% if event.kind == "position_open" %}{% with algo=event.value usd=event.usd signed=True %}{% partial livelogfigure %}{% endwith %}{% endif %}
 {% elif event.kind == "asset_in" or event.kind == "asset_out" %}
   <span class="livelog-what">{% if event.kind == "asset_in" %}Bought{% else %}Sold{% endif %} {{ event.name|default:"an asset" }}</span>
-  {% if event.kind == "asset_in" %}<span class="livelog-value num">{{ event.value|floatformat:"2g" }} ALGO</span>{% endif %}
+  {% if event.kind == "asset_in" %}{% with algo=event.value usd=event.usd signed=False %}{% partial livelogfigure %}{% endwith %}{% endif %}
 {% elif event.kind == "nft_in" or event.kind == "nft_out" %}
   <span class="livelog-what">{% if event.kind == "nft_in" %}Bought{% else %}Sold{% endif %} an NFT from {{ event.name|default:"a collection" }}</span>
 {% elif event.kind == "price" %}
   <span class="livelog-what">ALGO price {{ event.old|floatformat:"3" }} to {{ event.new|floatformat:"3" }} USD</span>
   <span class="livelog-value num{% if event.pct < 0 %} neg{% endif %}">{% if event.pct > 0 %}+{% endif %}{{ event.pct|floatformat:"1" }}%</span>
+  {% if event.held %}<span class="livelog-held livelog-usd">{% if event.impact > 0 %}+{% endif %}{{ event.impact|floatformat:"2g" }} USD on {{ event.held|floatformat:"2g" }} ALGO held</span>{% endif %}
+{% elif event.kind == "asset_price" %}
+  <span class="livelog-what">{{ event.name|default:"An asset" }} price {{ event.old|floatformat:"-8g" }} to {{ event.new|floatformat:"-8g" }} {% if event.basis == "usd" %}USD{% else %}ALGO{% endif %}</span>
+  <span class="livelog-value num{% if event.pct < 0 %} neg{% endif %}">{% if event.pct > 0 %}+{% endif %}{{ event.pct|floatformat:"1" }}%</span>
+  <span class="livelog-held">{% if event.impact > 0 %}+{% endif %}{{ event.impact|floatformat:"2g" }} {% if event.basis == "usd" %}USD{% else %}ALGO{% endif %} on {{ event.amount|amount_repr:event.decimals }} held</span>
 {% elif event.kind == "online" %}
   <span class="livelog-what">Account went online</span>
 {% elif event.kind == "offline" %}
   <span class="livelog-what">Account went offline</span>
 {% elif event.kind == "transfer" %}
   <span class="livelog-what">{% if event.amount < 0 %}Sent{% else %}Received{% endif %} {% if event.name and event.decimals is not None %}{{ event.amount|abs_value|amount_repr:event.decimals }} {% endif %}{{ event.name|default:"an asset" }}</span>
-  {% if event.algo is not None %}<span class="livelog-value num{% if event.algo < 0 %} neg{% endif %}">{% if event.algo > 0 %}+{% endif %}{{ event.algo|floatformat:"2g" }} ALGO</span>{% endif %}
-  {% if event.address or event.usd is not None %}<span class="livelog-held">{% if event.address %}{{ event.address|slice:":5" }}…{{ event.address|slice:"-5:" }}{% endif %}{% if event.address and event.usd is not None %} · {% endif %}{% if event.usd is not None %}{% if event.usd > 0 %}+{% endif %}{{ event.usd|floatformat:"2g" }} USD{% endif %}</span>{% endif %}
+  {% if event.algo is not None %}{% with algo=event.algo usd=event.usd signed=True %}{% partial livelogfigure %}{% endwith %}{% endif %}
+  {% if event.address %}<span class="livelog-held">{{ event.address|slice:":5" }}…{{ event.address|slice:"-5:" }}</span>{% endif %}
 {% endif %}
 </li>
 {% endpartialdef livelogevent %}
+{% comment %} A row's figure in ALGO, and in USD when the event carries it. The
+   log shows one of the two by the page's currency (`data-cur` on the shell),
+   so `livelog-algo` is set only when a USD twin exists. A missing `usd` arrives
+   as "", hence `usd or usd == 0`, not `is not None`. {% endcomment %}
+{% partialdef livelogfigure %}<span class="livelog-value num{% if algo < 0 %} neg{% endif %}{% if usd or usd == 0 %} livelog-algo{% endif %}">{% if signed and algo > 0 %}+{% endif %}{{ algo|floatformat:"2g" }} ALGO</span>{% if usd or usd == 0 %}<span class="livelog-value num{% if usd < 0 %} neg{% endif %} livelog-usd">{% if signed and usd > 0 %}+{% endif %}{{ usd|floatformat:"2g" }} USD</span>{% endif %}{% endpartialdef livelogfigure %}
 {% partialdef livelogegap inline %}
-<li class="livelog-row livelog-gap">{{ count }} update{{ count|pluralize }} not received</li>
+<li class="livelog-row livelog-gap"><time class="livelog-time"></time><span class="livelog-what">{{ count }} update{{ count|pluralize }} not received</span></li>
 {% endpartialdef livelogegap %}
