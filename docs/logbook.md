@@ -3429,3 +3429,16 @@ line, so the row needed no new CSS. See the widgets logbook, `inhouse/liverefres
 - `_swap_entry.html`: the CSV copy button. `style.tw.css` is rebuilt from
   `input.css`; a rebuild of the previous `input.css` reproduced the committed
   file exactly, so the rebuilt file differs only by these rules.
+
+## website/templates/snippets/dynamic/livelog.html - exchange, liquidity and named positions (2026-10-10)
+
+- `exchange`: "Exchanged A for B", or "Received A, B" / "Sent A, B" when
+  everything went one way. The engine splits the legs into `outs` and `ins`,
+  so the template needs no filtering to place the commas. The figure is the
+  net, signed.
+- `liquidity`: "Removed liquidity, <pool>: A, B". The figure is unsigned: it
+  is the worth that moved, and the verb says which way.
+- `livelogleg`: one leg, with the amount unsigned. Without a name or
+  decimals it reads "an asset", as the transfer row does.
+- Position rows name the pool when there is one ("Closed Liquidity, Tinyman2 LP
+  TALGO-TINY"), and say "×2" when one row stands for several instances.

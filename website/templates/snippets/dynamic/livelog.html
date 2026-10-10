@@ -11,7 +11,7 @@
   {% with algo=event.algo usd=event.usd signed=True %}{% partial livelogfigure %}{% endwith %}
   <span class="livelog-held">{{ event.held }} held</span>
 {% elif event.kind == "position_open" or event.kind == "position_close" %}
-  <span class="livelog-what">{% if event.kind == "position_open" %}Opened{% else %}Closed{% endif %} {{ event.name|default:"a position" }}{% if event.provider %} on {{ event.provider }}{% endif %}</span>
+  <span class="livelog-what">{% if event.kind == "position_open" %}Opened{% else %}Closed{% endif %} {{ event.name|default:"a position" }}{% if event.pool %}, {{ event.pool }}{% elif event.provider %} on {{ event.provider }}{% endif %}{% if event.count > 1 %} ×{{ event.count }}{% endif %}</span>
   {% if event.kind == "position_open" %}{% with algo=event.value usd=event.usd signed=True %}{% partial livelogfigure %}{% endwith %}{% endif %}
 {% elif event.kind == "asset_in" or event.kind == "asset_out" %}
   <span class="livelog-what">{% if event.kind == "asset_in" %}Bought{% else %}Sold{% endif %} {{ event.name|default:"an asset" }}</span>
@@ -30,6 +30,14 @@
   <span class="livelog-what">Account went online</span>
 {% elif event.kind == "offline" %}
   <span class="livelog-what">Account went offline</span>
+{% elif event.kind == "exchange" %}
+  <span class="livelog-what">{% if event.outs and event.ins %}Exchanged {% for leg in event.outs %}{% partial livelogleg %}{% if not forloop.last %}, {% endif %}{% endfor %} for {% for leg in event.ins %}{% partial livelogleg %}{% if not forloop.last %}, {% endif %}{% endfor %}{% elif event.ins %}Received {% for leg in event.ins %}{% partial livelogleg %}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Sent {% for leg in event.outs %}{% partial livelogleg %}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</span>
+  {% if event.algo is not None %}{% with algo=event.algo usd=event.usd signed=True %}{% partial livelogfigure %}{% endwith %}{% endif %}
+  {% if event.address %}<span class="livelog-held">{{ event.address|slice:":5" }}…{{ event.address|slice:"-5:" }}</span>{% endif %}
+{% elif event.kind == "liquidity" %}
+  <span class="livelog-what">{% if event.action == "added" %}Added{% else %}Removed{% endif %} liquidity, {{ event.pool|default:"a pool" }}: {% for leg in event.legs %}{% partial livelogleg %}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+  {% if event.algo is not None %}{% with algo=event.algo usd=event.usd signed=False %}{% partial livelogfigure %}{% endwith %}{% endif %}
+  {% if event.address %}<span class="livelog-held">{{ event.address|slice:":5" }}…{{ event.address|slice:"-5:" }}</span>{% endif %}
 {% elif event.kind == "transfer" %}
   <span class="livelog-what">{% if event.amount < 0 %}Sent{% else %}Received{% endif %} {% if event.name and event.decimals is not None %}{{ event.amount|abs_value|amount_repr:event.decimals }} {% endif %}{{ event.name|default:"an asset" }}</span>
   {% if event.algo is not None %}{% with algo=event.algo usd=event.usd signed=True %}{% partial livelogfigure %}{% endwith %}{% endif %}
@@ -42,6 +50,9 @@
    so `livelog-algo` is set only when a USD twin exists. A missing `usd` arrives
    as "", hence `usd or usd == 0`, not `is not None`. {% endcomment %}
 {% partialdef livelogfigure %}<span class="livelog-value num{% if algo < 0 %} neg{% endif %}{% if usd or usd == 0 %} livelog-algo{% endif %}">{% if signed and algo > 0 %}+{% endif %}{{ algo|floatformat:"2g" }} ALGO</span>{% if usd or usd == 0 %}<span class="livelog-value num{% if usd < 0 %} neg{% endif %} livelog-usd">{% if signed and usd > 0 %}+{% endif %}{{ usd|floatformat:"2g" }} USD</span>{% endif %}{% endpartialdef livelogfigure %}
+{% comment %} One leg of a transaction: the amount without its sign, which the
+   verb carries. Without a name or decimals the base units would mislead. {% endcomment %}
+{% partialdef livelogleg %}{% if leg.name and leg.decimals is not None %}{{ leg.amount|abs_value|amount_repr:leg.decimals }} {{ leg.name }}{% else %}an asset{% endif %}{% endpartialdef livelogleg %}
 {% partialdef livelogegap inline %}
 <li class="livelog-row livelog-gap"><time class="livelog-time"></time><span class="livelog-what">{{ count }} update{{ count|pluralize }} not received</span></li>
 {% endpartialdef livelogegap %}

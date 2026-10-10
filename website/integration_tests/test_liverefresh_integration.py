@@ -592,6 +592,31 @@ class LiveLogRedisContractTest(TestCase):
         assert '<li class="livelog-row" data-key="12.0">' in loaded
         assert "Sent 2.5000 ALGO" in loaded
 
+    def test_liverefresh_integration_liquidity_removed_is_one_row(self):
+        """**One transaction group, one row**, as the engine publishes it."""
+        removed = {
+            "kind": "liquidity",
+            "action": "removed",
+            "round": 41234573,
+            "pool": "Tinyman2 LP TALGO-TINY",
+            "legs": [
+                {"asset": 2537013734, "name": "tALGO", "amount": 32000609, "decimals": 6, "algo": 35.14},
+                {"asset": 2200000000, "name": "TINY", "amount": 4536043332, "decimals": 6, "algo": 32.27},
+            ],
+            "algo": 67.41,
+            "usd": 7.8,
+            "ts": 1791615649,
+        }
+        latest = _block(13, [removed])
+        self._latest(latest)
+        self._backlog(latest)
+        user = _dynamic_reader("ll-liquidity@example.com")
+
+        body = self._poll(user).content.decode()
+
+        assert body.count('class="livelog-row"') == 1
+        assert "Removed liquidity, Tinyman2 LP TALGO-TINY: 32.0006 tALGO, 4,536.0433 TINY" in body
+
     def test_liverefresh_integration_an_nft_bought_is_restored_on_load(self):
         """An NFT purchase reloads the page like an asset does, so it restores the
         same way: the row is in the backlog, and the shell renders it."""
