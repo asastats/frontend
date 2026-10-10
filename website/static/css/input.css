@@ -4510,7 +4510,7 @@
   padding: 16px;
 }
 
-.alerts-list { margin: 0 0 0.75rem; padding: 0; list-style: none; }
+.alerts-list { margin: 0.5rem 0 0; padding: 0; list-style: none; }
 
 .alerts-rule {
   display: flex;
@@ -4601,13 +4601,21 @@
   font-size: 0.8rem;
 }
 
+/* First in the panel, so its rule sits under it, between it and the list.
+   At the limit `.alerts-full` stands in its place and takes the same rule. */
+.alerts-full {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--alert-line);
+}
+
 .alerts-form {
   display: flex;
   flex-wrap: wrap;
   gap: 0.625rem;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--alert-line);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--alert-line);
 }
 
 .alerts-field { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 8rem; }

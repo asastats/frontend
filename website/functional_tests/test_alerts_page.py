@@ -428,6 +428,26 @@ class AlertsFieldsTest(AddressPageMixin, FunctionalTest):
     the address page, which is where `alerts.js` is loaded.
     """
 
+    def test_a_long_list_leaves_the_form_in_view(self):
+        """The rules sit below the form, so adding one needs no scroll."""
+        user = self.sign_in("alerts-long@example.com", permission=CLUSTER)
+        for threshold in range(1, 31):
+            self.rule(user, threshold=str(threshold * 100))
+
+        self.open_modal_from_button()
+        panel = self.find_elem_by_id("id-alerts-panel")
+        save = self.find_elem_by_class("alerts-save")
+
+        top, bottom = self.browser.execute_script(
+            "var p = arguments[0].getBoundingClientRect(),"
+            " s = arguments[1].getBoundingClientRect();"
+            "return [s.top - p.top, p.bottom - s.bottom];",
+            panel,
+            save,
+        )
+        assert top >= 0 and bottom >= 0, (top, bottom)
+        assert panel.get_property("scrollHeight") > panel.get_property("clientHeight")
+
     def test_a_portfolio_subject_asks_for_neither_asset_nor_period(self):
         self.sign_in("alerts-fields-total@example.com")
         self.open_modal_from_button()

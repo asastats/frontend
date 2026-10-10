@@ -3452,3 +3452,10 @@ line, so the row needed no new CSS. See the widgets logbook, `inhouse/liverefres
   and centres it. The browser test
   `test_the_online_chip_sits_level_with_the_addresses` measures the word's
   middle against the neighbouring pill's middle.
+
+## website/static/css/input.css - `.alerts-form`, `.alerts-full`, `.alerts-list` (2026-10-10)
+
+- The alerts panel now opens with the form (widgets logbook,
+  `inhouse/alerts/templates/alerts/_panel.html`). The form's dividing rule moved
+  from its top to its bottom, and `.alerts-full`, which stands in for the form
+  at the limit, takes the same rule.
