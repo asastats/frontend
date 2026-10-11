@@ -148,7 +148,7 @@ class LiveRefreshTest(FunctionalTest):
     RENDERS_POSITIONS = True
     SUPPORTS_REGROUP = True
     #: The live log is dynamic-only; the classic layout has no charts to sit beside.
-    #: The charts panel the log sits beside on the dynamic layout.
+    #: The charts panel the log sits below on the dynamic layout.
     HAS_CHARTS = True
     #: The class of the element the log is moved into on this layout.
     LOG_HOME = "charts-row"
@@ -1122,15 +1122,13 @@ class LiveRefreshTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
-    def test_the_charts_and_the_live_log_share_a_top_edge(
+    def test_the_live_log_sits_below_the_charts_on_a_wide_screen(
         self, mocked_fetch, mocked_status, mocked_capabilities, mocked_redis
     ):
-        """**Beside the charts, not above or below them.** Each panel's summary
-        starts at the same height, and the log is to the right of the charts on
-        a wide screen. Measured, because the two carried different margins and
-        the log sat higher than the charts it stood beside."""
+        """**Below the charts at every width**, sharing their left edge, even on a
+        screen wide enough for two columns."""
         if not self.HAS_CHARTS:
-            self.skipTest("this layout has no charts panel to sit beside")
+            self.skipTest("this layout has no charts panel to sit below")
         mocked_fetch.return_value = self.sample
         mocked_status.return_value = {}
         mocked_capabilities.return_value = {"permission": ASASTATSER}
@@ -1154,8 +1152,8 @@ class LiveRefreshTest(FunctionalTest):
             "var log = document.querySelector('#id-livelog > summary').getBoundingClientRect();"
             "return {charts: charts.top, log: log.top, logLeft: log.left, chartsLeft: charts.left};"
         )
-        assert abs(tops["charts"] - tops["log"]) <= 1
-        assert tops["logLeft"] > tops["chartsLeft"]
+        assert tops["log"] > tops["charts"]
+        assert abs(tops["logLeft"] - tops["chartsLeft"]) <= 1
 
     @mock.patch("widgets.inhouse.liverefresh.views.redis_instance")
     @mock.patch("core.context_processors.fetch_capabilities")

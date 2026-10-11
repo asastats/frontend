@@ -118,7 +118,7 @@
     </p>
   </div>
 </div>
-{% comment %} The live log: hidden until a watch starts, then moved beside the
+{% comment %} The live log: hidden until a watch starts, then moved below the
    charts by `liverefresh.js`. Per-reader, so not in the cached page. {% endcomment %}
 <details id="id-livelog" class="livelog"{% if livelog_seq is not None %} data-log-seq="{{ livelog_seq }}"{% endif %} hidden>
   <summary>

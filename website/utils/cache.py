@@ -1,6 +1,6 @@
 """Module containing functions for retrieving and setting cache values."""
 
-from utils.constants.core import LIVEREFRESH_HOLDINGS_KEY
+from utils.constants.core import LIVEREFRESH_HOLDINGS_KEY, LIVEREFRESH_PAYLOAD_PREFIX
 
 
 # # BUNDLE
@@ -61,6 +61,11 @@ def cached_live_holdings(page, cache_client):
     :type cache_client: :class:`Redis`
     :return: str
     """
+    # **Empty unless the engine is publishing the page now.** `lvh` outlives the
+    # watch, so an unwatched page would carry a fingerprint from hours ago and be
+    # reloaded by the first fresh read. See docs/logbook.md.
+    if not cache_client.exists(f"{LIVEREFRESH_PAYLOAD_PREFIX}:{page}"):
+        return ""
     value = cache_client.hget(LIVEREFRESH_HOLDINGS_KEY, page)
     if isinstance(value, bytes):
         return value.decode("ascii", "replace")

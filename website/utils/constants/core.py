@@ -374,6 +374,10 @@ LIVEREFRESH_MAX_FRAGMENTS = 100
 #: engine's live pass writes them.
 LIVEREFRESH_HOLDINGS_KEY = "lvh"
 
+#: The engine's live payload, `lvp:{page}`, which expires two minutes after the
+#: page was last published. Its absence means the engine is not watching the page.
+LIVEREFRESH_PAYLOAD_PREFIX = "lvp"
+
 #: How long a touch keeps a page - or an address - counted as being watched.
 #:
 #: **Mirrors the engine's `LIVE_SUBSCRIPTION_SECONDS`**, which is the window it

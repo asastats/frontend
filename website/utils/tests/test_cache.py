@@ -64,6 +64,18 @@ class TestUtilsCacheLiveHoldings:
         assert cached_live_holdings("AAA", client) == "beef1234"
         client.hget.assert_called_once_with(LIVEREFRESH_HOLDINGS_KEY, "AAA")
 
+    def test_utils_cache_live_holdings_is_empty_without_a_live_payload(self, mocker):
+        """`lvh` outlives the watch. A page the engine is not publishing would
+        carry a fingerprint from its last watch, and its first fresh read would
+        reload the reader's page."""
+        client = mocker.MagicMock()
+        client.exists.return_value = 0
+        client.hget.return_value = b"beef1234"
+
+        assert cached_live_holdings("AAA", client) == ""
+        client.exists.assert_called_once_with("lvp:AAA")
+        client.hget.assert_not_called()
+
     def test_utils_cache_live_holdings_is_empty_for_an_unwatched_page(self, mocker):
         """**A value, not a failure.** Every page nobody watches has no entry,
         and an empty fingerprint keys them exactly as they were keyed before any

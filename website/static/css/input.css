@@ -3137,29 +3137,18 @@
 .dynamic-page .chart { min-width: 0; }
 
 /* ---- live log ------------------------------------------------------------- */
-/* Beside the charts from 1024px, below them before. `charts-row` is made by
-   `liverefresh.js` when a watch starts, so there is no row without a watch. */
+/* Below the charts at every width. `charts-row` is made by `liverefresh.js`
+   when a watch starts, so there is no row without a watch. */
 .dynamic-page .charts-row {
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(0, 1fr);
 }
 
-@media (min-width: 1024px) {
-  .dynamic-page .charts-row {
-    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
-    align-items: start;
-  }
-}
-
 .livelog {
   margin-top: 1rem;
   border-top: 1px solid var(--color-base-300);
   padding-top: 0.75rem;
-}
-
-@media (min-width: 1024px) {
-  .livelog { margin-top: 0; }
 }
 
 .livelog > summary {
@@ -3244,9 +3233,7 @@
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
 }
 
-/* The two panels share a top edge on the wide grid. Each carried its own top
-   margin, so the log sat higher than the charts beside it. The row supplies the
-   spacing now. */
+/* The row's gap is the spacing between the two panels. */
 .dynamic-page .charts-row > .chart-panel,
 .dynamic-page .charts-row > .livelog {
   margin-top: 0;

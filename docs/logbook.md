@@ -3496,3 +3496,50 @@ line, so the row needed no new CSS. See the widgets logbook, `inhouse/liverefres
   (always a 301) and a bare-IP HTTPS URL (its certificate would not verify).
 - `:80` is unchanged. Unknown names still get the 301 to `www`, and that block
   is what answers the ACME challenge for the redirected domains.
+
+## website/static/css/input.css - the live log goes above the charts again (2026-10-11)
+
+From 1024px the log had been placed beside the charts in a two-column row. It
+now sits above the charts at every width: one column, with the log first. The
+reader asked for this, having decided the side-by-side layout was the wrong
+call. The `.charts-row` wrapper stays, because the browser tests and the
+"move once" guard in `liverefresh.js` both depend on it. Its 1024px rule is
+gone, along with the `.livelog { margin-top: 0 }` that went with it. The row's
+gap now spaces the two panels. `style.tw.css` was rebuilt with
+`build-tailwind.sh`. A rebuild of the previous `input.css` matched the
+committed file exactly.
+
+## website/utils/cache.py - `cached_live_holdings` is empty unless the engine is publishing the page (2026-10-11)
+
+The reader reported it: a bookmarked page, opened with Auto-refresh on, loaded
+and then reloaded whole a few seconds later, almost every time.
+
+The asgi log showed what happened. Every case was a tab that lived 3-4 s.
+The next tab's fingerprint differed in the asset digest, and the counter was
+unchanged, so no transaction caused it. For 4LTJKG+13 on 2026-10-11 at 11:58
+UTC, the engine's first read of the bundle came at 11:58:33, after the page
+was opened. The page had rendered with the `lvh` fingerprint left over from
+the bundle's previous watch, hours old. `lvh` has no expiry, by design
+(engine `mupdate_live_holdings`). Assets had come and gone since then, so the
+first fresh read published a different asset digest, and
+`_reload_response` ordered a reload.
+
+The reload changed nothing. The address page is rendered from the API and
+cached for 60 s, so its rows were already current. Only the fingerprint it
+carried was old.
+
+`cached_live_holdings` now returns "" unless `lvp:{page}` exists. The engine
+refreshes that key on every publish and it expires 120 s after the last one.
+A page the engine is not watching renders with an empty fingerprint. The
+widget then adopts the first published one (`liverefresh:holdings`, widgets
+logbook, same date). A transaction landing between the render and the
+engine's first read, a window of a few seconds, waits for the next one to
+reload.
+
+### Correction, same day: below the charts, not above
+
+The request was for the log *below* the charts; "before" was a typo. On the
+dynamic layout the charts are now the row's first child and the log the
+second, in one column at every width. The classic layout is unchanged: the
+log is still the right-aligned card under the consolidated box, sized to its
+content.
