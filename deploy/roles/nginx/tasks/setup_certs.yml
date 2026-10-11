@@ -85,6 +85,60 @@
   notify: Restart openresty
   tags: [nginx, letsencrypt]
 
+# Redirected domains: a certificate each, issued through the :80 default_server's
+# webroot. A block is rendered only for a domain whose certificate exists, so a
+# failed issuance cannot stop nginx. See docs/logbook.md.
+- name: Check which redirected domains already have a certificate
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"
+  become: true
+  loop: "{{ site_alias_domains }}"
+  register: nginx_alias_cert_stat
+  when: not is_molecule_test | default(false) and inventory_hostname in groups['production']
+  tags: [nginx, letsencrypt]
+
+- name: Generate Let's Encrypt certificates for redirected domains
+  ansible.builtin.command: >
+    certbot certonly --non-interactive --agree-tos --no-eff-email
+    --email {{ admin_email }}
+    -a webroot --webroot-path /var/www/letsencrypt
+    --cert-name {{ item.item }}
+    -d {{ item.item }} -d www.{{ item.item }}
+  become: true
+  loop: "{{ nginx_alias_cert_stat.results | default([]) }}"
+  when:
+    - item.stat is defined
+    - not item.stat.exists
+    - test is not defined
+  register: nginx_alias_certbot
+  failed_when: false
+  changed_when: nginx_alias_certbot.rc == 0
+  tags: [nginx, letsencrypt]
+
+- name: Check which redirected domains have a certificate now
+  ansible.builtin.stat:
+    path: "/etc/letsencrypt/live/{{ item }}/fullchain.pem"
+  become: true
+  loop: "{{ site_alias_domains }}"
+  register: nginx_alias_cert_ready
+  when: not is_molecule_test | default(false) and inventory_hostname in groups['production']
+  tags: [nginx, nginx-snippets, letsencrypt]
+
+- name: Keep only the redirected domains nginx can serve
+  ansible.builtin.set_fact:
+    nginx_alias_domains: >-
+      {{ nginx_alias_cert_ready.results | default([])
+         | selectattr('stat', 'defined') | selectattr('stat.exists')
+         | map(attribute='item') | list }}
+  tags: [nginx, nginx-snippets, letsencrypt]
+
+- name: Say which redirected domains got no certificate
+  ansible.builtin.debug:
+    msg: "No certificate for {{ item }}: its redirect is left out. Is its DNS pointing here?"
+  loop: "{{ site_alias_domains | difference(nginx_alias_domains) }}"
+  when: not is_molecule_test | default(false) and inventory_hostname in groups['production']
+  tags: [nginx, letsencrypt]
+
 - name: "Add ssl config to nginx sites-available for {{ site_name }}"
   ansible.builtin.template:
     src: nginx.ssl.conf

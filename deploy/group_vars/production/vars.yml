@@ -1,3 +1,7 @@
 ---
 host_alias: production
 log_level: info
+# Other domains we own that redirect to https://www.<site_name>; each gets its own
+# certificate. See docs/logbook.md (deploy/roles/nginx, 2026-10-11).
+site_alias_domains:
+  - asastats.link

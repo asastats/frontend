@@ -29,6 +29,8 @@ webapp_group: "{{ hostvars['localhost'].env_vars.WEBAPP_GROUP | default('webapps
 
 projects_path: /var/www/
 site_path: "{{ projects_path }}{{ site_name }}"
+# Domains redirected to the site, set per environment (production lists ours).
+site_alias_domains: []
 
 # Measured on the liveserver 2026-09-14, not derived from cpu_count(). A warm
 # website worker is ~605 MB RSS (largest 643), so 13 costs ~7.9 GB of the 44 GB

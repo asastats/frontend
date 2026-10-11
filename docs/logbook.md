@@ -3466,3 +3466,33 @@ line, so the row needed no new CSS. See the widgets logbook, `inhouse/liverefres
   button now speaks only for this browser (widgets logbook, `alerts.js`
   `checkBrowser`). The browser test `AlertsThisBrowserTest` overrides the VAPID
   settings, because without them the enable block is not rendered.
+
+## deploy/roles/nginx - redirected domains and a :443 catch-all (2026-10-11)
+
+- **What prompted it.** Django logged `DisallowedHost` for `asastats.link` and
+  `www.asastats.link` about ten times a day. Every one was a scanner: a
+  single `GET /` from a cloud range, a fake or ancient browser string, and
+  nothing fetched after it. The domain is ours (NameSilo, paid to 2027-01-04),
+  and its DNS still points at the liveserver. The `:443` `default_server` was
+  the real `www` block, so any name, and any bare-IP request, reached Django.
+- **`site_alias_domains`** (empty in `group_vars/all`, `[asastats.link]` in
+  `group_vars/production`) gets a block each in `nginx.ssl.conf`: apex and
+  `www`, its own certificate, `301` to `https://www.<site_name>`. Not added to
+  `ALLOWED_HOSTS`: a second copy of the site would split sign-in cookies,
+  break the OAuth and wallet-signing origins, and duplicate every page for
+  search engines.
+- **Certificates** come from `setup_certs.yml`, through the webroot the `:80`
+  `default_server` already serves for every host. `--cert-name <domain>`
+  puts each in `/etc/letsencrypt/live/<domain>/`, and the existing daily
+  `certbot renew` cron renews it with the others. The block is rendered only for
+  a domain whose certificate exists (`nginx_alias_domains`), so a failed
+  issuance leaves a debug line instead of an nginx that will not start.
+- **The `:443` `default_server`** is now a block with `ssl_reject_handshake on`.
+  An unknown name or a bare IP gets no TLS handshake at all, so it never reaches
+  Django. `ipv6only=on` moved with it, because it may appear on only one listen
+  per socket. Checked before changing it: the server's own HTTPS calls
+  (the engine's alerts webhook, about 60,000 a day, and the website's API calls)
+  name a host. The webhook gets 200 with redirects off, which rules out `:80`
+  (always a 301) and a bare-IP HTTPS URL (its certificate would not verify).
+- `:80` is unchanged. Unknown names still get the 301 to `www`, and that block
+  is what answers the ACME challenge for the redirected domains.
