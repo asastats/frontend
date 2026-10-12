@@ -3543,3 +3543,26 @@ dynamic layout the charts are now the row's first child and the log the
 second, in one column at every width. The classic layout is unchanged: the
 log is still the right-aligned card under the consolidated box, sized to its
 content.
+
+## deploy/roles/websockets/templates/daphne-supervisor.conf - `PYTHONUNBUFFERED=1` (2026-10-12)
+
+Daphne writes its access log to stdout, and supervisord collects it through a
+pipe. Python block-buffers a pipe, so each of the four `asgi` processes wrote
+asgi.log in chunks of about 8 KB, only when its buffer filled or the process
+stopped.
+
+The 10-12 sync showed the effect:
+- The file's tail stopped at 16:53 UTC on 10-11.
+- Its newest line (17:20 UTC) sat in the middle of the file.
+- The last 60,000 lines jumped backwards in time by more than a minute 268
+  times.
+- Nothing served after the 19:37 local restart had arrived, although nginx
+  logged daphne answering live-refresh polls at 19:38 and 20:11.
+
+A quiet process could therefore hold a traceback for hours, or lose it if it
+was killed.
+
+`PYTHONUNBUFFERED=1` makes every line go out as it is written. The handler
+restarts supervisor when the template changes. On a server managed by hand,
+`supervisorctl reread && supervisorctl update` restarts the `asgi` group with
+the new environment.
