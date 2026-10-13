@@ -3632,3 +3632,24 @@ measures roughly 27rem with the quiet hint, so 32rem leaves room for the unread
 badge. Still sized to what is needed rather than full width, per the 2026-10-11
 decision. `test_the_live_log_sits_right_aligned_below_the_consolidated_header`
 asserts both spans are a single line box at 1280px.
+
+## website/config/settings/base.py — `INHOUSE_WIDGETS` gains `pnl` (2026-10-13)
+
+The profit and loss widget (`website/widgets/inhouse/pnl/`). This list drives
+the widget's static and template paths; `widgets/constants.py` mounts its URLs.
+Both lists have to change together.
+
+## website/templates/address.html, address_dynamic.html — "Profit and loss" button (2026-10-13)
+
+Next to "Historic data", gated by the `pnl_access` filter (the P&L manifest
+bands) inside the same deployment-capability block. Below Asastatser the
+widget also requires a linked address, which the filter cannot see. A free
+reader on someone else's address therefore gets the button and, on clicking,
+the explanation and the subscriptions page. That is deliberate.
+`static/css/style.tw.css` was rebuilt for the widget's new classes.
+
+## website/static/css/input.css — profit and loss hooks (2026-10-13)
+
+The P&L widget's styling moved here from the widget's own stylesheet, per the
+one-directional rule in this file. A section at the end styles the `pnl-*`
+hooks with theme variables only. `style.tw.css` was rebuilt.

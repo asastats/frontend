@@ -19,6 +19,7 @@ from core.templatetags.core_extras import (
     get_styling,
     has_styling,
     historic_access,
+    pnl_access,
     historic_data,
     identicon,
     integer_comma,
@@ -187,6 +188,21 @@ class TestFilters:
         returned = historic_access(profile, size)
         assert returned == profile.can_access_historic_widget.return_value
         profile.can_access_historic_widget.assert_called_once_with(size)
+
+    # # pnl_access
+    @pytest.mark.parametrize("profile", [None, ""])
+    def test_filters_pnl_access_without_profile(self, profile, mocker):
+        mocked = mocker.patch("core.templatetags.core_extras.can_access_widget")
+        assert pnl_access(profile, 1) is False
+        mocked.assert_not_called()
+
+    def test_filters_pnl_access_functionality(self, mocker):
+        profile = mocker.MagicMock()
+        mocked = mocker.patch(
+            "core.templatetags.core_extras.can_access_widget", return_value=True
+        )
+        assert pnl_access(profile, 5) is True
+        mocked.assert_called_once_with("pnl", profile, 5)
 
     # # historic_data
     def test_filters_historic_data_for_bundle(self):

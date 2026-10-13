@@ -14,6 +14,7 @@ from utils import explorers as explorer_constants
 from utils.constants.charts import PIE_CHART_MAXIMUM_ITEMS
 from utils.constants.core import DEFAULT_EXPLORER, ELEMENTS_STYLING, USDC_ID
 from utils.helpers import bundle_from_addresses, nft_floor_price
+from widgethost.access import can_access_widget
 
 register = Library()
 
@@ -168,6 +169,19 @@ def historic_access(profile, size):
     :return: Boolean
     """
     return profile.can_access_historic_widget(size) if profile is not None else False
+
+
+@register.filter
+def pnl_access(profile, size):
+    """Return True if provided ``profile`` can access the P&L widget for ``size``.
+
+    :param profile: user profile instance, or a falsy value without one
+    :type profile: class:`core.models.Profile`
+    :param size: number of Algorand addresses
+    :type size: int
+    :return: Boolean
+    """
+    return bool(profile) and can_access_widget("pnl", profile, size)
 
 
 @register.filter

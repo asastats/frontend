@@ -715,6 +715,7 @@ INHOUSE_WIDGETS = [
     "dustsweep",
     "liverefresh",
     "alerts",
+    "pnl",
 ]
 THIRDPARTY_WIDGETS = []
 

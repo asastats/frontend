@@ -110,6 +110,9 @@
         {% if user.profile|historic_access:historic.1 %}
         <a class="btn btn-outline btn-sm" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
         {% endif %}
+        {% if user.profile|pnl_access:historic.1 %}
+        <a class="btn btn-outline btn-sm" href="{% url 'pnl' historic.0 %}" target="_blank" title="Profit and loss for address(es)">Profit and loss</a>
+        {% endif %}
         {% if user.profile|export_access:historic.1 %}
         <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-outline{% endif %}"
           href="{% url 'export_bundle' bundle|bundle_hash %}"
@@ -122,6 +125,9 @@
       {% if deployment_capabilities.permission|export_capability:1 %}
         {% if user.profile|historic_access:1 %}
         <a class="btn btn-outline btn-sm" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
+        {% endif %}
+        {% if user.profile|pnl_access:1 %}
+        <a class="btn btn-outline btn-sm" href="{% url 'pnl' address.0 %}" target="_blank" title="Profit and loss for address(es)">Profit and loss</a>
         {% endif %}
         {% if user.profile|export_access:1 %}
         <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-outline{% endif %}"

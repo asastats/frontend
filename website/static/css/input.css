@@ -4848,3 +4848,160 @@
   font-size: 0.75rem;
   color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
 }
+
+/* ----------------------------------------------------------- profit and loss
+   Hooks emitted by widgets/inhouse/pnl, whose templates carry no framework
+   classes (see the one-directional rule above). Theme variables only, so every
+   theme applies. */
+.pnl-page-title {
+  font-size: 1.875rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin-bottom: 0.5rem;
+}
+
+.pnl-addresses { margin: 0 0 0.75rem; font-family: var(--font-mono, monospace); font-size: 0.85rem; }
+.pnl-addresses span { margin-right: 0.75rem; }
+
+.pnl-switches { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.pnl-currency { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+.pnl-currency a {
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: 999px;
+  color: color-mix(in oklch, var(--color-base-content) 70%, transparent);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.pnl-currency a[aria-current="true"] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-weight: 600;
+}
+
+.pnl-muted,
+.pnl-coverage {
+  font-size: 0.85rem;
+  color: color-mix(in oklch, var(--color-base-content) 65%, transparent);
+}
+.pnl-warning { color: var(--color-warning); font-size: 0.875rem; }
+.pnl-gain { color: var(--color-success); }
+.pnl-loss { color: var(--color-error); }
+
+.pnl-button {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: 999px;
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.pnl-button-primary {
+  padding: 0.45rem 0.9rem;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.pnl-button:hover,
+.pnl-alert-option:hover { filter: brightness(1.06); }
+
+.pnl-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.pnl-badge {
+  display: inline-block;
+  margin-left: 0.375rem;
+  padding: 0 0.45rem;
+  border: 1px solid var(--color-warning);
+  border-radius: 999px;
+  color: var(--color-warning);
+  font-size: 0.7rem;
+  font-weight: 500;
+  vertical-align: middle;
+}
+.pnl-badge-muted {
+  border-color: var(--color-base-300);
+  color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+}
+
+.pnl-process,
+.pnl-progress { display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start; }
+.pnl-kept { margin: 0; padding: 0; list-style: none; }
+.pnl-kept > li { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; }
+.pnl-phase {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) repeat(3, minmax(5rem, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+}
+.pnl-phase h5 { margin: 0; font-size: 0.85rem; font-weight: 500; }
+.pnl-phase label { display: flex; flex-direction: column; font-size: 0.75rem; }
+.pnl-phase progress { width: 100%; accent-color: var(--color-primary); }
+
+.pnl-summary { margin-bottom: 1rem; }
+.pnl-total,
+.pnl-period { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem; }
+.pnl-total strong { font-size: 1.75rem; font-weight: 700; }
+.pnl-period { margin-bottom: 0.75rem; }
+.pnl-period strong { font-size: 1.375rem; font-weight: 600; }
+.pnl-period p { flex-basis: 100%; margin: 0; }
+.pnl-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0;
+}
+.pnl-figures dt {
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--color-base-content) 65%, transparent);
+}
+.pnl-figures dd { margin: 0; font-weight: 600; }
+
+.pnl-table-wrap { overflow-x: auto; }
+.pnl-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.pnl-table th,
+.pnl-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--color-base-300);
+  white-space: nowrap;
+}
+.pnl-table thead th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  color: color-mix(in oklch, var(--color-base-content) 65%, transparent);
+}
+.pnl-table tbody th { text-align: left; font-weight: 500; }
+.pnl-table td { text-align: right; font-variant-numeric: tabular-nums; }
+.pnl-closed { opacity: 0.6; }
+.pnl-txid { font-family: var(--font-mono, monospace); }
+.pnl-asset { margin-top: 1.25rem; }
+.pnl-asset h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; }
+
+.pnl-alert-cell { text-align: left !important; }
+.pnl-alert summary { cursor: pointer; font-size: 0.8rem; color: var(--color-primary); }
+.pnl-alert form { display: inline; }
+.pnl-alert-option {
+  margin: 0.25rem 0.25rem 0 0;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: 999px;
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
