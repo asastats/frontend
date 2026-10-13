@@ -3607,3 +3607,14 @@ The `price` row rendered both prices with `floatformat:"3"`. ALGO trades near
 "0.121 to 0.121 USD -0.6%": the third decimal is a step of almost 1%. Four
 decimals show the move the percentage describes. The `asset_price` row is
 unchanged; it already uses `-8g`.
+
+## website/integration_tests/test_api_integration.py - bundle addresses compared sorted (2026-10-13)
+
+`test_integration_api_v2_bundle2_functionality` failed with the same four
+addresses in a different order. The engine sorts a bundle's addresses
+(`engine/core/helpers.py:_normalize`); the frontend's `create_bundle` caches them
+in the order posted and never overwrites. `test_api_views_integration.py` posts
+bundle 2 as ADDRESS1, NFD1, ADDRESS2, NFD2, and the key has no expiry, so after
+that suite ran once the cached order never matched again. The API promises which
+addresses, not their order, so `_test_all` now compares against the sorted cache
+value. Normalising `create_bundle` was considered and left for later.

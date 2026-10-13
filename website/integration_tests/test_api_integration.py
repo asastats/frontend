@@ -67,9 +67,10 @@ class TestSetup(TestCase):
             assert response.data["account_info"]["bundle"] is None
 
         if kwargs.get("bundle"):
-            assert response.data["account_info"]["addresses"] == check_bundle_addresses(
-                kwargs.get("bundle")
-            ).split(" ")
+            # The engine sorts; the cache keeps whatever order created the bundle.
+            assert response.data["account_info"]["addresses"] == sorted(
+                check_bundle_addresses(kwargs.get("bundle")).split(" ")
+            )
             assert response.data["account_info"]["bundle"] == kwargs.get("bundle")
 
         assert response.data["account_info"]["online"] is None
