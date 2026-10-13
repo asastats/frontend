@@ -2031,6 +2031,14 @@ class LiveRefreshClassicTest(LiveRefreshTest):
         assert geometry["top"] >= geometry["headerBottom"] - 1
         assert abs(geometry["right"] - geometry["boxRight"]) <= 2
 
+        # the header fits one line on a wide screen
+        lines = self.browser.execute_script(
+            "var s = document.querySelector('#id-livelog > summary');"
+            "return [s.querySelector('.livelog-title').getClientRects().length,"
+            " s.querySelector('.charts-hint').getClientRects().length];"
+        )
+        assert lines == [1, 1]
+
 # Pre-existing browser-integration failures: Selenium timeouts.
 # The server-side mock and wrap work (verified by TestLiveRefreshTimeoutWrap);
 # these require a fully live browser + service which is unavailable in this env.

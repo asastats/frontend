@@ -3618,3 +3618,17 @@ bundle 2 as ADDRESS1, NFD1, ADDRESS2, NFD2, and the key has no expiry, so after
 that suite ran once the cached order never matched again. The API promises which
 addresses, not their order, so `_test_all` now compares against the sorted cache
 value. Normalising `create_bundle` was considered and left for later.
+
+## website/static/css/input.css - classic live log header on one line (2026-10-13)
+
+On classic the summary wrapped to three lines ("Live / log", hint over two)
+with plenty of room beside the card. Two causes: the hint's quiet style
+(400 weight, 0.72rem, 55% colour) was scoped to `.dynamic-page .charts-hint`,
+so on classic it rendered at the summary's 600 weight and 0.78rem; and the card
+was capped at 28rem. The hint style now also applies under `.livelog`, "Live
+log" got `.livelog-title` with `white-space: nowrap`, and the classic card is
+32rem wide (max 100%, so it still narrows and wraps on a phone). The header
+measures roughly 27rem with the quiet hint, so 32rem leaves room for the unread
+badge. Still sized to what is needed rather than full width, per the 2026-10-11
+decision. `test_the_live_log_sits_right_aligned_below_the_consolidated_header`
+asserts both spans are a single line box at 1280px.

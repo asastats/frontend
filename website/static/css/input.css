@@ -3121,7 +3121,8 @@
 
 .dynamic-page .chev { transition: transform 0.15s ease; }
 
-.dynamic-page .charts-hint {
+.dynamic-page .charts-hint,
+.livelog .charts-hint {
   font-weight: 400;
   color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
   font-size: 0.72rem;
@@ -3163,6 +3164,8 @@
 }
 
 .livelog > summary::-webkit-details-marker { display: none; }
+
+.livelog-title { white-space: nowrap; }
 
 .livelog > summary:hover { color: var(--color-base-content); }
 
@@ -3246,9 +3249,10 @@
   margin-top: 1rem;
 }
 
+/* Header on one line where it fits; narrows and wraps on a phone. */
 .livelog-section > .livelog {
-  width: 100%;
-  max-width: 28rem;
+  width: 32rem;
+  max-width: 100%;
   margin-top: 0;
   border: 1px solid var(--color-base-300);
   border-radius: 0.5rem;
