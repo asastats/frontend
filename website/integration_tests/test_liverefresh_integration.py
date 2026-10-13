@@ -653,8 +653,8 @@ class LiveLogRedisContractTest(TestCase):
         restored = self.client.get(reverse("swap_entry", args=[ADDRESS]))
         live = self._poll(user, since=11)
 
-        assert "ALGO price 0.214 to 0.222 USD" in restored.content.decode()
-        assert "ALGO price 0.214 to 0.222 USD" in live.content.decode()
+        assert "ALGO price 0.2140 to 0.2215 USD" in restored.content.decode()
+        assert "ALGO price 0.2140 to 0.2215 USD" in live.content.decode()
 
     def test_liverefresh_integration_a_gap_longer_than_the_backlog_is_said(self):
         """**The backlog holds the last twenty, so a reader further behind has

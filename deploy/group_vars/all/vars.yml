@@ -62,8 +62,10 @@ requirements_filename: production.txt
 
 # Web cache runs as a SECOND Redis instance so the existing 6379 server is untouched
 # Set true on a host that ALSO runs the closed backend (ASA Stats liveserver).
-# When true, the web-cache port must not be 6379 — that instance is the backend's
-# read-only replica of the engine master. Forkers (frontend only) leave this false.
+# When true, the web-cache port must be neither 6379 (the backend's replica) nor
+# 6381 (its master, when the engine shares the host). Forkers leave this false.
+# On a shared host this repo owns the base (setuphost, hardening); the backend's
+# engine writes data/ and static/thumbnails here. docs/logbook.md#deploygroup_varsallvarsyml
 backend_colocated: "{{ hostvars['localhost'].env_vars.BACKEND_COLOCATED | default(false) | bool }}"
 redis_port: "{{ hostvars['localhost'].env_vars.REDIS_PORT_LOCAL | default(6380) }}"
 redis_data_dir: "/var/lib/redis{{ redis_port }}"

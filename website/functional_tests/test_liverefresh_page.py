@@ -811,7 +811,7 @@ class LiveRefreshTest(FunctionalTest):
             "return row.textContent.replace(/\\s+/g, ' ').trim();});"
         )
         assert len(rows) == 1
-        assert "ALGO price 0.214 to 0.222 USD" in rows[0]
+        assert "ALGO price 0.2140 to 0.2215 USD" in rows[0]
         assert "+3.5%" in rows[0]
         # Beside the charts, and still the same document.
         assert (

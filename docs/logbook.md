@@ -3566,3 +3566,44 @@ was killed.
 restarts supervisor when the template changes. On a server managed by hand,
 `supervisorctl reread && supervisorctl update` restarts the `asgi` group with
 the new environment.
+
+## deploy/group_vars/all/vars.yml, deploy/roles/redis/tasks/main.yml - sharing a host with the engine too (2026-10-12)
+
+The backend's deploy can now put its engine on this same host. Its inventory's
+cacheserver and liveserver share one address. Nothing in this repository has
+to change for that, for three reasons:
+
+- The website reaches the engine only through `ASASTATS_API_URL`.
+- It uses Redis only on its own 6380.
+- The engine moves its code, venv and scripts to `/var/www/engine.<site>`, so
+  they no longer collide with `source/`, `venv/` and `scripts/` here.
+
+What this repository has to keep true on a shared host:
+
+- **It owns the base.** The backend's engine play skips its own `setuphost`
+  and `hardening` when colocated, as its api play always has. The two copies
+  differ in `/etc/hosts` 127.0.x lines, postfix `mydestination` and fail2ban
+  jails. If both ran, each would rewrite the other on every run, and the
+  engine's SSH-only jail would drop the nginx jails here.
+- **It runs first.** The backend's plays assume the webapp user, nginx and
+  PostgreSQL exist.
+- **The web-cache port stays 6380.** The guard now refuses 6381 as well as
+  6379: 6379 is the backend's read-only replica, and 6381 is its master when
+  the engine runs here.
+
+The engine writes `data/` and `static/thumbnails`, `static/icons` under this
+site's tree as the same webapp user. Until now lsyncd pushed them there from
+cacheserver; on one host the engine writes them directly. The `static`
+directory is created by both repositories with identical owner, group and
+mode, so neither run changes the other's.
+
+The design and its measurements are in the workspace's
+`benchmark/COLOCATION-PLAN.md`.
+
+## website/templates/snippets/dynamic/livelog.html - ALGO price row to four decimals (2026-10-13)
+
+The `price` row rendered both prices with `floatformat:"3"`. ALGO trades near
+0.12 USD, so a move the engine reports (it crossed the threshold) could read
+"0.121 to 0.121 USD -0.6%": the third decimal is a step of almost 1%. Four
+decimals show the move the percentage describes. The `asset_price` row is
+unchanged; it already uses `-8g`.
