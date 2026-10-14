@@ -5005,3 +5005,57 @@
   font-size: 0.75rem;
   cursor: pointer;
 }
+.pnl-table td.pnl-text { text-align: left; }
+.pnl-asset > .pnl-link { display: inline-block; margin-bottom: 0.5rem; font-size: 0.85rem; }
+
+/* Narrow screens: every table row becomes a card, each cell a labelled line
+   from its `data-label`; the header row is hidden. */
+@media (max-width: 640px) {
+  .pnl-page-title { font-size: 1.5rem; }
+  .pnl-total strong { font-size: 1.5rem; }
+  .pnl-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pnl-phase { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pnl-phase h5 { grid-column: 1 / -1; }
+
+  .pnl-table-wrap { overflow-x: visible; }
+  .pnl-table,
+  .pnl-table tbody,
+  .pnl-table tr,
+  .pnl-table th,
+  .pnl-table td { display: block; width: 100%; }
+  .pnl-table thead { display: none; }
+  .pnl-table tr {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-base-300);
+    border-radius: 0.75rem;
+  }
+  .pnl-table tbody th {
+    padding: 0 0 0.375rem;
+    border-bottom: 1px solid var(--color-base-300);
+    font-size: 0.95rem;
+  }
+  .pnl-table td,
+  .pnl-table td.pnl-text {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.25rem 0;
+    border-bottom: 0;
+    text-align: right;
+    white-space: normal;
+  }
+  .pnl-table td[data-label]::before {
+    content: attr(data-label);
+    text-align: left;
+    color: color-mix(in oklch, var(--color-base-content) 65%, transparent);
+  }
+  .pnl-table td:empty { display: none; }
+  .pnl-alert-cell { justify-content: flex-start !important; }
+}
+
+/* Smooth scroll to an asset's events and back, as #scroll-to-top does on the
+   address page; htmx's `show:top` follows `scroll-behavior`. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.pnl) { scroll-behavior: smooth; }
+}

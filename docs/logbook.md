@@ -3653,3 +3653,9 @@ the explanation and the subscriptions page. That is deliberate.
 The P&L widget's styling moved here from the widget's own stylesheet, per the
 one-directional rule in this file. A section at the end styles the `pnl-*`
 hooks with theme variables only. `style.tw.css` was rebuilt.
+
+## website/static/css/input.css — pnl on narrow screens (2026-10-14)
+
+Below 640px each `pnl-table` row is a card: the asset name heads it and every
+cell is a line labelled from its `data-label`. Text cells (`pnl-text`) align
+left in the wide table.
