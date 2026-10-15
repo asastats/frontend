@@ -527,3 +527,63 @@ class TestCacheIsKeyedOnTheHoldings:
         mocker.patch("core.views.cached_live_holdings", return_value="")
 
         assert 'data-holdings=""' in _render(reader, payload)
+
+
+@pytest.mark.django_db
+class TestCacheIsKeyedOnTheFiat:
+    """The reader's fiat is rendered into the page, so it is in the key."""
+
+    @pytest.fixture(autouse=True)
+    def eur_rate(self, mocker):
+        return mocker.patch("utils.fiat.latest_rates", return_value={"EUR": 0.5})
+
+    @staticmethod
+    def _fiat_user(username, code):
+        user = _user(username, permission=INTRO)
+        user.profile.fiat = code
+        user.profile.save()
+        return user
+
+    def test_a_eur_page_is_not_served_to_a_usd_reader(self, payload):
+        cache.clear()
+        eur_html = _render(self._fiat_user("fiatkey-1", "EUR"), payload)
+        usd_html = _render(self._fiat_user("fiatkey-2", "USD"), payload)
+
+        assert 'data-fiat="EUR" data-fiat-rate="0.5"' in eur_html
+        assert 'data-fiat="USD" data-fiat-rate="1.0"' in usd_html
+        assert eur_html != usd_html
+
+    def test_readers_on_one_fiat_still_share_an_entry(self, payload):
+        cache.clear()
+        first = _render(self._fiat_user("fiatkey-3", "EUR"), payload)
+        second = _render(self._fiat_user("fiatkey-4", "EUR"), payload)
+
+        assert first == second
+
+    def test_without_a_published_rate_a_eur_reader_gets_the_usd_page(
+        self, payload, eur_rate
+    ):
+        cache.clear()
+        eur_rate.return_value = {}
+        eur_html = _render(self._fiat_user("fiatkey-5", "EUR"), payload)
+        usd_html = _render(self._fiat_user("fiatkey-6", "USD"), payload)
+
+        assert eur_html == usd_html
+
+    def test_the_eur_page_labels_its_figures_in_eur(self, payload):
+        cache.clear()
+        html = _render(self._fiat_user("fiatkey-7", "EUR"), payload)
+
+        assert " EUR/ALGO" in html
+        assert " USD/ALGO" not in html
+
+    def test_the_dynamic_page_offers_the_readers_fiat(self, payload):
+        cache.clear()
+        user = _user("fiatkey-8", permission=ASASTATSER, layout="dynamic")
+        user.profile.fiat = "EUR"
+        user.profile.save()
+        html = _render(user, payload)
+
+        assert '<button type="button" data-ccy="EUR" aria-pressed="false">EUR</button>' in html
+        assert " EUR/ALGO" in html
+        assert " USD/ALGO" not in html

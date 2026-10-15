@@ -4913,6 +4913,7 @@
 .pnl-link {
   padding: 0;
   border: 0;
+  text-align: left;
   background: none;
   color: var(--color-primary);
   font: inherit;
@@ -4990,7 +4991,7 @@
   text-align: left;
   color: color-mix(in oklch, var(--color-base-content) 65%, transparent);
 }
-.pnl-table tbody th { text-align: left; font-weight: 500; }
+.pnl-table tbody th { text-align: left; font-weight: 500; white-space: normal; min-width: 8rem; }
 .pnl-table td { text-align: right; font-variant-numeric: tabular-nums; }
 .pnl-closed { opacity: 0.6; }
 .pnl-txid { font-family: var(--font-mono, monospace); }
@@ -5013,24 +5014,30 @@
 .pnl-table td.pnl-text { text-align: left; }
 .pnl-asset > .pnl-link { display: inline-block; margin-bottom: 0.5rem; font-size: 0.85rem; }
 
-/* Narrow screens: every table row becomes a card, each cell a labelled line
-   from its `data-label`; the header row is hidden. */
 @media (max-width: 640px) {
   .pnl-page-title { font-size: 1.5rem; }
   .pnl-total strong { font-size: 1.5rem; }
   .pnl-figures { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pnl-phase { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pnl-phase h5 { grid-column: 1 / -1; }
+}
 
+/* Below 1024px the table no longer fits: every row becomes a card, each cell a
+   labelled line from its `data-label`, cards in as many columns as fit. */
+@media (max-width: 1023px) {
   .pnl-table-wrap { overflow-x: visible; }
   .pnl-table,
-  .pnl-table tbody,
   .pnl-table tr,
   .pnl-table th,
   .pnl-table td { display: block; width: 100%; }
+  .pnl-table tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: 0.75rem;
+  }
   .pnl-table thead { display: none; }
   .pnl-table tr {
-    margin-bottom: 0.75rem;
+    min-width: 0;
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--color-base-300);
     border-radius: 0.75rem;
@@ -5064,15 +5071,18 @@
 @media (prefers-reduced-motion: no-preference) {
   html:has(.pnl) { scroll-behavior: smooth; }
 }
-.pnl-event-note {
+.pnl-event-note,
+.pnl-cell-note {
   display: block;
   font-size: 0.75rem;
   white-space: normal;
   color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
 }
-@media (max-width: 640px) {
+@media (max-width: 1023px) {
   .pnl-table td.pnl-text:has(.pnl-event-note) { flex-wrap: wrap; }
   .pnl-table td .pnl-event-note { flex-basis: 100%; text-align: right; }
+  .pnl-table td:has(.pnl-cell-note) { flex-wrap: wrap; }
+  .pnl-table td .pnl-cell-note { flex-basis: 100%; text-align: right; }
 }
 .pnl-chart { margin-top: 1rem; }
 .pnl-chart-figure { display: flex; flex-direction: column; gap: 0.375rem; }

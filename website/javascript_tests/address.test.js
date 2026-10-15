@@ -3070,3 +3070,95 @@ describe("repaintClassicLive internals edge cases", function () {
     expect(distChart.data.datasets[0].data[0]).toBeDefined();
   });
 });
+
+
+describe("a reader whose fiat is EUR", function () {
+  // As the address page renders for a reader who chose EUR; fiat.js reads it.
+  function eur(rate) {
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<span hidden data-fiat="EUR" data-fiat-rate="' + (rate || "0.5") + '"></span>'
+    );
+    window.Chart.getChart.mockReturnValue(chartInstance());
+    ["ratiochart", "ratiochartfloor", "asachart", "nftchart", "nftfloorchart",
+      "distchart"].forEach(function (n) { address.parseJsonScript(n); });
+  }
+  function head() {
+    return $(".pricetip")[0];
+  }
+  function tip(element) {
+    return (element.closest(".tooltip") || element).dataset.tip;
+  }
+  function money(value) {
+    return parseFloat(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  it('shows the total in EUR on the fiat side', function () {
+    eur();
+    address.setCurrency("EUR");
+    expect(head().innerHTML).toBe(money(head().dataset.total * 0.5) + " EUR");
+    expect(tip(head())).toContain(" ALGO/EUR)");
+    expect($(".switch input[type=checkbox]").prop("checked")).toBe(true);
+  });
+
+  it('reads a stored "USD" as the fiat side and shows EUR', function () {
+    eur();
+    address.setCurrency("USD");
+    expect(head().innerHTML).toContain(" EUR");
+    expect(head().innerHTML).not.toContain("USD");
+  });
+
+  it('converts each figure from ALGO at the page price and the rate', function () {
+    eur();
+    address.setCurrency("EUR");
+    var price = parseFloat(head().dataset.price);
+    var figure = $("span.val").not(".pricealgo")[0];
+    expect(figure.innerHTML).toBe(money(figure.dataset.val / price * 0.5) + " EUR");
+  });
+
+  it('shows EUR in the tooltips on the ALGO side', function () {
+    eur();
+    address.setCurrency("ALGO");
+    expect(head().innerHTML).toContain(" ALGO");
+    expect(tip(head())).toContain(" EUR/ALGO)");
+    var figure = $("span.val").not(".pricealgo")[0];
+    expect(tip(figure)).toContain(" EUR");
+  });
+
+  it('stores the reader\'s fiat when switched on', function () {
+    eur();
+    var box = $(".switch input[type=checkbox]")[0];
+    box.checked = true;
+    address.toggleCurrency.call(box);
+    expect(localStorage.setItem).toHaveBeenCalledWith("cur", "EUR");
+  });
+
+  it('labels a unit price in EUR', function () {
+    eur();
+    localStorage.setItem("cur", "EUR");
+    var el = $(".unitprice")[0];
+    address.toggleUnitPrice.call(el, { target: { innerHTML: el.dataset.unit } });
+    expect(el.innerHTML).toContain(" EUR");
+    address.toggleUnitPrice.call(el, { target: { innerHTML: "nope" } });
+    expect(el.innerHTML).toContain("/EUR");
+  });
+
+  it('converts chart totals with the rate', function () {
+    eur("0.5");
+    localStorage.setItem("cur", "ALGO");
+    var algo = address.totalChart("nftchart");
+    localStorage.setItem("cur", "EUR");
+    var price = parseFloat(head().dataset.price);
+    expect(address.totalChart("nftchart")).toBeCloseTo(algo / price * 0.5);
+  });
+
+  it('shows the total without NFTs in EUR', function () {
+    eur();
+    localStorage.setItem("cur", "EUR");
+    address.setTotalNoNft("y");
+    expect(head().innerHTML).toContain(" EUR");
+    localStorage.setItem("cur", "ALGO");
+    address.setTotalNoNft("y");
+    expect(tip(head())).toContain(" EUR/ALGO)");
+  });
+});

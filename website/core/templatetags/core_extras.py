@@ -1170,3 +1170,41 @@ def allocation_bands(consolidated, total):
         }
         for key, label in ALLOCATION_BANDS
     ]
+
+
+@register.filter
+def in_fiat(fiat, usd):
+    """Return `usd` in the reader's `fiat`; a missing `fiat` is USD.
+
+    Used as `{{ fiat|in_fiat:amount }}`: a missing filter input renders, a
+    missing filter argument raises. See docs/logbook.md.
+
+    :param fiat: the reader's fiat from `utils.fiat.fiat_for_user`, or ""
+    :type fiat: dict
+    :param usd: amount in USD
+    :type usd: float
+    :return: float or None
+    """
+    rate = fiat.get("rate", 1.0) if isinstance(fiat, dict) else 1.0
+    try:
+        return float(usd) * float(rate)
+    except (TypeError, ValueError):
+        return None
+
+
+@register.simple_tag
+def fiat_figure(usd, fiat, arg=-1):
+    """Return `usd` in the reader's `fiat`, formatted by `floatformat` with `arg`.
+
+    A tag because its arguments render when missing, as filter arguments do not.
+
+    :param usd: amount in USD, "" when missing
+    :type usd: float
+    :param fiat: the reader's fiat, "" when missing
+    :type fiat: dict
+    :param arg: `floatformat` argument
+    :type arg: str
+    :return: str
+    """
+    value = in_fiat(fiat, usd)
+    return "" if value is None else floatformat(value, arg)

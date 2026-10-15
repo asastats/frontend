@@ -573,3 +573,71 @@ describe("the total's tooltip", function () {
     expect(function () { consolidated.setTip(head, "x"); }).not.toThrow();
   });
 });
+
+
+describe("a reader whose fiat is EUR, on a snapshot with its own rate", function () {
+  // The page carries today's rate; the snapshot's `.pricetip` its own date's.
+  function eur(snapshotRate) {
+    document.body.insertAdjacentHTML(
+      "afterbegin",
+      '<span hidden data-fiat="EUR" data-fiat-rate="0.9"></span>'
+    );
+    if (snapshotRate !== undefined) {
+      $(".pricetip")[0].dataset.snapshotRate = snapshotRate;
+    }
+  }
+
+  it('converts at the snapshot rate, not today\'s', function () {
+    eur("0.5");
+    localStorage.setItem("hcur", "EUR");
+    // 10 ALGO NFTs at 2 ALGO per USD is 5 USD, so 2.5 EUR
+    expect(consolidated.totalChart("nftchart")).toBeCloseTo(2.5);
+    expect(consolidated.currencyLabel("EUR")).toBe("EUR");
+  });
+
+  it('reads a stored USD as the fiat side', function () {
+    eur("0.5");
+    expect(consolidated.currencyLabel("USD")).toBe("EUR");
+    expect(consolidated.currencyLabel("ALGO")).toBe("ALGO");
+  });
+
+  it('is USD for a snapshot without its rate', function () {
+    eur();
+    expect(consolidated.snapshotFiat()).toEqual({ code: "USD", rate: 1 });
+  });
+
+  it('is USD without a total on the page', function () {
+    eur("0.5");
+    $(".pricetip").remove();
+    expect(consolidated.snapshotFiat()).toEqual({ code: "USD", rate: 1 });
+  });
+
+  it('writes the total without NFTs in EUR', function () {
+    eur("0.5");
+    localStorage.setItem("hcur", "EUR");
+    localStorage.setItem("htotalnonft", "y");
+    consolidated.mainConsolidated();
+    // (200 - 10) ALGO at 2 ALGO per USD is 95 USD, so 47.50 EUR
+    // `cur` is stubbed in this suite, so the number is read without formatting
+    expect($(".pricetip")[0].innerHTML).toContain("47.5 EUR");
+  });
+
+  it('puts EUR in the total\'s tip on the ALGO side', function () {
+    eur("0.5");
+    consolidated.mainConsolidated();
+    expect($(".pricetip")[0].dataset.tip).toContain(" EUR/ALGO)");
+  });
+});
+
+
+describe("a page without fiat.js", function () {
+  afterEach(function () {
+    global.Fiat = require("../static/js/fiat.js");
+  });
+
+  it('is USD', function () {
+    delete global.Fiat;
+    $(".pricetip")[0].dataset.snapshotRate = "0.5";
+    expect(consolidated.snapshotFiat()).toEqual({ code: "USD", rate: 1 });
+  });
+});

@@ -236,11 +236,12 @@
    site.js is here for copy-to-clipboard and the swap login gate; theme.js
    and authmodal.js cover the tabs, modals and toasts. bundle.js is the
    wallet package - without it there is no wallet connect, no EVM flow and no
-   swap bridge.
+   swap bridge. fiat.js is read by page scripts in `otherfooter`, so it loads first.
 {% endcomment %}
 <script src="{% static 'js/jquery-2.2.4.min.js' %}"></script>
 <script src="{% static 'js/htmx.min.js' %}"></script>
 <script src="{% static 'js/site.js' %}"></script>
+<script src="{% static 'js/fiat.js' %}"></script>
 <script src="{% static 'js/theme.js' %}"></script>
 <script src="{% static 'js/authmodal.js' %}"></script>
 <script type="module" src="{% static 'js/bundle.js' %}"></script>

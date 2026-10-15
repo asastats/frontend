@@ -56,6 +56,8 @@ class Profile(models.Model):
     votes = models.BigIntegerField(default=0, blank=True)
     permission = models.BigIntegerField(default=0, blank=True)
     currency = models.CharField(max_length=5, blank=True, default="ALGO")
+    #: Fiat the site shows instead of USD; one of `settings.FIAT_CURRENCIES`.
+    fiat = models.CharField(max_length=3, default="USD")
     preferred_router = models.CharField(max_length=32, blank=True, default="")
     preferred_explorer = models.CharField(max_length=32, blank=True, default="")
     preferred_layout = models.CharField(max_length=32, blank=True, default="")

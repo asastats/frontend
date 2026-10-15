@@ -2948,3 +2948,60 @@ describe("searching inside every collection", () => {
     expect(collections()).toEqual([]);
   });
 });
+
+describe("a reader whose fiat is EUR", () => {
+  // The address page renders the switch with the reader's fiat and stamps the rate.
+  beforeEach(() => {
+    mountPage();
+    const button = document.querySelector('#tb-ccy [data-ccy="USD"]');
+    button.setAttribute("data-ccy", "EUR");
+    button.textContent = "EUR";
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<span hidden data-fiat="EUR" data-fiat-rate="0.5"></span>'
+    );
+  });
+  afterEach(() => {
+    window.localStorage.removeItem("cur");
+  });
+
+  function headline() {
+    return document.querySelector(".pricetip").textContent;
+  }
+
+  test("the headline and the line under it convert at the rate", () => {
+    load();
+    document.querySelector('#tb-ccy [data-ccy="EUR"]').click();
+
+    expect(headline()).toBe("7.50 EUR");
+    expect(document.querySelector(".pricetip").getAttribute("data-tip")).toBe("150.00 ALGO");
+    expect(document.querySelector(".total-sub .num").textContent).toBe(
+      "150.00 ALGO at 0.050000 EUR/ALGO"
+    );
+    expect(document.querySelector("#f1 .cval .u.unit").textContent).toBe("EUR");
+  });
+
+  test("on the ALGO side the other currency is EUR", () => {
+    load();
+
+    expect(headline()).toBe("150.00 ALGO");
+    expect(document.querySelector(".pricetip").getAttribute("data-tip")).toBe("7.50 EUR");
+  });
+
+  test("a stored USD is read as the fiat side", () => {
+    window.localStorage.setItem("cur", "USD");
+
+    const toolbar = load();
+
+    expect(toolbar.state().ccy).toBe("EUR");
+    expect(document.querySelector('#tb-ccy [data-ccy="EUR"]').getAttribute("aria-pressed")).toBe("true");
+    expect(headline()).toBe("7.50 EUR");
+  });
+
+  test("choosing it stores the code", () => {
+    load();
+    document.querySelector('#tb-ccy [data-ccy="EUR"]').click();
+
+    expect(window.localStorage.getItem("cur")).toBe("EUR");
+  });
+});

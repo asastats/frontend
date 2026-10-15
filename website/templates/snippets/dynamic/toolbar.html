@@ -53,7 +53,7 @@
        one block. {% endcomment %}
     <div class="seg" id="tb-ccy" role="group" aria-label="Currency">
       <button type="button" data-ccy="ALGO" aria-pressed="true">ALGO</button>
-      <button type="button" data-ccy="USD" aria-pressed="false">USD</button>
+      <button type="button" data-ccy="{{ fiat.code|default:'USD' }}" aria-pressed="false">{{ fiat.code|default:"USD" }}</button>
     </div>
 
     {% comment %} Both of these are the reader's setting rather than this

@@ -175,8 +175,57 @@ function updateChartData(chart) {
 
 
 /**
+ * Return the shown snapshot's fiat: the reader's code at the snapshot's own rate
+ * (`data-snapshot-rate` on `.pricetip`), or USD without one.
+ * @function snapshotFiat
+ * @returns {{code: String, rate: Number}}
+ */
+function snapshotFiat() {
+  var elem = $(".pricetip")[0];
+  var rate = elem ? parseFloat(elem.dataset.snapshotRate) : NaN;
+  var code = typeof Fiat !== "undefined" ? Fiat.code() : "USD";
+  if (code === "USD" || !(rate > 0)) return { code: "USD", rate: 1 };
+  return { code: code, rate: rate };
+}
+
+
+/**
+ * Return `algo` in the snapshot's fiat, `price` being its ALGO per USD.
+ * @function algoToFiat
+ * @param {Number|String} algo
+ * @param {Number|String} price
+ * @returns {Number}
+ */
+function algoToFiat(algo, price) {
+  return parseFloat(algo) / parseFloat(price) * snapshotFiat().rate;
+}
+
+
+/**
+ * Return whether the `hcur` choice is the fiat side: anything but "ALGO".
+ * @function isFiatSide
+ * @param {String} code
+ * @returns {Boolean}
+ */
+function isFiatSide(code) {
+  return !!code && code !== "ALGO";
+}
+
+
+/**
+ * Return the unit shown for the `hcur` choice.
+ * @function currencyLabel
+ * @param {String} code
+ * @returns {String}
+ */
+function currencyLabel(code) {
+  return isFiatSide(code) ? snapshotFiat().code : "ALGO";
+}
+
+
+/**
  * Update distribution chart
- * USD/ALGO conversion for distchart datasets (hcur key).
+ * Fiat/ALGO conversion for distchart datasets (hcur key).
  * @function updateDistChart
  */
 function updateDistChart() {
@@ -189,8 +238,8 @@ function updateDistChart() {
   for (var i = 0; i < datasets.length; i++) {
     for (var j = 0; j < datasets[i].data.length; j++) {
       value = parseFloat(chartDatasets["distchart"].datasets[i].data[j]);
-      if (code == 'USD') {
-        value /= price;
+      if (isFiatSide(code)) {
+        value = algoToFiat(value, price);
       }
       chart.data.datasets[i].data[j] = value.toString();
     }
@@ -221,7 +270,7 @@ function legendClickHandler(chart, item) {
 
 /**
  * Calculate and return total for chart defined by provided name
- * USD/ALGO conversion via hcur key.
+ * Fiat/ALGO conversion via hcur key.
  * @function totalChart
  * @param {String} name
  * @returns {Number}
@@ -249,8 +298,8 @@ function totalChart(name) {
     total = $(".pricetip")[0].dataset.totalnftfloor;
   }
 
-  if (code == 'USD') {
-    total /= price;
+  if (isFiatSide(code)) {
+    total = algoToFiat(total, price);
   }
 
   return total;
@@ -290,7 +339,7 @@ function formatChartTotal(chart, name) {
   var totalNew = totalChartFiltered(chart, name);
   var code = localStorage.getItem('hcur') || 'ALGO';
 
-  return cur(totalNew / 100.0 * total) + " " + code;
+  return cur(totalNew / 100.0 * total) + " " + currencyLabel(code);
 };
 
 
@@ -353,15 +402,16 @@ function setTotalNoNft(value) {
   var total = value === 'y' ? (totalwnft - totalnft) / price : totalwnft / price;
 
   elem.dataset.total = total;
+  var shown = snapshotFiat();
 
-  if (code == 'USD') {
+  if (isFiatSide(code)) {
     $(".pricetip").each(function () {
-      setTip(this, cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)");
-      this.innerHTML = cur(total) + " USD";
+      setTip(this, cur(total * price) + " ALGO (" + dec6(price / shown.rate) + " ALGO/" + shown.code + ")");
+      this.innerHTML = cur(total * shown.rate) + " " + shown.code;
     });
   } else {
     $(".pricetip").each(function () {
-      setTip(this, cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)");
+      setTip(this, cur(total * shown.rate) + " " + shown.code + " (" + dec6(pricealgo * shown.rate) + " " + shown.code + "/ALGO)");
       this.innerHTML = cur(total * price) + " ALGO";
     });
   }
@@ -373,7 +423,7 @@ function setTotalNoNft(value) {
 
 /**
  * Calculate and return section's percentage of all assets
- * USD/ALGO conversion via hcur/price.
+ * Fiat/ALGO conversion via hcur/price.
  * @function percentDistAsset
  * @param {Object} context
  * @returns {String}
@@ -388,8 +438,8 @@ function percentDistAsset(context) {
       totalNew += parseFloat(datasets[i].data[context.dataIndex]);
     }
   }
-  if (code == 'USD') {
-    totalNew /= price;
+  if (isFiatSide(code)) {
+    totalNew = algoToFiat(totalNew, price);
   }
   return (100 * parseFloat(context.raw) / totalNew).toFixed(2) + "%";
 };
@@ -397,7 +447,7 @@ function percentDistAsset(context) {
 
 /**
  * Calculate and return section's percentage of current asset
- * USD/ALGO conversion via hcur/price.
+ * Fiat/ALGO conversion via hcur/price.
  * @function percentDistSection
  * @param {Object} context
  * @returns {String}
@@ -412,8 +462,8 @@ function percentDistSection(context) {
       totalNew += parseFloat(data[i]);
     }
   }
-  if (code == 'USD') {
-    totalNew /= price;
+  if (isFiatSide(code)) {
+    totalNew = algoToFiat(totalNew, price);
   }
   return (100 * parseFloat(context.raw) / totalNew).toFixed(2) + "%";
 };
@@ -428,12 +478,12 @@ function percentDistSection(context) {
  */
 function valueDistSection(context) {
   var code = localStorage.getItem('hcur') || 'ALGO';
-  return cur(context.raw) + " " + code;
+  return cur(context.raw) + " " + currencyLabel(code);
 };
 
 
 /**
- * Calculate and return asset/collection value in ALGO/USD
+ * Calculate and return asset/collection value in ALGO or the snapshot's fiat
  * Uses totalChart + hcur for currency.
  * @function valueSection
  * @param {String} name
@@ -443,7 +493,7 @@ function valueDistSection(context) {
 function valueSection(name, index) {
   var total = totalChart(name);
   var code = localStorage.getItem('hcur') || 'ALGO';
-  return cur(chartDatasets[name].datasets[0].data[index] * total / 100.0) + " " + code;
+  return cur(chartDatasets[name].datasets[0].data[index] * total / 100.0) + " " + currencyLabel(code);
 };
 
 
@@ -686,6 +736,8 @@ if (typeof exports !== 'undefined') {
     updateDistChart,
     legendClickHandler,
     totalChart,
+    snapshotFiat,
+    currencyLabel,
     totalChartFiltered,
     formatChartTotal,
     setTip,

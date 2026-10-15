@@ -30,6 +30,7 @@ from core.forms import (
     ExportForm,
     ProfileBundleNameForm,
     ProfileExplorerForm,
+    ProfileFiatForm,
     ProfileFormSet,
     ProfileInlineForm,
     ProfileLayoutForm,
@@ -878,3 +879,29 @@ class TestProfileLayoutForm:
         )
         form = ProfileLayoutForm(instance=profile)
         assert form.initial["preferred_layout"] == "dynamic"
+
+
+class TestProfileFiatForm:
+    """Testing class for :class:`ProfileFiatForm`."""
+
+    def test_profilefiatform_issubclass_of_modelform(self):
+        assert issubclass(ProfileFiatForm, ModelForm)
+
+    def test_profilefiatform_meta_model_and_fields(self):
+        assert ProfileFiatForm.Meta.model is Profile
+        assert ProfileFiatForm.Meta.fields == ("fiat",)
+
+    def test_profilefiatform_choices_come_from_settings(self, settings):
+        settings.FIAT_CURRENCIES = ("USD", "EUR", "CHF")
+        form = ProfileFiatForm()
+        assert isinstance(form.fields["fiat"], ChoiceField)
+        assert form.fields["fiat"].choices == [
+            ("USD", "USD"),
+            ("EUR", "EUR"),
+            ("CHF", "CHF"),
+        ]
+
+    def test_profilefiatform_refuses_an_unconfigured_code(self):
+        form = ProfileFiatForm(data={"fiat": "GBP"}, instance=Profile())
+        assert not form.is_valid()
+        assert "fiat" in form.errors

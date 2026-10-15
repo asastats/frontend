@@ -10,6 +10,8 @@ from core.templatetags.core_extras import (
     beyond,
     bundle_hash,
     dict_get,
+    fiat_figure,
+    in_fiat,
     dist_height,
     dist_price,
     explorer_base,
@@ -982,3 +984,52 @@ class TestCoreExtrasFoldCounts:
         for total in range(0, 45):
             rows = list(range(total))
             assert next_batch(rows, 20) <= beyond(rows, 20)
+
+
+class TestFiltersInFiat:
+    """Tests for the in_fiat filter."""
+
+    def test_filters_in_fiat_multiplies_by_the_rate(self):
+        assert in_fiat({"code": "EUR", "rate": 0.89}, 100) == pytest.approx(89.0)
+
+    def test_filters_in_fiat_reads_strings(self):
+        assert in_fiat({"rate": "2"}, "2.5") == 5.0
+
+    def test_filters_in_fiat_without_fiat_is_usd(self):
+        # a missing `fiat` reaches the filter as string_if_invalid
+        assert in_fiat("", 12.5) == 12.5
+        assert in_fiat(None, 12.5) == 12.5
+
+    def test_filters_in_fiat_is_none_without_a_value(self):
+        fiat = {"code": "EUR", "rate": 0.89}
+        assert in_fiat(fiat, None) is None
+        assert in_fiat(fiat, "") is None
+
+    def test_filters_in_fiat_renders_without_fiat_in_context(self):
+        from django.template import Context, Template
+
+        template = Template("{% load core_extras %}{{ fiat|in_fiat:usd|floatformat:2 }}")
+        assert template.render(Context({"usd": 3})) == "3.00"
+        assert template.render(Context({"usd": 3, "fiat": {"rate": 0.5}})) == "1.50"
+
+
+class TestFiatFigureTag:
+    """Tests for the fiat_figure tag."""
+
+    FIAT = {"code": "EUR", "rate": 0.5, "symbol": "€"}
+
+    def test_fiat_figure_converts_and_formats(self):
+        assert fiat_figure(216.302465, self.FIAT, "2g") == "108.15"
+
+    def test_fiat_figure_without_fiat_is_usd(self):
+        assert fiat_figure(216.302465, "", "2g") == "216.30"
+
+    def test_fiat_figure_without_a_value_is_empty(self):
+        assert fiat_figure("", self.FIAT, "2g") == ""
+
+    def test_fiat_figure_renders_whatever_is_missing(self):
+        from django.template import Context, Template
+
+        template = Template('{% load core_extras %}[{% fiat_figure band.x fiat "2g" %}]')
+        assert template.render(Context({})) == "[]"
+        assert template.render(Context({"band": {"x": 3}})) == "[3.00]"

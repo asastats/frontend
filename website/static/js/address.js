@@ -68,6 +68,27 @@ function wireFetchedItems() {
 
 
 /**
+ * Return `algo` in the reader's fiat, `price` being the header's ALGO per USD.
+ * @param {Number|String} algo
+ * @param {Number|String} price
+ * @returns {Number}
+ */
+function algoToFiat(algo, price) {
+  return parseFloat(algo) / parseFloat(price) * Fiat.rate();
+}
+
+
+/**
+ * Return the unit shown for the `cur` choice: "ALGO" or the reader's fiat.
+ * @param {String} code
+ * @returns {String}
+ */
+function currencyLabel(code) {
+  return Fiat.isFiatSide(code) ? Fiat.code() : "ALGO";
+}
+
+
+/**
  * Put the reader's currency and total mode back after a swap replaced them.
  * See logbook: why restoreDisplayChoices exists (live poll reverts choices).
  * @function restoreDisplayChoices
@@ -485,8 +506,8 @@ function updateDistChart() {
   for (var i = 0; i < datasets.length; i++) {
     for (var j = 0; j < datasets[i].data.length; j++) {
       value = parseFloat(chartDatasets["distchart"].datasets[i].data[j]);
-      if (code == 'USD') {
-        value /= price;
+      if (Fiat.isFiatSide(code)) {
+        value = algoToFiat(value, price);
       }
       chart.data.datasets[i].data[j] = value.toString();
     }
@@ -667,8 +688,8 @@ function updateHeaderFigures(header, totals) {
     var figure = header.querySelector('.cons-value[data-band="' + category + '"]');
     if (!figure) return;
     figure.setAttribute("data-val", totals[category]);
-    var displayValue = code === "USD" ? totals[category] / price : totals[category];
-    figure.textContent = cur(displayValue) + " " + code;
+    var displayValue = Fiat.isFiatSide(code) ? algoToFiat(totals[category], price) : totals[category];
+    figure.textContent = cur(displayValue) + " " + currencyLabel(code);
   });
 }
 
@@ -751,7 +772,7 @@ function updateAsaChart(live) {
 
 /**
  * Update the distribution (stacked) chart with live category data.
- * Computes "others" slice per dataset. Applies currency conversion if USD.
+ * Computes "others" slice per dataset. Applies currency conversion on the fiat side.
  * @param {Object} live - { assets: {...}, categories: {...} }
  */
 function updateDistributionChart(live) {
@@ -786,12 +807,12 @@ function updateDistributionChart(live) {
   if (!distributionChart) return;
 
   var price = parseFloat(document.querySelector(".pricetip").dataset.price) || 1;
-  var isUSD = localStorage.getItem("cur") === "USD";
+  var isFiat = Fiat.isFiatSide(localStorage.getItem("cur"));
 
   distributionChart.data.datasets.forEach(function (dataset, index) {
     var source = distribution.datasets[index].data;
     dataset.data = source.map(function (value) {
-      return String(isUSD ? parseFloat(value) / price : value);
+      return String(isFiat ? algoToFiat(value, price) : value);
     });
   });
   distributionChart.update();
@@ -851,8 +872,8 @@ function totalChart(name) {
     total = document.querySelector("[data-totalnftfloor]").dataset.totalnftfloor;
   }
 
-  if (code == 'USD') {
-    total /= price;
+  if (Fiat.isFiatSide(code)) {
+    total = algoToFiat(total, price);
   }
 
   return total;
@@ -894,7 +915,7 @@ function formatChartTotal(chart, name) {
   var totalNew = totalChartFiltered(chart, name);
   var code = localStorage.getItem('cur') || 'ALGO';
 
-  return cur(totalNew / 100.0 * total) + " " + code;
+  return cur(totalNew / 100.0 * total) + " " + currencyLabel(code);
 };
 
 
@@ -930,8 +951,8 @@ function percentDistAsset(context) {
       totalNew += parseFloat(datasets[i].data[context.dataIndex]);
     }
   }
-  if (code == 'USD') {
-    totalNew /= price;
+  if (Fiat.isFiatSide(code)) {
+    totalNew = algoToFiat(totalNew, price);
   }
   return (100 * parseFloat(context.raw) / totalNew).toFixed(2) + "%";
 };
@@ -955,8 +976,8 @@ function percentDistSection(context) {
       totalNew += parseFloat(data[i]);
     }
   }
-  if (code == 'USD') {
-    totalNew /= price;
+  if (Fiat.isFiatSide(code)) {
+    totalNew = algoToFiat(totalNew, price);
   }
   return (100 * parseFloat(context.raw) / totalNew).toFixed(2) + "%";
 };
@@ -972,12 +993,12 @@ function percentDistSection(context) {
  */
 function valueDistSection(context) {
   var code = localStorage.getItem('cur') || 'ALGO';
-  return cur(context.raw) + " " + code;
+  return cur(context.raw) + " " + currencyLabel(code);
 };
 
 
 /**
- * Calculate and return asset/collection value in ALGO/USD
+ * Calculate and return asset/collection value in ALGO or the reader's fiat
  * @function valueSection
  *
  * @param {String} name
@@ -988,7 +1009,7 @@ function valueDistSection(context) {
 function valueSection(name, index) {
   var total = totalChart(name);
   var code = localStorage.getItem('cur') || 'ALGO';
-  return cur(chartDatasets[name].datasets[0].data[index] * total / 100.0) + " " + code;
+  return cur(chartDatasets[name].datasets[0].data[index] * total / 100.0) + " " + currencyLabel(code);
 };
 
 
@@ -1421,15 +1442,16 @@ function toggleUnitPrice(event) {
 
   var value = this.dataset.val;
 
-  if (code == 'USD') {
-    value = value / price;
+  if (Fiat.isFiatSide(code)) {
+    value = algoToFiat(value, price);
   }
+  var unit = currencyLabel(code);
 
   var reciprocal = event.target.innerHTML.indexOf(this.dataset.unit) !== -1 ? false : true;
   if (reciprocal) {
-    this.innerHTML = parseFloat(1.0 / value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 }) + " " + this.dataset.unit + "/" + code;
+    this.innerHTML = parseFloat(1.0 / value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 }) + " " + this.dataset.unit + "/" + unit;
   } else {
-    this.innerHTML = parseFloat(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 }) + " " + code;
+    this.innerHTML = parseFloat(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 }) + " " + unit;
   }
 }
 
@@ -1489,16 +1511,18 @@ function setCurrency(code) {
   var price = pricetip.dataset.price;
   var pricealgo = pricetip.dataset.pricealgo;
   var total = pricetip.dataset.total;
-  if (code == 'USD') {
+  var fiat = Fiat.code();
+  var rate = Fiat.rate();
+  if (Fiat.isFiatSide(code)) {
     $(".pricetip").each(function () {
-      setTip(this, cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)");
-      this.innerHTML = cur(total) + " USD";
+      setTip(this, cur(total * price) + " ALGO (" + dec6(price / rate) + " ALGO/" + fiat + ")");
+      this.innerHTML = cur(total * rate) + " " + fiat;
     });
     $("span.val").each(function () {
       if ($(this).hasClass("pricealgo"))
-        this.innerHTML = dec6(price) + " ALGO/USD";
+        this.innerHTML = dec6(price / rate) + " ALGO/" + fiat;
       else
-        this.innerHTML = cur(this.dataset.val / price) + " USD";
+        this.innerHTML = cur(algoToFiat(this.dataset.val, price)) + " " + fiat;
       // The class as well as the text. `data-tip` has been written to these
       // spans since before the conversion and only `.pricetip` ever carried the
       // class that displays it, so every figure computed a tooltip on every
@@ -1512,20 +1536,20 @@ function setCurrency(code) {
     // template that emits `.val6` pairs it with `.unitprice`. The condition
     // was copied down with the loop and could never be true.
     $("span.val6").each(function () {
-      this.innerHTML = parseFloat(this.dataset.val / price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " USD";
+      this.innerHTML = algoToFiat(this.dataset.val, price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " " + fiat;
     });
   } else {
     $(".pricetip").each(function () {
-      setTip(this, cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)");
+      setTip(this, cur(total * rate) + " " + fiat + " (" + dec6(pricealgo * rate) + " " + fiat + "/ALGO)");
       this.innerHTML = cur(total * price) + " ALGO";
     });
     $("span.val").each(function () {
       if ($(this).hasClass("pricealgo"))
-        this.innerHTML = dec6(pricealgo) + " USD/ALGO";
+        this.innerHTML = dec6(pricealgo * rate) + " " + fiat + "/ALGO";
       else
         this.innerHTML = cur(this.dataset.val) + " ALGO";
       $(this).addClass("tooltip");
-      setTip(this, cur(this.dataset.val / price) + " USD");
+      setTip(this, cur(algoToFiat(this.dataset.val, price)) + " " + fiat);
     });
     $("span.val6").each(function () {
       this.innerHTML = parseFloat(this.dataset.val).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " ALGO";
@@ -1533,16 +1557,16 @@ function setCurrency(code) {
   }
   setTotalCharts();
 
-  $(".switch").find("input[type=checkbox]").prop('checked', code == 'USD');
+  $(".switch").find("input[type=checkbox]").prop('checked', Fiat.isFiatSide(code));
 }
 
 
 /**
- * Switch amounts from ALGO to USD back and forth
+ * Switch amounts from ALGO to the reader's fiat back and forth
  *
  */
 function toggleCurrency() {
-  var code = $(this).prop('checked') ? 'USD' : 'ALGO';
+  var code = $(this).prop('checked') ? Fiat.code() : 'ALGO';
   localStorage.setItem('cur', code);
   setCurrency(code);
 }
@@ -1663,15 +1687,17 @@ function setTotalNoNft(value) {
   var total = value === 'y' ? (totalwnft - totalnft) / price : totalwnft / price;
 
   pricetip.dataset.total = total;
+  var fiat = Fiat.code();
+  var rate = Fiat.rate();
 
-  if (code == 'USD') {
+  if (Fiat.isFiatSide(code)) {
     $(".pricetip").each(function () {
-      setTip(this, cur(total * price) + " ALGO (" + dec6(price) + " ALGO/USD)");
-      this.innerHTML = cur(total) + " USD";
+      setTip(this, cur(total * price) + " ALGO (" + dec6(price / rate) + " ALGO/" + fiat + ")");
+      this.innerHTML = cur(total * rate) + " " + fiat;
     });
   } else {
     $(".pricetip").each(function () {
-      setTip(this, cur(total) + " USD (" + dec6(pricealgo) + " USD/ALGO)");
+      setTip(this, cur(total * rate) + " " + fiat + " (" + dec6(pricealgo * rate) + " " + fiat + "/ALGO)");
       this.innerHTML = cur(total * price) + " ALGO";
     });
   }

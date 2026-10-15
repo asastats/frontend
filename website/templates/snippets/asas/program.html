@@ -43,7 +43,7 @@
         <div class="text-sm text-base-content/70">Available: {{ ld.value|floatformat:'2g' }} ALGO</div>
       {% endif %}
     {% endfor %}
-    <div><span class="val pricealgo text-xs opacity-70" data-val="{{ pricealgo }}">{{ pricealgo|floatformat:'6g' }} USD/ALGO</span></div>
+    <div><span class="val pricealgo text-xs opacity-70" data-val="{{ pricealgo }}">{% fiat_figure pricealgo fiat '6g' %} {{ fiat.code|default:"USD" }}/ALGO</span></div>
   </div>
 {% else %}
   {% comment %} Every other program, non-ALGO Balance rows included, dispatching

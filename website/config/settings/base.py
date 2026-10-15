@@ -321,6 +321,10 @@ CACHE_TTL = 60 * 90  # Cache time to live is 90 minutes.
 ADDRESS_INITIAL_ASSETS = 20
 ADDRESS_INITIAL_COLLECTIONS = 10
 
+#: Fiats a reader may choose, USD first. Every code but USD needs the engine's
+#: rate in Redis (`fxrt`); without it the reader sees USD. See docs/logbook.md.
+FIAT_CURRENCIES = ("USD", "EUR")
+
 #: What a reader may choose instead, from the Asastatser tier upward.
 #:
 #: **Every value here needs its own CSS rule**, because `:nth-child()` cannot

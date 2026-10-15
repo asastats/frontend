@@ -19,13 +19,13 @@
 {% elif event.kind == "nft_in" or event.kind == "nft_out" %}
   <span class="livelog-what">{% if event.kind == "nft_in" %}Bought{% else %}Sold{% endif %} an NFT from {{ event.name|default:"a collection" }}</span>
 {% elif event.kind == "price" %}
-  <span class="livelog-what">ALGO price {{ event.old|floatformat:"4" }} to {{ event.new|floatformat:"4" }} USD</span>
+  <span class="livelog-what">ALGO price {% fiat_figure event.old fiat "4" %} to {% fiat_figure event.new fiat "4" %} {{ fiat.code|default:"USD" }}</span>
   <span class="livelog-value num{% if event.pct < 0 %} neg{% endif %}">{% if event.pct > 0 %}+{% endif %}{{ event.pct|floatformat:"1" }}%</span>
-  {% if event.held %}<span class="livelog-held livelog-usd">{% if event.impact > 0 %}+{% endif %}{{ event.impact|floatformat:"2g" }} USD on {{ event.held|floatformat:"2g" }} ALGO held</span>{% endif %}
+  {% if event.held %}<span class="livelog-held livelog-usd">{% if event.impact > 0 %}+{% endif %}{% fiat_figure event.impact fiat "2g" %} {{ fiat.code|default:"USD" }} on {{ event.held|floatformat:"2g" }} ALGO held</span>{% endif %}
 {% elif event.kind == "asset_price" %}
-  <span class="livelog-what">{{ event.name|default:"An asset" }} price {{ event.old|floatformat:"-8g" }} to {{ event.new|floatformat:"-8g" }} {% if event.basis == "usd" %}USD{% else %}ALGO{% endif %}</span>
+  <span class="livelog-what">{{ event.name|default:"An asset" }} price {% if event.basis == "usd" %}{% fiat_figure event.old fiat "-8g" %} to {% fiat_figure event.new fiat "-8g" %} {{ fiat.code|default:"USD" }}{% else %}{{ event.old|floatformat:"-8g" }} to {{ event.new|floatformat:"-8g" }} ALGO{% endif %}</span>
   <span class="livelog-value num{% if event.pct < 0 %} neg{% endif %}">{% if event.pct > 0 %}+{% endif %}{{ event.pct|floatformat:"1" }}%</span>
-  <span class="livelog-held">{% if event.impact > 0 %}+{% endif %}{{ event.impact|floatformat:"2g" }} {% if event.basis == "usd" %}USD{% else %}ALGO{% endif %} on {{ event.amount|amount_repr:event.decimals }} held</span>
+  <span class="livelog-held">{% if event.impact > 0 %}+{% endif %}{% if event.basis == "usd" %}{% fiat_figure event.impact fiat "2g" %} {{ fiat.code|default:"USD" }}{% else %}{{ event.impact|floatformat:"2g" }} ALGO{% endif %} on {{ event.amount|amount_repr:event.decimals }} held</span>
 {% elif event.kind == "online" %}
   <span class="livelog-what">Account went online</span>
 {% elif event.kind == "offline" %}
@@ -45,11 +45,12 @@
 {% endif %}
 </li>
 {% endpartialdef livelogevent %}
-{% comment %} A row's figure in ALGO, and in USD when the event carries it. The
+{% comment %} A row's figure in ALGO, and in the reader's fiat (from the event's
+   USD, at the latest rate) when the event carries USD. The
    log shows one of the two by the page's currency (`data-cur` on the shell),
    so `livelog-algo` is set only when a USD twin exists. A missing `usd` arrives
    as "", hence `usd or usd == 0`, not `is not None`. {% endcomment %}
-{% partialdef livelogfigure %}<span class="livelog-value num{% if algo < 0 %} neg{% endif %}{% if usd or usd == 0 %} livelog-algo{% endif %}">{% if signed and algo > 0 %}+{% endif %}{{ algo|floatformat:"2g" }} ALGO</span>{% if usd or usd == 0 %}<span class="livelog-value num{% if usd < 0 %} neg{% endif %} livelog-usd">{% if signed and usd > 0 %}+{% endif %}{{ usd|floatformat:"2g" }} USD</span>{% endif %}{% endpartialdef livelogfigure %}
+{% partialdef livelogfigure %}<span class="livelog-value num{% if algo < 0 %} neg{% endif %}{% if usd or usd == 0 %} livelog-algo{% endif %}">{% if signed and algo > 0 %}+{% endif %}{{ algo|floatformat:"2g" }} ALGO</span>{% if usd or usd == 0 %}<span class="livelog-value num{% if usd < 0 %} neg{% endif %} livelog-usd">{% if signed and usd > 0 %}+{% endif %}{% fiat_figure usd fiat "2g" %} {{ fiat.code|default:"USD" }}</span>{% endif %}{% endpartialdef livelogfigure %}
 {% comment %} One leg of a transaction: the amount without its sign, which the
    verb carries. Without a name or decimals the base units would mislead. {% endcomment %}
 {% partialdef livelogleg %}{% if leg.name and leg.decimals is not None %}{{ leg.amount|abs_value|amount_repr:leg.decimals }} {{ leg.name }}{% else %}an asset{% endif %}{% endpartialdef livelogleg %}

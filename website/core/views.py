@@ -46,6 +46,7 @@ from core.forms import (
     DeactivateProfileForm,
     ProfileBundleNameForm,
     ProfileExplorerForm,
+    ProfileFiatForm,
     ProfileFormSet,
     ProfileLayoutForm,
     ProfileLiveRefreshForm,
@@ -94,6 +95,7 @@ from utils.constants.users import (
     BUNDLE_NAME_NOT_FOUND_ERROR,
     BUNDLE_NOT_VIEWABLE_ERROR,
 )
+from utils.fiat import USD_FIAT, fiat_for_user
 from utils.helpers import (
     check_algorand_address,
     check_bundle_addresses,
@@ -385,6 +387,9 @@ class BaseAddressView(TemplateView):
     #: is exactly right for a view rendered without a request behind it.
     live_holdings = ""
 
+    #: The reader's fiat, set by ``dispatch`` and part of the cache key.
+    fiat = USD_FIAT
+
     def dispatch(self, request, *args, **kwargs):
         """Validate URL value, resolve any bundle, render through the layout's
         own cache entry.
@@ -435,12 +440,13 @@ class BaseAddressView(TemplateView):
                 return _bundle_not_viewable(request)
 
         self.layout = layout_for_user(getattr(request, "user", None))
+        self.fiat = fiat_for_user(getattr(request, "user", None))
         self.live_holdings = self._live_holdings(url_value)
         cached = cache_page(
             self.cache_timeout,
             key_prefix=(
                 f"layout-{self.layout}-{self._entitlement_key(request)}"
-                f"-{self.live_holdings}"
+                f"-fiat-{self.fiat['code']}-{self.live_holdings}"
             ),
         )(super().dispatch)
         return cached(request, *args, **kwargs)
@@ -560,6 +566,7 @@ class BaseAddressView(TemplateView):
         # partial for exactly that reason.
         context["layout"] = self.layout
         context["compact"] = layout_compact(self.layout)
+        context["fiat"] = self.fiat
 
         # Not reader-derived: a property of the addresses, identical for
         # everyone looking at them. In the key as well, so the markup and the
@@ -1298,6 +1305,7 @@ class ProfileSettingsView(View):
             "explorer_form": ProfileExplorerForm(instance=profile),
             "layout_form": ProfileLayoutForm(instance=profile),
             "liverefresh_form": ProfileLiveRefreshForm(instance=profile),
+            "fiat_form": ProfileFiatForm(instance=profile),
             "can_access_liverefresh": profile.can_access_live_refresh(),
             # The refilling bucket's terms, or None where there is no limit.
             # The settings page turns it into the upgrade prompt; see
@@ -1374,6 +1382,16 @@ class ProfileSettingsView(View):
                 return redirect("profile_settings")
             context = self._context(request)
             context["liverefresh_form"] = form
+            return render(request, self.template_name, context)
+
+        if section == "fiat":
+            form = ProfileFiatForm(data=request.POST, instance=profile)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Currency preference saved.", extra_tags="fiat")
+                return redirect("profile_settings")
+            context = self._context(request)
+            context["fiat_form"] = form
             return render(request, self.template_name, context)
 
         if section == "explorer":
@@ -1905,6 +1923,8 @@ class SwapEntryView(TemplateView):
         context["dustsweep_address"] = ""
         context["dustsweep_addresses"] = []
         context["liverefresh_url"] = ""
+        # The live log's figures are in it; this partial is never cached.
+        context["fiat"] = fiat_for_user(self.request.user)
         user = self.request.user
         if not user.is_authenticated:
             return context

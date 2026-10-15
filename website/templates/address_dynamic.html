@@ -2,6 +2,7 @@
 {% load static %}
 {% load core_extras %}
 {% load partials %}
+{% load l10n %}
 {% comment %} The dynamic address page: designs 2 and 3.
 
    One template, two layouts. `compact` comes from the view off the layout
@@ -30,6 +31,8 @@
 {% endblock %}
 
 {% block content %}
+{% comment %} The reader's fiat for fiat.js; the cache key carries `fiat.code`. {% endcomment %}
+<span hidden data-fiat="{{ fiat.code|default:'USD' }}" data-fiat-rate="{{ fiat.rate|default:1|unlocalize }}"></span>
 {% comment %} One scope class for the whole design: every rule in the dynamic
    block of `input.css` is written under it, so nothing here reaches design 1's
    markup, which shares this base template and stylesheet. {% endcomment %}
@@ -74,12 +77,12 @@
             data-price="{{ band.priceusdc }}" data-pricealgo="{{ band.pricealgo }}"
             data-total="{{ band.totalusdc }}" data-totalwnft="{{ band.total }}"
             data-totalnft="{{ band.nft }}"
-            data-tip='{{ band.totalusdc|floatformat:"2g" }} USD ({{ band.pricealgo|floatformat:"2g" }} USD/ALGO)'>{{ band.total|floatformat:"2g" }} ALGO</span>
+            data-tip='{% fiat_figure band.totalusdc fiat "2g" %} {{ fiat.code|default:"USD" }} ({% fiat_figure band.pricealgo fiat "2g" %} {{ fiat.code|default:"USD" }}/ALGO)'>{{ band.total|floatformat:"2g" }} ALGO</span>
         {% endpartialdef bandtotal %}
       </h1>
       <div class="total-sub">
         {% partialdef bandusd inline %}
-        <span id="id-band-usd" {% if oob %}hx-swap-oob="true" {% endif %}class="num">{{ band.totalusdc|floatformat:"2g" }} USD at {{ band.pricealgo|floatformat:"6g" }} USD/ALGO</span>
+        <span id="id-band-usd" {% if oob %}hx-swap-oob="true" {% endif %}class="num">{% fiat_figure band.totalusdc fiat "2g" %} {{ fiat.code|default:"USD" }} at {% fiat_figure band.pricealgo fiat "6g" %} {{ fiat.code|default:"USD" }}/ALGO</span>
         {% endpartialdef bandusd %}
       </div>
       <p class="total-note">Everything this address holds.</p>

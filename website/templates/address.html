@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% load static %}{% load core_extras %}{% load partials %}
+{% extends 'base.html' %}{% load static %}{% load core_extras %}{% load partials %}{% load l10n %}
 {% comment %}
   The address page, design 1.
 
@@ -24,6 +24,8 @@
 {% endif %}
 {% endblock %}
 {% block content %}
+{% comment %} The reader's fiat for fiat.js; the cache key carries `fiat.code`. {% endcomment %}
+<span hidden data-fiat="{{ fiat.code|default:'USD' }}" data-fiat-rate="{{ fiat.rate|default:1|unlocalize }}"></span>
 <div id="id-swap-entry-container" hx-get="{% url 'swap_entry' url_value %}" hx-trigger="load" hx-swap="innerHTML"></div>
 {{ asachart|json_script:"asachart" }}{{ nftchart|json_script:"nftchart" }}{{ ratiochart|json_script:"ratiochart" }}{{ distchart|json_script:"distchart" }}{{ nftfloorchart|json_script:"nftfloorchart" }}{{ consolidated|json_script:"consolidated" }}
 {% with total=account.total band=account.total system=account.system_info account_info=account.account_info %}
@@ -65,7 +67,7 @@
       data-holdings="{{ live_holdings }}">
     <span class="sr-only">Total value:</span>
     {% partialdef classicband inline %}
-    <span id="id-band-classic" {% if oob %}hx-swap-oob="true" {% endif %}class="tooltip" data-tip='{{ band.totalusdc|floatformat:"2g" }} USD ({{ band.pricealgo|floatformat:"2g" }} USD/ALGO)'>
+    <span id="id-band-classic" {% if oob %}hx-swap-oob="true" {% endif %}class="tooltip" data-tip='{% fiat_figure band.totalusdc fiat "2g" %} {{ fiat.code|default:"USD" }} ({% fiat_figure band.pricealgo fiat "2g" %} {{ fiat.code|default:"USD" }}/ALGO)'>
       {% comment %} **Quoted, every one of them.** An unquoted attribute whose
          value renders empty swallows the next one as its value rather than
          becoming blank, which costs two figures for one missing key.
@@ -77,7 +79,7 @@
     </span>
     {% endpartialdef classicband %}
     {% partialdef classictip inline %}
-    <span id="id-total-tip" {% if oob %}hx-swap-oob="true" {% endif %}class="sr-only">{{ band.totalusdc|floatformat:"2g" }} USD ({{ band.pricealgo|floatformat:"2g" }} USD/ALGO)</span>
+    <span id="id-total-tip" {% if oob %}hx-swap-oob="true" {% endif %}class="sr-only">{% fiat_figure band.totalusdc fiat "2g" %} {{ fiat.code|default:"USD" }} ({% fiat_figure band.pricealgo fiat "2g" %} {{ fiat.code|default:"USD" }}/ALGO)</span>
     {% endpartialdef classictip %}
   </h1>
 
@@ -255,7 +257,7 @@
       <label class="inline-flex cursor-pointer items-center gap-2">
         <span>ALGO</span>
         <input class="toggle toggle-sm" type="checkbox">
-        <span>USD</span>
+        <span>{{ fiat.code|default:"USD" }}</span>
       </label>
     </div>
   </div>

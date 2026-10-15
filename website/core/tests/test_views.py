@@ -1114,6 +1114,34 @@ class ProfileSettingsPageTest(TestCase):
             )
         self.assertTemplateUsed(response, "profile_settings.html")
 
+    def test_settings_page_fiat_post_saves_for_a_reader_on_no_tier(self):
+        assert self.user.profile.permission == 0
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_settings"), data={"section": "fiat", "fiat": "EUR"}
+            )
+        self.assertRedirects(response, reverse("profile_settings"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.fiat == "EUR"
+        tags = [m.extra_tags for m in get_messages(response.wsgi_request)]
+        assert tags == ["fiat"]
+
+    def test_settings_page_fiat_post_invalid_rerenders_template(self):
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_settings"), data={"section": "fiat", "fiat": "XYZ"}
+            )
+        self.assertTemplateUsed(response, "profile_settings.html")
+        assert "fiat" in response.context["fiat_form"].errors
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.fiat == "USD"
+
+    def test_settings_page_renders_the_fiat_section(self):
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+        assert 'id="id-section-fiat"' in response.content.decode()
+        assert response.context["fiat_form"].instance == self.user.profile
+
     def test_settings_page_liverefresh_post_saves_for_entitled_user(self):
         """**Opt-in, and off by default even for a reader who may have it.**
 
@@ -2110,3 +2138,25 @@ class CanPollLiverefreshTest(TestCase):
                 _can_poll_liverefresh(self.user, self.addresses)
 
         self.assertIn("real-time refresh unavailable", captured.output[0])
+
+
+class TestSwapEntryFiat:
+    """The swap entry renders the live log, so it carries the reader's fiat."""
+
+    def test_swap_entry_context_carries_the_readers_fiat(self, mocker):
+        from django.contrib.auth.models import AnonymousUser
+        from django.test import RequestFactory
+
+        from core.views import SwapEntryView
+
+        fiat = {"code": "EUR", "rate": 0.5, "symbol": "€"}
+        mocked = mocker.patch("core.views.fiat_for_user", return_value=fiat)
+        view = SwapEntryView()
+        view.request = RequestFactory().get("/")
+        view.request.user = AnonymousUser()
+        view.args, view.kwargs = ("A" * 58,), {}
+
+        context = view.get_context_data()
+
+        assert context["fiat"] is fiat
+        mocked.assert_called_once_with(view.request.user)

@@ -347,6 +347,26 @@ describe("what a payload's numbers mean", () => {
     window.localStorage.removeItem("cur");
   });
 
+  test("a reader whose fiat is EUR sees the charts in EUR", () => {
+    mountHeader({ total: 1000, nft: 0, rate: 0.25 });
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      '<span hidden data-fiat="EUR" data-fiat-rate="0.5"></span>'
+    );
+    window.localStorage.setItem("cur", "USD");
+    const { chart, slices, scaleFor } = load();
+
+    const el = chart(
+      "Allocation",
+      slices(chartData(["A"], [100], ["#1"])),
+      scaleFor({ total: "everything" }),
+    );
+
+    expect(el.querySelector(".donut-total").textContent).toBe("125.00");
+    expect(el.querySelector(".donut-unit").textContent).toBe("EUR");
+    window.localStorage.removeItem("cur");
+  });
+
   test("chart figures are two decimals, the same as the rows they describe", () => {
     // A legend entry and the asset row it came from are one figure shown
     // twice. This file used to carry `toolbar.js`'s widening rule and has to

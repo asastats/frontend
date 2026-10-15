@@ -3659,3 +3659,94 @@ hooks with theme variables only. `style.tw.css` was rebuilt.
 Below 640px each `pnl-table` row is a card: the asset name heads it and every
 cell is a line labelled from its `data-label`. Text cells (`pnl-text`) align
 left in the wide table.
+
+## website/static/css/input.css — P&L table cards below 1024px (2026-10-14)
+
+The P&L table has up to twelve unwrapped columns and needs about 1,100px.
+Cards started at 640px, so mid-size screens got a clipped, sideways-scrolling
+table. Cards now start below 1024px and sit in an `auto-fill` grid
+(minimum 19rem), so a 900px screen shows two across. Checked by screenshotting
+a saved OGRUN page in headless Chromium at 900 and 1200px. Above 1024px the
+wrapper still scrolls if a Cluster table with long pool names does not fit.
+
+## core/models.py, core/forms.py, core/views.py, utils/fiat.py, static/js/fiat.js — the reader's fiat (2026-10-15)
+
+Phase F2 of `p-l/FIAT-PLAN.md` (workspace root). `Profile.fiat` (default "USD")
+holds the fiat a signed-in reader sees instead of USD. It is chosen in a new
+"Currency" section of the settings page that every authenticated reader may
+use, with no tier check (user decision, 2026-10-14). The model field has no
+`choices`: `settings.FIAT_CURRENCIES` feeds the form, so adding a currency needs
+no migration. `Profile.currency` (default "ALGO", read nowhere) is left as it is,
+by the user's decision.
+
+The engine converts USD with ECB daily rates (engine `pricer/fiat.py`) and
+publishes the latest rate per code to this site's Redis as `fxrt`.
+`utils.fiat.latest_rates` reads that key at most every five minutes per process.
+A failed read keeps the last good rates. `fiat_for_user` answers USD for
+anonymous readers, for unknown codes and whenever the rate is missing, so a
+figure is never labelled EUR while still in USD.
+
+**No per-reader fiat in `base.html`.** The plan said to stamp `data-fiat` on
+`<body>`. `BaseStaticPageView` and the address page are `cache_page`d for 90
+minutes and shared between readers, so the first reader's fiat would be served
+to everyone. The attributes go only on markup that is rendered per reader or
+whose cache key carries the fiat (the address page's key gets a `fiat-<code>`
+part in F3). `fiat.js` reads the first `[data-fiat]` element and answers USD
+when there is none. It loads from `base.html` before the `otherfooter` page
+scripts.
+
+The `cur` localStorage key keeps "ALGO" or a fiat code. `Fiat.isFiatSide` reads
+anything but "ALGO" as the fiat side, so a stored "USD" keeps working for a
+reader who later picks EUR, with no migration of browser state.
+
+## core/views.py, templates/address*.html, static/js/address.js, toolbar.js, dynamic.js — the address page in the reader's fiat (2026-10-15)
+
+Fiat F3 (`p-l/FIAT-PLAN.md`). The engine still sends ALGO figures, the ALGO per
+USD price (`priceusdc`, the `data-price` attribute) and USD totals. The page
+converts them to the reader's fiat with the rate on a hidden
+`[data-fiat][data-fiat-rate]` span at the top of the page's content.
+
+**Cache key.** `BaseAddressView.dispatch` resolves `fiat_for_user` next to the
+layout and adds `-fiat-<code>-` to the `cache_page` key prefix. Readers on one
+fiat still share an entry. The rate inside an entry can be up to `CACHE_TTL`
+(90 minutes) old, which is immaterial for a daily ECB rate. Every USD reader's
+key changed with this, so each address page misses once after the deploy.
+
+**`{% fiat_figure amount fiat "2g" %}`, not a filter.** Django renders a missing
+filter *input* as `string_if_invalid`, but raises `VariableDoesNotExist` for a
+missing filter *argument* and the page becomes a 500. The live-refresh fragments
+render the same partials from an engine payload that may lack `pricealgo` (older
+engine), and other include paths may have no `fiat`. So neither value may be a
+filter argument. A `simple_tag` resolves its arguments leniently, so both may be
+missing: no `fiat` gives USD, no amount gives "". This was found when
+`liverefresh`'s older-engine test failed on `{{ fiat|in_fiat:band.pricealgo }}`.
+The `in_fiat` filter stays, for an input that is always present.
+
+**JS.** Everything that divided an ALGO figure by `price` to get USD now calls
+`algoToFiat` (address.js), and `rate()` in toolbar.js is fiat per ALGO.
+`dataset.total * price` (USD to ALGO) is left alone. Units come from `Fiat.code()`.
+A stored `cur` of "USD" is the fiat side for an EUR reader (`Fiat.isFiatSide`).
+The switch stores the reader's code. `test_helpers.js` loads `fiat.js`
+globally, as `base.html` does.
+
+## static/js/consolidated.js — the historic snapshot's fiat (2026-10-15)
+
+`consolidated.js` serves the historic widget's consolidated view (key `hcur`).
+Its figures belong to the snapshot shown, so it converts at the snapshot's own
+date's rate (`data-snapshot-rate` on `.pricetip`, widgets logbook) rather than
+`Fiat.rate()`, which is today's. Without that attribute, or without `fiat.js`,
+it shows USD.
+
+## templates/snippets/dynamic/livelog.html, core/views.py — the live log in the reader's fiat (2026-10-15)
+
+Fiat F6 (`p-l/FIAT-PLAN.md`). The engine sends each live-log event's `usd`
+figure, worked out at that block's ALGO price. The log shows it in the reader's
+fiat through `{% fiat_figure usd fiat "2g" %}` at the latest ECB rate, labelled
+with `fiat.code`. That covers ALGO price moves and USD-basis asset price moves
+(decision Q6): within a day the EUR move equals the USD move, and only the
+16:00 CET rate update separates them. The class names `livelog-usd` and
+`livelog-algo` and the shell's `data-cur="USD"` are kept: the CSS and
+`liverefresh.js` bind to them, and "USD" there means "the fiat side". Rows
+restored on load render in `_swap_entry.html`, which is per reader and never
+cached, so `SwapEntryView` puts `fiat` in its context. Live rows get it from the
+liverefresh fragment view.

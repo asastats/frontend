@@ -93,6 +93,10 @@ class TestProfileModel:
         profile = Profile()
         assert profile.currency == "ALGO"
 
+    def test_profile_model_default_fiat_for_profile(self):
+        profile = Profile()
+        assert profile.fiat == "USD"
+
     def test_profile_model_default_api_tokens_valid_from_for_profile(self):
         profile = Profile()
         assert profile.api_tokens_valid_from is None

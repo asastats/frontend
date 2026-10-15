@@ -507,6 +507,8 @@ class TestBaseAddressViewGetContextData:
             # asked next -- see `core/tests/test_address_layout.py`.
             "layout",
             "compact",
+            # Keyed too: the entry name carries `fiat-<code>`.
+            "fiat",
             "live_holdings",
         }
         assert set(context.keys()) == expected

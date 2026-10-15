@@ -187,11 +187,11 @@
   }
 
   /**
-   * @returns {string} the currency the page is showing, "ALGO" or "USD".
+   * @returns {string} the currency the page is showing, "ALGO" or the reader's fiat.
    */
   function currency() {
     try {
-      return window.localStorage.getItem("cur") === "USD" ? "USD" : "ALGO";
+      return Fiat.isFiatSide(window.localStorage.getItem("cur")) ? Fiat.code() : "ALGO";
     } catch (error) {
       // A browser refusing storage is not a reason to draw no charts.
       return "ALGO";
@@ -205,7 +205,7 @@
    * @returns {string} the formatted number.
    */
   function money(algo) {
-    var value = currency() === "USD" ? algo * headline("pricealgo") : algo;
+    var value = currency() !== "ALGO" ? algo * headline("pricealgo") * Fiat.rate() : algo;
     if (!isFinite(value)) value = 0;
     return value.toLocaleString("en-US", {
       minimumFractionDigits: 2,

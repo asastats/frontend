@@ -123,7 +123,7 @@
         nft: batches(stored.more && stored.more.nft),
       },
       // Read from their own keys, not from this address's view. See SHARED.
-      ccy: settings.ccy === "USD" ? "USD" : "ALGO",
+      ccy: Fiat.isFiatSide(settings.ccy) ? Fiat.code() : "ALGO",
       nonft: settings.nonft === "y",
       refresh: settings.refresh === "y",
     };
@@ -210,12 +210,12 @@
   }
 
   /**
-   * @returns {number} USD per ALGO, from the header's own data attributes.
+   * @returns {number} the reader's fiat per ALGO: the header's USD per ALGO times the rate.
    */
   function rate() {
     var head = document.querySelector(".dynamic-page .pricetip");
     var value = head ? parseFloat(head.getAttribute("data-pricealgo")) : NaN;
-    return isFinite(value) ? value : 0;
+    return isFinite(value) ? value * Fiat.rate() : 0;
   }
 
   /**
@@ -225,7 +225,7 @@
    * @returns {string} the formatted number, with no unit.
    */
   function fmt(algo) {
-    var value = state.ccy === "USD" ? algo * rate() : algo;
+    var value = state.ccy !== "ALGO" ? algo * rate() : algo;
     return value.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
@@ -807,16 +807,17 @@
     var algo = num(head, "data-totalwnft");
     if (state.nonft) algo -= num(head, "data-totalnft");
 
-    var usd = algo * rate();
-    var inChosen = state.ccy === "USD" ? usd : algo;
-    var other = state.ccy === "USD" ? algo : usd;
+    var fiat = algo * rate();
+    var inChosen = state.ccy !== "ALGO" ? fiat : algo;
+    var other = state.ccy !== "ALGO" ? algo : fiat;
+    var otherUnit = state.ccy !== "ALGO" ? "ALGO" : Fiat.code();
 
     // The unit goes *inside* this element: it is written wholesale, and a
     // sibling would survive the write and read "216.30 USD ALGO".
     head.textContent = plain(inChosen) + " " + state.ccy;
     head.setAttribute(
       "data-tip",
-      plain(other) + " " + (state.ccy === "USD" ? "ALGO" : "USD")
+      plain(other) + " " + otherUnit
     );
 
     var sub = document.querySelector(".dynamic-page .total-sub .num");
@@ -824,13 +825,15 @@
       sub.textContent =
         plain(other) +
         " " +
-        (state.ccy === "USD" ? "ALGO" : "USD") +
+        otherUnit +
         " at " +
         rate().toLocaleString("en-US", {
           minimumFractionDigits: 6,
           maximumFractionDigits: 6,
         }) +
-        " USD/ALGO";
+        " " +
+        Fiat.code() +
+        "/ALGO";
     }
 
     var note = document.querySelector(".dynamic-page .total-note");

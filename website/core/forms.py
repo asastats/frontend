@@ -2,6 +2,7 @@
 
 from algosdk.constants import ADDRESS_LEN
 from captcha.fields import CaptchaField
+from django.conf import settings
 from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -379,6 +380,24 @@ class ProfileLiveRefreshForm(ModelForm):
     class Meta:
         model = Profile
         fields = ("live_refresh",)
+
+
+class ProfileFiatForm(ModelForm):
+    """Form for the fiat shown instead of USD; open to every authenticated reader."""
+
+    class Meta:
+        model = Profile
+        fields = ("fiat",)
+
+    def __init__(self, *args, **kwargs):
+        """Populate the select from `settings.FIAT_CURRENCIES`."""
+        super().__init__(*args, **kwargs)
+        self.fields["fiat"] = ChoiceField(
+            choices=[(code, code) for code in settings.FIAT_CURRENCIES],
+            required=True,
+            label="Currency",
+            widget=Select(attrs={"class": "select"}),
+        )
 
 
 class ProfileLayoutForm(ModelForm):
