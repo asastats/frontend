@@ -5013,6 +5013,19 @@
 }
 .pnl-table td.pnl-text { text-align: left; }
 .pnl-asset > .pnl-link { display: inline-block; margin-bottom: 0.5rem; font-size: 0.85rem; }
+.pnl-tabs { margin-bottom: 1rem; }
+.pnl-settings { display: flex; flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+.pnl-settings h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; }
+.pnl-settings form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.pnl-settings select {
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-base-300);
+  border-radius: var(--radius-field, 0.25rem);
+  background: var(--color-base-100);
+  color: var(--color-base-content);
+}
+.pnl-settings p { margin: 0 0 0.75rem; }
 
 @media (max-width: 640px) {
   .pnl-page-title { font-size: 1.5rem; }

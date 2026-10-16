@@ -3794,3 +3794,11 @@ whether others sharing it saw the P&L button. The key is now
 gets one address, so the bit only ever varies together with the export gate,
 and it separates nobody yet. It is there so the key keeps matching the markup
 when the bands change.
+
+## website/static/css/input.css - P&L Settings tab (2026-10-16)
+
+`.pnl-tabs` and `.pnl-settings` for the P&L widget's new Settings tab (widgets
+`docs/logbook.md`, `inhouse/pnl/templates/pnl/index.html`, 2026-10-16). The
+tabs reuse `.pnl-currency`'s pill links. `style.tw.css` was rebuilt with
+`build-tailwind.sh`; a rebuild of the previous `input.css` first matched the
+committed file exactly.
