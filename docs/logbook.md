@@ -3777,3 +3777,20 @@ shows within a minute.
 render the address page with only `check_export_status` mocked, functional
 tests included, and without the stub each would call the real engine and pass
 on the fallback without anyone noticing.
+
+### Correction, same day: the P&L state lives on the gated button
+
+The band and alert above were wrong. They showed "Your profit and loss report
+is being processed." to everyone, logged-out visitors included, and in the
+classic design as a full-width alert. The state now changes only the P&L
+button, which is already behind `pnl_access`: outlined "Profit and loss:
+processing" while it runs, and filled "Profit and loss ready" until a table is
+seen. Both notices are gone.
+
+The same report exposed a cache leak: `_entitlement_key` folded in the export
+and historic gates but not `pnl_access`, so whoever filled an entry decided
+whether others sharing it saw the P&L button. The key is now
+`e{export}h{historic}p{pnl}`. Under today's P&L bands every signed-in reader
+gets one address, so the bit only ever varies together with the export gate,
+and it separates nobody yet. It is there so the key keeps matching the markup
+when the bands change.

@@ -113,7 +113,7 @@
         <a class="btn btn-outline btn-sm" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
         {% endif %}
         {% if user.profile|pnl_access:historic.1 %}
-        <a class="btn btn-sm {% if pnl_ready %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'pnl' historic.0 %}" target="_blank" title="{% if pnl_ready %}Profit and loss report is ready{% else %}Profit and loss for address(es){% endif %}">{% if pnl_ready %}Profit and loss ready{% else %}Profit and loss{% endif %}</a>
+        <a class="btn btn-sm {% if pnl_ready %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'pnl' historic.0 %}" target="_blank" title="{% if pnl_ready %}Profit and loss report is ready{% elif processing_pnl %}Your profit and loss report is being processed{% else %}Profit and loss for address(es){% endif %}">{% if pnl_ready %}Profit and loss ready{% elif processing_pnl %}Profit and loss: processing{% else %}Profit and loss{% endif %}</a>
         {% endif %}
         {% if user.profile|export_access:historic.1 %}
         <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-outline{% endif %}"
@@ -129,7 +129,7 @@
         <a class="btn btn-outline btn-sm" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
         {% endif %}
         {% if user.profile|pnl_access:1 %}
-        <a class="btn btn-sm {% if pnl_ready %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'pnl' address.0 %}" target="_blank" title="{% if pnl_ready %}Profit and loss report is ready{% else %}Profit and loss for address(es){% endif %}">{% if pnl_ready %}Profit and loss ready{% else %}Profit and loss{% endif %}</a>
+        <a class="btn btn-sm {% if pnl_ready %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'pnl' address.0 %}" target="_blank" title="{% if pnl_ready %}Profit and loss report is ready{% elif processing_pnl %}Your profit and loss report is being processed{% else %}Profit and loss for address(es){% endif %}">{% if pnl_ready %}Profit and loss ready{% elif processing_pnl %}Profit and loss: processing{% else %}Profit and loss{% endif %}</a>
         {% endif %}
         {% if user.profile|export_access:1 %}
         <a class="btn btn-sm {% if report_available and not report_downloaded %}btn-primary{% else %}btn-outline{% endif %}"
@@ -152,11 +152,6 @@
   {% if system.information %}
     <div class="alert alert-success mx-auto mt-4 max-w-2xl" role="status">
       <span>{{ system.information }}</span>
-    </div>
-  {% endif %}
-  {% if processing_pnl %}
-    <div class="alert alert-info mx-auto mt-4 max-w-2xl" role="status">
-      <span>Your profit and loss report is being processed.</span>
     </div>
   {% endif %}
 </header>

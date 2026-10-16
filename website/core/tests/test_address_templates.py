@@ -656,14 +656,16 @@ class TestTheExportActionLooksLikeOne:
                     assert "btn-primary" in node.classes
                     assert node.text().strip() == "Profit and loss ready"
 
-    def test_a_running_pnl_report_is_announced(self, sample_payload):
+    def test_a_running_pnl_report_shows_on_its_button_only(self, sample_payload):
         context = _build_context(sample_payload)
         for template in self.TEMPLATES:
-            assert "profit and loss report is being processed" not in render_to_string(
-                template, context
-            )
             html = render_to_string(template, {**context, "processing_pnl": True})
-            assert "Your profit and loss report is being processed." in html
+            links = self._pnl_links(html)
+            assert links
+            for node in links:
+                assert "btn-outline" in node.classes
+                assert node.text().strip() == "Profit and loss: processing"
+            assert html.count("being processed") == len(links)
 
 
 class TestTheLoadMoreControlKeepsItsPromise:

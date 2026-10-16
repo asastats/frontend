@@ -459,6 +459,22 @@ class TestCacheIsKeyedOnEntitlementToo:
         assert "Historic data" not in free
         assert "Historic data" in subscriber
 
+    def test_the_pnl_gate_is_in_the_key(self, mocker):
+        """The P&L button and its processing or ready state sit behind a third gate."""
+        from core.views import BaseAddressView
+
+        view = BaseAddressView()
+        view.addresses = ADDRESS
+        request = mocker.MagicMock()
+        mocker.patch("core.views.export_access", return_value=True)
+        mocker.patch("core.views.historic_access", return_value=False)
+        gate = mocker.patch("core.views.pnl_access", return_value=True)
+
+        assert view._entitlement_key(request) == "e1h0p1"
+        gate.return_value = False
+        assert view._entitlement_key(request) == "e1h0p0"
+        gate.assert_called_with(request.user.profile, 1)
+
 
 @pytest.mark.django_db
 class TestCacheIsKeyedOnTheHoldings:

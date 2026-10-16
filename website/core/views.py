@@ -72,7 +72,7 @@ from core.permissions import (
     CanAddBundleNameMixin,
     CanUseBundleNamesMixin,
 )
-from core.templatetags.core_extras import export_access, historic_access
+from core.templatetags.core_extras import export_access, historic_access, pnl_access
 from utils.cache import cached_live_holdings
 from utils.charts import (
     prepare_base_charts_from_serialized_data,
@@ -483,8 +483,8 @@ class BaseAddressView(TemplateView):
         """Return a token separating readers whose page differs by entitlement.
 
         The layout is not the only per-reader thing rendered into this page: the
-        header carries a Historic data link and a CSV export link, each behind
-        its own gate, and neither is part of the path or of any header. Keyed on
+        header carries Historic data, Profit and loss and CSV export links, each
+        behind its own gate, and neither is part of the path or of any header. Keyed on
         the layout alone, an anonymous visitor and a subscriber share one entry
         -- both resolve to ``classic`` -- so whoever asks for an address first
         decides what everyone else sees until it expires. An anonymous request
@@ -493,8 +493,8 @@ class BaseAddressView(TemplateView):
 
         Folded into the prefix rather than solved with ``Vary``, for the reason
         given in ``dispatch``: keying on the cookie would give every session its
-        own entry and lose the sharing this cache exists for. Two booleans add
-        at most four entries per address per layout, and readers who see the
+        own entry and lose the sharing this cache exists for. Three booleans add
+        at most eight entries per address per layout, and readers who see the
         same page still share one.
 
         The gates are the template's own filters rather than a reimplementation
@@ -518,9 +518,10 @@ class BaseAddressView(TemplateView):
         """
         profile = getattr(getattr(request, "user", None), "profile", None)
         size = len(self.addresses.split())
-        return "e{}h{}".format(
+        return "e{}h{}p{}".format(
             int(bool(export_access(profile, size))),
             int(bool(historic_access(profile, size))),
+            int(bool(pnl_access(profile, size))),
         )
 
     def get_template_names(self):
