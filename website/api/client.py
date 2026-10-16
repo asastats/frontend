@@ -223,6 +223,19 @@ def export_status(bundle):
     return _request("GET", f"/api/v2/exports/{canonical_bundle(bundle)}/status/").json()
 
 
+def pnl_state(bundle):
+    """Return the P&L widget's state for ``bundle``, for the address page.
+
+    ``{"state": "processing" | "ready" | None, "seen": bool}``; ``bundle`` is the
+    hash the P&L widget keys by (:func:`api.widgets.bundle_and_addresses_from_path`).
+
+    :param bundle: P&L bundle hash
+    :type bundle: str
+    :return: dict
+    """
+    return _request("GET", f"/api/v2/pnl/{bundle}/state/").json()
+
+
 def download_export(bundle):
     """Return the export archive bytes (streamed) for ``bundle``.
 

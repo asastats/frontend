@@ -41,6 +41,7 @@ from api.client import (
     fetch_price,
 )
 from api.main import fetch_and_serialize_account
+from api.widgets import bundle_and_addresses_from_path
 from core.context_processors import load_typefaces
 from core.forms import (
     DeactivateProfileForm,
@@ -55,6 +56,7 @@ from core.forms import (
 )
 from core.helpers import (
     check_export_status,
+    check_pnl_state,
     check_forbidden_addresses,
     may_view_bundle,
     prepare_tax_context,
@@ -555,6 +557,13 @@ class BaseAddressView(TemplateView):
         elif tax_data.get("tax_report"):
             context["report_available"] = True
             context["report_downloaded"] = tax_data.get("downloaded", False)
+
+        pnl = check_pnl_state(bundle_and_addresses_from_path(url_value)[0])
+        if pnl.get("state") == "processing":
+            context["processing_pnl"] = True
+
+        elif pnl.get("state") == "ready" and not pnl.get("seen"):
+            context["pnl_ready"] = True
 
         context["banner"] = weighted_randomized_banner()
         context["url_value"] = url_value

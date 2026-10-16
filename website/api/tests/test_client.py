@@ -16,6 +16,7 @@ from api.client import (
     fetch_collection_items,
     fetch_price,
     fetch_serialized_account,
+    pnl_state,
     reset_export,
     start_export,
 )
@@ -447,6 +448,13 @@ class TestApiClientFunctions:
         returned = export_status(bundle)
         assert returned == mocked_request.return_value.json.return_value
         mocked_request.assert_called_once_with("GET", f"/api/v2/exports/{bundle}/status/")
+
+    # # pnl_state
+    def test_api_client_pnl_state_functionality(self, mocker):
+        mocked_request = mocker.patch("api.client._request")
+        returned = pnl_state("PNLBUNDLE")
+        assert returned == mocked_request.return_value.json.return_value
+        mocked_request.assert_called_once_with("GET", "/api/v2/pnl/PNLBUNDLE/state/")
 
     # # download_export
     def test_api_client_download_export_functionality(self, mocker):

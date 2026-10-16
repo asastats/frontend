@@ -3750,3 +3750,30 @@ with `fiat.code`. That covers ALGO price moves and USD-basis asset price moves
 restored on load render in `_swap_entry.html`, which is per reader and never
 cached, so `SwapEntryView` puts `fiat` in its context. Live rows get it from the
 liverefresh fragment view.
+
+## website/core/views.py — P&L state on the address page (2026-10-16)
+
+Requested: tell readers on the address page when their profit and loss report
+is done, the way a built CSV export turns its button primary. `BaseAddressView`
+asks `check_pnl_state` for the bundle hash the P&L widget keys by
+(`bundle_and_addresses_from_path(url_value)`, so an address maps to its
+one-address bundle). That reads the engine's `pnl/<bundle>/state/` with the
+website key (engine `docs/logbook.md`, 2026-10-16), and an engine failure
+gives `{}`. The view resolves the bundle and passes it in, because `core.helpers`
+importing `api.widgets` is a cycle (`api.widgets` → `api.helpers` →
+`core.helpers`).
+
+- `processing_pnl`: "Your profit and loss report is being processed." (design
+  1 as an info alert under the header, design 2 as a `band-note` beside the tax
+  note).
+- `pnl_ready` (priced, and no table shown since): the P&L button turns
+  `btn-primary` and reads "Profit and loss ready".
+
+Like the tax state, this is a property of the addresses, not of the reader, so
+it may sit in the shared page cache. `CACHE_TTL_ADDRESS` is 60 s, so a change
+shows within a minute.
+
+`conftest.py` stubs `core.helpers.pnl_state` for every test. Dozens of tests
+render the address page with only `check_export_status` mocked, functional
+tests included, and without the stub each would call the real engine and pass
+on the fallback without anyone noticing.

@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.http import Http404
 
 import core.helpers
+from api.client import BackendError
 from core.helpers import (
     BUNDLE_SEPARATION_CHARS,
     INVALID_ADDRESS_TEXT,
@@ -25,6 +26,7 @@ from core.helpers import (
     _strip_address,
     addresses_from_raw,
     check_export_status,
+    check_pnl_state,
     check_forbidden_addresses,
     check_public_bundles,
     context_with_consolidated_data,
@@ -337,6 +339,18 @@ class TestCoreHelpersTaxClientSideFunctions:
         returned = check_export_status(url_value)
         assert returned == mocked_export.return_value
         mocked_export.assert_called_once_with(url_value)
+
+    # # check_pnl_state
+    def test_core_helpers_check_pnl_state_functionality(self, mocker):
+        mocked_state = mocker.patch(
+            "core.helpers.pnl_state", return_value={"state": "ready", "seen": True}
+        )
+        assert check_pnl_state("BUNDLE") == {"state": "ready", "seen": True}
+        mocked_state.assert_called_once_with("BUNDLE")
+
+    def test_core_helpers_check_pnl_state_when_the_engine_fails(self, mocker):
+        mocker.patch("core.helpers.pnl_state", side_effect=BackendError("down"))
+        assert check_pnl_state("BUNDLE") == {}
 
     # # prepare_tax_context
     def test_core_helpers_prepare_tax_context_for_single_address(self, mocker):

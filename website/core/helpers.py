@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import Http404
 
-from api.client import export_status
+from api.client import BackendError, export_status, pnl_state
 from api.client import reset_export as _reset_export
 from api.client import start_export as _start_export
 from core.models import BundleName
@@ -214,6 +214,20 @@ def check_export_status(url_value):
     :return: dict
     """
     return export_status(url_value)
+
+
+def check_pnl_state(bundle):
+    """Return the P&L state for provided `bundle`, empty when the engine fails.
+
+    :param bundle: hash the P&L widget keys the addresses by
+    :type bundle: str
+    :return: dict
+    """
+    try:
+        return pnl_state(bundle)
+
+    except BackendError:
+        return {}
 
 
 def prepare_tax_context(context, url_value):

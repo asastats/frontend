@@ -30,3 +30,9 @@ def clear_cache():
     """
     cache.clear()
     yield
+
+
+@pytest.fixture(autouse=True)
+def no_pnl_state_request(mocker):
+    """Answer the address page's P&L state locally; see website/docs/logbook.md."""
+    return mocker.patch("core.helpers.pnl_state", return_value={})

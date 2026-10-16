@@ -634,6 +634,37 @@ class TestTheExportActionLooksLikeOne:
                 assert "btn-primary" in node.classes
                 assert "Download processed CSV" in node.text()
 
+    def _pnl_links(self, html):
+        return [
+            node for node in parse(html).select("a") if "/pnl/" in (node.get("href") or "")
+        ]
+
+    def test_a_ready_pnl_report_is_the_loud_one_until_seen(self, sample_payload):
+        for is_bundle in (True, False):
+            context = _build_context(sample_payload, is_bundle=is_bundle)
+            for template in self.TEMPLATES:
+                quiet = self._pnl_links(render_to_string(template, context))
+                assert quiet, f"{template} renders no P&L link"
+                for node in quiet:
+                    assert "btn-outline" in node.classes
+                    assert node.text().strip() == "Profit and loss"
+
+                ready = self._pnl_links(
+                    render_to_string(template, {**context, "pnl_ready": True})
+                )
+                for node in ready:
+                    assert "btn-primary" in node.classes
+                    assert node.text().strip() == "Profit and loss ready"
+
+    def test_a_running_pnl_report_is_announced(self, sample_payload):
+        context = _build_context(sample_payload)
+        for template in self.TEMPLATES:
+            assert "profit and loss report is being processed" not in render_to_string(
+                template, context
+            )
+            html = render_to_string(template, {**context, "processing_pnl": True})
+            assert "Your profit and loss report is being processed." in html
+
 
 class TestTheLoadMoreControlKeepsItsPromise:
     """What the fold is, and what the button under it says it will do.

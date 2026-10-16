@@ -357,6 +357,47 @@ class TestBaseAddressViewGetContextData:
         assert "report_available" not in context
         assert "report_downloaded" not in context
 
+
+    def test_sets_processing_pnl_while_pnl_runs(self, mocker):
+        self._patch_collaborators(mocker)
+        state = mocker.patch(
+            "core.views.check_pnl_state", return_value={"state": "processing"}
+        )
+        view = _build_view(args=(ADDRESS,))
+        view.addresses = ADDRESS
+        context = view.get_context_data()
+        assert context["processing_pnl"] is True
+        assert "pnl_ready" not in context
+        state.assert_called_once()
+
+    def test_sets_pnl_ready_until_seen(self, mocker):
+        self._patch_collaborators(mocker)
+        state = mocker.patch(
+            "core.views.check_pnl_state",
+            return_value={"state": "ready", "seen": False},
+        )
+        view = _build_view(args=(ADDRESS,))
+        view.addresses = ADDRESS
+        context = view.get_context_data()
+        assert context["pnl_ready"] is True
+        assert "processing_pnl" not in context
+        state.return_value = {"state": "ready", "seen": True}
+        context = view.get_context_data()
+        assert "pnl_ready" not in context
+
+    def test_asks_pnl_state_for_the_widgets_bundle(self, mocker):
+        self._patch_collaborators(mocker)
+        state = mocker.patch("core.views.check_pnl_state", return_value={})
+        resolve = mocker.patch(
+            "core.views.bundle_and_addresses_from_path", return_value=("PNLBUNDLE", "")
+        )
+        view = _build_view(args=(ADDRESS.lower(),))
+        view.addresses = ADDRESS
+        context = view.get_context_data()
+        resolve.assert_called_once_with(ADDRESS)
+        state.assert_called_once_with("PNLBUNDLE")
+        assert "processing_pnl" not in context
+        assert "pnl_ready" not in context
     def test_writes_banner(self, mocker):
         mocks = self._patch_collaborators(mocker)
         view = _build_view(args=(ADDRESS,))
