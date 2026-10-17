@@ -3835,3 +3835,20 @@ request context and were fine; `500r.html` uses no variables.
 (widgets `docs/logbook.md`, `_pricing.html`, 2026-10-17). `style.tw.css` rebuilt
 with `build-tailwind.sh`; a rebuild of the previous `input.css` first matched
 the committed file.
+
+## website/widgethost/enforcement.py - an invalid address or unknown bundle in a widget URL (2026-10-17)
+
+Same bug as the address page's (entry above, `core/views.py`), in the widgets:
+`/widgets/historic/<invalid address>`, `/widgets/pnl/…`, and an unknown 40-character
+bundle hash raised a 500. Each widget's `test_func` calls
+`bundle_and_addresses_from_path`, whose `validate_bundle`/`validate_address` raise
+DRF's `ValidationError` (`api/helpers.py` imports it from `rest_framework`), and
+nothing between the mixin and Django caught it.
+
+`WidgetAccessMixin.get_test_func` now wraps the view's `test_func`: a Django or DRF
+`ValidationError` makes the check fail and is kept as `invalid_path`;
+`handle_no_permission` sends such a request to the index with that message
+("Invalid Algorand address!", "Bundle doesn't exist!") before any other refusal,
+signed in or not. Historic's and P&L's own `handle_no_permission` call `super()`
+first, so they need no change; the swap and alerts views get it too. Checked
+through the test client on both widgets' URLs.
