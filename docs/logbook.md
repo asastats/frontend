@@ -3802,3 +3802,29 @@ when the bands change.
 tabs reuse `.pnl-currency`'s pill links. `style.tw.css` was rebuilt with
 `build-tailwind.sh`; a rebuild of the previous `input.css` first matched the
 committed file exactly.
+
+## website/core/views.py - an invalid address in the URL; the 500 page's link (2026-10-17)
+
+`/IEDY3UI3X7SK7HCDRDRCRSULHWOT4Y6BNEGZGBJ3OD33LEBIYZS35Q6ZQQ` (58 characters,
+bad checksum) raised a 500 from `api.helpers.validate_address`. The root form
+rejects the same value with "Invalid Algorand address!", but
+`BaseAddressView.dispatch` took any 58-character value as an address and only
+checked it against the forbidden list. Since 2026-10-16 the page's P&L state
+call (`bundle_and_addresses_from_path`, commit `c5d9565`) validates the value,
+and its `ValidationError` was not caught. Before that the invalid value went
+on to the engine.
+
+`dispatch` now checks a single address with `is_valid_address` first, before
+the forbidden list, the cache and anything else, and renders `index.html` with
+`AddressForm` bound to the URL value, so the reader sees the form's own error,
+as `NameServiceView` does for a name it cannot resolve (status 200, like that
+view). A 40-character bundle hash keeps its redirect to the index when unknown.
+
+The 500 page's "Go to the home page" link and logo pointed at `href=""`:
+`custom_server_error` rendered `500.html` with no context, so `{{ WEBSITE_URL }}`
+was empty. It now passes `WEBSITE_URL` from settings explicitly. Context
+processors are deliberately not used there: the handler also serves Redis
+outages (`BusyLoadingError`, `ConnectionError`), and a processor that needs
+Redis or the database would fail again while rendering the error page. The
+other error pages (404, 401, 403_csrf) go through Django's handlers with a
+request context and were fine; `500r.html` uses no variables.

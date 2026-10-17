@@ -224,7 +224,10 @@ def custom_server_error(request, template_name="500.html"):
             "Server error 500 - %s - for path '%s'!" % (str(typ), request.path)
         )
     template = loader.get_template(template_name)
-    return HttpResponseServerError(template.render())
+    # no context processors here: they may need the Redis that just failed
+    return HttpResponseServerError(
+        template.render({"WEBSITE_URL": settings.WEBSITE_URL})
+    )
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -332,6 +335,22 @@ class NameServiceView(BaseNameServiceView):
         return render(self.request, "index.html", {"form": form})
 
 
+def _invalid_address(request, url_value):
+    """Render the index with the address form's own error for `url_value`.
+
+    :param request: Django request object
+    :type request: :class:`django.http.HttpRequest`
+    :param url_value: invalid 58-character value found in URL
+    :type url_value: str
+    :var form: address form bound to the URL value, so it carries the error
+    :type form: :class:`AddressForm`
+    :return: :class:`django.http.HttpResponse`
+    """
+    form = AddressForm(data={"address": url_value})
+    form.is_valid()
+    return render(request, "index.html", {"form": form})
+
+
 def _bundle_not_viewable(request):
     """Send a reader who may not view a large bundle back to the index, told why."""
     messages.error(request, BUNDLE_NOT_VIEWABLE_ERROR.format(MAX_BUNDLE_SIZE))
@@ -424,6 +443,9 @@ class BaseAddressView(TemplateView):
         :return: object
         """
         url_value = self.args[0].upper()
+        if len(url_value) > 50 and not is_valid_address(url_value):
+            return _invalid_address(request, url_value)
+
         check_forbidden_addresses(url_value)
 
         if len(url_value) > 50:

@@ -144,6 +144,35 @@ class TestCustomErrorHandlers:
             mocked_logger.assert_not_called()
 
 
+    def test_core_views_custom_server_error_links_to_the_website(self, settings):
+        settings.WEBSITE_URL = "https://www.example.com"
+        with mock.patch("core.views.sys.exc_info", return_value=(ValueError, None, None)):
+            returned = custom_server_error(RequestFactory().get("/x"))
+        assert returned.status_code == 500
+        assert b'<a class="action" href="https://www.example.com">' in returned.content
+
+
+@pytest.mark.django_db
+class TestAddressViewInvalidAddress:
+    """A 58-character value that is not an address gets the index form's error."""
+
+    INVALID = "IEDY3UI3X7SK7HCDRDRCRSULHWOT4Y6BNEGZGBJ3OD33LEBIYZS35Q6ZQQ"
+
+    def test_core_views_address_view_invalid_address_shows_form_error(self, client, mocker):
+        account = mocker.patch("core.views.fetch_and_serialize_account")
+        pnl = mocker.patch("core.views.check_pnl_state")
+        response = client.get(f"/{self.INVALID}")
+        assert response.status_code == 200
+        assert "Invalid Algorand address!" in response.content.decode()
+        assert [template.name for template in response.templates][0] == "index.html"
+        account.assert_not_called()
+        pnl.assert_not_called()
+
+    def test_core_views_address_view_lowercase_invalid_address(self, client):
+        response = client.get(f"/{self.INVALID.lower()}")
+        assert "Invalid Algorand address!" in response.content.decode()
+
+
 class BaseView:
     """Base helper class for testing custom views."""
 
