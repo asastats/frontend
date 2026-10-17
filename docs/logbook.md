@@ -3828,3 +3828,10 @@ outages (`BusyLoadingError`, `ConnectionError`), and a processor that needs
 Redis or the database would fail again while rendering the error page. The
 other error pages (404, 401, 403_csrf) go through Django's handlers with a
 request context and were fine; `500r.html` uses no variables.
+
+## website/static/css/input.css - P&L pricing progress bar (2026-10-17)
+
+`.pnl-pricing` lays out the pricing fragment's label and `<progress>` bar
+(widgets `docs/logbook.md`, `_pricing.html`, 2026-10-17). `style.tw.css` rebuilt
+with `build-tailwind.sh`; a rebuild of the previous `input.css` first matched
+the committed file.
