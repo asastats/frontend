@@ -3852,3 +3852,13 @@ nothing between the mixin and Django caught it.
 signed in or not. Historic's and P&L's own `handle_no_permission` call `super()`
 first, so they need no change; the swap and alerts views get it too. Checked
 through the test client on both widgets' URLs.
+
+## website/templates/subscriptions.html - Profit and loss widget lines (2026-10-17)
+
+The P&L widget was missing from the subscriptions page. One line per paid tier,
+after the historic widget's line, as agreed with the user on 2026-10-17
+(`p-l/PLAN.md` §4): Intro single address; Asastatser single address, periods,
+ALGO view, drill-down; Professional up to 5 addresses, MVE, chart, LP
+analytics; Cluster up to 20 addresses, CSV export, FIFO. The Free card lists no
+features, so its linked-address P&L is not mentioned there. Same classes as the
+neighbouring lines: no Tailwind rebuild needed.

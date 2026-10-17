@@ -5,8 +5,6 @@ from django.core.exceptions import PermissionDenied, ValidationError
 
 from widgethost.enforcement import WidgetAccessMixin
 
-INVALID = "IEDY3UI3X7SK7HCDRDRCRSULHWOT4Y6BNEGZGBJ3OD33LEBIYZS35Q6ZQQ"
-
 
 class TestWidgethostEnforcementWidgetAccessMixin:
     """Testing class for :py:class:`widgethost.enforcement.WidgetAccessMixin`."""
@@ -41,6 +39,9 @@ class TestWidgethostEnforcementWidgetAccessMixin:
         profile = mocker.MagicMock(permission=9)
         assert mixin._access_callback(profile, 3) is True
         mocked.assert_called_once_with(9, mixin.manifest.required_permission, 3)
+
+
+INVALID = "IEDY3UI3X7SK7HCDRDRCRSULHWOT4Y6BNEGZGBJ3OD33LEBIYZS35Q6ZQQ"
 
 
 class TestWidgethostEnforcementInvalidPath:
@@ -80,7 +81,6 @@ class TestWidgethostEnforcementInvalidPath:
     def test_widgethost_enforcement_handle_no_permission_functionality(self, mocker):
         mixin = WidgetAccessMixin()
         mixin.request = mocker.MagicMock()
-        mixin.invalid_path = None
         error = mocker.patch("widgethost.enforcement.messages.error")
         with pytest.raises(PermissionDenied):
             mixin.handle_no_permission()
