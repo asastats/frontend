@@ -3869,3 +3869,14 @@ neighbouring lines: no Tailwind rebuild needed.
 the P&L table's "Show N more" buttons and the "X is hidden … Undo" row.
 `.pnl-hide` sets the size of the Hide / Show again button. Widget side: widgets
 logbook, R4 (same date).
+
+## website/static/css/input.css — P&L update banner (2026-10-18)
+
+`.pnl-updating` is the banner over the last P&L table while an update runs;
+`.pnl-processed` the "Transactions processed … Update" line. Widget side:
+widgets logbook (same date).
+
+## website/static/css/input.css — P&L PDF report block (2026-10-18)
+
+`.pnl-report` holds "Prepare PDF report", its checkbox and then the download
+link, below the P&L table's CSV button.

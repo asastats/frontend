@@ -5004,6 +5004,11 @@
 .pnl-more-cell { text-align: left !important; padding-block: 0.6rem !important; }
 .pnl-more-cell form { display: inline; }
 .pnl-hide { font-size: 0.8rem; }
+.pnl-updating { margin: 0 0 0.5rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; background: var(--color-base-200); font-size: 0.875rem; }
+.pnl-processed { margin: 0 0 0.75rem; }
+.pnl-report { margin-top: 0.75rem; }
+.pnl-report form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem; }
+.pnl-report label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; }
 .pnl-alert summary { cursor: pointer; font-size: 0.8rem; color: var(--color-primary); }
 .pnl-alert form { display: inline; }
 .pnl-alert-option {
