@@ -115,3 +115,41 @@ class PnlUnprocessedBundleTest(TestCase):
         with self.assertRaises(BackendError) as raised:
             _pnl("pnl:process", "POST", "process/", json={"addresses": "NOTANADDRESS"})
         self.assertEqual(raised.exception.status_code, 400)
+
+
+#: The reader's own figures, as `PnlAccessMixin.overrides` sends them.
+OVERRIDES = {
+    "basis": [{"id": "A" * 52, "asset": "0", "amount": "50.5", "currency": "usd"}],
+    "values": [{"asset": "31566704", "amount": "1", "currency": "algo"}],
+    "own": ["2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"],
+}
+
+
+class PnlOverridesTest(TestCase):
+    """The engine reads the reader's own figures on every endpoint that takes them."""
+
+    def test_integration_pnl_overrides_accepted_everywhere(self):
+        for scope, suffix, payload, expected in (
+            ("pnl:evaluate", "evaluate/", EVALUATE, {"type": "show_update"}),
+            ("pnl:evaluate", "chart/", {"currency": "usd"}, {"type": "show_update"}),
+            ("pnl:asset", "asset/", {"asset": "0", **EVALUATE}, {"type": "show_update"}),
+            ("pnl:asset", "history/", {"currency": "usd"}, {"type": "show_update"}),
+            ("pnl:events", "updating/", EVALUATE, {"updating": None, "rows_at": 0}),
+            (
+                "pnl:evaluate",
+                "report/",
+                {**EVALUATE, "page": "a4", "full": False, "hidden": []},
+                {"type": "show_update"},
+            ),
+        ):
+            with self.subTest(suffix=suffix):
+                self.assertEqual(
+                    _pnl(scope, "POST", suffix, json={**payload, "overrides": OVERRIDES}),
+                    (200, expected),
+                )
+
+    def test_integration_pnl_overrides_refuses_a_bad_figure(self):
+        bad = {"values": [{"asset": "31566704", "amount": "-1", "currency": "usd"}]}
+        with self.assertRaises(BackendError) as raised:
+            _pnl("pnl:evaluate", "POST", "evaluate/", json={**EVALUATE, "overrides": bad})
+        self.assertEqual(raised.exception.status_code, 400)

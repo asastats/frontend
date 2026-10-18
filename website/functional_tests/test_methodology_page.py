@@ -6,7 +6,15 @@ from selenium.webdriver.common.by import By
 from .base import FunctionalTest
 
 #: Section ids other pages and the PDF may link to.
-SECTIONS = ("counted", "prices", "cost-basis", "incomplete", "coverage", "gaps")
+SECTIONS = (
+    "counted",
+    "prices",
+    "cost-basis",
+    "incomplete",
+    "own-figures",
+    "coverage",
+    "gaps",
+)
 
 
 class MethodologyPageTest(FunctionalTest):

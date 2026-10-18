@@ -3978,3 +3978,24 @@ payload from an engine that does not send it. Tests: unit (api), functional
 (`test_alerts_page.py`, the sample account given ids), integration
 (`test_api_integration.py` checks the live API's collections, needs the
 engine; `test_alerts_integration.py` fires a floor rule, Redis only).
+
+## website/functional_tests/test_pnl_overrides.py; website/integration_tests/test_pnl_integration.py (PnlOverridesTest); website/templates/methodology.html (#own-figures); website/static/css/input.css (.pnl-override) — R3 (2026-10-18)
+
+Functional tests drive the reader's own figures through the browser with the
+engine patched: a value for an unpriced asset, a deposit's cost set and
+removed in the drill-down, a server-side error shown in the form (the number
+input is turned into text to get past the browser's own check), and no forms
+for Intro. The integration tests send overrides to every engine endpoint that
+takes them for an unprocessed bundle (all answer as without them) and check
+that a negative figure is refused with 400; they need the dev engine, so they
+did not run here. The methodology page and the engine's `_methodology.html`
+gained a "Your own figures" section together, as their note asks.
+
+## website/functional_tests/test_pnl_overrides.py (PnlWalletsTest); integration own wallets; methodology; .pnl-wallets — R3 step two (2026-10-18)
+
+`PnlWalletsTest` reuses the override tests' setup (it subclasses them and
+blanks their tests): a wallet added in Settings is stored and sent as `own`,
+removed again, a bad address explained, no section for Intro. The integration
+payload gained an `own` address. The methodology's "Your own figures" section
+explains other wallets, and that both transfers still count as money out and
+in.
