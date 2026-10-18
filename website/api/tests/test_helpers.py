@@ -143,6 +143,8 @@ class TestApiHelpersUsdConversion:
         assert returned["total"] == {"x": 1}
         mocked_asaitems.assert_called_once_with(["i"], "1.5")
         mocked_nfts.assert_called_once_with(["c"], "1.5")
+        euro = convert_account_values_to_usd(serialized_data, "1.2", "EUR")
+        assert euro["account_info"]["values_in"] == "EUR"
 
 
 class TestApiHelpersExtractHelpers:

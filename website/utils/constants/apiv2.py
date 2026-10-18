@@ -24,6 +24,17 @@ ACCOUNT_PARAMETERS = [
         type=OpenApiTypes.BOOL,
         required=False,
     ),
+    # * values in another fiat
+    OpenApiParameter(
+        name="fiat",
+        description=(
+            "All values in this fiat currency (USD or EUR); EUR uses the latest "
+            "European Central Bank rate. Takes precedence over usd."
+        ),
+        location=OpenApiParameter.QUERY,
+        type=OpenApiTypes.STR,
+        required=False,
+    ),
     # * top valued items only
     OpenApiParameter(
         name="limit",
@@ -139,6 +150,17 @@ ACCOUNT_ASAS_PARAMETERS = [
         type=OpenApiTypes.BOOL,
         required=False,
     ),
+    # * values in another fiat
+    OpenApiParameter(
+        name="fiat",
+        description=(
+            "All values in this fiat currency (USD or EUR); EUR uses the latest "
+            "European Central Bank rate. Takes precedence over usd."
+        ),
+        location=OpenApiParameter.QUERY,
+        type=OpenApiTypes.STR,
+        required=False,
+    ),
     # * ASA items headers only
     OpenApiParameter(
         name="headers",
@@ -199,6 +221,17 @@ ACCOUNT_NFTS_PARAMETERS = [
         description="All values in USD.",
         location=OpenApiParameter.QUERY,
         type=OpenApiTypes.BOOL,
+        required=False,
+    ),
+    # * values in another fiat
+    OpenApiParameter(
+        name="fiat",
+        description=(
+            "All values in this fiat currency (USD or EUR); EUR uses the latest "
+            "European Central Bank rate. Takes precedence over usd."
+        ),
+        location=OpenApiParameter.QUERY,
+        type=OpenApiTypes.STR,
         required=False,
     ),
     # * NFT collections headers only

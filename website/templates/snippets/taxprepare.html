@@ -49,6 +49,8 @@
     </div>
   </fieldset>
 
+  <p class="text-xs text-base-content/60">Worth amounts in {{ export_fiat|default:"USD" }}{% if export_fiat and export_fiat != "USD" %}, converted from USD at the European Central Bank's rate of each transaction's day{% endif %}. Your currency is set in your profile.</p>
+
   {% if form.non_field_errors %}
   <p class="text-sm text-error">{{ form.non_field_errors }}</p>
   {% endif %}

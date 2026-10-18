@@ -1,5 +1,8 @@
 """Testing module for :py:mod:`api.main` module."""
 
+import pytest
+from rest_framework.exceptions import ValidationError
+
 from api.data import API_EXAMPLE_ADDRESS1, API_EXAMPLE_BUNDLE1
 from api.main import (
     account_entities,
@@ -11,6 +14,7 @@ from api.main import (
     processed_asaitems,
     processed_nftcollections,
     processed_nftitems,
+    values_price,
 )
 
 
@@ -283,7 +287,7 @@ class TestApMainFunctions:
         assert returned == mocked_convert.return_value
         mocked_top.assert_called_once_with(serialized_data, 10)
         mocked_headers.assert_called_once_with(mocked_top.return_value)
-        mocked_convert.assert_called_once_with(headers_serialized_data, pricealgo)
+        mocked_convert.assert_called_once_with(headers_serialized_data, pricealgo, "USD")
 
     # # processed_asaitems
     def test_api_main_processed_asaitems_for_no_query_params(self, mocker):
@@ -592,3 +596,41 @@ class TestApiMainResolvedNftLinks:
 
         payload = {"total": {}}
         assert resolved_nft_links(payload) is payload
+
+
+class TestApiMainValuesPrice:
+    """Testing class for :py:func:`api.main.values_price`."""
+
+    DATA = {"total": {"pricealgo": "0.2"}}
+
+    @pytest.mark.parametrize(
+        "query,expected",
+        [
+            ({}, None),
+            ({"usd": "false"}, None),
+            ({"usd": "true"}, ("USD", "0.2")),
+            ({"fiat": "usd"}, ("USD", "0.2")),
+            ({"fiat": "EUR", "usd": "true"}, ("EUR", "0.1")),
+        ],
+    )
+    def test_api_main_values_price(self, mocker, settings, query, expected):
+        settings.FIAT_CURRENCIES = ("USD", "EUR")
+        mocker.patch("api.main.latest_rates", return_value={"EUR": 0.5})
+        assert values_price(query, self.DATA) == expected
+
+    @pytest.mark.parametrize("query,rates", [({"fiat": "GBP"}, {}), ({"fiat": "EUR"}, {})])
+    def test_api_main_values_price_refuses(self, mocker, settings, query, rates):
+        settings.FIAT_CURRENCIES = ("USD", "EUR")
+        mocker.patch("api.main.latest_rates", return_value=rates)
+        with pytest.raises(ValidationError):
+            values_price(query, self.DATA)
+
+    def test_api_main_values_price_needs_no_total_without_a_fiat(self):
+        assert values_price({}, {}) is None
+
+    def test_api_main_processed_account_in_eur(self, mocker, settings):
+        settings.FIAT_CURRENCIES = ("USD", "EUR")
+        mocker.patch("api.main.latest_rates", return_value={"EUR": 0.5})
+        convert = mocker.patch("api.main.convert_account_values_to_usd")
+        processed_account(self.DATA, {"fiat": "EUR"})
+        convert.assert_called_once_with(self.DATA, "0.1", "EUR")

@@ -837,6 +837,14 @@ class TestExportView(BaseView):
         assert isinstance(mocked_prepare.call_args_list[0][0][0].get("form"), ExportForm)
         assert mocked_prepare.call_args_list[0][0][1] == TEST_ADDRESS
 
+    def test_core_views_exportview_get_context_data_names_the_fiat(self, mocker):
+        view = ExportView()
+        view = self.setup_view(view, self.request, TEST_ADDRESS)
+        mocker.patch("core.views.fiat_code_for_user", return_value="EUR")
+        mocked_prepare = mocker.patch("core.views.prepare_tax_context")
+        view.get_context_data()
+        assert mocked_prepare.call_args_list[0][0][0].get("export_fiat") == "EUR"
+
     def test_core_views_exportview_get_context_data_for_bundle(self, mocker):
         # Setup view
         view = ExportView()

@@ -1,6 +1,7 @@
 """Module containing api app's serializers."""
 
 from algosdk.constants import ADDRESS_LEN
+from django.conf import settings
 from drf_spectacular.utils import OpenApiExample, extend_schema_serializer
 from rest_framework.serializers import (
     BooleanField,
@@ -669,7 +670,7 @@ class AccountInfoSerializer(Serializer):
 
     addresses = ListField(child=CharField(min_length=ADDRESS_LEN, max_length=ADDRESS_LEN))
     bundle = CharField(min_length=40, max_length=40)
-    values_in = ChoiceField(choices=["ALGO", "USD"])
+    values_in = ChoiceField(choices=["ALGO", *settings.FIAT_CURRENCIES])
     online = BooleanField()
     points = IntegerField()
 

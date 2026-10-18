@@ -51,6 +51,23 @@ def latest_rates(client=None, now=None):
     return rates
 
 
+def fiat_code_for_user(user):
+    """Return the configured fiat code `user` chose, "USD" for anyone else.
+
+    :param user: request's user
+    :type user: :class:`User`
+    :var code: chosen fiat code
+    :type code: str
+    :return: str
+    """
+    try:
+        code = user.profile.fiat if user.is_authenticated else "USD"
+    except Exception:  # noqa: BLE001 - a user without a profile reads USD
+        code = "USD"
+
+    return code if code in settings.FIAT_CURRENCIES else "USD"
+
+
 def fiat_for_user(user):
     """Return the code, rate from USD and symbol of the fiat `user` sees.
 
@@ -62,12 +79,8 @@ def fiat_for_user(user):
     :type code: str
     :return: dict
     """
-    try:
-        code = user.profile.fiat if user.is_authenticated else "USD"
-    except Exception:  # noqa: BLE001 - a user without a profile reads USD
-        code = "USD"
-
-    if code == "USD" or code not in settings.FIAT_CURRENCIES:
+    code = fiat_code_for_user(user)
+    if code == "USD":
         return dict(USD_FIAT)
 
     rate = latest_rates().get(code)

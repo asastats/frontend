@@ -21,6 +21,7 @@ from utils.constants.core import (
     MAX_BUNDLE_SIZE,
 )
 from utils.constants.tax import TAX_DURATION_MESSAGE
+from utils.fiat import fiat_code_for_user
 from utils.constants.users import (
     BUNDLE_ADDRESSES_LIMIT_HELP_TEXT,
     PUBLIC_BUNDLE_ADDRESSES_LIMIT_HELP_TEXT,
@@ -276,6 +277,9 @@ def start_export(url_value, addresses, request, **kwargs):
     options = {
         key: kwargs[key] for key in ("provider", "use_mve", "non_zero") if key in kwargs
     }
+    fiat = fiat_code_for_user(getattr(request, "user", None))
+    if fiat != "USD":
+        options["fiat"] = fiat
     return _start_export(url_value, addresses, options)  # enqueues process_addresses
 
 

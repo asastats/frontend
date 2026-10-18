@@ -9,6 +9,7 @@ from utils.fiat import (
     CACHE_KEY_FIAT_RATES,
     FIAT_RATES_MEMO_SECONDS,
     USD_FIAT,
+    fiat_code_for_user,
     fiat_for_user,
     latest_rates,
 )
@@ -109,6 +110,14 @@ class TestUtilsFiatForUser:
         settings.FIAT_CURRENCIES = ("USD", "CHF")
         mocker.patch("utils.fiat.latest_rates", return_value={"CHF": 0.8})
         assert fiat_for_user(_user(mocker, "CHF"))["symbol"] == ""
+
+    def test_utils_fiat_code_for_user_needs_no_rate(self, mocker, settings):
+        settings.FIAT_CURRENCIES = ("USD", "EUR")
+        rates = mocker.patch("utils.fiat.latest_rates", return_value={})
+        assert fiat_code_for_user(_user(mocker)) == "EUR"
+        assert fiat_code_for_user(_user(mocker, "GBP")) == "USD"
+        assert fiat_code_for_user(None) == "USD"
+        rates.assert_not_called()
 
     def test_utils_fiat_for_user_returns_a_copy(self, mocker):
         fiat_for_user(_user(mocker, "USD"))["code"] = "changed"

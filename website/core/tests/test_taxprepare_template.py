@@ -43,6 +43,13 @@ class TestCoreTaxprepareTemplate:
             assert help_text, f"{field} has no help text to render"
             assert help_text in rendered, f"{field}'s help text is not on the page"
 
+    def test_core_taxprepare_names_the_currency(self, rendered):
+        assert "Worth amounts in USD." in rendered
+        euro = render_to_string(
+            "snippets/taxprepare.html", {"form": ExportForm(), "export_fiat": "EUR"}
+        )
+        assert "Worth amounts in EUR, converted from USD" in euro
+
     def test_core_taxprepare_unimplemented_providers_say_so(self, rendered):
         assert "Not implemented yet" in rendered
 

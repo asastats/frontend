@@ -1,5 +1,8 @@
 """Module containing public functions for API v2 package."""
 
+from django.conf import settings
+from rest_framework.exceptions import ValidationError
+
 from api import live
 from api.client import fetch_serialized_account
 from api.helpers import (
@@ -28,8 +31,46 @@ from api.helpers import (
 from api.position_id import annotate_positions
 from utils.constants.core import DEFAULT_EXPLORER
 from utils.explorers import marker_link
+from utils.fiat import latest_rates
 from utils.helpers import bundle_from_addresses
 
+
+
+def values_price(query_params, serialized_data):
+    """Return the currency `query_params` ask values in and ALGO's price in it.
+
+    ``fiat`` names a configured currency; ``usd=true`` is the older spelling of
+    ``fiat=USD``. None leaves the values in ALGO.
+
+    :param query_params: request's query parameters
+    :type query_params: :class:`QueryDict`
+    :param serialized_data: serialized account's data, holding ALGO's USDC price
+    :type serialized_data: dict
+    :var code: requested fiat code
+    :type code: str
+    :var rate: `code` per USD
+    :type rate: float
+    :return: two-tuple or None
+    """
+    code = str(query_params.get("fiat") or "").upper()
+    if not code:
+        if query_params.get("usd") not in ("true", True):
+            return None
+
+        code = "USD"
+
+    if code not in settings.FIAT_CURRENCIES:
+        raise ValidationError({"fiat": f"One of {list(settings.FIAT_CURRENCIES)}."})
+
+    pricealgo = serialized_data.get("total").get("pricealgo")
+    if code == "USD":
+        return code, pricealgo
+
+    rate = latest_rates().get(code)
+    if not rate:
+        raise ValidationError({"fiat": f"No {code} rate is available right now."})
+
+    return code, str(float(pricealgo) * rate)
 
 def account_entities(serialized_data):
     """Return all programs, providers and NFT markets instances found in account's data.
@@ -157,13 +198,8 @@ def filtered_asaitem(asset_id, serialized_data, query_params):
     :return: dict
     """
     asaitem = extract_asaitem(asset_id, serialized_data.get("asaitems"))
-    return (
-        convert_asaitems_values_to_usd(
-            [asaitem], serialized_data.get("total").get("pricealgo")
-        )[0]
-        if query_params.get("usd") in ("true", True)
-        else asaitem
-    )
+    priced = values_price(query_params, serialized_data)
+    return convert_asaitems_values_to_usd([asaitem], priced[1])[0] if priced else asaitem
 
 
 def filtered_nftcollection(collection, serialized_data, query_params):
@@ -182,11 +218,10 @@ def filtered_nftcollection(collection, serialized_data, query_params):
     nftcollection = extract_nftcollection(
         collection, serialized_data.get("nftcollections")
     )
+    priced = values_price(query_params, serialized_data)
     return (
-        convert_nftcollections_values_to_usd(
-            [nftcollection], serialized_data.get("total").get("pricealgo")
-        )[0]
-        if query_params.get("usd") in ("true", True)
+        convert_nftcollections_values_to_usd([nftcollection], priced[1])[0]
+        if priced
         else nftcollection
     )
 
@@ -205,13 +240,8 @@ def filtered_nftitem(nft_id, serialized_data, query_params):
     :return: dict
     """
     nftitem = extract_nftitem(nft_id, serialized_data.get("nftcollections"))
-    return (
-        convert_items_values_to_usd(
-            [nftitem], serialized_data.get("total").get("pricealgo")
-        )[0]
-        if query_params.get("usd") in ("true", True)
-        else nftitem
-    )
+    priced = values_price(query_params, serialized_data)
+    return convert_items_values_to_usd([nftitem], priced[1])[0] if priced else nftitem
 
 
 def processed_account(serialized_data, query_params):
@@ -233,10 +263,9 @@ def processed_account(serialized_data, query_params):
     if query_params.get("headers") in ("true", True):
         serialized_data = extract_account_headers(serialized_data)
 
-    if query_params.get("usd") in ("true", True):
-        serialized_data = convert_account_values_to_usd(
-            serialized_data, serialized_data.get("total").get("pricealgo")
-        )
+    priced = values_price(query_params, serialized_data)
+    if priced:
+        serialized_data = convert_account_values_to_usd(serialized_data, *priced[::-1])
 
     return serialized_data
 
@@ -281,10 +310,9 @@ def processed_asaitems(serialized_data, query_params):
     if query_params.get("headers") in ("true", True):
         asaitems = extract_asaitems_headers(asaitems)
 
-    if query_params.get("usd") in ("true", True):
-        asaitems = convert_asaitems_values_to_usd(
-            asaitems, serialized_data.get("total").get("pricealgo")
-        )
+    priced = values_price(query_params, serialized_data)
+    if priced:
+        asaitems = convert_asaitems_values_to_usd(asaitems, priced[1])
 
     return asaitems
 
@@ -324,10 +352,9 @@ def processed_nftcollections(serialized_data, query_params):
     if query_params.get("headers") in ("true", True):
         nftcollections = extract_nftcollections_headers(nftcollections)
 
-    if query_params.get("usd") in ("true", True):
-        nftcollections = convert_nftcollections_values_to_usd(
-            nftcollections, serialized_data.get("total").get("pricealgo")
-        )
+    priced = values_price(query_params, serialized_data)
+    if priced:
+        nftcollections = convert_nftcollections_values_to_usd(nftcollections, priced[1])
 
     return nftcollections
 
@@ -368,9 +395,8 @@ def processed_nftitems(serialized_data, query_params):
     if limit and int(limit):
         nftitems = nftitems[: int(limit)]
 
-    if query_params.get("usd") in ("true", True):
-        nftitems = convert_items_values_to_usd(
-            nftitems, serialized_data.get("total").get("pricealgo")
-        )
+    priced = values_price(query_params, serialized_data)
+    if priced:
+        nftitems = convert_items_values_to_usd(nftitems, priced[1])
 
     return nftitems

@@ -410,6 +410,15 @@ class TestCoreHelpersTaxClientSideFunctions:
             TEST_BUNDLE, "FOO", {"provider": "koinly", "use_mve": True, "non_zero": False}
         )
 
+    def test_core_helpers_start_export_in_the_readers_fiat(self, mocker):
+        mocker.patch("core.helpers._send_enqueued_messages")
+        mocker.patch("core.helpers.fiat_code_for_user", return_value="EUR")
+        mocked_start = mocker.patch("core.helpers._start_export")
+        start_export(TEST_BUNDLE, "FOO", mocker.MagicMock(), provider="koinly")
+        mocked_start.assert_called_once_with(
+            TEST_BUNDLE, "FOO", {"provider": "koinly", "fiat": "EUR"}
+        )
+
 
 class TestCoreHelpersPublicBundlesFunctions:
     """Testing class for :py:mod:`core.helpers` public bundles' functions."""

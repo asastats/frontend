@@ -3895,3 +3895,28 @@ to `api.client.start_export`, which posts them as `options`. The engine side is
 `.pnl-setting-save` rows (the widget's settings form). `.pnl-total small +
 small` puts a dot between the two percentages in the summary card. Rebuilt
 with `./build-tailwind.sh`.
+
+## website/core/helpers.py:start_export, utils/fiat.py:fiat_code_for_user — the tax CSV in the reader's fiat (2026-10-18)
+
+The export now posts `fiat` with its options when the reader's profile fiat is
+not USD; the engine converts the CSV's worth amounts at ECB daily rates (engine
+logbook, same date). `fiat_code_for_user` is `fiat_for_user` without the rate
+lookup: the conversion uses the engine's stored daily rates, so a missing
+latest rate in Redis must not turn the export back to USD. The form says which
+currency the CSV uses (`export_fiat`).
+
+## website/api/main.py:values_price — `?fiat=` on the public API (2026-10-18)
+
+`p-l/FIAT-PLAN.md` §11. Every endpoint that took `usd=true` also takes
+`fiat=<code>` from `settings.FIAT_CURRENCIES`; `fiat` wins over `usd`, and
+`usd=true` stays as the older spelling of `fiat=USD`. Values are converted as
+`usd=true` always did, from ALGO at the account's `pricealgo`, which for EUR is
+first multiplied by the latest ECB rate the engine publishes (`utils.fiat.latest_rates`).
+`account_info.values_in` reports the code. An unknown code is a 400, and so is
+EUR while no rate is published, rather than silently answering in USD. The
+schema documents `fiat` beside `usd` in the three parameter lists.
+
+## website/templates/features.html — currencies (2026-10-18)
+
+The tracker line now says ALGO, USD or EUR, chosen in the profile, and lists
+what follows the choice; the API line says the same of its values.

@@ -97,7 +97,7 @@ from utils.constants.users import (
     BUNDLE_NAME_NOT_FOUND_ERROR,
     BUNDLE_NOT_VIEWABLE_ERROR,
 )
-from utils.fiat import USD_FIAT, fiat_for_user
+from utils.fiat import USD_FIAT, fiat_code_for_user, fiat_for_user
 from utils.helpers import (
     check_algorand_address,
     check_bundle_addresses,
@@ -831,6 +831,8 @@ class ExportView(FormView):
 
         if self._tax_data.get("processing_tax"):
             context["processing_tax"] = url_value
+
+        context["export_fiat"] = fiat_code_for_user(getattr(self.request, "user", None))
 
         if self._tax_data.get("analysis_tax"):
             analysis_data = self._tax_data.get("analysis_tax", {})

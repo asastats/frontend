@@ -123,18 +123,20 @@ def _convert_programs_values_to_usd(programs, pricealgo):
     ]
 
 
-def convert_account_values_to_usd(serialized_data, pricealgo):
-    """Return serialized account's data with all the values converted to USD.
+def convert_account_values_to_usd(serialized_data, pricealgo, code="USD"):
+    """Return serialized account's data with all the values converted to a fiat.
 
     :param serialized_data: serialized account's data
     :type serialized_data: dict
-    :param pricealgo: ALGO price in USDC
+    :param pricealgo: ALGO price in the fiat
     :type pricealgo: str
+    :param code: the fiat's code, reported in `values_in`
+    :type code: str
     :return: dict
     """
     return {
         **serialized_data,
-        "account_info": {**serialized_data.get("account_info"), "values_in": "USD"},
+        "account_info": {**serialized_data.get("account_info"), "values_in": code},
         "asaitems": convert_asaitems_values_to_usd(
             serialized_data.get("asaitems"), pricealgo
         ),
