@@ -3888,3 +3888,10 @@ MVE or the non-zero choice and both were always off. `core.helpers.start_export`
 now passes `provider`, `use_mve` and `non_zero` (and nothing else from the form)
 to `api.client.start_export`, which posts them as `options`. The engine side is
 `core/views.py:ExportView` in the engine logbook.
+
+## website/static/css/input.css — P&L settings and summary (2026-10-18)
+
+`.pnl-settings form` is a column now, with `.pnl-setting` and
+`.pnl-setting-save` rows (the widget's settings form). `.pnl-total small +
+small` puts a dot between the two percentages in the summary card. Rebuilt
+with `./build-tailwind.sh`.

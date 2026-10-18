@@ -4964,6 +4964,7 @@
 .pnl-total,
 .pnl-period { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem; }
 .pnl-total strong { font-size: 1.75rem; font-weight: 700; }
+.pnl-total small + small::before { content: "·"; margin-right: 0.75rem; }
 .pnl-period { margin-bottom: 0.75rem; }
 .pnl-period strong { font-size: 1.375rem; font-weight: 600; }
 .pnl-period p { flex-basis: 100%; margin: 0; }
@@ -5026,9 +5027,10 @@
 .pnl-tabs { margin-bottom: 1rem; }
 .pnl-settings { display: flex; flex-direction: column; gap: 1.5rem; align-items: flex-start; }
 .pnl-settings h2 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; }
-.pnl-settings form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }
+.pnl-settings form { display: flex; flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+.pnl-setting label { display: flex; align-items: center; gap: 0.5rem; }
+.pnl-setting-save { display: flex; align-items: center; gap: 0.75rem; }
 .pnl-settings select {
-  margin-left: 0.5rem;
   padding: 0.25rem 0.5rem;
   border: 1px solid var(--color-base-300);
   border-radius: var(--radius-field, 0.25rem);
