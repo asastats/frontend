@@ -428,6 +428,57 @@ class AlertsWebhookEndToEndTest(TestCase):
         assert response.status_code == 200
         assert response.json()["fired"] == 1
 
+    def test_alerts_integration_an_outflow_fires_a_rule(self):
+        """Read off the page's published transfer events: 500 ALGO left it."""
+        self._rule(subject=Subject.OUTFLOW, direction=Direction.UP, last_value="0")
+        events = [
+            {"kind": "transfer", "asset": 0, "amount": -500_000_000, "algo": -500.0}
+        ]
+        self.redis.set(
+            f"lvp:{self.page}",
+            msgpack.packb({"total": 900.0, "values": {}, "events": events}),
+        )
+
+        response = self._post("alerts_repriced", {"page": self.page})
+
+        assert response.json()["fired"] == 1
+
+    def test_alerts_integration_a_move_inside_the_bundle_is_no_outflow(self):
+        """Out of one of the bundle's addresses and into another in the same block."""
+        self._rule(subject=Subject.OUTFLOW, direction=Direction.UP, last_value="0")
+        events = [
+            {"kind": "transfer", "address": "A", "algo": -500.0},
+            {"kind": "transfer", "address": "B", "algo": 500.0},
+        ]
+        self.redis.set(
+            f"lvp:{self.page}",
+            msgpack.packb({"total": 1000.0, "values": {}, "events": events}),
+        )
+
+        response = self._post("alerts_repriced", {"page": self.page})
+
+        assert response.json()["fired"] == 0
+
+    def test_alerts_integration_a_floor_move_fires_a_rule(self):
+        """The page's floor event for the rule's collection crosses 500 ALGO."""
+        self._rule(
+            subject=Subject.NFT_FLOOR,
+            direction=Direction.UP,
+            threshold="500",
+            last_value=None,
+            collection_id="pigs",
+            collection_name="Lost Pigs",
+        )
+        events = [{"kind": "floor", "collection": "pigs", "old": 400.0, "new": 520.0}]
+        self.redis.set(
+            f"lvp:{self.page}",
+            msgpack.packb({"total": 900.0, "values": {}, "events": events}),
+        )
+
+        response = self._post("alerts_repriced", {"page": self.page})
+
+        assert response.json()["fired"] == 1
+
     def test_alerts_integration_a_priced_asset_fires_a_rule(self):
         """**The one call that carries a number rather than a page name.**
 

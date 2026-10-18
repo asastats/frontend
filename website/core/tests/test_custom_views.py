@@ -60,6 +60,7 @@ from core.views import (
     ExportView,
     FaqView,
     FeaturesView,
+    MethodologyView,
     HomePageView,
     IndexView,
     NameServiceView,
@@ -612,6 +613,22 @@ class TestFeaturesView:
 
     def test_core_views_featuresview_sets_template_name(self):
         assert FeaturesView.template_name == "features.html"
+
+
+class TestMethodologyView:
+    """Testing class for :class:`core.views.MethodologyView`."""
+
+    def test_core_views_methodologyview_is_subclass_of_basestaticpageview(self):
+        assert issubclass(MethodologyView, BaseStaticPageView)
+
+    def test_core_views_methodologyview_sets_template_name(self):
+        assert MethodologyView.template_name == "methodology.html"
+
+    def test_core_views_methodologyview_renders(self, client):
+        response = client.get("/methodology/")
+        assert response.status_code == 200
+        assert b"How profit and loss is calculated" in response.content
+        assert b"Known gaps" in response.content
 
 
 class TestSubscriptionsFaqView:

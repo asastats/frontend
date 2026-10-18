@@ -30,7 +30,7 @@
    the template - the htmx upgrade checker included - sees its words as
    attribute names. `innerMorph`, not `innerHTML`: it keeps the items already
    on screen (see docs/logbook.md). {% endcomment %}
-<details id="f{{ slug }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
+<details{% if coll.id %} data-collection-id="{{ coll.id }}" data-collection-name="{{ coll.name }}"{% endif %} id="f{{ slug }}" class="fitem mcard{% if shown and index >= shown %} folded{% endif %}"
          data-sort-value="{{ coll.value }}"
          data-sort-amount="{{ coll.amount|default:0 }}"
          data-sort-name="{{ coll.name|default:''|lower }}"

@@ -33,7 +33,8 @@ Provider = namedtuple("Provider", ["name", "info"], defaults=["Unknown", None])
 
 NftCollection = namedtuple(
     "NftCollection",
-    ["value", "name", "amount", "nfts"],  # TODO: "floor" will be added
+    ["value", "name", "amount", "nfts", "id"],  # TODO: "floor" will be added
+    defaults=(None,),
 )
 NftItem = namedtuple("NftItem", ["value", "nft", "amount", "price"])
 Nft = namedtuple(

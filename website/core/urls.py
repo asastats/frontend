@@ -158,6 +158,9 @@ urlpatterns = [
     re_path(r"^asm-privacy/$", core_views.ASMPrivacyView.as_view(), name="asm_privacy"),
     re_path(r"^features/$", core_views.FeaturesView.as_view(), name="features"),
     re_path(
+        r"^methodology/$", core_views.MethodologyView.as_view(), name="methodology"
+    ),
+    re_path(
         r"^subscriptions/$",
         core_views.SubscriptionsView.as_view(),
         name="subscriptions",

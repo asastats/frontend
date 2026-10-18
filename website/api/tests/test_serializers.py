@@ -246,3 +246,12 @@ class TestApiSerializersRepresentation:
             field in api.serializers.SystemInfoSerializer._declared_fields
             for field in ("warning", "information")
         )
+
+
+def test_api_serializers_nft_collection_carries_its_id():
+    from api.serializers import NftCollectionSerializer
+    from api.structs import NftCollection
+
+    data = NftCollectionSerializer(NftCollection(1, "Pigs", 1, [], "abc")).data
+    assert data["id"] == "abc"
+    assert NftCollectionSerializer(NftCollection(1, "Pigs", 1, [])).data["id"] is None

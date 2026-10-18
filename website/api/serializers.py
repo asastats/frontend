@@ -576,6 +576,8 @@ class NftCollectionSerializer(Serializer):
     name = CharField(max_length=100)
     amount = IntegerField()
     nfts = NftItemSerializer(many=True)
+    #: the collection's id, as the live pass's floor events name it
+    id = CharField(max_length=64, allow_null=True, required=False)
     # floor = NftListingSerializer()  # TODO: will be moved here
 
 

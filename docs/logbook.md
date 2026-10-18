@@ -3920,3 +3920,61 @@ schema documents `fiat` beside `usd` in the three parameter lists.
 
 The tracker line now says ALGO, USD or EUR, chosen in the profile, and lists
 what follows the choice; the API line says the same of its values.
+
+## website/templates/methodology.html — the public P&L methodology page (2026-10-18)
+
+R5 (`p-l/PLAN.md` §18; public per §20). `/methodology/` (`MethodologyView`,
+in the sitemap and the footer's Product list). The rules are the PDF's
+(`engine/pnl/templates/pnl/_methodology.html`), reworded for any reader, and
+both templates say to change them together. Added here: which tiers have the
+other cost methods and the NFT choice, the protocols decoded and the known
+gaps. The protocol list names only providers seen in classified output (the
+local raw reports' descriptions) or checked by name in the classifier
+(`storage/process/amm.py`, `nftlistings.py`, `nftpurchases.py`); it is not
+exhaustive. The P&L widget links it from its coverage notes.
+
+## website/functional_tests, website/integration_tests — today's website work covered (2026-10-18)
+
+The user's rule from today: every new page or feature gets functional tests,
+and integration tests when it calls the engine.
+
+Functional (run here, Chrome headless):
+- `test_methodology_page.py`: reached from the footer, section anchors, real
+  lists, the tax-advice line.
+- `test_export_page.py`: the form names USD or EUR by the reader's profile, and
+  pressing Process starts the export with `fiat` EUR (or without it for USD).
+  `_start_export` and `check_export_status` are patched; the test waits for the
+  start rather than for the page, because the click returns before the POST
+  arrives (the first version passed for USD and failed for EUR on timing).
+- `test_pnl_widget.py`: the NFT choice by tier and saving it, the appraised
+  badge and value note, `nfts: false` in every evaluate request once a reader
+  left NFTs out, and the methodology link. It found the Settings-tab bug fixed
+  in the widgets repo (widgets logbook, same date).
+
+Integration (start the engine from `~/dev/backend/engine`; not run here, the
+user runs them after syncing):
+- `test_pnl_integration.py`: the first P&L integration file. Every scope is
+  called for a bundle nothing processed: events `{}`, evaluate, report, chart
+  and asset `show_update`, updating `{"updating": None, "rows_at": 0}`, reset
+  204, `nfts` false accepted and `"no"` refused, process refused for addresses
+  of another bundle (so nothing is queued). `pnl` joined
+  `test_widget_scopes_integration.py`'s widgets, its scopes excused as covered
+  here; the guard's engine-free checks pass with `--noconftest`.
+- `test_api_integration.py`, `TestIntegrationFiatApiV2`: `fiat=USD` equals
+  `usd=true`; EUR values are USD values times the published rate (skipped
+  while no rate is published); `values_in`; 400 for an unknown code.
+- `test_export_options_integration.py`: the engine refuses an unknown fiat, a
+  lower-case one and an unknown provider before queueing anything.
+- `test_export_integration.py` (skipped module, heavy hardware): the page names
+  the CSV currency, and a full EUR export has EUR worth amounts.
+
+## website/templates/snippets/nfts/collection.html, dynamic/collection.html, api/serializers.py — collection ids (2026-10-18)
+
+Each NFT collection row carries `data-collection-id` and
+`data-collection-name` when the engine sent an id; the alerts modal builds its
+collection list for the `nft_floor` subject from them (widgets logbook, same
+date). The site's own API serializer and struct carry `id` too, null for a
+payload from an engine that does not send it. Tests: unit (api), functional
+(`test_alerts_page.py`, the sample account given ids), integration
+(`test_api_integration.py` checks the live API's collections, needs the
+engine; `test_alerts_integration.py` fires a floor rule, Redis only).

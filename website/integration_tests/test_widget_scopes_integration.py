@@ -60,6 +60,7 @@ WIDGETS = (
     "historic",
     "hogswap",
     "liverefresh",
+    "pnl",
     "swapcore",
 )
 
@@ -98,6 +99,11 @@ EXCUSED = {
     "historic:evaluate": "covered by `test_historic_integration.py`, grant included",
     "historic:events": "covered by `test_historic_integration.py`, grant included",
     "historic:timestamp": "covered by `test_historic_integration.py`, grant included",
+    "pnl:asset": "covered by `test_pnl_integration.py`, grant included",
+    "pnl:evaluate": "covered by `test_pnl_integration.py`, grant included",
+    "pnl:events": "covered by `test_pnl_integration.py`, grant included",
+    "pnl:process": "covered by `test_pnl_integration.py`, grant included",
+    "pnl:reset": "covered by `test_pnl_integration.py`, grant included",
     "router:quote": "builds a real quote against the chain, ~15 s on this hardware",
     "router:group": "builds a real transaction group; belongs with the swap tests",
     "router:sweep": "covered by `test_dustsweep_integration.py`, grant included",

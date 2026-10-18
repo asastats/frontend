@@ -700,6 +700,12 @@ class FeaturesView(BaseStaticPageView):
     template_name = "features.html"
 
 
+class MethodologyView(BaseStaticPageView):
+    """View for presenting the profit and loss methodology page."""
+
+    template_name = "methodology.html"
+
+
 class SubscriptionsView(BaseStaticPageView):
     """View for presenting Subscriptions page."""
 

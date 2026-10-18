@@ -34,6 +34,7 @@ The lifecycle test mutates backend state, so it resets the export in
 next run start from the finished state and skip the part being tested.
 """
 
+import csv
 import time
 import zipfile
 from io import BytesIO
@@ -102,6 +103,12 @@ class ExportPageTest(TestCase):
             "for, so the form would enqueue the wrong account",
         )
 
+    def test_integration_export_page_names_the_csv_currency(self):
+        response = self.client.get(f"/export/{TINY_ADDRESS}/")
+
+        self.assertEqual(response.context["export_fiat"], "USD")
+        self.assertContains(response, "Worth amounts in USD.")
+
     def test_integration_export_status_answers_for_an_unprocessed_address(self):
         """The status endpoint must answer even with nothing to report.
 
@@ -115,6 +122,29 @@ class ExportPageTest(TestCase):
             dict,
             f"status endpoint returned {type(status).__name__}: {status!r}",
         )
+
+
+class ExportInEurTest(TestCase):
+    """The same export with ``fiat`` EUR: its worth amounts say EUR."""
+
+    def tearDown(self):
+        try:
+            reset_export(TINY_ADDRESS)
+        except Exception:  # noqa: BLE001 - teardown must not mask a failure
+            pass
+
+    def test_integration_export_in_eur(self):
+        reset_export(TINY_ADDRESS)
+        start_export(TINY_ADDRESS, TINY_ADDRESS, {"fiat": "EUR"})
+        status = _wait_for_report(TINY_ADDRESS)
+        self.assertTrue(status.get("tax_report"), f"no report: {status!r}")
+
+        with zipfile.ZipFile(BytesIO(download_export(TINY_ADDRESS))) as archive:
+            name = next(name for name in archive.namelist() if name.endswith(".csv"))
+            rows = list(csv.DictReader(archive.read(name).decode().splitlines()))
+
+        currencies = {row["Net Worth Currency"] for row in rows} - {""}
+        self.assertIn("EUR", currencies, f"no EUR worth amount in {name}")
 
 
 class ExportLifecycleTest(TestCase):

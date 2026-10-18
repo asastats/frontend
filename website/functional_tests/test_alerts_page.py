@@ -176,6 +176,9 @@ class AddressPageMixin(AlertsReaderMixin):
         status.return_value = {}
         with open(SAMPLE_PATH) as sample_file:
             account.return_value = json.load(sample_file)
+        # the ids the engine now sends, so the floor alert can name a collection
+        for index, collection in enumerate(account.return_value["nftcollections"]):
+            collection["id"] = f"collection{index}"
 
     def open_address_page(self):
         self.browser.get(f"{self.server_url}/{ADDRESS}")
@@ -515,6 +518,68 @@ class AlertsWritingTest(AddressPageMixin, FunctionalTest):
 
         self.wait_until(
             lambda: "Portfolio total" in self.text_for(".alerts-rule-text"),
+            timeout=self.OPEN_TIMEOUT,
+        )
+
+    def test_an_outflow_asks_for_no_direction(self):
+        self.sign_in("alerts-fields-outflow@example.com")
+        self.open_modal_from_button()
+
+        self.choose_subject("outflow")
+
+        self._wait_hidden(".alerts-direction-field")
+        self._wait_hidden(".alerts-asset-field")
+        assert (
+            self.browser.execute_script(
+                "return document.querySelector('.alerts-direction').value;"
+            )
+            == "up"
+        )
+
+    def test_writing_an_outflow_rule(self):
+        self.sign_in("alerts-outflow@example.com")
+        self.open_modal_from_button()
+        self.fill_form(subject="outflow", threshold="1000")
+
+        self.save_form()
+
+        self.wait_until(
+            lambda: "Value sent out of" in self.text_for(".alerts-rule-text"),
+            timeout=self.OPEN_TIMEOUT,
+        )
+        assert "rises above 1000.00 ALGO" in self.text_for(".alerts-rule-text")
+
+    def test_an_nft_floor_offers_the_pages_collections(self):
+        self.sign_in("alerts-fields-floor@example.com")
+        self.open_modal_from_button()
+
+        self.choose_subject("nft_floor")
+
+        self._wait_hidden(".alerts-collection-field", hidden=False)
+        names = self.browser.execute_script(
+            "return [...document.querySelectorAll('.alerts-collection option')]"
+            ".map(function (o) { return o.textContent; });"
+        )
+        assert names[0] == "Choose a collection"
+        assert "Brave New World" in names
+        assert len(names) == len(set(names))
+
+    def test_writing_an_nft_floor_rule(self):
+        self.sign_in("alerts-floor@example.com")
+        self.open_modal_from_button()
+        self.fill_form(subject="nft_floor", threshold="500")
+        self.browser.execute_script(
+            "var select = document.querySelector('.alerts-collection');"
+            "var option = [...select.options].find("
+            "  function (o) { return o.textContent === 'Brave New World'; });"
+            "select.value = option.value;"
+            "select.dispatchEvent(new Event('change', {bubbles: true}));"
+        )
+
+        self.save_form()
+
+        self.wait_until(
+            lambda: "Brave New World floor" in self.text_for(".alerts-rule-text"),
             timeout=self.OPEN_TIMEOUT,
         )
 

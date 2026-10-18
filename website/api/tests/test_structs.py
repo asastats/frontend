@@ -188,7 +188,14 @@ class TestApiStructsNamedTuples:
         assert api.structs.NftCollection.__name__ == "NftCollection"
 
     def test_api_structs_nftcollection_tuple_fields(self):
-        assert api.structs.NftCollection._fields == ("value", "name", "amount", "nfts")
+        assert api.structs.NftCollection._fields == (
+            "value",
+            "name",
+            "amount",
+            "nfts",
+            "id",
+        )
+        assert api.structs.NftCollection(1, "n", 1, []).id is None
 
     # # NftItem
     def test_api_structs_defines_nftitem_tuple(self):

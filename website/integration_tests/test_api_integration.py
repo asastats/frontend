@@ -22,6 +22,7 @@ from api.data import (
     API_EXAMPLE_NFD_NAME1,
 )
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
+from utils.fiat import latest_rates
 from utils.helpers import check_bundle_addresses, create_bundle
 
 
@@ -309,6 +310,64 @@ class TestIntegrationApiV2(TestSetup):
 #         self._test_all(
 #             response, address=API_EXAMPLE_ADDRESS3, ignore_asa_value=[393537671]
 #         )
+
+
+class TestIntegrationFiatApiV2(TestSetup):
+    """`?fiat=` against the same account in USD: the ratio is the published rate."""
+
+    def _asaitems(self, query):
+        return self.client.get(
+            f"/api/v2/{API_EXAMPLE_ADDRESS1}/asas/?limit=5&{query}",
+            content_type="application/json",
+        )
+
+    def test_integration_fiat_api_v2_usd_is_the_old_usd_flag(self):
+        fiat, flag = self._asaitems("fiat=USD"), self._asaitems("usd=true")
+        self.assertEqual(fiat.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            [item["value"] for item in fiat.data], [item["value"] for item in flag.data]
+        )
+
+    def test_integration_fiat_api_v2_eur_values_follow_the_rate(self):
+        rate = latest_rates().get("EUR")
+        if not rate:
+            pytest.skip("the engine has published no EUR rate on this machine")
+
+        euro, usd = self._asaitems("fiat=EUR"), self._asaitems("fiat=USD")
+        self.assertEqual(euro.status_code, status.HTTP_200_OK)
+        for in_euro, in_usd in zip(euro.data, usd.data, strict=True):
+            if float(in_usd["value"]) > 1:
+                assert isclose(
+                    float(in_euro["value"]), float(in_usd["value"]) * rate, rel_tol=1e-5
+                )
+
+    def test_integration_fiat_api_v2_account_says_its_currency(self):
+        if not latest_rates().get("EUR"):
+            pytest.skip("the engine has published no EUR rate on this machine")
+
+        response = self.client.get(
+            f"/api/v2/{API_EXAMPLE_ADDRESS1}/?limit=1&fiat=EUR",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["account_info"]["values_in"], "EUR")
+
+    def test_integration_fiat_api_v2_refuses_an_unknown_currency(self):
+        response = self._asaitems("fiat=GBP")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TestIntegrationNftCollectionIdApiV2(TestSetup):
+    """Each NFT collection names the id the live pass's floor events use."""
+
+    def test_integration_api_v2_nft_collections_carry_their_id(self):
+        response = self.client.get(
+            f"/api/v2/{API_EXAMPLE_ADDRESS1}/nftcollections/?limit=5",
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for collection in response.data:
+            assert "id" in collection
 
 
 class TestIntegrationApiTierAddressLimit(TestCase):

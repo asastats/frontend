@@ -229,6 +229,12 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.FeaturesView"
         assert url.name == "features"
 
+    def test_core_urls_methodology(self):
+        url = self._url_from_pattern(r"^methodology/$")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "core.views.MethodologyView"
+        assert url.name == "methodology"
+
     def test_core_urls_subscriptions(self):
         url = self._url_from_pattern(r"^subscriptions/$")
         assert isinstance(url, URLPattern)
@@ -295,7 +301,7 @@ class TestCoreUrls:
         assert url.name == "alerts_service_worker"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 43
+        assert len(urls.urlpatterns) == 44
 
 
 class RootAssetUrlTest(TestCase):

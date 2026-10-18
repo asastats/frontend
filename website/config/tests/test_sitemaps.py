@@ -54,6 +54,9 @@ class SitemapTest(TestCase):
     def test_sitemap_covers_features_page(self):
         self.check_for_sole_item("features")
 
+    def test_sitemap_covers_methodology_page(self):
+        self.check_for_sole_item("methodology")
+
     def test_sitemap_covers_subscriptions_page(self):
         self.check_for_sole_item("subscriptions")
 
