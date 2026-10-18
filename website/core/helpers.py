@@ -273,7 +273,10 @@ def start_export(url_value, addresses, request, **kwargs):
     :type request: :class:`django.http.HttpRequest`
     """
     _send_enqueued_messages(request, addresses)  # keep the open UX messaging
-    return _start_export(url_value, addresses)  # backend enqueues process_addresses
+    options = {
+        key: kwargs[key] for key in ("provider", "use_mve", "non_zero") if key in kwargs
+    }
+    return _start_export(url_value, addresses, options)  # enqueues process_addresses
 
 
 # # PUBLIC BUNDLES

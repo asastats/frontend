@@ -392,7 +392,23 @@ class TestCoreHelpersTaxClientSideFunctions:
         returned = start_export(url_value, addresses, request)
         assert returned == mocked_start.return_value
         mocked_send.assert_called_once_with(request, addresses)
-        mocked_start.assert_called_once_with(url_value, addresses)
+        mocked_start.assert_called_once_with(url_value, addresses, {})
+
+    def test_core_helpers_start_export_passes_only_the_form_options(self, mocker):
+        mocker.patch("core.helpers._send_enqueued_messages")
+        mocked_start = mocker.patch("core.helpers._start_export")
+        start_export(
+            TEST_BUNDLE,
+            "FOO",
+            mocker.MagicMock(),
+            provider="koinly",
+            use_mve=True,
+            non_zero=False,
+            agree=True,
+        )
+        mocked_start.assert_called_once_with(
+            TEST_BUNDLE, "FOO", {"provider": "koinly", "use_mve": True, "non_zero": False}
+        )
 
 
 class TestCoreHelpersPublicBundlesFunctions:

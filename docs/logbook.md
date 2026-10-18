@@ -3880,3 +3880,11 @@ widgets logbook (same date).
 
 `.pnl-report` holds "Prepare PDF report", its checkbox and then the download
 link, below the P&L table's CSV button.
+
+## website/core/helpers.py, website/api/client.py — export options sent to the engine (2026-10-18)
+
+`start_export` dropped the export form's options, so the engine never received
+MVE or the non-zero choice and both were always off. `core.helpers.start_export`
+now passes `provider`, `use_mve` and `non_zero` (and nothing else from the form)
+to `api.client.start_export`, which posts them as `options`. The engine side is
+`core/views.py:ExportView` in the engine logbook.

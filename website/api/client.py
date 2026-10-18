@@ -199,10 +199,15 @@ def fetch_capabilities():
     return _request("GET", "/api/v2/capabilities/").json()
 
 
-def start_export(value, addresses):
-    """Trigger backend CSV-export processing. `addresses` is authoritative."""
+def start_export(value, addresses, options=None):
+    """Trigger backend CSV-export processing. `addresses` is authoritative.
+
+    `options` holds the export form's provider, use_mve and non_zero.
+    """
     return _request(
-        "POST", "/api/v2/exports/", json={"bundle": value, "addresses": addresses}
+        "POST",
+        "/api/v2/exports/",
+        json={"bundle": value, "addresses": addresses, "options": options or {}},
     ).json()
 
 

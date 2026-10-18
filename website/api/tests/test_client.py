@@ -393,7 +393,21 @@ class TestApiClientFunctions:
         mocked_request.assert_called_once_with(
             "POST",
             "/api/v2/exports/",
-            json={"bundle": value, "addresses": addresses},
+            json={"bundle": value, "addresses": addresses, "options": {}},
+        )
+
+    def test_api_client_start_export_sends_the_options(self, mocker):
+        options = {"provider": "koinly", "use_mve": True, "non_zero": False}
+        mocked_request = mocker.patch("api.client._request")
+        start_export(API_EXAMPLE_BUNDLE1, "FOO BAR", options)
+        mocked_request.assert_called_once_with(
+            "POST",
+            "/api/v2/exports/",
+            json={
+                "bundle": API_EXAMPLE_BUNDLE1,
+                "addresses": "FOO BAR",
+                "options": options,
+            },
         )
 
     # # export_status
