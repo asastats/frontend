@@ -3862,3 +3862,10 @@ ALGO view, drill-down; Professional up to 5 addresses, MVE, chart, LP
 analytics; Cluster up to 20 addresses, CSV export, FIFO. The Free card lists no
 features, so its linked-address P&L is not mentioned there. Same classes as the
 neighbouring lines: no Tailwind rebuild needed.
+
+## website/static/css/input.css — P&L "Show more" cell and hide button (2026-10-18)
+
+`.pnl-more-cell` (left-aligned, against the table's right-aligned cells) holds
+the P&L table's "Show N more" buttons and the "X is hidden … Undo" row.
+`.pnl-hide` sets the size of the Hide / Show again button. Widget side: widgets
+logbook, R4 (same date).

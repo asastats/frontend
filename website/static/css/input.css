@@ -5001,6 +5001,9 @@
 .pnl-asset h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; }
 
 .pnl-alert-cell { text-align: left !important; }
+.pnl-more-cell { text-align: left !important; padding-block: 0.6rem !important; }
+.pnl-more-cell form { display: inline; }
+.pnl-hide { font-size: 0.8rem; }
 .pnl-alert summary { cursor: pointer; font-size: 0.8rem; color: var(--color-primary); }
 .pnl-alert form { display: inline; }
 .pnl-alert-option {
