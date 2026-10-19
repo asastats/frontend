@@ -4788,7 +4788,8 @@
 
 .alerts-asset-results:empty { display: none; }
 
-.alerts-window-note {
+.alerts-window-note,
+.alerts-collection-note {
   display: block;
   margin-top: 4px;
   font-size: 0.7rem;

@@ -10,8 +10,8 @@
 </header>
 <article class="mx-auto max-w-3xl text-left">
   <h2 id="counted">What is counted</h2>
-  <p>Every transaction of your addresses is read from the Algorand blockchain and classified: swaps, liquidity added and removed, deposits into and withdrawals from dApps (lending, farms, staking), rewards, NFT purchases and sales, transfers, costs and network fees.</p>
-  <p>Transfers between the addresses of one bundle are moves, not sales: they keep their cost basis. A transfer to any other address takes the units out at their cost; a transfer in from one brings them in at their market value on arrival.</p>
+  <p>{{ WEBSITE_NAME }} reads every transaction of your addresses from the Algorand blockchain and sorts it into swaps, liquidity added and removed, deposits into and withdrawals from dApps (lending, farms, staking), rewards, NFT purchases and sales, transfers, costs and network fees.</p>
+  <p>A transfer between the addresses of one bundle moves the units and keeps their cost basis. A transfer to any other address takes the units out at their cost; a transfer in from one brings them in at their market value on arrival.</p>
 
   <h2 id="prices">Prices</h2>
   <p>Each event is valued at the time it happened, from the Algorand DEX pools that held the asset at that moment. ALGO is valued in US dollars through USDC. Other currencies use the European Central Bank's rate for the event's day.</p>
@@ -23,19 +23,22 @@
   <p>Realized profit or loss is what a disposal fetched minus that cost; unrealized is what the units held are worth now minus their cost. Income (rewards, airdrops, interest) is counted at its value on receipt and becomes the cost basis of those units. Costs and network fees are expenses.</p>
 
   <h2 id="incomplete">Where figures are incomplete</h2>
-  <p>A sale of more units than the known history shows were held realizes nothing for the part without a known cost; its proceeds are noted. An event without a price counts as zero and marks its asset incomplete. A holding without a current price is left out of value and unrealized. Assets that never had a market price, usually unsolicited tokens, count for nothing. An NFT the appraisal knows nothing about has no current price. The widget lists the holdings without a current price, the sales beyond the known history and the events without a price under "Show the affected assets".</p>
+  <p>When a sale is larger than the holding the known history shows, the part without a known cost realizes nothing; its proceeds are noted. An event without a price counts as zero and marks its asset incomplete. A holding without a current price is left out of value and unrealized. Assets that never had a market price, usually unsolicited tokens, count for nothing. An NFT without an appraisal has no current price. The widget lists the holdings without a current price, the sales beyond the known history and the events without a price under "Show the affected assets".</p>
 
   <h2 id="own-figures">Your own figures</h2>
-  <p>On the Asastatser tier and higher you can enter what you paid for a deposit from outside your addresses, for example an asset bought on an exchange and withdrawn; it replaces the deposit's market value on arrival as its cost. You can also enter a value per unit for a holding without a current price; it is used only while the asset has no market price, is marked "set by you", and is left out of the chart over time. You can list your other wallets too: units you send to one and later bring back keep the cost they left with, instead of taking their market value on return. Both transfers still count as money out and in, because what the units did while away is not seen. Your figures are kept with your account, apply to you alone, and change nothing in the classified history.</p>
+  <p>On the Asastatser tier and higher you can enter what you paid for a deposit from outside your addresses, for example an asset bought on an exchange and withdrawn. That price becomes the deposit's cost in place of its market value on arrival.</p>
+  <p>You can also enter a value per unit for a holding without a current price. It is used only while the asset has no market price, is marked "set by you", and is left out of the chart over time.</p>
+  <p>You can list your other wallets too. Units you send to one and later bring back keep the cost they left with, instead of taking their market value on return. Both transfers still count as money out and in, because the widget cannot see what the units did while away.</p>
+  <p>Your figures are kept with your account, apply to you alone, and change nothing in the classified history.</p>
 
   <h2 id="coverage">What is decoded</h2>
-  <p>Besides plain payments and asset transfers, transactions with these Algorand protocols are recognized:</p>
+  <p>Besides plain payments and asset transfers, the classifier recognizes transactions with these Algorand protocols:</p>
   <ul class="list-disc space-y-1 pl-5">
     <li><strong>Swaps and liquidity:</strong> Tinyman (1.0, 1.1 and 2), Pact, Humble, Algofi, STAMM, Vestige, Folks Router, and Tinyman recurring orders</li>
     <li><strong>Lending and borrowing:</strong> Folks Finance (v1 and v2), Algofi, Goanna Lending</li>
     <li><strong>Liquid staking:</strong> xALGO, mALGO, Tinyman liquid staking</li>
     <li><strong>Staking and farms:</strong> Réti pooling, CompX, Pact farms, Cometa, Algofund, Gard, Gainify, Haystack, and farm and staking rewards generally</li>
-    <li><strong>NFT markets:</strong> ALGOxNFT, Rand Gallery, EXA Market, Shufl, Algogems, AB2 Gallery, Downbad, Asalytic, Dartroom, THC, NFDomains; listings are positions, not sales</li>
+    <li><strong>NFT markets:</strong> ALGOxNFT, Rand Gallery, EXA Market, Shufl, Algogems, AB2 Gallery, Downbad, Asalytic, Dartroom, THC, NFDomains; a listed NFT stays among your holdings until it sells</li>
     <li><strong>Trading and markets:</strong> Alpha Arcade, FXDX, Deridex, Lofty limit orders</li>
     <li><strong>Bridges:</strong> Wormhole, Allbridge</li>
     <li><strong>Governance:</strong> Algorand governance, Folks Finance and Tinyman governance</li>
@@ -47,7 +50,7 @@
     <li>AlgoDEX order executions and some Mallow settlements are not fully decoded.</li>
     <li>LP tokens of small pools without ALGO on either side may have no price.</li>
     <li>An NFT swapped for another NFT has no price at the time of the swap, so the swap counts as zero.</li>
-    <li>Assets bought on an exchange and withdrawn to your address arrive at their market value, not at what you paid.</li>
+    <li>Assets bought on an exchange and withdrawn to your address arrive at their market value unless you enter what you paid (see <a href="#own-figures" class="link">Your own figures</a>).</li>
   </ul>
 
   <p class="mt-8"><strong>This is not tax advice.</strong> Tax rules differ between countries and may require a particular cost basis method, treatment of income or of transfers; check with a tax adviser.</p>
