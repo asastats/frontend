@@ -30,6 +30,7 @@
 - name: Check whether the static build script is present
   ansible.builtin.stat:
     path: "{{ site_path }}/source/{{ app_name }}/build-static.sh"
+  become: true  # the source tree is the web user's, 0750
   register: projectsetup_build_static_script
   tags: [project-setup, run-project-scripts, update-project-code]
   # See docs/logbook.md#deployrolesprojectsetuptasksproject_scriptsyml

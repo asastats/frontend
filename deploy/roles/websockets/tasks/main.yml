@@ -16,6 +16,19 @@
   become: true
   tags: [channels, supervisor]
 
+- name: Install the Daphne rolling restart (asgir) and status alias (sasgi)
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  become: true
+  loop:
+    - { src: asgir.sh, dest: /usr/local/bin/asgir, mode: "0755" }
+    - { src: asgi-profile.sh, dest: /etc/profile.d/asgi.sh, mode: "0644" }
+  tags: [channels, daphne]
+
 - name: Write the Daphne supervisor configuration
   ansible.builtin.template:
     src: daphne-supervisor.conf

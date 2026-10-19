@@ -4007,3 +4007,72 @@ in.
 `API_LIVE_*` by hand, and the deploy rewrites the whole `.env`, so they were
 deleted on every run (found by comparing renders with the server,
 workspace `p-l/envcheck/`).
+
+## deploy/roles/websockets/handlers/main.yml — Daphne restarts with new code (2026-10-19)
+
+A code or `.env` change notified "Reload web server": gunicorn and OpenResty
+reloaded, while the Daphne processes (supervisor group `asgi`) kept running
+the old code until someone restarted them. They now restart on the same
+notification.
+
+Not changed: `templates/asgi-logrotate` sends HUP to `daphne-<env>:*`, a group
+that doesn't exist (the program is `asgi`), and `|| true` hides the error.
+
+## deploy/roles/redis/tasks/web_cache.yml — never a replica (2026-10-19)
+
+`redis_6380.conf` starts as a copy of `/etc/redis/redis.conf` (`force: false`).
+On the liveserver that file is the backend's 6379 read-only replica. If the
+backend's api play ran before the first frontend run, the web cache would
+inherit `replicaof` and refuse writes. Any `replicaof`/`slaveof` line is now
+removed. Production's file was made long before, so this only guards fresh and
+merged hosts.
+
+## deploy/roles/websockets — rolling Daphne restart, asgir and sasgi (2026-10-19)
+
+**Correction to the entry above** (Daphne restarts with new code): it used
+`supervisorctl restart asgi:`, which stops all four workers at once. The
+user asked for the rolling restart they run by hand on the liveserver
+(`asgir` in their `~/.bashrc`).
+
+- `templates/asgir.sh` → `/usr/local/bin/asgir`. It restarts `asgi:asgi0…N-1`
+  one at a time and waits for each before the next. A worker counts as back
+  when it is RUNNING and its unix socket is newer than the restart; a leftover
+  socket file doesn't count. It stops the rollout if a worker isn't back
+  within `daphne_restart_timeout` (30 s).
+- It re-runs itself with sudo. `N` comes from `daphne_numprocs`, which is
+  also the nginx upstream's count.
+- `templates/asgi-profile.sh` → `/etc/profile.d/asgi.sh`: the `sasgi` alias.
+- Handlers: a code or `.env` change ("Reload web server") runs `asgir`.
+- A supervisor config change ("Reload daphne") runs
+  `supervisorctl update asgi` instead of restarting the supervisor service.
+  That is the only hard restart left, and it restarts only this group.
+  `asgir` is skipped when `update` has just restarted the group.
+
+Tested in a container under supervisor with four stand-in workers:
+- the rollout never had fewer than 3 of 4 RUNNING;
+- a worker that never opens its socket stops the rollout with exit 1;
+- `update` prints nothing when nothing changed (so `changed_when` holds), and
+  "stopped / updated process group" after a change.
+
+## deploy/roles/projectsetup/tasks/project_scripts.yml — stat with become (2026-10-19)
+
+`Check whether the static build script is present` failed in the user's
+production dry run. Every other task under `site_path/source` uses `become`;
+this stat ran as the admin user, who can't enter the web user's 0750 tree.
+
+## deploy/roles/nginx/tasks/certbot.yml — a packaged certbot stays (2026-10-19)
+
+The production dry run (`--check`) failed at `Create symbolic link for
+Certbot`. On the liveserver `/usr/bin/certbot` is a regular file from Debian's
+`certbot` package (`dpkg -S`, February 2024), and `file: state=link` refuses to
+turn a file into a link. A real run would have failed there too. That package
+renews the certificates: `certbot.timer` runs it, and so does root's 05:22
+cron line that `setup_renewal.yml` writes. `/opt/certbot` (pip, January 2025)
+exists beside it but nothing calls it.
+
+Every certbot call in both deploy repositories is `certonly -a webroot` or
+`renew`, and the packaged certbot handles both. So the link is now made only
+when `/usr/bin/certbot` is missing or already a link (a fresh host, where the
+pip venv is the only certbot). The packaged binary is left alone rather than
+replaced, because replacing it would change which certbot renews production's
+certificates.

@@ -17,6 +17,14 @@
     - certbot-nginx
   tags: [certbot]
 
+- name: Look for an existing /usr/bin/certbot
+  ansible.builtin.stat:
+    path: /usr/bin/certbot
+    follow: false
+  register: nginx_certbot_bin
+  tags: [certbot]
+
+# A regular file is Debian's certbot package, which renews (certbot.timer): keep it
 - name: Create symbolic link for Certbot
   ansible.builtin.file:
     src: /opt/certbot/bin/certbot
@@ -25,4 +33,5 @@
     group: root
     state: link
   become: true
+  when: not (nginx_certbot_bin.stat.isreg | default(false))
   tags: [certbot]

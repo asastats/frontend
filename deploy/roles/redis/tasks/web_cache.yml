@@ -44,6 +44,16 @@
   notify: "Enable and restart web cache"
   tags: [redis-web-cache]
 
+# The copy's source may be the backend's 6379 replica config: never a replica.
+- name: "Keep the web cache a primary, port {{ redis_port }}"
+  ansible.builtin.lineinfile:
+    path: "/etc/redis/redis_{{ redis_port }}.conf"
+    regexp: '^\s*(replicaof|slaveof)\s'
+    state: absent
+  become: true
+  notify: "Enable and restart web cache"
+  tags: [redis-web-cache]
+
 - name: "Install the systemd unit for the web cache on port {{ redis_port }}"
   ansible.builtin.template:
     src: redis_instance.service

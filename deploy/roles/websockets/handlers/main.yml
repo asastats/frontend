@@ -1,10 +1,20 @@
 ---
-# Supervisor restart rereads conf.d and (re)starts Daphne
+# Config changed: `update` rereads conf.d and restarts only the asgi group.
+# Code or .env changed: one worker at a time (asgir), unless `update` just did.
 # docs/logbook.md#deployroleswebsocketshandlersmainyml
-- name: Reload daphne
-  ansible.builtin.systemd:
-    name: supervisor
-    state: restarted
+- name: Reload daphne  # noqa: command-instead-of-module (the module has no `update`)
+  ansible.builtin.command: supervisorctl -c /etc/supervisor/supervisord.conf update asgi
   become: true
+  register: websockets_daphne_update
+  changed_when: websockets_daphne_update.stdout | trim | length > 0
   when: manage_services | default(true) | bool
   listen: "Reload daphne"
+
+- name: Restart the Daphne workers one at a time
+  ansible.builtin.command: /usr/local/bin/asgir
+  become: true
+  changed_when: true
+  when:
+    - manage_services | default(true) | bool
+    - not ((websockets_daphne_update | default({})) is changed)
+  listen: "Reload web server"
