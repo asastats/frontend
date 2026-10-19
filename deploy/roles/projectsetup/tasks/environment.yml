@@ -49,6 +49,11 @@
       - VAPID_ADMIN_EMAIL
       # The engine signs its alert triggers with this; the website verifies.
       - ALERTS_WEBHOOK_SECRET
+      # API tiers and live refresh (off when unset)
+      - API_TIER_ENFORCED
+      - API_TIER_EXEMPT_USER_IDS
+      - API_LIVE_ENABLED
+      - API_LIVE_SHARED_TOKEN_USER_IDS
   ansible.builtin.template:
     src: environment_file
     dest: "{{ site_path }}/source/{{ app_name }}/.env"

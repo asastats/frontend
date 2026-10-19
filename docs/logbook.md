@@ -3999,3 +3999,11 @@ removed again, a bad address explained, no section for Intro. The integration
 payload gained an `own` address. The methodology's "Your own figures" section
 explains other wallets, and that both transfers still count as money out and
 in.
+
+## deploy/roles/projectsetup/tasks/environment.yml — API flags (2026-10-19)
+
+`API_TIER_ENFORCED`, `API_TIER_EXEMPT_USER_IDS`, `API_LIVE_ENABLED` and
+`API_LIVE_SHARED_TOKEN_USER_IDS` join the rendered keys. Production set
+`API_LIVE_*` by hand, and the deploy rewrites the whole `.env`, so they were
+deleted on every run (found by comparing renders with the server,
+workspace `p-l/envcheck/`).
