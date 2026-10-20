@@ -22,7 +22,7 @@ class MethodologyPageTest(FunctionalTest):
 
     def test_the_footer_leads_to_the_methodology(self):
         self.browser.get(self.server_url + reverse("features"))
-        self.find_elem_by_link_text("Profit and loss methodology").click()
+        self.find_elem_by_link_text("P&L methodology").click()
         self.wait_for_page_load()
         self.assertTrue(self.browser.current_url.endswith(reverse("methodology")))
         heading = self.browser.find_element(By.TAG_NAME, "h1").text
