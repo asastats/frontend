@@ -692,13 +692,15 @@ CSRF_TRUSTED_ORIGINS = [f"https://*.{WEBSITE_BASE_DOMAIN}"]
 ASGI_APPLICATION = "config.asgi.application"
 
 REDIS_PASSWORD_ESCAPED = quote(REDIS_AUTH, safe="")
+CHANNEL_LAYER_ADDRESS = (
+    f"redis://:{REDIS_PASSWORD_ESCAPED}@{REDIS_HOST}:{REDIS_PORT_LOCAL}/0"
+)
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [
-                f"redis://:{REDIS_PASSWORD_ESCAPED}@{REDIS_HOST}:{REDIS_PORT_LOCAL}/0"
-            ],
+            # socket_timeout above channels_redis' 5 s BZPOPMIN; see docs/logbook.md
+            "hosts": [{"address": CHANNEL_LAYER_ADDRESS, "socket_timeout": 30}],
         },
     },
 }

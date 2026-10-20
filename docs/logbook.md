@@ -4076,3 +4076,26 @@ when `/usr/bin/certbot` is missing or already a link (a fresh host, where the
 pip venv is the only certbot). The packaged binary is left alone rather than
 replaced, because replacing it would change which certbot renews production's
 certificates.
+
+## website/config/settings/base.py:CHANNEL_LAYERS — `socket_timeout` 30 (2026-10-20)
+
+Reported 2026-10-20: the historic bar chart redrew every few seconds on an
+idle page, and a zoom was undone the same way. The asgi log of 2026-10-10
+shows why. Every historic socket lived 5–7 s (`WSCONNECT` … `WSDISCONNECT`), and
+each one ended with `Exception inside application: Timeout reading from
+127.0.0.1:6380` raised from `channels.utils.await_many_dispatch` (16 times, about
+one per session). htmx 4's `hx-ws` reconnects on that close (code 1011) after
+about 0.5 s and resets its backoff on every open. Each new `connect()` sent the
+full-range charts, so the chart redrew and the zoom was lost.
+
+Cause: redis-py 8 gives each connection a 5 s `socket_timeout`
+(`DEFAULT_SOCKET_TIMEOUT`, the traceback's `read_response` lines 782/783 are
+8.x's). channels_redis 4.3 waits for channel messages with `BZPOPMIN … 5`
+(`brpop_timeout`), so an idle wait and the read timeout expire together, and
+the read loses. Reproduced on the dev Redis (database 15): an idle
+`RedisChannelLayer.receive` raised `TimeoutError` after 5.0 s with the old
+`hosts`, and stayed up 14 s with `{"address": …, "socket_timeout": 30}`.
+`channels_redis.utils.create_pool` passes the dict's other keys to
+`ConnectionPool.from_url`. 30 only has to stay well above `brpop_timeout`.
+The address moved into `CHANNEL_LAYER_ADDRESS` to fit 90 columns. Test:
+`config/tests/test_settings.py`.
