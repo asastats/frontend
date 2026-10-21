@@ -166,6 +166,18 @@ class PnlWidgetNftTest(FunctionalTest):
         for payload in self._evaluate_payloads():
             self.assertIs(payload.get("nfts"), False)
 
+    def test_the_processed_time_follows_the_readers_timezone(self):
+        self._log_in(ASASTATSER)
+        self.browser.execute_cdp_cmd(
+            "Emulation.setTimezoneOverride", {"timezoneId": "Asia/Tokyo"}
+        )
+        self.results = {**RESULTS, "processed_at": 1_760_000_000}
+        self._open()
+        processed = self.find_elem_by_css("time[data-local-time]")
+        self.assertIn("GMT+9", processed.text)
+        self.assertNotIn("UTC", processed.text)
+        self.assertEqual(processed.get_attribute("datetime"), "2025-10-09T08:53:20Z")
+
     def test_a_reader_sees_what_a_reprocess_changed(self):
         self._log_in(ASASTATSER)
         change = {"quantity": -1, "cost": -627_030_000, "realized": 0.0}
