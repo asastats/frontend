@@ -1,6 +1,6 @@
 # ASA Stats website's frontend
 
-[![build](https://github.com/asastats/frontend/actions/workflows/build.yml/badge.svg)](https://github.com/asastats/frontend/actions/workflows/build.yml) [![docs](https://app.readthedocs.org/projects/asastats/badge/?version=latest)](https://asastats.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/asastats/frontend/graph/badge.svg?token=DQC4SRY8J9)](https://codecov.io/gh/asastats/frontend) ![ansible-lint](https://github.com/asastats/frontend/actions/workflows/ansible-lint.yml/badge.svg) ![molecule](https://github.com/asastats/frontend/actions/workflows/molecule.yml/badge.svg) 
+[![build](https://github.com/asastats/frontend/actions/workflows/build.yml/badge.svg)](https://github.com/asastats/frontend/actions/workflows/build.yml) [![docs](https://img.shields.io/readthedocs/asastats/latest)](https://asastats.readthedocs.io/en/latest/?badge=latest) [![codecov](https://codecov.io/gh/asastats/frontend/graph/badge.svg?token=DQC4SRY8J9)](https://codecov.io/gh/asastats/frontend) ![ansible-lint](https://github.com/asastats/frontend/actions/workflows/ansible-lint.yml/badge.svg) ![molecule](https://github.com/asastats/frontend/actions/workflows/molecule.yml/badge.svg) 
 
 
 This repository contains the frontend and core web application code for ASA Stats, a platform that evaluates and presents ASA and NFT price information on the Algorand blockchain.
