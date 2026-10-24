@@ -57,6 +57,7 @@
     <section class="md:order-1">
       <h3 class="text-center text-xl font-semibold">Use social media</h3>
       <div class="mt-5 flex flex-col gap-2">
+        {% include "socialaccount/snippets/apple_button.html" %}
         <a class="btn btn-outline justify-start gap-3" role="button" id="id_discord" href="/accounts/discord/login/"><img class="h-5 w-5" src="{% static 'img/social/discord.png' %}" alt="Discord logo" />Sign in with Discord</a>
         <a class="btn btn-outline justify-start gap-3" role="button" id="id_twitter" href="/accounts/twitter_oauth2/login/"><img class="h-5 w-5" src="{% static 'img/social/twitter.png' %}" alt="X logo" />Sign in with X</a>
         <a class="btn btn-outline justify-start gap-3" role="button" id="id_reddit" href="/accounts/reddit/login/"><img class="h-5 w-5" src="{% static 'img/social/reddit.png' %}" alt="Reddit logo" />Sign in with Reddit</a>

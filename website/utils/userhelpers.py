@@ -147,6 +147,7 @@ def delete_deactivated():
     :type users: :class:`QuerySet`
     :return: int
     """
+    from core.apple import revoke_for_user
     from core.models import LiveAllowanceBucket
 
     count = 0
@@ -154,6 +155,8 @@ def delete_deactivated():
     for user in users:
         # Keyed by `u:<pk>`, not a foreign key, so nothing cascades to it.
         LiveAllowanceBucket.objects.filter(key=f"u:{user.pk}").delete()
+        # A second try if Apple was unreachable when the account was closed.
+        revoke_for_user(user)
         user.profile.delete()
         user.delete()
         count += 1

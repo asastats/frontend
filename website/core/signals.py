@@ -1,11 +1,14 @@
 """Module containing core app signals."""
 
+from allauth.account.signals import user_signed_up
+from allauth.socialaccount.signals import social_account_added, social_account_updated
 from django.contrib.auth.models import User
 from django.contrib.auth.signals import user_logged_in
 from django.db.models.signals import post_save
 from django.dispatch import Signal, receiver
 
-from core.models import Profile
+from core.apple import revoke_for_user
+from core.models import AppleSignInToken, Profile
 
 #: Sent with ``user`` when an account is closed (deactivated, deleted within a
 #: week). Receivers drop what must stop at once, e.g. push delivery.
@@ -59,3 +62,39 @@ def post_login(sender, user, request, **kwargs):
     """
     if user.profile.authorized:
         user.profile.check_votes_and_permission()
+
+
+def keep_apple_token(sociallogin):
+    """Store the refresh token of a Sign in with Apple login, for revocation.
+
+    :param sociallogin: allauth's record of the social login
+    :type sociallogin: :class:`allauth.socialaccount.models.SocialLogin`
+    """
+    token = sociallogin.token
+    if sociallogin.account.provider != "apple" or token is None or not token.token_secret:
+        return
+
+    AppleSignInToken.objects.update_or_create(
+        user=sociallogin.user, defaults={"refresh_token": token.token_secret}
+    )
+
+
+@receiver(social_account_added)
+@receiver(social_account_updated)
+def keep_apple_token_on_login(sender, request, sociallogin, **kwargs):
+    """Keep the Apple token on a returning login or a connected account."""
+    keep_apple_token(sociallogin)
+
+
+@receiver(user_signed_up)
+def keep_apple_token_on_signup(sender, request, user, **kwargs):
+    """Keep the Apple token when Sign in with Apple created the account."""
+    sociallogin = kwargs.get("sociallogin")
+    if sociallogin is not None:
+        keep_apple_token(sociallogin)
+
+
+@receiver(user_deactivated)
+def revoke_apple_token_on_deactivation(sender, user, **kwargs):
+    """Revoke the user's Sign in with Apple token when the account is closed."""
+    revoke_for_user(user)

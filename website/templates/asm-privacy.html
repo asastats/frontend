@@ -19,7 +19,7 @@
     <ul class="list-disc space-y-1 pl-5">
       <li><strong>Without an account:</strong> the Algorand addresses and bundles you look up, so we can show them.</li>
       <li><strong>Your account:</strong> an email address and a username, and optionally your first and last name. The email is used to confirm the account and to reset your password.</li>
-      <li><strong>Sign-in with Google, Apple, GitHub, Discord, Reddit or X:</strong> the identifier and the basic profile details that service shares with us, such as your email address. With Sign in with Apple you can hide your email address.</li>
+      <li><strong>Sign-in with Google, Apple, GitHub, Discord, Reddit or X:</strong> the identifier and the basic profile details that service shares with us, such as your email address. With Sign in with Apple you can hide your email address, and we keep the token Apple issues only to revoke it when you delete your account.</li>
       <li><strong>Wallet sign-in and linked addresses:</strong> the Algorand addresses you prove you own by signing a message in your wallet.</li>
       <li><strong>What you save:</strong> bundle names and their addresses, settings, alert rules, and the profit and loss settings and figures you enter.</li>
       <li><strong>Notifications:</strong> if you turn alerts on, a notification token for your device, its platform and the app version, so alerts reach it.</li>
@@ -74,7 +74,7 @@
 
   <h2 id="contact">Contact us</h2>
   <div class="mt-3 space-y-4 text-base-content/80">
-    <p>Questions or requests about your data: info@{{ WEBSITE_DOMAIN }}, or the {{ WEBSITE_NAME }} community channels (Discord, X and Reddit).</p>
+    <p>Questions or requests about your data: info@{{ WEBSITE_BASE_DOMAIN }}, or the {{ WEBSITE_NAME }} community channels (Discord, X and Reddit).</p>
   </div>
 </article>
 {% endblock %}

@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 from config import __version__
 from utils.constants.apiv2 import SPECTACULAR_DESCRIPTION
-from utils.helpers import get_env_variable, parse_export_limits
+from utils.helpers import get_env_variable, parse_export_limits, read_optional_file
 
 load_dotenv()
 
@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
+    "allauth.socialaccount.providers.apple",
     "allauth.socialaccount.providers.discord",
     "allauth.socialaccount.providers.github",
     "allauth.socialaccount.providers.google",
@@ -185,7 +186,28 @@ ACCOUNT_USER_DISPLAY = "utils.userhelpers.user_display"
 # http://stackoverflow.com/a/25378883
 ACCOUNT_SIGNUP_FORM_CLASS = "core.forms.CustomSignupForm"
 
+# Sign in with Apple (F5): Services ID, key id, team id and the .p8 key's path.
+APPLE_CLIENT_ID = get_env_variable("APPLE_CLIENT_ID", "")
+APPLE_KEY_ID = get_env_variable("APPLE_KEY_ID", "")
+APPLE_TEAM_ID = get_env_variable("APPLE_TEAM_ID", "")
+APPLE_PRIVATE_KEY_FILE = get_env_variable("APPLE_PRIVATE_KEY_FILE", "")
+APPLE_PRIVATE_KEY = read_optional_file(APPLE_PRIVATE_KEY_FILE)
+#: The button is rendered only when every part is present.
+APPLE_SIGN_IN_ENABLED = all(
+    (APPLE_CLIENT_ID, APPLE_KEY_ID, APPLE_TEAM_ID, APPLE_PRIVATE_KEY)
+)
+
 SOCIALACCOUNT_PROVIDERS = {
+    # https://developer.apple.com/account/resources/identifiers (Services IDs);
+    # allauth's names: client_id = Services ID, secret = key id, key = team id
+    "apple": {
+        "APP": {
+            "client_id": APPLE_CLIENT_ID,
+            "secret": APPLE_KEY_ID,
+            "key": APPLE_TEAM_ID,
+            "settings": {"certificate_key": APPLE_PRIVATE_KEY},
+        }
+    },
     # https://discord.com/developers/applications
     "discord": {
         "APP": {

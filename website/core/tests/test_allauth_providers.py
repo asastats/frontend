@@ -35,6 +35,7 @@ import re
 
 import pytest
 from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 
 #: Where each configured provider is expected to send the user.
@@ -45,6 +46,7 @@ from django.urls import reverse
 #: endpoint -- Twitter's move to `x.com` being the recent one -- shows up as a
 #: failure here rather than as a support ticket.
 AUTHORIZE_URLS = {
+    "apple": "https://appleid.apple.com/auth/authorize",
     "discord": "https://discord.com/api/oauth2/authorize",
     "github": "https://github.com/login/oauth/authorize",
     "google": "https://accounts.google.com/o/oauth2/v2/auth",
@@ -96,8 +98,14 @@ class TestCoreAllauthProviders:
         Nothing generates them from the provider list, so adding a provider to
         `INSTALLED_APPS` does not add a button and removing one does not take
         it away. Comparing the two sets is the only thing that notices.
+
+        Apple's button renders only once its keys are configured (F5), so it is
+        switched on here.
         """
-        assert _installed_providers() == set(_template_links(client))
+        with override_settings(APPLE_SIGN_IN_ENABLED=True):
+            links = _template_links(client)
+
+        assert _installed_providers() == set(links)
 
     def test_core_allauth_the_expected_hosts_are_the_installed_ones(self):
         """Guards this module against the project changing under it."""
@@ -176,7 +184,12 @@ class TestCoreAllauthCallbackFailures:
 
     @pytest.mark.parametrize("provider", sorted(AUTHORIZE_URLS))
     def test_core_allauth_a_declined_consent_screen_is_handled(self, client, provider):
-        response = client.get(f"/accounts/{provider}/login/callback/?error=access_denied")
+        callback = f"/accounts/{provider}/login/callback/"
+        if provider == "apple":
+            # Apple answers with a cross-site form_post; allauth re-reads it on a GET.
+            response = client.post(callback, {"error": "access_denied"}, follow=True)
+        else:
+            response = client.get(f"{callback}?error=access_denied")
 
         assert response.status_code == 401
         assert "socialaccount/authentication_error.html" in [

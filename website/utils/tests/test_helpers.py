@@ -667,3 +667,26 @@ class TestUtilsHelpersNftFloorPrice:
         """Most NFTs are floored nowhere, and a chart summing `None` would take
         the whole page down."""
         assert nft_floor_price(nft) == 0.0
+
+
+class TestUtilsHelpersReadOptionalFile:
+    """Testing class for :py:func:`utils.helpers.read_optional_file`."""
+
+    def test_utils_helpers_read_optional_file_reads_a_file(self, tmp_path):
+        from utils.helpers import read_optional_file
+
+        key = tmp_path / "AuthKey.p8"
+        key.write_text("-----BEGIN PRIVATE KEY-----\nx\n")
+
+        assert read_optional_file(str(key)) == "-----BEGIN PRIVATE KEY-----\nx\n"
+
+    @pytest.mark.parametrize("path", ["", "/no/such/AuthKey.p8"])
+    def test_utils_helpers_read_optional_file_empty_when_absent(self, path):
+        from utils.helpers import read_optional_file
+
+        assert read_optional_file(path) == ""
+
+    def test_utils_helpers_read_optional_file_ignores_a_directory(self, tmp_path):
+        from utils.helpers import read_optional_file
+
+        assert read_optional_file(str(tmp_path)) == ""

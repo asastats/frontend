@@ -198,6 +198,7 @@ class TestCoreContextProcessors:
             "WEBSITE_NAME": settings.WEBSITE_NAME,
             "WEBSITE_URL": settings.WEBSITE_URL,
             "WEBSITE_DOMAIN": settings.WEBSITE_DOMAIN,
+            "WEBSITE_BASE_DOMAIN": settings.WEBSITE_BASE_DOMAIN,
             "BASE_CDN_URL": settings.BASE_CDN_URL,
             # Published so both designs fold at the same counts the templates,
             # `toolbar.js` and `showmore.js` all need, rather than at several
@@ -212,6 +213,7 @@ class TestCoreContextProcessors:
             "MEDIUM_NAME": settings.MEDIUM_NAME,
             "DISCORD_INVITE": settings.DISCORD_INVITE,
             "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
+            "APPLE_SIGN_IN": settings.APPLE_SIGN_IN_ENABLED,
             "AVAILABLE_THEMES": settings.AVAILABLE_THEMES,
             "AVAILABLE_THEMES_BY_SCHEME": settings.AVAILABLE_THEMES_BY_SCHEME,
             "DEFAULT_THEMES_BY_SCHEME": settings.DEFAULT_THEMES_BY_SCHEME,

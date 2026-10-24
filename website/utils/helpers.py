@@ -16,6 +16,7 @@ import os
 import random
 import re
 import time
+from pathlib import Path
 
 from algosdk.encoding import is_valid_address
 from django.conf import settings
@@ -134,6 +135,19 @@ def get_env_variable(name, default=None):
                 "{} {}!".format(name, MISSING_ENVIRONMENT_VARIABLE_ERROR)
             )
         return default
+
+
+def read_optional_file(path):
+    """Return the text of the file at `path`, or "" if none is named or it is absent.
+
+    :param path: file path, possibly empty
+    :type path: str
+    :return: str
+    """
+    if not path or not Path(path).is_file():
+        return ""
+
+    return Path(path).read_text()
 
 
 def message_for_app_code_in_values(values, app_codes, msg):

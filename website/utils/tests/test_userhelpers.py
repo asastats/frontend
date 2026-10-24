@@ -505,7 +505,7 @@ def _personal_rows(user, tag):
     from allauth.account.models import EmailAddress
     from allauth.socialaccount.models import SocialAccount
 
-    from core.models import BundleName, LiveAllowanceBucket
+    from core.models import AppleSignInToken, BundleName, LiveAllowanceBucket
     from walletauth.models import LinkedAddress, WalletNonce
     from widgets.inhouse.alerts.models import AlertRule, PushSubscription
     from widgets.inhouse.pnl.models import (
@@ -538,6 +538,7 @@ def _personal_rows(user, tag):
         user=user, bundle=f"h{tag}", kind="basis", asset="0", amount=1, currency="usd"
     )
     LiveAllowanceBucket.objects.create(key=f"u:{user.pk}")
+    AppleSignInToken.objects.create(user=user, refresh_token=f"r.{tag}")
     EmailAddress.objects.create(user=user, email=f"{tag}@example.com")
     SocialAccount.objects.create(user=user, provider="github", uid=tag)
     return [
@@ -552,6 +553,7 @@ def _personal_rows(user, tag):
         (PnlHiddenAsset, {"user_id": user.pk}),
         (PnlOverride, {"user_id": user.pk}),
         (LiveAllowanceBucket, {"key": f"u:{user.pk}"}),
+        (AppleSignInToken, {"user_id": user.pk}),
         (EmailAddress, {"user_id": user.pk}),
         (SocialAccount, {"user_id": user.pk}),
     ]

@@ -85,3 +85,20 @@ class AuthPagesTest(FunctionalTest):
         form = self._open("account_login")
         self.assertTrue(form.find_elements(By.CSS_SELECTOR, "button[type='submit']"))
         self.assertTrue(form.find_elements(By.ID, "id_login"))
+
+
+class SignInWithAppleTest(FunctionalTest):
+    """Sign in with Apple appears once configured, first among the providers (F5)."""
+
+    def test_no_apple_button_without_keys(self):
+        self.browser.get(self.server_url + reverse("account_login"))
+
+        self.assertEqual(self.browser.find_elements(By.ID, "id_apple"), [])
+
+    def test_apple_button_when_configured(self):
+        with self.settings(APPLE_SIGN_IN_ENABLED=True):
+            self.browser.get(self.server_url + reverse("account_login"))
+            button = self.find_elem_by_id("id_apple")
+
+            self.assertEqual(button.text.strip(), "Sign in with Apple")
+            self.assertTrue(button.get_attribute("href").endswith("/accounts/apple/login/"))

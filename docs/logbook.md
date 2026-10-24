@@ -4479,3 +4479,80 @@ says the site "does not log any data" and names a DEACTIVATE button. Both
 are out of date; flagged to the user rather than rewritten here. The contact
 line renders `info@{{ WEBSITE_DOMAIN }}` (`info@www.asastats.com`), as on the
 deletion page; the mailbox is waiting on the user's confirmation.
+
+## config/settings/base.py (APPLE_*), templates/socialaccount/snippets/apple_button.html, nginx ssl.conf — Sign in with Apple (F5, 2026-10-24)
+
+Apple 4.8: an app whose primary account can be created with a third-party
+login (Google, X, …) must also offer an equivalent that limits data to name and
+email and lets the user hide the email. allauth's `apple` provider is installed
+for the whole site; inside the app it will go through the system-browser
+flow (F4) like every other provider.
+
+- Settings, all empty by default: `APPLE_CLIENT_ID` (the **Services ID**, e.g.
+  `com.asastats.web`), `APPLE_KEY_ID`, `APPLE_TEAM_ID`, `APPLE_PRIVATE_KEY_FILE`
+  (a path to the `.p8`, read with `utils.helpers.read_optional_file`).
+  allauth names them oddly: `client_id` = Services ID, `secret` = key id,
+  `key` = team id, `settings.certificate_key` = the key itself. It signs the
+  client secret (ES256 JWT) from them for each token exchange.
+- `APPLE_SIGN_IN_ENABLED` is true only when all four are present. The button
+  (`apple_button.html`, in the login modal's social tab and in
+  `account/base_auth.html`, first in the list) and the Apple entry in
+  `socialaccount/snippets/provider_list.html` render only then. Production
+  therefore shows nothing until the keys exist.
+- Styling: Apple's guidelines ask for the logo and "Sign in with Apple" on a
+  black (or white) button, at least as prominent as the others. The colours
+  are an inline `style`: the committed stylesheet has no `bg-black`, and a
+  rebuild currently drags in a daisyUI upgrade (see the F2 entry).
+- CSP `form-action` gains `https://appleid.apple.com`. The flow starts with a
+  POST from allauth's confirmation page that redirects there, and
+  `form-action` also governs where a form submission may redirect.
+- Apple returns to `/accounts/apple/login/callback/` with a **cross-site
+  `form_post`**, which carries no `SameSite=Lax` session cookie. allauth
+  stores that response in its own short-lived cookie and redirects to a normal
+  GET callback (`apple_post_callback`). It still has to be proven by a real
+  round trip on staging, a user action.
+
+**Not done: token revocation on account deletion.** Apple's account deletion
+guidance asks apps that offer Sign in with Apple to revoke the user's tokens
+through its REST API when the account is deleted. allauth neither revokes nor
+keeps provider tokens unless `SOCIALACCOUNT_STORE_TOKENS` is on, and that
+setting would store every provider's tokens. Options were put to the user.
+
+Tests: `core/tests/test_sign_in_with_apple.py`,
+`core/tests/test_allauth_providers.py` (Apple added: host, redirect_uri, the
+POST-only callback), `utils/tests/test_helpers.py::TestUtilsHelpersReadOptionalFile`,
+`functional_tests/test_auth_pages.py::SignInWithAppleTest`.
+
+## core/apple.py, core/models.py:AppleSignInToken, core/signals.py — revoking Sign in with Apple tokens (F5, 2026-10-24)
+
+Apple's account deletion guidance asks an app that offers Sign in with Apple
+to revoke the user's tokens through its REST API when the account is deleted.
+The user chose (2026-10-24) to keep **Apple's refresh token only**, rather than
+turn on `SOCIALACCOUNT_STORE_TOKENS`, which would store every provider's
+tokens.
+
+- `AppleSignInToken` (one row per user, `CASCADE`, migration `0011`) holds
+  that refresh token and nothing else. It is written by
+  `keep_apple_token` from three allauth signals that each carry the
+  `sociallogin`: `user_signed_up` (new account), `social_account_updated`
+  (returning login) and `social_account_added` (Apple connected to an existing
+  account). allauth's Apple adapter puts the refresh token in
+  `token.token_secret`.
+- On `user_deactivated` (the account is closed), `revoke_for_user` POSTs it to
+  `https://appleid.apple.com/auth/revoke` with an ES256 client secret
+  (`apple_client_secret`: iss = team id, sub = Services ID, kid = key id,
+  5 minutes). On success the row is deleted. If Apple refuses or cannot be
+  reached, it is kept, and `delete_deactivated` tries again before the
+  account is hard-deleted; the cascade removes it either way. Without the
+  Apple keys configured nothing is sent (logged).
+- The app privacy policy says this in one clause (Sign in with Apple
+  bullet).
+
+Tests: `core/tests/test_sign_in_with_apple.py` (secret claims verified against a
+generated P-256 key; revoke success, refusal, network failure, unconfigured;
+capture from each signal; the deactivation and deletion paths), and the F6
+audit test now includes the table.
+
+**Correction 2026-10-24** to the F12 and F6 entries above: the contact address
+is `info@asastats.com`, rendered as `info@{{ WEBSITE_BASE_DOMAIN }}` (the user
+confirmed the mailbox). `WEBSITE_BASE_DOMAIN` was added to `global_constants`.

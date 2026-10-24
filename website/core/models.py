@@ -955,3 +955,17 @@ class LiveAllowanceBucket(models.Model):
         return self.refilled(
             self.balance, (now - self.modified).total_seconds(), capacity, per_second
         )
+
+
+class AppleSignInToken(models.Model):
+    """The refresh token Sign in with Apple issued, kept only to revoke it.
+
+    Apple asks apps to revoke a user's tokens when the account is deleted
+    (`core.apple`); see docs/logbook.md.
+    """
+
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="apple_sign_in_token"
+    )
+    refresh_token = models.TextField()
+    updated = models.DateTimeField(auto_now=True)

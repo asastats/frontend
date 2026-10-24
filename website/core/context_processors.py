@@ -145,6 +145,7 @@ def global_constants(request):
         "WEBSITE_SHORT_NAME": settings.WEBSITE_SHORT_NAME,
         "WEBSITE_URL": settings.WEBSITE_URL,
         "WEBSITE_DOMAIN": settings.WEBSITE_DOMAIN,
+        "WEBSITE_BASE_DOMAIN": settings.WEBSITE_BASE_DOMAIN,
         "BASE_CDN_URL": settings.BASE_CDN_URL,
         "X_HANDLE": settings.X_HANDLE,
         "SUBREDDIT_NAME": settings.SUBREDDIT_NAME,
@@ -153,6 +154,7 @@ def global_constants(request):
         "MEDIUM_NAME": settings.MEDIUM_NAME,
         "DISCORD_INVITE": settings.DISCORD_INVITE,
         "GITHUB_ORGANIZATION": settings.GITHUB_ORGANIZATION,
+        "APPLE_SIGN_IN": settings.APPLE_SIGN_IN_ENABLED,
         # How many rows an address page section shows before offering the rest,
         # and how many each press adds. Published rather than repeated in the
         # browser, because the template renders the first fold and `toolbar.js`

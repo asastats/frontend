@@ -3,6 +3,7 @@
 {% get_providers as socialaccount_providers %}
 <div class="mx-auto flex max-w-sm flex-col gap-2">
 {% for provider in socialaccount_providers %}
+{% if provider.id != "apple" or APPLE_SIGN_IN %}
 {% if provider.id == "openid" %}
 {% for brand in provider.get_brands %}
   <a title="{{brand.name}}"
@@ -12,5 +13,6 @@
 {% endfor %}
 {% endif %}
   <a class="btn btn-outline justify-start" role="button" href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}">{{provider.name}}</a>
+{% endif %}
 {% endfor %}
 </div>

@@ -96,5 +96,5 @@ class WebsiteDomainSettingTest(TestCase):
         response = self.client.get(reverse("asm_privacy"))
         html = response.content.decode()
 
-        self.assertIn(f"info@{settings.WEBSITE_DOMAIN}", html)
+        self.assertIn(f"info@{settings.WEBSITE_BASE_DOMAIN}", html)  # since 2026-10-24
         self.assertNotIn("info@https", html)

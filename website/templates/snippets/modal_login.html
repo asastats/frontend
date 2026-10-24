@@ -49,6 +49,7 @@
       {% comment %} ---- TAB 2: social providers ---- {% endcomment %}
       <div id="modal-tab-social" class="modal-tab-panel" hidden>
         <div class="mx-auto flex max-w-sm flex-col gap-2">
+          {% include "socialaccount/snippets/apple_button.html" %}
           <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/discord/login/"><img class="h-5 w-5" src="{% static 'img/social/discord.png' %}" alt="{% trans 'Discord logo' %}" />Sign in with Discord</a>
           <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/twitter_oauth2/login/"><img class="h-5 w-5" src="{% static 'img/social/twitter.png' %}" alt="{% trans 'X logo' %}" />Sign in with X</a>
           <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/reddit/login/"><img class="h-5 w-5" src="{% static 'img/social/reddit.png' %}" alt="{% trans 'Reddit logo' %}" />Sign in with Reddit</a>
