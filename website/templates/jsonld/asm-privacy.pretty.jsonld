@@ -1,10 +1,10 @@
 {
   "@context": "http://schema.org",
   "@type": "WebPage",
-  "name": "{{ WEBSITE_NAME }} Mobile Privacy Policy",
+  "name": "{{ WEBSITE_NAME }} app Privacy Policy",
   "url": "{{ WEBSITE_URL }}/asm-privacy/",
   "@id": "{{ WEBSITE_URL }}/#asm-privacy",
-  "description": "Privacy Policy for the {{ WEBSITE_NAME }} Mobile application",
+  "description": "Privacy Policy for the {{ WEBSITE_NAME }} app for iOS and Android",
   "isPartOf":{
       "@type": "WebSite",
       "@id":"{{ WEBSITE_URL }}/#site",

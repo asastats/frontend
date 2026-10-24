@@ -1,34 +1,81 @@
 {% extends 'base.html' %}
-{% block title %}Privacy Policy - {{ WEBSITE_NAME }} Mobile{% endblock %}
-{% block description %}Privacy Policy for the {{ WEBSITE_NAME }} Mobile application. {{ WEBSITE_NAME }} Mobile does not collect or store personal data.{% endblock %}
-{% block keywords %}{{ WEBSITE_NAME }} Mobile,{{ WEBSITE_SHORT_NAME }},Algorand,ASA,privacy policy,privacy,data,app,software{% endblock %}
+{% block title %}Privacy Policy - {{ WEBSITE_NAME }} app{% endblock %}
+{% block description %}Privacy Policy for the {{ WEBSITE_NAME }} app for iOS and Android: what it collects, why, who else processes it, and how to delete your account.{% endblock %}
+{% block keywords %}{{ WEBSITE_NAME }} app,{{ WEBSITE_SHORT_NAME }},Algorand,ASA,privacy policy,privacy,data,app,account deletion{% endblock %}
 {% block content %}
 <header class="mx-auto mb-10 max-w-3xl text-center">
   <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Privacy Policy</h1>
+  <p class="mt-3 text-lg text-base-content/70">The {{ WEBSITE_NAME }} app for iOS and Android.</p>
 </header>
 <article class="mx-auto max-w-3xl text-left">
-  <h2 id="warranty">{{ WEBSITE_NAME }} Mobile</h2>
+  <h2 id="summary">In short</h2>
   <div class="mt-3 space-y-4 text-base-content/80">
-    <p>{{ WEBSITE_NAME }} built the {{ WEBSITE_NAME }} Mobile app as a Free app. This service is provided by {{ WEBSITE_NAME }} at no cost and is intended for use as is.</p>
-    <p>This application does not collect or store personal data.</p>
-    <p>If you installed this application from Google Play, then Google Play does collect some personal data. Please see the privacy policy for Google Play Services here: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener" title="Google Play Services Privacy Policy page">https://policies.google.com/privacy</a></p>
-  </div>
-  <h2 id="links">Links to Other Sites</h2>
-  <div class="mt-3 space-y-4 text-base-content/80">
-    <p>{{ WEBSITE_NAME }} Mobile contains links to other sites. If you click on a third-party link, you will be directed to that site. Note that these external sites are not operated by us. Therefore, we strongly advise you to review the Privacy Policy of these websites. We have no control over and assume no responsibility for the content, privacy policies, or practices of any third-party sites or services.</p>
+    <p>The {{ WEBSITE_NAME }} app shows the {{ WEBSITE_URL }} website and adds notifications, links and sharing around it. It collects only what it needs to give you the same account and features as the website. It shows no ads, does not track you across apps or websites, and does not sell or share your data for advertising.</p>
+    <p>{{ WEBSITE_NAME }} never holds your keys. Transactions are signed in your own wallet app.</p>
   </div>
 
-  <h2 id="changes">Changes to This Privacy Policy</h2>
+  <h2 id="collected">What we collect, and why</h2>
   <div class="mt-3 space-y-4 text-base-content/80">
-    <p>We may update our Privacy Policy from time to time. Thus, you are advised to review this page periodically for any changes. We will notify you of any changes by posting the new Privacy Policy on this page.</p>
-    <p>This policy is effective as of 2022-11-11</p>
+    <ul class="list-disc space-y-1 pl-5">
+      <li><strong>Without an account:</strong> the Algorand addresses and bundles you look up, so we can show them.</li>
+      <li><strong>Your account:</strong> an email address and a username, and optionally your first and last name. The email is used to confirm the account and to reset your password.</li>
+      <li><strong>Sign-in with Google, Apple, GitHub, Discord, Reddit or X:</strong> the identifier and the basic profile details that service shares with us, such as your email address. With Sign in with Apple you can hide your email address.</li>
+      <li><strong>Wallet sign-in and linked addresses:</strong> the Algorand addresses you prove you own by signing a message in your wallet.</li>
+      <li><strong>What you save:</strong> bundle names and their addresses, settings, alert rules, and the profit and loss settings and figures you enter.</li>
+      <li><strong>Notifications:</strong> if you turn alerts on, a notification token for your device, its platform and the app version, so alerts reach it.</li>
+      <li><strong>Usage of the service:</strong> each request reaches our server with your IP address, the page asked for (which can contain an address) and the app's name and version. It is used to serve the request, to keep the service running and to stop abuse.</li>
+    </ul>
+    <p>The app stores your sign-in session and your display preferences (theme, layout) on your device.</p>
+    <p>We do not collect your location, contacts, photos, health or financial account data, and the app contains no analytics or advertising software.</p>
   </div>
 
-  <h2 id="contact">Contact Us</h2>
+  <h2 id="third-parties">Who else processes it</h2>
   <div class="mt-3 space-y-4 text-base-content/80">
-    <p>If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at info@{{ WEBSITE_DOMAIN }}.</p>
+    <ul class="list-disc space-y-1 pl-5">
+      <li><strong>Google (Firebase Cloud Messaging) and Apple (Push Notification service)</strong> deliver alert notifications. They receive your device's notification token and the notification itself.</li>
+      <li><strong>The sign-in service you choose</strong> (Google, Apple, GitHub, Discord, Reddit, X) handles that sign-in under its own policy.</li>
+      <li><strong>Your wallet</strong> (Pera, Defly and others) and the WalletConnect relay it uses see the address you connect and the transactions you are asked to sign.</li>
+      <li><strong>Links to other sites</strong> open in a browser. Those sites are not ours and have their own privacy policies.</li>
+      <li><strong>The App Store and Google Play</strong> collect data under their own policies when you install the app.</li>
+    </ul>
+    <p>We share nothing else, and we never sell personal data.</p>
   </div>
 
+  <h2 id="retention">How long we keep it</h2>
+  <div class="mt-3 space-y-4 text-base-content/80">
+    <p>Account data is kept until you delete your account. Server logs are deleted after about two weeks. Expired sign-in sessions are removed every week.</p>
+  </div>
+
+  <h2 id="deletion">Deleting your account</h2>
+  <div class="mt-3 space-y-4 text-base-content/80">
+    <p>You can delete your account in the app or on the website: <strong>Profile</strong>, then <strong>Account</strong>, then <strong>Delete account</strong>. Alerts stop at once, and the account and all its data are permanently deleted within 7 days. Details are on the <a href="{% url 'account_deletion' %}">account deletion page</a>.</p>
+    <p>Algorand addresses and transactions are public on the blockchain and remain visible to anyone, with or without an {{ WEBSITE_NAME }} account.</p>
+  </div>
+
+  <h2 id="security">Security</h2>
+  <div class="mt-3 space-y-4 text-base-content/80">
+    <p>All traffic between the app and our server is encrypted (HTTPS). No method of transmission or storage is completely secure, but we use commercially acceptable means to protect your data.</p>
+  </div>
+
+  <h2 id="children">Children</h2>
+  <div class="mt-3 space-y-4 text-base-content/80">
+    <p>The app is not directed at children under 13, and we do not knowingly collect their data.</p>
+  </div>
+
+  <h2 id="earlier">Earlier versions</h2>
+  <div class="mt-3 space-y-4 text-base-content/80">
+    <p>Versions before 1.1, published as {{ WEBSITE_NAME }} Mobile, had no accounts. They kept the addresses you entered on your device and sent them to our server to look up their holdings.</p>
+  </div>
+
+  <h2 id="changes">Changes to this policy</h2>
+  <div class="mt-3 space-y-4 text-base-content/80">
+    <p>We will post any change on this page. Last updated: 24 October 2026.</p>
+  </div>
+
+  <h2 id="contact">Contact us</h2>
+  <div class="mt-3 space-y-4 text-base-content/80">
+    <p>Questions or requests about your data: info@{{ WEBSITE_DOMAIN }}, or the {{ WEBSITE_NAME }} community channels (Discord, X and Reddit).</p>
+  </div>
 </article>
 {% endblock %}
 {% block otherfooter %}<script type="application/ld+json">{% include "jsonld/asm-privacy.jsonld" %}</script>{% endblock %}

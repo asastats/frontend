@@ -54,3 +54,21 @@ class StaticPagesTest(FunctionalTest):
         for anchor in ("how", "when", "what", "kept", "contact"):
             with self.subTest(anchor=anchor):
                 self.assertTrue(self.browser.find_elements(By.ID, anchor))
+
+    def test_app_privacy_policy_covers_what_the_stores_ask(self):
+        # The store listings point at this URL; App Review and Play's Data
+        # safety review read it against what the app collects.
+        self.browser.get(self.server_url + reverse("asm_privacy"))
+
+        for anchor in (
+            "collected",
+            "third-parties",
+            "retention",
+            "deletion",
+            "children",
+            "contact",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertTrue(self.browser.find_elements(By.ID, anchor))
+        link = self.browser.find_element(By.CSS_SELECTOR, "#deletion + div a")
+        self.assertTrue(link.get_attribute("href").endswith(reverse("account_deletion")))

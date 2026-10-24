@@ -4453,3 +4453,29 @@ Tests: `utils/tests/test_userhelpers.py::TestUserHelpersDeleteDeactivatedLeavesN
 `core/tests/test_forms.py` (signal), `core/tests/test_views.py::AccountDeletionPageTest`,
 `functional_tests/test_static_pages.py::test_account_deletion_page_is_public_and_says_when`,
 `functional_tests/test_profile_account.py` (new wording).
+
+## templates/asm-privacy.html — the app's privacy policy (F12, 2026-10-24)
+
+The URL stays: both store listings already point at `/asm-privacy/`. The page
+described the Flutter "ASA Stats Mobile" app, which collected nothing because
+it had no accounts. The 1.1 app is the website, so the policy now lists what
+the website collects for an account: email and username, optional name,
+social sign-in details, linked wallet addresses, saved bundles, alerts and
+P&L figures, push tokens (F8), and server logs. It also names the third
+parties (FCM/APNs, sign-in providers, wallets and WalletConnect, the stores),
+retention, deletion (linking `/account-deletion/`), security, children and the
+earlier versions.
+
+Facts it relies on, so a change to them is a change to this page: nginx
+access logs follow the distribution's logrotate (14 daily files, so "about
+two weeks"); `clearsessions` runs weekly; account deletion completes within
+7 days (`deletedeactivated`, F6); the app has no analytics, advertising or
+crash-reporting SDK. The App Store privacy labels and the Play Data safety
+answers in the workspace's `capacitor/STORE-LISTING.md` are drafted from the
+same list.
+
+The website's own policy (`static/auth_privacy.html`) is separate and still
+says the site "does not log any data" and names a DEACTIVATE button. Both
+are out of date; flagged to the user rather than rewritten here. The contact
+line renders `info@{{ WEBSITE_DOMAIN }}` (`info@www.asastats.com`), as on the
+deletion page; the mailbox is waiting on the user's confirmation.

@@ -19,7 +19,7 @@ def snippet_for_item(folder, item):
         ("tokenomics", "Tokenomics"),
         ("faq", "FAQ page"),
         ("disclaimer", "Disclaimer"),
-        ("asm-privacy", "{{ WEBSITE_NAME }} Mobile"),
+        ("asm-privacy", "{{ WEBSITE_NAME }} app"),
         ("features", "features"),
         ("subscriptions", "Subscription plans"),
     ],
