@@ -2,6 +2,7 @@
 
 from django_minify_html.middleware import MinifyHtmlMiddleware
 
+from core.appclient import parse_app_client
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 
@@ -35,3 +36,14 @@ class CustomUserHeaderMiddleware:
 
         response["X-User-Header"] = header
         return response
+
+
+class AppClientMiddleware:
+    """Set ``request.app_client`` from the ASA Stats app's user-agent token."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        request.app_client = parse_app_client(request.META.get("HTTP_USER_AGENT"))
+        return self.get_response(request)

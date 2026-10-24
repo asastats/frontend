@@ -42,6 +42,7 @@ from api.client import (
 )
 from api.main import fetch_and_serialize_account
 from api.widgets import bundle_and_addresses_from_path
+from core.appclient import app_cache_prefix
 from core.context_processors import load_typefaces
 from core.forms import (
     DeactivateProfileForm,
@@ -466,13 +467,13 @@ class BaseAddressView(TemplateView):
         self.layout = layout_for_user(getattr(request, "user", None))
         self.fiat = fiat_for_user(getattr(request, "user", None))
         self.live_holdings = self._live_holdings(url_value)
-        cached = cache_page(
-            self.cache_timeout,
-            key_prefix=(
-                f"layout-{self.layout}-{self._entitlement_key(request)}"
-                f"-fiat-{self.fiat['code']}-{self.live_holdings}"
-            ),
-        )(super().dispatch)
+        key_prefix = (
+            f"layout-{self.layout}-{self._entitlement_key(request)}"
+            f"-fiat-{self.fiat['code']}-{self.live_holdings}"
+        )
+        if app_cache_prefix(request):
+            key_prefix = f"{app_cache_prefix(request)}-{key_prefix}"
+        cached = cache_page(self.cache_timeout, key_prefix=key_prefix)(super().dispatch)
         return cached(request, *args, **kwargs)
 
     def _live_holdings(self, url_value):
@@ -664,10 +665,22 @@ class AddressViewCustom(BaseAddressView):
     cache_timeout = CACHE_TTL_CUSTOM_ADDRESS
 
 
-@method_decorator(cache_page(CACHE_TTL), name="dispatch")
-@method_decorator(csrf_protect, name="dispatch")
 class BaseStaticPageView(TemplateView):
     """Base view for presenting static pages."""
+
+    def dispatch(self, request, *args, **kwargs):
+        """Render through the cache entry for this request's client, app or browser.
+
+        Cache outside CSRF, as the class decorators had it before the app.
+
+        :param request: Django request object
+        :type request: :class:`django.http.HttpRequest`
+        :return: :class:`django.http.HttpResponse`
+        """
+        cached = cache_page(CACHE_TTL, key_prefix=app_cache_prefix(request))(
+            csrf_protect(super().dispatch)
+        )
+        return cached(request, *args, **kwargs)
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)

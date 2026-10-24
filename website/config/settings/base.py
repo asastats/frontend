@@ -85,6 +85,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "core.middleware.AppClientMiddleware",
     "core.middleware.CustomMinifyHtmlMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -132,6 +133,7 @@ TEMPLATES = [
                 "core.context_processors.main_navigation",
                 "core.context_processors.profile_navigation",
                 "core.context_processors.walletconnect",
+                "core.context_processors.app_client",
             ],
         },
     },
@@ -409,10 +411,30 @@ WEBSITE_BASE_DOMAIN = get_env_variable("WEBSITE_BASE_DOMAIN", "asastats.com")
 X_HANDLE = get_env_variable("X_HANDLE", "@asastatscom")
 SUBREDDIT_NAME = get_env_variable("SUBREDDIT_NAME", "asastats")
 ANDROID_APP = get_env_variable("ANDROID_APP", "com.asastats.app")
-IOS_APP = get_env_variable("ANDROID_APP", "asa-stats-mobile/id6443547246")
+IOS_APP = get_env_variable("IOS_APP", "asa-stats-mobile/id6443547246")
 MEDIUM_NAME = get_env_variable("MEDIUM_NAME", "@asastats")
 DISCORD_INVITE = get_env_variable("DISCORD_INVITE", "Vjx7w7pAC7")
 GITHUB_ORGANIZATION = get_env_variable("GITHUB_ORGANIZATION", "asastats")
+
+# The ASA Stats app (core.appclient). Comma lists; see docs/logbook.md.
+APP_HIDE_PURCHASE = frozenset(
+    value.strip()
+    for value in get_env_variable("APP_HIDE_PURCHASE", "ios,android").split(",")
+    if value.strip()
+)
+APP_HIDDEN_WIDGETS = {
+    platform: frozenset(
+        value.strip()
+        for value in get_env_variable(f"APP_HIDDEN_WIDGETS_{platform.upper()}", "").split(",")
+        if value.strip()
+    )
+    for platform in ("ios", "android")
+}
+APP_UNSUPPORTED_WALLETS = frozenset(
+    value.strip()
+    for value in get_env_variable("APP_UNSUPPORTED_WALLETS", "kibisis,lute").split(",")
+    if value.strip()
+)
 
 # Themes offered by the appearance picker, grouped by the `color-scheme` each
 # theme declares for itself. The grouping is presentation only -- the picker

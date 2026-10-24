@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 from api.client import BackendError, fetch_capabilities
+from core import appclient
 
 logger = logging.getLogger(__name__)
 
@@ -186,3 +187,13 @@ def walletconnect(request):
     return {
         "WALLET_CONNECT_PROJECT_ID": getattr(settings, "WALLET_CONNECT_PROJECT_ID", "")
     }
+
+
+def app_client(request):
+    """Expose the request's ASA Stats app client, None in a browser.
+
+    :param request: Django request object
+    :type request: :class:`django.http.HttpRequest`
+    :return: dict
+    """
+    return {"APP_CLIENT": appclient.app_client(request)}

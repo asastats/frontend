@@ -54,6 +54,11 @@
       - API_TIER_EXEMPT_USER_IDS
       - API_LIVE_ENABLED
       - API_LIVE_SHARED_TOKEN_USER_IDS
+      # ASA Stats app switches (core.appclient; defaults when unset)
+      - APP_HIDE_PURCHASE
+      - APP_HIDDEN_WIDGETS_IOS
+      - APP_HIDDEN_WIDGETS_ANDROID
+      - APP_UNSUPPORTED_WALLETS
   ansible.builtin.template:
     src: environment_file
     dest: "{{ site_path }}/source/{{ app_name }}/.env"

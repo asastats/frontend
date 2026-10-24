@@ -7,10 +7,10 @@
    `templates/` or `static/` loads Materialize, and no first-party script
    reads `window.M`.
 {% endcomment %}<!DOCTYPE html>
-<html lang="en">{% load static %}{% load i18n %}
+<html lang="en"{% if APP_CLIENT %} class="in-app" data-app-platform="{{ APP_CLIENT.platform }}"{% endif %}>{% load static %}{% load i18n %}
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0{% if APP_CLIENT %}, viewport-fit=cover{% endif %}"/>
     {% comment %}
       Every preference here is the reader's, never sent to the server, and has
       to be stamped before the stylesheet paints: applied afterwards, the
@@ -49,6 +49,8 @@
       from static/fonts, so no third party is told who reads this site.
     {% endcomment %}
     <link href="{% static 'css/style.tw.css' %}" type="text/css" rel="stylesheet" media="screen">
+    {% comment %} App only, and inline rather than in style.tw.css: see docs/logbook.md. {% endcomment %}
+    {% if APP_CLIENT %}<style>body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }</style>{% endif %}
     {% comment %}
     **Keep the 180x180 apple-touch-icon first.** Pera Wallet's SDK builds the
     dApp metadata it shows at connect time from the first `<link>` whose `rel`
@@ -172,8 +174,10 @@
             <li><a class="link link-hover" href="{% url 'subscriptions' %}">Subscriptions</a></li>
             <li><a class="link link-hover" href="{% url 'swagger-ui' %}">API</a></li>
             <li><a class="link link-hover" href="{% url 'faq' %}">FAQ</a></li>
+            {% if not APP_CLIENT %}
             <li><a class="link link-hover" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener">App&nbsp;Store</a></li>
             <li><a class="link link-hover" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener">Play&nbsp;Store</a></li>
+            {% endif %}
           </ul>
         </div>
 
@@ -246,6 +250,7 @@
 <script src="{% static 'js/theme.js' %}"></script>
 <script src="{% static 'js/authmodal.js' %}"></script>
 <script type="module" src="{% static 'js/bundle.js' %}"></script>
+{% if APP_CLIENT %}<script type="module" src="{% static 'js/app.js' %}"></script>{% endif %}
 {% block otherfooter %}{% endblock %}
 </body>
 </html>

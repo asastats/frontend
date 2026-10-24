@@ -4099,3 +4099,108 @@ the read loses. Reproduced on the dev Redis (database 15): an idle
 `ConnectionPool.from_url`. 30 only has to stay well above `brpop_timeout`.
 The address moved into `CHANNEL_LAYER_ADDRESS` to fit 90 columns. Test:
 `config/tests/test_settings.py`.
+
+---
+
+## core/appclient.py, core/middleware.py, core/context_processors.py, config/settings/base.py — the ASA Stats app client (2026-10-24)
+
+The new ASA Stats app (`asastats/mobile`, Capacitor) is a native shell that
+loads this website. The plan is `capacitor/HANDOFF.md` in the workspace. The
+app appends `ASAStatsApp/<major>.<minor>.<patch> (<ios|android>)` to the
+WebView's user agent (`mobile/capacitor.config.ts`). `core.appclient` is the
+**only** place that parses it: `AppClientMiddleware` sets `request.app_client`
+(`AppClient(platform, version)` or None), and the `app_client` context processor
+publishes it to templates as `APP_CLIENT`. Nothing else reads the UA.
+
+The regex is strict: exactly three numeric parts, lower-case platform. A token
+that does not match is a browser. Failing closed means a malformed app build
+gets the plain website, which works, rather than half an app mode.
+
+The per-platform switches are settings rather than constants, so App Review
+can be answered without shipping a binary:
+
+- `APP_HIDE_PURCHASE` (default `ios,android`): `purchase_hidden(request)`
+  drives the purchase/upgrade calls to action (F10).
+- `APP_HIDDEN_WIDGETS_IOS`, `APP_HIDDEN_WIDGETS_ANDROID` (default empty):
+  `widget_hidden(request, name)`, for the swap widgets should a reviewer read
+  them as an exchange under Apple 3.1.5(iii) (F11).
+- `APP_UNSUPPORTED_WALLETS` (default `kibisis,lute`):
+  `wallet_supported(request, wallet_id)`. Kibisis is a browser extension and Lute
+  a web popup or extension, so neither works inside an app WebView (F7).
+
+An empty variable means an empty list, so `APP_HIDE_PURCHASE=` shows purchase
+links in the app.
+
+`IOS_APP` read the `ANDROID_APP` variable (copy-paste slip). It was harmless
+while neither was set; fixed here.
+
+### Cache keys: the app gets its own entries (2026-10-24)
+
+`base.html` renders differently for the app, and two views share rendered pages
+through `cache_page`: `BaseStaticPageView` (about, FAQ, features, ...) and the
+address page's `dispatch`. Neither key carried the client, so the first visitor
+would decide for everyone until the entry expired: a browser could get the app
+page (no store links, `app.js`) or the app the browser page.
+
+`Vary: User-Agent` was rejected for the reason the address page's `dispatch`
+already gives for `Vary: Cookie`: `cache_page` learns its key before the outer
+middleware adds headers. And keyed on the whole UA string, every browser build
+would get its own entry. Instead `app_cache_prefix(request)` returns
+`app-ios`/`app-android` for the app and **None for a browser**. The browser key
+is therefore exactly what it was before, and the app adds at most two entries
+per page. The address page puts it in front of its existing prefix only when
+set.
+
+`BaseStaticPageView` had `cache_page` and `csrf_protect` as class decorators.
+They moved into `dispatch` in the same order (cache outside, CSRF inside),
+because the prefix needs the request. Inverting them would change which
+responses get cached together with a fresh CSRF cookie.
+
+Tests: `core/tests/test_appclient.py` (FAQ, browser after app and app after
+browser), `core/tests/test_address_layout.py::TestCacheIsKeyedOnTheAppClient`.
+
+## templates/base.html — app mode (2026-10-24)
+
+With `APP_CLIENT`:
+
+- `<html class="in-app" data-app-platform="ios|android">`, for CSS and for
+  `app.js`. The pre-paint script adds `prefold` to the same `class`, which is
+  why it uses `classList.add` rather than setting the attribute.
+- `viewport-fit=cover` on the viewport meta, plus `body` padding by
+  `env(safe-area-inset-*)`. Android 16 with target SDK 36 is edge-to-edge.
+  Capacitor 8's SystemBars plugin (`insetsHandling: css`, the default) either
+  pads the WebView natively and reports zero insets (WebView < 140, or no
+  `cover`), or passes the real insets through to `env()` (WebView ≥ 140 with
+  `cover`). `env()` is right in both cases and on iOS. The
+  `--safe-area-inset-*` variables the plugin also sets are written by
+  `evaluateJavascript` onto `document.documentElement`, which a full page
+  navigation discards, so they are not used. Padding `body` rather than
+  `header` covers the pages that blank the header (`index`). Fixed-position
+  toasts and dialogs are not padded; that is a beta checklist line.
+- The App Store / Play Store footer links are not rendered: they would offer
+  the app inside itself.
+- `js/app.js` loads as a module after `bundle.js`.
+
+**Why the safe-area CSS is an inline `<style>` and not in `style.tw.css`.** A
+rebuild with today's `fetch-tailwind.sh` toolchain (Tailwind 4.3.3, latest
+daisyUI) does not reproduce the committed stylesheet from an unchanged
+`input.css`: daisyUI's output has changed. Committing a rebuild would ship
+a daisyUI upgrade to every page as a side effect of the app. The rule is one
+line, is sent only to the app, and the CSP's `style-src` already allows
+`'unsafe-inline'`. Move it into `input.css` with the next deliberate
+stylesheet rebuild.
+
+Tests: `core/tests/test_appclient.py::TestCoreAppClientBaseTemplate`, and
+`functional_tests/test_app_client.py` (Chrome with the token via
+`--user-agent`, and without).
+
+## wallet/vite.config.ts, wallet/src/app/ — the `app` entry (2026-10-24)
+
+A second Rollup input, `app: src/app/main.ts`, built to `js/app.js` beside
+`js/bundle.js` (`entryFileNames` picks by chunk name). It is committed like
+`bundle.js`. Building both entries reproduces the committed `bundle.js`
+byte for byte, so the entry adds a file and changes nothing in the wallet
+bundle. For now it only publishes `window.ASAStatsApp = {isApp: true}`;
+splash, links, downloads, back button, push and sign-in come with F3.
+Separate from `bundle.js` so browsers never download the Capacitor plugin
+code.

@@ -603,3 +603,28 @@ class TestCacheIsKeyedOnTheFiat:
         assert '<button type="button" data-ccy="EUR" aria-pressed="false">EUR</button>' in html
         assert " EUR/ALGO" in html
         assert " USD/ALGO" not in html
+
+
+@pytest.mark.django_db
+class TestCacheIsKeyedOnTheAppClient:
+    """The ASA Stats app and a browser never share an address page entry."""
+
+    APP_UA = "Mozilla/5.0 (Linux; Android 16; wv) ASAStatsApp/1.1.0 (android)"
+
+    def _render_as(self, payload, user_agent):
+        p1, p2, p3, p4 = _render_patches(payload)
+        with p1, p2, p3, p4:
+            client = Client(HTTP_USER_AGENT=user_agent)
+            return client.get(f"/{ADDRESS}").content.decode()
+
+    def test_an_app_page_is_not_served_to_a_browser(self, payload):
+        cache.clear()
+        assert 'class="in-app' in self._render_as(payload, self.APP_UA)
+
+        assert "in-app" not in _render(None, payload)
+
+    def test_a_browser_page_is_not_served_to_the_app(self, payload):
+        cache.clear()
+        assert "in-app" not in _render(None, payload)
+
+        assert 'class="in-app' in self._render_as(payload, self.APP_UA)

@@ -24,6 +24,8 @@ export default defineConfig({
     // load only when a user actually picks an EVM / WalletConnect wallet.
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
+      // app.js: the ASA Stats app's entry, loaded by base.html in app mode only.
+      input: { index: "index.html", app: "src/app/main.ts" },
       // Vite 8's Rolldown engine is far stricter than Rollup about a handful of
       // third-party patterns. Every warning silenced below originates in
       // node_modules pulled in by WalletConnect/Reown (ox, lottie-web, asn1.js);
@@ -46,7 +48,7 @@ export default defineConfig({
         defaultHandler(warning);
       },
       output: {
-        entryFileNames: "js/bundle.js",
+        entryFileNames: (chunk) => (chunk.name === "app" ? "js/app.js" : "js/bundle.js"),
         chunkFileNames: "dist/[name]-[hash].js",
         assetFileNames: "dist/[name].[ext]",
         manualChunks: undefined,
