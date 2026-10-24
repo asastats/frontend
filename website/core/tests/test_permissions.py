@@ -214,3 +214,32 @@ class TestCorePermissionMixins:
         mixin.request = mocker.MagicMock()
         mixin.test_func()
         mixin.request.user.profile.can_use_bundle_names.assert_called_once_with()
+
+
+class TestCorePermissionsInApp(BaseView):
+    """The bundle names message without its subscriptions link in the app (F10)."""
+
+    def test_bundlenamesredirection_message_without_link_in_app(self, mocker):
+        from core.appclient import AppClient
+        from utils.constants.users import ADJUST_BUNDLE_NAMES_SIZE_ERROR_APP
+
+        mocker.patch("core.permissions.redirect")
+        view = BundleNamesRedirection()
+        self.request.user = mocker.MagicMock()
+        self.request.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
+        self.request.app_client = AppClient("ios", (1, 1, 0))
+        view = self.setup_view(view, self.request)
+        with (
+            mock.patch(
+                "core.permissions.UserPassesTestMixin.handle_no_permission"
+            ) as mocked_super,
+            mock.patch("core.permissions.messages") as mocked_messages,
+            mock.patch("core.permissions.mark_safe") as mocked_safe,
+        ):
+            mocked_super.side_effect = PermissionDenied("", "", 0)
+            view.handle_no_permission()
+            mocked_safe.assert_not_called()
+            mocked_messages.error.assert_called_once_with(
+                self.request, ADJUST_BUNDLE_NAMES_SIZE_ERROR_APP
+            )
+        assert "<a" not in ADJUST_BUNDLE_NAMES_SIZE_ERROR_APP

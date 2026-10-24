@@ -8,6 +8,9 @@ from dataclasses import dataclass
 
 from django.conf import settings
 
+#: Shown in the app where a browser gets a link towards buying or upgrading.
+PURCHASE_HIDDEN_TEXT = "Not included in your current plan."
+
 #: Appended by mobile/capacitor.config.ts: change both together.
 APP_CLIENT_REGEX = re.compile(r"\bASAStatsApp/(\d+)\.(\d+)\.(\d+) \((ios|android)\)")
 

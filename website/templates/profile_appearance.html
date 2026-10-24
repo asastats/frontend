@@ -110,12 +110,21 @@
       </div>
     </div>
     {% else %}
+    {% if PURCHASE_HIDDEN %}
+    <span role="tab" id="id-tab-fonts" aria-disabled="true"
+       class="tab flex-1 rounded-field py-2 text-center text-sm font-medium text-base-content/50"
+       title="{{ PURCHASE_HIDDEN_TEXT }}">
+      Fonts
+      <span class="badge badge-outline badge-xs ml-2">Professional</span>
+    </span>
+    {% else %}
     <a role="tab" id="id-tab-fonts" href="{% url 'subscriptions' %}"
        class="tab flex-1 cursor-pointer rounded-field py-2 text-center text-sm font-medium"
        title="Choosing a typeface is available from the Professional tier">
       Fonts
       <span class="badge badge-outline badge-xs ml-2">Professional</span>
     </a>
+    {% endif %}
     {% endif %}
 
   </div>

@@ -102,10 +102,10 @@ class TestCoreAppClientRequest:
         assert app_client(RequestFactory().get("/")) is None
 
     def test_core_appclient_context_processor(self):
-        assert app_client_processor(_request(ANDROID_UA)) == {
-            "APP_CLIENT": AppClient("android", (1, 1, 0))
-        }
-        assert app_client_processor(_request(BROWSER_UA)) == {"APP_CLIENT": None}
+        assert app_client_processor(_request(ANDROID_UA))["APP_CLIENT"] == AppClient(
+            "android", (1, 1, 0)
+        )
+        assert app_client_processor(_request(BROWSER_UA))["APP_CLIENT"] is None
 
     def test_core_appclient_app_cache_prefix(self):
         assert app_cache_prefix(_request(IOS_UA)) == "app-ios"
@@ -208,3 +208,112 @@ class TestCoreAppClientBaseTemplate:
 
         assert 'data-app-platform="ios"' in self._faq(IOS_UA)
         assert 'data-app-platform="android"' in self._faq(ANDROID_UA)
+
+
+PURCHASE_LINK_MARKERS = ("/subscriptions/", "subtopia.io", "app.pact.fi", "app.tinyman.org")
+
+
+def _purchase_links(html):
+    """Return the hrefs in `html` that lead towards buying."""
+    import re
+
+    return [
+        href
+        for href in re.findall(r'href="([^"]*)"', html)
+        if any(marker in href for marker in PURCHASE_LINK_MARKERS)
+    ]
+
+
+class TestCoreAppClientPurchaseHidden:
+    """Calls to buy or upgrade are not rendered for the app (F10)."""
+
+    @pytest.fixture(autouse=True)
+    def _capabilities(self, mocker):
+        mocker.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        )
+
+    def _page(self, name, user_agent):
+        return Client(HTTP_USER_AGENT=user_agent).get(reverse(name)).content.decode()
+
+    def test_core_appclient_context_processor_purchase_hidden(self):
+        from core.appclient import PURCHASE_HIDDEN_TEXT
+
+        context = app_client_processor(_request(IOS_UA))
+
+        assert context["PURCHASE_HIDDEN"] is True
+        assert context["PURCHASE_HIDDEN_TEXT"] == PURCHASE_HIDDEN_TEXT
+        assert app_client_processor(_request(BROWSER_UA))["PURCHASE_HIDDEN"] is False
+
+    def test_core_appclient_main_navigation_drops_subscriptions_in_app(self):
+        from django.contrib.auth.models import AnonymousUser
+
+        from core.context_processors import MAIN_NAVIGATION_ANONYMOUS, main_navigation
+
+        request = _request(ANDROID_UA)
+        request.user = AnonymousUser()
+        names = [name for name, _ in main_navigation(request)["main_navigation"]]
+
+        assert "subscriptions" not in names
+        assert len(names) == len(MAIN_NAVIGATION_ANONYMOUS) - 1
+
+    @pytest.mark.parametrize("name", ["faq", "subscriptions", "about", "features"])
+    def test_core_appclient_pages_have_no_purchase_links_in_app(self, name):
+        assert _purchase_links(self._page(name, ANDROID_UA)) == []
+        assert _purchase_links(self._page(name, IOS_UA)) == []
+
+    @pytest.mark.parametrize("name", ["faq", "subscriptions"])
+    def test_core_appclient_pages_keep_purchase_links_in_a_browser(self, name):
+        assert _purchase_links(self._page(name, BROWSER_UA))
+
+    def test_core_appclient_subscriptions_page_keeps_the_plans_in_app(self):
+        html = self._page("subscriptions", IOS_UA)
+
+        assert "Subscription Models" in html
+        assert "How to Subscribe" not in html
+        assert "SUBSCRIBE</a>" not in html
+
+    def test_core_appclient_faq_hides_buying_and_upgrading_in_app(self):
+        html = self._page("faq", IOS_UA)
+
+        assert "Where can I buy ASASTATS?" not in html
+        assert "Can I upgrade or cancel my subscription?" not in html
+        assert "How are subscriptions handled?" in html
+
+    @override_settings(APP_HIDE_PURCHASE=frozenset())
+    def test_core_appclient_purchase_links_return_when_switched_off(self):
+        assert _purchase_links(self._page("faq", ANDROID_UA))
+
+
+@pytest.mark.django_db
+class TestCoreAppClientPurchaseHiddenProfile:
+    """The profile pages' locked-feature hints, without the upgrade links."""
+
+    @pytest.fixture(autouse=True)
+    def _capabilities(self, mocker):
+        mocker.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        )
+
+    def _page(self, name, user_agent, django_user_model):
+        user = django_user_model.objects.create_user(
+            username=f"purchase-{name}-{len(user_agent)}", password="x"
+        )
+        client = Client(HTTP_USER_AGENT=user_agent)
+        client.force_login(user)
+        return client.get(reverse(name)).content.decode()
+
+    @pytest.mark.parametrize(
+        "name", ["profile_settings", "profile_appearance", "profile_account"]
+    )
+    def test_core_appclient_profile_pages_in_app(self, name, django_user_model):
+        html = self._page(name, ANDROID_UA, django_user_model)
+
+        assert _purchase_links(html) == []
+        assert "Tap to upgrade" not in html
+
+    def test_core_appclient_profile_settings_in_a_browser(self, django_user_model):
+        html = self._page("profile_settings", BROWSER_UA, django_user_model)
+
+        assert _purchase_links(html)
+        assert "Tap to upgrade" in html

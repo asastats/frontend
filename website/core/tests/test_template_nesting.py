@@ -15,11 +15,11 @@ So this is a stack, not a count: it walks the tags in order and names the first
 one without a partner.
 
 Conditionals are handled by checking the primary branch -- ``{% else %}``,
-``{% empty %}`` and ``{% elif %}`` arms are dropped, then the remaining Django
-tags are stripped. That reads a template the way one request renders it. Two
-templates genuinely open an element in one arm and close it in another, so no
-single branch balances; they are named in ``BRANCH_STRADDLING`` with the reason,
-rather than being caught by a pattern that would quietly excuse others too.
+``{% empty %}`` and ``{% elif %}`` arms are dropped, nested ones included, then
+the remaining Django tags are stripped. That reads a template the way one
+request renders it. A template that opens an element in one arm and closes it
+in another balances on no single branch; name it in ``BRANCH_STRADDLING`` with
+the reason, rather than excusing it with a pattern. See docs/logbook.md.
 """
 
 import re
@@ -40,27 +40,16 @@ TAG = re.compile(
 #: `{% comment %}` blocks hold prose, and the prose here often quotes markup.
 DJANGO_COMMENT = re.compile(r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}", re.DOTALL)
 
-#: The alternative arms of a conditional. Removing them leaves the branch a
-#: request takes when every condition holds.
-ELSE_ARM = re.compile(
-    r"\{%\s*(?:else|empty)\s*%\}.*?(?=\{%\s*end(?:if|for)\s*%\})", re.DOTALL
-)
-ELIF_ARM = re.compile(r"\{%\s*elif\b.*?%\}.*?(?=\{%\s*(?:elif|else|endif)\b)", re.DOTALL)
+#: A Django block tag and its first word.
+BLOCK_TAG = re.compile(r"\{%\s*(?P<word>\w+).*?%\}", re.DOTALL)
 
 #: Everything else Django owns.
 DJANGO_TAG = re.compile(r"\{%.*?%\}|\{\{.*?\}\}|\{#.*?#\}", re.DOTALL)
 
 #: Templates where an element is opened in one branch and closed in another, so
-#: no single branch balances on its own. Both are deliberate: the page is two
-#: different documents depending on the condition, sharing a closing tag.
-BRANCH_STRADDLING = {
-    "password_reset_from_key.html": (
-        "the token_fail branch and the form branch share closing markup"
-    ),
-    "program.html": (
-        "the Balance-on-ALGO branch and the general branch share closing markup"
-    ),
-}
+#: no single branch balances on its own. Empty since 2026-10-24: both former
+#: entries balanced once nested arms were dropped correctly.
+BRANCH_STRADDLING = {}
 
 
 def _template_paths():
@@ -78,8 +67,24 @@ def _primary_branch(source):
     :return: str
     """
     without_comments = DJANGO_COMMENT.sub("", source)
-    primary = ELIF_ARM.sub("", ELSE_ARM.sub("", without_comments))
-    return DJANGO_TAG.sub("", primary)
+    # One frame per open if/for: True while in its first arm. Text is kept only
+    # when every enclosing frame is, so nested conditionals in an else arm drop
+    # with it (a regex up to the next endif cut such arms short).
+    frames, kept, position = [], [], 0
+    for tag in BLOCK_TAG.finditer(without_comments):
+        if all(frames):
+            kept.append(without_comments[position : tag.start()])
+        position = tag.end()
+        word = tag.group("word")
+        if word in ("if", "for"):
+            frames.append(True)
+        elif word in ("elif", "else", "empty") and frames:
+            frames[-1] = False
+        elif word in ("endif", "endfor") and frames:
+            frames.pop()
+    if all(frames):
+        kept.append(without_comments[position:])
+    return DJANGO_TAG.sub("", "".join(kept))
 
 
 def _unbalanced(markup):

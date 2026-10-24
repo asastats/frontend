@@ -38,6 +38,7 @@
     </ul>
     <p>All verification is on-chain and permissionless.</p>
   </div>
+  {% if not PURCHASE_HIDDEN %}
   <h3 id="howto">How to Subscribe</h3>
   <div class="mt-3 space-y-4 text-base-content/80">
     <ol class="list-decimal space-y-1 pl-5">
@@ -47,6 +48,7 @@
     </ol>
     <p>You can view or manage your tier at any time through the dashboard.</p>
   </div>
+  {% endif %}
   <h3 id="models">Subscription Models</h3>
   <div id="user" class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
     <div class="card row-span-3 grid grid-rows-subgrid gap-0 bg-base-100 shadow-sm border border-base-300">
@@ -56,7 +58,7 @@
         </div>
         <div class="card-actions flex-col items-center gap-3 border-t border-base-300 p-5">
           <strong>2,500 ASASTATS / Month</strong>
-          <a class="btn btn-primary" href="https://subtopia.io/subscription/2685642641" target="_blank" rel="noopener" title="Subscribe to Intro tier on Subtopia.io">SUBSCRIBE</a>
+          {% if not PURCHASE_HIDDEN %}<a class="btn btn-primary" href="https://subtopia.io/subscription/2685642641" target="_blank" rel="noopener" title="Subscribe to Intro tier on Subtopia.io">SUBSCRIBE</a>{% endif %}
         </div>
       <div class="border-t border-base-300 p-5">
         <ul class="checks space-y-2 text-sm">
@@ -90,7 +92,7 @@
         </div>
         <div class="card-actions flex-col items-center gap-3 border-t border-base-300 p-5">
           <strong>18,000 ASASTATS / Month</strong>
-          <a class="btn btn-primary" href="https://subtopia.io/subscription/2685654686" target="_blank" rel="noopener" title="Subscribe to Asastatser tier on Subtopia.io">SUBSCRIBE</a>
+          {% if not PURCHASE_HIDDEN %}<a class="btn btn-primary" href="https://subtopia.io/subscription/2685654686" target="_blank" rel="noopener" title="Subscribe to Asastatser tier on Subtopia.io">SUBSCRIBE</a>{% endif %}
         </div>
       <div class="border-t border-base-300 p-5">
         <ul class="checks space-y-2 text-sm">
@@ -125,7 +127,7 @@
         </div>
         <div class="card-actions flex-col items-center gap-3 border-t border-base-300 p-5">
           <strong>38,000 ASASTATS / Month</strong>
-          <a class="btn btn-primary" href="https://subtopia.io/subscription/2685656754" target="_blank" rel="noopener" title="Subscribe to Professional tier on Subtopia.io">SUBSCRIBE</a>
+          {% if not PURCHASE_HIDDEN %}<a class="btn btn-primary" href="https://subtopia.io/subscription/2685656754" target="_blank" rel="noopener" title="Subscribe to Professional tier on Subtopia.io">SUBSCRIBE</a>{% endif %}
         </div>
       <div class="border-t border-base-300 p-5">
         <ul class="checks space-y-2 text-sm">
@@ -162,7 +164,7 @@
         </div>
         <div class="card-actions flex-col items-center gap-3 border-t border-base-300 p-5">
           <strong>500,000 ASASTATS / Month</strong>
-          <a class="btn btn-primary" href="https://subtopia.io/subscription/2685660411" target="_blank" rel="noopener" title="Subscribe to Cluster tier on Subtopia.io">SUBSCRIBE</a>
+          {% if not PURCHASE_HIDDEN %}<a class="btn btn-primary" href="https://subtopia.io/subscription/2685660411" target="_blank" rel="noopener" title="Subscribe to Cluster tier on Subtopia.io">SUBSCRIBE</a>{% endif %}
         </div>
       <div class="border-t border-base-300 p-5">
         <ul class="checks space-y-2 text-sm">

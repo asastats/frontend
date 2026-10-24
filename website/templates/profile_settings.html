@@ -97,14 +97,14 @@
       {% include "snippets/messages_section.html" with section="explorer" %}
     </form>
     {% else %}
-    <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Intro tier — open subscriptions">
+    {% if PURCHASE_HIDDEN %}<div title="Available from the Intro tier">{% else %}<a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Intro tier — open subscriptions">{% endif %}
       <div>
         <select class="select" disabled aria-disabled="true">
           <option>Allo</option>
         </select>
-        <span class="mt-1 block text-xs text-base-content/60">Choosing an explorer is available from the <span class="text-primary">Intro</span> tier. Tap to upgrade.</span>
+        <span class="mt-1 block text-xs text-base-content/60">Choosing an explorer is available from the <span class="text-primary">Intro</span> tier.{% if not PURCHASE_HIDDEN %} Tap to upgrade.{% endif %}</span>
       </div>
-    </a>
+    {% if PURCHASE_HIDDEN %}</div>{% else %}</a>{% endif %}
     {% endif %}
     </div>
   </section>
@@ -146,7 +146,7 @@
         <span class="text-primary">{{ liverefresh_terms.hours }} hours</span> of real-time refresh{% if liverefresh_terms.linked_only %}
         per connected address{% endif %}, topping up by
         {{ liverefresh_terms.weekly_minutes }} minutes a week.
-        <a href="{% url 'subscriptions' %}" class="link">Subscribe</a> to remove the limit.
+        {% if not PURCHASE_HIDDEN %}<a href="{% url 'subscriptions' %}" class="link">Subscribe</a> to remove the limit.{% endif %}
       </span>
       {% endif %}
       <div class="mt-4">
@@ -158,15 +158,15 @@
     {% comment %} Unreachable on this deployment, because the widget's free band
        admits every authenticated reader. Kept because the bands live in
        `widget.toml` and a fork that removes the free one needs this branch. {% endcomment %}
-    <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Asastatser tier — open subscriptions">
+    {% if PURCHASE_HIDDEN %}<div title="Available from the Asastatser tier">{% else %}<a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Asastatser tier — open subscriptions">{% endif %}
       <div>
         <label class="flex items-center gap-3">
           <input type="checkbox" class="checkbox" disabled aria-disabled="true">
           <span class="text-sm text-base-content/60">Refresh on every block</span>
         </label>
-        <span class="mt-1 block text-xs text-base-content/60">Real-time refresh is available from the <span class="text-primary">Asastatser</span> tier. Tap to upgrade.</span>
+        <span class="mt-1 block text-xs text-base-content/60">Real-time refresh is available from the <span class="text-primary">Asastatser</span> tier.{% if not PURCHASE_HIDDEN %} Tap to upgrade.{% endif %}</span>
       </div>
-    </a>
+    {% if PURCHASE_HIDDEN %}</div>{% else %}</a>{% endif %}
     {% endif %}
     </div>
   </section>
@@ -208,21 +208,21 @@
     <ul class="mt-4 space-y-1">
       {% for layout in locked %}
       <li class="text-xs text-base-content/60">
-        <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the {{ layout.tier }} tier — open subscriptions">{{ layout.name }} &mdash; from the <span class="text-primary">{{ layout.tier }}</span> tier</a>
+        {% if PURCHASE_HIDDEN %}{{ layout.name }} &mdash; from the <span class="text-primary">{{ layout.tier }}</span> tier{% else %}<a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the {{ layout.tier }} tier — open subscriptions">{{ layout.name }} &mdash; from the <span class="text-primary">{{ layout.tier }}</span> tier</a>{% endif %}
       </li>
       {% endfor %}
     </ul>
     {% endif %}
     {% endwith %}
     {% else %}
-    <a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Intro tier — open subscriptions">
+    {% if PURCHASE_HIDDEN %}<div title="Available from the Intro tier">{% else %}<a href="{% url 'subscriptions' %}" class="link link-hover" title="Available from the Intro tier — open subscriptions">{% endif %}
       <div>
         <select class="select" disabled aria-disabled="true">
           <option>Classic</option>
         </select>
-        <span class="mt-1 block text-xs text-base-content/60">Choosing a layout is available from the <span class="text-primary">Intro</span> tier. Tap to upgrade.</span>
+        <span class="mt-1 block text-xs text-base-content/60">Choosing a layout is available from the <span class="text-primary">Intro</span> tier.{% if not PURCHASE_HIDDEN %} Tap to upgrade.{% endif %}</span>
       </div>
-    </a>
+    {% if PURCHASE_HIDDEN %}</div>{% else %}</a>{% endif %}
     {% endif %}
     </div>
   </section>
@@ -284,12 +284,12 @@
         to lay out every row before it will scroll.
       </p>
     {% else %}
-    <a href="{% url 'subscriptions' %}" class="link link-hover" title="Choosing how many rows a page shows is available from the Asastatser tier">
+    {% if PURCHASE_HIDDEN %}<div title="Choosing how many rows a page shows is available from the Asastatser tier">{% else %}<a href="{% url 'subscriptions' %}" class="link link-hover" title="Choosing how many rows a page shows is available from the Asastatser tier">{% endif %}
       <div>
         <span class="text-sm text-base-content/60">Choose how many rows open at once</span>
-        <span class="mt-1 block text-xs text-base-content/60">Available from the <span class="text-primary">Asastatser</span> tier. Tap to upgrade.</span>
+        <span class="mt-1 block text-xs text-base-content/60">Available from the <span class="text-primary">Asastatser</span> tier.{% if not PURCHASE_HIDDEN %} Tap to upgrade.{% endif %}</span>
       </div>
-    </a>
+    {% if PURCHASE_HIDDEN %}</div>{% else %}</a>{% endif %}
     {% endif %}
     </div>
   </section>

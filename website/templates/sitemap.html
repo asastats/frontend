@@ -24,7 +24,7 @@
         {% elif url.item.0 == "tokenomics" %}
             <li><a class="link link-hover" href="{{ url.location }}">Tokenomics</a></li>
         {% elif url.item.0 == "subscriptions" %}
-            <li><a class="link link-hover" href="{{ url.location }}">Subscriptions page</a></li>
+            {% if not PURCHASE_HIDDEN %}<li><a class="link link-hover" href="{{ url.location }}">Subscriptions page</a></li>{% endif %}
         {% elif url.item.0 == "faq" %}
             <li><a class="link link-hover" href="{{ url.location }}">FAQ page</a></li>
         {% elif url.item.0 == "features" %}

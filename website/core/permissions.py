@@ -6,8 +6,10 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.utils.safestring import mark_safe
 
+from core.appclient import purchase_hidden
 from utils.constants.users import (
     ADJUST_BUNDLE_NAMES_SIZE_ERROR,
+    ADJUST_BUNDLE_NAMES_SIZE_ERROR_APP,
     SUBSCRIPTION_TIER_PERMISSIONS,
 )
 
@@ -25,7 +27,10 @@ class BundleNamesRedirection(UserPassesTestMixin):
                 self.request.user.profile.permission
                 >= SUBSCRIPTION_TIER_PERMISSIONS["Intro"]
             ):
-                messages.error(self.request, mark_safe(ADJUST_BUNDLE_NAMES_SIZE_ERROR))
+                if purchase_hidden(self.request):
+                    messages.error(self.request, ADJUST_BUNDLE_NAMES_SIZE_ERROR_APP)
+                else:
+                    messages.error(self.request, mark_safe(ADJUST_BUNDLE_NAMES_SIZE_ERROR))
                 return redirect("home")
 
             return redirect("subscriptions")

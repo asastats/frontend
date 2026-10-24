@@ -31,6 +31,7 @@ from django.urls import include, path, re_path
 
 from api import urls as api_urls
 from core import urls as core_urls
+from core.views_app import apple_app_site_association, assetlinks
 from walletauth import urls as walletauth_urls
 from widgets import urls as widget_urls
 
@@ -97,6 +98,13 @@ urlpatterns = [
         },
         name="sitemap",
     ),
+    # The app's Universal Links / App Links documents; ahead of the catch-all.
+    path(
+        ".well-known/apple-app-site-association",
+        apple_app_site_association,
+        name="apple_app_site_association",
+    ),
+    path(".well-known/assetlinks.json", assetlinks, name="assetlinks"),
     # walletauth app namespace
     re_path(r"^api/v2/wallet/", include(walletauth_urls)),
     # api app namespace

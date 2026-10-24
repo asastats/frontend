@@ -4267,3 +4267,101 @@ reconnect), push (F8), sign-in (F4).
 Versions: the `@capacitor/*` packages are pinned exactly to the versions in
 `mobile/package.json`. The JS half speaks to the native half of the same
 plugin, so bump both together.
+
+## core/views_app.py, config/urls.py, nginx site_server_block.conf — Universal Links and App Links (F9, 2026-10-24)
+
+`/.well-known/apple-app-site-association` (no `.json` suffix, served as
+`application/json`, never redirected) and `/.well-known/assetlinks.json` are
+views rather than static files, because the Apple team id
+(`APPLE_APP_ID_PREFIX`, default `DF2V3954Z7`) and the Android signing
+fingerprints (`ANDROID_CERT_SHA256`, comma list) are deployment settings. Both
+are routed ahead of the `core.urls` catch-all. nginx has `location =` blocks
+for them that go straight to Django. `location /` would also have reached
+Django through `try_files` and `@fallback`; the exact match says it on
+purpose.
+
+AASA components: the excludes come first, because Apple applies the first
+component that matches, then `/*`. Excluded: `/accounts/*` (the OAuth
+callbacks must stay in the sign-in browser sheet; see F4), `/api/*`,
+`/app/auth/*`, `/static/*`, `/admin/*`, `/captcha/*`. The Android manifest
+lists page prefixes instead, because `pathPattern` cannot exclude
+(mobile `docs/logbook.md`).
+
+`assetlinks.json` is `[]` until `ANDROID_CERT_SHA256` is set. It must carry the
+**Play App Signing** key's SHA-256 (Play Console → App signing), which is
+what store installs are signed with. Add the upload key's for builds installed
+outside Play.
+
+Only `www.asastats.com`: the apex `asastats.com` redirects to www on both
+ports (`nginx.ssl.conf`), so it is not a host the app can claim (Apple fetches
+the AASA without following redirects).
+
+Tests: `core/tests/test_views_app.py`.
+
+## core/appclient.py:purchase_hidden, core/context_processors.py, templates — no purchase calls to action in the app (F10, 2026-10-24)
+
+Decision D4: inside the ASA Stats app there is no link or call to action
+towards buying a tier or the token (Apple 3.1.1/3.1.3 and 3.1.1(a); Play
+payments policy). `purchase_hidden(request)` is true for the app on the
+platforms in `APP_HIDE_PURCHASE` (both by default). The `app_client` context
+processor publishes it as `PURCHASE_HIDDEN`, together with the neutral
+`PURCHASE_HIDDEN_TEXT` ("Not included in your current plan.").
+
+Inventory, 2026-10-24, and what the app gets:
+
+- Header (signed out): the Subscriptions entry is dropped (`main_navigation`).
+- Footer: Subscriptions, Buy ASASTATS, Pact liquidity and Tinyman liquidity
+  are not rendered. Tokenomics stays: it describes the token, it does not
+  sell it.
+- FAQ: "Where can I buy ASASTATS?" and "Can I upgrade or cancel my
+  subscription?" are not rendered, nor is the "View Subscription Plans"
+  link. "How are subscriptions handled?" stays as information.
+- `/subscriptions/`: the plans, features and prices stay as information.
+  "How to Subscribe" and the four Subtopia SUBSCRIBE buttons are not
+  rendered. The page stays reachable because the permission mixins still
+  redirect there.
+- Profile settings (explorer, live refresh, layouts, row folding): the
+  locked-feature hint keeps its tier sentence but is not a link, and "Tap to
+  upgrade." / "Subscribe to remove the limit." are not rendered. Profile
+  appearance: the locked Fonts tab is a non-link `<span>`. Profile account:
+  "See what each tier includes" is not rendered.
+- `_swap_entry.html`: "Subscribe for unlimited" is not rendered.
+- Sitemap: the subscriptions entry is not rendered.
+- `ADJUST_BUNDLE_NAMES_SIZE_ERROR_APP` (`core.permissions`): the message
+  without its link.
+- Widgets (alerts, historic, P&L): see the widgets logbook.
+
+Judgment calls, flagged to the user: the token buy and liquidity links are
+hidden too, because buying ASASTATS is how a tier is bought. The OpenAPI
+description (`utils/constants/apiv2.py`) still links "are subscribed" to
+`/subscriptions/`. It is a static schema string, and in the app that page
+shows no purchase steps.
+
+Cache: FAQ, subscriptions and the address page are `cache_page`d. App
+entries are keyed per platform (`app_cache_prefix`, F2), so per-platform
+values of `APP_HIDE_PURCHASE` cannot leak into each other. After changing
+the setting, existing entries are served until they expire (`CACHE_TTL`).
+
+Tests: `core/tests/test_appclient.py` (`TestCoreAppClientPurchaseHidden*`),
+`core/tests/test_permissions.py::TestCorePermissionsInApp`,
+`functional_tests/test_app_client.py::AppPurchaseLinksTest`.
+
+## core/tests/test_template_nesting.py — nested arms (2026-10-24)
+
+`_primary_branch` dropped `{% else %}` / `{% elif %}` arms with regexes that
+stopped at the **first** following `{% endif %}`. An `{% if %}` nested inside
+an else arm therefore cut that arm short, and its remaining markup was checked
+as if it were the primary branch. F10's guards (an `{% if PURCHASE_HIDDEN %}`
+inside existing else arms in `profile_settings.html` and the alerts
+`_toolbar.html` / `modal.html`) tripped it. It is now a walker over the block
+tags that keeps text only while every enclosing `if`/`for` is in its first
+arm.
+
+Correction to the module's earlier premise: `password_reset_from_key.html`
+and `program.html` were not straddling branches. They were this artifact. Both
+balance on their primary branch, and `BRANCH_STRADDLING` is empty.
+
+## config/tests/test_urls.py — eleven root patterns (2026-10-24)
+
+The guard moves from 9 to 11 for the two `.well-known` routes (F9), which sit
+ahead of the `core.urls` catch-all on purpose.

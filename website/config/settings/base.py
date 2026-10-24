@@ -435,6 +435,13 @@ APP_UNSUPPORTED_WALLETS = frozenset(
     for value in get_env_variable("APP_UNSUPPORTED_WALLETS", "kibisis,lute").split(",")
     if value.strip()
 )
+# Universal Links / App Links documents (core.views_app).
+APPLE_APP_ID_PREFIX = get_env_variable("APPLE_APP_ID_PREFIX", "DF2V3954Z7")
+ANDROID_CERT_SHA256 = tuple(
+    value.strip().upper()
+    for value in get_env_variable("ANDROID_CERT_SHA256", "").split(",")
+    if value.strip()
+)
 
 # Themes offered by the appearance picker, grouped by the `color-scheme` each
 # theme declares for itself. The grouping is presentation only -- the picker

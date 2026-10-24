@@ -54,7 +54,8 @@ class TestAsastatsUrls:
         assert "core.urls" in str(url.urlconf_name)
 
     def test_config_urls_patterns_count(self):
-        """Nine since the root assets joined: the count is a guard, not a fact.
+        """Eleven since the app's two `.well-known` documents (2026-10-24), nine
+        since the root assets joined: the count is a guard, not a fact.
 
         It exists so a route added without thought about *order* is noticed,
         this urlconf ending in a catch-all that swallows anything a pattern
@@ -63,7 +64,7 @@ class TestAsastatsUrls:
         number moves with a reason recorded, rather than being edited to make a
         red test green.
         """
-        assert len(urls.urlpatterns) == 9
+        assert len(urls.urlpatterns) == 11
 
     def test_config_urls_defines_custom_handler500(self):
         assert getattr(urls, "handler500") == "core.views.custom_server_error"

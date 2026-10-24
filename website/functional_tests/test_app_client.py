@@ -82,3 +82,45 @@ class BrowserPagesTest(FunctionalTest):
 
         self.assertFalse(_app_js_requested(self.browser))
         self.assertIsNone(self.browser.execute_script("return window.ASAStatsApp;"))
+
+
+PURCHASE_LINKS = (
+    "a[href*='/subscriptions/'], a[href*='subtopia.io'], "
+    "a[href*='app.pact.fi'], a[href*='app.tinyman.org']"
+)
+
+
+class AppPurchaseLinksTest(FunctionalTest):
+    """No page the app shows links towards buying or upgrading (F10)."""
+
+    def setup_platform(self):
+        super().setup_platform()
+        self.browser_options.add_argument(f"--user-agent={APP_USER_AGENT}")
+
+    def _assert_no_purchase_links(self, names):
+        for name in names:
+            with self.subTest(page=name):
+                self.browser.get(self.server_url + reverse(name))
+                hrefs = [
+                    link.get_attribute("href")
+                    for link in self.browser.find_elements(By.CSS_SELECTOR, PURCHASE_LINKS)
+                ]
+                self.assertEqual(hrefs, [])
+
+    def test_signed_out_pages_have_no_purchase_links(self):
+        self._assert_no_purchase_links(
+            ["index", "faq", "subscriptions", "about", "features", "tokenomics"]
+        )
+
+    def test_signed_in_pages_have_no_purchase_links(self):
+        self.create_cookie_and_go_to_index_page_tier("app-purchase@example.com")
+        self._assert_no_purchase_links(
+            ["home", "profile_settings", "profile_appearance", "profile_account"]
+        )
+
+    def test_subscriptions_page_shows_plans_without_buying(self):
+        self.browser.get(self.server_url + reverse("subscriptions"))
+        body = self.browser.find_element(By.TAG_NAME, "body").text
+
+        self.assertIn("Subscription Models", body)
+        self.assertNotIn("How to Subscribe", body)

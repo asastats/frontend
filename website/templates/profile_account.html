@@ -33,7 +33,7 @@
       </dl>
       <p class="mt-3 text-sm text-base-content/60">
         Your tier follows the ASA Stats token held by your authorized address.
-        <a class="link link-hover" href="{% url 'subscriptions' %}">See what each tier includes</a>.
+        {% if not PURCHASE_HIDDEN %}<a class="link link-hover" href="{% url 'subscriptions' %}">See what each tier includes</a>.{% endif %}
       </p>
     </div>
   </section>

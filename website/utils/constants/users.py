@@ -82,6 +82,10 @@ ADJUST_BUNDLE_NAMES_SIZE_ERROR = (
     "Decrease number of bundle names and/or their size to fit your "
     "<a href='/subscriptions/' target='_blank' rel='noopener'>subscription tier</a>."
 )
+#: The app's variant: no link towards buying (core.appclient.purchase_hidden).
+ADJUST_BUNDLE_NAMES_SIZE_ERROR_APP = (
+    "Decrease number of bundle names and/or their size to fit your subscription tier."
+)
 AUTHORIZATION_TRANSACTION_CONFIRMED_MESSAGE = "Address is authorized!"
 AUTHORIZATION_TRANSACTION_ERROR_MESSAGE = (
     "Authorization transaction to our escrow not found!"

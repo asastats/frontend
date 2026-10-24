@@ -59,6 +59,8 @@
       - APP_HIDDEN_WIDGETS_IOS
       - APP_HIDDEN_WIDGETS_ANDROID
       - APP_UNSUPPORTED_WALLETS
+      - APPLE_APP_ID_PREFIX
+      - ANDROID_CERT_SHA256
   ansible.builtin.template:
     src: environment_file
     dest: "{{ site_path }}/source/{{ app_name }}/.env"

@@ -109,6 +109,13 @@ def main_navigation(request):
     if user is not None and user.is_authenticated:
         return {"main_navigation": MAIN_NAVIGATION_AUTHENTICATED}
 
+    if appclient.purchase_hidden(request):
+        return {
+            "main_navigation": [
+                entry for entry in MAIN_NAVIGATION_ANONYMOUS if entry[0] != "subscriptions"
+            ]
+        }
+
     return {"main_navigation": MAIN_NAVIGATION_ANONYMOUS}
 
 
@@ -190,10 +197,15 @@ def walletconnect(request):
 
 
 def app_client(request):
-    """Expose the request's ASA Stats app client, None in a browser.
+    """Expose the request's ASA Stats app client (None in a browser) and
+    whether calls to buy or upgrade are hidden from it.
 
     :param request: Django request object
     :type request: :class:`django.http.HttpRequest`
     :return: dict
     """
-    return {"APP_CLIENT": appclient.app_client(request)}
+    return {
+        "APP_CLIENT": appclient.app_client(request),
+        "PURCHASE_HIDDEN": appclient.purchase_hidden(request),
+        "PURCHASE_HIDDEN_TEXT": appclient.PURCHASE_HIDDEN_TEXT,
+    }

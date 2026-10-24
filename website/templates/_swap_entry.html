@@ -113,9 +113,11 @@
       timer. Your free allowance tops up by
       <span class="whitespace-nowrap">{{ liverefresh_weekly_minutes|default:"15" }} minutes</span>
       each week.</p>
+    {% if not PURCHASE_HIDDEN %}
     <p class="mt-2">
       <a href="{% url 'subscriptions' %}" class="btn btn-primary btn-sm">Subscribe for unlimited</a>
     </p>
+    {% endif %}
   </div>
 </div>
 {% comment %} The live log: hidden until a watch starts, then moved below the
