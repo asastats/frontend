@@ -1,4 +1,37 @@
-import { install } from "./main";
+import { Capacitor } from "@capacitor/core";
+
+import { installBackButton } from "./backButton";
+import { installDeepLinks } from "./deepLinks";
+import { download, installDownloads } from "./downloads";
+import { installHaptics } from "./haptics";
+import { installLinks } from "./links";
+import { install, start } from "./main";
+import { installSplash } from "./splash";
+import { installStatusBar } from "./statusBar";
+
+jest.mock("@capacitor/core", () => ({
+  Capacitor: { isNativePlatform: jest.fn().mockReturnValue(false) },
+}));
+jest.mock("./backButton", () => ({ installBackButton: jest.fn() }));
+jest.mock("./deepLinks", () => ({ installDeepLinks: jest.fn() }));
+jest.mock("./downloads", () => ({
+  download: jest.fn().mockResolvedValue(true),
+  installDownloads: jest.fn(),
+}));
+jest.mock("./haptics", () => ({ installHaptics: jest.fn() }));
+jest.mock("./links", () => ({ installLinks: jest.fn() }));
+jest.mock("./splash", () => ({ installSplash: jest.fn() }));
+jest.mock("./statusBar", () => ({ installStatusBar: jest.fn() }));
+
+const installers = [
+  installSplash,
+  installLinks,
+  installDownloads,
+  installBackButton,
+  installDeepLinks,
+  installStatusBar,
+  installHaptics,
+];
 
 describe("app main", () => {
   beforeEach(() => {
@@ -6,13 +39,30 @@ describe("app main", () => {
   });
 
   it("publishes window.ASAStatsApp with isApp", () => {
-    expect(install()).toEqual({ isApp: true });
+    expect(install().isApp).toBe(true);
     expect(window.ASAStatsApp?.isApp).toBe(true);
   });
 
+  it("exposes download", async () => {
+    await expect(install().download("/x.csv")).resolves.toBe(true);
+    expect(download).toHaveBeenCalledWith("/x.csv");
+  });
+
   it("keeps an API that is already there", () => {
-    const existing = { isApp: true as const };
+    const existing = { isApp: true as const, download: jest.fn() };
     window.ASAStatsApp = existing;
     expect(install()).toBe(existing);
+  });
+
+  it("wires nothing native without the bridge", () => {
+    expect(start()).toBe(false);
+    expect(window.ASAStatsApp?.isApp).toBe(true);
+    installers.forEach((fn) => expect(fn).not.toHaveBeenCalled());
+  });
+
+  it("wires every module with the bridge", () => {
+    (Capacitor.isNativePlatform as jest.Mock).mockReturnValueOnce(true);
+    expect(start()).toBe(true);
+    installers.forEach((fn) => expect(fn).toHaveBeenCalledTimes(1));
   });
 });

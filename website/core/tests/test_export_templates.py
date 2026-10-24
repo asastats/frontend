@@ -179,3 +179,11 @@ def test_export_taxfinished_agreement_is_a_list(rendered):
     assert not any(
         item.text().strip().startswith(("1)", "2)", "3)")) for item in items
     ), "the terms are still numbered by hand inside the list"
+
+
+def test_export_taxfinished_download_is_marked_for_the_app(rendered):
+    """Only Download returns a file, so only it is fetched by the app's app.js."""
+    dom = parse(rendered)
+    marked = [element.attrs.get("id") for element in dom.select("[data-app-download]")]
+
+    assert marked == ["download"]

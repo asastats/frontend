@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && vite build -c vite.app.config.ts",
     "build:docs": "typedoc",
     "preview": "vite preview",
     "test": "npm run test:coverage",
@@ -27,6 +27,14 @@
   },
   "dependencies": {
     "@blockshake/defly-connect": "^1.2.1",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.4",
     "@folks-router/js-sdk": "^0.5.1",
     "@perawallet/connect": "^1.6.1",
     "@txnlab/use-wallet": "^5.0.0",

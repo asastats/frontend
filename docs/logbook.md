@@ -4204,3 +4204,66 @@ bundle. For now it only publishes `window.ASAStatsApp = {isApp: true}`;
 splash, links, downloads, back button, push and sign-in come with F3.
 Separate from `bundle.js` so browsers never download the Capacitor plugin
 code.
+
+**Correction 2026-10-24** to the `wallet/vite.config.ts` entry above: the
+second Rollup input did not survive F3. Once `app.js` imported a module that
+the wallet bundle also uses (`notify.ts`), Rolldown moved it into a shared
+chunk, which rewrote `bundle.js` and re-hashed every lazy chunk. `app.js` is
+now built by its own pass, `vite.app.config.ts`, run after the wallet build
+by `npm run build`. Two separate builds cannot share chunks, and
+`vite.config.ts` is back to what it was before the app. The app's lazy
+chunks are the Capacitor plugins' web fallbacks (`dist/app-web-*.js`), which
+the native app never loads.
+
+## wallet/src/app/ — `app.js`, the app's native behaviour (F3, 2026-10-24)
+
+One module per behaviour, each with its own Jest file. `main.ts` publishes
+`window.ASAStatsApp` (`isApp`, `download(url)`) and wires the modules only when
+`Capacitor.isNativePlatform()`. The user-agent token alone puts a page in app
+mode; without the bridge (an old shell, a browser sending the token, or spike
+check S1 failing) the plugins would only reject.
+
+- `splash.ts`: hides the splash on DOMContentLoaded. The shell auto-hides it
+  after 3 s anyway (`mobile/capacitor.config.ts`), so a page that never runs
+  this still clears it.
+- `links.ts`: a link to another origin opens in the in-app browser sheet
+  (`Browser.open`), so the app's page is never replaced by someone else's
+  site. A same-origin `target="_blank"` link (Historic data, P&L on the
+  address page) opens in place, because the app has no tabs. Other schemes
+  (`mailto:`, `tel:`, `perawallet-wc:`) are left to the WebView, which hands
+  them to the OS. How wallet hand-offs behave is spike check S3. The listener
+  is in the bubble phase and skips clicks that a page script already
+  prevented. `window.open` calls are not covered.
+- `downloads.ts`: `a[data-app-download]`, and a form or submit button carrying
+  the attribute, are fetched with the session cookie. A response with
+  `Content-Disposition: attachment` is written to the app's cache directory
+  (`Filesystem`, base64) and handed to the share sheet. Anything else (a
+  validation error, a "still processing" redirect) is shown the ordinary
+  way: a link navigates to where the fetch ended up, a form is submitted
+  again natively. The tax form marks its **Download button**, not the form:
+  Refresh would otherwise be POSTed twice. The file name is cut down to a
+  base name with safe characters, so the server cannot pick a path inside the
+  cache. The whole file is held in memory as a blob and then as base64. The
+  tax zip can be several MB, so memory on a low-end Android is a beta
+  checklist line.
+- `backButton.ts` (Android): closes the topmost `<dialog open>`, then an open
+  `details.dropdown` (the header menu), then goes back, and on the first page
+  calls `App.minimizeApp()` rather than exiting.
+- `deepLinks.ts`: an App Link / Universal Link to this site navigates there.
+  The `com.asastats.app:/auth` return belongs to F4 and is ignored here.
+- `statusBar.ts`: picks light or dark status bar icons from the luminance of
+  `<body>`'s computed background, on load and whenever theme.js changes
+  `data-theme`. 0.179 is the luminance at which white and black text have
+  equal contrast. Only `setStyle` is called. Overlay and inset handling are
+  left to Capacitor 8's SystemBars plugin and the safe-area padding in
+  base.html; `setOverlaysWebView` would fight them.
+- `haptics.ts`: a light impact on `.copy` (site.js's copy-to-clipboard
+  buttons, about ten templates) and on anything marked `data-app-haptic`
+  (F8's "alert saved").
+
+Not yet: resume after a long background (spike check S7 decides what has to
+reconnect), push (F8), sign-in (F4).
+
+Versions: the `@capacitor/*` packages are pinned exactly to the versions in
+`mobile/package.json`. The JS half speaks to the native half of the same
+plugin, so bump both together.

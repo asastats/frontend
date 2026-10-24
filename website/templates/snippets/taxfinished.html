@@ -47,7 +47,7 @@
     {% endif %}
 
     <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
-      <button class="btn btn-primary" id="download" name="download" value="1" type="submit">Download</button>
+      <button class="btn btn-primary" id="download" name="download" value="1" type="submit" data-app-download>Download</button>
       <button class="btn btn-outline" id="refresh" name="refresh" value="1" type="submit">Refresh</button>
       {% if bundle %}
       <a class="btn btn-ghost" id="back" href="{% url 'bundle' url_value %}" title="Evaluate bundle">Back</a>

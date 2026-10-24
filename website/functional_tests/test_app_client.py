@@ -54,6 +54,10 @@ class AppClientPagesTest(FunctionalTest):
 
         self.assertTrue(_app_js_requested(self.browser))
         self.assertTrue(self.browser.execute_script("return window.ASAStatsApp.isApp;"))
+        self.assertEqual(
+            self.browser.execute_script("return typeof window.ASAStatsApp.download;"),
+            "function",
+        )
 
 
 class BrowserPagesTest(FunctionalTest):
