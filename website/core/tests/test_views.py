@@ -2160,3 +2160,92 @@ class TestSwapEntryFiat:
 
         assert context["fiat"] is fiat
         mocked.assert_called_once_with(view.request.user)
+
+
+class SwapEntryHiddenWidgetsTest(TestCase):
+    """The per-reader partial leaves out widgets switched off for the app (F11)."""
+
+    IOS_UA = "Mozilla/5.0 (iPhone) ASAStatsApp/1.1.0 (ios)"
+
+    def setUp(self):
+        self.address = "A" * 58
+        self.url = reverse("swap_entry", args=[self.address])
+        self.user = user_model.objects.create(
+            email="swaphidden@testuser.com", username="swaphidden"
+        )
+        self.user.set_password("12345o")
+        self.user.save()
+        with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            self.client.login(username="swaphidden", password="12345o")
+
+    def _get(self, hidden, router="folks"):
+        with self.settings(
+            APP_HIDDEN_WIDGETS={"ios": frozenset(hidden), "android": frozenset()}
+        ), mock.patch(
+            "core.views.linked_addresses_for_user", return_value={self.address}
+        ), mock.patch(
+            "core.views.swap_entry_url", return_value=f"/widgets/{router}/AAA"
+        ), mock.patch(
+            "core.models.Profile.preferred_router_or_default", return_value=router
+        ):
+            return self.client.get(self.url, HTTP_USER_AGENT=self.IOS_UA)
+
+    def test_swap_entry_nothing_hidden_offers_swap_and_sweep(self):
+        response = self._get(())
+        self.assertContains(response, "id-swap-enabled")
+        self.assertContains(response, "id-dustsweep-open")
+
+    def test_swap_entry_hidden_swapcore_drops_the_swap_only(self):
+        response = self._get({"swapcore"})
+        self.assertNotContains(response, "id-swap-enabled")
+        self.assertContains(response, "id-dustsweep-open")
+
+    def test_swap_entry_hidden_router_drops_the_swap(self):
+        self.assertNotContains(self._get({"folks"}), "id-swap-enabled")
+        self.assertContains(self._get({"folks"}, router="haystack"), "id-swap-enabled")
+
+    def test_swap_entry_hidden_dustsweep_keeps_the_swap(self):
+        response = self._get({"dustsweep"})
+        self.assertContains(response, "id-swap-enabled")
+        self.assertNotContains(response, "id-dustsweep-open")
+
+    def test_swap_entry_hidden_alerts_drops_the_toolbar(self):
+        self.assertNotContains(self._get({"alerts"}), 'id="id-alerts"')
+        self.assertContains(self._get(()), 'id="id-alerts"')
+
+    def test_swap_entry_hidden_liverefresh_drops_the_marker(self):
+        profile = self.user.profile
+        profile.live_refresh = True
+        profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Asastatser"]
+        profile.save()
+
+        self.assertContains(self._get(()), "id-liverefresh")
+        self.assertNotContains(self._get({"liverefresh"}), "id-liverefresh")
+
+
+class AccountDeletionPageTest(TestCase):
+    """The public account deletion page and the closed-account wording (F6)."""
+
+    def test_account_deletion_page_needs_no_sign_in(self):
+        with mock.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        ):
+            response = self.client.get("/account-deletion/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "account_deletion.html")
+        self.assertContains(response, "permanently deleted within 7 days")
+
+    def test_account_deletion_page_is_in_the_sitemap(self):
+        response = self.client.get("/sitemap.xml")
+
+        self.assertContains(response, "/account-deletion/")
+
+    def test_inactive_page_says_when_the_account_is_deleted(self):
+        with mock.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        ):
+            response = self.client.get(reverse("account_inactive"))
+
+        self.assertContains(response, "will be permanently deleted within 7 days")

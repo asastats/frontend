@@ -9,6 +9,7 @@ from core.appclient import (
     AppClient,
     app_cache_prefix,
     app_client,
+    hidden_widgets,
     parse_app_client,
     purchase_hidden,
     wallet_supported,
@@ -317,3 +318,77 @@ class TestCoreAppClientPurchaseHiddenProfile:
 
         assert _purchase_links(html)
         assert "Tap to upgrade" in html
+
+
+ADDRESS = "A" * 58
+IOS_HIDES = {"ios": frozenset({"historic", "swapcore"}), "android": frozenset()}
+
+
+class TestCoreAppClientHiddenWidgets:
+    """Widgets switched off per platform answer 404 in the app (F11)."""
+
+    @pytest.fixture(autouse=True)
+    def _capabilities(self, mocker):
+        mocker.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        )
+
+    def test_core_appclient_hidden_widgets_empty_for_a_browser(self):
+        with override_settings(APP_HIDDEN_WIDGETS=IOS_HIDES):
+            assert hidden_widgets(_request(BROWSER_UA)) == frozenset()
+
+    def test_core_appclient_hidden_widgets_per_platform(self):
+        with override_settings(APP_HIDDEN_WIDGETS=IOS_HIDES):
+            assert hidden_widgets(_request(IOS_UA)) == {"historic", "swapcore"}
+            assert hidden_widgets(_request(ANDROID_UA)) == frozenset()
+
+    @override_settings(APP_HIDDEN_WIDGETS=IOS_HIDES)
+    def test_core_appclient_hidden_widget_is_404_in_the_app(self):
+        response = Client(HTTP_USER_AGENT=IOS_UA).get(f"/widgets/historic/{ADDRESS}")
+
+        assert response.status_code == 404
+
+    @override_settings(APP_HIDDEN_WIDGETS=IOS_HIDES)
+    def test_core_appclient_every_path_of_a_hidden_widget_is_404(self):
+        client = Client(HTTP_USER_AGENT=IOS_UA)
+
+        assert client.get("/widgets/swapcore/anything/deeper").status_code == 404
+
+    @override_settings(APP_HIDDEN_WIDGETS=IOS_HIDES)
+    @pytest.mark.parametrize("user_agent", [ANDROID_UA, BROWSER_UA])
+    def test_core_appclient_widget_is_served_elsewhere(self, user_agent):
+        response = Client(HTTP_USER_AGENT=user_agent).get(f"/widgets/historic/{ADDRESS}")
+
+        assert response.status_code != 404
+
+    @override_settings(APP_HIDDEN_WIDGETS=IOS_HIDES)
+    def test_core_appclient_other_widgets_are_served_in_the_app(self):
+        response = Client(HTTP_USER_AGENT=IOS_UA).get(f"/widgets/pnl/{ADDRESS}")
+
+        assert response.status_code != 404
+
+    def test_core_appclient_middleware_ignores_non_widget_paths(self):
+        from core.middleware import WIDGET_PATH_REGEX
+
+        assert WIDGET_PATH_REGEX.match("/widgets/historic/x").group("name") == "historic"
+        assert WIDGET_PATH_REGEX.match("/historic/widgets/x") is None
+
+
+class TestCoreAppClientWidgetShownFilter:
+    """Testing class for the fail-open :func:`core_extras.widget_shown` filter."""
+
+    @override_settings(APP_HIDDEN_WIDGETS=IOS_HIDES)
+    def test_core_extras_widget_shown(self):
+        from core.templatetags.core_extras import widget_shown
+
+        assert widget_shown(_request(IOS_UA), "swapcore") is False
+        assert widget_shown(_request(IOS_UA), "pnl") is True
+        assert widget_shown(_request(ANDROID_UA), "swapcore") is True
+        assert widget_shown(_request(BROWSER_UA), "swapcore") is True
+
+    @override_settings(APP_HIDDEN_WIDGETS=IOS_HIDES)
+    @pytest.mark.parametrize("request_value", [None, ""])
+    def test_core_extras_widget_shown_fails_open(self, request_value):
+        from core.templatetags.core_extras import widget_shown
+
+        assert widget_shown(request_value, "swapcore") is True

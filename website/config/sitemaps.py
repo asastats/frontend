@@ -36,6 +36,7 @@ class StaticViewSitemap(sitemaps.Sitemap):
             ("tokenomics", ()),
             ("faq", ()),
             ("features", ()),
+            ("account_deletion", ()),
             ("methodology", ()),
             ("subscriptions", ()),
             ("disclaimer", ()),

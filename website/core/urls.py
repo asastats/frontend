@@ -155,6 +155,11 @@ urlpatterns = [
     re_path(r"^tokenomics/$", core_views.TokenomicsView.as_view(), name="tokenomics"),
     re_path(r"^faq/$", core_views.FaqView.as_view(), name="faq"),
     re_path(r"^disclaimer/$", core_views.DisclaimerView.as_view(), name="disclaimer"),
+    re_path(
+        r"^account-deletion/$",
+        core_views.AccountDeletionView.as_view(),
+        name="account_deletion",
+    ),
     re_path(r"^asm-privacy/$", core_views.ASMPrivacyView.as_view(), name="asm_privacy"),
     re_path(r"^features/$", core_views.FeaturesView.as_view(), name="features"),
     re_path(

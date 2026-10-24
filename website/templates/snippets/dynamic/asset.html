@@ -117,7 +117,7 @@
          is the no-JS fallback it prevents. Gated on `url_value` because a swap
          needs the one address whose holdings it spends, and a bundle page
          resolving to several has none to name. {% endcomment %}
-      {% if url_value %}
+      {% if url_value and request|widget_shown:'swapcore' %}
       <div class="swap-action-column">
         <a class="btn btn-primary btn-sm id-swap-swap-toggle"
            href="{% url 'swap_source' url_value asset.id %}"

@@ -41,3 +41,16 @@ class StaticPagesTest(FunctionalTest):
         # <li>, which the old markup got wrong elsewhere on the site.
         for row in rows:
             self.assertEqual(row.tag_name, "li")
+
+    def test_account_deletion_page_is_public_and_says_when(self):
+        # Play Console links this page, so it must open without signing in.
+        self.browser.get(self.server_url + reverse("account_deletion"))
+
+        self.assertEqual(
+            self.browser.find_element(By.TAG_NAME, "h1").text, "Delete your account"
+        )
+        body = self.browser.find_element(By.TAG_NAME, "body").text
+        self.assertIn("permanently deleted within 7 days", body)
+        for anchor in ("how", "when", "what", "kept", "contact"):
+            with self.subTest(anchor=anchor):
+                self.assertTrue(self.browser.find_elements(By.ID, anchor))

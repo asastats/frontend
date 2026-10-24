@@ -147,9 +147,13 @@ def delete_deactivated():
     :type users: :class:`QuerySet`
     :return: int
     """
+    from core.models import LiveAllowanceBucket
+
     count = 0
     users = get_user_model().objects.filter(is_active=False)
     for user in users:
+        # Keyed by `u:<pk>`, not a foreign key, so nothing cascades to it.
+        LiveAllowanceBucket.objects.filter(key=f"u:{user.pk}").delete()
         user.profile.delete()
         user.delete()
         count += 1

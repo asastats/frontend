@@ -3,6 +3,7 @@
 Chrome sends the app's user-agent token, as the Capacitor WebView does.
 """
 
+from django.test import override_settings
 from django.urls import reverse
 from selenium.webdriver.common.by import By
 
@@ -124,3 +125,20 @@ class AppPurchaseLinksTest(FunctionalTest):
 
         self.assertIn("Subscription Models", body)
         self.assertNotIn("How to Subscribe", body)
+
+
+@override_settings(
+    APP_HIDDEN_WIDGETS={"android": frozenset({"historic"}), "ios": frozenset()}
+)
+class AppHiddenWidgetsTest(FunctionalTest):
+    """A widget switched off for the app's platform is not served to it (F11)."""
+
+    def setup_platform(self):
+        super().setup_platform()
+        self.browser_options.add_argument(f"--user-agent={APP_USER_AGENT}")
+
+    def test_hidden_widget_is_page_not_found(self):
+        self.create_cookie_and_go_to_index_page_tier("app-hidden@example.com")
+        self.browser.get(self.server_url + reverse("historic", args=["A" * 58]))
+
+        self.assertEqual(self.browser.title, "Page not found")

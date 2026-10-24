@@ -109,10 +109,10 @@
       {% if is_bundle %}
         {% with historic=bundle|historic_data %}
         {% if deployment_capabilities.permission|export_capability:historic.1 %}
-          {% if user.profile|historic_access:historic.1 %}
+          {% if user.profile|historic_access:historic.1 and request|widget_shown:'historic' %}
           <a class="btn btn-outline btn-sm" href="{% url 'historic' historic.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
           {% endif %}
-          {% if user.profile|pnl_access:historic.1 %}
+          {% if user.profile|pnl_access:historic.1 and request|widget_shown:'pnl' %}
           <a class="btn btn-sm {% if pnl_ready %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'pnl' historic.0 %}" target="_blank" title="{% if pnl_ready %}Profit and loss report is ready{% elif processing_pnl %}Your profit and loss report is being processed{% else %}Profit and loss for address(es){% endif %}">{% if pnl_ready %}Profit and loss ready{% elif processing_pnl %}Profit and loss: processing{% else %}Profit and loss{% endif %}</a>
           {% endif %}
           {% if user.profile|export_access:historic.1 %}
@@ -125,10 +125,10 @@
         {% endwith %}
       {% else %}
         {% if deployment_capabilities.permission|export_capability:1 %}
-          {% if user.profile|historic_access:1 %}
+          {% if user.profile|historic_access:1 and request|widget_shown:'historic' %}
           <a class="btn btn-outline btn-sm" href="{% url 'historic' address.0 %}" target="_blank" title="Process and show historic data for address(es)">Historic data</a>
           {% endif %}
-          {% if user.profile|pnl_access:1 %}
+          {% if user.profile|pnl_access:1 and request|widget_shown:'pnl' %}
           <a class="btn btn-sm {% if pnl_ready %}btn-primary{% else %}btn-outline{% endif %}" href="{% url 'pnl' address.0 %}" target="_blank" title="{% if pnl_ready %}Profit and loss report is ready{% elif processing_pnl %}Your profit and loss report is being processed{% else %}Profit and loss for address(es){% endif %}">{% if pnl_ready %}Profit and loss ready{% elif processing_pnl %}Profit and loss: processing{% else %}Profit and loss{% endif %}</a>
           {% endif %}
           {% if user.profile|export_access:1 %}

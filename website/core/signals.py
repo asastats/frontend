@@ -3,9 +3,13 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.signals import user_logged_in
 from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.dispatch import Signal, receiver
 
 from core.models import Profile
+
+#: Sent with ``user`` when an account is closed (deactivated, deleted within a
+#: week). Receivers drop what must stop at once, e.g. push delivery.
+user_deactivated = Signal()
 
 
 @receiver(post_save, sender=User)

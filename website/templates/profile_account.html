@@ -45,14 +45,15 @@
   {% endcomment %}
   <section class="rounded-box border border-error/30 bg-base-100">
     <div class="border-b border-error/30 px-5 py-4">
-      <h2 class="text-base font-medium">Deactivate account</h2>
+      <h2 class="text-base font-medium">Delete account</h2>
     </div>
     <div class="flex flex-wrap items-center justify-between gap-4 px-5 py-5">
       <p class="max-w-prose text-sm text-base-content/60">
-        Deactivating removes your profile and your saved bundles. Your addresses
-        stay on the chain and can be looked up without an account.
+        Your account and its data are permanently deleted within 7 days and
+        cannot be restored. Your addresses stay on the chain and can be looked
+        up without an account.
       </p>
-      <a class="btn btn-outline btn-error btn-sm" href="{% url 'deactivate_profile' %}" id="id_deactivate">Deactivate account</a>
+      <a class="btn btn-outline btn-error btn-sm" href="{% url 'deactivate_profile' %}" id="id_deactivate">Delete account</a>
     </div>
   </section>
 

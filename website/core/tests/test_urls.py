@@ -301,7 +301,7 @@ class TestCoreUrls:
         assert url.name == "alerts_service_worker"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 44
+        assert len(urls.urlpatterns) == 45
 
 
 class RootAssetUrlTest(TestCase):

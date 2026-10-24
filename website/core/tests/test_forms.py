@@ -623,12 +623,23 @@ class TestDeactivateProfileForm:
     def test_deactivateprofileform_deactivate_profile_sets_request_deactivates_user(
         self, mocker
     ):
+        mocker.patch("core.forms.user_deactivated")
         request = mocker.MagicMock()
         request.user.is_active = True
         DeactivateProfileForm().deactivate_profile(request)
         assert request.user.is_active is False
 
+    def test_deactivateprofileform_deactivate_profile_sends_user_deactivated(
+        self, mocker
+    ):
+        signal = mocker.patch("core.forms.user_deactivated")
+        mocker.patch("core.forms.logout")
+        request = mocker.MagicMock()
+        DeactivateProfileForm().deactivate_profile(request)
+        signal.send.assert_called_once_with(sender=User, user=request.user)
+
     def test_deactivateprofileform_deactivate_profile_logouts_user(self, mocker):
+        mocker.patch("core.forms.user_deactivated")
         mocked = mocker.patch("core.forms.logout")
         request = mocker.MagicMock()
         DeactivateProfileForm().deactivate_profile(request)

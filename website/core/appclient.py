@@ -86,6 +86,20 @@ def purchase_hidden(request):
     return client is not None and client.platform in settings.APP_HIDE_PURCHASE
 
 
+def hidden_widgets(request):
+    """Return the names of the widgets switched off for `request`.
+
+    :param request: Django request object
+    :type request: :class:`django.http.HttpRequest`
+    :return: frozenset
+    """
+    client = app_client(request)
+    if client is None:
+        return frozenset()
+
+    return settings.APP_HIDDEN_WIDGETS.get(client.platform, frozenset())
+
+
 def widget_hidden(request, name):
     """Return True if the widget called `name` is switched off for `request`.
 
@@ -95,11 +109,7 @@ def widget_hidden(request, name):
     :type name: str
     :return: bool
     """
-    client = app_client(request)
-    if client is None:
-        return False
-
-    return name in settings.APP_HIDDEN_WIDGETS.get(client.platform, frozenset())
+    return name in hidden_widgets(request)
 
 
 def wallet_supported(request, wallet_id):

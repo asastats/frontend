@@ -65,7 +65,7 @@
           <div id="{{ asset.id }}" class="fitem grid gap-4 md:grid-cols-4">
             {% include "snippets/asas/meta.html" with asaitem=asaitem asset=asset %}
             <div class="asar md:col-span-3 md:text-right">
-              {% if url_value %}
+              {% if url_value and request|widget_shown:'swapcore' %}
               <div class="">
                 <div class="asa flex flex-wrap items-start justify-end gap-3">
                   <div class="swap-action-column order-2">

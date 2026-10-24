@@ -41,7 +41,7 @@
     {% comment %} The two secondary destinations, as ghost buttons: the one
        filled control on this view belongs to "Add bundle name". {% endcomment %}
     <div class="flex flex-none flex-wrap items-center gap-1">
-      {% if bundlename.can_access_historic_widget %}
+      {% if bundlename.can_access_historic_widget and request|widget_shown:'historic' %}
       <a class="btn btn-ghost btn-xs" href="{% url 'historic' bundlename.bundle %}" target="_blank"
          title="Process and show historic data for {{ bundlename.name }}">Historic</a>
       {% endif %}

@@ -46,14 +46,17 @@ class ProfileAccountTest(FunctionalTest):
             "the account page has no Back button leading to the profile",
         )
 
-        # He sees there's deactivate account button leading to deactivate page
+        # He sees there's a delete account button leading to the deletion page
         deactivate = self.find_elem_by_id("id_deactivate")
         self.assertIn("/profile/deactivate/", deactivate.get_attribute("href"))
+        self.assertEqual(deactivate.text.strip(), "Delete account")
 
-        # He clicks it and finds himself on deactivate account page
+        # He clicks it and finds himself on the delete account page, which says
+        # when the account is gone and that it cannot be restored
         with self.wait_for_page_load(timeout=5):
             deactivate.click()
-        self.assertIn("Deactivate account", self.browser.page_source)
+        self.assertIn("Delete account", self.browser.page_source)
+        self.assertIn("permanently deleted within 7 days", self.browser.page_source)
 
         # He sees the captcha image
         form = self.find_elem_by_id("deactivate_profile")

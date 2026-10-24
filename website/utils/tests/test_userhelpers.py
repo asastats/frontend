@@ -495,3 +495,82 @@ class TestUtilsUserHelpersFunctions:
         )
         validate_address_or_algo_name_url_path(url_path)
         mocked_check.assert_called_once_with(url_path)
+
+
+def _personal_rows(user, tag):
+    """Create one of every row that belongs to ``user`` (the F6 data audit).
+
+    :return: list of (model, filter) pairs that must be empty after deletion
+    """
+    from allauth.account.models import EmailAddress
+    from allauth.socialaccount.models import SocialAccount
+
+    from core.models import BundleName, LiveAllowanceBucket
+    from walletauth.models import LinkedAddress, WalletNonce
+    from widgets.inhouse.alerts.models import AlertRule, PushSubscription
+    from widgets.inhouse.pnl.models import (
+        PnlBundle,
+        PnlHiddenAsset,
+        PnlOverride,
+        PnlSettings,
+    )
+
+    profile = user.profile
+    BundleName.objects.create(profile=profile, name=f"b{tag}", bundle=f"h{tag}")
+    LinkedAddress.objects.create(
+        profile=profile,
+        address=f"A{tag}",
+        canonical_address=f"A{tag}",
+        chain="algorand",
+        auth_method="signature",
+    )
+    WalletNonce.objects.create(user=user, address=f"A{tag}", nonce=f"n{tag}")
+    AlertRule.objects.create(
+        user=user, subject="asa_price", direction="down", threshold="1", asset_id=1
+    )
+    PushSubscription.objects.create(
+        user=user, endpoint=f"https://push.example/{tag}", p256dh="k", auth="a"
+    )
+    PnlBundle.objects.create(user=user, bundle=f"h{tag}", address_count=1)
+    PnlSettings.objects.create(user=user)
+    PnlHiddenAsset.objects.create(user=user, bundle=f"h{tag}", asset="0")
+    PnlOverride.objects.create(
+        user=user, bundle=f"h{tag}", kind="basis", asset="0", amount=1, currency="usd"
+    )
+    LiveAllowanceBucket.objects.create(key=f"u:{user.pk}")
+    EmailAddress.objects.create(user=user, email=f"{tag}@example.com")
+    SocialAccount.objects.create(user=user, provider="github", uid=tag)
+    return [
+        (Profile, {"pk": profile.pk}),
+        (BundleName, {"profile_id": profile.pk}),
+        (LinkedAddress, {"profile_id": profile.pk}),
+        (WalletNonce, {"user_id": user.pk}),
+        (AlertRule, {"user_id": user.pk}),
+        (PushSubscription, {"user_id": user.pk}),
+        (PnlBundle, {"user_id": user.pk}),
+        (PnlSettings, {"user_id": user.pk}),
+        (PnlHiddenAsset, {"user_id": user.pk}),
+        (PnlOverride, {"user_id": user.pk}),
+        (LiveAllowanceBucket, {"key": f"u:{user.pk}"}),
+        (EmailAddress, {"user_id": user.pk}),
+        (SocialAccount, {"user_id": user.pk}),
+    ]
+
+
+@pytest.mark.django_db
+class TestUserHelpersDeleteDeactivatedLeavesNothing:
+    """A deleted account leaves no personal row behind (F6, Apple 5.1.1(v))."""
+
+    def test_utils_delete_deactivated_removes_every_personal_row(self):
+        closed = get_user_model().objects.create(username="closed", is_active=False)
+        kept = get_user_model().objects.create(username="kept")
+        closed_rows = _personal_rows(closed, "closed")
+        kept_rows = _personal_rows(kept, "kept")
+
+        assert delete_deactivated() == 1
+
+        assert not get_user_model().objects.filter(pk=closed.pk).exists()
+        for model, lookup in closed_rows:
+            assert not model.objects.filter(**lookup).exists(), model.__name__
+        for model, lookup in kept_rows:
+            assert model.objects.filter(**lookup).exists(), model.__name__

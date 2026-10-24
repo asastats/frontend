@@ -4365,3 +4365,91 @@ balance on their primary branch, and `BRANCH_STRADDLING` is empty.
 
 The guard moves from 9 to 11 for the two `.well-known` routes (F9), which sit
 ahead of the `core.urls` catch-all on purpose.
+
+## core/middleware.py:AppClientMiddleware, core/appclient.py:hidden_widgets, core/views.py (swap entry), templates — per-platform widget switch (F11, 2026-10-24)
+
+Decision D5: swap widgets are shown in the app, but can be switched off per
+platform without a new app build, should App Review read a DEX swap signed
+in the user's own wallet as an "exchange" (Apple 3.1.5(iii)). The mechanism is
+general: `APP_HIDDEN_WIDGETS_IOS` / `APP_HIDDEN_WIDGETS_ANDROID` take any widget
+names from `INHOUSE_WIDGETS`. Both are empty by default.
+
+- **Gate:** `AppClientMiddleware` raises `Http404` for `/widgets/<name>/…`
+  when `<name>` is hidden on the app's platform. Every view of a widget,
+  including htmx fragments and swap endpoints, is mounted under its name
+  (`widgets/urls.py`), so one check covers all of them. Websocket routes
+  (Channels) are not HTTP and are not gated. They are only opened by the
+  widget's own page, which is gated.
+- **Entry points** read `HIDDEN_WIDGETS` (context processor; empty in a
+  browser): the historic and P&L buttons on the address pages, home and
+  index; the per-asset Swap link in the address accordion (`swapcore`); the
+  alerts toolbar in `_swap_entry.html`. The address pages are cached per
+  platform for the app (`app_cache_prefix`), so a hidden button cannot leak
+  between iOS and Android, or into a browser.
+- **The per-reader swap entry** (`SwapEntryView` context) leaves out the swap
+  marker when `swapcore` *or the reader's preferred router* is hidden, the
+  dust sweep when `dustsweep` is, and the live-refresh marker when
+  `liverefresh` is. Swap and sweep are now gated separately (both still on
+  linkage), so hiding one keeps the other; `swap_addresses` is computed from
+  `linked` itself rather than borrowed from the sweep's context.
+
+To hide swaps on iOS: `APP_HIDDEN_WIDGETS_IOS=swapcore` (the routers then have
+no entry point). The profile settings page still offers every router as the
+preferred one; a hidden router simply produces no swap entry.
+
+Tests: `core/tests/test_appclient.py::TestCoreAppClientHiddenWidgets`,
+`core/tests/test_views.py::SwapEntryHiddenWidgetsTest`,
+`functional_tests/test_app_client.py::AppHiddenWidgetsTest`.
+
+**Correction 2026-10-24** to the F11 entry above: the templates do not read a
+`HIDDEN_WIDGETS` context variable any more. `{% if 'pnl' not in HIDDEN_WIDGETS %}`
+failed **closed**: a render without context processors (`render_to_string`
+without a request, as the address template tests do) leaves the variable
+undefined. The `in` test then errors inside `{% if %}`, which Django
+evaluates as false, so the buttons vanished. A filter taking the variable as
+its argument fails the same way. The templates now use
+`request|widget_shown:'pnl'` (`core_extras.widget_shown`), keyed on the
+request itself: a missing request resolves to None, which is a browser, which
+hides nothing. `HIDDEN_WIDGETS` was removed from the context processor.
+
+## core/forms.py:DeactivateProfileForm, core/signals.py:user_deactivated, utils/userhelpers.py:delete_deactivated, templates — account deletion in the app (F6, 2026-10-24)
+
+Apple 5.1.1(v) and Google Play require that an account can be deleted from
+inside the app, and Play also needs a public web page for it. Deletion already
+existed (D9). "Deactivate" sets `is_active = False`, and the weekly cron
+`deletedeactivated` (Wednesdays 23:20) hard-deletes inactive users, so an
+account is gone **within 7 days** at most. Apple accepts deletion that
+completes later if the user is told when.
+
+- Wording: the profile account page, `deactivate_profile.html` and allauth's
+  `account_inactive.html` now say "Delete account" and "permanently deleted
+  within 7 days … cannot be restored". The URL name `deactivate_profile`, the
+  form id `deactivate_profile` and the link id `id_deactivate` are
+  unchanged, because tests and scripts bind to them.
+- `/account-deletion/` (`AccountDeletionView`, public, cached like the other
+  static pages, in the sitemap): how to delete, when, what goes, what stays
+  (public chain data, routine server logs), and a contact. The contact renders
+  `info@{{ WEBSITE_DOMAIN }}`, the same as `asm-privacy.html`, which comes out
+  as `info@www.asastats.com`. Flagged to the user to confirm the mailbox.
+- `user_deactivated` (a `core.signals` Signal) is sent when the account is
+  closed. Receivers stop what must not wait a week: the alerts widget deletes
+  push subscriptions, and F8's native devices will follow. A signal, so that
+  `core` imports no widget model.
+- Data audit, 2026-10-24. Every relation to the user or the profile is
+  `CASCADE`: Profile; BundleName and walletauth LinkedAddress (via the
+  profile); WalletNonce; alerts AlertRule and PushSubscription; pnl PnlBundle,
+  PnlSettings, PnlHiddenAsset, PnlOverride; allauth EmailAddress and
+  SocialAccount (allauth's own cascade). The one row no cascade reaches is
+  `LiveAllowanceBucket`, keyed by the string `u:<pk>`, which
+  `delete_deactivated` now deletes. Redis live-refresh spend keys expire on
+  their own (`SPEND_TTL`). `WalletLoginNonce` is bound to an address, not a
+  user, and expires in 5 minutes. Sessions on the user's other devices stay
+  in the session store until they expire, but they point at a user that no
+  longer exists and carry nothing else. The test creates one of each row for a
+  closed account and for a kept one, and asserts the closed account's rows are
+  all gone and the kept account's are not.
+
+Tests: `utils/tests/test_userhelpers.py::TestUserHelpersDeleteDeactivatedLeavesNothing`,
+`core/tests/test_forms.py` (signal), `core/tests/test_views.py::AccountDeletionPageTest`,
+`functional_tests/test_static_pages.py::test_account_deletion_page_is_public_and_says_when`,
+`functional_tests/test_profile_account.py` (new wording).

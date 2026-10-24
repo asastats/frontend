@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}{{ WEBSITE_NAME }} - Delete your account{% endblock %}
+{% block description %}How to delete your {{ WEBSITE_NAME }} account and its data, and when it is gone.{% endblock %}
+{% block keywords %}{{ WEBSITE_SHORT_NAME }},account,delete account,account deletion,data deletion,privacy{% endblock %}
+{% block content %}
+<header class="mx-auto mb-10 max-w-3xl text-center">
+  <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Delete your account</h1>
+  <p class="mt-3 text-lg text-base-content/70">On the website and in the {{ WEBSITE_NAME }} app, the same way.</p>
+</header>
+<article class="mx-auto max-w-3xl">
+  <section>
+    <h2 id="how">How to delete it</h2>
+    <div class="mt-3 space-y-4 text-base-content/80">
+      <ol class="list-decimal space-y-1 pl-5">
+        <li>Sign in.</li>
+        <li>Open <strong>Profile</strong>, then <strong>Account</strong>.</li>
+        <li>Choose <strong>Delete account</strong>, enter the characters from the image and confirm.</li>
+      </ol>
+      <p>You are signed out at once, and the account can no longer be used to sign in.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="when">When it is deleted</h2>
+    <div class="mt-3 space-y-4 text-base-content/80">
+      <p>The account and all its data are <strong>permanently deleted within 7 days</strong>. It cannot be restored. Alert notifications stop immediately.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="what">What is deleted</h2>
+    <div class="mt-3 space-y-4 text-base-content/80">
+      <ul class="list-disc space-y-1 pl-5">
+        <li>Your account: username, email address and name.</li>
+        <li>The sign-in methods connected to it: email, social accounts and wallet sign-in.</li>
+        <li>Your profile, settings and API token.</li>
+        <li>Your bundle names and linked addresses.</li>
+        <li>Your alerts and the browsers or devices registered to receive them.</li>
+        <li>Your profit and loss settings and the figures you entered.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="kept">What is not deleted</h2>
+    <div class="mt-3 space-y-4 text-base-content/80">
+      <p>Algorand addresses and transactions are public on the blockchain. Anyone can still look them up on {{ WEBSITE_NAME }} without an account. Routine server logs are kept for a limited time as part of normal operation.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="contact">Questions</h2>
+    <div class="mt-3 space-y-4 text-base-content/80">
+      <p>If you cannot sign in any more and want your account deleted, contact us at info@{{ WEBSITE_DOMAIN }}.</p>
+    </div>
+  </section>
+</article>
+{% endblock %}

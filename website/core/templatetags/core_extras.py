@@ -9,6 +9,7 @@ from django.template.defaultfilters import floatformat
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 
+from core.appclient import widget_hidden
 from core.exportpermissions import tier_allows
 from utils import explorers as explorer_constants
 from utils.constants.charts import PIE_CHART_MAXIMUM_ITEMS
@@ -21,6 +22,21 @@ register = Library()
 #: what the engine sends as an NFT listing's link when the NFT waits to be
 #: claimed (engine's `DOWNBAD_CLAIM_URL`); keep the two in step
 CLAIM_LINKS = ("https://www.downbad.farm/me?tab=offers",)
+
+
+@register.filter
+def widget_shown(request, name):
+    """Return False if widget `name` is switched off for the app `request` came from.
+
+    Keyed on ``request`` so it fails open: a render without one shows everything.
+
+    :param request: Django request object, or None
+    :type request: :class:`django.http.HttpRequest`
+    :param name: widget name
+    :type name: str
+    :return: bool
+    """
+    return not widget_hidden(request, name)
 
 
 @register.filter

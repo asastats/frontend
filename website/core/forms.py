@@ -22,6 +22,7 @@ from django.forms.widgets import TextInput
 
 from core.helpers import addresses_from_raw, format_addresses_limit_help_text
 from core.models import BundleName, Profile
+from core.signals import user_deactivated
 from utils.constants.core import INVALID_ADDRESS_TEXT, MAX_BUNDLE_SIZE
 from utils.constants.tax import (
     TAX_FORM_NON_ZERO_HELP_TEXT,
@@ -259,6 +260,7 @@ class DeactivateProfileForm(Form):
         """
         request.user.is_active = False
         request.user.save()
+        user_deactivated.send(sender=User, user=request.user)
         logout(request)
 
 

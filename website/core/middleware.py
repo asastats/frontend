@@ -1,8 +1,11 @@
 """Module containing core app's custom middlewares."""
 
+import re
+
+from django.http import Http404
 from django_minify_html.middleware import MinifyHtmlMiddleware
 
-from core.appclient import parse_app_client
+from core.appclient import parse_app_client, widget_hidden
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 
@@ -38,12 +41,22 @@ class CustomUserHeaderMiddleware:
         return response
 
 
+#: Every view of a widget is mounted under its name (widgets/urls.py).
+WIDGET_PATH_REGEX = re.compile(r"^/widgets/(?P<name>[\w-]+)/")
+
+
 class AppClientMiddleware:
-    """Set ``request.app_client`` from the ASA Stats app's user-agent token."""
+    """Set ``request.app_client`` from the ASA Stats app's user-agent token,
+    and answer 404 for a widget switched off on the app's platform."""
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
         request.app_client = parse_app_client(request.META.get("HTTP_USER_AGENT"))
+        if request.app_client is not None:
+            match = WIDGET_PATH_REGEX.match(request.path_info)
+            if match and widget_hidden(request, match.group("name")):
+                raise Http404("widget not available in the app")
+
         return self.get_response(request)

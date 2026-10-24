@@ -42,7 +42,7 @@ from api.client import (
 )
 from api.main import fetch_and_serialize_account
 from api.widgets import bundle_and_addresses_from_path
-from core.appclient import app_cache_prefix
+from core.appclient import app_cache_prefix, widget_hidden
 from core.context_processors import load_typefaces
 from core.forms import (
     DeactivateProfileForm,
@@ -693,6 +693,12 @@ class AboutView(BaseStaticPageView):
     """View for presenting About page."""
 
     template_name = "about.html"
+
+
+class AccountDeletionView(BaseStaticPageView):
+    """View for presenting the public account deletion page (store listings link it)."""
+
+    template_name = "account_deletion.html"
 
 
 class DisclaimerView(BaseStaticPageView):
@@ -2000,6 +2006,7 @@ class SwapEntryView(TemplateView):
             and profile.live_refresh
             and profile.can_access_live_refresh(len(addresses))
             and _can_poll_liverefresh(user, addresses)
+            and not widget_hidden(self.request, "liverefresh")
         ):
             context["liverefresh_url"] = reverse("liverefresh", args=[value])
             context["liverefresh_interval"] = LIVEREFRESH_POLL_SECONDS
@@ -2017,7 +2024,7 @@ class SwapEntryView(TemplateView):
         context["alerts_bundle"] = value
 
         linked = linked_addresses_for_user(user, addresses)
-        if linked:
+        if linked and not widget_hidden(self.request, "dustsweep"):
             # **Both actions are signed by one holder's key**, so what matters
             # is which of the page's addresses this reader controls; the rest
             # of a bundle belongs to some other key.
@@ -2028,7 +2035,11 @@ class SwapEntryView(TemplateView):
             context["dustsweep_addresses"] = sorted(linked)
             context["dustsweep_address"] = preferred_linked_address(user, linked)
             context["dustsweep_plan_url"] = reverse("dustsweep_plan")
-            router = user.profile.preferred_router_or_default()
+        router = user.profile.preferred_router_or_default() if linked else ""
+        # The modal (swapcore) and the reader's router are both widgets.
+        if linked and not (
+            widget_hidden(self.request, "swapcore") or widget_hidden(self.request, router)
+        ):
             cfg = swap_client_cfg(router)
             context["swap_url"] = swap_entry_url(router, value)
             context["swap_router"] = router
@@ -2047,7 +2058,7 @@ class SwapEntryView(TemplateView):
             # every address on this page the reader owns plus the best guess
             # for when the wallet is on none of them, and `swap.js` prefers the
             # connected account.
-            context["swap_addresses"] = context["dustsweep_addresses"]
+            context["swap_addresses"] = sorted(linked)
             context["swap_address"] = context["dustsweep_address"]
             # "" for a router that ships no SDK, which the template skips
             # rather than naming a static file that does not exist.
