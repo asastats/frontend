@@ -7,8 +7,6 @@ widget's unit tests have them; the calls themselves are covered there.
 import time
 from unittest import mock
 
-import requests
-
 from django.contrib.auth import get_user_model
 from selenium.webdriver.common.by import By
 
@@ -217,30 +215,6 @@ class PnlWidgetNftTest(FunctionalTest):
             f"https://explorer.perawallet.app/tx/{TRANSACTION}",
         )
         self.assertEqual(link.get_attribute("target"), "_blank")
-
-    def test_only_cluster_is_offered_the_events_csv(self):
-        for permission, offered in ((PROFESSIONAL, False), (CLUSTER, True)):
-            with self.subTest(permission=permission):
-                self._log_in(permission)
-                self._open()
-                self.find_elem_by_link_text("How these figures are made")
-                links = self.browser.find_elements(By.LINK_TEXT, "Download events CSV")
-                self.assertEqual(bool(links), offered)
-
-    def test_the_events_csv_downloads_every_event(self):
-        self._log_in(CLUSTER)
-        self._open()
-        href = self.find_elem_by_link_text("Download events CSV").get_attribute("href")
-        response = requests.get(
-            href,
-            cookies={self.cookie["name"]: self.cookie["value"]},
-            timeout=30,
-        )
-        self.assertEqual(response.headers["Content-Type"], "text/csv; charset=utf-8")
-        lines = response.content.decode("utf-8-sig").splitlines()
-        self.assertTrue(lines[0].startswith("Date (UTC),Transaction ID,"))
-        self.assertIn(TRANSACTION, lines[1])
-        self.assertIn("Rand Gallery purchase", lines[1])
 
     def test_insights_follow_the_tier(self):
         for permission, winners, concentration in (

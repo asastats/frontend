@@ -4610,3 +4610,20 @@ Data audit (addendum to the F6 entry above, 2026-10-25): `NativePushDevice`
 Tests: `wallet/src/app/push.test.ts`, `wallet/src/app/main.test.ts`,
 `utils/tests/test_userhelpers.py::TestUserHelpersDeleteDeactivatedLeavesNothing`,
 `integration_tests/test_alerts_integration.py::AlertsMigrationsTest`.
+
+## website/static/img/social/{discord,github,google,reddit,twitter}.png — cropped to square (2026-10-25)
+
+The five icons were 64×96 PNGs with a 64×64 logo and 16 px of transparent
+padding above and below. Shown as `h-5 w-5` in the social sign-in buttons they
+were squashed to the wrong ratio. Cropped to their 64×64 content so the
+templates need no change. The `*24.png` files were already square.
+
+## templates/socialaccount/snippets/apple_button.html — outlined like the others (2026-10-25)
+
+Correction to the F5 entry above ("Styling"): the button is no longer black.
+At the user's request it is `btn btn-outline` like the other providers, with
+no inline colours, and the Apple logo uses `currentColor`, so it follows the
+theme's text colour. Apple's guidelines also allow a white button with a black
+outline, which is what light themes now show. On dark themes the logo and
+text are light on dark; if App Review objects, the black button is the
+earlier version of this file.
