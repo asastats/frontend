@@ -38,3 +38,6 @@ djangorestframework-yaml>=2.0.0
 # of alerts belongs there, beside work of exactly that shape. This project's
 # part is delivery: look up a subscription and send one request.
 pywebpush>=2.0.0
+
+## Native push for the app (FCM HTTP v1); imported lazily by alerts/push.py
+google-auth>=2.62.0

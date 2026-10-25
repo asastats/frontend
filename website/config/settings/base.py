@@ -817,6 +817,11 @@ VAPID_PUBLIC_KEY = get_env_variable("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = get_env_variable("VAPID_PRIVATE_KEY", "")
 VAPID_ADMIN_EMAIL = get_env_variable("VAPID_ADMIN_EMAIL", "")
 
+# Native push for the app through Firebase Cloud Messaging (HTTP v1); see
+# `docs/logbook.md`. Empty means native push is off, as for VAPID above.
+FCM_PROJECT_ID = get_env_variable("FCM_PROJECT_ID", "")
+FCM_CREDENTIALS_FILE = get_env_variable("FCM_CREDENTIALS_FILE", "")
+
 # The secret the engine signs its alert triggers with, verified by
 # `AlertsRepricedView`. Shaped like the router monitor's webhook settings, which
 # is the pattern it copies.

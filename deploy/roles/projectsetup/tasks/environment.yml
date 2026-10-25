@@ -51,6 +51,8 @@
       - VAPID_PUBLIC_KEY
       - VAPID_PRIVATE_KEY
       - VAPID_ADMIN_EMAIL
+      - FCM_PROJECT_ID
+      - FCM_CREDENTIALS_FILE
       # The engine signs its alert triggers with this; the website verifies.
       - ALERTS_WEBHOOK_SECRET
       # API tiers and live refresh (off when unset)
