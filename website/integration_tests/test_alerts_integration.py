@@ -55,7 +55,13 @@ from widgets.inhouse.alerts.evaluate import (
     payload_for,
     percent_move,
 )
-from widgets.inhouse.alerts.models import AlertRule, Direction, PushSubscription, Subject
+from widgets.inhouse.alerts.models import (
+    AlertRule,
+    Direction,
+    NativePushDevice,
+    PushSubscription,
+    Subject,
+)
 from widgets.inhouse.alerts.population import (
     RULE_ASSETS_KEY,
     RULES_KEY,
@@ -587,6 +593,9 @@ class AlertsMigrationsTest(TestCase):
 
     def test_alerts_integration_the_subscription_table_exists(self):
         assert PushSubscription.objects.count() == 0
+
+    def test_alerts_integration_the_native_device_table_exists(self):
+        assert NativePushDevice.objects.count() == 0
 
     def test_alerts_integration_the_subject_column_fits_every_subject(self):
         """**Migration `0003`, and the reason for it.**

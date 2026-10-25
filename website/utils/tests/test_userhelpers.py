@@ -507,7 +507,11 @@ def _personal_rows(user, tag):
 
     from core.models import AppleSignInToken, BundleName, LiveAllowanceBucket
     from walletauth.models import LinkedAddress, WalletNonce
-    from widgets.inhouse.alerts.models import AlertRule, PushSubscription
+    from widgets.inhouse.alerts.models import (
+        AlertRule,
+        NativePushDevice,
+        PushSubscription,
+    )
     from widgets.inhouse.pnl.models import (
         PnlBundle,
         PnlHiddenAsset,
@@ -531,6 +535,7 @@ def _personal_rows(user, tag):
     PushSubscription.objects.create(
         user=user, endpoint=f"https://push.example/{tag}", p256dh="k", auth="a"
     )
+    NativePushDevice.objects.create(user=user, token=f"fcm-{tag}", platform="ios")
     PnlBundle.objects.create(user=user, bundle=f"h{tag}", address_count=1)
     PnlSettings.objects.create(user=user)
     PnlHiddenAsset.objects.create(user=user, bundle=f"h{tag}", asset="0")
@@ -548,6 +553,7 @@ def _personal_rows(user, tag):
         (WalletNonce, {"user_id": user.pk}),
         (AlertRule, {"user_id": user.pk}),
         (PushSubscription, {"user_id": user.pk}),
+        (NativePushDevice, {"user_id": user.pk}),
         (PnlBundle, {"user_id": user.pk}),
         (PnlSettings, {"user_id": user.pk}),
         (PnlHiddenAsset, {"user_id": user.pk}),

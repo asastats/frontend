@@ -4556,3 +4556,57 @@ audit test now includes the table.
 **Correction 2026-10-24** to the F12 and F6 entries above: the contact address
 is `info@asastats.com`, rendered as `info@{{ WEBSITE_BASE_DOMAIN }}` (the user
 confirmed the mailbox). `WEBSITE_BASE_DOMAIN` was added to `global_constants`.
+
+## wallet/src/app/push.ts, config/settings/base.py (FCM_*), requirements/base.txt — alerts as native notifications (F8, 2026-10-25)
+
+The app's WebView has no Web Push, so the alerts widget reaches phones through
+Firebase Cloud Messaging (widgets `docs/logbook.md`, "native push to the ASA
+Stats app", has the server side). This is the app half.
+
+- **The plugin is reached with `registerPlugin("FirebaseMessaging")`, not by
+  importing `@capacitor-firebase/messaging`.** That package's web
+  implementation imports `firebase/messaging` (checked in 8.5.2,
+  `dist/esm/web.js`). Vite would have to resolve it: either the build fails
+  or the Firebase web SDK ends up in `dist/`. `app.js` only runs on the native
+  platform, where `registerPlugin` proxies to the native plugin the shell
+  registers (`mobile/` pins the package). So the package is **not** a
+  dependency of `frontend/wallet`; `push.ts` declares the few methods it
+  calls. If the plugin's API changes in `mobile/`, update those declarations.
+- **The contract with widgets `alerts.js`:** `window.ASAStatsApp.enablePush(urls)`
+  resolves `{ok, message}` (never rejects in practice; alerts.js catches
+  anyway), `checkPush(urls)` resolves a boolean and never prompts,
+  `disablePush()` never throws. `urls` are the modal's
+  `data-device-register-url` / `data-device-unregister-url`.
+- **The urls are kept in localStorage (`asastats.push`)** once a device is on,
+  because a refreshed token (`tokenReceived`) and a logout happen on pages
+  that do not carry the alerts modal. Its presence also means "this device
+  was turned on", so nothing is registered for a reader who never asked.
+- **Logout unregisters first.** `ACCOUNT_LOGOUT_ON_GET` is on, so a tap on any
+  link to `/accounts/logout/` logs out at once; the click is taken over,
+  `disablePush()` runs, then the link is followed. The confirmation page's POST
+  form is handled the same way. Matched by path rather than by a data
+  attribute so no template had to change. Offline, the unregister fails and
+  the logout still goes ahead; the server's re-home rule (`update_or_create`
+  on the token) moves the phone to whoever signs in next.
+- **A tapped notification opens `data.url` only when it is same-origin.** Every
+  page of the site can call the plugins (HANDOFF §3), so a URL from a
+  notification payload is treated as untrusted.
+- `register()` sends `Capacitor.getPlatform()` and `App.getInfo().version` as
+  `platform` / `app_version`.
+- Built with `npm run build`: `bundle.js` and the `dist/app-web-*` chunks were
+  byte-identical; only `js/app.js` changed. No new chunk appeared, which is
+  the check that no Firebase web code was pulled in.
+
+Settings: `FCM_PROJECT_ID`, `FCM_CREDENTIALS_FILE` (both empty by default = off),
+in the Ansible env list. `google-auth` is in `requirements/base.txt` so the
+project role installs it; the sender imports it lazily, so a server without it
+still starts. Values and the key file: `capacitor/ENV-VARS.md` in the workspace.
+
+Data audit (addendum to the F6 entry above, 2026-10-25): `NativePushDevice`
+(widgets alerts) is `CASCADE` on the user, deleted at once by a
+`user_deactivated` receiver, and is one of the rows in
+`TestUserHelpersDeleteDeactivatedLeavesNothing`.
+
+Tests: `wallet/src/app/push.test.ts`, `wallet/src/app/main.test.ts`,
+`utils/tests/test_userhelpers.py::TestUserHelpersDeleteDeactivatedLeavesNothing`,
+`integration_tests/test_alerts_integration.py::AlertsMigrationsTest`.

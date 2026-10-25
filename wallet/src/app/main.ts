@@ -10,6 +10,7 @@ import { installDeepLinks } from "./deepLinks";
 import { download, installDownloads } from "./downloads";
 import { installHaptics } from "./haptics";
 import { installLinks } from "./links";
+import { checkPush, disablePush, enablePush, installPush, type DeviceUrls, type PushResult } from "./push";
 import { installSplash } from "./splash";
 import { installStatusBar } from "./statusBar";
 
@@ -18,6 +19,12 @@ export interface ASAStatsAppApi {
   isApp: true;
   /** Fetch a same-site file and open the share sheet for it. */
   download: (url: string) => Promise<boolean>;
+  /** Ask permission and register this device for alerts (widgets `alerts.js`). */
+  enablePush: (urls: DeviceUrls) => Promise<PushResult>;
+  /** Re-register without prompting; whether this device is on. */
+  checkPush: (urls: DeviceUrls) => Promise<boolean>;
+  /** Unregister this device; done before logout. */
+  disablePush: () => Promise<void>;
 }
 
 declare global {
@@ -34,7 +41,13 @@ declare global {
  */
 export function install(target: Window = window): ASAStatsAppApi {
   if (!target.ASAStatsApp) {
-    target.ASAStatsApp = { isApp: true, download: (url) => download(url) };
+    target.ASAStatsApp = {
+      isApp: true,
+      download: (url) => download(url),
+      enablePush,
+      checkPush,
+      disablePush,
+    };
   }
   return target.ASAStatsApp;
 }
@@ -57,6 +70,7 @@ export function start(): boolean {
   installDeepLinks();
   installStatusBar();
   installHaptics();
+  installPush();
   return true;
 }
 

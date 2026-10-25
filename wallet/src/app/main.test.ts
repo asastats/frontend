@@ -6,6 +6,7 @@ import { download, installDownloads } from "./downloads";
 import { installHaptics } from "./haptics";
 import { installLinks } from "./links";
 import { install, start } from "./main";
+import { checkPush, disablePush, enablePush, installPush } from "./push";
 import { installSplash } from "./splash";
 import { installStatusBar } from "./statusBar";
 
@@ -20,6 +21,12 @@ jest.mock("./downloads", () => ({
 }));
 jest.mock("./haptics", () => ({ installHaptics: jest.fn() }));
 jest.mock("./links", () => ({ installLinks: jest.fn() }));
+jest.mock("./push", () => ({
+  checkPush: jest.fn(),
+  disablePush: jest.fn(),
+  enablePush: jest.fn(),
+  installPush: jest.fn(),
+}));
 jest.mock("./splash", () => ({ installSplash: jest.fn() }));
 jest.mock("./statusBar", () => ({ installStatusBar: jest.fn() }));
 
@@ -31,6 +38,7 @@ const installers = [
   installDeepLinks,
   installStatusBar,
   installHaptics,
+  installPush,
 ];
 
 describe("app main", () => {
@@ -48,8 +56,21 @@ describe("app main", () => {
     expect(download).toHaveBeenCalledWith("/x.csv");
   });
 
+  it("exposes the push calls alerts.js makes", () => {
+    const api = install();
+    expect(api.enablePush).toBe(enablePush);
+    expect(api.checkPush).toBe(checkPush);
+    expect(api.disablePush).toBe(disablePush);
+  });
+
   it("keeps an API that is already there", () => {
-    const existing = { isApp: true as const, download: jest.fn() };
+    const existing = {
+      isApp: true as const,
+      download: jest.fn(),
+      enablePush: jest.fn(),
+      checkPush: jest.fn(),
+      disablePush: jest.fn(),
+    };
     window.ASAStatsApp = existing;
     expect(install()).toBe(existing);
   });
