@@ -3,19 +3,19 @@
  * `data-fiat` is the code and `data-fiat-rate` the fiat per USD; without
  * both (or with a bad rate) every answer is USD. See docs/logbook.md.
  */
-(function (root) {
+(function () {
   "use strict";
 
   var SYMBOLS = { USD: "$", EUR: "€" };
 
   /** @returns {Element|null} the element carrying the reader's fiat. */
   function source() {
-    return typeof document === "undefined" ? null : document.querySelector("[data-fiat]");
+    return document.querySelector("[data-fiat]");
   }
 
-  /** @returns {number} the published rate, or NaN when unusable. */
+  /** @returns {number} the published rate, or NaN when unusable; needs the element. */
   function publishedRate(element) {
-    var value = element ? parseFloat(element.getAttribute("data-fiat-rate")) : NaN;
+    var value = parseFloat(element.getAttribute("data-fiat-rate"));
     return isFinite(value) && value > 0 ? value : NaN;
   }
 
@@ -54,13 +54,13 @@
     return !!stored && stored !== "ALGO";
   }
 
-  var api = {
+  // Page scripts and the jest suite read window.Fiat; no module guard, whose
+  // false arm cannot run under jest (as dynamic.js explains).
+  window.Fiat = {
     code: code,
     rate: rate,
     fromUsd: fromUsd,
     symbol: symbol,
     isFiatSide: isFiatSide,
   };
-  root.Fiat = api;
-  if (typeof module !== "undefined" && module.exports) module.exports = api;
-})(typeof window !== "undefined" ? window : this);
+})();

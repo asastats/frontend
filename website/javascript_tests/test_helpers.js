@@ -27,4 +27,4 @@ global.getEvents = (element) => {
 }
 
 // base.html loads fiat.js before every page script; without `data-fiat` it answers USD.
-global.Fiat = require("../static/js/fiat.js");
+require("../static/js/fiat.js"); // sets window.Fiat, which is the global

@@ -180,6 +180,9 @@ class DustSweepPageTest(FunctionalTest):
         self.find_elem_by_css(".id-dustsweep-open").click()
         modal = self.find_elem_by_id("dustsweep-modal")
         self.wait_until(lambda: modal.get_attribute("open") is not None)
+        # the plan's answer resizes the centred dialog, moving the button (logbook)
+        cta = self.find_elem_by_css(".id-dustsweep-cta")
+        self.wait_until(lambda: "Reading" not in cta.text)
 
         self.find_elem_by_css(".id-dustsweep-close").click()
         self.wait_until(lambda: modal.get_attribute("open") is None)

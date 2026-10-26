@@ -66,7 +66,11 @@ class AppSignInFlowTest(FunctionalTest):
         self.browser_options.add_argument(f"--user-agent={APP_USER_AGENT}")
 
     def _signed_in_browser_session(self, next_url):
-        cookie = self.create_session_cookie(username="sheet@example.com", password="pw")
+        # permission=0: no authorized address, so the real login in redeem does
+        # not make post_login ask an Algorand node (none is set in CI).
+        cookie = self.create_session_cookie(
+            username="sheet@example.com", password="pw", permission=0
+        )
         from django.contrib.sessions.backends.db import SessionStore
 
         session = SessionStore(session_key=cookie["value"])

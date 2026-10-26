@@ -4696,3 +4696,62 @@ is what the pinned toolchain builds.
 Upgrading is deliberate: change both versions and every checksum, rebuild,
 and commit the stylesheet in the same commit; every machine then runs
 `fetch-tailwind.sh` once.
+
+## wallet/src/app/resume.ts — wake the wallet sockets on resume (S3, 2026-10-26)
+
+Spike S3 on Android (Redmi 9, Android 11, MIUI): Pera and Defly connect,
+the wallet approves, the app comes back on the same page and nothing
+happens; in Chrome and Firefox on the same phone it finishes. Still so on the
+store build (Internal app sharing), 2026-10-26.
+
+Pera Connect 1.6 and Defly Connect 1.2 wait for the wallet's answer on a
+WalletConnect v1 socket (`@walletconnect/socket-transport` 1.8, bundled in
+`static/dist/index-*.js`). That transport reconnects only when the socket
+fires `close` or the window fires `online`, and on every reconnect it
+re-subscribes, whereupon the bridge delivers what it queued meanwhile (the
+approval). When Android freezes the app's process in the background, the
+socket can die without a `close` ever arriving, and the page waits on it
+forever. Chrome is not frozen that way, which fits it working there.
+
+`installResume` fires `online` on the window on every Capacitor `resume`.
+The transport opens a fresh socket, closes the old one and re-subscribes.
+Nothing else on the site listens for `online` (checked 2026-10-26), and a
+spare reconnect when the socket was healthy costs one socket. This is the
+hypothesis-driven fix; whether it is the cause is settled on the phone. If it
+is not, the WebView console is the next step (`SPIKE-CHECKLIST.md`).
+
+## website/package.json (jest), website/static/js/fiat.js — the website's Jest run at 100 % and enforced (2026-10-26)
+
+The user asked for every line of the website's JavaScript under Jest. Two
+files were short of 100 %:
+
+- **`static/js/app.js`** (0 %) is not source: it is the Vite build of
+  `wallet/src/app/` (`vite.app.config.ts`), tested there at 100 % with its
+  own threshold, exactly like `bundle.js`, which this config already left out.
+  Measuring the minified build here only produced a 0 % row, so it is
+  excluded the same way.
+- **`static/js/fiat.js`** had three arms no test could reach: a
+  `typeof document === "undefined"` guard (a browser always has one),
+  `publishedRate`'s `element ?` check (both callers only reach it with an
+  element), and the `typeof module` export guard with its `this` fallback,
+  whose false arms cannot run under Jest. It now publishes `window.Fiat` only,
+  as `dynamic.js` does for the same reason; the three website tests that
+  loaded it read `window.Fiat`. The widget suites stub `Fiat` themselves and
+  were not affected.
+
+`coverageThreshold` is now 100 % on all four counters, as in
+`wallet/jest.config.cjs`, so frontend's `build.yml` (`npm run test:coverage`)
+fails on a gap instead of reporting it. The one skipped test is
+`site.helpers.test.js`'s cookie-consent block, for `initializeCookieConsent`,
+which is commented out in `site.js`; it switches itself on if that returns.
+
+### `website/functional_tests/test_dustsweep_page.py`: `test_the_modal_closes_again` waits for the plan (2026-10-26)
+
+It failed in GitHub's workflow and passed locally (the close click left the
+dialog `open`). Believed cause, not proven: the `<dialog>` is centred
+vertically, and when `/widgets/dustsweep/plan` answers (a 502 in CI, where no
+engine runs) the error notice appears and the dialog grows, so the close
+button moves up. On the slower runner that answer can land between Selenium
+computing the click point and dispatching the click, and the click misses the
+button. The test now waits until the CTA leaves "Reading your holdings…"
+before clicking, as the signature tests already do.

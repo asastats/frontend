@@ -7,6 +7,7 @@ import { installHaptics } from "./haptics";
 import { installLinks } from "./links";
 import { install, start } from "./main";
 import { checkPush, disablePush, enablePush, installPush } from "./push";
+import { installResume } from "./resume";
 import { installSignIn, signIn } from "./signIn";
 import { installSplash } from "./splash";
 import { installStatusBar } from "./statusBar";
@@ -28,6 +29,7 @@ jest.mock("./push", () => ({
   enablePush: jest.fn(),
   installPush: jest.fn(),
 }));
+jest.mock("./resume", () => ({ installResume: jest.fn() }));
 jest.mock("./signIn", () => ({
   installSignIn: jest.fn(),
   signIn: jest.fn().mockResolvedValue(true),
@@ -45,6 +47,7 @@ const installers = [
   installHaptics,
   installPush,
   installSignIn,
+  installResume,
 ];
 
 describe("app main", () => {

@@ -4,7 +4,9 @@
 
 "use strict";
 
-const Fiat = require("../static/js/fiat.js");
+require("../static/js/fiat.js");
+
+const Fiat = window.Fiat;
 
 /** Put the reader's fiat on the page the way the server does. */
 function page(code, rate) {
@@ -20,7 +22,7 @@ describe("fiat.js", () => {
   });
 
   test("is exposed on window", () => {
-    expect(window.Fiat).toBe(Fiat);
+    expect(Object.keys(Fiat).sort()).toEqual(["code", "fromUsd", "isFiatSide", "rate", "symbol"]);
   });
 
   test("reads EUR and its rate", () => {

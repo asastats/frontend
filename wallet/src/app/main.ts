@@ -10,6 +10,7 @@ import { installDeepLinks } from "./deepLinks";
 import { download, installDownloads } from "./downloads";
 import { installHaptics } from "./haptics";
 import { installLinks } from "./links";
+import { installResume } from "./resume";
 import { checkPush, disablePush, enablePush, installPush, type DeviceUrls, type PushResult } from "./push";
 import { installSignIn, signIn } from "./signIn";
 import { installSplash } from "./splash";
@@ -76,6 +77,7 @@ export function start(): boolean {
   installHaptics();
   installPush();
   installSignIn();
+  installResume();
   return true;
 }
 

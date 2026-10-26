@@ -8,6 +8,7 @@
       "<rootDir>/static/js/*.js",
       "!<rootDir>/static/js/**.min*.js",
       "!<rootDir>/static/js/bundle.js",
+      "!<rootDir>/static/js/app.js",
       "!<rootDir>/javascript_tests/coverage/**"
     ],
     "coverageReporters": [
@@ -17,7 +18,15 @@
     "setupFiles": [
       "jest-localstorage-mock",
       "<rootDir>/javascript_tests/test_helpers.js"
-    ]
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      }
+    }
   },
   "scripts": {
     "test": "jest",

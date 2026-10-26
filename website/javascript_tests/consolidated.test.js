@@ -631,8 +631,10 @@ describe("a reader whose fiat is EUR, on a snapshot with its own rate", function
 
 
 describe("a page without fiat.js", function () {
+  const fiat = global.Fiat;
+
   afterEach(function () {
-    global.Fiat = require("../static/js/fiat.js");
+    global.Fiat = fiat;
   });
 
   it('is USD', function () {
