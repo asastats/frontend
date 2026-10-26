@@ -4755,3 +4755,26 @@ button moves up. On the slower runner that answer can land between Selenium
 computing the click point and dispatching the click, and the click misses the
 button. The test now waits until the CTA leaves "Reading your holdings…"
 before clicking, as the signature tests already do.
+
+### `wallet/src/app/returnPage.ts`: back to the page after the browser sheet (2026-10-26)
+
+Reported on the Redmi 9 (Internal app sharing build): tap a link to another
+site on an address page (a listed NFT), close the browser sheet with its X or
+with Back, and the app shows the site's root instead of the address page.
+Nothing on the site sends a reader to `/` (`address.js`'s refresh reloads the
+same page). Capacitor does not keep the WebView's page: when Android destroys
+the activity (or the process, or the WebView's renderer) while the Custom Tab
+is in front, the app starts again at `server.url`. A low-memory phone with
+Chrome in front makes that likely. This is believed, not proven: no logcat yet.
+
+The fix is on the web side, so it ships with a deploy and no new app build.
+`links.ts` stores `{url, at}` under localStorage `asastats.return` just before
+`Browser.open`. A normal return (App `resume`, Browser `browserFinished`)
+deletes it. On load, `installReturn` (first in `start()`) reads and deletes
+it, and when this load is the root with no query and the record is under 30
+minutes old and same-site, it does `location.replace` to the stored page.
+The 30 minutes keep a later cold start from the icon on the root. Rejected:
+saving the URL natively in `MainActivity.onSaveInstanceState`. It would cover
+every way out of the app, but it needs a new build and nothing here can run
+it, and it does not help when the renderer crashes. Revisit if the same thing
+shows up after wallet hand-offs.

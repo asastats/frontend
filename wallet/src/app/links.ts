@@ -9,6 +9,8 @@
 
 import { Browser } from "@capacitor/browser";
 
+import { rememberReturn } from "./returnPage";
+
 /** What to do with a tapped link. */
 export type LinkAction = "browser" | "in-place" | "default";
 
@@ -56,6 +58,7 @@ export function handleLinkClick(
   if (action === "default") return false;
   event.preventDefault();
   if (action === "browser") {
+    rememberReturn(window.location.href);
     void Browser.open({ url: anchor.href });
   } else {
     navigate(anchor.href);

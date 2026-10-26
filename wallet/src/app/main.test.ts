@@ -8,6 +8,7 @@ import { installLinks } from "./links";
 import { install, start } from "./main";
 import { checkPush, disablePush, enablePush, installPush } from "./push";
 import { installResume } from "./resume";
+import { installReturn } from "./returnPage";
 import { installSignIn, signIn } from "./signIn";
 import { installSplash } from "./splash";
 import { installStatusBar } from "./statusBar";
@@ -30,6 +31,7 @@ jest.mock("./push", () => ({
   installPush: jest.fn(),
 }));
 jest.mock("./resume", () => ({ installResume: jest.fn() }));
+jest.mock("./returnPage", () => ({ installReturn: jest.fn() }));
 jest.mock("./signIn", () => ({
   installSignIn: jest.fn(),
   signIn: jest.fn().mockResolvedValue(true),
@@ -38,6 +40,7 @@ jest.mock("./splash", () => ({ installSplash: jest.fn() }));
 jest.mock("./statusBar", () => ({ installStatusBar: jest.fn() }));
 
 const installers = [
+  installReturn,
   installSplash,
   installLinks,
   installDownloads,

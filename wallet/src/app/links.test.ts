@@ -1,10 +1,12 @@
 import { Browser } from "@capacitor/browser";
 
 import { classifyLink, handleLinkClick, installLinks } from "./links";
+import { rememberReturn } from "./returnPage";
 
 jest.mock("@capacitor/browser", () => ({
   Browser: { open: jest.fn().mockResolvedValue(undefined) },
 }));
+jest.mock("./returnPage", () => ({ rememberReturn: jest.fn() }));
 
 const ORIGIN = "https://www.asastats.com";
 
@@ -67,6 +69,7 @@ describe("handleLinkClick", () => {
     expect(handleLinkClick(event, ORIGIN, navigate)).toBe(true);
     expect(event.defaultPrevented).toBe(true);
     expect(Browser.open).toHaveBeenCalledWith({ url: "https://x.com/asastatscom" });
+    expect(rememberReturn).toHaveBeenCalledWith(window.location.href);
   });
 
   it("navigates a same-site new-tab link in place", () => {
