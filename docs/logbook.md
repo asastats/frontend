@@ -4672,3 +4672,27 @@ The profile's connections page connects inside the WebView, which Google
 refuses. In app mode its button is replaced by a note to connect on the
 website (user's answer to F4 Q3). The check is `APP_CLIENT`, which is falsy
 when the template renders without the context processor, so it fails open.
+
+## website/tailwind-toolchain.sh, fetch-tailwind.sh, build-tailwind.sh, core/tests/test_stylesheet_build.py — a pinned toolchain (2026-10-26)
+
+`fetch-tailwind.sh` used to download the *latest* Tailwind binary and daisyUI
+plugins. The user's machine and this one ended up with different daisyUI
+releases, the two built different bytes from the same templates, and
+`test_the_committed_stylesheet_is_not_behind_the_templates` failed here with
+"the same classes are defined either way" although nobody was behind on a
+rebuild. It went green each time the user rebuilt on this machine and red
+again when a stylesheet built elsewhere was synced in.
+
+Now `tailwind-toolchain.sh` pins Tailwind v4.3.3 and daisyUI v5.7.50 with the
+SHA-256 of every release asset (Tailwind's from its release `sha256sums.txt`;
+the four platforms the fetch script knows). `fetch-tailwind.sh` downloads
+exactly those and refuses a mismatch, `build-tailwind.sh` refuses to build
+with anything else, and the test skips with the mismatch named instead of
+reporting a stale build. The pins are the files this machine already had on
+2026-10-26 (both daisyUI files byte-identical to the v5.7.50 release, the
+binary to v4.3.3's `linux-arm64`), so the stylesheet the user rebuilt here
+is what the pinned toolchain builds.
+
+Upgrading is deliberate: change both versions and every checksum, rebuild,
+and commit the stylesheet in the same commit; every machine then runs
+`fetch-tailwind.sh` once.

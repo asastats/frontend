@@ -172,6 +172,26 @@ class PnlDownloadTabTest(FunctionalTest):
         self.assertEqual(response.headers["Content-Type"], "application/pdf")
         self.assertEqual(response.content, PDF)
 
+    def test_a_prepared_report_is_still_there_after_another_tab(self):
+        self._log_in(CLUSTER)
+        self._open("?tab=download")
+        self.find_elem_by_css("#id-pnl-report button[type=submit]").click()
+        self.find_elem_by_link_text("Download PDF report")
+
+        self.find_elem_by_link_text("Profit and loss").click()
+        self.find_elem_by_id("id-pnl-body")
+        self.find_elem_by_link_text("Download").click()
+
+        link = self.find_elem_by_link_text("Download PDF report")
+        self.assertIn("key=k_a4", link.get_attribute("href"))
+        self.assertNotIn("Prepare PDF report", self.browser.page_source)
+
+    def test_a_report_never_asked_for_is_not_prepared_by_opening_the_tab(self):
+        self._log_in(CLUSTER)
+        self._open("?tab=download")
+        self.find_elem_by_css("#id-pnl-report button[type=submit]")
+        self.assertNotIn("Download PDF report", self.browser.page_source)
+
     def test_an_expired_report_comes_back_to_the_download_tab(self):
         self.engine_request.side_effect = BackendError("404: gone")
         self._log_in(CLUSTER)

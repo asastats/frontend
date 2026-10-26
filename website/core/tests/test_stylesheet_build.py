@@ -33,10 +33,9 @@ script is not compiled and never was -- that is a property of the build
 configuration, not something this test is failing to notice.
 
 The toolchain is fetched per machine and gitignored, so this skips where it is
-absent. It also skips, loudly, when the local Tailwind differs in version from
-the one that produced the committed file: `fetch-tailwind.sh` pulls *latest*, so
-two developers can hold different binaries, and a diff between versions says
-nothing about whether anybody forgot to rebuild.
+absent. It also skips, loudly, when the local toolchain is not the one pinned in
+`tailwind-toolchain.sh` (see docs/logbook.md), or when the local Tailwind
+differs in version from the one that produced the committed file.
 """
 
 import re
@@ -48,6 +47,9 @@ from django.conf import settings
 
 #: Where the toolchain and the build output live.
 CSS_DIR = Path(settings.STATICFILES_DIRS[0]) / "css"
+
+#: `website/`, where `tailwind-toolchain.sh` pins the toolchain's checksums.
+WEBSITE_DIR = Path(settings.STATICFILES_DIRS[0]).parent
 
 #: The build output every page loads.
 STYLESHEET = CSS_DIR / "style.tw.css"
@@ -122,6 +124,19 @@ def rebuilt(tmp_path_factory, committed):
         pytest.skip(
             f"the Tailwind toolchain is not on this machine ({', '.join(missing)}); "
             "run website/fetch-tailwind.sh to make this test able to run"
+        )
+
+    pinned = subprocess.run(
+        ["bash", "-c", '. ./tailwind-toolchain.sh && check_toolchain "$0"', str(CSS_DIR)],
+        cwd=WEBSITE_DIR,
+        capture_output=True,
+        text=True,
+    )
+    if pinned.returncode != 0:
+        pytest.skip(
+            "this machine's Tailwind toolchain is not the pinned one "
+            f"({pinned.stdout.strip()}), so its build says nothing about the "
+            "templates; run website/fetch-tailwind.sh"
         )
 
     out = tmp_path_factory.mktemp("tailwind") / "style.tw.css"

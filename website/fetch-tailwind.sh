@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Fetch the Tailwind + DaisyUI toolchain for frontend/website.
+# Fetch the pinned Tailwind + DaisyUI toolchain (tailwind-toolchain.sh) for
+# frontend/website.
 #
 # All three files are gitignored and fetched per machine; only the built
 # stylesheet (static/css/style.tw.css) is committed, mirroring how
@@ -13,31 +14,33 @@ set -euo pipefail
 cd "$(dirname "$0")"
 CSS_DIR="static/css"
 
-# The standalone binary is per-platform. aarch64 (Raspberry Pi 5) -> linux-arm64.
-case "$(uname -s)-$(uname -m)" in
-  Linux-aarch64|Linux-arm64)  TW_ASSET="tailwindcss-linux-arm64" ;;
-  Linux-x86_64)               TW_ASSET="tailwindcss-linux-x64" ;;
-  Darwin-arm64)               TW_ASSET="tailwindcss-macos-arm64" ;;
-  Darwin-x86_64)              TW_ASSET="tailwindcss-macos-x64" ;;
-  *)
-    echo "Unrecognised platform: $(uname -s)-$(uname -m)" >&2
-    echo "Pick an asset from https://github.com/tailwindlabs/tailwindcss/releases/latest" >&2
-    exit 1
-    ;;
-esac
+. ./tailwind-toolchain.sh
 
-echo ">> Tailwind CSS standalone ($TW_ASSET)"
-curl -fsSLo "$CSS_DIR/tailwindcss" \
-  "https://github.com/tailwindlabs/tailwindcss/releases/latest/download/$TW_ASSET"
+TW_ASSET="$(tw_asset)" || {
+  echo "Unrecognised platform: $(uname -s)-$(uname -m)" >&2
+  exit 1
+}
+TW_URL="https://github.com/tailwindlabs/tailwindcss/releases/download/v$TAILWIND_VERSION"
+DAISY_URL="https://github.com/saadeghi/daisyui/releases/download/v$DAISYUI_VERSION"
+
+# fetch <url> <file> <asset>: download, then refuse anything but the pinned bytes.
+fetch() {
+  curl -fsSLo "$2.part" "$1"
+  if [ "$(sha256_of "$2.part")" != "$(pinned_sha "$3")" ]; then
+    rm -f "$2.part"
+    echo "Checksum mismatch for $3 from $1" >&2
+    exit 1
+  fi
+  mv "$2.part" "$2"
+}
+
+echo ">> Tailwind CSS v$TAILWIND_VERSION ($TW_ASSET)"
+fetch "$TW_URL/$TW_ASSET" "$CSS_DIR/tailwindcss" "$TW_ASSET"
 chmod +x "$CSS_DIR/tailwindcss"
 
-echo ">> daisyui.mjs"
-curl -fsSLo "$CSS_DIR/daisyui.mjs" \
-  "https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.mjs"
-
-echo ">> daisyui-theme.mjs"
-curl -fsSLo "$CSS_DIR/daisyui-theme.mjs" \
-  "https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.mjs"
+echo ">> daisyUI v$DAISYUI_VERSION"
+fetch "$DAISY_URL/daisyui.mjs" "$CSS_DIR/daisyui.mjs" daisyui.mjs
+fetch "$DAISY_URL/daisyui-theme.mjs" "$CSS_DIR/daisyui-theme.mjs" daisyui-theme.mjs
 
 echo
 echo "Fetched:"
