@@ -4720,6 +4720,18 @@ spare reconnect when the socket was healthy costs one socket. This is the
 hypothesis-driven fix; whether it is the cause is settled on the phone. If it
 is not, the WebView console is the next step (`SPIKE-CHECKLIST.md`).
 
+### Correction, 2026-10-26 (evening): the socket was never the problem
+
+Measured on the Redmi with the WebView debugger: the approval arrives on the
+bridge socket while the app is still hidden behind Pera, and the WalletConnect,
+Pera and use-wallet stores are all written within 0.1 s. The page simply
+never redraws: `main.ts` had unsubscribed the wallet cards on `beforeunload`,
+which the WebView fires for the `wc:` hand-off. See "wallet/src/main.ts —
+wallet cards stop listening at the wallet hand-off" below. The `online` nudge
+here did not matter for S3; it does no harm (one spare socket per resume, more
+when earlier Connect attempts left connectors behind) and is left in place
+for now.
+
 ## website/package.json (jest), website/static/js/fiat.js — the website's Jest run at 100 % and enforced (2026-10-26)
 
 The user asked for every line of the website's JavaScript under Jest. Two
@@ -4778,3 +4790,36 @@ saving the URL natively in `MainActivity.onSaveInstanceState`. It would cover
 every way out of the app, but it needs a new build and nothing here can run
 it, and it does not help when the renderer crashes. Revisit if the same thing
 shows up after wallet hand-offs.
+
+## wallet/src/main.ts — wallet cards stop listening at the wallet hand-off (S3, 2026-10-26)
+
+The cause of spike S3 in the app (Pera and Defly connect, approve, and the
+site's Sign in never appears until the app is restarted).
+
+`App.init` unsubscribed every `WalletComponent` on `beforeunload`. Connect
+opens the wallet with a `wc:` URL; the WebView fires `beforeunload` at the
+start of that navigation, hands the URL to Android and keeps the page. From
+then on the cards no longer heard the use-wallet store. The approval did
+arrive (on the bridge socket, while the page was hidden), and use-wallet
+stored the connected account, but nothing redrew the card, so it kept showing
+Connect. A reload or restart rendered the stored session, which is why "kill
+the app and reopen it" showed Sign in.
+
+Evidence (Redmi 9, Android 11, debug build, 2026-10-26): the store's atom had
+7 subscribers after a load (the manager's 3, one per bound card) and 3 after
+the hand-off; a no-op `setState` on the live page then saved state and
+changed nothing on the card. The same drop follows any external-scheme
+navigation (`market://`). Why Chrome on the same phone finishes was not
+established.
+
+The teardown now runs on `pagehide` and only when `!event.persisted`: a real
+unload, never a hand-off, and a page kept in the back/forward cache keeps its
+listeners. Checked on the phone before deploying, by serving the new
+`bundle.js` through the debugger: 7 subscribers before and after the
+hand-off, and a real Pera Connect showed Sign in and signed in.
+
+A second, separate failure seen once in four tries: MIUI killed the app's
+process 12 s after Pera came to the front (`has died: prev LAST`), which loses
+the pending Connect entirely. Not addressed; WalletConnect v1 keeps no
+pending session to resume.
+

@@ -105,7 +105,14 @@ describe("App wallet wiring", () => {
     expect(resumeSessionsMock).toHaveBeenCalledTimes(1);
   });
 
-  it("destroys bound components on beforeunload", async () => {
+  /** A `pagehide` event; jsdom has no PageTransitionEvent constructor. */
+  function pagehide(persisted: boolean): Event {
+    const event = new Event("pagehide");
+    Object.defineProperty(event, "persisted", { value: persisted });
+    return event;
+  }
+
+  it("destroys bound components when the page is unloaded", async () => {
     document.body.innerHTML = '<div id="wallet-connect"></div><div id="wallet-pera"></div>';
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       walletsResponse([{ id: "pera", name: "Pera" }])
@@ -113,8 +120,22 @@ describe("App wallet wiring", () => {
     const app = new App();
     await app.init();
     destroyMock.mockClear();
-    window.dispatchEvent(new Event("beforeunload"));
+    window.dispatchEvent(pagehide(false));
     expect(destroyMock).toHaveBeenCalled();
+  });
+
+  it("keeps them on beforeunload and into the back/forward cache", async () => {
+    document.body.innerHTML = '<div id="wallet-connect"></div><div id="wallet-pera"></div>';
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      walletsResponse([{ id: "pera", name: "Pera" }])
+    );
+    const app = new App();
+    await app.init();
+    destroyMock.mockClear();
+    // A wallet hand-off to wc: fires beforeunload and the page stays (S3)
+    window.dispatchEvent(new Event("beforeunload"));
+    window.dispatchEvent(pagehide(true));
+    expect(destroyMock).not.toHaveBeenCalled();
   });
 
   it("skips wallets whose card is not rendered", async () => {

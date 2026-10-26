@@ -77,8 +77,9 @@ export class App {
 
       await this.walletManager.resumeSessions();
 
-      window.addEventListener("beforeunload", () => {
-        this.walletComponents.forEach((c) => c.destroy?.());
+      // Not beforeunload: a wallet hand-off (wc:) fires it and keeps the page (docs/logbook.md)
+      window.addEventListener("pagehide", (event: PageTransitionEvent) => {
+        if (!event.persisted) this.walletComponents.forEach((c) => c.destroy?.());
       });
     } catch (error) {
       console.error("Error initializing wallet app:", error);
