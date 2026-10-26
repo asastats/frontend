@@ -105,6 +105,8 @@ urlpatterns = [
         name="apple_app_site_association",
     ),
     path(".well-known/assetlinks.json", assetlinks, name="assetlinks"),
+    # The app's system-browser sign-in (F4); ahead of the catch-all.
+    re_path(r"^app/auth/", include("core.urls_appauth")),
     # walletauth app namespace
     re_path(r"^api/v2/wallet/", include(walletauth_urls)),
     # api app namespace

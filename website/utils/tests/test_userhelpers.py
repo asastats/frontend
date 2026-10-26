@@ -6,6 +6,7 @@ import time
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from core.models import Profile
 from utils.constants.users import (
@@ -505,7 +506,12 @@ def _personal_rows(user, tag):
     from allauth.account.models import EmailAddress
     from allauth.socialaccount.models import SocialAccount
 
-    from core.models import AppleSignInToken, BundleName, LiveAllowanceBucket
+    from core.models import (
+        AppleSignInToken,
+        AppLoginTicket,
+        BundleName,
+        LiveAllowanceBucket,
+    )
     from walletauth.models import LinkedAddress, WalletNonce
     from widgets.inhouse.alerts.models import (
         AlertRule,
@@ -544,6 +550,13 @@ def _personal_rows(user, tag):
     )
     LiveAllowanceBucket.objects.create(key=f"u:{user.pk}")
     AppleSignInToken.objects.create(user=user, refresh_token=f"r.{tag}")
+    AppLoginTicket.objects.create(
+        ticket_hash=f"{tag:0>64}",
+        user=user,
+        challenge="c" * 43,
+        next_url="/home/",
+        expires_at=timezone.now(),
+    )
     EmailAddress.objects.create(user=user, email=f"{tag}@example.com")
     SocialAccount.objects.create(user=user, provider="github", uid=tag)
     return [
@@ -560,6 +573,7 @@ def _personal_rows(user, tag):
         (PnlOverride, {"user_id": user.pk}),
         (LiveAllowanceBucket, {"key": f"u:{user.pk}"}),
         (AppleSignInToken, {"user_id": user.pk}),
+        (AppLoginTicket, {"user_id": user.pk}),
         (EmailAddress, {"user_id": user.pk}),
         (SocialAccount, {"user_id": user.pk}),
     ]

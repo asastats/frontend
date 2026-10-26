@@ -12,7 +12,12 @@
      >{{brand.name}}</a>
 {% endfor %}
 {% endif %}
+  {% if provider.id == "google" and APP_CLIENT %}
+  {# Google refuses sign-in inside the app's WebView (F4, Q3). #}
+  <p class="text-sm text-base-content/70" id="id_google_connect_on_website">Connect Google on the website.</p>
+  {% else %}
   <a class="btn btn-outline justify-start" role="button" href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}">{{provider.name}}</a>
+  {% endif %}
 {% endif %}
 {% endfor %}
 </div>

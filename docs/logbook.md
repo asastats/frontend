@@ -4627,3 +4627,48 @@ theme's text colour. Apple's guidelines also allow a white button with a black
 outline, which is what light themes now show. On dark themes the logo and
 text are light on dark; if App Review objects, the black button is the
 earlier version of this file.
+
+## core/views_appauth.py, core/models.py:AppLoginTicket, core/urls_appauth.py, core/views_app.py (webcredentials), templates/appauth/ — the app's system-browser sign-in (F4, 2026-10-26)
+
+Google refuses OAuth inside an embedded WebView and Apple wants the system
+sheet, so in the app the social buttons sign in through the system browser,
+whose session is separate from the WebView's. The browser hands the app a
+one-time ticket and the WebView trades it for its own session. The design,
+its threat table and the user's answers are in `capacitor/F4-DESIGN.md`
+(§9 supersedes §3, §5 and §6 where it says so).
+
+- **`start` logs the browser out first.** On Android the Auth Tab shares
+  Chrome's cookies, and a session already in Chrome (somebody else's, or one
+  planted for login CSRF) must not reach the app. It also keeps
+  `session["app_auth"]` alive through allauth's `login()`: Django flushes the
+  session when a *different* user logs in and only cycles the key from an
+  anonymous one.
+- **`start` renders an auto-submitted POST** to `/accounts/<provider>/login/`:
+  allauth refuses a GET there (`SOCIALACCOUNT_LOGIN_ON_GET` stays off). The
+  button still works with JavaScript off.
+- **The callback is https, never a custom scheme** (user's Q5 = a). A custom
+  scheme returns to whichever app opened the sheet, so a malicious app could
+  start the flow with its own challenge and catch a ticket for the victim
+  (a provider may sign the victim in without typing). `/app/auth/return/` is
+  matched by the OS instead: iOS 17.4+ delivers it only to an app named in
+  the AASA `webcredentials`, Chrome's Auth Tab (137+) only to an app the
+  asset links name. Devices without either get no social sign-in in the app.
+  The `complete` redirect is relative so it stays on the host the OS checks.
+- **Any attempt spends a known ticket**, a wrong verifier included, so a
+  stolen ticket cannot be retried against guesses. Every refusal answers the
+  same 400 page; the reason goes to the INFO log only.
+- **Throttle**: a `SimpleRateThrottle` keyed by IP whether or not the client
+  is signed in (`AnonRateThrottle` skips signed-in users), rate
+  `app-auth-redeem` in `REST_FRAMEWORK`. Reusing DRF's class in a plain view
+  replaced the planned cache helper: same cache, already tested.
+- **Old tickets** are deleted on every new one (older than ten minutes), so
+  no cron job exists for them. The F6 deletion audit includes the model.
+- Assumed, to confirm on a device: Chrome's Auth Tab verification reads the
+  `handle_all_urls` relation `assetlinks.json` already serves.
+
+## templates/socialaccount/snippets/provider_list.html — no Google connect in the app (2026-10-26)
+
+The profile's connections page connects inside the WebView, which Google
+refuses. In app mode its button is replaced by a note to connect on the
+website (user's answer to F4 Q3). The check is `APP_CLIENT`, which is falsy
+when the template renders without the context processor, so it fails open.

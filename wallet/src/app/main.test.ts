@@ -7,6 +7,7 @@ import { installHaptics } from "./haptics";
 import { installLinks } from "./links";
 import { install, start } from "./main";
 import { checkPush, disablePush, enablePush, installPush } from "./push";
+import { installSignIn, signIn } from "./signIn";
 import { installSplash } from "./splash";
 import { installStatusBar } from "./statusBar";
 
@@ -27,6 +28,10 @@ jest.mock("./push", () => ({
   enablePush: jest.fn(),
   installPush: jest.fn(),
 }));
+jest.mock("./signIn", () => ({
+  installSignIn: jest.fn(),
+  signIn: jest.fn().mockResolvedValue(true),
+}));
 jest.mock("./splash", () => ({ installSplash: jest.fn() }));
 jest.mock("./statusBar", () => ({ installStatusBar: jest.fn() }));
 
@@ -39,6 +44,7 @@ const installers = [
   installStatusBar,
   installHaptics,
   installPush,
+  installSignIn,
 ];
 
 describe("app main", () => {
@@ -63,6 +69,11 @@ describe("app main", () => {
     expect(api.disablePush).toBe(disablePush);
   });
 
+  it("exposes signIn for a provider and a page", async () => {
+    await expect(install().signIn("google", "/profile/")).resolves.toBe(true);
+    expect(signIn).toHaveBeenCalledWith("google", "/profile/");
+  });
+
   it("keeps an API that is already there", () => {
     const existing = {
       isApp: true as const,
@@ -70,6 +81,7 @@ describe("app main", () => {
       enablePush: jest.fn(),
       checkPush: jest.fn(),
       disablePush: jest.fn(),
+      signIn: jest.fn(),
     };
     window.ASAStatsApp = existing;
     expect(install()).toBe(existing);

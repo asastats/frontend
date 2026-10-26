@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ WEBSITE_NAME }} - App sign-in{% endblock %}
+{% block content %}
+{# `kind` comes from core.views_appauth; one message per kind. #}
+<article class="mx-auto max-w-md text-center" id="id_app_auth_message" data-kind="{{ kind }}">
+  {% if kind == "return" %}
+  <h1 class="text-2xl font-semibold">Return to the {{ WEBSITE_NAME }} app</h1>
+  <p class="mt-4">This page finishes a sign-in inside the {{ WEBSITE_NAME }} app. Open the app to continue.</p>
+  {% elif kind == "throttled" %}
+  <h1 class="text-2xl font-semibold">Too many attempts</h1>
+  <p class="mt-4">Wait a minute, then sign in again from the app.</p>
+  {% elif kind == "expired" %}
+  <h1 class="text-2xl font-semibold">Sign-in expired</h1>
+  <p class="mt-4">Tap the sign-in button again.</p>
+  {% else %}
+  <h1 class="text-2xl font-semibold">Sign-in did not finish</h1>
+  <p class="mt-4">Go back to the {{ WEBSITE_NAME }} app and try again.</p>
+  {% endif %}
+</article>
+{% endblock %}

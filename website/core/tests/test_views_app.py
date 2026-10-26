@@ -39,6 +39,17 @@ class TestCoreViewsAppAppleAppSiteAssociation:
 
         assert document["applinks"]["details"][0]["appIDs"] == [f"ABCDE12345.{APP_ID}"]
 
+    def test_core_views_app_aasa_lists_the_app_for_the_sign_in_callback(self, client):
+        _, document = self._get(client)
+
+        assert document["webcredentials"] == {"apps": [f"DF2V3954Z7.{APP_ID}"]}
+
+    @override_settings(APPLE_APP_ID_PREFIX="ABCDE12345")
+    def test_core_views_app_aasa_webcredentials_team_from_settings(self, client):
+        _, document = self._get(client)
+
+        assert document["webcredentials"] == {"apps": [f"ABCDE12345.{APP_ID}"]}
+
     def test_core_views_app_aasa_excludes_before_including_everything(self, client):
         _, document = self._get(client)
         components = document["applinks"]["details"][0]["components"]
@@ -49,7 +60,8 @@ class TestCoreViewsAppAppleAppSiteAssociation:
         assert components[-1] == {"/": "/*"}
 
     @pytest.mark.parametrize(
-        "path", ["/accounts/*", "/api/*", "/app/auth/*", "/static/*", "/admin/*", "/captcha/*"]
+        "path",
+        ["/accounts/*", "/api/*", "/app/auth/*", "/static/*", "/admin/*", "/captcha/*"],
     )
     def test_core_views_app_aasa_excluded_paths(self, path):
         assert path in AASA_EXCLUDED_PATHS

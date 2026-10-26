@@ -21,24 +21,20 @@ AASA_EXCLUDED_PATHS = (
 
 
 def apple_app_site_association(request):
-    """Return the Universal Links document for the app.
+    """Return the Universal Links and sign-in callback document for the app.
 
     :param request: Django request object
     :type request: :class:`django.http.HttpRequest`
     :return: :class:`django.http.JsonResponse`
     """
+    app_id = f"{settings.APPLE_APP_ID_PREFIX}.{APP_ID}"
     components = [{"/": path, "exclude": True} for path in AASA_EXCLUDED_PATHS]
     components.append({"/": "/*"})
     return JsonResponse(
         {
-            "applinks": {
-                "details": [
-                    {
-                        "appIDs": [f"{settings.APPLE_APP_ID_PREFIX}.{APP_ID}"],
-                        "components": components,
-                    }
-                ]
-            }
+            "applinks": {"details": [{"appIDs": [app_id], "components": components}]},
+            # The app's sign-in sheet returns only to an app listed here (F4).
+            "webcredentials": {"apps": [app_id]},
         }
     )
 

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}{{ WEBSITE_NAME }} - Sign in with {{ provider_name }}{% endblock %}
+{% block content %}
+<article class="mx-auto max-w-md text-center">
+  <h1 class="text-2xl font-semibold">Sign in to the {{ WEBSITE_NAME }} app</h1>
+  {# id_app_auth_start: submitted by the script below and by the functional test. #}
+  <form id="id_app_auth_start" method="POST" action="{{ action }}" class="mt-6">
+    {% csrf_token %}
+    <input type="hidden" name="process" value="login">
+    <input type="hidden" name="next" value="{{ complete }}">
+    <button class="btn btn-primary" type="submit">Continue with {{ provider_name }}</button>
+  </form>
+</article>
+<script>document.getElementById("id_app_auth_start").submit();</script>
+{% endblock %}

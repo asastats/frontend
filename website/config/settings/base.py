@@ -415,6 +415,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "walletauth": "10/min",  # authorize (per user)
         "walletauth-login": "5/min",  # sign-in (per IP)
+        "app-auth-redeem": "10/min",  # app sign-in ticket (per IP)
     },
 }
 

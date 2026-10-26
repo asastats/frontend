@@ -969,3 +969,19 @@ class AppleSignInToken(models.Model):
     )
     refresh_token = models.TextField()
     updated = models.DateTimeField(auto_now=True)
+
+
+class AppLoginTicket(models.Model):
+    """A one-time ticket the system browser hands the app after social sign-in.
+
+    Only the ticket's SHA-256 is stored (`core.views_appauth`, F4); see
+    docs/logbook.md.
+    """
+
+    ticket_hash = models.CharField(max_length=64, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="+")
+    challenge = models.CharField(max_length=43)
+    next_url = models.CharField(max_length=2048)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)

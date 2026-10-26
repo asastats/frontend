@@ -214,3 +214,69 @@ class TestCoreAllauthCallbackFailures:
 
         assert "socialaccount/base.html" in names
         assert response.content
+
+
+#: `href="/accounts/<id>/login/" data-app-signin="<id>"` as the templates write it.
+APP_SIGNIN_LINK = re.compile(r'href="/accounts/(\w+)/login/" data-app-signin="(\w+)"')
+
+
+@pytest.mark.django_db
+class TestCoreAllauthAppSignIn:
+    """Every sign-in button tells app.js which provider to start (F4)."""
+
+    def _pairs(self, html):
+        return APP_SIGNIN_LINK.findall(html)
+
+    def test_core_allauth_login_page_buttons_carry_their_provider(self, client):
+        from core.views_appauth import PROVIDERS
+
+        with override_settings(APPLE_SIGN_IN_ENABLED=True):
+            pairs = self._pairs(client.get(reverse("account_login")).content.decode())
+
+        assert all(href == provider for href, provider in pairs)
+        assert {provider for _, provider in pairs} == set(PROVIDERS)
+
+    def test_core_allauth_modal_buttons_carry_their_provider(self):
+        from django.template.loader import render_to_string
+
+        from core.views_appauth import PROVIDERS
+
+        pairs = self._pairs(
+            render_to_string("snippets/modal_login.html", {"APPLE_SIGN_IN": True})
+        )
+
+        assert all(href == provider for href, provider in pairs)
+        assert {provider for _, provider in pairs} == set(PROVIDERS)
+
+
+@pytest.mark.django_db
+class TestCoreAllauthConnectionsInApp:
+    """Google refuses the app's WebView, so it is connected on the website (F4, Q3)."""
+
+    def _connections(self, client, django_user_model, **headers):
+        user = django_user_model.objects.create_user(username="connect", password="x")
+        client.force_login(user)
+        return client.get(
+            reverse("socialaccount_connections"), **headers
+        ).content.decode()
+
+    def test_core_allauth_connections_in_app_without_google(
+        self, client, django_user_model
+    ):
+        html = self._connections(
+            client,
+            django_user_model,
+            HTTP_USER_AGENT="Mozilla/5.0 ASAStatsApp/1.1.0 (android)",
+        )
+
+        assert "/accounts/google/login/" not in html
+        assert 'id="id_google_connect_on_website"' in html
+        assert "/accounts/github/login/" in html
+
+    def test_core_allauth_connections_in_a_browser_with_google(
+        self, client, django_user_model
+    ):
+        html = self._connections(client, django_user_model)
+
+        assert "/accounts/google/login/" in html
+        assert "id_google_connect_on_website" not in html

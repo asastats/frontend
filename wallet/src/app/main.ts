@@ -11,6 +11,7 @@ import { download, installDownloads } from "./downloads";
 import { installHaptics } from "./haptics";
 import { installLinks } from "./links";
 import { checkPush, disablePush, enablePush, installPush, type DeviceUrls, type PushResult } from "./push";
+import { installSignIn, signIn } from "./signIn";
 import { installSplash } from "./splash";
 import { installStatusBar } from "./statusBar";
 
@@ -25,6 +26,8 @@ export interface ASAStatsAppApi {
   checkPush: (urls: DeviceUrls) => Promise<boolean>;
   /** Unregister this device; done before logout. */
   disablePush: () => Promise<void>;
+  /** Social sign-in through the system browser (F4); whether it was sent. */
+  signIn: (provider: string, next?: string) => Promise<boolean>;
 }
 
 declare global {
@@ -47,6 +50,7 @@ export function install(target: Window = window): ASAStatsAppApi {
       enablePush,
       checkPush,
       disablePush,
+      signIn: (provider, next) => signIn(provider, next),
     };
   }
   return target.ASAStatsApp;
@@ -71,6 +75,7 @@ export function start(): boolean {
   installStatusBar();
   installHaptics();
   installPush();
+  installSignIn();
   return true;
 }
 
