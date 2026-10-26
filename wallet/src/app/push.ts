@@ -130,12 +130,16 @@ export async function enablePush(urls: DeviceUrls): Promise<PushResult> {
 }
 
 /**
- * Re-register silently when permission is already granted; never prompts.
+ * Re-register silently a device the reader turned on; never prompts.
+ *
+ * Android before 13 grants the permission at install, so a granted
+ * permission alone is not the reader's consent.
  *
  * @param urls - the device endpoints.
  * @returns whether this device is on.
  */
 export async function checkPush(urls: DeviceUrls): Promise<boolean> {
+  if (!storedUrls()) return false;
   try {
     const { receive } = await FirebaseMessaging.checkPermissions();
     if (receive !== "granted") return false;

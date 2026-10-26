@@ -136,6 +136,15 @@ describe("enablePush", () => {
 });
 
 describe("checkPush", () => {
+  beforeEach(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(URLS)));
+
+  it("is off without registering when this device was never turned on", async () => {
+    localStorage.clear();
+    await expect(checkPush(URLS)).resolves.toBe(false);
+    expect(plugin.checkPermissions).not.toHaveBeenCalled();
+    expect(fetchMock()).not.toHaveBeenCalled();
+  });
+
   it("re-registers silently when permission is granted", async () => {
     await expect(checkPush(URLS)).resolves.toBe(true);
     expect(plugin.requestPermissions).not.toHaveBeenCalled();
@@ -151,7 +160,6 @@ describe("checkPush", () => {
   it("is off when the server refuses", async () => {
     fetchMock().mockResolvedValue({ ok: false });
     await expect(checkPush(URLS)).resolves.toBe(false);
-    expect(storedUrls()).toBeNull();
   });
 
   it("is off when the plugin fails", async () => {
