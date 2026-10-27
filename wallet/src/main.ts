@@ -136,7 +136,9 @@ export class App {
    */
   private explain(resumed: Resumed) {
     if (resumed.kind === "connected") {
-      say(document, resumed.wallet, `${RESUMABLE[resumed.wallet].name} is connected. Tap Sign in to finish.`);
+      /** The card's own next-step label: "Sign in" on login, "Authorize address" when linking. */
+      const next = document.getElementById(`auth-button-${resumed.wallet}`)?.textContent?.trim() || "Sign in";
+      say(document, resumed.wallet, `${RESUMABLE[resumed.wallet].name} is connected. Tap ${next} to finish.`);
     } else if (resumed.kind === "signed") {
       offerSignIn(document, resumed.step, resumed.signed, csrfToken());
     } else if (resumed.kind === "lost") {

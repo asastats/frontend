@@ -5179,3 +5179,22 @@ Wallet signed the user in, `/home/`, with one Core init and no "No matching
 key". Rejected: renaming the entries (touches base.html, test pages and
 tests) and `Cache-Control: no-cache` on the two unhashed names (does not
 reach caches already out there).
+
+### `wallet/src/main.ts`: `resumeSessions()` returns on the resumed page; the notice names the card's button (2026-10-27)
+
+Open item 2 from the resume entries above ("`resumeSessions()` ... had not
+returned on that page"): with `230fb8b` deployed it returns. On the Redmi,
+debug app, Profile → Link address: Connect in Pera, the app force-stopped 3 s
+after Pera received the request, approved, reopened: the connect resumed,
+and `window` carried the `pagehide` listener from `dist/main-*.js` that
+`init()` adds only after `await resumeSessions()` (read with
+`DOMDebugger.getEventListeners`). Same on a normal load. Most likely cause of
+the earlier hang: the bundle running twice (two `App`s, two use-wallet
+managers on one store); not proven, since the old build is gone.
+
+Same run: the resumed notice said "Tap Sign in to finish" on the link page,
+whose button is "Authorize address". It now reads the card's own
+`#auth-button-<wallet>` label (fallback "Sign in").
+
+Since Trust Wallet was installed, a Pera/Defly `wc:` hand-off shows Android's
+app chooser (Trust also claims `wc:`); picking Pera works as before.

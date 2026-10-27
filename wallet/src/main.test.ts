@@ -264,6 +264,16 @@ describe("App resume in the app", () => {
     );
   });
 
+  it("names the card's own next step, as on the link-address page", async () => {
+    await start(
+      { kind: "connected", wallet: "pera" },
+      '<div id="wallet-pera"><button id="auth-button-pera"> Authorize address </button></div>'
+    );
+    expect(document.querySelector("#wallet-pera [data-notice]")!.textContent).toBe(
+      "Pera is connected. Tap Authorize address to finish."
+    );
+  });
+
   it("says when the wallet did not answer", async () => {
     await start({ kind: "lost", wallet: "pera" });
     expect(document.querySelector("#wallet-pera [data-notice]")!.textContent).toBe(
