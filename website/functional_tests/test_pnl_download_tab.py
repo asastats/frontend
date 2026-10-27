@@ -46,6 +46,7 @@ class PnlDownloadTabTest(FunctionalTest):
             self.addCleanup(patch.stop)
         capabilities.return_value = {"permission": 100}
         self.engine_request.return_value = types.SimpleNamespace(content=PDF)
+        self.report_type = "ready"
 
     def _engine(self, scope, method, bundle, suffix="", **kwargs):
         """Answer each P&L endpoint for a processed bundle."""
@@ -54,7 +55,7 @@ class PnlDownloadTabTest(FunctionalTest):
             "evaluate/": RESULTS,
             "updating/": {"updating": None, "rows_at": 0},
             "chart/": {"currency": "usd", "points": []},
-            "report/": {"type": "ready", "key": "k_a4"},
+            "report/": {"type": self.report_type, "key": "k_a4"},
             "history/": {
                 "currency": "usd",
                 "assets": {"671908166": RESULTS["assets"][0]},
@@ -180,11 +181,51 @@ class PnlDownloadTabTest(FunctionalTest):
 
         self.find_elem_by_link_text("Profit and loss").click()
         self.find_elem_by_id("id-pnl-body")
-        self.find_elem_by_link_text("Download").click()
+        self.find_elem_by_css('nav.pnl-tabs a[href*="tab=download"]').click()
 
         link = self.find_elem_by_link_text("Download PDF report")
         self.assertIn("key=k_a4", link.get_attribute("href"))
         self.assertNotIn("Prepare PDF report", self.browser.page_source)
+
+    def _ask_for_the_report(self):
+        self._open("?tab=download")
+        self.find_elem_by_css("#id-pnl-report button[type=submit]").click()
+        self.find_elem_by_link_text("Download PDF report")
+
+    def test_the_other_tabs_say_when_the_report_is_ready(self):
+        self._log_in(CLUSTER)
+        self._ask_for_the_report()
+        for tab in ("Settings", "Profit and loss"):
+            with self.subTest(tab=tab):
+                self.find_elem_by_link_text(tab).click()
+                badge = 'nav.pnl-tabs a[href*="tab=download"] #id-pnl-report-badge'
+                self.wait_until(lambda: self.find_elem_by_css(badge).text == "PDF ready")
+
+    def test_the_badge_waits_while_the_report_is_prepared(self):
+        self.report_type = "preparing"
+        self._log_in(CLUSTER)
+        self._open("?tab=download")
+        self.find_elem_by_css("#id-pnl-report button[type=submit]").click()
+        self.wait_until(lambda: "Preparing the PDF report" in self.browser.page_source)
+
+        self.find_elem_by_link_text("Profit and loss").click()
+        self.wait_until(
+            lambda: self.find_elem_by_id("id-pnl-report-badge").text == "Preparing PDF"
+        )
+        self.report_type = "ready"
+        self.wait_until(
+            lambda: self.find_elem_by_id("id-pnl-report-badge").text == "PDF ready",
+            timeout=15,
+        )
+
+    def test_no_badge_without_a_report_asked_for(self):
+        self._log_in(CLUSTER)
+        self._open()
+        self.find_elem_by_id("id-pnl-body")
+        self.assertEqual(self.browser.find_elements(By.ID, "id-pnl-report-badge"), [])
+        self._open("?tab=download")
+        self.find_elem_by_id("id-pnl-download")
+        self.assertEqual(self.browser.find_elements(By.ID, "id-pnl-report-badge"), [])
 
     def test_a_report_never_asked_for_is_not_prepared_by_opening_the_tab(self):
         self._log_in(CLUSTER)
