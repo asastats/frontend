@@ -5,7 +5,7 @@ module.exports = {
     "^.+\\.(ts|tsx|js|mjs)$": ["ts-jest", { tsconfig: "tsconfig.test.json" }],
   },
   transformIgnorePatterns: [
-    "node_modules/(?!(@txnlab/use-wallet.*|@perawallet/connect|@blockshake/defly-connect|lute-connect|viem|@walletconnect)/)",
+    "node_modules/(?!(@txnlab/use-wallet.*|@perawallet/connect|@perawallet/walletconnect|@noble|@blockshake/defly-connect|lute-connect|viem|@walletconnect)/)",
   ],
   testMatch: ["**/?(*.)+(spec|test).ts"],
 

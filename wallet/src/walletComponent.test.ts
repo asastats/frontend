@@ -161,6 +161,19 @@ describe("WalletComponent interaction", () => {
     expect(mockWallet.connect).toHaveBeenCalledTimes(1);
   });
 
+  it("connect does nothing without a wallet", async () => {
+    component.wallet = null as unknown as typeof component.wallet;
+    await expect(component.connect()).resolves.toBeUndefined();
+  });
+
+  it("connect forgets its pending step when the wallet answers in this page", async () => {
+    document.documentElement.classList.add("in-app");
+    localStorage.setItem("asastats.walletResume", "{}");
+    await component.connect();
+    expect(localStorage.getItem("asastats.walletResume")).toBeNull();
+    document.documentElement.classList.remove("in-app");
+  });
+
   it("disconnect button calls wallet.disconnect", () => {
     root.querySelector<HTMLButtonElement>("#disconnect-button-pera")!.click();
     expect(mockWallet.disconnect).toHaveBeenCalledTimes(1);

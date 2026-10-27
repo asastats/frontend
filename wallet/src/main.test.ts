@@ -30,6 +30,14 @@ jest.mock("./walletComponent", () => ({
   })),
 }));
 
+const resumeStepMock = jest.fn().mockResolvedValue({ kind: "none" });
+const offerSignInMock = jest.fn();
+jest.mock("./walletResume", () => ({
+  ...jest.requireActual("./walletResume"),
+  resumeStep: (...args: unknown[]) => resumeStepMock(...args),
+  offerSignIn: (...args: unknown[]) => offerSignInMock(...args),
+}));
+
 import { WalletManager } from "@txnlab/use-wallet";
 import { WalletComponent } from "./walletComponent";
 
@@ -203,5 +211,74 @@ describe("App test harness gate", () => {
     expect(install).toHaveBeenCalled();
     delete (window as any).__WALLET_TEST__;
     jest.dontMock("./walletTestHarness");
+  });
+});
+
+/*
+ * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ * SECTION: A step the phone interrupted (walletResume.ts)
+ * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ */
+describe("App resume in the app", () => {
+  const seen: { managers?: number; text?: string | null } = {};
+  const SIGN = { kind: "sign", wallet: "defly", apiBase: "/api/v2/wallet/login" };
+
+  async function start(resumed: unknown, card = '<div id="wallet-pera"><div data-notice="info">lost</div></div>') {
+    document.documentElement.classList.add("in-app");
+    document.body.innerHTML = `<div id="wallet-connect"></div>${card}<div id="wallet-defly"></div>`;
+    (global.fetch as jest.Mock).mockResolvedValueOnce(walletsResponse([{ id: "pera" }, { id: "defly" }]));
+    resumeStepMock.mockImplementationOnce(async () => {
+      seen.managers = (WalletManager as jest.Mock).mock.calls.length;
+      seen.text = document.querySelector("#wallet-pera [data-notice]")?.textContent;
+      return resumed;
+    });
+    const app = new App();
+    await app.init();
+    document.documentElement.classList.remove("in-app");
+  }
+
+  afterEach(() => {
+    document.cookie = "csrftoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  });
+
+  it("finishes the step before the manager loads, and says a connect is done", async () => {
+    await start({ kind: "connected", wallet: "pera" });
+    expect(resumeStepMock).toHaveBeenCalledWith(window.location.href);
+    expect(seen).toEqual({ managers: 0, text: "Checking Pera's answer…" });
+    expect(document.querySelector("#wallet-pera [data-notice]")!.textContent).toBe(
+      "Pera is connected. Tap Sign in to finish."
+    );
+  });
+
+  it("says when the wallet did not answer", async () => {
+    await start({ kind: "lost", wallet: "pera" });
+    expect(document.querySelector("#wallet-pera [data-notice]")!.textContent).toBe(
+      "Pera did not answer in time, so that step did not finish. Please connect again."
+    );
+  });
+
+  it("offers to finish a signed sign-in with the cookie's CSRF token", async () => {
+    document.cookie = "csrftoken=fromcookie";
+    await start({ kind: "signed", step: SIGN, signed: "c2ln" });
+    expect(offerSignInMock).toHaveBeenCalledWith(document, SIGN, "c2ln", "fromcookie");
+  });
+
+  it("falls back to the page's CSRF input, then to nothing", async () => {
+    await start({ kind: "signed", step: SIGN, signed: "c2ln" }, '<input name="csrfmiddlewaretoken" value="frominput"><div id="wallet-pera"></div>');
+    expect(offerSignInMock).toHaveBeenLastCalledWith(document, SIGN, "c2ln", "frominput");
+    await start({ kind: "signed", step: SIGN, signed: "c2ln" }, '<div id="wallet-pera"></div>');
+    expect(offerSignInMock).toHaveBeenLastCalledWith(document, SIGN, "c2ln", "");
+  });
+
+  it("does not announce a check for a card it cannot resume", async () => {
+    await start({ kind: "none" }, '<div id="wallet-lute"><div data-notice="info">lost</div></div><div id="wallet-pera"></div>');
+    expect(document.querySelector("#wallet-lute [data-notice]")!.textContent).toBe("lost");
+  });
+
+  it("does nothing outside the app", async () => {
+    document.body.innerHTML = '<div id="wallet-connect"></div><div id="wallet-pera"></div>';
+    (global.fetch as jest.Mock).mockResolvedValueOnce(walletsResponse([{ id: "pera" }]));
+    await new App().init();
+    expect(resumeStepMock).not.toHaveBeenCalled();
   });
 });

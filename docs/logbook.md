@@ -4854,3 +4854,48 @@ Not checked end to end: the live site's `app.js` is the old one, and a
 debugger cannot attach to a restarted process before its page loads. After
 the deploy: Connect in Pera, kill the app from adb while Pera is in front,
 relaunch, and the notice should show on the login page.
+
+### `wallet/src/walletResume.ts`: finishing a wallet step after the app was closed (2026-10-27)
+
+Built to `capacitor/WALLET-RESUME-DESIGN.md` and the audit
+`WALLET-RESUME-SECURITY.md` (planning repo; rules R1-R9 are cited in the
+code). Pera's bridges keep a message for a subscriber who comes later, even
+after the first subscriber died without a close frame (checked 4/4 that day),
+which is what makes this possible.
+
+- **Saving.** `walletComponent.connect()` and `auth()` wrap the wallet call in
+  `watchStep`: in the app only, for Pera and Defly only, the step is written
+  to `asastats.walletResume` on `beforeunload` (fired for the `wc:` hand-off)
+  and when the page is hidden, from the connector's public `session` getter.
+  The flow ending in this page (success or error) removes it. One step at a
+  time.
+- **Resuming.** `App.init` calls `resumeStep` before `createWalletManager`.
+  A step for this exact URL, at most 5 minutes old (the login nonce's TTL),
+  naming an allowed bridge (`wallet-connect-[a-z].perawallet.app`), is taken
+  out of storage first. A socket subscribes to the step's `clientId` for up
+  to 20 s. A message is used only if its HMAC verifies under the step's key
+  (WebCrypto, before decrypting), and only if it is the approval of this
+  handshake or a single signed 0-ALGO self-payment from the step's address
+  with exactly the step's note, no close-out, no rekey.
+- **Connect** is stored where the libraries read it back: `walletconnect`
+  (the session), `PeraWallet.Wallet` / `DeflyWallet.Wallet`, and use-wallet's
+  `@txnlab/use-wallet:v5`. use-wallet's normal `resumeSessions()` then
+  reconnects. `walletResume.contract.test.ts` proves it against the real
+  libraries. Note that `@txnlab/use-wallet-pera` loads its own nested
+  `@perawallet/connect` 1.6.0 (with `@perawallet/walletconnect` 1.0.0), not
+  the top-level 1.6.1; the test loads that copy. Jest now transforms
+  `@perawallet/walletconnect` and `@noble` for it, and the test stubs lottie
+  (no canvas in jsdom).
+- **Sign** is never stored: the collected proof goes to a "Finish signing
+  in?" notice in the card, and posts to `<apiBase>/verify/` only on that tap.
+- Versions of use-wallet (core, Pera, Defly), `@perawallet/connect` and
+  `@blockshake/defly-connect` are now exact in `package.json`, so an upgrade
+  is a deliberate change that reruns the contract test.
+- Logout (a form posting to `/accounts/logout/`) drops a pending step.
+
+R2 for the signature matches by content rather than by JSON-RPC id: the id is
+made inside each library at send time and is not exposed, while the content
+check (sender, note, shape) is what the server verifies anyway, so it is the
+stricter test.
+
+Not yet checked on the phone at the time of writing: the Redmi was off adb.

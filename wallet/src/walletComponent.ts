@@ -1,5 +1,6 @@
 import { notify } from "./notify";
 import { uint8ArrayToBase64 } from "./walletAdapters";
+import { connectStep, signStep, watchStep } from "./walletResume";
 import { BaseWallet, WalletManager } from "@txnlab/use-wallet";
 import {
   makePaymentTxnWithSuggestedParamsFromObject,
@@ -164,7 +165,14 @@ export class WalletComponent {
 
   /** Connects the wallet. */
   connect = async () => {
-    await this.wallet?.connect();
+    if (!this.wallet) return;
+    // In the app, keeps the pending connect while the wallet is in front (walletResume.ts).
+    const stop = watchStep(this.wallet, connectStep(this.wallet.id, window.location.href));
+    try {
+      await this.wallet.connect();
+    } finally {
+      stop();
+    }
   };
 
   /** Disconnects the wallet and clears its session. */
@@ -260,14 +268,6 @@ export class WalletComponent {
         suggestedParams,
       });
       const encodedTx = encodeUnsignedTransaction(transaction);
-      /** Wallet-signed transactions (one element for our single txn). */
-      const signedTxs = await this.wallet.signTransactions([encodedTx]);
-      if (!signedTxs[0]) {
-        throw new Error("No signed transaction returned");
-      }
-
-      /** Base64 of the signed transaction bytes, as the backend expects. */
-      const signedTxBase64 = uint8ArrayToBase64(signedTxs[0]);
 
       /** Post-login destination for a wallet sign-in started from a Swap click
        *  (the modal's hidden login field), or the login page's ?next. Validated
@@ -277,6 +277,33 @@ export class WalletComponent {
           ?.value ||
         new URLSearchParams(window.location.search).get("next") ||
         "";
+
+      // In the app, keeps the pending signature while the wallet is in front (walletResume.ts).
+      const stop = watchStep(
+        this.wallet,
+        signStep({
+          wallet: this.wallet.id,
+          url: window.location.href,
+          address: activeAddress,
+          nonce: nonceData.nonce,
+          note: `${nonceData.prefix}${nonceData.nonce}`,
+          apiBase: this.apiBase,
+          next,
+        })
+      );
+      /** Wallet-signed transactions (one element for our single txn). */
+      let signedTxs: (Uint8Array | null)[];
+      try {
+        signedTxs = await this.wallet.signTransactions([encodedTx]);
+      } finally {
+        stop();
+      }
+      if (!signedTxs[0]) {
+        throw new Error("No signed transaction returned");
+      }
+
+      /** Base64 of the signed transaction bytes, as the backend expects. */
+      const signedTxBase64 = uint8ArrayToBase64(signedTxs[0]);
       const verifyResponse = await fetch(`${this.apiBase}/verify/`, {
         method: "POST",
         headers,

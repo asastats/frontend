@@ -5,9 +5,27 @@ import { install as installTestHarness } from "./walletTestHarness";
 import { initEvm } from "./evmBootstrap";
 import { initManageAddresses } from "./manageBootstrap";
 import { initSwapBridge } from "./swapBootstrap";
+import {
+  RESUMABLE,
+  inApp,
+  installLogoutForget,
+  offerSignIn,
+  resumeStep,
+  say,
+  type Resumed,
+} from "./walletResume";
 
 /** Default mount point of the walletauth API (overridable via data attribute). */
 const DEFAULT_API_BASE = "/api/v2/wallet";
+
+/** The CSRF token, from the cookie or the page's hidden input. */
+function csrfToken(): string {
+  return (
+    document.cookie.match("(^|;)\\s*csrftoken\\s*=\\s*([^;]+)")?.pop() ||
+    document.querySelector<HTMLInputElement>('input[name="csrfmiddlewaretoken"]')?.value ||
+    ""
+  );
+}
 
 /**
  * Bootstraps the wallet-connect experience on the website authorize page.
@@ -27,6 +45,7 @@ export class App {
 
   /** Registers initialization on `DOMContentLoaded`. */
   constructor() {
+    installLogoutForget();
     document.addEventListener("DOMContentLoaded", this.init.bind(this));
   }
 
@@ -55,6 +74,9 @@ export class App {
       /** Backend wallet descriptors: `[{ id, name }, ...]`. */
       const walletsData = await walletsResponse.json();
 
+      // Before the manager loads its stored state: a resumed connect is stored for it.
+      const resumed = await this.resume();
+
       this.walletManager = createWalletManager(walletsData);
 
       walletsData.forEach((walletData: any) => {
@@ -76,6 +98,7 @@ export class App {
       });
 
       await this.walletManager.resumeSessions();
+      this.explain(resumed);
 
       // Not beforeunload: a wallet hand-off (wc:) fires it and keeps the page (docs/logbook.md)
       window.addEventListener("pagehide", (event: PageTransitionEvent) => {
@@ -88,6 +111,40 @@ export class App {
       if (errorDiv) {
         errorDiv.style.display = "block";
       }
+    }
+  }
+
+  /**
+   * In the app, finish a step the phone interrupted (walletResume.ts).
+   *
+   * @returns what was found.
+   */
+  private async resume(): Promise<Resumed> {
+    if (!inApp()) return { kind: "none" };
+    const pending = document.querySelector("[data-notice]")?.closest('[id^="wallet-"]');
+    const wallet = pending?.id.replace(/^wallet-/, "");
+    if (wallet && RESUMABLE[wallet]) {
+      say(document, wallet, `Checking ${RESUMABLE[wallet].name}'s answer…`);
+    }
+    return resumeStep(window.location.href);
+  }
+
+  /**
+   * Tell the reader how the resumed step ended.
+   *
+   * @param resumed - from {@link App.resume}.
+   */
+  private explain(resumed: Resumed) {
+    if (resumed.kind === "connected") {
+      say(document, resumed.wallet, `${RESUMABLE[resumed.wallet].name} is connected. Tap Sign in to finish.`);
+    } else if (resumed.kind === "signed") {
+      offerSignIn(document, resumed.step, resumed.signed, csrfToken());
+    } else if (resumed.kind === "lost") {
+      say(
+        document,
+        resumed.wallet,
+        `${RESUMABLE[resumed.wallet].name} did not answer in time, so that step did not finish. Please connect again.`
+      );
     }
   }
 }
