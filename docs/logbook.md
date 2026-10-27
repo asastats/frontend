@@ -5157,3 +5157,25 @@ else in the bundle waits for a page event, and `alerts.js` reads
 `window.ASAStatsApp` only when its dialog opens, so `app.js` arriving a
 moment later is harmless. Missed because the unit tests call `init()`
 directly and nothing ran the built bundle in a browser before the deploy.
+
+### `wallet/vite.config.ts`, `wallet/vite.app.config.ts`: Vite's preload helper in its own chunk (2026-10-27)
+
+Correction to the loader entry above ("reruns only the loader, ... harmless"):
+wrong. After the deploy the app still made two WalletConnect pairings. Its
+WebView had an old `/static/js/bundle.js` (the full pre-loader bundle) in its
+disk cache: nginx serves unhashed static names with `expires 10d`, and chunks
+had been importing that URL for the helper all along. So any browser that
+ever loaded a lazy chunk could run a stale full bundle beside the current
+one, until its cache expired. The headless check passed only because it ran
+on a fresh profile.
+
+Now `manualChunks` puts the preload helper in `dist/preload-helper-*.js`
+(`app-preload-helper-*.js` for app.js), so no emitted chunk imports
+`js/bundle.js` or `js/app.js`, and nothing requests those mutable URLs again;
+stale copies are simply never used. Checked: none of the 95 emitted chunks
+names an entry; headless Chromium requested only hashed URLs; on the Redmi
+(local build served in, stale cache still present) WalletConnect → Trust
+Wallet signed the user in, `/home/`, with one Core init and no "No matching
+key". Rejected: renaming the entries (touches base.html, test pages and
+tests) and `Cache-Control: no-cache` on the two unhashed names (does not
+reach caches already out there).

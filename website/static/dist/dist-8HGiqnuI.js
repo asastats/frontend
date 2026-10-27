@@ -1,0 +1,1 @@
+import{s as r}from"./rolldown-runtime-DwyjGMXk.js";import"./esm-BkRdPehd.js";import{t}from"./es5-HQQo0Ber.js";import{f as s}from"./index-ba872692-DoRcZEbQ.js";var p=r(t(),1);export{s as PeraWalletConnect};

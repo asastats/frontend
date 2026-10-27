@@ -51,7 +51,8 @@ export default defineConfig({
         entryFileNames: "js/bundle.js",
         chunkFileNames: "dist/[name]-[hash].js",
         assetFileNames: "dist/[name].[ext]",
-        manualChunks: undefined,
+        // Out of the entry, so no chunk imports js/bundle.js (a mutable, cached URL; logbook).
+        manualChunks: (id: string) => (id.includes("preload-helper") ? "preload-helper" : undefined),
       },
     },
   },

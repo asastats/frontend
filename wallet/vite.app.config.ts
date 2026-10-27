@@ -15,6 +15,8 @@ export default defineConfig({
       output: {
         entryFileNames: "js/app.js",
         chunkFileNames: "dist/app-[name]-[hash].js",
+        // Out of the entry, so no chunk imports js/app.js (a mutable, cached URL; logbook).
+        manualChunks: (id: string) => (id.includes("preload-helper") ? "preload-helper" : undefined),
       },
     },
   },
