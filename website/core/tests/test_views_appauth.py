@@ -178,7 +178,7 @@ class TestCoreViewsAppauthStart:
         assert '<input type="hidden" name="next" value="/app/auth/complete/">' in html
         assert "csrfmiddlewaretoken" in html
         assert "Continue with Google" in html
-        assert 'getElementById("id_app_auth_start").submit()' in html
+        assert 'src="/static/js/appauth-start.js"' in html
 
 
 @pytest.mark.django_db

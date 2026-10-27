@@ -82,6 +82,7 @@ const SIGN: SignStep = {
   note: NOTE,
   apiBase: "/api/v2/wallet/login",
   next: "",
+  binding: "cd".repeat(32),
 };
 
 const PARAMS: SuggestedParams = {
@@ -258,7 +259,7 @@ describe("watchStep", () => {
 
 describe("steps", () => {
   it("builds a sign step only for a connected session", () => {
-    const fields = { wallet: "defly", url: URL_, address: ADDRESS, nonce: "abc123", note: NOTE, apiBase: SIGN.apiBase, next: "" };
+    const fields = { wallet: "defly", url: URL_, address: ADDRESS, nonce: "abc123", note: NOTE, apiBase: SIGN.apiBase, next: "", binding: SIGN.binding };
     expect(signStep(fields, () => NOW)({ ...SESSION, connected: true })).toEqual(SIGN);
     expect(signStep(fields)(SESSION)).toBeNull();
     expect(connectStep("pera", URL_)(SESSION)?.at).toEqual(expect.any(Number));
@@ -297,6 +298,8 @@ describe("takeStep", () => {
     ["a sign with a missing field", { ...SIGN, next: undefined }],
     ["a sign with a bad address", { ...SIGN, address: "NOPE" }],
     ["a sign posting elsewhere", { ...SIGN, apiBase: "https://evil.example/api" }],
+    ["a sign without its binding", { ...SIGN, binding: undefined }],
+    ["a sign with a bad binding", { ...SIGN, binding: "xy" }],
     ["an unknown kind", { ...CONNECT, kind: "other" }],
   ])("drops %s", (_, step) => {
     saved(step);
@@ -622,7 +625,7 @@ describe("offerSignIn (R5)", () => {
     expect(global.fetch).toHaveBeenCalledWith("/api/v2/wallet/login/verify/", {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-CSRFToken": "token" },
-      body: JSON.stringify({ address: ADDRESS, signedTransaction: "c2lnbmVk", nonce: "abc123", chain: "algorand", next: "/swap/" }),
+      body: JSON.stringify({ address: ADDRESS, signedTransaction: "c2lnbmVk", nonce: "abc123", chain: "algorand", binding: SIGN.binding, next: "/swap/" }),
     });
     expect(go).toHaveBeenCalledWith("/home/");
   });

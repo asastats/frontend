@@ -187,11 +187,12 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
 
     @staticmethod
     def _shape_ok(txn):
-        """Require a 0-amount self-payment (sender == receiver).
+        """Require a lone 0-amount self-payment that cannot close or rekey.
 
         The sender is the proven identity, so binding sender to a specific
-        address is the caller's concern (``verify`` for authorize); here we only
-        require that the proof is a zero-value self-payment.
+        address is the caller's concern (``verify`` for authorize). The proof is
+        a submittable mainnet transaction, so close-out, rekey and grouping are
+        refused (docs/logbook.md).
 
         :param txn: transaction to inspect
         :type txn: :class:`algosdk.transaction.Transaction`
@@ -203,6 +204,9 @@ class AlgorandSignedTxnVerifier(WalletProofVerifier):
             and getattr(txn, "amt", 0) == 0
             and bool(sender)
             and getattr(txn, "receiver", None) == sender
+            and not getattr(txn, "close_remainder_to", None)
+            and not getattr(txn, "rekey_to", None)
+            and not getattr(txn, "group", None)
         )
 
     @staticmethod

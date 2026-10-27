@@ -65,6 +65,8 @@ export interface SignStep extends StepBase {
   note: string;
   apiBase: string;
   next: string;
+  /** The page's login binding secret; the verify needs it. */
+  binding: string;
 }
 
 export type Step = ConnectStep | SignStep;
@@ -200,7 +202,10 @@ export function connectStep(wallet: string, url: string, now: () => number = Dat
  * @returns a function for {@link watchStep}.
  */
 export function signStep(
-  fields: Pick<SignStep, "wallet" | "url" | "address" | "nonce" | "note" | "apiBase" | "next">,
+  fields: Pick<
+    SignStep,
+    "wallet" | "url" | "address" | "nonce" | "note" | "apiBase" | "next" | "binding"
+  >,
   now: () => number = Date.now
 ) {
   return (session: Session): SignStep | null =>
@@ -250,6 +255,7 @@ export function takeStep(storage: Storage, href: string, now: number): Step | nu
   if (step.kind === "sign") {
     const strings = [step.address, step.nonce, step.note, step.apiBase, step.next];
     if (strings.some((value) => typeof value !== "string")) return null;
+    if (typeof step.binding !== "string" || !/^[0-9a-f]{64}$/.test(step.binding)) return null;
     if (!isValidAddress(step.address as string) || !step.apiBase?.startsWith("/")) return null;
     return step as SignStep;
   }
@@ -567,6 +573,7 @@ export function offerSignIn(
             signedTransaction: signed,
             nonce: step.nonce,
             chain: "algorand",
+            binding: step.binding,
             ...(step.next ? { next: step.next } : {}),
           }),
         });

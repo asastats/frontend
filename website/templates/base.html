@@ -11,35 +11,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0{% if APP_CLIENT %}, viewport-fit=cover{% endif %}"/>
-    {% comment %}
-      Every preference here is the reader's, never sent to the server, and has
-      to be stamped before the stylesheet paints: applied afterwards, the
-      reader would watch the theme flash, the font swap or rows appear under
-      them.
-    {% endcomment %}
-    <script>
-      (function () {
-        "use strict";
-        var saved = localStorage.getItem("theme");
-        if (saved) document.documentElement.setAttribute("data-theme", saved);
-        var face = localStorage.getItem("typeface");
-        if (face) document.documentElement.setAttribute("data-typeface", face);
-        // `prefold` scopes the CSS that folds sections before the scripts run.
-        // `toolbar.js` and `showmore.js` drop it and own folding from then on,
-        // because they re-fold on filter and sort and a CSS rule counting DOM
-        // position would fight them.
-        var folds = { "fold-assets": 1, "fold-collections": 1 };
-        var stamped = false;
-        for (var key in folds) {
-          var value = localStorage.getItem(key);
-          if (value) {
-            document.documentElement.setAttribute("data-" + key, value);
-            stamped = true;
-          }
-        }
-        if (stamped) document.documentElement.classList.add("prefold");
-      })();
-    </script>
+    {# Synchronous, in <head>: the reader's stored theme, typeface and folds must be stamped before paint. #}
+    <script src="{% static 'js/preferences.js' %}"></script>
     <title>{% block title %}{{ WEBSITE_NAME }}{% endblock %}</title>
     <meta name="description" content="{% block description %}{{ WEBSITE_NAME }} evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.{% endblock %}">
     <meta name="keywords" content="{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount{% endblock %}">

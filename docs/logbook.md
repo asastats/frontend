@@ -4899,3 +4899,67 @@ check (sender, note, shape) is what the server verifies anyway, so it is the
 stricter test.
 
 Not yet checked on the phone at the time of writing: the Redmi was off adb.
+
+### `website/walletauth/verifiers.py` `_shape_ok`: no close-out, rekey or group in a proof (2026-10-27)
+
+Finding E3 of the wallet-resume security audit
+(`capacitor/WALLET-RESUME-SECURITY.md`). The sign-in/authorize proof is a
+real, submittable mainnet transaction. The shape check required a 0-amount
+self-payment but would have accepted one carrying `close_remainder_to` or
+`rekey_to`, which, if anyone submitted it, would close or rekey the account.
+Our own pages never set them; the check now refuses them, and a grouped
+transaction too. A lease stays allowed (harmless, and a wallet may add one).
+Tests: `test_algorand_verifier_close_or_rekey_returns_none`,
+`test_algorand_verifier_grouped_proof_returns_none`. The 23 EVM tests fail
+in this Pi's Python only for want of `eth_account`, before and after.
+
+### `website/walletauth/login_views.py`, `models.py` (`WalletLoginNonce.binding`), `wallet/src/walletComponent.ts`: login nonce bound to the page (2026-10-27)
+
+Finding E2 of the wallet-resume audit (`capacitor/WALLET-RESUME-SECURITY.md`).
+A login nonce was bound to the address but not to whoever asked for it, so a
+signed proof seen by anyone within its 5 minutes logged in as that account
+from anywhere (the proof is also a submittable transaction, so it could even
+become public on-chain).
+
+Now `auth()` makes a fresh 32-byte secret per attempt and sends it with the
+nonce request; the server stores only its SHA-256 (`binding`, migration
+0002). The verify refuses a bound nonce unless the same secret comes back,
+with the "Invalid or used nonce" answer and without consuming the nonce. The
+resume record carries the secret, so a sign-in finished after a restart still
+works.
+
+Rejected: binding to the Django session cookie. Android's WebView writes
+cookies to disk on a timer, and the app is killed within seconds of the
+wallet opening, so a session cookie set by the nonce request can be lost and
+the resumed verify would then fail. localStorage, which the resume already
+relies on, did survive that kill on the Redmi.
+
+Kept optional per nonce so a page still running the previous `bundle.js`
+during a deploy can sign in; such a nonce has an empty `binding`. EVM sign-in
+(`evmWalletComponent.ts`) does not send one yet.
+
+### `deploy/roles/nginx/templates/ssl.conf` CSP, `static/js/preferences.js`, `static/js/appauth-start.js`, `api/urls.py`: no `'unsafe-inline'` in `script-src` (2026-10-27)
+
+Finding E1 of the wallet-resume audit (`capacitor/WALLET-RESUME-SECURITY.md`):
+with `'unsafe-inline'`, any HTML injection runs as script, and script on
+this origin can read the stored WalletConnect sessions and drive the
+reader's wallet. Inventory: no inline event handlers were left (an earlier
+`csp-safe-handlers.js` removed them); every other inline `<script>` is a
+JSON-LD or JSON data block, which the CSP does not apply to. Three ran code:
+
+- `base.html`'s head script stamping theme, typeface and folds before paint
+  is now `js/preferences.js`, loaded synchronously in the same place, so
+  there is still no flash (functional `test_appearance.py` passes).
+- `appauth/start.html`'s auto-submit is now `js/appauth-start.js`.
+- drf-spectacular's Swagger page inlined its config; `SpectacularSwaggerSplitView`
+  serves it at `?script` instead (Redoc has no inline script without
+  `REDOC_UI_SETTINGS`).
+
+`core/tests/test_csp_inline_scripts.py` fails on any template (site and
+widgets, test pages excluded) that gains an executable inline script or an
+inline handler, and checks the Swagger page. htmx and jQuery re-run
+`<script>` tags in HTML they insert; those come from the same templates, so
+the scan covers them. `style-src` keeps `'unsafe-inline'` (the app's
+safe-area `<style>`, see above). Not checked against the live site before
+the deploy: open a few pages, the swap, the wallet sign-in and the API docs
+with the console open and look for CSP reports.

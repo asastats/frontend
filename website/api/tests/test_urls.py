@@ -321,7 +321,7 @@ class TestApiUrls:
     def test_api_urls_openapi_swagger_ui(self):
         url = self._url_from_pattern(r"schema/swagger-ui/")
         assert isinstance(url, URLPattern)
-        assert url.lookup_str == "drf_spectacular.views.SpectacularSwaggerView"
+        assert url.lookup_str == "drf_spectacular.views.SpectacularSwaggerSplitView"
         assert url.name == "swagger-ui"
 
     def test_api_urls_openapi_redoc(self):

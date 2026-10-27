@@ -242,6 +242,28 @@ describe("WalletComponent auth", () => {
     expect(window.location.href).toBe("/profile/");
   });
 
+  it("binds the nonce to a fresh page secret and proves it at verify (audit E2)", async () => {
+    mockWallet.activeAccount = { address: "ACTIVEADDR" };
+    mockFetchSequence(
+      { nonce: "n1", prefix: "asastats-auth:" },
+      { success: true, redirect_url: "/profile/" }
+    );
+    await component.auth();
+    const calls = (global.fetch as jest.Mock).mock.calls;
+    const nonceBody = JSON.parse(calls[0][1].body);
+    expect(nonceBody.binding).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.parse(calls[1][1].body).binding).toBe(nonceBody.binding);
+
+    mockFetchSequence(
+      { nonce: "n2", prefix: "asastats-auth:" },
+      { success: true, redirect_url: "/profile/" }
+    );
+    await component.auth();
+    expect(JSON.parse((global.fetch as jest.Mock).mock.calls[2][1].body).binding).not.toBe(
+      nonceBody.binding
+    );
+  });
+
   it("includes next in the verify body from the hidden login field", async () => {
     mockWallet.activeAccount = { address: "ACTIVEADDR" };
     document.body.innerHTML +=

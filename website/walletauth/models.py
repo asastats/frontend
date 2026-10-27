@@ -109,6 +109,9 @@ class WalletLoginNonce(models.Model):
     chain = models.CharField(max_length=16, default="algorand")
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)
+    #: SHA-256 hex of the page's binding secret; verify must present the
+    #: secret. Empty for a nonce issued without one (an older page).
+    binding = models.CharField(max_length=64, blank=True, default="")
 
     class Meta:
         indexes = [

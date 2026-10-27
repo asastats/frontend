@@ -13,6 +13,8 @@ and account resolver.
 
 import logging
 import re
+from hashlib import sha256
+from hmac import compare_digest
 from secrets import token_hex
 
 from algosdk.encoding import is_valid_address as is_valid_algorand_address
@@ -54,6 +56,20 @@ def is_valid_chain_address(chain, address):
     if chain == "evm":
         return bool(_EVM_ADDRESS_RE.match(address))
     return False
+
+
+#: The page's binding secret: 32 random bytes in hex (docs/logbook.md).
+BINDING_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _binding_hash(value):
+    """Return the SHA-256 hex digest stored for a binding secret.
+
+    :param value: the binding secret as sent by the page
+    :type value: str
+    :return: str
+    """
+    return sha256(value.encode()).hexdigest()
 
 
 def _perform_login(request, user):
@@ -138,9 +154,18 @@ class WalletLoginNonceAPIView(APIView):
         if chain == "evm":
             address = address.lower()
 
+        binding = request.data.get("binding") or ""
+        if binding and not (isinstance(binding, str) and BINDING_RE.match(binding)):
+            return Response({"success": False, "error": "Invalid binding"}, status=400)
+
         WalletLoginNonce.purge_stale()
         nonce = token_hex(16)
-        WalletLoginNonce.objects.create(address=address, chain=chain, nonce=nonce)
+        WalletLoginNonce.objects.create(
+            address=address,
+            chain=chain,
+            nonce=nonce,
+            binding=_binding_hash(binding) if binding else "",
+        )
         return Response(
             {
                 "nonce": nonce,
@@ -208,6 +233,15 @@ class WalletLoginVerifyAPIView(APIView):
                 nonce=nonce_str, address=proven, chain=chain, used=False
             )
         except WalletLoginNonce.DoesNotExist:
+            return Response(
+                {"success": False, "error": "Invalid or used nonce"}, status=400
+            )
+        # A proof without the page's secret is refused, and the nonce kept for it.
+        binding = request.data.get("binding")
+        if nonce_obj.binding and not (
+            isinstance(binding, str)
+            and compare_digest(nonce_obj.binding, _binding_hash(binding))
+        ):
             return Response(
                 {"success": False, "error": "Invalid or used nonce"}, status=400
             )

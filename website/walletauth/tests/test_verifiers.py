@@ -173,6 +173,26 @@ class TestAlgorandSignedTxnVerifier:
         )
         assert verify(txn.sign(secret), address) is None
 
+    @pytest.mark.parametrize("field", ["close_remainder_to", "rekey_to"])
+    def test_algorand_verifier_close_or_rekey_returns_none(self, field):
+        secret, address = account.generate_account()
+        _, other = account.generate_account()
+        txn = PaymentTxn(
+            sender=address,
+            sp=make_params(),
+            receiver=address,
+            amt=0,
+            note=make_note(),
+            **{field: other},
+        )
+        assert verify(txn.sign(secret), address) is None
+
+    def test_algorand_verifier_grouped_proof_returns_none(self):
+        secret, address = account.generate_account()
+        txn = make_self_payment(address, make_note())
+        txn.group = bytes(32)
+        assert verify(txn.sign(secret), address) is None
+
     # # verify - note
     def test_algorand_verifier_wrong_note_returns_none(self):
         secret, address = account.generate_account()

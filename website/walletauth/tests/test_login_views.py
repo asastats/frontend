@@ -8,6 +8,7 @@ from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
 from walletauth.login_views import (
     WalletLoginNonceAPIView,
     WalletLoginVerifyAPIView,
+    _binding_hash,
 )
 from walletauth.models import LinkedAddress, WalletLoginNonce
 from walletauth.throttling import WalletLoginRateThrottle
@@ -18,6 +19,7 @@ user_model = get_user_model()
 PROVEN = "TIIHS4257NZIQCQEYKI3WHCKACXDA37FP42JLJEZ7R5MXGQS63KFS7PR34"
 OTHER = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 EVM_ADDRESS = "0x52908400098527886E0F7030069857D2E4169EE7"
+BINDING = "ab" * 32
 
 
 def link_user(address=PROVEN, username="loginuser", login_enabled=True):
@@ -68,6 +70,36 @@ class TestWalletLoginNonceAPIView:
         nonce = WalletLoginNonce.objects.get(nonce=response.data["nonce"])
         assert nonce.address == PROVEN
         assert nonce.chain == "algorand"
+
+    @pytest.mark.django_db
+    def test_login_nonce_stores_the_hash_of_a_binding(self):
+        request = APIRequestFactory().post(
+            "/login/nonce/", {"address": PROVEN, "binding": BINDING}, format="json"
+        )
+        response = WalletLoginNonceAPIView.as_view()(request)
+        assert response.status_code == 200
+        nonce = WalletLoginNonce.objects.get(nonce=response.data["nonce"])
+        assert nonce.binding == _binding_hash(BINDING)
+        assert BINDING not in nonce.binding
+
+    @pytest.mark.django_db
+    def test_login_nonce_without_binding_stores_none(self):
+        request = APIRequestFactory().post(
+            "/login/nonce/", {"address": PROVEN}, format="json"
+        )
+        response = WalletLoginNonceAPIView.as_view()(request)
+        assert WalletLoginNonce.objects.get(nonce=response.data["nonce"]).binding == ""
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("binding", ["short", "AB" * 32, "zz" * 32, 12345])
+    def test_login_nonce_rejects_a_malformed_binding(self, binding):
+        request = APIRequestFactory().post(
+            "/login/nonce/", {"address": PROVEN, "binding": binding}, format="json"
+        )
+        response = WalletLoginNonceAPIView.as_view()(request)
+        assert response.status_code == 400
+        assert response.data["error"] == "Invalid binding"
+        assert not WalletLoginNonce.objects.exists()
 
     @pytest.mark.django_db
     def test_login_nonce_rejects_invalid_address(self):
@@ -299,6 +331,42 @@ class TestWalletLoginVerifyAPIView:
         response = WalletLoginVerifyAPIView.as_view()(request)
         assert response.status_code == 401
         perform.assert_not_called()
+
+    @pytest.mark.django_db
+    @pytest.mark.parametrize("sent", [None, "", "cd" * 32, 5])
+    def test_login_verify_refuses_a_bound_nonce_without_its_secret(self, mocker, sent):
+        link_user()
+        WalletLoginNonce.objects.create(
+            address=PROVEN, chain="algorand", nonce="nb", binding=_binding_hash(BINDING)
+        )
+        _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        perform = mocker.patch("walletauth.login_views._perform_login")
+        data = {"nonce": "nb", "chain": "algorand"}
+        if sent is not None:
+            data["binding"] = sent
+        request = APIRequestFactory().post("/login/verify/", data, format="json")
+        response = WalletLoginVerifyAPIView.as_view()(request)
+        assert response.status_code == 400
+        assert response.data["error"] == "Invalid or used nonce"
+        perform.assert_not_called()
+        assert WalletLoginNonce.objects.get(nonce="nb").used is False
+
+    @pytest.mark.django_db
+    def test_login_verify_logs_in_with_the_bound_secret(self, mocker):
+        link_user()
+        WalletLoginNonce.objects.create(
+            address=PROVEN, chain="algorand", nonce="nb", binding=_binding_hash(BINDING)
+        )
+        _patch_verifier(mocker, _FakeLoginVerifier(proven=PROVEN))
+        mocker.patch("walletauth.login_views._perform_login", return_value="/home/")
+        request = APIRequestFactory().post(
+            "/login/verify/",
+            {"nonce": "nb", "chain": "algorand", "binding": BINDING},
+            format="json",
+        )
+        response = WalletLoginVerifyAPIView.as_view()(request)
+        assert response.status_code == 200
+        assert WalletLoginNonce.objects.get(nonce="nb").used is True
 
     @pytest.mark.django_db
     def test_login_verify_logs_in_linked_account(self, mocker):

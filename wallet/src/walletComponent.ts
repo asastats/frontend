@@ -244,10 +244,14 @@ export class WalletComponent {
         "X-CSRFToken": this.getCsrfToken(),
       };
 
+      /** Secret only this page knows; the login verify refuses the proof without it. */
+      const binding = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
+        b.toString(16).padStart(2, "0")
+      ).join("");
       const nonceResponse = await fetch(`${this.apiBase}/nonce/`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ address: activeAddress, chain: "algorand" }),
+        body: JSON.stringify({ address: activeAddress, chain: "algorand", binding }),
       });
       /** `{ nonce, prefix }` on success, or `{ error }`. */
       const nonceData = await nonceResponse.json();
@@ -289,6 +293,7 @@ export class WalletComponent {
           note: `${nonceData.prefix}${nonceData.nonce}`,
           apiBase: this.apiBase,
           next,
+          binding,
         })
       );
       /** Wallet-signed transactions (one element for our single txn). */
@@ -312,6 +317,7 @@ export class WalletComponent {
           signedTransaction: signedTxBase64,
           nonce: nonceData.nonce,
           chain: "algorand",
+          binding,
           ...(next ? { next } : {}),
         }),
       });

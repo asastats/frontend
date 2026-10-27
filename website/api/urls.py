@@ -5,7 +5,7 @@ from django_minify_html.decorators import no_html_minification
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
-    SpectacularSwaggerView,
+    SpectacularSwaggerSplitView,
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -70,7 +70,8 @@ def _nested_account_patterns(type):
 
 
 schema_view = SpectacularAPIView.as_view()
-swagger_view = SpectacularSwaggerView.as_view(url_name="api_schema")
+# The split view serves its config script as a file: the CSP allows no inline script.
+swagger_view = SpectacularSwaggerSplitView.as_view(url_name="api_schema")
 redoc_view = SpectacularRedocView.as_view(url_name="api_schema")
 schema_view = no_html_minification(schema_view)
 swagger_view = no_html_minification(swagger_view)
