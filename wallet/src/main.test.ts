@@ -250,6 +250,20 @@ describe("App resume in the app", () => {
     );
   });
 
+  it("says so without waiting for every wallet to resume", async () => {
+    resumeSessionsMock.mockReturnValueOnce(new Promise(() => undefined));
+    document.documentElement.classList.add("in-app");
+    document.body.innerHTML = '<div id="wallet-connect"></div><div id="wallet-pera"></div>';
+    (global.fetch as jest.Mock).mockResolvedValueOnce(walletsResponse([{ id: "pera" }]));
+    resumeStepMock.mockResolvedValueOnce({ kind: "connected", wallet: "pera" });
+    void new App().init();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    document.documentElement.classList.remove("in-app");
+    expect(document.querySelector("#wallet-pera [data-notice]")!.textContent).toBe(
+      "Pera is connected. Tap Sign in to finish."
+    );
+  });
+
   it("says when the wallet did not answer", async () => {
     await start({ kind: "lost", wallet: "pera" });
     expect(document.querySelector("#wallet-pera [data-notice]")!.textContent).toBe(

@@ -438,6 +438,20 @@ describe("acceptSignature (R2)", () => {
     expect(accept({ id: 1, result: [null, signed] })).toBe(signed);
   });
 
+  it("takes it as a list of byte values, as Defly sends it", () => {
+    const signed = proof();
+    const bytes = [...Buffer.from(signed, "base64")];
+    expect(accept({ id: 1, result: [bytes] })).toBe(signed);
+  });
+
+  it.each([
+    ["an empty byte list", []],
+    ["values that are not bytes", [1, 256]],
+    ["not a list or text", { 0: 1 }],
+  ])("ignores %s", (_, item) => {
+    expect(accept({ id: 1, result: [item] })).toBeNull();
+  });
+
   it.each([
     ["a refusal", () => ({ id: 1, error: { message: "no" } }), false],
     ["no list", () => ({ id: 1, result: "x" }), null],

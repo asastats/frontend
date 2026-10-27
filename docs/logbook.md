@@ -4963,3 +4963,74 @@ the scan covers them. `style-src` keeps `'unsafe-inline'` (the app's
 safe-area `<style>`, see above). Not checked against the live site before
 the deploy: open a few pages, the swap, the wallet sign-in and the API docs
 with the console open and look for CSP reports.
+
+### `wallet/src/walletResume.ts` on the Redmi: connect resumed (2026-10-27)
+
+First run on the phone (debug app, bundle served through the debugger, the
+WebView then kept it in its cache across the restart): Connect in Pera, the
+step was saved at the hand-off (kind, wallet, page, `wallet-connect-h`
+bridge, clientId, handshake), the app was stopped while Pera was in front
+(`am kill` and `am crash` refused a "previous" app; `am force-stop` did it),
+the user approved in Pera and reopened. The page collected the approval from
+the bridge: `walletconnect` connected with the reader's account, use-wallet's
+active wallet Pera, and the card showed Disconnect and Sign in.
+
+One bug: the notice kept "Checking Pera's answer…", because `explain()` ran
+after `await resumeSessions()`, which had not returned on that page more
+than a minute later. Which wallet's resume holds it was not established
+(Pera's webview check times out after 2 s; Lute and Defly return at once
+without a session). The notice now comes before `resumeSessions()`. If that
+call really never returns in the app, the `pagehide` teardown registered
+after it is never installed either; worth a look.
+
+### `wallet/src/walletResume.ts` `acceptSignature`: Defly answers with byte lists (2026-10-27)
+
+The sign half failed on the Redmi for Pera and for Defly ("did not answer in
+time"), while connect resumed for both. Listening on the relay beside the
+running page caught Defly's answer: `result` is `[[int, int, …]]`, the signed
+transaction as a list of byte values, not base64 text. The check took only
+strings, so it treated the real signature as "not yet" until the 20 s ran
+out. Pera Connect's own code accepts both forms (`"string"==typeof n[0] ?
+base64 : Uint8Array.from`), so Pera most likely answers the same way. Both are
+taken now; the bytes are turned into base64 for the verify call. The real
+Defly answer passed the fixed check offline (and failed it with a changed
+note), then was deleted.
+
+Side observations from the same session: the relay closes an idle socket
+after a minute or two (the 20 s wait is well inside that); and with two
+subscribers on one topic the running page did not finish its own sign-in
+while the listener held the answer, so the relay seems to hand a message to
+one subscriber only.
+
+### `wallet/src/walletResume.ts` on the Redmi: sign-in resumed with Defly (2026-10-27)
+
+After the byte-list fix, with the fixed bundle attached to the restarted
+process by the debugger: Defly Sign in, the app killed two seconds after
+Defly came to the front, the reader approved, reopened, and the card asked
+"Defly signed before your phone closed ASA Stats. Finish signing in?". On
+Finish, the live server verified the proof and answered 401 "No account is
+linked to this wallet" for that address: the signature, note and nonce all
+passed, and only the account lookup failed (an address/account setting, not
+the resume). Connect resumed earlier for Pera and Defly.
+
+Test-rig lesson: the WebView keeps a served bundle in its memory cache only;
+after a restart it loads the disk copy, which kept an older swapped build.
+Two earlier "did not answer in time" rounds ran that older (pre-fix) code.
+Attaching the swap to the new process before the login page loads avoids it.
+Also: `am kill` and `am crash` do not stop a "previous" app; `am force-stop`
+does.
+
+### `wallet/src/walletResume.ts`: Pera's sign-in does not resume (2026-10-27)
+
+With the fixed bundle attached to the restarted process, Pera's sign step
+still ended "did not answer in time". Listening on the session's `clientId`
+beside a running page, Pera's answer arrives at once as `["<base64>"]`, a
+format the check always took. In four rounds where the app was closed
+before the reader approved (one with a listener subscribed about a second
+after the kill, reconnecting when the relay dropped it), nothing ever
+arrived. Defly's answer does arrive after the kill, and connect resumes for
+both. Best explanation, not proven: Pera's wallet or its relay notices the
+requesting page went offline and does not deliver the signature. The sign
+half stays for Pera (it costs nothing and falls back to the notice); for
+Pera the reader taps Sign in again after a restart, with the card already
+connected.

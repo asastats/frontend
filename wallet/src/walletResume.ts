@@ -384,6 +384,27 @@ export function acceptApproval(step: ConnectStep) {
 }
 
 /**
+ * The bytes of one signed transaction in a wallet's answer: base64 text, or
+ * (Defly, and Pera Connect allows it) a list of byte values.
+ *
+ * @param item - one entry of the JSON-RPC result.
+ * @returns the bytes, or null.
+ */
+function signedBytes(item: unknown): Uint8Array | null {
+  if (typeof item === "string") {
+    try {
+      return Uint8Array.from(atob(item), (c) => c.charCodeAt(0));
+    } catch {
+      return null;
+    }
+  }
+  if (Array.isArray(item) && item.length && item.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
+    return Uint8Array.from(item);
+  }
+  return null;
+}
+
+/**
  * Accept only a signature of this sign-in proof (R2): one signed 0-ALGO
  * self-payment from the step's address with exactly the step's note.
  *
@@ -395,10 +416,10 @@ export function acceptSignature(step: SignStep) {
     if ("error" in message) return false;
     const result = message.result;
     if (!Array.isArray(result)) return null;
-    const signed = result.filter((item) => typeof item === "string");
+    const signed = result.map(signedBytes).filter((bytes): bytes is Uint8Array => bytes !== null);
     if (signed.length !== 1) return null;
     try {
-      const { txn } = decodeSignedTransaction(Uint8Array.from(atob(signed[0]), (c) => c.charCodeAt(0)));
+      const { txn } = decodeSignedTransaction(signed[0]);
       const sender = txn.sender.toString();
       const note = new TextDecoder().decode(txn.note);
       const pay = txn.payment;
@@ -411,7 +432,7 @@ export function acceptSignature(step: SignStep) {
         pay.receiver.toString() === sender &&
         !pay.closeRemainderTo &&
         !txn.rekeyTo;
-      return ok ? (signed[0] as string) : null;
+      return ok ? btoa(String.fromCharCode(...signed[0])) : null;
     } catch {
       return null;
     }

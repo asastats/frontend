@@ -97,8 +97,9 @@ export class App {
         }
       });
 
-      await this.walletManager.resumeSessions();
+      // Before resumeSessions: it waits for every wallet, and one can take long in the app.
       this.explain(resumed);
+      await this.walletManager.resumeSessions();
 
       // Not beforeunload: a wallet hand-off (wc:) fires it and keeps the page (docs/logbook.md)
       window.addEventListener("pagehide", (event: PageTransitionEvent) => {
