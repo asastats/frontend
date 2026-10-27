@@ -10,7 +10,8 @@ export default defineConfig({
     manifest: false,
     minify: "esbuild",
     rollupOptions: {
-      input: { app: "src/app/main.ts" },
+      // A loader: a chunk importing the entry by its unhashed name reruns only this (logbook).
+      input: { app: "src/app/entry.ts" },
       output: {
         entryFileNames: "js/app.js",
         chunkFileNames: "dist/app-[name]-[hash].js",

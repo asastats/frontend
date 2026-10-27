@@ -5104,3 +5104,56 @@ Plain HTML with no template tags: it is served raw at `/static/` and through
 `html_file` at `/auth_privacy.html`. `functional_tests/test_configuration.py`
 asserts its `<h1>Privacy policy</h1>`. A new swap source or third-party call
 from the browser is a change to this page too.
+
+### `wallet/src/entry.ts`, `wallet/src/app/entry.ts`, `vite.config.ts`, `vite.app.config.ts`: the wallet bundle ran twice in production (2026-10-27)
+
+Found while trying EVM sign-in (WalletConnect → Trust Wallet) in the app on
+the Redmi; the user saw the same failure on the website. One tap created two
+WalletConnect pairings (two `display_uri`, "Core ... Init() was called 2
+times"), the wallet approved one, and the page answered "No matching key.
+proposal" / "Pending session not found": nothing signed in.
+
+Cause: lazy chunks imported shared code from the entry as `../js/bundle.js`,
+but production serves the entry through `ManifestStaticFilesStorage` as
+`bundle.<hash>.js`. Two URLs are two modules, so the first lazy chunk (the EVM
+connectors load on every page with the EVM section) ran `main.ts` a second
+time: a second `App`, second Algorand wallet cards, a second `initEvm` and a
+second click handler on `#evm-wallet-connect`. Development serves one
+unhashed file, so it never showed locally. `app.js` had the same shape (its
+`app-web-*` chunks import `../js/app.js`).
+
+Fix: each entry is now a loader that only `import()`s `main.ts`, so the app
+code lives in a Vite-hashed chunk (`dist/main-*.js`, `dist/app-main-*.js`)
+that everything imports by the same URL. Vite 8 still puts its preload
+helper in the entry and chunks import it from `../js/bundle.js`; that reruns
+only the loader, whose `import()` of the same chunk URL the browser runs
+once. `modulePreload: false` does not move the helper (tried). Rejected:
+Django's `support_js_module_import_aggregation` (rewrites every chunk's
+imports at collectstatic; experimental) and a WalletConnect upgrade to 2.26.0
+(tried on the phone, same failure; the duplicate pairing was ours).
+
+Worth re-checking with this fixed: open item 2, use-wallet's
+`resumeSessions()` never returning on the resumed login page in the app,
+since two `App` instances shared one use-wallet store there too.
+
+`dist/` now holds exactly the 93 chunks the build emits (checked by
+following imports from both entries); 55 stale ones removed.
+
+### `deploy/roles/nginx/templates/ssl.conf`: `img-src` allows `blob:` (2026-10-27)
+
+The WalletConnect window (AppKit) draws wallet icons from `blob:` URLs; the
+CSP blocked them, so the list showed no icons. A `blob:` URL holds only data
+the page itself created.
+
+### `wallet/src/main.ts`: `App.init` no longer waits for `DOMContentLoaded` (2026-10-27)
+
+Correction to the loader entry above: it broke the Algorand wallet cards in
+production (user: Connect under Pera opened nothing, no console error). The
+constructor only listened for `DOMContentLoaded`, and `entry.ts` now imports
+`main.ts` after that event has usually fired, so `init` never ran and the
+cards had no click handlers. The EVM, manage and swap bootstraps already
+checked `document.readyState`; `App` is now started the same way. Nothing
+else in the bundle waits for a page event, and `alerts.js` reads
+`window.ASAStatsApp` only when its dialog opens, so `app.js` arriving a
+moment later is harmless. Missed because the unit tests call `init()`
+directly and nothing ran the built bundle in a browser before the deploy.

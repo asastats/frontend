@@ -43,10 +43,9 @@ export class App {
   /** Resolved walletauth API base path. */
   private apiBase: string = DEFAULT_API_BASE;
 
-  /** Registers initialization on `DOMContentLoaded`. */
+  /** Installs the logout hook; `init` is started by the bootstrap below. */
   constructor() {
     installLogoutForget();
-    document.addEventListener("DOMContentLoaded", this.init.bind(this));
   }
 
   /**
@@ -150,8 +149,16 @@ export class App {
   }
 }
 
-// Initialize the application.
-new App();
+/* istanbul ignore next -- bootstrap glue; App.init is tested directly */
+{
+  // entry.ts imports this module after DOMContentLoaded has usually fired.
+  const app = new App();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => void app.init());
+  } else {
+    void app.init();
+  }
+}
 
 /* istanbul ignore next -- bootstrap glue; orchestration is tested in evmBootstrap.test */
 {

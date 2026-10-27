@@ -24,6 +24,8 @@ export default defineConfig({
     // load only when a user actually picks an EVM / WalletConnect wallet.
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
+      // A loader: a chunk importing the entry by its unhashed name reruns only this (logbook).
+      input: { bundle: "src/entry.ts" },
       // Vite 8's Rolldown engine is far stricter than Rollup about a handful of
       // third-party patterns. Every warning silenced below originates in
       // node_modules pulled in by WalletConnect/Reown (ox, lottie-web, asn1.js);
