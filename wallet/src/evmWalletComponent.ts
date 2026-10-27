@@ -1,3 +1,4 @@
+import { newBinding } from "./binding";
 import { notify } from "./notify";
 
 /** Default mount point of the EVM walletauth API (overridable per instance). */
@@ -218,10 +219,12 @@ export class EvmWalletComponent {
         "X-CSRFToken": this.getCsrfToken(),
       };
 
+      /** Secret only this page knows; the login verify refuses the proof without it. */
+      const binding = newBinding();
       const nonceResponse = await fetchFn(`${this.apiBase}/nonce/`, {
         method: "POST",
         headers,
-        body: JSON.stringify({ address: addr, chain: "evm" }),
+        body: JSON.stringify({ address: addr, chain: "evm", binding }),
       });
       /** `{ nonce, prefix }` on success, or `{ error }`. */
       const nonceData = await nonceResponse.json();
@@ -243,6 +246,7 @@ export class EvmWalletComponent {
           nonce: nonceData.nonce,
           chain: "evm",
           signature,
+          binding,
         }),
       });
       /** `{ success, redirect_url }` or `{ success:false, error }`. */

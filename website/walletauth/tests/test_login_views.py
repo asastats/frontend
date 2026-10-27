@@ -421,6 +421,35 @@ class TestWalletLoginVerifyAPIView:
         assert WalletLoginNonce.objects.get(nonce="evm-nonce").used is True
 
     @pytest.mark.django_db
+    @pytest.mark.parametrize("sent,status", [(None, 400), ("cd" * 32, 400), (BINDING, 200)])
+    def test_login_verify_evm_bound_nonce_needs_its_secret(self, mocker, sent, status):
+        from eth_account import Account
+        from eth_account.messages import encode_defunct
+
+        acct = Account.create()
+        evm_address = acct.address.lower()
+        signed = acct.sign_message(
+            encode_defunct(text=WALLET_CONNECT_NONCE_PREFIX + "evm-nb")
+        )
+        raw = signed.signature.hex()
+        signature = raw if raw.startswith("0x") else "0x" + raw
+        link_user(address=evm_address, username="evmowner")
+        WalletLoginNonce.objects.create(
+            address=evm_address,
+            chain="evm",
+            nonce="evm-nb",
+            binding=_binding_hash(BINDING),
+        )
+        mocker.patch("walletauth.login_views._perform_login", return_value="/home/")
+        data = {"nonce": "evm-nb", "chain": "evm", "signature": signature}
+        if sent is not None:
+            data["binding"] = sent
+        request = APIRequestFactory().post("/login/verify/", data, format="json")
+        response = WalletLoginVerifyAPIView.as_view()(request)
+        assert response.status_code == status
+        assert WalletLoginNonce.objects.get(nonce="evm-nb").used is (status == 200)
+
+    @pytest.mark.django_db
     def test_login_verify_evm_rejects_signature_for_other_nonce(self, mocker):
         # A valid signature, but over a different challenge -> recovered address
         # won't match the nonce that was issued -> rejected.

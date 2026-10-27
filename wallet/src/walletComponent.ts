@@ -1,3 +1,4 @@
+import { newBinding } from "./binding";
 import { notify } from "./notify";
 import { uint8ArrayToBase64 } from "./walletAdapters";
 import { connectStep, signStep, watchStep } from "./walletResume";
@@ -245,9 +246,7 @@ export class WalletComponent {
       };
 
       /** Secret only this page knows; the login verify refuses the proof without it. */
-      const binding = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) =>
-        b.toString(16).padStart(2, "0")
-      ).join("");
+      const binding = newBinding();
       const nonceResponse = await fetch(`${this.apiBase}/nonce/`, {
         method: "POST",
         headers,

@@ -187,7 +187,11 @@ describe("EvmWalletComponent.authorizeWith success", () => {
     const fetchMock = global.fetch as jest.Mock;
     expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/wallet/login/nonce/");
     const nonceBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(nonceBody).toEqual({ address: VALID_ADDR.toLowerCase(), chain: "evm" });
+    expect(nonceBody).toEqual({
+      address: VALID_ADDR.toLowerCase(),
+      chain: "evm",
+      binding: expect.stringMatching(/^[0-9a-f]{64}$/),
+    });
     expect(fetchMock.mock.calls[0][1].headers["X-CSRFToken"]).toBe("tok123");
 
     expect(sign).toHaveBeenCalledWith(
@@ -202,9 +206,27 @@ describe("EvmWalletComponent.authorizeWith success", () => {
       nonce: "N1",
       chain: "evm",
       signature: "0xdeadbeef",
+      binding: nonceBody.binding,
     });
 
     expect(navigate).toHaveBeenCalledWith("/home/");
+  });
+
+  it("binds each sign-in attempt to a new secret (audit E2)", async () => {
+    const root = setupDOM();
+    const c = new EvmWalletComponent(root, "/api/v2/wallet/login", deps());
+    mockFetchSequence(
+      { nonce: "N1", prefix: "p:" },
+      { success: true, redirect_url: "/" },
+      { nonce: "N2", prefix: "p:" },
+      { success: true, redirect_url: "/" }
+    );
+    await c.authorizeWith(makeConnector());
+    await c.authorizeWith(makeConnector());
+    const bodies = (global.fetch as jest.Mock).mock.calls.map((call) => JSON.parse(call[1].body));
+    expect(bodies[1].binding).toBe(bodies[0].binding);
+    expect(bodies[3].binding).toBe(bodies[2].binding);
+    expect(bodies[2].binding).not.toBe(bodies[0].binding);
   });
 
   it("uses the link API base when constructed for linking", async () => {

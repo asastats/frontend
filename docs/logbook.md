@@ -5070,3 +5070,19 @@ in?" offer. Notices the step itself raises afterwards (errors through
 Same rig as the Pera connect above: Sign in in Defly (14:22:08), app
 force-stopped 3 s later, approved, reopened from home: the app asked
 "Finish signing in?".
+
+### `wallet/src/evmWalletComponent.ts`, `wallet/src/binding.ts`: EVM sign-in bound to the page too (2026-10-27)
+
+Correction to the E2 entry above ("EVM sign-in does not send one yet"): it
+does now. `newBinding()` moved to `binding.ts` so both cards share it;
+`evmWalletComponent.ts` must not import `walletAdapters.ts`, which loads
+every Algorand wallet library. The EVM card sends the secret with the nonce
+and the verify, a new one per attempt. The server side was already
+chain-agnostic; `test_login_verify_evm_bound_nonce_needs_its_secret` runs it
+with a real EIP-191 signature. The link API (`/wallet/link/`) receives the
+field too and ignores it: linking already needs a signed-in session.
+
+`TestPerformLogin::test_perform_login_falls_back_to_login_redirect_url`
+fails locally ("'allauth' is not a package": it stubs `allauth` in
+`sys.modules` and something then imports `allauth.urls`), also when run
+alone; not from this change.
