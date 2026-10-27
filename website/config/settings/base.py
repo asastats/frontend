@@ -455,7 +455,7 @@ APP_HIDDEN_WIDGETS = {
 }
 APP_UNSUPPORTED_WALLETS = frozenset(
     value.strip()
-    for value in get_env_variable("APP_UNSUPPORTED_WALLETS", "kibisis,lute").split(",")
+    for value in get_env_variable("APP_UNSUPPORTED_WALLETS", "kibisis,lute,exodus").split(",")
     if value.strip()
 )
 # Universal Links / App Links documents (core.views_app).

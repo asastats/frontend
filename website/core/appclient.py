@@ -112,6 +112,20 @@ def widget_hidden(request, name):
     return name in hidden_widgets(request)
 
 
+def supported_wallets(request):
+    """Return ``ALGORAND_WALLETS`` without those the app cannot use, in app mode.
+
+    :param request: Django request object
+    :type request: :class:`django.http.HttpRequest`
+    :return: list of ``{"id", "name"}`` wallet descriptors
+    """
+    from utils.constants.core import ALGORAND_WALLETS
+
+    return [
+        wallet for wallet in ALGORAND_WALLETS if wallet_supported(request, wallet["id"])
+    ]
+
+
 def wallet_supported(request, wallet_id):
     """Return True if the wallet `wallet_id` can be used from `request`.
 
@@ -121,4 +135,6 @@ def wallet_supported(request, wallet_id):
     :type wallet_id: str
     :return: bool
     """
-    return app_client(request) is None or wallet_id not in settings.APP_UNSUPPORTED_WALLETS
+    return (
+        app_client(request) is None or wallet_id not in settings.APP_UNSUPPORTED_WALLETS
+    )

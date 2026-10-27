@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+{% load static %}<html lang="en"{% if APP_CLIENT %} class="in-app" data-app-platform="{{ APP_CLIENT.platform }}"{% endif %}>
 <head>
     <meta charset="utf-8">
     <title>Page not found</title>
@@ -17,6 +17,8 @@
         <p>Sorry, but the page you were trying to view does not exist.</p>
         <a class="action" href="{{ WEBSITE_URL }}">Go to the home page</a>
     </main>
+    {# app.js handles Android Back; without it the app is stuck here (docs/logbook.md) #}
+    {% if APP_CLIENT %}<script type="module" src="{% static 'js/app.js' %}"></script>{% endif %}
 </body>
 
 </html>

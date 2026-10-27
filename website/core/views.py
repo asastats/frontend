@@ -42,7 +42,7 @@ from api.client import (
 )
 from api.main import fetch_and_serialize_account
 from api.widgets import bundle_and_addresses_from_path
-from core.appclient import app_cache_prefix, widget_hidden
+from core.appclient import app_cache_prefix, supported_wallets, widget_hidden
 from core.context_processors import load_typefaces
 from core.forms import (
     DeactivateProfileForm,
@@ -81,7 +81,6 @@ from utils.charts import (
 )
 from utils.clients import redis_instance
 from utils.constants.core import (
-    ALGORAND_WALLETS,
     CACHE_TTL_ADDRESS,
     CACHE_TTL_CUSTOM_ADDRESS,
     CONTENT_TYPES_FOR_EXTENSION,
@@ -1497,7 +1496,7 @@ class ProfileAuthorizeView(CanAccessAuthorizeMixin, TemplateView):
         :return: dict
         """
         context = super().get_context_data(*args, **kwargs)
-        context["wallets"] = ALGORAND_WALLETS
+        context["wallets"] = supported_wallets(self.request)
         context["wallet_test_mode"] = settings.WALLET_TEST_MODE
         return context
 

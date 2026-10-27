@@ -25,7 +25,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from utils.constants.core import ALGORAND_WALLETS
+from core.appclient import supported_wallets
 from walletauth.management import (
     CannotDisablePrimaryLogin,
     CannotRemovePrimary,
@@ -169,7 +169,7 @@ def profile_link_address(request):
         request,
         "profile_link_address.html",
         {
-            "wallets": ALGORAND_WALLETS,
+            "wallets": supported_wallets(request),
             "wallet_connect_project_id": getattr(
                 settings, "WALLET_CONNECT_PROJECT_ID", ""
             ),

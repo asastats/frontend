@@ -18,7 +18,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from utils.constants.core import ALGORAND_WALLETS, WALLET_CONNECT_NONCE_PREFIX
+from core.appclient import supported_wallets
+from utils.constants.core import WALLET_CONNECT_NONCE_PREFIX
 from walletauth.linking import AddressAlreadyLinked, sync_primary_linked
 from walletauth.models import WalletNonce
 from walletauth.throttling import WalletAuthRateThrottle
@@ -38,7 +39,7 @@ class WalletsAPIView(APIView):
         :return: JSON list of supported wallet descriptors
         :rtype: :class:`rest_framework.response.Response`
         """
-        return Response(ALGORAND_WALLETS)
+        return Response(supported_wallets(request))
 
 
 class WalletNonceAPIView(APIView):

@@ -5198,3 +5198,31 @@ whose button is "Authorize address". It now reads the card's own
 
 Since Trust Wallet was installed, a Pera/Defly `wc:` hand-off shows Android's
 app chooser (Trust also claims `wc:`); picking Pera works as before.
+
+### `website/templates/404.html`: app mode and `app.js` (2026-10-27)
+
+Beta checklist over adb (Redmi, debug app): on the "not found" page Android
+Back did nothing, twice. The standalone error pages do not extend
+`base.html`, so in the app 404 had no `in-app` class and no `app.js`, and
+`app.js` is what answers the Back button. 404 now adds both under
+`APP_CLIENT`, as `base.html` does (Django's 404 handler renders with the
+request, so the context processor runs). The "link nothing" rule of the
+error pages is about stylesheets on a broken site (500); a 404 happens on a
+working one. 500 renders without a request context and stays as it was.
+
+### `website/core/appclient.py` `supported_wallets`, wallet card sources: the app no longer offers Lute, Kibisis, Exodus (2026-10-27)
+
+Beta checklist over adb: the app's login page showed Lute, Kibisis and
+Exodus beside Pera and Defly. `wallet_supported()` and
+`APP_UNSUPPORTED_WALLETS` existed since F1 but nothing called them: the F7
+filter was waiting on the spike and never got wired. All four sources of the
+cards now go through `supported_wallets(request)`: the `supported_wallets`
+template tag (login page and login modal), the authorize view, the
+link-address view and `WalletsAPIView` (what the bundle fetches). In a
+browser nothing changes.
+
+Exodus joins the default (`kibisis,lute,exodus`): like Lute and Kibisis it is
+a browser extension, and the bundle has no Exodus adapter at all
+(`ADAPTER_FACTORIES` lists pera, defly, lute, kibisis), so its card could
+not work in the app. A deployment that sets `APP_UNSUPPORTED_WALLETS` in its
+env keeps its own value.

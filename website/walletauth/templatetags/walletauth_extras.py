@@ -7,16 +7,18 @@ processor: ``{% supported_wallets as wallets %}`` then iterate.
 
 from django import template
 
-from utils.constants.core import ALGORAND_WALLETS
+from core.appclient import supported_wallets as wallets_for
 
 register = template.Library()
 
 
-@register.simple_tag
-def supported_wallets():
-    """Return the supported-wallet descriptors for card rendering.
+@register.simple_tag(takes_context=True)
+def supported_wallets(context):
+    """Return the wallet descriptors this request can use, for card rendering.
 
+    :param context: template context carrying ``request``
+    :type context: :class:`django.template.Context`
     :return: list of ``{"id", "name"}`` wallet descriptors
     :rtype: list
     """
-    return ALGORAND_WALLETS
+    return wallets_for(context["request"])

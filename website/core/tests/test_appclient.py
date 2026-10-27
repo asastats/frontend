@@ -12,11 +12,13 @@ from core.appclient import (
     hidden_widgets,
     parse_app_client,
     purchase_hidden,
+    supported_wallets,
     wallet_supported,
     widget_hidden,
 )
 from core.context_processors import app_client as app_client_processor
 from core.middleware import AppClientMiddleware
+from utils.constants.core import ALGORAND_WALLETS
 
 ANDROID_UA = (
     "Mozilla/5.0 (Linux; Android 16; Pixel 8; wv) AppleWebKit/537.36 "
@@ -97,7 +99,9 @@ class TestCoreAppClientRequest:
     def test_core_appclient_middleware_returns_the_response(self):
         response = object()
 
-        assert AppClientMiddleware(lambda r: response)(RequestFactory().get("/")) is response
+        assert (
+            AppClientMiddleware(lambda r: response)(RequestFactory().get("/")) is response
+        )
 
     def test_core_appclient_app_client_without_middleware(self):
         assert app_client(RequestFactory().get("/")) is None
@@ -166,6 +170,50 @@ class TestCoreAppClientPredicates:
         assert wallet_supported(_request(IOS_UA), "kibisis") is True
 
 
+class TestCoreAppClientSupportedWallets:
+    """Every source of the wallet cards leaves out the wallets the app cannot use."""
+
+    @pytest.fixture(autouse=True)
+    def _capabilities(self, mocker):
+        mocker.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        )
+
+    def test_core_appclient_supported_wallets_in_a_browser(self):
+        assert supported_wallets(_request(BROWSER_UA)) == ALGORAND_WALLETS
+
+    def test_core_appclient_supported_wallets_in_the_app(self):
+        assert [w["id"] for w in supported_wallets(_request(IOS_UA))] == ["pera", "defly"]
+
+    def test_core_appclient_wallets_api_in_the_app(self):
+        response = Client(HTTP_USER_AGENT=ANDROID_UA).get("/api/v2/wallet/wallets/")
+
+        assert [w["id"] for w in response.json()] == ["pera", "defly"]
+
+    @pytest.mark.django_db
+    def test_core_appclient_login_page_cards_in_the_app(self):
+        html = (
+            Client(HTTP_USER_AGENT=ANDROID_UA)
+            .get(reverse("account_login"))
+            .content.decode()
+        )
+
+        assert 'id="wallet-pera"' in html
+        assert 'id="wallet-lute"' not in html
+        assert 'id="wallet-kibisis"' not in html
+        assert 'id="wallet-exodus"' not in html
+
+    @pytest.mark.django_db
+    def test_core_appclient_login_page_cards_in_a_browser(self):
+        html = (
+            Client(HTTP_USER_AGENT=BROWSER_UA)
+            .get(reverse("account_login"))
+            .content.decode()
+        )
+
+        assert 'id="wallet-lute"' in html
+
+
 class TestCoreAppClientBaseTemplate:
     """base.html in app mode, and its cache entries kept apart from a browser's."""
 
@@ -187,6 +235,18 @@ class TestCoreAppClientBaseTemplate:
         assert "/static/js/app.js" in html
         assert "apps.apple.com" not in html
         assert "play.google.com" not in html
+
+    def test_core_appclient_404_page_in_app_mode(self):
+        html = Client(HTTP_USER_AGENT=ANDROID_UA).get("/no/such/page/").content.decode()
+
+        assert '<html lang="en" class="in-app" data-app-platform="android">' in html
+        assert "/static/js/app.js" in html
+
+    def test_core_appclient_404_page_in_a_browser(self):
+        html = Client(HTTP_USER_AGENT=BROWSER_UA).get("/no/such/page/").content.decode()
+
+        assert '<html lang="en">' in html
+        assert "/static/js/app.js" not in html
 
     def test_core_appclient_base_template_in_a_browser(self):
         html = self._faq(BROWSER_UA)
@@ -211,7 +271,12 @@ class TestCoreAppClientBaseTemplate:
         assert 'data-app-platform="android"' in self._faq(ANDROID_UA)
 
 
-PURCHASE_LINK_MARKERS = ("/subscriptions/", "subtopia.io", "app.pact.fi", "app.tinyman.org")
+PURCHASE_LINK_MARKERS = (
+    "/subscriptions/",
+    "subtopia.io",
+    "app.pact.fi",
+    "app.tinyman.org",
+)
 
 
 def _purchase_links(html):
