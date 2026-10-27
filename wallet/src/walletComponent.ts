@@ -360,6 +360,10 @@ export class WalletComponent {
     this.element.addEventListener("click", async (e: Event) => {
       /** The clicked element, matched against this wallet's control ids. */
       const target = e.target as HTMLElement;
+      // A new step makes the card's resume and hand-off notices stale.
+      if (/^(connect|disconnect|set-active|auth)-button-/.test(target.id)) {
+        this.element?.querySelectorAll("[data-notice]").forEach((n) => n.remove());
+      }
       if (target.id === `connect-button-${this.wallet.id}`) {
         await this.connect();
       } else if (target.id === `disconnect-button-${this.wallet.id}`) {

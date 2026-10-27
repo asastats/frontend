@@ -5034,3 +5034,39 @@ requesting page went offline and does not deliver the signature. The sign
 half stays for Pera (it costs nothing and falls back to the notice); for
 Pera the reader taps Sign in again after a restart, with the card already
 connected.
+
+### `deploy/roles/nginx/templates/ssl.conf` CSP after the deploy, on the Redmi (2026-10-27)
+
+E1 checked on the live site in the debug app (CDP: console plus a
+`securitypolicyviolation` listener): home, an address page, `swap-entry`,
+`accounts/login/` with the wallet cards, Swagger (29 operations rendered)
+and Redoc. The only report: Redoc's `https://cdn.redoc.ly/redoc/logo-mini.svg`
+blocked by `img-src`. A CSP source without a trailing slash matches that
+exact path only; the entry was `https://cdn.redoc.ly/redoc` since the June
+playbook, not from E1. Now `https://cdn.redoc.ly/redoc/` (needs the nginx
+role again).
+
+### `wallet/src/walletResume.ts` on the Play build (2026-10-27)
+
+Deployed bundle, Play app on the Redmi, no debugger: Connect in Pera
+(14:18:34), app force-stopped 3 s later while Pera was in front (stands in
+for MIUI's kill, which did not happen on its own after Recents was cleared),
+approved in Pera, app reopened from home as a new process (14:19:12): the
+connect resumed. Same result as the debug app with the swapped bundle.
+
+### `wallet/src/walletComponent.ts`: a new step clears the card's notices (2026-10-27)
+
+User report from the Play build: after a resumed Pera connect, "Pera is
+connected. Tap Sign in to finish." stayed in the card after Disconnect.
+`say()` and `showHandoffNotice()` add a `[data-notice]` to the card and
+nothing removed it. Now any tap on the card's Connect, Disconnect, Set active
+or Sign in button removes the card's notices before the step runs, which also
+covers the hand-off notice, "did not answer in time" and the "Finish signing
+in?" offer. Notices the step itself raises afterwards (errors through
+`notify.ts`) are added after the clear.
+
+### `wallet/src/walletResume.ts` on the Play build: Defly sign-in (2026-10-27)
+
+Same rig as the Pera connect above: Sign in in Defly (14:22:08), app
+force-stopped 3 s later, approved, reopened from home: the app asked
+"Finish signing in?".

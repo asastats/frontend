@@ -179,6 +179,27 @@ describe("WalletComponent interaction", () => {
     expect(mockWallet.disconnect).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["connect", "disconnect", "set-active", "auth"])(
+    "%s button removes the card's stale notices",
+    (action) => {
+      jest.spyOn(component, "auth").mockResolvedValue(undefined);
+      const notice = document.createElement("div");
+      notice.dataset.notice = "info";
+      notice.textContent = "Pera is connected. Tap Sign in to finish.";
+      root.appendChild(notice);
+      root.querySelector<HTMLButtonElement>(`#${action}-button-pera`)!.click();
+      expect(root.querySelector("[data-notice]")).toBeNull();
+    }
+  );
+
+  it("other clicks in the card keep its notices", () => {
+    const notice = document.createElement("div");
+    notice.dataset.notice = "info";
+    root.appendChild(notice);
+    root.querySelector("h4")!.click();
+    expect(root.querySelector("[data-notice]")).not.toBeNull();
+  });
+
   it("set-active button calls wallet.setActive", () => {
     root.querySelector<HTMLButtonElement>("#set-active-button-pera")!.click();
     expect(mockWallet.setActive).toHaveBeenCalledTimes(1);
