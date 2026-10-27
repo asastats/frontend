@@ -5226,3 +5226,48 @@ a browser extension, and the bundle has no Exodus adapter at all
 (`ADAPTER_FACTORIES` lists pera, defly, lute, kibisis), so its card could
 not work in the app. A deployment that sets `APP_UNSUPPORTED_WALLETS` in its
 env keeps its own value.
+
+Correction to the `404.html` entry above (same day, after the deploy): the
+"Back did nothing" finding was most likely an artifact of the test. Every
+navigation was made through the WebView debugger, without a user gesture,
+and Chromium marks such history entries skippable, so `canGoBack()` was
+false (the Android functional test's "a tap, not location.assign()" note).
+Reached by a real tap, Back on the 404 page goes back, now through `app.js`;
+before, Capacitor's own fallback (`goBack()` when no JS listener) would have
+done the same. The change stays: the 404 page now behaves like every other
+page in the app (app mode, minimize on the first page, link handling).
+
+### `website/tailwind-toolchain.sh` `strip_theme_controller`, `build-tailwind.sh`: no daisyUI theme `:has()` selectors (2026-10-27)
+
+App beta: the 3,618-asset address (`MVEKYHFLJ…DOW6GI`) took over 20 s to draw
+its charts on the Redmi 9. Measured over the WebView debugger: the HTML
+(645 KB, ~88k elements) arrives in under 1 s and parsing takes ~1.2 s, but 61
+style recalcs took ~33 s, ~900 ms each even when one element changed (a
+canvas class toggle). Deleting rules in the live page: without the 57
+`:root:has(input.theme-controller[value=X]:checked)` selectors a pass costs
+~107 ms; without every `:has()` 0 ms. Chromium re-evaluates a `:root:has()`
+by walking the document, and these rules sit on `:root`.
+
+Both daisyUI plugins (5.7.50) build that selector from a fixed string
+(`${root}:has(input.${prefix}theme-controller[value=…]:checked),[data-theme=…]`);
+`input.css` can change only `root` and `prefix`, not drop the `:has()`. The
+picker's radios carry `theme-controller`, but `theme.js` sets `data-theme` on
+`<html>` on change, so `[data-theme=X]` already does the work. The build now
+strips the `:has()` half after minifying; the stylesheet test does the same
+to its fresh build, so the byte comparison still holds, and a second test
+checks the committed file has none. `--watch` builds keep them (dev only).
+
+Whole page on the Redmi with the stripped live CSS served in over CDP
+`Fetch`: charts drawn 24.6 s → 11.0 s, all main-thread work 37.9 s → 11.7 s.
+Left: daisyUI's modal `:root:has(.modal…)` rules (~45–60 ms per pass), a
+3.6 s DOM-ready task (Chart.js and `address.js` reading layout), and 1,348
+asset bodies rendered before anyone opens them.
+
+Follow-up to the `strip_theme_controller` entry above (2026-10-28, after the
+deploy): the address measured again on the Redmi in the debug app, cache off,
+deployed `style.tw.80a0fe591f92.css` (no `theme-controller` selectors). Two
+runs: charts drawn at 10.4 s and 9.2 s after navigation, load at 12.3 s and
+11.0 s, main-thread work 12.2 s and 12.8 s. Style recalcs were 54–56 passes
+taking 3.8–4.0 s, ~70 ms each (was 61 passes, ~33 s). That matches the 11.0 s
+/ 11.7 s predicted from the CDP `Fetch` swap. The other causes listed above are
+still open.

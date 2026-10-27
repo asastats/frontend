@@ -236,13 +236,15 @@ class TestCoreAllauthAppSignIn:
         assert all(href == provider for href, provider in pairs)
         assert {provider for _, provider in pairs} == set(PROVIDERS)
 
-    def test_core_allauth_modal_buttons_carry_their_provider(self):
+    def test_core_allauth_modal_buttons_carry_their_provider(self, rf):
         from django.template.loader import render_to_string
 
         from core.views_appauth import PROVIDERS
 
         pairs = self._pairs(
-            render_to_string("snippets/modal_login.html", {"APPLE_SIGN_IN": True})
+            render_to_string(
+                "snippets/modal_login.html", {"APPLE_SIGN_IN": True}, request=rf.get("/")
+            )
         )
 
         assert all(href == provider for href, provider in pairs)

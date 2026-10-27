@@ -54,6 +54,10 @@ class AppClientPagesTest(FunctionalTest):
         self.browser.get(self.server_url + reverse("faq"))
 
         self.assertTrue(_app_js_requested(self.browser))
+        # app.js is a loader: the global appears once its chunk has run.
+        self.wait_until(
+            lambda: self.browser.execute_script("return !!window.ASAStatsApp;")
+        )
         self.assertTrue(self.browser.execute_script("return window.ASAStatsApp.isApp;"))
         self.assertEqual(
             self.browser.execute_script("return typeof window.ASAStatsApp.download;"),

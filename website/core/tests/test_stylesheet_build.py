@@ -153,6 +153,11 @@ def rebuilt(tmp_path_factory, committed):
     if result.returncode != 0:
         pytest.fail(f"the Tailwind build failed:\n{result.stderr}")
 
+    subprocess.run(
+        ["bash", "-c", '. ./tailwind-toolchain.sh && strip_theme_controller "$0"', str(out)],
+        cwd=WEBSITE_DIR,
+        check=True,
+    )
     fresh = out.read_text()
     here = _version(result.stderr) or _version(fresh)
     theirs = _version(committed)
@@ -205,3 +210,11 @@ def test_the_committed_stylesheet_is_not_behind_the_templates(committed, rebuilt
         "static/css/style.tw.css is not what these templates build to. "
         "Run website/build-tailwind.sh and commit the result." + detail
     )
+
+
+def test_the_committed_stylesheet_has_no_theme_controller_selectors(committed):
+    """`build-tailwind.sh` strips daisyUI's `:root:has(input.theme-controller...)`.
+
+    Each one makes every style pass re-scan the whole page (docs/logbook.md).
+    """
+    assert "theme-controller[value=" not in committed

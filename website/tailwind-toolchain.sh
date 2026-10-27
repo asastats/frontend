@@ -53,3 +53,10 @@ check_toolchain() {
   done
   return $bad
 }
+
+# Drop daisyUI's `:root:has(input.theme-controller[...]:checked),` from each theme
+# selector: theme.js sets data-theme, and the :has() makes every style pass re-scan
+# the page. Run on every build, test included. See docs/logbook.md.
+strip_theme_controller() {
+  sed 's/:root:has(input\.theme-controller\[value=[^]]*\]:checked),//g' "$1" > "$1.tmp" && mv "$1.tmp" "$1"
+}

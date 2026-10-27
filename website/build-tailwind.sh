@@ -25,6 +25,7 @@ if [ "${1:-}" = "--watch" ]; then
 fi
 
 "$CSS_DIR/tailwindcss" -i "$CSS_DIR/input.css" -o "$CSS_DIR/style.tw.css" --minify
+strip_theme_controller "$CSS_DIR/style.tw.css"
 
 # Attribution has to be re-applied after the build. The vendored theme files
 # each carry a `/*! ... */` banner, but Lightning CSS -- which Tailwind uses to
