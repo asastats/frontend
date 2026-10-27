@@ -12,6 +12,7 @@ import { installReturn } from "./returnPage";
 import { installSignIn, signIn } from "./signIn";
 import { installSplash } from "./splash";
 import { installStatusBar } from "./statusBar";
+import { installHandoff } from "./walletHandoff";
 
 jest.mock("@capacitor/core", () => ({
   Capacitor: { isNativePlatform: jest.fn().mockReturnValue(false) },
@@ -38,8 +39,10 @@ jest.mock("./signIn", () => ({
 }));
 jest.mock("./splash", () => ({ installSplash: jest.fn() }));
 jest.mock("./statusBar", () => ({ installStatusBar: jest.fn() }));
+jest.mock("./walletHandoff", () => ({ installHandoff: jest.fn() }));
 
 const installers = [
+  installHandoff,
   installReturn,
   installSplash,
   installLinks,
@@ -103,5 +106,8 @@ describe("app main", () => {
     (Capacitor.isNativePlatform as jest.Mock).mockReturnValueOnce(true);
     expect(start()).toBe(true);
     installers.forEach((fn) => expect(fn).toHaveBeenCalledTimes(1));
+    expect((installHandoff as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+      (installReturn as jest.Mock).mock.invocationCallOrder[0]
+    );
   });
 });

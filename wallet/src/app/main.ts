@@ -16,6 +16,7 @@ import { checkPush, disablePush, enablePush, installPush, type DeviceUrls, type 
 import { installSignIn, signIn } from "./signIn";
 import { installSplash } from "./splash";
 import { installStatusBar } from "./statusBar";
+import { installHandoff } from "./walletHandoff";
 
 /** The global page scripts feature-detect; see capacitor/HANDOFF.md §6. */
 export interface ASAStatsAppApi {
@@ -69,6 +70,8 @@ export function install(target: Window = window): ASAStatsAppApi {
 export function start(): boolean {
   install();
   if (!Capacitor.isNativePlatform()) return false;
+  // Before installReturn: a lost wallet step's page wins.
+  installHandoff();
   installReturn();
   installSplash();
   installLinks();

@@ -4823,3 +4823,34 @@ process 12 s after Pera came to the front (`has died: prev LAST`), which loses
 the pending Connect entirely. Not addressed; WalletConnect v1 keeps no
 pending session to resume.
 
+
+### `wallet/src/app/walletHandoff.ts`: saying so when the app died behind the wallet (2026-10-27)
+
+The "one in four" above became three in three on the Play build on
+2026-10-27. Evidence (adb, `capacitor/SPIKE-RESULTS.md`): about 2 s after Pera
+or Defly starts, `MiuiMemoryService` kills the WebView renderer (adj 700,
+"service"), and WebView then takes the app down because nothing handles
+`onRenderProcessGone`. Locking the app in Recents did not stop it. The
+pending WalletConnect request lives only in the renderer's memory, so the
+step is lost whatever the shell does. This module is the cheap fallback the
+user chose first. Keeping the step across a restart needs a design, and it
+would have to cover the signature trip as well as the connect.
+
+How it works: a capture-phase click on `#connect-button-<id>` or
+`#auth-button-<id>` (walletComponent.ts ids) writes `{id, name, url, at}` to
+localStorage; App `resume` (same process) drops it. On load, `handoffTarget`
+reads it once. sessionStorage tells a restart from a page change: it is
+empty in a new WebView process and kept across navigations in the same one.
+Both facts were checked on the Redmi with the debug build (am kill while in
+the background, then relaunch: localStorage kept, sessionStorage null; a
+`location.assign` kept it). A restart within 10 minutes goes back to the
+page the wallet was opened from and shows an info `data-notice` in that
+wallet's card, or at the top of `<main>` when the card is hidden (the login
+modal). It runs before `installReturn` and clears the browser sheet's
+remembered page, so the wallet's page wins. The card names were read on the
+live login page: Pera, Defly, Lute, Kibisis, Exodus.
+
+Not checked end to end: the live site's `app.js` is the old one, and a
+debugger cannot attach to a restarted process before its page loads. After
+the deploy: Connect in Pera, kill the app from adb while Pera is in front,
+relaunch, and the notice should show on the login page.
