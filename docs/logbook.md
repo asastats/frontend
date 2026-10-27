@@ -5086,3 +5086,21 @@ field too and ignores it: linking already needs a signed-in session.
 fails locally ("'allauth' is not a package": it stubs `allauth` in
 `sys.modules` and something then imports `allauth.urls`), also when run
 alone; not from this change.
+
+### `website/static/auth_privacy.html`: the website's privacy policy rewritten (B5, 2026-10-27)
+
+Flagged in the F12 entry above; the user chose to rewrite it. It said the
+site logs nothing, collects only an email, and named a DEACTIVATE button at
+`/profile/deactivate/`. It now follows `asm-privacy.html` (same facts, same
+retention and deletion wording) with what only the website has: EVM wallet
+sign-in, browser push subscriptions (`alerts.PushSubscription`, delivered by
+the browser's push service), the cookies (`csrftoken` always, `sessionid`
+when signed in, 28 days; messages use the session, there is no language
+cookie) and local storage (theme, typeface, folds, wallet sessions), and the
+swap widgets' browser calls to Folks Router, Haystack, LiquiHog and Nodely
+(the CSP's `connect-src`). It links the app policy at `/asm-privacy/`.
+
+Plain HTML with no template tags: it is served raw at `/static/` and through
+`html_file` at `/auth_privacy.html`. `functional_tests/test_configuration.py`
+asserts its `<h1>Privacy policy</h1>`. A new swap source or third-party call
+from the browser is a change to this page too.
