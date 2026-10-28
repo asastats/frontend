@@ -5467,3 +5467,55 @@ first paint would pay anyway.
 Still open, not measured on the Redmi yet: htmx's initial `process` walk
 (~400 ms over the whole page) and the remaining `tooltip`/`data-tip` writes
 (render them server-side for ALGO readers?).
+
+### `website/templates/snippets/nonval.html` `min-w-0` on the not-evaluated cards (2026-10-28)
+
+Found on the Redmi in the app (dynamic design, bundles `/newtest` and
+`/My-private`): opening "N not evaluated" made the page scroll sideways
+(`scrollWidth` 682 on a 392 px viewport). An asset whose URL is a long IPFS
+link widened its card to 653 px in a 335 px grid column: a grid item's
+`min-width` is `auto`, so it never shrinks below its content and the URL line's
+`truncate` never gets a width to cut at. `min-w-0` on `.fitem` fixes it; checked
+on the phone by adding the class over CDP (cards 335 px, URL ends in "…", no
+sideways scroll). `.min-w-0` was already in the committed and live
+`style.tw.css`, so no stylesheet rebuild.
+
+### `website/templates/snippets/dynamic/nft.html` trait chips `max-w-full break-words` (2026-10-28)
+
+Found on the Redmi in the app (dynamic design, an opened POAF collection): a
+trait whose value is one long word (a 58-character creator address, an IPFS
+file URL) made its chip wider than the card, and the card clipped it, so the
+end of the value was unreadable. The chips are flex items; `max-w-full` caps
+their automatic minimum width at the row, and `break-words` lets the
+unbreakable value wrap there, while chips with spaces wrap as before. Done with
+utilities already in the committed and live `style.tw.css` rather than in
+`input.css`'s `.dynamic-page .trait` rule, which would need a stylesheet
+rebuild. Checked on the phone by adding the classes over CDP.
+
+Correction to the trait-chip entry above (2026-10-28, same evening): the
+utilities broke `core/tests/test_dynamic_design_classes.py` (the dynamic
+designs use only classes declared in `input.css` or listed there, and
+`max-w-full` is also a design-one class). The fix now lives in `input.css`'s
+`.dynamic-page .trait` rule (`max-width: 100%; overflow-wrap: anywhere`,
+checked on the phone by injecting the rule over CDP), so it needs a
+`style.tw.css` rebuild before it shows; the template is back as it was.
+
+### `website/static/js/pins.js` `layout`, `website/static/js/toolbar.js` load cost on the heavy address (2026-10-28, measured only)
+
+Redmi 9, debug app, signed in (dynamic design), the 3,618-asset address,
+cache off, after the `eba0cd0` deploy. A fresh app process matters: a
+`uiautomator dump` switches the WebView's accessibility tree on for the life of
+the process, and with it `Blink.Accessibility.UpdateTime` added 3.1 s and the
+main thread looked 12.7 s busy (25 s by `Performance.getMetrics`). Fresh: 7.7 s
+busy over the load, of which script 2.5 s, HTML parsing 1.3 s, style 0.7 s;
+one long task of 1.9 s at +4.2 s, the DOMContentLoaded handlers.
+
+CPU profile of that task (inclusive): `toolbar.js` ~0.66 s (its whole-state
+apply at load: row sort `appendChild` ~140 ms, `querySelectorAll` ~140 ms, the
+TreeWalker search text ~190 ms, built although no search is typed; `ct()`
+then resets that cache with `B = new WeakMap`), `pins.js` ~0.47 s (`layout`
+re-appends every entry of every list in pinned order, `appendChild` ~250-310
+ms, even when the order would not change), `htmx` ~0.5 s (vendor), jQuery
+~0.23 s. Possible guard, not built (waiting for the user): `layout` and
+`layoutPositions` return early when the entries already stand in the wanted
+order. `toolbar.js` has the user's uncommitted edit, so it was not touched.

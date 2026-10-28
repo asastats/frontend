@@ -13,7 +13,7 @@
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {% for noteval in notevals %}
         {% with asset=noteval.asset %}
-        <div id="{{ asset.id }}" class="fitem rounded-box border border-base-300 p-3 text-sm">
+        <div id="{{ asset.id }}" class="fitem min-w-0 rounded-box border border-base-300 p-3 text-sm">
           <div class="flex items-center gap-2">
             <img src="{{ noteval|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon h-8 w-8 flex-none rounded-full" loading="lazy" decoding="async" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
             <span class="title truncate font-medium">{{ asset.name }}</span>
