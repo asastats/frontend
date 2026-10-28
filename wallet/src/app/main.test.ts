@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 
+import { installAppLock } from "./appLock";
 import { installBackButton } from "./backButton";
 import { installDeepLinks } from "./deepLinks";
 import { download, installDownloads } from "./downloads";
@@ -17,6 +18,7 @@ import { installHandoff } from "./walletHandoff";
 jest.mock("@capacitor/core", () => ({
   Capacitor: { isNativePlatform: jest.fn().mockReturnValue(false) },
 }));
+jest.mock("./appLock", () => ({ installAppLock: jest.fn() }));
 jest.mock("./backButton", () => ({ installBackButton: jest.fn() }));
 jest.mock("./deepLinks", () => ({ installDeepLinks: jest.fn() }));
 jest.mock("./downloads", () => ({
@@ -54,6 +56,7 @@ const installers = [
   installPush,
   installSignIn,
   installResume,
+  installAppLock,
 ];
 
 describe("app main", () => {

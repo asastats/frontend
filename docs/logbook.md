@@ -5291,3 +5291,73 @@ readers on ALGO (the `restoreDisplayChoices` entry above) was removed in
 `a24ca08` with its test changed to expect the swap to re-apply ALGO
 formatting, so it reads as deliberate. Scoping it to the swapped fragment
 would halve the rest; that is a behaviour question for the user.
+
+### `website/static/js/address.js` scoped currency pass (`noteSwapped`, `takeSwappedRoots`, `within`; 2026-10-28)
+
+User's call (2026-10-28): after an htmx swap, re-apply the currency only to
+what the swap brought in. Before, every `htmx:after:swap` ran `setCurrency`
+over the whole page, and twice per swap, since both `address.js`
+(`wireFetchedItems`) and `liverefresh.js` call `restoreDisplayChoices()`. On
+the 3,618-asset address that meant a second full pass at load for the
+toolbar's swap-entry fragment, which holds no figures at all.
+
+How: a capture-phase `htmx:before:swap` listener on `document` notes each
+task's target (htmx 4 puts them in `detail.tasks`, as `liverefresh.js`
+`rememberExpanded` relies on). It is registered when the script runs, not on
+`window.onload`, because the load-time swap can land before onload.
+`restoreDisplayChoices` takes the noted targets once: an innerHTML target is
+still in the document; an outerHTML or out-of-band one is found again by id.
+`setCurrency(code, roots)` then sets only the `.pricetip` / `span.val` /
+`span.val6` inside those roots (themselves included) and skips the chart
+titles when there are none. The second caller of the same swap finds nothing
+left and returns. The price data is still read from the page's first
+`.pricetip`, and the switch state is still set globally.
+
+Falls back to the whole page, as before, when no swap has been noted yet (a
+direct call, or the jsdom tests that dispatch after:swap alone), or when a
+replaced target has no id to find it by. Headless Chromium, live page with
+the local file: `restoreDisplayChoices` no longer shows in the profile, and
+`setCurrency` runs once at load.
+
+Correction to the `restoreDisplayChoices` entry above: since `a24ca08` it has
+run for readers on ALGO as well (the swapped figures need their fiat
+tooltips); "only when the reader is away from the defaults" no longer holds.
+What keeps it cheap now is the scope.
+
+### `website/tailwind-toolchain.sh` `strip_modal_scroll_lock`, `build-tailwind.sh` (2026-10-28)
+
+The rest of the `:root:has()` cost after `strip_theme_controller`: daisyUI's
+modal component ships five rules that turn on its page scroll lock
+(`:root:has(.modal.modal-open | .modal[open] | .modal:popover-open |
+.modal:target | .modal-toggle:checked+.modal){--page-scroll-lock: }`),
+measured at ~45-60 ms per style pass on the Redmi. No template, script,
+widget or the wallet bundle puts daisyUI's `modal` class on anything: every
+dialog here is a native `<dialog>` opened with `showModal()` under its own
+class (`alerts-modal`, `swap-modal`, `dustsweep-modal`, `#modalLogin`,
+`#id_modalconfirm`). So the five never matched and the lock never ran; the
+build now drops them, after minifying, and the stylesheet test does the same
+to its fresh build. A second test checks the committed file has none.
+
+The user's request (2026-10-28) was to strip them and add a small script to
+keep the scroll lock working. There was no lock to keep, so no script was
+added: one that locks the page behind a native dialog would be new
+behaviour. The rest of daisyUI's scroll-lock variables stay and resolve as
+"unlocked".
+
+Needs the user's rebuild of `style.tw.css` (pinned toolchain); until then
+`test_the_committed_stylesheet_is_not_behind_the_templates` and the new test
+fail ("same classes, changed rule").
+
+### `wallet/src/app/appLock.ts`, `templates/base.html` "App lock" footer entry (2026-10-28)
+
+The page half of the O2 app lock (mobile `plugins/applock`, mobile logbook;
+design `capacitor/O2-BIOMETRIC-LOCK-DESIGN.md`). The user chose a native
+settings screen, so pages reach one call, `AppLock.openSettings()`; the
+switch and the prompt confirming each change are native. The entry sits in
+the footer's Product list where the store links are for the website, because
+the lock is for readers who are not signed in too, and the Profile pages need
+a login. It renders `hidden` in app mode and `installAppLock` unhides it only
+when `Capacitor.isPluginAvailable("AppLock")`, so app builds from before the
+plugin show nothing that would fail. Built with `npm run build`: only
+`js/app.js` and its `app-main` chunk changed (old chunk removed, nothing else
+imported it).

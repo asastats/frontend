@@ -3162,3 +3162,120 @@ describe("a reader whose fiat is EUR", function () {
     expect(tip(head())).toContain(" EUR/ALGO)");
   });
 });
+
+
+// Last in the file: once a swap is noted, an after:swap with no before:swap
+// (as the blocks above dispatch) no longer means "the whole page".
+describe("restoreDisplayChoices (scoped to the swapped fragments)", () => {
+  // Called directly, not dispatched on body: modules re-required above left
+  // their own listeners there.
+  function beforeSwap(targets) {
+    address.noteSwapped({
+      detail: { tasks: targets.map(function (target) { return { target: target }; }) },
+    });
+  }
+
+  function afterSwap() {
+    address.restoreDisplayChoices();
+  }
+
+  function figures() {
+    return Array.prototype.map.call(document.querySelectorAll("span.val"), function (span) {
+      return span.innerHTML;
+    });
+  }
+
+  it("leaves the page alone for a swap with no figures in it", () => {
+    localStorage.setItem("cur", "USD");
+    parseAll();
+    window.onload();
+    var before = figures();
+    var container = document.createElement("div");
+    document.body.appendChild(container);
+
+    beforeSwap([container]);
+    container.innerHTML = "<p>toolbar</p>";
+    afterSwap();
+
+    expect(figures()).toEqual(before);
+  });
+
+  it("sets only the figure an out-of-band swap replaced", () => {
+    localStorage.setItem("cur", "USD");
+    parseAll();
+    window.onload();
+    var spans = document.querySelectorAll("span.val:not(.pricealgo)");
+    var untouched = spans[0];
+    untouched.innerHTML = "left alone";
+    var old = spans[1];
+    old.id = "vswapped";
+    beforeSwap([old]);
+    var fresh = document.createElement("span");
+    fresh.id = "vswapped";
+    fresh.className = "val";
+    fresh.dataset.val = "10";
+    fresh.innerHTML = "10.00 ALGO";
+    old.replaceWith(fresh);
+
+    afterSwap();
+
+    expect(document.getElementById("vswapped").innerHTML).toContain(" USD");
+    expect(untouched.innerHTML).toBe("left alone");
+  });
+
+  it("runs once per swap, though two scripts ask for it", () => {
+    localStorage.setItem("cur", "USD");
+    parseAll();
+    window.onload();
+    var span = document.querySelector("span.val:not(.pricealgo)");
+    beforeSwap([span]);
+    address.restoreDisplayChoices();
+    span.innerHTML = "set by the second caller?";
+
+    address.restoreDisplayChoices();
+
+    expect(span.innerHTML).toBe("set by the second caller?");
+  });
+
+  it("notes nothing from a swap event that carries no tasks", () => {
+    localStorage.setItem("cur", "USD");
+    parseAll();
+    window.onload();
+    var span = document.querySelector("span.val:not(.pricealgo)");
+    beforeSwap([]);
+    address.restoreDisplayChoices();
+    span.innerHTML = "left alone";
+
+    address.noteSwapped({});
+    address.restoreDisplayChoices();
+
+    expect(span.innerHTML).toBe("left alone");
+  });
+
+  it("skips a task without a target", () => {
+    localStorage.setItem("cur", "USD");
+    parseAll();
+    window.onload();
+    var span = document.querySelector("span.val:not(.pricealgo)");
+    span.innerHTML = "left alone";
+
+    address.noteSwapped({ detail: { tasks: [null, {}] } });
+    address.restoreDisplayChoices();
+
+    expect(span.innerHTML).toBe("left alone");
+  });
+
+  it("falls back to the whole page when a replaced target has no id", () => {
+    localStorage.setItem("cur", "USD");
+    parseAll();
+    window.onload();
+    var span = document.querySelector("span.val:not(.pricealgo)");
+    var old = document.createElement("span");
+    beforeSwap([old]);
+    span.innerHTML = "999.99 ALGO";
+
+    address.restoreDisplayChoices();
+
+    expect(span.innerHTML).toContain(" USD");
+  });
+});

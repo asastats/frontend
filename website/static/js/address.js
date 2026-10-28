@@ -16,6 +16,8 @@ var lastRefreshAt = Date.now();
 /** When the reader last did anything, as a timestamp. */
 var lastActivityAt = 0;
 var chartDatasets = {};
+/** What htmx swaps since the last pass replaced or filled; null until one is seen. */
+var swappedRoots = null;
 
 
 /**
@@ -23,6 +25,9 @@ var chartDatasets = {};
  *
  */
 $(mainAddress);
+// Now, not on load: the toolbar's load-time swap can land first. Capture phase,
+// so the targets are read before any after:swap listener runs.
+document.addEventListener("htmx:before:swap", noteSwapped, true);
 
 
 /*
@@ -89,17 +94,79 @@ function currencyLabel(code) {
 
 
 /**
+ * Remember what an htmx swap is about to replace or fill.
+ * See logbook: address.js scoped currency pass.
+ * @function noteSwapped
+ * @param {CustomEvent} event htmx's `htmx:before:swap`, carrying `detail.tasks`
+ */
+function noteSwapped(event) {
+  var tasks = (event.detail && event.detail.tasks) || [];
+  swappedRoots = swappedRoots || [];
+  tasks.forEach(function (task) {
+    if (task && task.target) {
+      swappedRoots.push({ element: task.target, id: task.target.id });
+    }
+  });
+}
+
+
+/**
+ * The swapped elements now in the document, and forget them.
+ * @function takeSwappedRoots
+ * @returns {Element[]|null} the elements ([] when a pass already took them), or
+ *   null for the whole page: no swap noted yet, or one cannot be found again
+ */
+function takeSwappedRoots() {
+  var noted = swappedRoots;
+  if (noted === null) return null;
+  swappedRoots = [];
+  var roots = [];
+  for (var index = 0; index < noted.length; index++) {
+    var element = noted[index].element;
+    if (!element.isConnected) {
+      // outerHTML and out-of-band swaps replace the node: read the new one.
+      element = noted[index].id ? document.getElementById(noted[index].id) : null;
+      if (!element) return null;
+    }
+    roots.push(element);
+  }
+  return roots;
+}
+
+
+/**
  * Put the reader's currency and total mode back after a swap replaced them.
- * See logbook: why restoreDisplayChoices exists (live poll reverts choices).
+ * See logbook: why restoreDisplayChoices exists (live poll reverts choices),
+ * and address.js scoped currency pass (only the swapped fragments).
  * @function restoreDisplayChoices
  */
 function restoreDisplayChoices() {
+  var roots = takeSwappedRoots();
+  if (roots && roots.length === 0) return;
   var code = localStorage.getItem('cur') || 'ALGO';
   var nonft = localStorage.getItem('totalnonft') || '';
-  setCurrency(code);
+  if (!setCurrency(code, roots)) return;
   if (nonft) {
     setTotalNoNft(nonft);
   }
+}
+
+
+/**
+ * The elements matching `selector` in `roots` (themselves included), or the page.
+ * @function within
+ * @param {Element[]|null|undefined} roots
+ * @param {String} selector
+ * @returns {jQuery}
+ */
+function within(roots, selector) {
+  if (!roots) return $(selector);
+  var found = [];
+  roots.forEach(function (root) {
+    if (root.matches && root.matches(selector)) found.push(root);
+    found.push.apply(found, root.querySelectorAll(selector));
+  });
+  return $(found);
 }
 
 
@@ -1509,23 +1576,29 @@ function setTip(element, text) {
  * Calculate and set currency values based on provided currency code
  * See logbook: why setCurrency/setTotalNoNft return early for dynamic-page
  * @param {String} code
+ * @param {Element[]} [roots] only the figures in these (default: the page)
+ * @returns {Boolean} whether there were figures to set
  */
-function setCurrency(code) {
+function setCurrency(code, roots) {
   // Design 1 only; toolbar.js owns currency on dynamic-page
-  if (document.querySelector(".dynamic-page")) return;
+  if (document.querySelector(".dynamic-page")) return false;
   var pricetip = $(".pricetip")[0];
-  if (!pricetip) return;
+  if (!pricetip) return false;
+  var tips = within(roots, ".pricetip");
+  var vals = within(roots, "span.val");
+  var vals6 = within(roots, "span.val6");
+  if (roots && !tips.length && !vals.length && !vals6.length) return false;
   var price = pricetip.dataset.price;
   var pricealgo = pricetip.dataset.pricealgo;
   var total = pricetip.dataset.total;
   var fiat = Fiat.code();
   var rate = Fiat.rate();
   if (Fiat.isFiatSide(code)) {
-    $(".pricetip").each(function () {
+    tips.each(function () {
       setTip(this, cur(total * price) + " ALGO (" + dec6(price / rate) + " ALGO/" + fiat + ")");
       this.innerHTML = cur(total * rate) + " " + fiat;
     });
-    $("span.val").each(function () {
+    vals.each(function () {
       if ($(this).hasClass("pricealgo"))
         this.innerHTML = dec6(price / rate) + " ALGO/" + fiat;
       else
@@ -1542,15 +1615,15 @@ function setCurrency(code) {
     // rendered on `.val` spans only (snippets/asas/program.html), and the one
     // template that emits `.val6` pairs it with `.unitprice`. The condition
     // was copied down with the loop and could never be true.
-    $("span.val6").each(function () {
+    vals6.each(function () {
       this.innerHTML = VAL6_FORMAT.format(algoToFiat(this.dataset.val, price)) + " " + fiat;
     });
   } else {
-    $(".pricetip").each(function () {
+    tips.each(function () {
       setTip(this, cur(total * rate) + " " + fiat + " (" + dec6(pricealgo * rate) + " " + fiat + "/ALGO)");
       this.innerHTML = cur(total * price) + " ALGO";
     });
-    $("span.val").each(function () {
+    vals.each(function () {
       if ($(this).hasClass("pricealgo"))
         this.innerHTML = dec6(pricealgo * rate) + " " + fiat + "/ALGO";
       else
@@ -1558,13 +1631,14 @@ function setCurrency(code) {
       $(this).addClass("tooltip");
       setTip(this, cur(algoToFiat(this.dataset.val, price)) + " " + fiat);
     });
-    $("span.val6").each(function () {
+    vals6.each(function () {
       this.innerHTML = VAL6_FORMAT.format(parseFloat(this.dataset.val)) + " ALGO";
     });
   }
   setTotalCharts();
 
   $(".switch").find("input[type=checkbox]").prop('checked', Fiat.isFiatSide(code));
+  return true;
 }
 
 
@@ -1819,6 +1893,8 @@ if (typeof exports !== 'undefined') {
     filterChange,
     setTip,
     setCurrency,
+    restoreDisplayChoices,
+    noteSwapped,
     setTotalNoNft,
     toggleCurrency,
     toggleDist,

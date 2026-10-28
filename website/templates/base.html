@@ -150,6 +150,9 @@
             {% if not APP_CLIENT %}
             <li><a class="link link-hover" href="https://apps.apple.com/us/app/{{ IOS_APP }}" target="_blank" rel="noopener">App&nbsp;Store</a></li>
             <li><a class="link link-hover" href="https://play.google.com/store/apps/details?id={{ ANDROID_APP }}" target="_blank" rel="noopener">Play&nbsp;Store</a></li>
+            {% else %}
+            {% comment %} app.js (appLock.ts) unhides it when the shell has the AppLock plugin. {% endcomment %}
+            <li data-app-lock-settings hidden><button type="button" class="link link-hover">App lock</button></li>
             {% endif %}
           </ul>
         </div>

@@ -154,7 +154,13 @@ def rebuilt(tmp_path_factory, committed):
         pytest.fail(f"the Tailwind build failed:\n{result.stderr}")
 
     subprocess.run(
-        ["bash", "-c", '. ./tailwind-toolchain.sh && strip_theme_controller "$0"', str(out)],
+        [
+            "bash",
+            "-c",
+            '. ./tailwind-toolchain.sh && strip_theme_controller "$0"'
+            ' && strip_modal_scroll_lock "$0"',
+            str(out),
+        ],
         cwd=WEBSITE_DIR,
         check=True,
     )
@@ -218,3 +224,12 @@ def test_the_committed_stylesheet_has_no_theme_controller_selectors(committed):
     Each one makes every style pass re-scan the whole page (docs/logbook.md).
     """
     assert "theme-controller[value=" not in committed
+
+
+def test_the_committed_stylesheet_has_no_modal_scroll_lock_selectors(committed):
+    """`build-tailwind.sh` strips daisyUI's `:root:has(.modal...)` scroll-lock rules.
+
+    No page uses the `.modal` class, and each rule costs every style pass
+    (docs/logbook.md).
+    """
+    assert ":root:has(.modal" not in committed

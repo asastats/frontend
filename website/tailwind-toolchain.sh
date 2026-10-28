@@ -60,3 +60,10 @@ check_toolchain() {
 strip_theme_controller() {
   sed 's/:root:has(input\.theme-controller\[value=[^]]*\]:checked),//g' "$1" > "$1.tmp" && mv "$1.tmp" "$1"
 }
+
+# Drop daisyUI's five `:root:has(.modal...){--page-scroll-lock: }` rules: no page
+# uses its `.modal` class (our dialogs are native), and they cost every style pass.
+# Run on every build, test included. See docs/logbook.md.
+strip_modal_scroll_lock() {
+  sed 's/:root:has(\.modal[^{]*){--page-scroll-lock: }//g' "$1" > "$1.tmp" && mv "$1.tmp" "$1"
+}

@@ -65,6 +65,17 @@ class AppClientPagesTest(FunctionalTest):
         )
 
 
+    def test_app_page_keeps_app_lock_hidden_without_the_plugin(self):
+        # Chrome has no native bridge, as an app build from before the plugin.
+        self.browser.get(self.server_url + reverse("faq"))
+        self.wait_until(
+            lambda: self.browser.execute_script("return !!window.ASAStatsApp;")
+        )
+
+        entry = self.browser.find_element(By.CSS_SELECTOR, "[data-app-lock-settings]")
+        self.assertFalse(entry.is_displayed())
+
+
 class BrowserPagesTest(FunctionalTest):
     """The same page without the token is the plain website."""
 
@@ -76,6 +87,13 @@ class BrowserPagesTest(FunctionalTest):
         self.assertIsNone(html.get_attribute("data-app-platform"))
         viewport = self.browser.find_element(By.CSS_SELECTOR, "meta[name=viewport]")
         self.assertNotIn("viewport-fit", viewport.get_attribute("content"))
+
+    def test_browser_page_has_no_app_lock_entry(self):
+        self.browser.get(self.server_url + reverse("faq"))
+
+        self.assertEqual(
+            self.browser.find_elements(By.CSS_SELECTOR, "[data-app-lock-settings]"), []
+        )
 
     def test_browser_page_shows_the_store_links(self):
         self.browser.get(self.server_url + reverse("faq"))

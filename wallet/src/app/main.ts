@@ -5,6 +5,7 @@
 
 import { Capacitor } from "@capacitor/core";
 
+import { installAppLock } from "./appLock";
 import { installBackButton } from "./backButton";
 import { installDeepLinks } from "./deepLinks";
 import { download, installDownloads } from "./downloads";
@@ -83,6 +84,7 @@ export function start(): boolean {
   installPush();
   installSignIn();
   installResume();
+  installAppLock();
   return true;
 }
 
