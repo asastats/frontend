@@ -226,11 +226,14 @@
    */
   function fmt(algo) {
     var value = state.ccy !== "ALGO" ? algo * rate() : algo;
-    return value.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    return FIGURE_FORMAT.format(value);
   }
+
+  // Same output as toLocaleString("en-US", options), which builds a formatter per call.
+  var FIGURE_FORMAT = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   // -- the filter -----------------------------------------------------------
 
@@ -431,7 +434,8 @@
     var totals = { balance: 0, staked: 0, liquidity: 0, defi: 0 };
 
     rows.forEach(function (card) {
-      found[card.id] = matchesText(cardText(card));
+      // No query matches everything: skip reading the card's text.
+      found[card.id] = !state.q || matchesText(cardText(card));
       values[card.id] = 0;
       allValues[card.id] = 0;
       kept[card.id] = 0;

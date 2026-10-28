@@ -1,7 +1,7 @@
 /**
  * @file Say so when the phone closed the app behind a wallet.
  *
- * MIUI kills the WebView while Pera or Defly is open, and the app starts over
+ * MIUI kills the WebView while a wallet is open, and the app starts over
  * with the wallet step lost. See docs/logbook.md.
  */
 
@@ -21,8 +21,12 @@ export const ALIVE_KEY = "asastats.alive";
 /** How long after the wallet opened a fresh start still explains it. */
 export const HANDOFF_FOR_MS = 10 * 60 * 1000;
 
-/** Buttons that hand over to the wallet (walletComponent.ts ids). */
-const HANDOFF_BUTTONS = '[id^="connect-button-"], [id^="auth-button-"]';
+/** Buttons that hand over to the wallet (walletComponent.ts ids, evmWalletComponent.ts attributes). */
+const HANDOFF_BUTTONS =
+  '[id^="connect-button-"], [id^="auth-button-"], [data-wallet-connect][data-connector-id="walletconnect"], [data-evm-handoff]';
+
+/** The hand-off id of the EVM WalletConnect button; its notice goes in `#evm-wallet-connect`. */
+export const EVM_HANDOFF_ID = "evm";
 
 /** The wallet a hand-off was made to. */
 export interface HandoffWallet {
@@ -45,6 +49,7 @@ export function handoffWallet(target: EventTarget | null): HandoffWallet | null 
   if (!(target instanceof Element)) return null;
   const button = target.closest(HANDOFF_BUTTONS);
   if (!button) return null;
+  if (!button.id) return { id: EVM_HANDOFF_ID, name: "your wallet" };
   const id = button.id.replace(/^(connect|auth)-button-/, "");
   const name = button.ownerDocument
     .getElementById(`wallet-${id}`)
@@ -136,11 +141,15 @@ export function handoffTarget(
  * @returns the notice, or null when the page has nowhere to put it.
  */
 export function showHandoffNotice(doc: Document, wallet: HandoffWallet): HTMLElement | null {
-  const card = doc.getElementById(`wallet-${wallet.id}`);
+  const card = doc.getElementById(
+    wallet.id === EVM_HANDOFF_ID ? "evm-wallet-connect" : `wallet-${wallet.id}`
+  );
   const host = card && card.getClientRects().length > 0 ? card : doc.querySelector("main");
   if (!host) return null;
   const notice = doc.createElement("div");
   notice.dataset.notice = "info";
+  // walletResumeEvm.ts replaces this notice when it can finish the step
+  notice.dataset.walletHandoff = wallet.id;
   notice.setAttribute("role", "status");
   notice.textContent =
     `Your phone closed ASA Stats while ${wallet.name} was open, so that step did not finish. ` +

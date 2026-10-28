@@ -42,7 +42,7 @@
     "@txnlab/use-wallet-kibisis": "^5.0.0",
     "@txnlab/use-wallet-lute": "^5.0.0",
     "@txnlab/use-wallet-pera": "5.0.0",
-    "@walletconnect/ethereum-provider": "^2.23.9",
+    "@walletconnect/ethereum-provider": "2.23.9",
     "algosdk": "^3.7.0",
     "lute-connect": "^1.7.0",
     "viem": "^2.52.2"

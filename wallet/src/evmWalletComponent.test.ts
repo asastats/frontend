@@ -8,6 +8,7 @@ import {
   type EvmConnector,
   type EvmDeps,
 } from "./evmWalletComponent";
+import { EVM_RESUME_KEY } from "./walletResumeEvm";
 
 /**
  * Capture messages the package surfaces.
@@ -421,5 +422,163 @@ describe("EvmWalletComponent.authorizeWith failures", () => {
     await c.authorizeWith(makeConnector());
     const fetchMock = global.fetch as jest.Mock;
     expect(fetchMock.mock.calls[0][1].headers["X-CSRFToken"]).toBe("");
+  });
+});
+
+describe("EvmWalletComponent with WalletConnect in the app (walletResumeEvm.ts)", () => {
+  const wc = (over: Partial<EvmConnector> = {}) => makeConnector({ id: "walletconnect", name: "WalletConnect", ...over });
+  const NONCE = "0123456789abcdef0123456789abcdef";
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.classList.add("in-app");
+  });
+
+  afterEach(() => {
+    document.documentElement.classList.remove("in-app");
+  });
+
+  it("keeps the connect step, then the sign step, and drops it when done", async () => {
+    const root = setupDOM();
+    const seen: unknown[] = [];
+    const connect = jest.fn(async () => {
+      seen.push(JSON.parse(localStorage.getItem(EVM_RESUME_KEY)!));
+      return { provider: { request: jest.fn() }, address: VALID_ADDR };
+    });
+    const sign = jest.fn(async () => {
+      seen.push(JSON.parse(localStorage.getItem(EVM_RESUME_KEY)!));
+      return "0xsignature";
+    });
+    const c = new EvmWalletComponent(root, undefined, deps({ sign }));
+    mockFetchSequence({ nonce: NONCE, prefix: "asastats-auth:" }, { success: true });
+
+    await expect(c.authorizeWith(wc({ connect }))).resolves.toBe(true);
+
+    expect(seen[0]).toMatchObject({ kind: "connect", url: window.location.href });
+    expect(seen[1]).toMatchObject({
+      kind: "sign",
+      address: VALID_ADDR.toLowerCase(),
+      nonce: NONCE,
+      prefix: "asastats-auth:",
+      apiBase: "/api/v2/wallet/login",
+    });
+    expect((seen[1] as { binding: string }).binding).toMatch(/^[0-9a-f]{64}$/);
+    expect(localStorage.getItem(EVM_RESUME_KEY)).toBeNull();
+  });
+
+  it("drops the step when the flow fails", async () => {
+    const root = setupDOM();
+    const c = new EvmWalletComponent(root, undefined, deps());
+    const connector = wc({ connect: jest.fn().mockRejectedValue(new Error("closed")) });
+    await expect(c.authorizeWith(connector)).resolves.toBe(false);
+    expect(localStorage.getItem(EVM_RESUME_KEY)).toBeNull();
+  });
+
+  it("keeps nothing for an injected wallet", async () => {
+    const root = setupDOM();
+    const sign = jest.fn(async () => {
+      expect(localStorage.getItem(EVM_RESUME_KEY)).toBeNull();
+      return "0xsignature";
+    });
+    const c = new EvmWalletComponent(root, undefined, deps({ sign }));
+    mockFetchSequence({ nonce: NONCE, prefix: "p:" }, { success: true });
+    await c.authorizeWith(makeConnector());
+    expect(sign).toHaveBeenCalled();
+  });
+
+  it("deletes the signature WalletConnect kept once it is used (E4)", async () => {
+    const root = setupDOM();
+    const history = { values: [{ id: 1, topic: "t", request: { method: "wc_sessionRequest", params: { request: { method: "personal_sign" } } } }], delete: jest.fn() };
+    const provider = { request: jest.fn(), session: { topic: "t" }, signer: { client: { core: { history } } } };
+    const c = new EvmWalletComponent(root, undefined, deps());
+    mockFetchSequence({ nonce: NONCE, prefix: "p:" }, { success: true });
+    await c.authorizeWith(wc({ connect: jest.fn(async () => ({ provider, address: VALID_ADDR })) }));
+    expect(history.delete).toHaveBeenCalledWith("t", 1);
+  });
+
+  it("signs in with a restored provider", async () => {
+    const root = setupDOM();
+    const sign = jest.fn(async () => "0xsignature");
+    const c = new EvmWalletComponent(root, undefined, deps({ sign }));
+    const provider = { request: jest.fn() };
+    mockFetchSequence({ nonce: NONCE, prefix: "p:" }, { success: true });
+    await expect(c.signInWith(provider, VALID_ADDR, "Trust Wallet")).resolves.toBe(true);
+    expect(sign).toHaveBeenCalledWith(provider, VALID_ADDR.toLowerCase(), `p:${NONCE}`);
+  });
+
+  it("verifies a collected signature and follows the redirect", async () => {
+    const root = setupDOM();
+    const navigate = jest.fn();
+    const c = new EvmWalletComponent(root, undefined, deps({ navigate }));
+    mockFetchSequence({ success: true, redirect_url: "/home/" });
+    await expect(c.verify("/api/v2/wallet/link", NONCE, "0xsig", "b".repeat(64))).resolves.toBe(true);
+    const fetchMock = global.fetch as jest.Mock;
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/v2/wallet/link/verify/");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      nonce: NONCE,
+      chain: "evm",
+      signature: "0xsig",
+      binding: "b".repeat(64),
+    });
+    expect(navigate).toHaveBeenCalledWith("/home/");
+  });
+
+  it("says why a collected signature was refused", async () => {
+    const root = setupDOM();
+    const c = new EvmWalletComponent(root, undefined, deps());
+    mockFetchSequence({ success: false, error: "Nonce expired" });
+    await expect(c.verify("/api/v2/wallet/login", NONCE, "0xsig", "b".repeat(64))).resolves.toBe(false);
+    expect(notices.texts).toContain("Nonce expired");
+  });
+
+  it("stringifies a non-Error verify failure", async () => {
+    const root = setupDOM();
+    const c = new EvmWalletComponent(root, undefined, deps({ fetchFn: jest.fn().mockRejectedValue("offline") }));
+    await expect(c.verify("/api/v2/wallet/login", NONCE, "0xsig", "b".repeat(64))).resolves.toBe(false);
+    expect(notices.texts).toContain("offline");
+  });
+});
+
+describe("EvmWalletComponent in the login dialog", () => {
+  function dialogDOM() {
+    document.body.innerHTML = `
+      <dialog id="modalLogin" open>
+        <div id="evm-wallet-connect"><div id="evm-wallet-list"></div></div>
+      </dialog>`;
+    const dialog = document.getElementById("modalLogin") as HTMLDialogElement;
+    dialog.close = jest.fn(() => dialog.removeAttribute("open"));
+    dialog.showModal = jest.fn(() => dialog.setAttribute("open", ""));
+    return { dialog, root: document.getElementById("evm-wallet-connect")! };
+  }
+
+  it("steps aside while WalletConnect's picker is up, then comes back", async () => {
+    const { dialog, root } = dialogDOM();
+    const connect = jest.fn(async () => {
+      expect(dialog.open).toBe(false);
+      throw new Error("closed");
+    });
+    const c = new EvmWalletComponent(root, undefined, deps());
+    await c.authorizeWith(makeConnector({ id: "walletconnect", connect }));
+    expect(dialog.close).toHaveBeenCalled();
+    expect(dialog.showModal).toHaveBeenCalled();
+    expect(dialog.open).toBe(true);
+  });
+
+  it("does not reopen a dialog the reader already reopened", async () => {
+    const { dialog, root } = dialogDOM();
+    const connect = jest.fn(async () => {
+      dialog.setAttribute("open", "");
+      return { provider: { request: jest.fn() }, address: "" };
+    });
+    const c = new EvmWalletComponent(root, undefined, deps());
+    await c.authorizeWith(makeConnector({ id: "walletconnect", connect }));
+    expect(dialog.showModal).not.toHaveBeenCalled();
+  });
+
+  it("stays for an injected wallet", async () => {
+    const { dialog, root } = dialogDOM();
+    const c = new EvmWalletComponent(root, undefined, deps());
+    await c.authorizeWith(makeConnector({ connect: jest.fn().mockRejectedValue(new Error("x")) }));
+    expect(dialog.close).not.toHaveBeenCalled();
   });
 });

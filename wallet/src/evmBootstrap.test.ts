@@ -4,6 +4,7 @@
 
 import { initEvm } from "./evmBootstrap";
 import type { EvmConnector } from "./evmWalletComponent";
+import { EVM_RESUME_KEY, type RestoredProvider } from "./walletResumeEvm";
 
 function connector(): EvmConnector {
   return {
@@ -56,5 +57,77 @@ describe("initEvm", () => {
     const connectorFactory = jest.fn(async () => [] as EvmConnector[]);
     await initEvm({ connectorFactory, signer: jest.fn() });
     expect(connectorFactory).toHaveBeenCalledWith("");
+  });
+
+  describe("after a restart in the app", () => {
+    const ADDRESS = "0xf74bbabffd0e455934b2b450ea391d59410cf361";
+
+    function page(projectId = "pid-123") {
+      document.body.innerHTML = `
+        <div id="evm-wallet-connect" data-wc-project-id="${projectId}">
+          <div id="evm-wallet-list"></div>
+        </div>`;
+    }
+
+    function restored(): RestoredProvider {
+      return {
+        request: jest.fn(),
+        disconnect: jest.fn(),
+        session: { topic: "t", namespaces: { eip155: { accounts: [`eip155:1:${ADDRESS}`] } } },
+        signer: { client: { core: { history: { values: [], delete: jest.fn() } } } },
+      };
+    }
+
+    beforeEach(() => {
+      localStorage.clear();
+      document.documentElement.classList.add("in-app");
+    });
+
+    afterEach(() => {
+      document.documentElement.classList.remove("in-app");
+    });
+
+    it("finishes this page's WalletConnect step", async () => {
+      page();
+      localStorage.setItem(EVM_RESUME_KEY, JSON.stringify({ kind: "connect", url: window.location.href, at: Date.now() }));
+      const restore = jest.fn(async () => restored());
+      await initEvm({ connectorFactory: async () => [], signer: jest.fn(), restore });
+      expect(restore).toHaveBeenCalledWith("pid-123");
+      expect(localStorage.getItem(EVM_RESUME_KEY)).toBeNull();
+      expect(document.querySelector("[data-notice]")!.textContent).toContain("connected before your phone closed");
+    });
+
+    it("loads no WalletConnect without a step", async () => {
+      page();
+      const restore = jest.fn();
+      await initEvm({ connectorFactory: async () => [], signer: jest.fn(), restore });
+      expect(restore).not.toHaveBeenCalled();
+    });
+
+    it("does nothing without a project id", async () => {
+      page("");
+      localStorage.setItem(EVM_RESUME_KEY, JSON.stringify({ kind: "connect", url: window.location.href, at: Date.now() }));
+      const restore = jest.fn();
+      await initEvm({ connectorFactory: async () => [], signer: jest.fn(), restore });
+      expect(restore).not.toHaveBeenCalled();
+    });
+
+    it("does nothing on the website", async () => {
+      document.documentElement.classList.remove("in-app");
+      page();
+      localStorage.setItem(EVM_RESUME_KEY, JSON.stringify({ kind: "connect", url: window.location.href, at: Date.now() }));
+      const restore = jest.fn();
+      await initEvm({ connectorFactory: async () => [], signer: jest.fn(), restore });
+      expect(restore).not.toHaveBeenCalled();
+    });
+
+    it("does nothing for a document without a window", async () => {
+      const doc = document.implementation.createHTMLDocument("");
+      doc.body.innerHTML = '<div id="evm-wallet-connect" data-wc-project-id="pid"></div>';
+      doc.documentElement.classList.add("in-app");
+      const restore = jest.fn();
+      await initEvm({ connectorFactory: async () => [], signer: jest.fn(), restore }, doc);
+      expect(restore).not.toHaveBeenCalled();
+    });
   });
 });

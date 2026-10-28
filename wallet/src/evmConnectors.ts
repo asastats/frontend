@@ -3,6 +3,7 @@ import type {
   EvmConnector,
   EvmSigner,
 } from "./evmWalletComponent";
+import type { RestoredProvider } from "./walletResumeEvm";
 
 /**
  * Browser-only adapters that produce concrete {@link EvmConnector}s and an
@@ -98,6 +99,24 @@ export function walletConnectConnector(projectId: string): EvmConnector {
       };
     },
   };
+}
+
+/**
+ * Init WalletConnect without its modal, so it restores the session and answers
+ * it stored before the phone closed the app (walletResumeEvm.ts).
+ *
+ * @param projectId - Reown/WalletConnect Cloud project id.
+ * @returns The provider, as the resume reads it.
+ */
+export async function restoreWalletConnect(projectId: string): Promise<RestoredProvider> {
+  const { EthereumProvider } = await import("@walletconnect/ethereum-provider");
+  const provider = await EthereumProvider.init({
+    projectId,
+    chains: [1],
+    optionalChains: [1],
+    showQrModal: false,
+  });
+  return provider as unknown as RestoredProvider;
 }
 
 /**

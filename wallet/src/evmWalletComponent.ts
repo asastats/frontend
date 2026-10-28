@@ -1,5 +1,6 @@
 import { newBinding } from "./binding";
 import { notify } from "./notify";
+import { forgetEvmStep, forgetSignatures, rememberEvmStep } from "./walletResumeEvm";
 
 /** Default mount point of the EVM walletauth API (overridable per instance). */
 export const DEFAULT_EVM_API_BASE = "/api/v2/wallet/login";
@@ -201,11 +202,16 @@ export class EvmWalletComponent {
    * Connects the chosen wallet and runs the nonce → sign → verify exchange.
    *
    * @param connector - The wallet the user selected.
+   * @returns Whether the reader was signed in.
    */
-  async authorizeWith(connector: EvmConnector) {
+  async authorizeWith(connector: EvmConnector): Promise<boolean> {
+    /** In the app, WalletConnect steps are kept for a restart (walletResumeEvm.ts). */
+    const resumable = connector.id === "walletconnect";
+    const url = window.location.href;
+    if (resumable) rememberEvmStep({ kind: "connect", url, at: Date.now() });
     try {
       /** Provider and selected address from the opened wallet. */
-      const { provider, address } = await connector.connect();
+      const { provider, address } = await this.connect(connector);
       /** Canonical lower-cased address (the backend stores lower-case). */
       const addr = (address || "").toLowerCase();
       if (!EVM_ADDRESS_RE.test(addr)) {
@@ -213,17 +219,11 @@ export class EvmWalletComponent {
       }
 
       const fetchFn = this.deps.fetchFn || fetch.bind(window);
-      /** Shared headers, including CSRF for the session-authenticated link API. */
-      const headers = {
-        "Content-Type": "application/json",
-        "X-CSRFToken": this.getCsrfToken(),
-      };
-
       /** Secret only this page knows; the login verify refuses the proof without it. */
       const binding = newBinding();
       const nonceResponse = await fetchFn(`${this.apiBase}/nonce/`, {
         method: "POST",
-        headers,
+        headers: this.headers(),
         body: JSON.stringify({ address: addr, chain: "evm", binding }),
       });
       /** `{ nonce, prefix }` on success, or `{ error }`. */
@@ -232,22 +232,85 @@ export class EvmWalletComponent {
         throw new Error(nonceData.error);
       }
 
+      if (resumable) {
+        rememberEvmStep({
+          kind: "sign",
+          url,
+          at: Date.now(),
+          address: addr,
+          nonce: nonceData.nonce,
+          prefix: nonceData.prefix,
+          binding,
+          apiBase: this.apiBase,
+        });
+      }
       /** EIP-191 signature over `prefix + nonce`. */
       const signature = await this.deps.sign(
         provider,
         addr,
         `${nonceData.prefix}${nonceData.nonce}`
       );
+      forgetSignatures(provider);
+      return await this.verify(this.apiBase, nonceData.nonce, signature, binding);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.showError(message);
+      return false;
+    } finally {
+      if (resumable) forgetEvmStep();
+    }
+  }
 
-      const verifyResponse = await fetchFn(`${this.apiBase}/verify/`, {
+  /**
+   * Opens the wallet; WalletConnect's picker cannot show above the open login
+   * dialog (top layer), so the dialog closes until the connect ends.
+   *
+   * @param connector - The wallet the user selected.
+   * @returns The provider and address.
+   */
+  private async connect(connector: EvmConnector) {
+    const dialog = this.element.closest("dialog");
+    const stepAside = connector.id === "walletconnect" && !!dialog?.open;
+    if (stepAside) dialog!.close();
+    try {
+      return await connector.connect();
+    } finally {
+      if (stepAside && !dialog!.open) dialog!.showModal();
+    }
+  }
+
+  /**
+   * Runs the sign-in with a provider that is already connected (a resumed session).
+   *
+   * @param provider - The connected provider.
+   * @param address - Its address.
+   * @param name - The wallet's name.
+   * @returns Whether the reader was signed in.
+   */
+  signInWith(provider: Eip1193Provider, address: string, name: string): Promise<boolean> {
+    return this.authorizeWith({
+      id: "walletconnect",
+      name,
+      connect: async () => ({ provider, address }),
+    });
+  }
+
+  /**
+   * Posts a signature to `<apiBase>/verify/` and follows the redirect.
+   *
+   * @param apiBase - The login or link API base.
+   * @param nonce - The nonce that was signed.
+   * @param signature - The EIP-191 signature.
+   * @param binding - The page's login binding secret.
+   * @returns Whether the reader was signed in.
+   */
+  async verify(apiBase: string, nonce: string, signature: string, binding: string): Promise<boolean> {
+    try {
+      const fetchFn = this.deps.fetchFn || fetch.bind(window);
+      const verifyResponse = await fetchFn(`${apiBase}/verify/`, {
         method: "POST",
-        headers,
-        body: JSON.stringify({
-          nonce: nonceData.nonce,
-          chain: "evm",
-          signature,
-          binding,
-        }),
+        headers: this.headers(),
+        body: JSON.stringify({ nonce, chain: "evm", signature, binding }),
       });
       /** `{ success, redirect_url }` or `{ success:false, error }`. */
       const verifyData = await verifyResponse.json();
@@ -262,9 +325,19 @@ export class EvmWalletComponent {
           window.location.href = url;
         });
       navigate(verifyData.redirect_url || "/");
+      return true;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.showError(message);
+      return false;
     }
+  }
+
+  /** Shared headers, including CSRF for the session-authenticated link API. */
+  private headers() {
+    return {
+      "Content-Type": "application/json",
+      "X-CSRFToken": this.getCsrfToken(),
+    };
   }
 }

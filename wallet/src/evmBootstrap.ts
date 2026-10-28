@@ -4,6 +4,8 @@ import {
   type EvmConnector,
   type EvmSigner,
 } from "./evmWalletComponent";
+import { inApp } from "./walletResume";
+import { resumeEvm, takeEvmStep, type RestoredProvider } from "./walletResumeEvm";
 
 /** Injectable factories so the bootstrap can be tested without viem/WalletConnect. */
 export interface EvmBootstrapDeps {
@@ -11,6 +13,8 @@ export interface EvmBootstrapDeps {
   connectorFactory: (projectId: string) => EvmConnector[] | Promise<EvmConnector[]>;
   /** Signs the challenge message. */
   signer: EvmSigner;
+  /** Inits WalletConnect without its modal after a restart. */
+  restore: (projectId: string) => Promise<RestoredProvider>;
 }
 
 /**
@@ -45,11 +49,13 @@ export async function initEvm(
 
   let connectorFactory = deps.connectorFactory;
   let signer = deps.signer;
+  let restore = deps.restore;
   /* istanbul ignore next -- loads browser/viem adapters on real pages only */
-  if (!connectorFactory || !signer) {
+  if (!connectorFactory || !signer || !restore) {
     const adapters = await import("./evmConnectors");
     connectorFactory = connectorFactory || adapters.getDefaultConnectors;
     signer = signer || adapters.defaultEvmSigner;
+    restore = restore || adapters.restoreWalletConnect;
   }
 
   const component = new EvmWalletComponent(container, apiBase, {
@@ -57,5 +63,11 @@ export async function initEvm(
     sign: signer!,
   });
   await component.bind();
+  // In the app, after a restart, finish a WalletConnect step (walletResumeEvm.ts).
+  const view = doc.defaultView;
+  if (projectId && view && inApp(doc)) {
+    const step = takeEvmStep(view.localStorage, view.location.href, Date.now());
+    if (step) await resumeEvm(container, component, step, () => restore!(projectId));
+  }
   return component;
 }

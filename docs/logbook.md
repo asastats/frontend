@@ -5361,3 +5361,62 @@ when `Capacitor.isPluginAvailable("AppLock")`, so app builds from before the
 plugin show nothing that would fail. Built with `npm run build`: only
 `js/app.js` and its `app-main` chunk changed (old chunk removed, nothing else
 imported it).
+
+### `wallet/src/walletResumeEvm.ts`, `evmWalletComponent.ts`, `evmBootstrap.ts`, `evmConnectors.ts`, `app/walletHandoff.ts`: EVM (WalletConnect v2) resume after a restart (2026-10-28)
+
+Built from `capacitor/WALLET-RESUME-EVM-DESIGN.md` and `-SECURITY.md` (V1-V7)
+in the planning repo, after the user's OK.
+
+**Redmi check first (debug app, Trust Wallet, a scratch provider from the
+console, app force-stopped 3 s after Trust came to the front):** Trust's
+connect approval arrived ~2 s after the kill and a provider inited on the
+reopened page found the session; a `personal_sign` request sent before the
+kill was answered in Trust and, 15 s after the provider started on the
+reopened page, its history record held the 65-byte signature. Both facts the
+design rests on hold.
+
+**Two library gaps found on the phone (2.23.9), both handled in
+`walletResumeEvm.ts`:**
+- The provider takes the sign client's *first* session once, at init
+  (`client.session.getAll()[0]`). A connect the wallet approves while the
+  restored page is starting lands in the client only, so `provider.session`
+  stayed empty and the first real run said "did not answer in time" with the
+  session sitting in IndexedDB. `adoptSession` makes the newest client session
+  the provider's own (`signer.session` + `createProviders()`); the newest, not
+  the first, because an older session may also be stored.
+- A restored provider's eip155 rpc provider has no `methods` in its
+  namespace, and `request()` then throws "Cannot read properties of undefined
+  (reading 'includes')" for `personal_sign`. `fixNamespace` copies the
+  session's namespace in.
+The package is now pinned exactly (`2.23.9`) because both reach into
+internals; the Jest tests pin the record shapes (V7).
+
+**Real flow on the Redmi (local build served in over CDP `Fetch`):** WalletConnect
+→ Trust, app killed behind Trust, reopened: the hand-off notice took it back
+to `/accounts/login/`, "Trust Wallet connected before your phone closed ASA
+Stats. Finish signing in?" → Finish → (Trust opened by hand) signed, app
+killed again → "Trust Wallet signed before …" → Finish → signed in on
+`/home/`; the step record and the `personal_sign` history record were gone.
+Two fixes from that run: the resume's wallet buttons carry
+`data-evm-handoff`, which `walletHandoff.ts` notes, so the restart after the
+second hand-off returns to the page (it had landed on `/`); and the notice
+says "Open Trust Wallet and sign the message", since nothing brings Trust to
+the front for a request on a restored session. When the app stays alive,
+Trust shows connect and then sign in one visit, as before.
+
+**WalletConnect from the login dialog showed nothing** (found while
+testing: after the restart the user tapped WalletConnect three times in the
+dialog on `/`; three proposals, no picker). `showModal()` puts the dialog in
+the top layer and AppKit's `w3m-modal` was open underneath it. The component
+now closes the dialog while `connector.connect()` runs for WalletConnect and
+reopens it when the connect ends (the same top-layer problem `authmodal.js`
+solves for Pera/Defly's pickers).
+
+Also: E4 from the audit — every sign-in (site and app) deletes WalletConnect's
+stored `personal_sign` answers once used (`forgetSignatures`).
+
+Functional test: the hand-off notice runs only with the native bridge
+(`app/main.ts` `start()`), so a Chrome test with the app's user agent cannot
+reach it; the restart test is in the mobile repo's local job
+(`test_local.py`), which runs this repo from GitHub: it fails until this
+commit is pushed.

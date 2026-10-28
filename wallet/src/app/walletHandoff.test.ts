@@ -3,6 +3,7 @@ import { App } from "@capacitor/app";
 import { RETURN_KEY } from "./returnPage";
 import {
   ALIVE_KEY,
+  EVM_HANDOFF_ID,
   HANDOFF_FOR_MS,
   HANDOFF_KEY,
   NOTICE_KEY,
@@ -101,6 +102,30 @@ describe("handoffWallet", () => {
   ])("ignores %s", (_, target) => {
     card();
     expect(handoffWallet(target() as EventTarget | null)).toBeNull();
+  });
+});
+
+describe("handoffWallet for the EVM WalletConnect button", () => {
+  it("names a generic wallet whose notice goes in the EVM container", () => {
+    document.body.innerHTML = `
+      <main><div id="evm-wallet-connect">
+        <button data-wallet-connect data-connector-id="walletconnect"><span>WalletConnect</span></button>
+        <button data-wallet-connect data-connector-id="io.metamask">MetaMask</button>
+      </div></main>`;
+    const wc = handoffWallet(document.querySelector('[data-connector-id="walletconnect"] span'));
+    expect(wc).toEqual({ id: EVM_HANDOFF_ID, name: "your wallet" });
+    expect(handoffWallet(document.querySelector('[data-connector-id="io.metamask"]'))).toBeNull();
+    document.getElementById("evm-wallet-connect")!.insertAdjacentHTML(
+      "beforeend",
+      '<button data-evm-handoff>Finish signing in</button>'
+    );
+    expect(handoffWallet(document.querySelector("[data-evm-handoff]"))).toEqual({ id: EVM_HANDOFF_ID, name: "your wallet" });
+
+    const container = document.getElementById("evm-wallet-connect")!;
+    visible(container);
+    const notice = showHandoffNotice(document, wc!)!;
+    expect(notice.parentElement).toBe(container);
+    expect(notice.dataset.walletHandoff).toBe(EVM_HANDOFF_ID);
   });
 });
 

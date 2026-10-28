@@ -37,6 +37,7 @@ jest.mock(
 );
 
 import {
+  restoreWalletConnect,
   discoverInjectedConnectors,
   walletConnectConnector,
   getDefaultConnectors,
@@ -213,6 +214,20 @@ describe("walletConnectConnector", () => {
     await expect(
       walletConnectConnector("pid").connect()
     ).resolves.toMatchObject({ address: "" });
+  });
+});
+
+describe("restoreWalletConnect", () => {
+  it("inits WalletConnect without its modal", async () => {
+    const provider = { session: undefined };
+    EthereumProviderInit.mockResolvedValue(provider);
+    await expect(restoreWalletConnect("pid-1")).resolves.toBe(provider);
+    expect(EthereumProviderInit).toHaveBeenCalledWith({
+      projectId: "pid-1",
+      chains: [1],
+      optionalChains: [1],
+      showQrModal: false,
+    });
   });
 });
 
