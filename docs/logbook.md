@@ -5420,3 +5420,50 @@ Functional test: the hand-off notice runs only with the native bridge
 reach it; the restart test is in the mobile repo's local job
 (`test_local.py`), which runs this repo from GitHub: it fails until this
 commit is pushed.
+
+### `website/templates/snippets/asas.html`, `nonval.html`, `dynamic/asset.html` asset icons `loading="lazy"` (2026-10-28)
+
+Slow charts, rest. Headless Chromium (this computer, 393×851 mobile metrics,
+cache off) on the 3,618-asset address `MVEKYHFLJ63U…`: 2,240 `img.asaicon`
+in the page, all eager, and 1,819 of them answer 404 from the CDN
+(`/icons/<id>t.png` for assets that have no icon), so `csp-safe-handlers.js`
+swaps each one to `empty.png`: ~2,800 image requests at load and ~300 ms in
+the error handler alone. The server cannot know which icons exist on the CDN,
+so the fix is to stop asking for the ones nobody can see: about ten rows fit
+on a phone screen.
+
+Measured with the live page served in over CDP `Fetch`, with and without the
+attribute (the same local `address.js` in both): DOMContentLoaded 10.1 s →
+6.1 s, load 11.9 s → 6.1 s, requests 2,856 → 39, main-thread "(program)"
+8.3 s → 4.8 s, ready handlers 1.5 s → 1.1 s.
+
+Safe because `.asaicon` is a fixed 2rem box (`input.css`), so an icon that
+lands late moves nothing; the functional test checks the box and the
+property, and `AssetRowLayoutTest._render` already skips lazy images when it
+waits for images to settle. A filtered-out or folded row's icon simply waits
+until it is shown. Same attribute pair as the NFT collection thumbnails.
+`historic/assets.html` (widgets repo) has the same pattern on a much smaller
+list and is left alone.
+
+### `website/static/js/address.js` `setText`: why setCurrency skips unchanged writes (2026-10-28)
+
+The server renders every `span.val` / `span.val6` / `.pricetip` already in
+ALGO, and the load-time `setCurrency("ALGO")` wrote the same strings back
+into 4,553 + 842 spans on the heavy address, each `innerHTML` write a
+mutation that invalidates style on an 88k-element page (style recalcs are what
+cost most on the Redmi). `setText` writes `textContent` only when it differs;
+the strings are plain text (formatter output and units), so `textContent` and
+`innerHTML` give the same result. The `tooltip` class and `data-tip` are
+guarded the same way, so a second switch to the same currency mutates
+nothing (jest test with a `MutationObserver`).
+
+Measured in headless Chromium (as above): the figure loop's own writes fell to
+~8 ms; `setCurrency` 647 → 504–561 ms. What is left is first-load work the
+server does not render (the `tooltip` class and `data-tip` on every figure,
+the formatting) and `setTotalCharts` (~200 ms of Chart.js `update`). Chart.js
+`getMaximumSize` (~350–440 ms) is the page's first forced layout, which a
+first paint would pay anyway.
+
+Still open, not measured on the Redmi yet: htmx's initial `process` walk
+(~400 ms over the whole page) and the remaining `tooltip`/`data-tip` writes
+(render them server-side for ALGO readers?).

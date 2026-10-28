@@ -356,6 +356,33 @@ class AssetRowLayoutTest(FunctionalTest):
     @mock.patch("core.context_processors.fetch_capabilities")
     @mock.patch("core.views.check_export_status")
     @mock.patch("core.views.fetch_and_serialize_account")
+    def test_asset_icons_load_lazily_in_a_box_of_their_own(
+        self, mocked_fetch, mocked_status, mocked_capabilities
+    ):
+        """See logbook: snippets asset icons loading="lazy".
+
+        The box is the contract that makes lazy safe: an icon landing late
+        must not move the row it sits in.
+        """
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_capabilities.return_value = {"permission": 0}
+        self._render()
+
+        icons = self.browser.find_elements(By.CSS_SELECTOR, "img.asaicon")
+        self.assertGreater(len(icons), 0)
+        root_px = float(
+            self._computed(self.browser.find_element(By.TAG_NAME, "html"), "fontSize")[:-2]
+        )
+        for icon in icons:
+            with self.subTest(icon=icon.get_attribute("alt")):
+                self.assertEqual(icon.get_property("loading"), "lazy")
+                self.assertEqual(icon.size["width"], 2 * root_px)
+                self.assertEqual(icon.size["height"], 2 * root_px)
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
     def test_hovering_a_thumbnail_opens_the_preview_beside_it(
         self, mocked_fetch, mocked_status, mocked_capabilities
     ):

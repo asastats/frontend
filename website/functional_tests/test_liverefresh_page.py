@@ -1970,9 +1970,17 @@ class LiveRefreshClassicTest(LiveRefreshTest):
         self.sign_in(live_refresh=True, permission=ASASTATSER)
         self.open_page()
         self.arm()
-        live_title = self.browser.execute_script(
-            "var el = document.getElementById('tb-refresh') || document.querySelector('.refresh label');"
-            "return el ? el.getAttribute('title') : '';"
+        # Waited for: liverefresh.js comes with the per-reader partial, after load.
+        live_title = self.wait_until(
+            lambda: (
+                lambda t: t if "real time" in t else None
+            )(
+                self.browser.execute_script(
+                    "var el = document.getElementById('tb-refresh') || document.querySelector('.refresh label');"
+                    "return el ? el.getAttribute('title') : '';"
+                )
+            ),
+            timeout=15,
         )
         assert "real time" in live_title
 

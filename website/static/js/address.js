@@ -1563,12 +1563,24 @@ function dec6(num) {
 function setTip(element, text) {
   // Attribute goes on element that draws tooltip.
   var host = element.closest(".tooltip") || element;
-  host.dataset.tip = text;
+  if (host.dataset.tip !== text) host.dataset.tip = text;
   var describedBy = element.getAttribute("aria-describedby");
   if (describedBy) {
     var note = document.getElementById(describedBy);
     if (note) note.textContent = text;
   }
+}
+
+
+/**
+ * Set an element's text, skipping the write when it already reads so.
+ * See logbook: why setCurrency skips unchanged writes
+ * @function setText
+ * @param {Element} element element to write into
+ * @param {String} text the text it should read
+ */
+function setText(element, text) {
+  if (element.textContent !== text) element.textContent = text;
 }
 
 
@@ -1596,19 +1608,19 @@ function setCurrency(code, roots) {
   if (Fiat.isFiatSide(code)) {
     tips.each(function () {
       setTip(this, cur(total * price) + " ALGO (" + dec6(price / rate) + " ALGO/" + fiat + ")");
-      this.innerHTML = cur(total * rate) + " " + fiat;
+      setText(this, cur(total * rate) + " " + fiat);
     });
     vals.each(function () {
-      if ($(this).hasClass("pricealgo"))
-        this.innerHTML = dec6(price / rate) + " ALGO/" + fiat;
+      if (this.classList.contains("pricealgo"))
+        setText(this, dec6(price / rate) + " ALGO/" + fiat);
       else
-        this.innerHTML = cur(algoToFiat(this.dataset.val, price)) + " " + fiat;
+        setText(this, cur(algoToFiat(this.dataset.val, price)) + " " + fiat);
       // The class as well as the text. `data-tip` has been written to these
       // spans since before the conversion and only `.pricetip` ever carried the
       // class that displays it, so every figure computed a tooltip on every
       // switch that nothing could show. The tip is the same amount in the other
       // currency, which is worth a hover and is what the code always meant.
-      $(this).addClass("tooltip");
+      if (!this.classList.contains("tooltip")) this.classList.add("tooltip");
       setTip(this, cur(this.dataset.val) + " ALGO");
     });
     // No `pricealgo` check here, unlike the `.val` loop above: that class is
@@ -1616,23 +1628,23 @@ function setCurrency(code, roots) {
     // template that emits `.val6` pairs it with `.unitprice`. The condition
     // was copied down with the loop and could never be true.
     vals6.each(function () {
-      this.innerHTML = VAL6_FORMAT.format(algoToFiat(this.dataset.val, price)) + " " + fiat;
+      setText(this, VAL6_FORMAT.format(algoToFiat(this.dataset.val, price)) + " " + fiat);
     });
   } else {
     tips.each(function () {
       setTip(this, cur(total * rate) + " " + fiat + " (" + dec6(pricealgo * rate) + " " + fiat + "/ALGO)");
-      this.innerHTML = cur(total * price) + " ALGO";
+      setText(this, cur(total * price) + " ALGO");
     });
     vals.each(function () {
-      if ($(this).hasClass("pricealgo"))
-        this.innerHTML = dec6(pricealgo * rate) + " " + fiat + "/ALGO";
+      if (this.classList.contains("pricealgo"))
+        setText(this, dec6(pricealgo * rate) + " " + fiat + "/ALGO");
       else
-        this.innerHTML = cur(this.dataset.val) + " ALGO";
-      $(this).addClass("tooltip");
+        setText(this, cur(this.dataset.val) + " ALGO");
+      if (!this.classList.contains("tooltip")) this.classList.add("tooltip");
       setTip(this, cur(algoToFiat(this.dataset.val, price)) + " " + fiat);
     });
     vals6.each(function () {
-      this.innerHTML = VAL6_FORMAT.format(parseFloat(this.dataset.val)) + " ALGO";
+      setText(this, VAL6_FORMAT.format(parseFloat(this.dataset.val)) + " ALGO");
     });
   }
   setTotalCharts();
@@ -1892,6 +1904,7 @@ if (typeof exports !== 'undefined') {
     fillEpochs,
     filterChange,
     setTip,
+    setText,
     setCurrency,
     restoreDisplayChoices,
     noteSwapped,

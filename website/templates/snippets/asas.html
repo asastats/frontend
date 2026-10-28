@@ -45,7 +45,7 @@
              first swap. {% endcomment %}
           <span class="itemleft truncate">{% partialdef classicamount inline %}<span id="q{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}>{{ amount|amount_repr:decimals }}</span>{% endpartialdef classicamount %}&nbsp;<span class="unit font-medium">{{ asset.unit }}</span></span>
           <div class="icondiv itemmid">
-            <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
+            <img src="{{ asaitem|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon" loading="lazy" decoding="async" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
           </div>
           {% comment %} The partial takes `asset_id` and `value` rather than
              reading `asaitem`, because the liverefresh widget renders it once

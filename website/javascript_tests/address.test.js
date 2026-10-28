@@ -1361,6 +1361,38 @@ describe("every figure's tooltip", function () {
     expect(figure.classList.contains("tooltip")).toBe(true);
   });
 
+  it('leaves a figure untouched when it already reads right', function () {
+    // See logbook: why setCurrency skips unchanged writes
+    switchTo("ALGO");
+    var figures = document.querySelectorAll("span.val, span.val6, .pricetip");
+    var records = [];
+    var observer = new MutationObserver(function (list) {
+      records = records.concat(list);
+    });
+    Array.prototype.forEach.call(figures, function (figure) {
+      observer.observe(figure, { attributes: true, childList: true, characterData: true, subtree: true });
+    });
+
+    switchTo("ALGO");
+
+    records = records.concat(observer.takeRecords());
+    observer.disconnect();
+    expect(figures.length).toBeGreaterThan(0);
+    expect(records).toEqual([]);
+  });
+
+  it('setText writes only a different text', function () {
+    var el = document.createElement("span");
+    el.innerHTML = "<b>1.00</b> ALGO";
+    var bold = el.firstChild;
+
+    address.setText(el, "1.00 ALGO");
+    expect(el.firstChild).toBe(bold);
+
+    address.setText(el, "2.00 ALGO");
+    expect(el.innerHTML).toBe("2.00 ALGO");
+  });
+
   it('leaves the total to its wrapper', function () {
     // `.pricetip` sits inside a `.tooltip` element rather than being one --
     // DaisyUI reveals on `:has(:focus-visible)`, so the focusable span has to

@@ -42,7 +42,7 @@
        404s; without it a missing logo renders as a broken image glyph.
     {% endcomment %}
     <span class="mono-tile{% with slot=colors|dict_get:asset.id %}{% if slot %} c{{ slot }}{% endif %}{% endwith %}">
-      <img src="{{ asaitem|asa_icon }}" alt="" class="asaicon" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
+      <img src="{{ asaitem|asa_icon }}" alt="" class="asaicon" loading="lazy" decoding="async" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
     </span>
 
     <span class="cid">
