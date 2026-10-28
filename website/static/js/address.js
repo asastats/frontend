@@ -1456,6 +1456,13 @@ function toggleUnitPrice(event) {
 }
 
 
+// Same output as toLocaleString("en-US", options), which builds a formatter per call
+// (see logbook: address.js number formatters).
+var CUR_FORMAT = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+var DEC6_FORMAT = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+var VAL6_FORMAT = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 });
+
+
 /**
  * Shows provided number as currency
  *
@@ -1463,7 +1470,7 @@ function toggleUnitPrice(event) {
  *
  */
 function cur(num) {
-  return parseFloat(num).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return CUR_FORMAT.format(parseFloat(num));
 }
 
 
@@ -1474,7 +1481,7 @@ function cur(num) {
  *
  */
 function dec6(num) {
-  return parseFloat(num).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+  return DEC6_FORMAT.format(parseFloat(num));
 }
 
 
@@ -1536,7 +1543,7 @@ function setCurrency(code) {
     // template that emits `.val6` pairs it with `.unitprice`. The condition
     // was copied down with the loop and could never be true.
     $("span.val6").each(function () {
-      this.innerHTML = algoToFiat(this.dataset.val, price).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " " + fiat;
+      this.innerHTML = VAL6_FORMAT.format(algoToFiat(this.dataset.val, price)) + " " + fiat;
     });
   } else {
     $(".pricetip").each(function () {
@@ -1552,7 +1559,7 @@ function setCurrency(code) {
       setTip(this, cur(algoToFiat(this.dataset.val, price)) + " " + fiat);
     });
     $("span.val6").each(function () {
-      this.innerHTML = parseFloat(this.dataset.val).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " ALGO";
+      this.innerHTML = VAL6_FORMAT.format(parseFloat(this.dataset.val)) + " ALGO";
     });
   }
   setTotalCharts();

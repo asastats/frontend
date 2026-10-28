@@ -5271,3 +5271,23 @@ runs: charts drawn at 10.4 s and 9.2 s after navigation, load at 12.3 s and
 taking 3.8–4.0 s, ~70 ms each (was 61 passes, ~33 s). That matches the 11.0 s
 / 11.7 s predicted from the CDP `Fetch` swap. The other causes listed above are
 still open.
+
+### `website/static/js/address.js` number formatters (`CUR_FORMAT`, `DEC6_FORMAT`, `VAL6_FORMAT`; 2026-10-28)
+
+Slow charts, after the theme-selector strip: a Redmi trace of the 3,618-asset
+address showed a 4.0 s DOMContentLoaded task, 3.2 s of it jQuery ready
+handlers. A CPU profile in headless Chromium (this computer, mobile-sized
+window, live page) put most of it in `setCurrency`, which runs twice at load
+(from `mainAddress`, and again from the htmx after-swap handler through
+`restoreDisplayChoices`), and in `cur()` self time: `toLocaleString("en-US",
+options)` builds an `Intl.NumberFormat` on every call, once per figure. The
+spec defines `Number.prototype.toLocaleString` as exactly that formatter's
+`format`, so one formatter per option set gives the same strings. Measured
+with the local file served in over CDP `Fetch` (two runs each): `cur()`
+775-1,330 ms → 53-68 ms, `setCurrency` (both runs) 1.5-2.5 s → 0.56-0.77 s.
+
+Not changed: the second `setCurrency` run. The guard that skipped it for
+readers on ALGO (the `restoreDisplayChoices` entry above) was removed in
+`a24ca08` with its test changed to expect the swap to re-apply ALGO
+formatting, so it reads as deliberate. Scoping it to the swapped fragment
+would halve the rest; that is a behaviour question for the user.
