@@ -222,7 +222,10 @@ describe("installSignIn", () => {
 
   it("signs in instead of following the link", async () => {
     expect(click(document.getElementById("in")!)).toBe(true);
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    // The digest before `start` runs on Node's thread pool: one tick is not always enough.
+    for (let i = 0; i < 200 && !start.mock.calls.length; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
     expect(start.mock.calls[0][0].provider).toBe("google");
   });
 

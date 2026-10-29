@@ -690,3 +690,47 @@ describe("a band without a counter", () => {
     expect(grid.children.length).toBe(0);
   });
 });
+
+describe("a position list already in its order", () => {
+  const SERVED = [
+    { pid: "p1-a-1", amount: 10 },
+    { pid: "p1-a-2", amount: 20 },
+  ];
+
+  /** Load pins.js and return the test ids of positions it moved. */
+  function movedWhileLoading() {
+    const observer = new MutationObserver(() => {});
+    observer.observe(document.body, { childList: true, subtree: true });
+    load();
+    const records = observer.takeRecords();
+    observer.disconnect();
+    return records
+      .flatMap((record) => Array.from(record.addedNodes))
+      .filter((node) => node.classList && node.classList.contains("position"))
+      .map((node) => node.dataset.testid);
+  }
+
+  test("loads without moving a position", () => {
+    mountPositions(SERVED);
+
+    expect(movedWhileLoading()).toEqual([]);
+  });
+
+  test("an element after the positions still ends up before them", () => {
+    const container = mountPositions(SERVED);
+    const after = document.createElement("p");
+    container.appendChild(after);
+
+    expect(movedWhileLoading()).toEqual(["asset-a-0", "asset-a-1"]);
+    expect(container.firstElementChild).toBe(after);
+  });
+
+  test("a stored pin still moves its position", () => {
+    const container = mountPositions(SERVED);
+    load().togglePosition(controlAt(container, 1), document);
+    document.body.innerHTML = "";
+    mountPositions(SERVED);
+
+    expect(movedWhileLoading()).toEqual(["asset-a-1", "asset-a-0"]);
+  });
+});

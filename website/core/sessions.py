@@ -3,9 +3,25 @@
 See docs/logbook.md (website/core/sessions.py, 2026-10-03).
 """
 
+import hashlib
+import logging
+
 from django.contrib.sessions.backends.base import CreateError, UpdateError
 from django.contrib.sessions.backends.cache import KEY_PREFIX as CACHE_ONLY_KEY_PREFIX
 from django.contrib.sessions.backends.cached_db import SessionStore as CachedDbStore
+
+#: INFO in production (config/settings/production.py); see docs/logbook.md.
+trace_logger = logging.getLogger("core.sessiontrace")
+
+
+def key_digest(session_key):
+    """Return a short one-way name for `session_key`, safe to log.
+
+    :param session_key: a session key, e.g. the value of the session cookie
+    :type session_key: str
+    :return: str
+    """
+    return hashlib.sha256(session_key.encode()).hexdigest()[:12]
 
 
 class SessionStore(CachedDbStore):

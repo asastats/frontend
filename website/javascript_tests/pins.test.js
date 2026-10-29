@@ -1199,3 +1199,63 @@ describe("a section that can be dragged but not pinned", () => {
     expect(orderOf(rows)).toEqual(["fa", "fb"]);
   });
 });
+
+describe("a page already in its order", () => {
+  /**
+   * Mount both sections, let `prepare` alter the asset list, load pins.js
+   * and return the entries it moved (each append of one is a removal and an
+   * insertion, so an insertion is enough to count).
+   *
+   * @param {function(Element): void} prepare - changes made before loading.
+   * @returns {string[]} ids of the entries inserted while loading.
+   */
+  function movedWhileLoading(prepare = () => {}) {
+    document.body.innerHTML = "";
+    mountSection("asasec", ASSETS, false);
+    mountSection("nftsec", COLLECTIONS, true);
+    prepare(assetContainer());
+    const observer = new MutationObserver(() => {});
+    observer.observe(document.body, { childList: true, subtree: true });
+    jest.resetModules();
+    delete require.cache[require.resolve("../static/js/pins.js")];
+    require("../static/js/pins.js");
+    const records = observer.takeRecords();
+    observer.disconnect();
+    return records
+      .flatMap((record) => Array.from(record.addedNodes))
+      .filter((node) => node.classList && node.classList.contains("fitem"))
+      .map((node) => node.id);
+  }
+
+  test("loads without moving an entry", () => {
+    expect(movedWhileLoading()).toEqual([]);
+  });
+
+  test("whitespace between the entries does not count as out of order", () => {
+    const moved = movedWhileLoading((container) => {
+      Array.from(container.children).forEach((entry) => {
+        container.insertBefore(document.createTextNode("\n  "), entry);
+      });
+    });
+
+    expect(moved).toEqual([]);
+  });
+
+  test("an element after the entries still ends up before them", () => {
+    let after;
+    const moved = movedWhileLoading((container) => {
+      after = document.createElement("p");
+      container.appendChild(after);
+    });
+
+    expect(moved).toEqual(ASSETS);
+    expect(assetContainer().firstElementChild).toBe(after);
+    expect(orderOf(assetContainer())).toEqual(ASSETS);
+  });
+
+  test("a stored pin still moves its entry", () => {
+    mount().toggle("f246516580", document);
+
+    expect(movedWhileLoading()).toEqual(["f246516580", ASSET, ALGO]);
+  });
+});

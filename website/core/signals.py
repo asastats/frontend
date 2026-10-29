@@ -7,8 +7,10 @@ from django.contrib.auth.signals import user_logged_in
 from django.db.models.signals import post_save
 from django.dispatch import Signal, receiver
 
+from core.appclient import app_client
 from core.apple import revoke_for_user
 from core.models import AppleSignInToken, Profile
+from core.sessions import key_digest, trace_logger
 
 #: Sent with ``user`` when an account is closed (deactivated, deleted within a
 #: week). Receivers drop what must stop at once, e.g. push delivery.
@@ -103,3 +105,17 @@ def keep_apple_token_on_signup(sender, request, user, **kwargs):
 def revoke_apple_token_on_deactivation(sender, user, **kwargs):
     """Revoke the user's Sign in with Apple token when the account is closed."""
     revoke_for_user(user)
+
+
+@receiver(user_logged_in)
+def trace_app_login(sender, user, request, **kwargs):
+    """Log the session key an app sign-in starts, as :func:`core.sessions.key_digest`."""
+    client = app_client(request) if request is not None else None
+    if client is not None and request.session.session_key:
+        trace_logger.info(
+            "App session %s signed in: user %s, %s %s",
+            key_digest(request.session.session_key),
+            user.pk,
+            client.platform,
+            client.version_string,
+        )

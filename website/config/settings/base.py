@@ -87,6 +87,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "core.middleware.AppClientMiddleware",
+    "core.middleware.AppSessionTraceMiddleware",
     "core.middleware.CustomMinifyHtmlMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",

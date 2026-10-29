@@ -99,6 +99,12 @@ LOGGING = {
             "level": "WARNING",
             "propagate": False,
         },
+        # App sessions lost (docs/logbook.md, core/sessions.py).
+        "core.sessiontrace": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 

@@ -2,10 +2,13 @@
 
 import re
 
+from django.conf import settings
+from django.contrib.auth import SESSION_KEY
 from django.http import Http404
 from django_minify_html.middleware import MinifyHtmlMiddleware
 
 from core.appclient import parse_app_client, widget_hidden
+from core.sessions import key_digest, trace_logger
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 
 
@@ -60,3 +63,37 @@ class AppClientMiddleware:
                 raise Http404("widget not available in the app")
 
         return self.get_response(request)
+
+
+class AppSessionTraceMiddleware:
+    """Log an app request whose session cookie finds no session, or whose
+    session loses its user; must follow :class:`AppClientMiddleware`."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        cookie = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
+        if not cookie or request.app_client is None:
+            return self.get_response(request)
+
+        had_user = SESSION_KEY in request.session
+        if request.session.session_key is None:
+            trace_logger.info(
+                "App session %s not found: %s", key_digest(cookie), _where(request)
+            )
+
+        response = self.get_response(request)
+        user = getattr(request, "user", None)
+        if had_user and user is not None and not user.is_authenticated:
+            trace_logger.info(
+                "App session %s lost its user: %s", key_digest(cookie), _where(request)
+            )
+
+        return response
+
+
+def _where(request):
+    """Return the app and the request line, for :class:`AppSessionTraceMiddleware`."""
+    client = request.app_client
+    return f"{client.platform} {client.version_string} {request.method} {request.path}"

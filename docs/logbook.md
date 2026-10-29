@@ -5594,3 +5594,75 @@ plugin says the sheet exists; the Apple link keeps working as a web flow
 where there is no sheet (Android), and is intercepted only once armed
 (`data-app-connect-ready`), because availability is async and a click cannot
 be cancelled after an await.
+
+## wallet/package.json: `@capacitor/core` 8.6.0, in step with mobile (2026-10-29)
+
+Mobile moved to Capacitor 8.6.0 (mobile logbook). `@capacitor/core`'s `dist`
+is byte-identical between 8.5.3 and 8.6.0, so `app.js` was not rebuilt.
+
+## wallet/src/app/signIn.test.ts: "signs in instead of following the link" waits for `start` (2026-10-29)
+
+It failed about one full run in two on the Pi, before and after the bump
+alike (checked with 8.5.3 reinstalled): `signIn` awaits
+`crypto.subtle.digest`, which Node runs on its thread pool, before
+`WebAuth.start`, and one `setTimeout(0)` does not always cover that when 33
+suites run in parallel. The test now polls for the call, up to 1 s.
+
+## website/core/sessions.py `trace_logger`, core/middleware.py `AppSessionTraceMiddleware`, core/signals.py `trace_app_login` — why the app gets signed out (2026-10-29)
+
+"Problem 5" (workspace `capacitor/BETA-ADB-RESULTS.md`): the debug app on the
+Redmi was signed out twice (2026-10-27 about 17:30, 2026-10-28 between 18:55
+and 20:13) with a `sessionid` cookie still in the WebView. The second time the
+cookie was the one set at about 13:10, though the reader had signed in since.
+
+Ruled out from the code: `SECRET_KEY` rotation (fixed in the env file), a
+password change ending other sessions (nothing writes `user.password`; wallet
+sign-in goes through allauth's `perform_login`), a missing auth backend (both
+are listed), a prefetch of the logout URL (`ACCOUNT_LOGOUT_ON_GET`; nothing on
+the site prefetches), `push.ts` (acts only on real clicks), the F4
+`logout()` calls (they run in the system browser's cookie jar), and a cache
+flush (`cached_db`, this file's 2026-10-03 entry).
+
+Leading explanation, not proven: a sign-in cycles the session key and deletes
+the old session. Android's WebView writes cookies to disk in batches, and the
+app never called `CookieManager.flush()`. If the process died (MIUI kills it
+behind wallets, `adb install -r`, a force-stop) before the batch, the app came
+back with the older cookie, whose session was gone. Both incidents followed
+such a death. Mobile now flushes in `MainActivity.onPause` (mobile logbook).
+
+To settle it, three INFO lines on the `core.sessiontrace` logger (its own
+logger at INFO in production; root stays at WARNING), app requests only, the
+key as a 12-character SHA-256 prefix (`key_digest`), never the key:
+
+- `App session <digest> signed in: user <pk>, <platform> <version>`, from
+  `user_logged_in` (after `cycle_key`, so it is the key the app is sent);
+- `App session <digest> not found: <platform> <version> <method> <path>`, a
+  cookie that loads no session;
+- `App session <digest> lost its user: …`, a session that had `_auth_user_id`
+  when the request came in and an anonymous user when it left (auth hash,
+  inactive user, backend, or a real `/accounts/logout/`).
+
+Reading it: a "not found" digest equal to an *older* "signed in" line of the
+same user means the WebView lost the newer cookie; equal to the *latest*
+means the server lost the session. Remove the three once that is known.
+
+### `website/static/js/pins.js` `appendAll`: no re-append when the order already stands (2026-10-29)
+
+The guard proposed in the 2026-10-28 measurement above, approved by the user
+on 2026-10-29. `layout` and `layoutPositions` appended every entry even when
+nothing would move (~0.25-0.31 s of the 1.9 s load task on the heavy address,
+Redmi 9). `appendAll` skips when the parent's last *element* children already
+are the wanted entries in order: appending would then move only whitespace
+text nodes, so the result is the same. Any non-entry element among or after
+the entries fails the check and gets the full re-append, which puts it before
+the entries exactly as before (tests "an element after the entries…"). Not
+measured on the phone yet; it needs a deploy.
+
+#### Addendum, same day: the mechanism reproduced on the Redmi
+
+With the mobile flush build (APK 115107): a cookie set just before a
+force-stop without a pause was lost 3 times of 3, and kept 3 of 3 when the
+app went through `onPause` first (workspace `capacitor/BETA-ADB-RESULTS.md`).
+That shows the WebView can come back with an older cookie; it does not show
+the two incidents were this, so the trace stays until a sign-out is logged
+or enough time passes without one.

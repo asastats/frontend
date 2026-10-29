@@ -299,7 +299,23 @@
       return !isPinned(entry);
     });
 
-    top.concat(rest).forEach(function (entry) {
+    appendAll(parent, top.concat(rest));
+  }
+
+  /**
+   * Append `wanted` to `parent` in order, unless its last element children
+   * already are `wanted`: then appending would move only whitespace.
+   * @param {Element} parent - the container.
+   * @param {Element[]} wanted - its entries in the order they must end in.
+   */
+  function appendAll(parent, wanted) {
+    var node = parent.lastElementChild;
+    for (var i = wanted.length - 1; i >= 0 && node === wanted[i]; i--) {
+      node = node.previousElementSibling;
+    }
+    if (i < 0) return;
+
+    wanted.forEach(function (entry) {
       parent.appendChild(entry);
     });
   }
@@ -453,9 +469,7 @@
     var rest = entries.filter(function (position) {
       return top.indexOf(position) === -1;
     });
-    top.concat(rest).forEach(function (position) {
-      parent.appendChild(position);
-    });
+    appendAll(parent, top.concat(rest));
   }
 
   /**
