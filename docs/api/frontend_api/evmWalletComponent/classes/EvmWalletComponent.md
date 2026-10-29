@@ -6,7 +6,7 @@
 
 # Class: EvmWalletComponent
 
-Defined in: [evmWalletComponent.ts:67](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L67)
+Defined in: [evmWalletComponent.ts:69](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L69)
 
 Drives the EVM / xChain wallet flow for both authentication (login) and
 authorization (linking). The two modes differ only by `apiBase`
@@ -32,7 +32,7 @@ await c.bind();
 
 > **new EvmWalletComponent**(`element`, `apiBase?`, `deps`): `EvmWalletComponent`
 
-Defined in: [evmWalletComponent.ts:82](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L82)
+Defined in: [evmWalletComponent.ts:84](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L84)
 
 #### Parameters
 
@@ -64,7 +64,7 @@ Injected wallet/network collaborators.
 
 > `private` **apiBase**: `string`
 
-Defined in: [evmWalletComponent.ts:71](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L71)
+Defined in: [evmWalletComponent.ts:73](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L73)
 
 Base path of the EVM walletauth endpoints.
 
@@ -74,7 +74,7 @@ Base path of the EVM walletauth endpoints.
 
 > `private` **connectors**: [`EvmConnector`](../interfaces/EvmConnector.md)[] = `[]`
 
-Defined in: [evmWalletComponent.ts:75](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L75)
+Defined in: [evmWalletComponent.ts:77](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L77)
 
 Connectors rendered on the last `render`, for click lookup.
 
@@ -84,7 +84,7 @@ Connectors rendered on the last `render`, for click lookup.
 
 > `private` **deps**: [`EvmDeps`](../interfaces/EvmDeps.md)
 
-Defined in: [evmWalletComponent.ts:73](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L73)
+Defined in: [evmWalletComponent.ts:75](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L75)
 
 Injected collaborators.
 
@@ -94,7 +94,7 @@ Injected collaborators.
 
 > `private` **element**: `HTMLElement`
 
-Defined in: [evmWalletComponent.ts:69](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L69)
+Defined in: [evmWalletComponent.ts:71](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L71)
 
 The bound container (carries `#evm-wallet-list` and error slot).
 
@@ -104,7 +104,7 @@ The bound container (carries `#evm-wallet-list` and error slot).
 
 > `private` **addEventListeners**(): `void`
 
-Defined in: [evmWalletComponent.ts:182](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L182)
+Defined in: [evmWalletComponent.ts:184](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L184)
 
 Wires click delegation; routes connector-button clicks to the flow.
 
@@ -116,9 +116,9 @@ Wires click delegation; routes connector-button clicks to the flow.
 
 ### authorizeWith()
 
-> **authorizeWith**(`connector`): `Promise`\<`void`\>
+> **authorizeWith**(`connector`): `Promise`\<`boolean`\>
 
-Defined in: [evmWalletComponent.ts:204](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L204)
+Defined in: [evmWalletComponent.ts:207](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L207)
 
 Connects the chosen wallet and runs the nonce → sign → verify exchange.
 
@@ -132,7 +132,9 @@ The wallet the user selected.
 
 #### Returns
 
-`Promise`\<`void`\>
+`Promise`\<`boolean`\>
+
+Whether the reader was signed in.
 
 ***
 
@@ -140,7 +142,7 @@ The wallet the user selected.
 
 > **bind**(): `Promise`\<`void`\>
 
-Defined in: [evmWalletComponent.ts:93](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L93)
+Defined in: [evmWalletComponent.ts:95](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L95)
 
 Discovers connectors, renders buttons, and wires click delegation.
 
@@ -150,11 +152,36 @@ Discovers connectors, renders buttons, and wires click delegation.
 
 ***
 
+### connect()
+
+> `private` **connect**(`connector`): `Promise`\<\{ `address`: `string`; `provider`: [`Eip1193Provider`](../interfaces/Eip1193Provider.md); \}\>
+
+Defined in: [evmWalletComponent.ts:271](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L271)
+
+Opens the wallet; WalletConnect's picker cannot show above the open login
+dialog (top layer), so the dialog closes until the connect ends.
+
+#### Parameters
+
+##### connector
+
+[`EvmConnector`](../interfaces/EvmConnector.md)
+
+The wallet the user selected.
+
+#### Returns
+
+`Promise`\<\{ `address`: `string`; `provider`: [`Eip1193Provider`](../interfaces/Eip1193Provider.md); \}\>
+
+The provider and address.
+
+***
+
 ### getCsrfToken()
 
 > `private` **getCsrfToken**(): `string`
 
-Defined in: [evmWalletComponent.ts:154](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L154)
+Defined in: [evmWalletComponent.ts:156](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L156)
 
 Reads the CSRF token from the cookie, falling back to a hidden input.
 
@@ -166,11 +193,33 @@ The CSRF token, or an empty string when none is present.
 
 ***
 
+### headers()
+
+> `private` **headers**(): `object`
+
+Defined in: [evmWalletComponent.ts:337](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L337)
+
+Shared headers, including CSRF for the session-authenticated link API.
+
+#### Returns
+
+`object`
+
+##### Content-Type
+
+> **Content-Type**: `string` = `"application/json"`
+
+##### X-CSRFToken
+
+> **X-CSRFToken**: `string`
+
+***
+
 ### render()
 
 > `private` **render**(): `Promise`\<`void`\>
 
-Defined in: [evmWalletComponent.ts:103](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L103)
+Defined in: [evmWalletComponent.ts:105](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L105)
 
 Renders one button per discovered connector into `#evm-wallet-list`
 (falling back to the container itself). With no connectors, reveals the
@@ -186,7 +235,7 @@ Renders one button per discovered connector into `#evm-wallet-list`
 
 > `private` **showError**(`message`): `void`
 
-Defined in: [evmWalletComponent.ts:177](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L177)
+Defined in: [evmWalletComponent.ts:179](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L179)
 
 Surfaces an error through the host, falling back to a transient notice.
 
@@ -211,10 +260,88 @@ Human-readable error text (treated as untrusted).
 
 > `private` **showNoWallets**(): `void`
 
-Defined in: [evmWalletComponent.ts:140](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L140)
+Defined in: [evmWalletComponent.ts:142](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L142)
 
 Reveals the no-wallet error banner when present.
 
 #### Returns
 
 `void`
+
+***
+
+### signInWith()
+
+> **signInWith**(`provider`, `address`, `name`): `Promise`\<`boolean`\>
+
+Defined in: [evmWalletComponent.ts:290](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L290)
+
+Runs the sign-in with a provider that is already connected (a resumed session).
+
+#### Parameters
+
+##### provider
+
+[`Eip1193Provider`](../interfaces/Eip1193Provider.md)
+
+The connected provider.
+
+##### address
+
+`string`
+
+Its address.
+
+##### name
+
+`string`
+
+The wallet's name.
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+Whether the reader was signed in.
+
+***
+
+### verify()
+
+> **verify**(`apiBase`, `nonce`, `signature`, `binding`): `Promise`\<`boolean`\>
+
+Defined in: [evmWalletComponent.ts:307](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L307)
+
+Posts a signature to `<apiBase>/verify/` and follows the redirect.
+
+#### Parameters
+
+##### apiBase
+
+`string`
+
+The login or link API base.
+
+##### nonce
+
+`string`
+
+The nonce that was signed.
+
+##### signature
+
+`string`
+
+The EIP-191 signature.
+
+##### binding
+
+`string`
+
+The page's login binding secret.
+
+#### Returns
+
+`Promise`\<`boolean`\>
+
+Whether the reader was signed in.

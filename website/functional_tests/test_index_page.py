@@ -153,7 +153,9 @@ class IndexLogoTest(FunctionalTest):
             "const r = e => document.getElementById(e).getBoundingClientRect();"
             "const logo = r('logo'), field = r('id_address');"
             "return {logo: logo.height, centre: logo.left + logo.width / 2,"
-            "        field: field.bottom, viewport: innerHeight, mid: innerWidth / 2};"
+            # clientWidth: without the scrollbar a short viewport gets.
+            "        field: field.bottom, viewport: innerHeight,"
+            "        mid: document.documentElement.clientWidth / 2};"
         )
 
     def test_a_phone_on_its_side_shows_a_small_centred_logo_and_the_field(self):

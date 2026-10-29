@@ -198,9 +198,10 @@ APPLE_SIGN_IN_ENABLED = all(
 )
 #: The app's bundle id: the audience of native Sign in with Apple tokens (O3).
 APPLE_APP_BUNDLE_ID = "com.asastats.app"
-#: Google's iOS OAuth client for native sign-in (O3); not a secret, and empty
-#: until it exists (capacitor/O3-USER-STEPS.md A4).
-GOOGLE_IOS_CLIENT_ID = ""
+#: Google's iOS OAuth client for native sign-in (O3); not a secret.
+GOOGLE_IOS_CLIENT_ID = (
+    "1054116980925-ev23pc8lk1vpsnvfa2ohfd4u9467skcr.apps.googleusercontent.com"
+)
 
 SOCIALACCOUNT_PROVIDERS = {
     # https://developer.apple.com/account/resources/identifiers (Services IDs);

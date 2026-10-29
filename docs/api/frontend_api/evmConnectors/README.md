@@ -14,4 +14,5 @@
 
 - [discoverInjectedConnectors](functions/discoverInjectedConnectors.md)
 - [getDefaultConnectors](functions/getDefaultConnectors.md)
+- [restoreWalletConnect](functions/restoreWalletConnect.md)
 - [walletConnectConnector](functions/walletConnectConnector.md)

@@ -6,7 +6,7 @@
 
 # Interface: EvmBootstrapDeps
 
-Defined in: [evmBootstrap.ts:9](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L9)
+Defined in: [evmBootstrap.ts:11](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L11)
 
 Injectable factories so the bootstrap can be tested without viem/WalletConnect.
 
@@ -16,7 +16,7 @@ Injectable factories so the bootstrap can be tested without viem/WalletConnect.
 
 > **connectorFactory**: (`projectId`) => [`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[] \| `Promise`\<[`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)[]\>
 
-Defined in: [evmBootstrap.ts:11](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L11)
+Defined in: [evmBootstrap.ts:13](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L13)
 
 Builds the connector list for a given WalletConnect project id.
 
@@ -32,10 +32,30 @@ Builds the connector list for a given WalletConnect project id.
 
 ***
 
+### restore
+
+> **restore**: (`projectId`) => `Promise`\<[`RestoredProvider`](../../walletResumeEvm/interfaces/RestoredProvider.md)\>
+
+Defined in: [evmBootstrap.ts:17](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L17)
+
+Inits WalletConnect without its modal after a restart.
+
+#### Parameters
+
+##### projectId
+
+`string`
+
+#### Returns
+
+`Promise`\<[`RestoredProvider`](../../walletResumeEvm/interfaces/RestoredProvider.md)\>
+
+***
+
 ### signer
 
 > **signer**: [`EvmSigner`](../../evmWalletComponent/type-aliases/EvmSigner.md)
 
-Defined in: [evmBootstrap.ts:13](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L13)
+Defined in: [evmBootstrap.ts:15](https://github.com/asastats/frontend/blob/main/wallet/src/evmBootstrap.ts#L15)
 
 Signs the challenge message.

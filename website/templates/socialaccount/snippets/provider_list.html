@@ -13,10 +13,12 @@
 {% endfor %}
 {% endif %}
   {% if provider.id == "google" and APP_CLIENT %}
-  {# Google refuses sign-in inside the app's WebView (F4, Q3). #}
-  <p class="text-sm text-base-content/70" id="id_google_connect_on_website">Connect Google on the website.</p>
+  {# Google refuses sign-in inside the app's WebView (F4, Q3); app.js shows the button where the phone has Google's native sheet (O3) and hides the note. #}
+  <a class="btn btn-outline justify-start" role="button" id="id_google_connect" href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}" data-app-connect="google" hidden>{{provider.name}}</a>
+  <p class="text-sm text-base-content/70" id="id_google_connect_on_website" data-app-connect-fallback="google">Connect Google on the website.</p>
   {% else %}
-  <a class="btn btn-outline justify-start" role="button" href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}">{{provider.name}}</a>
+  {# data-app-connect: app.js connects Apple with the native sheet on iOS (O3); elsewhere the link works as it is. #}
+  <a class="btn btn-outline justify-start" role="button" href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}"{% if provider.id == "apple" and APP_CLIENT %} data-app-connect="apple"{% endif %}>{{provider.name}}</a>
   {% endif %}
 {% endif %}
 {% endfor %}

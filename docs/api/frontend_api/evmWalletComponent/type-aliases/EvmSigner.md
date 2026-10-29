@@ -8,7 +8,7 @@
 
 > **EvmSigner** = (`provider`, `address`, `message`) => `Promise`\<`string`\>
 
-Defined in: [evmWalletComponent.ts:31](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L31)
+Defined in: [evmWalletComponent.ts:33](https://github.com/asastats/frontend/blob/main/wallet/src/evmWalletComponent.ts#L33)
 
 Signs `message` for `address` via `provider`; resolves to a 0x signature.
 

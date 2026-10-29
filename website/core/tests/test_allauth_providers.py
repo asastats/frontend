@@ -253,7 +253,8 @@ class TestCoreAllauthAppSignIn:
 
 @pytest.mark.django_db
 class TestCoreAllauthConnectionsInApp:
-    """Google refuses the app's WebView, so it is connected on the website (F4, Q3)."""
+    """Google refuses the app's WebView: connected with the native sheet (O3) where
+    app.js finds one, else on the website (F4, Q3)."""
 
     def _connections(self, client, django_user_model, **headers):
         user = django_user_model.objects.create_user(username="connect", password="x")
@@ -271,9 +272,25 @@ class TestCoreAllauthConnectionsInApp:
             HTTP_USER_AGENT="Mozilla/5.0 ASAStatsApp/1.1.0 (android)",
         )
 
-        assert "/accounts/google/login/" not in html
+        assert re.search(
+            r'<a [^>]*id="id_google_connect" [^>]*data-app-connect="google" hidden>', html
+        )
+        assert 'data-app-connect-fallback="google"' in html
         assert 'id="id_google_connect_on_website"' in html
         assert "/accounts/github/login/" in html
+        assert 'data-app-connect="github"' not in html
+
+    @override_settings(APPLE_SIGN_IN_ENABLED=True)
+    def test_core_allauth_connections_in_app_apple_is_native_ready(
+        self, client, django_user_model
+    ):
+        html = self._connections(
+            client,
+            django_user_model,
+            HTTP_USER_AGENT="Mozilla/5.0 ASAStatsApp/1.1.0 (ios)",
+        )
+
+        assert re.search(r'href="/accounts/apple/login/\?process=connect"[^>]* data-app-connect="apple"', html)
 
     def test_core_allauth_connections_in_a_browser_with_google(
         self, client, django_user_model
@@ -282,3 +299,4 @@ class TestCoreAllauthConnectionsInApp:
 
         assert "/accounts/google/login/" in html
         assert "id_google_connect_on_website" not in html
+        assert "data-app-connect" not in html

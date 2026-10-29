@@ -8,7 +8,7 @@
 
 > **walletConnectConnector**(`projectId`): [`EvmConnector`](../../evmWalletComponent/interfaces/EvmConnector.md)
 
-Defined in: [evmConnectors.ts:77](https://github.com/asastats/frontend/blob/main/wallet/src/evmConnectors.ts#L77)
+Defined in: [evmConnectors.ts:78](https://github.com/asastats/frontend/blob/main/wallet/src/evmConnectors.ts#L78)
 
 Build a WalletConnect connector. The provider library is imported lazily so
 the dependency only loads when a project id is configured and the user picks

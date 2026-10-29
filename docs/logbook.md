@@ -5579,3 +5579,18 @@ ticket, no second session (unlike F4).
   Credential Manager needs it as server client id, and this spares the app a
   build-time value. `GOOGLE_IOS_CLIENT_ID` stays empty until the user creates
   the iOS client (`capacitor/O3-USER-STEPS.md` A4).
+
+**Addendum, same day: the page side (`wallet/src/app/signIn.ts`,
+`templates/socialaccount/snippets/provider_list.html`).** `signIn` asks
+`NativeSignIn.isAvailable` first; an app version without the plugin rejects,
+which reads as "no sheet", so old shells keep F4 unchanged. A native sign-in
+is a nonce `fetch`, the sheet, then a hidden form POST (not `fetch`), so
+allauth's answer, a redirect or its signup form, becomes the next page as in
+the web flow. The sheet's `unavailable` (Android: no Google account on the
+phone) falls back to F4 for sign-in; F4 has no connect, so Connections says
+to connect on the website instead. On Connections the Google button is served
+`hidden` next to the website note, and `armConnect` shows it only where the
+plugin says the sheet exists; the Apple link keeps working as a web flow
+where there is no sheet (Android), and is intercepted only once armed
+(`data-app-connect-ready`), because availability is async and a click cannot
+be cancelled after an await.
