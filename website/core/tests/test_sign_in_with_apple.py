@@ -15,7 +15,11 @@ class TestSignInWithAppleConfiguration:
     def test_apple_provider_maps_allauths_names(self):
         app = settings.SOCIALACCOUNT_PROVIDERS["apple"]["APP"]
 
-        assert app["client_id"] == settings.APPLE_CLIENT_ID
+        # Services ID first (allauth's API calls), then the app's bundle id (O3).
+        assert app["client_id"] == ",".join(
+            filter(None, (settings.APPLE_CLIENT_ID, settings.APPLE_APP_BUNDLE_ID))
+        )
+        assert app["client_id"].endswith("com.asastats.app")
         assert app["secret"] == settings.APPLE_KEY_ID
         assert app["key"] == settings.APPLE_TEAM_ID
         assert app["settings"]["certificate_key"] == settings.APPLE_PRIVATE_KEY
@@ -82,7 +86,9 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from core.apple import (
     APPLE_AUDIENCE,
     APPLE_REVOKE_URL,
+    APPLE_TOKEN_URL,
     apple_client_secret,
+    exchange_apple_code,
     revoke_apple_token,
     revoke_for_user,
 )
@@ -110,10 +116,13 @@ APPLE_CONFIGURED = override_settings(
 )
 
 
-def _sociallogin(user, provider="apple", secret="r.refresh"):
+def _sociallogin(user, provider="apple", secret="r.refresh", state=None):
     token = SimpleNamespace(token_secret=secret) if secret is not None else None
     return SimpleNamespace(
-        user=user, account=SimpleNamespace(provider=provider), token=token
+        user=user,
+        account=SimpleNamespace(provider=provider),
+        token=token,
+        state=state or {},
     )
 
 
@@ -279,5 +288,83 @@ class TestAppleTokenLifecycle:
 
         assert delete_deactivated() == 1
 
-        revoke.assert_called_once_with("r.refresh")
+        revoke.assert_called_once_with("r.refresh", "")
         assert not AppleSignInToken.objects.exists()
+
+    def test_keep_apple_token_stores_the_native_client(self, django_user_model):
+        user = self._user(django_user_model)
+
+        keep_apple_token(
+            _sociallogin(user, state={"apple_client_id": "com.asastats.app"})
+        )
+
+        assert AppleSignInToken.objects.get(user=user).client_id == "com.asastats.app"
+
+    def test_revoke_for_user_uses_the_issued_client(self, django_user_model, mocker):
+        user = self._user(django_user_model)
+        AppleSignInToken.objects.create(
+            user=user, refresh_token="r.app", client_id="com.asastats.app"
+        )
+        revoke = mocker.patch("core.apple.revoke_apple_token", return_value=True)
+
+        revoke_for_user(user)
+
+        revoke.assert_called_once_with("r.app", "com.asastats.app")
+
+
+class TestAppleNativeClient:
+    """Native sign-in (O3): the app's bundle id as Apple's client."""
+
+    @APPLE_CONFIGURED
+    def test_apple_client_secret_for_the_app(self):
+        secret = apple_client_secret(now=1_700_000_000, client_id="com.asastats.app")
+        claims = jwt.decode(secret, options={"verify_signature": False})
+        assert claims["sub"] == "com.asastats.app"
+
+    @APPLE_CONFIGURED
+    def test_revoke_apple_token_for_the_app(self, mocker):
+        post = mocker.patch(
+            "core.apple.requests.post", return_value=mocker.Mock(status_code=200)
+        )
+
+        assert revoke_apple_token("r.app", "com.asastats.app") is True
+        assert post.call_args.kwargs["data"]["client_id"] == "com.asastats.app"
+
+    @APPLE_CONFIGURED
+    def test_exchange_apple_code(self, mocker):
+        response = mocker.Mock(status_code=200)
+        response.json.return_value = {"access_token": "a", "refresh_token": "r"}
+        post = mocker.patch("core.apple.requests.post", return_value=response)
+
+        assert exchange_apple_code("c.code", "com.asastats.app") == {
+            "access_token": "a",
+            "refresh_token": "r",
+        }
+        assert post.call_args.args[0] == APPLE_TOKEN_URL
+        data = post.call_args.kwargs["data"]
+        assert data["grant_type"] == "authorization_code"
+        assert data["client_id"] == "com.asastats.app"
+
+    @APPLE_CONFIGURED
+    def test_exchange_apple_code_without_refresh_token(self, mocker):
+        response = mocker.Mock(status_code=200)
+        response.json.return_value = {"access_token": "a"}
+        mocker.patch("core.apple.requests.post", return_value=response)
+
+        assert exchange_apple_code("c.code", "com.asastats.app") is None
+
+    @APPLE_CONFIGURED
+    def test_exchange_apple_code_refused(self, mocker):
+        mocker.patch(
+            "core.apple.requests.post", return_value=mocker.Mock(status_code=400)
+        )
+
+        assert exchange_apple_code("c.code", "com.asastats.app") is None
+
+    @APPLE_CONFIGURED
+    def test_exchange_apple_code_unreachable(self, mocker):
+        mocker.patch(
+            "core.apple.requests.post", side_effect=requests.ConnectionError("down")
+        )
+
+        assert exchange_apple_code("c.code", "com.asastats.app") is None

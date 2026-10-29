@@ -75,7 +75,12 @@ def keep_apple_token(sociallogin):
         return
 
     AppleSignInToken.objects.update_or_create(
-        user=sociallogin.user, defaults={"refresh_token": token.token_secret}
+        user=sociallogin.user,
+        defaults={
+            "refresh_token": token.token_secret,
+            # Set by the app's native sign-in (O3); the web flow leaves it empty.
+            "client_id": sociallogin.state.get("apple_client_id", ""),
+        },
     )
 
 

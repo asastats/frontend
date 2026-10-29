@@ -5539,3 +5539,43 @@ ms, even when the order would not change), `htmx` ~0.5 s (vendor), jQuery
 ~0.23 s. Possible guard, not built (waiting for the user): `layout` and
 `layoutPositions` return early when the entries already stand in the wanted
 order. `toolbar.js` has the user's uncommitted edit, so it was not touched.
+
+---
+
+## core/views_appnative.py, core/apple.py (code exchange), core/models.py:AppleSignInToken.client_id, config/settings/base.py (Apple audiences, GOOGLE_IOS_CLIENT_ID) — native Sign in with Apple and Google in the app (O3, 2026-10-29)
+
+Design and threats: `capacitor/O3-NATIVE-SIGNIN-DESIGN.md` and
+`-SECURITY.md` (the user approved Google native on iOS too and native
+linking on 2026-10-29). The app shows the platform's own sheet and posts the
+ID token from the WebView, so the WebView's own session is signed in: no
+ticket, no second session (unlike F4).
+
+- **Checked against allauth 65.21.0's source** (a PyPI copy in the
+  workspace's `vendor/`; the venv has 65.20.1 and the tests pass on it).
+  Apple: `AppleProvider.get_auds()` splits `client_id` on commas and
+  `AppleOAuth2Client.get_client_id()` uses the first for every API call, so
+  the settings now list `"<Services ID>,com.asastats.app"`: the web flow is
+  unchanged and native tokens (audience = bundle id) verify. Google:
+  `verify_token` accepts only `app.client_id`, but iOS tokens may carry the
+  iOS client id, so the view calls allauth's `jwtkit.verify_and_decode` with
+  both audiences and both issuer spellings, then
+  `provider.sociallogin_from_response` and `complete_social_login`, the same
+  steps allauth's headless `ProviderTokenView` takes. `jwtkit` also puts each
+  `jti` on a cache blacklist, so a Google token is single-use on its own.
+- **Nonce**: issued by `native/nonce/` (app user agent, POST, CSRF), kept in
+  the session as SHA-256 only, popped on the first sign-in attempt whatever
+  its outcome, 5 minutes. Apple's sheet takes `SHA-256(nonce)` and puts that
+  in the token; Google puts the nonce itself, so the view hashes Google's.
+- **Apple refresh token** (revocation on account deletion, App Review
+  5.1.1(v)): the sheet's authorization code is exchanged with
+  `client_id = com.asastats.app`; a sign-in without a refresh token is
+  refused rather than leaving an account Apple's revocation could not reach.
+  `AppleSignInToken.client_id` keeps who the token was issued to (empty =
+  the Services ID), and revocation signs its client secret for that client.
+- **Linking** (`process=connect`) needs the session's user; allauth's connect
+  rules decide (an account owned by another user is refused with allauth's
+  message, test `..._connect_taken_account`).
+- `native/nonce/` also returns the website's Google client id: Android's
+  Credential Manager needs it as server client id, and this spares the app a
+  build-time value. `GOOGLE_IOS_CLIENT_ID` stays empty until the user creates
+  the iOS client (`capacitor/O3-USER-STEPS.md` A4).

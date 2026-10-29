@@ -196,13 +196,20 @@ APPLE_PRIVATE_KEY = read_optional_file(APPLE_PRIVATE_KEY_FILE)
 APPLE_SIGN_IN_ENABLED = all(
     (APPLE_CLIENT_ID, APPLE_KEY_ID, APPLE_TEAM_ID, APPLE_PRIVATE_KEY)
 )
+#: The app's bundle id: the audience of native Sign in with Apple tokens (O3).
+APPLE_APP_BUNDLE_ID = "com.asastats.app"
+#: Google's iOS OAuth client for native sign-in (O3); not a secret, and empty
+#: until it exists (capacitor/O3-USER-STEPS.md A4).
+GOOGLE_IOS_CLIENT_ID = ""
 
 SOCIALACCOUNT_PROVIDERS = {
     # https://developer.apple.com/account/resources/identifiers (Services IDs);
     # allauth's names: client_id = Services ID, secret = key id, key = team id
     "apple": {
         "APP": {
-            "client_id": APPLE_CLIENT_ID,
+            # Services ID first (allauth's API calls use the first), then the
+            # app's bundle id as a second accepted audience (O3).
+            "client_id": ",".join(filter(None, (APPLE_CLIENT_ID, APPLE_APP_BUNDLE_ID))),
             "secret": APPLE_KEY_ID,
             "key": APPLE_TEAM_ID,
             "settings": {"certificate_key": APPLE_PRIVATE_KEY},
@@ -416,6 +423,7 @@ REST_FRAMEWORK = {
         "walletauth": "10/min",  # authorize (per user)
         "walletauth-login": "5/min",  # sign-in (per IP)
         "app-auth-redeem": "10/min",  # app sign-in ticket (per IP)
+        "app-auth-native": "10/min",  # app native sign-in (per IP)
     },
 }
 

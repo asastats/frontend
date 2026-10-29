@@ -968,6 +968,9 @@ class AppleSignInToken(models.Model):
         User, on_delete=models.CASCADE, related_name="apple_sign_in_token"
     )
     refresh_token = models.TextField()
+    #: Who the token was issued to: empty is the website's Services ID,
+    #: otherwise the app's bundle id (native sign-in, O3).
+    client_id = models.CharField(max_length=255, blank=True, default="")
     updated = models.DateTimeField(auto_now=True)
 
 
