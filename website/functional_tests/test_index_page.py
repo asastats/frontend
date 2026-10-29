@@ -140,3 +140,30 @@ class IndexSloganTest(FunctionalTest):
             self.browser.get(self.server_url + reverse("index"))
 
         assert self._metrics(self.find_elem_by_css(".index-slogan"))["lines"] == 1
+
+
+class IndexLogoTest(FunctionalTest):
+    """A phone on its side keeps the address field in view. See logbook:
+    website/templates/index.html, short landscape screens."""
+
+    def _logo_and_field(self, width, height):
+        self.browser.set_window_size(width, height)
+        self.browser.get(self.server_url + reverse("index"))
+        return self.browser.execute_script(
+            "const r = e => document.getElementById(e).getBoundingClientRect();"
+            "const logo = r('logo'), field = r('id_address');"
+            "return {logo: logo.height, centre: logo.left + logo.width / 2,"
+            "        field: field.bottom, viewport: innerHeight, mid: innerWidth / 2};"
+        )
+
+    def test_a_phone_on_its_side_shows_a_small_centred_logo_and_the_field(self):
+        sizes = self._logo_and_field(844, 390)
+
+        assert sizes["logo"] <= sizes["viewport"] * 0.25 + 1
+        assert abs(sizes["centre"] - sizes["mid"]) <= 2
+        assert sizes["field"] <= sizes["viewport"]
+
+    def test_a_portrait_phone_keeps_the_full_width_logo(self):
+        sizes = self._logo_and_field(393, 800)
+
+        assert sizes["logo"] > sizes["viewport"] * 0.1

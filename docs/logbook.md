@@ -1662,6 +1662,26 @@ The provider icons were `{% templatetag openblock %} static %}` calls, but there
 is no `static/icons/` directory any more, so nginx's `try_files` fallback had
 been quietly serving `empty.png` in place of both.
 
+**Short landscape screens (2026-10-29).** The logo (912×386) fills the 672px
+column, so it stood ~284px tall: on a phone on its side (~390px high) it took
+nearly the whole screen, and with the keyboard open the field was all that was
+left. The user asked for a fix for the website and the app alike.
+`input.css` caps `#logo` at `25vh` under
+`(orientation: landscape) and (max-height: 540px)` (`width: auto` keeps the
+ratio; `margin-inline: auto` because preflight makes images block-level and
+the column's `text-center` no longer centres it). Measured in headless
+Chromium: 844×390 → logo ~97px, field and Track button in view.
+The same query also matches any screen whose *layout* viewport the keyboard
+squeezes wider than tall (a WebView that resizes for the keyboard), where the
+cap shrinks with it. Chrome and Safari in the browser do not resize the layout
+viewport for the keyboard, so there the cap stays at 25% of the full height,
+and the browser scrolls the field into view. Whether the app's WebView resizes
+(no `windowSoftInputMode` set; edge-to-edge on API 36) is to be checked on the
+Redmi. Rejected: hiding the logo while the field has focus, because
+`autofocus` focuses it on load, so the logo would vanish before any keyboard.
+Tests: `core/tests/test_index_logo.py`, `functional_tests/test_index_page.py`
+`IndexLogoTest` (fails until `style.tw.css` is rebuilt).
+
 ---
 
 ## website/templates/export.html

@@ -438,6 +438,16 @@
   text-wrap: balance;
 }
 
+/* Index logo on short screens: a phone on its side, or any screen with the
+   keyboard open. See logbook: website/templates/index.html. */
+@media (orientation: landscape) and (max-height: 540px) {
+  #logo {
+    max-height: 25vh;
+    width: auto;
+    margin-inline: auto;
+  }
+}
+
 .swap-page-title {
   font-size: 1.875rem;
   line-height: 1.2;
