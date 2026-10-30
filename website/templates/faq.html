@@ -20,7 +20,7 @@
       </li>
       <li class="p-4">
       <p><strong>Do I need to connect my wallet?</strong></p>
-      <p class="mt-2">No. Simply enter any Algorand address or .algo domain to start tracking. Wallet connection is required for <strong>subscription payments</strong>, <strong>governance</strong>, and <strong>accessing advanced user functionalities</strong>.</p>
+      <p class="mt-2">No. Simply enter any Algorand address or .algo domain to start tracking. Wallet connection is required for {% if not PURCHASE_HIDDEN %}<strong>subscription payments</strong>, <strong>governance</strong>, and{% else %}<strong>governance</strong> and{% endif %} <strong>accessing advanced user functionalities</strong>.</p>
       </li>
       <li class="p-4">
       <p><strong>What are “bundles”?</strong></p>
@@ -35,7 +35,7 @@
         <p><strong>What is the ASASTATS token used for?</strong></p>
         <p>ASASTATS (Asset ID: 393537671) is the platform’s utility token. It’s used to:</p>
         <ul class="list-disc space-y-1 pl-5">
-          <li>Pay for subscriptions</li>
+          {% if not PURCHASE_HIDDEN %}<li>Pay for subscriptions</li>{% endif %}
           <li>Unlock premium features and API access</li>
           <li>Stake for DAO governance (note: DAO access is currently closed)</li>
           <li>Earn in the community rewards program</li>
@@ -81,8 +81,12 @@
     <ul class="mt-4 divide-y divide-base-300 rounded-box border border-base-300 bg-base-100">
       <li class="p-4">
       <p><strong>How are subscriptions handled?</strong></p>
+      {% if PURCHASE_HIDDEN %}
+      <p class="mt-2">Subscriptions are managed through <strong>Subtopia smart contracts</strong> on-chain, and your wallet’s permission level is updated automatically.</p>
+      {% else %}
       <p class="mt-2">Subscriptions are powered by <strong>ASASTATS tokens</strong> and managed through <strong>Subtopia smart contracts</strong> on-chain.</p>
       <p class="mt-2">Once you pay for a tier, your wallet’s permission level is automatically updated.</p>
+      {% endif %}
       {% if not PURCHASE_HIDDEN %}<p class="mt-2">📘 View <a href="{{ WEBSITE_URL }}/subscriptions/" target="_blank" rel="noopener" title="Visit ASA Stats subscriptions page">Subscription Plans</a></p>{% endif %}      
       </li>
       {% if not PURCHASE_HIDDEN %}

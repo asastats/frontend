@@ -5740,3 +5740,26 @@ amount. Browsers are unchanged.
 
 Tests: `core/tests/test_appclient.py::...::test_core_appclient_subscriptions_page_hides_prices_in_app`,
 `functional_tests/test_app_client.py::AppPurchaseLinksTest::test_subscriptions_page_shows_plans_without_buying`.
+
+## website/templates/faq.html, tokenomics.html, subscriptions.html — no "pay in ASASTATS" in the app (2026-10-30)
+
+A further correction to the F10 entry (2026-10-24), at the user's request.
+F10 hid the links towards buying, but the app still read that a tier is paid
+for in ASASTATS. Together with the token pages that is a pointer to buying
+elsewhere, which the review notes (Apple 3.1.3(f), STORE-LISTING decision 5)
+say the app does not contain. With `PURCHASE_HIDDEN`:
+
+- FAQ: "subscription payments" leaves the wallet-connection answer; "Pay for
+  subscriptions" leaves the token-use list; "How are subscriptions handled?"
+  keeps only that Subtopia contracts manage them on-chain and the permission
+  level updates itself.
+- Tokenomics: "Subscription payments" leaves the Token Utility list.
+- `/subscriptions/`: "powered by ASASTATS tokens" leaves the intro, and the
+  "All subscription payments are made in ASASTATS (token ID…)" sentence goes.
+
+Left on purpose: the token's own description (token ID, supply, governance,
+rewards) and the FAQ governor answer naming the Cluster tier, which mention
+no payment. Browsers are unchanged.
+
+Tests: `core/tests/test_appclient.py::...::test_core_appclient_pages_hide_paying_in_asastats_in_app`,
+`test_core_appclient_faq_keeps_subscriptions_as_information_in_app`.

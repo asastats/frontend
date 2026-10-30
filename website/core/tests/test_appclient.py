@@ -339,6 +339,33 @@ class TestCoreAppClientPurchaseHidden:
         assert "How to Subscribe" not in html
         assert "SUBSCRIBE</a>" not in html
 
+    def test_core_appclient_subscriptions_page_hides_prices_in_app(self):
+        assert "ASASTATS / Month" not in self._page("subscriptions", ANDROID_UA)
+        assert "ASASTATS / Month" not in self._page("subscriptions", IOS_UA)
+        assert self._page("subscriptions", BROWSER_UA).count("ASASTATS / Month") == 5
+
+    @pytest.mark.parametrize("name", ["faq", "tokenomics", "subscriptions"])
+    def test_core_appclient_pages_hide_paying_in_asastats_in_app(self, name):
+        phrases = (
+            "Pay for subscriptions",
+            "Subscription payments",
+            "subscription payments",
+            "powered by <strong>ASASTATS tokens</strong>",
+            "Once you pay for a tier",
+            "All subscription payments are made in ASASTATS",
+        )
+        html = self._page(name, IOS_UA)
+        browser_html = self._page(name, BROWSER_UA)
+
+        assert [phrase for phrase in phrases if phrase in html] == []
+        assert [phrase for phrase in phrases if phrase in browser_html]
+
+    def test_core_appclient_faq_keeps_subscriptions_as_information_in_app(self):
+        html = self._page("faq", ANDROID_UA)
+
+        assert "Wallet connection is required for <strong>governance</strong> and" in html
+        assert "your wallet’s permission level is updated automatically" in html
+
     def test_core_appclient_faq_hides_buying_and_upgrading_in_app(self):
         html = self._page("faq", IOS_UA)
 

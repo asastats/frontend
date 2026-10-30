@@ -28,7 +28,7 @@
 <div class="mt-3 space-y-4 text-base-content/80">
   <p>ASASTATS is used for:</p>
   <ul class="list-disc space-y-1 pl-5">
-    <li><strong>Subscription payments</strong> to unlock premium features and tools</li>
+    {% if not PURCHASE_HIDDEN %}<li><strong>Subscription payments</strong> to unlock premium features and tools</li>{% endif %}
     <li><strong>DAO governance access</strong> (staking-based, now closed)</li>
     <li><strong>Developer access</strong> to advanced API endpoints and publishing widgets</li>
     <li><strong>Reward distribution</strong> for bug bounties, feature suggestions, and community initiatives</li>

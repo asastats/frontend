@@ -147,6 +147,7 @@ class AppPurchaseLinksTest(FunctionalTest):
 
         self.assertIn("Subscription Models", body)
         self.assertNotIn("How to Subscribe", body)
+        self.assertNotIn("ASASTATS / Month", body)
 
 
 @override_settings(
