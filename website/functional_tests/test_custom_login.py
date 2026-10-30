@@ -39,7 +39,7 @@ class CustomAuthTest(FunctionalTest):
         social = self.find_elem_by_id("id_discord")
         self.assertIn("/accounts/discord/login/", social.get_attribute("href"))
         social = self.find_elem_by_id("id_twitter")
-        self.assertIn("/accounts/twitter_oauth2/login/", social.get_attribute("href"))
+        self.assertIn("/accounts/twitter/login/", social.get_attribute("href"))
         social = self.find_elem_by_id("id_reddit")
         self.assertIn("/accounts/reddit/login/", social.get_attribute("href"))
         social = self.find_elem_by_id("id_github")
@@ -76,7 +76,7 @@ class CustomAuthTest(FunctionalTest):
         self.assertIn("/accounts/discord/login/", social.get_attribute("href"))
         text = "Sign in with X"
         social = self.browser.find_element(By.LINK_TEXT, text)
-        self.assertIn("/accounts/twitter_oauth2/login/", social.get_attribute("href"))
+        self.assertIn("/accounts/twitter/login/", social.get_attribute("href"))
         text = "Sign in with Reddit"
         social = self.browser.find_element(By.LINK_TEXT, text)
         self.assertIn("/accounts/reddit/login/", social.get_attribute("href"))
@@ -114,7 +114,7 @@ class CustomAuthTest(FunctionalTest):
         """Assert the five provider links are present and correctly targeted."""
         for text, href in (
             ("Sign in with Discord", "/accounts/discord/login/"),
-            ("Sign in with X", "/accounts/twitter_oauth2/login/"),
+            ("Sign in with X", "/accounts/twitter/login/"),
             ("Sign in with Reddit", "/accounts/reddit/login/"),
             ("Sign in with GitHub", "/accounts/github/login/"),
             ("Sign in with Google", "/accounts/google/login/"),

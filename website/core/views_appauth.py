@@ -46,6 +46,9 @@ CHALLENGE_RE = re.compile(r"^[A-Za-z0-9_-]{43}$")
 #: The verifier is 32 random bytes in base64url, the same length.
 VERIFIER_RE = CHALLENGE_RE
 
+#: Released apps send these ids; the allauth provider behind them changed.
+ALLAUTH_PROVIDERS = {"twitter_oauth2": "twitter"}
+
 SESSION_KEY = "app_auth"
 FLOW_LIFETIME = timedelta(minutes=15)
 TICKET_LIFETIME = timedelta(seconds=120)
@@ -159,7 +162,7 @@ def app_auth_start(request, provider):
         request,
         "appauth/start.html",
         {
-            "action": reverse(f"{provider}_login"),
+            "action": reverse(f"{ALLAUTH_PROVIDERS.get(provider, provider)}_login"),
             "complete": reverse("app_auth_complete"),
             "provider_name": PROVIDERS[provider],
         },

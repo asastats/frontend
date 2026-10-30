@@ -33,6 +33,8 @@ No credentials, no network, no browser.
 
 import re
 
+from unittest import mock
+
 import pytest
 from django.conf import settings
 from django.test import override_settings
@@ -51,8 +53,21 @@ AUTHORIZE_URLS = {
     "github": "https://github.com/login/oauth/authorize",
     "google": "https://accounts.google.com/o/oauth2/v2/auth",
     "reddit": "https://www.reddit.com/api/v1/authorize",
-    "twitter_oauth2": "https://x.com/i/oauth2/authorize",
+    "twitter": "https://api.x.com/oauth/authenticate",
 }
+
+#: OAuth 1.0a returns the user with `oauth_callback`, OAuth 2.0 with `redirect_uri`.
+CALLBACK_PARAMS = {"twitter": "oauth_callback"}
+
+
+@pytest.fixture(autouse=True)
+def _no_request_token_call():
+    """OAuth 1.0a asks the provider for a request token before redirecting."""
+    with mock.patch(
+        "allauth.socialaccount.providers.oauth.client.OAuthClient._get_request_token",
+        return_value={"oauth_token": "token"},
+    ):
+        yield
 
 #: `<a id="id_..." href="...">` as `base_auth.html` writes it.
 PROVIDER_LINK = re.compile(r'id="id_(\w+)"\s+href="(/accounts/[^"]+)"')
@@ -147,10 +162,11 @@ class TestCoreAllauthProviders:
         response = client.post(f"/accounts/{provider}/login/")
         location = response.headers["Location"]
 
+        param = CALLBACK_PARAMS.get(provider, "redirect_uri")
         assert (
-            f"redirect_uri=http%3A%2F%2Ftestserver%2Faccounts%2F{provider}"
+            f"{param}=http%3A%2F%2Ftestserver%2Faccounts%2F{provider}"
             "%2Flogin%2Fcallback%2F" in location
-        ), f"{provider} does not name our own callback as its redirect_uri"
+        ), f"{provider} does not name our own callback as its {param}"
 
     @pytest.mark.parametrize("provider", sorted(AUTHORIZE_URLS))
     def test_core_allauth_a_get_does_not_start_the_flow(self, client, provider):
@@ -188,6 +204,14 @@ class TestCoreAllauthCallbackFailures:
         if provider == "apple":
             # Apple answers with a cross-site form_post; allauth re-reads it on a GET.
             response = client.post(callback, {"error": "access_denied"}, follow=True)
+        elif provider == "twitter":
+            # OAuth 1.0a: X sends `denied=<request token>`, which allauth treats as
+            # a cancel rather than an error.
+            response = client.get(f"{callback}?denied=token", follow=True)
+            assert "socialaccount/login_cancelled.html" in [
+                template.name for template in response.templates if template.name
+            ]
+            return
         else:
             response = client.get(f"{callback}?error=access_denied")
 
@@ -228,18 +252,18 @@ class TestCoreAllauthAppSignIn:
         return APP_SIGNIN_LINK.findall(html)
 
     def test_core_allauth_login_page_buttons_carry_their_provider(self, client):
-        from core.views_appauth import PROVIDERS
+        from core.views_appauth import ALLAUTH_PROVIDERS, PROVIDERS
 
         with override_settings(APPLE_SIGN_IN_ENABLED=True):
             pairs = self._pairs(client.get(reverse("account_login")).content.decode())
 
-        assert all(href == provider for href, provider in pairs)
+        assert all(href == ALLAUTH_PROVIDERS.get(p, p) for href, p in pairs)
         assert {provider for _, provider in pairs} == set(PROVIDERS)
 
     def test_core_allauth_modal_buttons_carry_their_provider(self, rf):
         from django.template.loader import render_to_string
 
-        from core.views_appauth import PROVIDERS
+        from core.views_appauth import ALLAUTH_PROVIDERS, PROVIDERS
 
         pairs = self._pairs(
             render_to_string(
@@ -247,7 +271,7 @@ class TestCoreAllauthAppSignIn:
             )
         )
 
-        assert all(href == provider for href, provider in pairs)
+        assert all(href == ALLAUTH_PROVIDERS.get(p, p) for href, p in pairs)
         assert {provider for _, provider in pairs} == set(PROVIDERS)
 
 

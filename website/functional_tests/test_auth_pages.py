@@ -63,7 +63,7 @@ class AuthPagesTest(FunctionalTest):
         self._open("account_login")
         for provider, href in (
             ("id_discord", "/accounts/discord/login/"),
-            ("id_twitter", "/accounts/twitter_oauth2/login/"),
+            ("id_twitter", "/accounts/twitter/login/"),
             ("id_reddit", "/accounts/reddit/login/"),
             ("id_github", "/accounts/github/login/"),
             ("id_google", "/accounts/google/login/"),

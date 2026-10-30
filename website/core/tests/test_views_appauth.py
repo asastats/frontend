@@ -180,6 +180,12 @@ class TestCoreViewsAppauthStart:
         assert "Continue with Google" in html
         assert 'src="/static/js/appauth-start.js"' in html
 
+    def test_core_views_appauth_start_released_x_id_posts_to_oauth1(self, client):
+        response = _start(client, provider="twitter_oauth2")
+
+        assert response.context["action"] == "/accounts/twitter/login/"
+        assert "Continue with X" in response.content.decode()
+
 
 @pytest.mark.django_db
 class TestCoreViewsAppauthComplete:

@@ -5666,3 +5666,52 @@ app went through `onPause` first (workspace `capacitor/BETA-ADB-RESULTS.md`).
 That shows the WebView can come back with an older cookie; it does not show
 the two incidents were this, so the trace stays until a sign-out is logged
 or enough time passes without one.
+
+#### Measured on the Redmi, same day (deployed; A/B with the old file swapped in)
+
+Heavy address, dynamic design, fresh app process, cache off, two runs each:
+`pins.js` CPU 528-541 ms -> 156-174 ms (`layout` 295 ms -> 7-9 ms), the
+DOMContentLoaded task 2.08-2.10 s -> 1.66-1.76 s, main thread busy over the
+load 6.1-6.3 s -> 5.5 s, DOMContentLoaded 6.3-6.4 s -> 5.8-5.9 s. Details in
+the workspace's `capacitor/BETA-ADB-RESULTS.md`.
+
+---
+
+## website/config/settings/base.py (`twitter`), core/views_appauth.py:ALLAUTH_PROVIDERS, nginx ssl.conf — Sign in with X on OAuth 1.0a (2026-10-30)
+
+Sign-up with X had never worked in production. There were two separate faults.
+
+1. `Missing valid authorization header` at the token exchange. The deploy
+   renders the server's `.env` from `website/.env.production`, and that file held
+   a 26-character placeholder `TWITTER_SECRET`. Fixing the credentials got past
+   this step.
+2. `403 Forbidden` from `GET https://api.x.com/2/users/me`, which allauth's
+   `twitter_oauth2` calls right after the token exchange. When this was
+   reproduced by hand, the body was `reason: client-not-enrolled`,
+   `required_enrollment: "Appropriate Level of API Access"`. The text claims the
+   app is not in a Project, but it was (project 1872402928255836160, app
+   29821832). The real cause is that the project is on X's Free plan, and since X
+   moved to pay-per-use (February 2026) that plan has no v2 user lookup. The
+   cheapest plan the portal offered was $200 a month, which was rejected.
+
+With the same app's OAuth 1.0a Consumer Keys and the owner's access token,
+`GET https://api.x.com/1.1/account/verify_credentials.json` returned 200 and the
+profile on the Free plan. That is the only call allauth's `twitter` (OAuth 1.0a)
+provider makes, so the site switched to it. The env keys were renamed to
+`TWITTER_API_KEY` / `TWITTER_API_KEY_SECRET`, so OAuth 2.0 client values cannot
+be pasted in by mistake. The portal needs OAuth 1.0a turned on under User
+authentication settings, and the callback
+`https://www.asastats.com/accounts/twitter/login/callback/`.
+
+Released apps still send `twitter_oauth2`: the native WebAuth plugin has an
+allow-list of provider ids (`mobile/plugins/webauth/*/WebAuthRequest.*`). So the
+buttons keep `data-app-signin="twitter_oauth2"`, and `app_auth_start` maps it to
+the `twitter` login URL through `ALLAUTH_PROVIDERS`. The map can go once no
+supported app version sends the old id and the plugin's list says `twitter`.
+
+`form-action` gains `https://api.x.com`, because the OAuth 1.0a login redirects
+to `https://api.x.com/oauth/authenticate` after the POST to `/accounts/twitter/login/`.
+
+If X ever opens v2 user lookup to the Free plan again, or the project is paid
+for, switching back is a revert of this change. No `twitter_oauth2` social
+accounts existed, because no sign-up ever completed.
