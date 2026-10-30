@@ -5763,3 +5763,302 @@ no payment. Browsers are unchanged.
 
 Tests: `core/tests/test_appclient.py::...::test_core_appclient_pages_hide_paying_in_asastats_in_app`,
 `test_core_appclient_faq_keeps_subscriptions_as_information_in_app`.
+
+## docs/frontend.rst: why the coverage paragraph lost its history (2026-10-30)
+
+`wallet/jest.config.cjs` enforces 100% on statements, branches, functions and
+lines and excludes only `*.d.ts` and `setupTests.ts`. The doc used to add that
+this was "deliberate and recent". Before the change the config named five modules
+to skip while four more carried `/* istanbul ignore file */` of their own, so a
+reported "100%" covered seven files of twelve. The one that mattered was
+`swapBootstrap.ts`, which publishes the whole `window.asastatsSwap` surface:
+anything added there landed outside the number by default. The date of the
+change was not recorded here at the time.
+
+## docs/themes.rst: Dachi's `catppuccin` was removed (2026-10-30, date of the change not recorded)
+
+It went when the four official Catppuccin flavours (`latte`, `frappe`,
+`macchiato`, `mocha`) arrived: it was one dark approximation of a palette that
+now ships in all four. The doc paragraph saying so was dropped because nothing in
+the current themes depends on it.
+
+## docs/address_page_dom.rst: history moved out of the contract (2026-10-30)
+
+The doc is the DOM contract; these notes explained how it got that way and were
+taken out so the contract reads straight. None of the facts is current behaviour.
+
+- **Design 1's reference.** It is the last commit before the redesign branch.
+  The doc used to add that this was "rather than a checkout kept beside this
+  one", which was the pre-redesign tree and is no longer there.
+- **`entry_controls.html`.** A shared snippet wrapping the grip and pin in
+  `.entry-controls`, written when the controls were going into design 1. Nothing
+  included it once design 1 was restored to the untouched old page, so it and its
+  stylesheet rules were deleted.
+- **Layout preference partial.** The layout used to arrive from a non-cached
+  `/layout-preference/` partial, was stamped onto `<html>` as
+  `data-layout-position` and re-stamped before paint from `localStorage`. That
+  existed only because the markup was assumed unable to vary per reader. Keying
+  the cache on the layout removed `LayoutPreferenceView`, its URL,
+  `_layout_preference.html`, `static/js/layout.js` and the pre-paint stamp in
+  `base.html`.
+- **The plain count (2026-08-28).** It replaced a magnitude rule,
+  `ADDRESS_SECTION_THRESHOLD` with an `ADDRESS_SECTION_FLOOR` under it, applied by
+  a `utils.cutoff` module that no longer exists. That rule showed 33 rows on one
+  address and 8 on the next, and its control revealed the entire remainder in one
+  press, so a label reading "39 more" delivered an unfold rather than a batch. A
+  reader cannot see a rule, only its result, and a number they cannot predict
+  reads as arbitrary. The full reasoning is beside the two settings in
+  `config/settings/base.py`.
+- **The prototype's 95%/99%/99.5%/All control.** The two sections briefly carried
+  it, only ever as a way to demonstrate the page with everything on screen before
+  a load-more existed. "Show me the rows carrying 99.5% of the value" is not a
+  sentence a reader thinks in. Design 1 briefly kept the magnitude rule above.
+  Neither survived.
+- **Build passes.** The NFT section was design 1's markup included unchanged
+  until "pass 3"; the toolbar was "pass 2". The passes are not recorded anywhere
+  else, so the names meant nothing to a later reader.
+
+## docs/frontend.rst renamed to docs/wallet.rst (2026-10-30)
+
+The page documents the TypeScript wallet package in `wallet/`, but was named
+`frontend`, which is also the name of the repository, and sat last in the index.
+Entries above that are filed under `docs/frontend.rst` mean this file. The old
+Read the Docs URL (`.../frontend.html`) no longer exists; add a redirect in the
+Read the Docs project settings if anything links to it. `wallet/README.md` and
+`docs/development.rst` were updated to the new name.
+
+## deploy/ — long comments moved out of the code (2026-10-31)
+
+The 2026-09-27 pass left a second layer of long comments in `deploy/`: the nginx
+templates, `group_vars/all/vars.yml`, `project_scripts.yml`, the molecule
+defaults file and the dotenv parser in `converge.yml`. Each is now the shortest
+note that stops a wrong edit, plus a pointer to the section below that carries
+the rest. The wording is the original; only the place changed.
+
+## deploy/roles/nginx/templates/site_server_block.conf, long comments (2026-10-31)
+
+### `access_log` at server level
+
+**Set here, at server level, and that placement is the point.** Two
+`access_log` directives on the *same* level accumulate - nginx writes the line
+twice, once per format - and the stock `access_log` lives in
+`/etc/nginx/nginx.conf`, which this role patches in place rather than
+templating. A server-level directive replaces the inherited one instead of
+adding to it, so the file gets one line per request in the `timed` format and
+nothing else has to be edited.
+
+The path is the distro default deliberately: every capture, rotation rule and
+analysis script in `post-deploy/` already points at it.
+
+### Icons and thumbnails
+
+Asset icons and NFT thumbnails are served from the CDN now - see `asa_icon` /
+`provider_icon` in `core/templatetags/core_extras.py`, which emit absolute
+`BASE_CDN_URL` paths. The `/static/icons/` and `/static/thumbnails/` blocks that
+used to live here are gone with them; their `try_files` fallback to
+`empty.png` was, by the end, the only thing still answering those urls.
+
+### Content-hashed static assets
+
+Named `<file>.<12 hex>.<ext>` by Django's `ManifestStaticFilesStorage`. The name
+changes whenever the content does, so these can never go stale and are safe to
+cache indefinitely.
+
+`root` rather than `alias`, and only here: nginx requires an `alias` inside a
+regex location to refer to captures from that regex, and this pattern has none.
+`root {{ site_path }}` appends the whole URI, so `/static/js/x.abc123.js`
+resolves to `{{ site_path }}/static/js/x.abc123.js` - the same file the
+`alias {{ site_path }}/static` block serves. The prefix block keeps `alias`
+precisely because the two are not interchangeable in general: they only agree
+here because the location prefix is the alias path's last segment, and changing
+a working production rule for symmetry would be a needless risk.
+
+`collectstatic` keeps the unhashed copy alongside the hashed one, and anything
+still addressed by a mutable name lands in the `/static` block: `alias`, ten
+days, unchanged from before.
+
+### Address-shaped API reads
+
+`/api/v2/<58-char Algorand address>/...`, matched case-sensitively on the base32
+alphabet (A-Z and 2-7) so the location cannot catch anything else under
+`/api/v2/` - not `/wallet/`, `/schema/`, `/settings/` or `/internal/`, all of
+which the browser or our own server reaches without an `Authorization` header
+and none of which the scraper asks for.
+
+Requests here are limited only when they carry no credential, per the
+`$api_unauth_key` map in the http block (see `site_http_block.conf` below). An
+unauthenticated read of this API is answered 401 whatever happens, so the
+throttle costs a real caller nothing: the burst is more than enough to see the
+error and go and get a token.
+
+429 rather than nginx's default 503, because this is a machine-facing path and
+429 is the answer a client can act on. It also sidesteps `error_page 503`, which
+would otherwise return an HTML page to a JSON client.
+
+### `/widgets/liverefresh/` goes to the ASGI server
+
+Measured over nine days of access logs: 35,920 requests, 4.9% of everything,
+and it grows with *readers* rather than with clicks - a single open live page is
+about 1,200 requests an hour whether or not anybody touches it. Every one of
+those took one of `gunicorn_workers` (13) sync workers, each of which blocks for
+the whole request, on a box where an address page already holds one for ~2.2 s.
+
+The poll is the right shape to move: a Redis read and a fragment render, all
+I/O. Django runs a *sync* view under ASGI inside `ThreadSensitiveContext`, which
+Django 5.2 opens per request - so these run concurrently in threads and nothing
+had to be rewritten as async. An async view calling this code would have been
+worse than a sync worker, because blocking the loop stalls every request sharing
+the process.
+
+`channels-backend` and daphne already exist for websockets, and
+`config/asgi.py` already routes `"http"` to Django - so this is a location, not
+a deployment. Longer prefix than `/widgets/`, so nginx prefers it. No
+`$http_upgrade` branch is needed: daphne is a `ProtocolTypeRouter` and serves
+both.
+
+**No `limit_req` here, and that is deliberate.** `zone=main` is 4r/m per
+address; the poll runs every ~3 s, which is 20/m for one reader with one tab
+open. Copying the address page's limiter onto it - which the first draft of this
+block did - would 503 the live refresh continuously, and `error_page 503` would
+answer an htmx fragment request with an HTML page.
+
+### `/widgets/swapcore/`
+
+The swap widget's two engine-data calls, moved for the same reason and measured
+to be almost nothing: 24 requests in nine days against the poll's 35,920. They
+are here because they are the same *shape* - a keystroke search and a holdings
+refresh, both short and both I/O - not because they are a load today.
+
+### `/widgets/`
+
+A real WebSocket handshake has `Upgrade: websocket` and goes to Daphne;
+everything else goes to WSGI. The live poll and the swap widget's engine-data
+calls no longer arrive here at all; they match the longer prefixes above and go
+to Daphne over HTTP.
+
+## deploy/roles/nginx/templates/nginx.ssl.conf, long comments (2026-10-31)
+
+### `access_log` on the :80 redirect server
+
+The `timed` format here too, so one log file has one shape. These lines never
+reach an upstream, so `$upstream_response_time` is always `-` - but a parser
+that has to cope with two field counts in one file is how a one-line awk quietly
+starts reporting the wrong column.
+
+## deploy/roles/nginx/templates/site_http_block.conf, long comments (2026-10-31)
+
+### `log_format timed`
+
+How long each request took, which the combined format does not carry.
+
+**Both numbers, because they answer different questions.**
+`$upstream_response_time` is how long gunicorn or daphne held the request -
+which, with sync workers, *is* how long one of the 13 was unavailable to anyone
+else. `$request_time` adds the time spent reading the request and writing the
+response to the client, so a slow phone inflates it without costing a worker
+anything. Diagnosing worker contention wants the first; diagnosing "the site
+feels slow" wants the second.
+
+**Appended, never inserted.** Everything before these is the stock `combined`
+format, byte for byte, so every existing awk, grep and script that counts on `$4`
+being the timestamp or looks for `"GET ` keeps working. Inserting a field would
+silently shift all of them - and this project's traffic figures are built out of
+exactly that kind of one-liner.
+
+A missing upstream (a static file, a redirect answered by nginx itself) logs `-`
+rather than a number.
+
+### `$api_unauth_key` and the `api_unauth` zone
+
+Measured over nine days of access logs, 2026-09-20: 342,704 of 459,984 requests
+to `/api/v2` - 75% - came from a single scraper rotating two AWS us-east-2
+hosts, and **not one of them was ever served a 200**. It polls a fixed set of
+addresses on a 61-second cycle, enumerates tens of thousands more, and pays
+twice for every poll because it never learns the trailing slash and Django
+answers `APPEND_SLASH` with a 301. See `post-deploy/FINDING-the-401-wall.md`.
+
+The key is the client address ONLY when the request carries no `Authorization`
+header. An empty key is exempt from `limit_req` entirely, so every authenticated
+caller - the website's own server-side client, the mobile app, third-party
+integrations - is untouched **by construction** rather than by an allowlist
+somebody has to maintain as callers come and go.
+
+This alone would be too blunt, because the browser reaches parts of `/api/v2`
+with a session cookie and no header: the wallet login and link flows
+(`/api/v2/wallet/nonce/`, `/verify/`, `/wallets/`) and the Swagger and Redoc
+schema pages. Throttling those would break signing in. So the limit is also
+scoped, in the server block, to address-shaped paths only - which is exactly and
+only what the scraper asks for.
+
+## deploy/group_vars/all/vars.yml, long comments (2026-10-31)
+
+### `gunicorn_workers`
+
+Measured on the liveserver 2026-09-14, not derived from `cpu_count()`. A warm
+website worker is ~605 MB RSS (largest 643), so 13 costs ~7.9 GB of the 44 GB
+free; load was 4.62 on 20 cores, so CPU is not the limit either. The limit is
+that sync workers block: at 5, the whole site serves five concurrent requests,
+and an address page holds one for ~2.2 s while it waits on the engine API.
+
+NOT `cpu_count() * 2 + 1` (= 41 here). That rule assumes CPU-bound workers;
+these wait on HTTP and Redis. 41 x 605 MB is ~25 GB for throughput the load
+average says is not wanted. Re-measure with `live/tools/inspect_liveserver.py`
+before moving it again.
+
+The api (`deploy/group_vars/api/vars.yml`) must rise with this or the queue only
+moves: a website request that calls the engine holds a worker at both ends.
+
+### `backend_colocated`
+
+Set true on a host that ALSO runs the closed backend (ASA Stats liveserver).
+When true, the web-cache port must be neither 6379 (the backend's replica) nor
+6381 (its master, when the engine shares the host). Forkers leave this false.
+On a shared host this repo owns the base (`setuphost`, `hardening`); the
+backend's engine writes `data/` and `static/thumbnails` here. The design is in
+"deploy/group_vars/all/vars.yml, deploy/roles/redis/tasks/main.yml - sharing a
+host with the engine too (2026-10-12)" above.
+
+## deploy/roles/projectsetup/tasks/project_scripts.yml, build result checks (2026-10-31)
+
+`changed_when`: the script prints how many outputs it actually replaced, and
+reports zero when the bytes were already right - so a second deploy that builds
+the same JavaScript says `ok`, not `changed`. `'minified' in stdout` said
+changed on every run, which is what failed Molecule's idempotence check.
+
+`failed_when`: both halves are needed. `rc` alone passes a script that exits 0
+having minified nothing; the stdout check alone would not notice a crash, and
+naming `failed_when` at all replaces the default rc check rather than adding to
+it.
+
+## deploy/molecule/shared/.env.molecule, long comments (2026-10-31)
+
+Values a throwaway Molecule container needs so provisioning can finish.
+
+Loaded FIRST in every scenario's `env_files`, so a real `.env.testing` or
+`.env.production` overrides every line here - the merge takes the last file to
+give a key a value. A key left blank does NOT override, which is what keeps
+`website/.env.example` (blank on purpose, loaded last by the ci scenario) from
+undoing this file; see `converge.yml`.
+
+Why the file exists at all: `manage.py migrate` aborts on a Django system check
+of level ERROR, and `asastats.E001` fires when `SIMPLE_JWT_KEY` is empty. The
+committed `website/.env.example` deliberately leaves it blank ("ROTATED -- never
+reuse the old hardcoded value"), which is right for an example and fatal for
+provisioning, so the value a container needs lives here instead of being written
+into the example.
+
+`SIMPLE_JWT_KEY` signs and verifies only within the container. An empty value
+makes `manage.py` refuse to run at all; a wrong one is harmless because no real
+token is presented to this host.
+
+`EXPORT_TIERS_ADDRESSES_LIMIT` silences `asastats.W003`. Not required to
+provision - it is a Warning, not an Error - but a warning nobody can act on is
+one everybody learns to ignore.
+
+## deploy/molecule/shared/converge.yml, dotenv inline comment (2026-10-31)
+
+The inline-comment strip runs BEFORE trimming: the example writes the comment on
+a line whose value is blank, so trimming first would leave the `#` at the start
+with no whitespace in front of it to match. A quoted value keeps everything
+inside the quotes, `#` too. The rest of the parser is in the 2026-09-27 section
+of this file above.

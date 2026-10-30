@@ -9,7 +9,7 @@ The site's CSS is built from ``website/static/css/input.css`` with the
 ``node_modules`` for it and no Sass: three files are fetched per machine, and
 only the built ``style.tw.css`` is committed.
 
-Fetch the toolchain once per machine --- the script picks the right binary for
+Fetch the toolchain once per machine; the script picks the right binary for
 your platform:
 
 .. code-block:: bash
@@ -29,7 +29,7 @@ Then build:
 
 ``build-tailwind.sh`` refuses to run with a missing toolchain rather than
 producing a stylesheet without it, and it prepends the CC BY attribution banner
-that Lightning CSS would otherwise strip --- see :doc:`themes` for what that
+that Lightning CSS would otherwise strip. See :doc:`themes` for what that
 banner is for and for how to add or remove a theme.
 
 **Commit ``static/css/style.tw.css`` with the change that caused it.** The
@@ -51,18 +51,18 @@ This one needs ``node`` and ``npm``, because it runs a pinned ``esbuild``
 through ``npx``. Ansible installs both (``setuphost``), and the deploy runs the
 script before ``collectstatic``.
 
-Two things worth knowing about it:
+Two details of how it works:
 
 * **The output is not committed.** ``static/build`` is gitignored, and in
   production it is placed *first* in ``STATICFILES_DIRS`` so ``collectstatic``
   prefers the minified copy of each file over the readable source of the same
-  name. Templates always name the source --- ``{% static 'js/site.js' %}`` ---
+  name. Templates always name the source (``{% static 'js/site.js' %}``),
   so nothing in a template changes between development, where the directory is
   absent, and production, where it is not.
 * **It only replaces what actually changed.** Each file is built into a
   temporary directory and moved into place only when the bytes differ, then the
   script prints ``BUILD_UPDATED=<n>``. Rewriting an identical file would give it
-  a new mtime, which makes ``collectstatic`` copy it again --- and that made
+  a new mtime, which makes ``collectstatic`` copy it again, and that made
   both tasks report a change on every deploy.
 
 Vendored bundles (``*.min*.js``, ``bundle.js``) are skipped: they are already
@@ -99,7 +99,7 @@ answers the question for its own environment. Before changing one, check which
 of these you are actually running:
 
 ``config.settings.development``
-  ``DummyCache`` --- every write is discarded. Right for ``runserver``, where
+  ``DummyCache``: every write is discarded. Right for ``runserver``, where
   six views are ``cache_page``\ 'd and three of them for ninety minutes: a
   developer wants to see an edit now, not in an hour and a half. A Redis block
   sits commented out beneath it for when you need to reproduce a caching bug.
@@ -117,7 +117,7 @@ of these you are actually running:
   the session.
 
 The ``redis`` role is provisioned unconditionally by ``deploy/site_playbook.yml``
---- it is in the role list, not something to uncomment --- and it configures a
+(it is in the role list, not something to uncomment), and it configures a
 **dedicated** instance on ``redis_port``, which ``deploy/group_vars/all/vars.yml``
 takes from ``REDIS_PORT_LOCAL`` and defaults to 6380. The separate port is the
 point: on a host that also runs the closed backend, 6379 is that backend's
@@ -126,7 +126,7 @@ replica and is read-only, and the app writes to its cache on every miss.
 Restart Daphne workers
 ----------------------
 
-You should add a shell function to your ``~/.bashrc`` to restart the Daphne
+Add this shell function to your ``~/.bashrc`` to restart the Daphne
 workers one at a time, so that live refresh keeps working in open browsers.
 It waits for each worker to come back before moving on to the next.
 

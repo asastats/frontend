@@ -1,9 +1,9 @@
 Provisioning
 ============
 
-``Ansible`` is Python package used to deploy frontend infrastructure.
+Ansible is the Python package used to deploy the frontend infrastructure.
 
-This guide is made for ``Ubuntu Server 24.04.4 LTS`` hosts, but it's applicable for many other Debian based Linux/GNU distros.
+This guide is made for ``Ubuntu Server 24.04.4 LTS`` hosts, but it applies to many other Debian-based Linux distros.
 
 
 Local machine requirements
@@ -12,8 +12,8 @@ Local machine requirements
 Ansible installation
 ^^^^^^^^^^^^^^^^^^^^
 
-If you don't use the project's Python environment, the most recent stable Ansible version is available through ``pip``
-and its Python 3 version for Debian-based systems is called python3-pip.
+If you don't use the project's Python environment, install the latest stable Ansible with ``pip``.
+On Debian-based systems the Python 3 package is called ``python3-pip``.
 
 .. code-block:: bash
 
@@ -33,7 +33,7 @@ Production
 SSH access
 """"""""""
 
-For majority of VPS providers, **root** user is already configured and ssh access is allowed by provided public key.
+For most VPS providers, the **root** user is already configured and SSH access is allowed with the public key you provided.
 
 
 Virtual machine
@@ -61,27 +61,27 @@ Configuration for Ubuntu 24.04.4 server:
           addresses: [8.8.8.8, 8.8.4.4]
 
 
-Configuration from above is activated by `sudo netplan apply`.
+Activate it with ``sudo netplan apply``.
 
 
 SSH access
 """"""""""
 
-Server should have ``openssh-server`` installed and running. Many GNU/Linux have Python 3 preinstalled.
+The server needs ``openssh-server`` installed and running. Many GNU/Linux distros have Python 3 preinstalled.
 
 .. code-block:: bash
 
   sudo apt-get install openssh-server python3
 
 
-For testing purposes in VM environment, a temporary user should be created. Upon first start it will enable the root login by running:
+In a VM used for testing, create a temporary user. On first start it enables the root login with:
 
 .. code-block:: bash
 
     tempuser@ubuntu:~# sudo passwd root
 
 
-In Ubuntu ssh login for root is restricted, so it should be temporary allowed:
+Ubuntu restricts SSH login for root, so allow it temporarily:
 
 .. code-block:: bash
 
@@ -89,14 +89,14 @@ In Ubuntu ssh login for root is restricted, so it should be temporary allowed:
   PermitRootLogin yes
 
 
-Default identity public key copying (use -i identity_file for different identity) from the local machine is issued by:
+Copy your default identity's public key from the local machine with (use ``-i identity_file`` for a different identity):
 
 .. code-block:: bash
 
     ssh-copy-id root@192.168.1.100
 
 
-Temporary user should be deleted afterwards:
+Delete the temporary user afterwards:
 
 .. code-block:: bash
 
@@ -111,7 +111,7 @@ Project provisioning
   Before using in production, you need to update the content of the error pages in the ``website/templates/`` directory,
   as well as the ``static/auth_privacy.html`` and ``static/auth_terms.html`` HTML pages to reflect your company name.
 
-Use the following commands from the `deploy` directory to provision the website on your testing server:
+From the ``deploy`` directory, provision your testing server with:
 
 .. code-block:: bash
 
@@ -127,7 +127,7 @@ Similarly, for your production server use:
   ansible-playbook --limit=production site_playbook.yml
 
 
-For debugging purpose, add `-vv` or `-vvvv` for more verbose output:
+To debug, add ``-vv`` or ``-vvvv`` for more verbose output:
 
 .. code-block:: bash
 
@@ -146,7 +146,7 @@ infrastructure one from ``deploy/`` and the application one from ``website/``:
   deploy/.env.production   website/.env.production
 
 ``deploy/.env-example`` and ``website/.env.example`` are the templates. Copy
-rather than edit them --- both are committed, and both are deliberately blank
+rather than edit them: both are committed, and both are blank
 where a secret belongs.
 
 A key left blank does **not** override a key another file gave a value, so the
@@ -158,7 +158,7 @@ empty one.
 Upgrade system and project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Issue the following command if you want to fully upgrade system and Python packages to the latest versions:
+Run this to upgrade the system and the Python packages to their latest versions:
 
 .. code-block:: bash
 
@@ -168,7 +168,7 @@ Issue the following command if you want to fully upgrade system and Python packa
 Update project code
 ^^^^^^^^^^^^^^^^^^^
 
-After code has changed, issue the following command to apply those changes:
+After the code changes, run this to apply them:
 
 .. code-block:: bash
 
@@ -195,7 +195,7 @@ themselves.
 
 Every scenario loads ``molecule/shared/.env.molecule`` first. That file exists
 because ``manage.py`` refuses to run at all when a Django system check of level
-ERROR fires --- an empty ``SIMPLE_JWT_KEY`` is one --- and the committed
+ERROR fires (an empty ``SIMPLE_JWT_KEY`` is one), and the committed
 example leaves that blank on purpose. Nothing in it is a secret and nothing in
 it should reach a real host.
 

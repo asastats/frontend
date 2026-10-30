@@ -7,7 +7,7 @@ backend, expanding privileges on the manage page, and signing swap groups.
 This directory is `wallet/` at the repository root — not under `website/`,
 because it is bundled rather than served from Django's static files.
 
-The reference copy of this document is `docs/frontend.rst`, which Sphinx builds
+The reference copy of this document is `docs/wallet.rst`, which Sphinx builds
 along with the TypeDoc output in `docs/api/frontend_api/`. Keep the two in step.
 
 ## Overview

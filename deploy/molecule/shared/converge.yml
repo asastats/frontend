@@ -69,10 +69,8 @@
           {%   if stripped and not stripped.startswith('#') and '=' in stripped %}
           {%     set key = stripped.split('=', 1)[0] | trim %}
           {%     set rest = stripped.split('=', 1)[1] %}
-          {#     Stripped BEFORE trimming: the example writes the comment on a #}
-          {#     line whose value is blank, so trimming first would leave the  #}
-          {#     '#' at the start with no whitespace in front of it to match.  #}
-          {#     A quoted value keeps everything inside the quotes, '#' too.   #}
+          {# Strip BEFORE trimming; a quoted value keeps its `#`. #}
+          {# docs/logbook.md#deploymoleculesharedconvergeyml-dotenv-inline-comment-2026-10-31 #}
           {%     set value = (rest | trim) if (rest | trim)[:1] in ['"', "'"]
                              else rest | regex_replace('(^|[ \t])#.*$', '') | trim %}
           {%     if key %}

@@ -1,15 +1,14 @@
-.. ASA Stats frontend documentation master file, created by
-   sphinx-quickstart on Sun Jul 18 22:22:48 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+ASA Stats frontend documentation
+================================
 
-Welcome to ASA Stats frontend documentation!
-============================================
+The ASA Stats website: a Django project in ``website/``, the TypeScript wallet package in
+``wallet/`` and the Ansible deployment in ``deploy/``.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
+   wallet
    development
    provisioning
    howto
@@ -17,7 +16,6 @@ Welcome to ASA Stats frontend documentation!
    themes
    address_page_dom
    api
-   frontend
 
 
 Indices and tables

@@ -56,13 +56,16 @@ You can then access the log with:
 Invalid HTTP_HOST header
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-https://stackoverflow.com/a/49817720/11703358
+Django answers a request whose ``Host`` header is not in ``ALLOWED_HOSTS`` with
+``DisallowedHost`` and logs "Invalid HTTP_HOST header". On the production host the usual
+source is a scan by bare IP or an unknown name. nginx keeps those away from Django in two
+places in ``deploy/roles/nginx/templates/``: the ``default_server`` block in
+``nginx.ssl.conf`` refuses the TLS handshake for any other name, and the ``/api/v2/``
+address location in ``site_server_block.conf`` returns ``444`` for hosts outside the
+site's own names.
 
-.. code-block:: bash
-
-  if ( $host !~* ^(yourdomain.com|www.yourdomain.com)$ ) {
-    return 444;
-  }
+If you still see the message for a name you do use, add it to ``ALLOWED_HOSTS`` in
+``config/settings/production.py`` and to the host pattern in ``site_server_block.conf``.
 
 
 Static files
@@ -79,7 +82,7 @@ Production serves static files through ``ManifestStaticFilesStorage``, where
 ``{% static %}`` **raises** for a path with no entry in ``staticfiles.json``.
 Development's storage returns the URL and lets the browser 404 it, so a
 template naming a file that is not there is a 500 in production and a silent
-nothing everywhere else --- including in the test suite.
+nothing everywhere else, including in the test suite.
 
 Two causes, in this order of likelihood:
 
@@ -102,7 +105,7 @@ A router or widget cannot reach its own API
 
   Refused to connect because it violates the document's Content Security Policy
 
-Not an error the page can catch and explain --- the fetch never happens, so the
+The page cannot catch and explain this: the fetch never happens, so the
 feature simply does nothing. The host is missing from ``connect-src`` in
 ``deploy/roles/nginx/templates/ssl.conf``.
 
@@ -149,7 +152,7 @@ once (a second htmx core on the page silently drops ``ws-connect``) and that the
 ``ws-connect`` URL carries a real bundle. If instead the WS request shows a ``404``, the
 route is not registered. Check the widget's ``routing.py`` is included and that
 ``runserver`` is serving ASGI/Daphne (``daphne`` listed above the staticfiles
-app in ``INSTALLED_APPS`` --- which this project registers as
+app in ``INSTALLED_APPS``; this project registers that app as
 ``core.staticfiles.AsastatsStaticFilesConfig``, not by its Django name).
 
 
@@ -167,10 +170,9 @@ Timeout reading from Redis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``redis.exceptions.TimeoutError: Timeout reading from <host>`` in the consumer's receive
-loop is the Channels bus, not the app cache. Confirm the frontend and the engine target
-the same Redis host, port and database, and that ``channels``, ``channels_redis`` and
-``redis`` are pinned to a compatible set: a newer ``redis-py`` (RESP3) against an older
-``channels_redis`` produces exactly this timeout.
+loop is the Channels bus, not the app cache. Check the two rules under *Realtime* in the
+widgets docs (one Redis for both sides, a compatible set of pins): a newer ``redis-py``
+(RESP3) against an older ``channels_redis`` produces exactly this timeout.
 
 
 Debugging using headers

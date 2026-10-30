@@ -5,9 +5,9 @@ A TypeScript application, built with Vite, that provides the browser-side wallet
 experience: connecting a wallet, proving ownership of an address to the Django
 backend, expanding privileges on the manage page, and signing swap groups.
 
-It lives in ``wallet/`` at the repository root --- not under ``website/``,
-because it is bundled rather than served from Django's static files, and not in
-a directory called ``frontend``, which is the repository itself.
+It lives in ``wallet/`` at the repository root, not under ``website/``
+(it is bundled rather than served from Django's static files) and not in a
+directory called ``frontend``, which is the repository itself.
 
 Overview
 --------
@@ -21,8 +21,8 @@ Architecture
 
 Each concern is a module with one job, and the modules split three ways:
 
-**Components** own a wallet and its UI. **Bridges** are pure orchestration ---
-no DOM, no network setup --- so the flow they describe can be tested without a
+**Components** own a wallet and its UI. **Bridges** are pure orchestration,
+with no DOM and no network setup, so the flow they describe can be tested without a
 browser. **Bootstraps** are the browser-only wiring that finds the page's
 elements, reads CSRF, and hands a component to a bridge. That split is why the
 suite can cover the logic without driving a wallet.
@@ -70,8 +70,8 @@ privilege-expanding action; the bootstrap supplies CSRF and the API base.
 ``swapBootstrap.ts`` / ``swapBridge.ts``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Swap execution. The bridge is pure orchestration of a prepared swap --- sign
-the group with the connected wallet, submit, wait for confirmation --- while
+Swap execution. The bridge is pure orchestration of a prepared swap (sign
+the group with the connected wallet, submit, wait for confirmation), while
 the bootstrap holds the opt-in handling, partial-group signing and the wallet
 manager.
 
@@ -100,7 +100,7 @@ Development
    npm run build:docs   # regenerate docs/api/frontend_api/ with TypeDoc
 
 ``npm run build:docs`` writes into ``docs/api/frontend_api/``, which is the
-directory the toctree above points at --- so a renamed or added module needs
+directory the toctree above points at, so a renamed or added module needs
 that command run, and its output committed, before the reference here resolves.
 
 Testing
@@ -113,28 +113,22 @@ Testing
    npm run test:watch
    npm run test:coverage
 
-**Coverage is enforced, not merely reported**: ``jest.config.cjs`` sets a 100%
-threshold on statements, branches, functions and lines, so a new module arrives
-covered or the suite fails.
+``jest.config.cjs`` enforces a 100% threshold on statements, branches, functions
+and lines, so a new module arrives covered or the suite fails.
 
-Exactly two things are excluded, and both because they *cannot* be covered
-rather than because covering them is awkward: ``*.d.ts``, which has no runtime
-statements, and ``setupTests.ts``, which Jest loads before instrumentation.
-Everything else in ``src/`` counts --- including the bootstraps and the test
-harness. That is deliberate and recent: the config used to name five modules to
-skip while four more carried ``/* istanbul ignore file */`` of their own, so a
-reported "100%" covered seven files of twelve. The one that mattered was
-``swapBootstrap.ts``, which publishes the whole ``window.asastatsSwap`` surface
---- anything added there landed outside the number by default.
+Exactly two things are excluded, because they cannot be covered: ``*.d.ts``, which
+has no runtime statements, and ``setupTests.ts``, which Jest loads before
+instrumentation. Everything else in ``src/`` counts, including the bootstraps and
+the test harness, so a module-level ``/* istanbul ignore file */`` is not an option.
 
 Wallet integration
 ------------------
 
 Algorand wallets through ``@txnlab/use-wallet``:
 
-* **Pera Wallet** --- mobile and web
-* **Defly Wallet** --- mobile
-* **Lute Connect** --- browser extension
+* **Pera Wallet**: mobile and web
+* **Defly Wallet**: mobile
+* **Lute Connect**: browser extension
 * other adapters the library supports
 
 EVM wallets through the project's own connectors: EIP-6963 injected providers,
@@ -153,10 +147,10 @@ Authentication flow
 Transaction types
 -----------------
 
-* **Payment transactions** --- for authentication
-* **Application calls** --- smart contract interactions
-* **Asset transfer** --- reward token claims, and swap legs
-* **Atomic groups** --- swaps and other multi-transaction operations
+* **Payment transactions**: for authentication
+* **Application calls**: smart contract interactions
+* **Asset transfer**: reward token claims, and swap legs
+* **Atomic groups**: swaps and other multi-transaction operations
 
 File structure
 --------------
@@ -183,8 +177,8 @@ File structure
 Dependencies
 ------------
 
-* **@txnlab/use-wallet** --- Algorand wallet management and transaction signing
-* **algosdk** --- Algorand JavaScript SDK
-* **vite** --- build tool and development server
-* **jest** --- testing framework
-* **typedoc** --- documentation generation
+* **@txnlab/use-wallet**: Algorand wallet management and transaction signing
+* **algosdk**: Algorand JavaScript SDK
+* **vite**: build tool and development server
+* **jest**: testing framework
+* **typedoc**: documentation generation

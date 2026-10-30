@@ -55,15 +55,11 @@
   become: true
   become_user: "{{ webapp_user }}"
   register: projectsetup_build_static
-  # The script prints how many outputs it actually replaced, and reports zero
-  # when the bytes were already right -- so a second deploy that builds the
-  # same JavaScript says `ok`, not `changed`. `'minified' in stdout` said
-  # changed on every run, which is what failed Molecule's idempotence check.
+  # BUILD_UPDATED=0 when nothing changed keeps a second run `ok` (idempotence).
+  # docs/logbook.md#deployrolesprojectsetuptasksproject_scriptsyml-build-result-checks-2026-10-31
   changed_when: "'BUILD_UPDATED=0' not in projectsetup_build_static.stdout"
-  # Both halves are needed. `rc` alone passes a script that exits 0 having
-  # minified nothing; the stdout check alone would not notice a crash, and
-  # naming `failed_when` at all replaces the default rc check rather than
-  # adding to it.
+  # Both checks: `rc` alone passes a build that minified nothing, and naming
+  # `failed_when` replaces the default rc check.
   failed_when: >-
     projectsetup_build_static.rc != 0
     or 'minified' not in projectsetup_build_static.stdout

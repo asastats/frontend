@@ -13,7 +13,7 @@ The address page has been bitten twice by the same shape of failure.
 
 The jest fixture ``javascript_tests/address.html`` once sat roughly 3,000 lines
 behind the template it was supposed to mirror, while every test went on passing
---- because nothing read it. And during the Materialize → DaisyUI conversion the
+because nothing read it. And during the Materialize → DaisyUI conversion the
 in-place controls (``.tdist``, ``.price``, ``.unitprice``) lost everything but
 ``cursor: pointer``; they still *worked*, so nothing failed, and they rendered as
 plain text for the whole redesign.
@@ -34,9 +34,8 @@ the JavaScript has to change in the same commit.
    ``classic`` (design 1)
      The original page, deliberately unchanged, plus the load-more fold. It has
      no pin, no grip, no position component, and it keeps Chart.js. Its
-     reference is the repository's own history --- the last commit before the
-     redesign branch --- rather than a checkout kept beside this one, which is
-     what the pre-redesign tree was and is no longer there.
+     reference is the repository's own history: the last commit before the
+     redesign branch.
 
    ``dynamic`` / ``dynamic-compact`` (Dynamic / Dynamic compact,
     designs 2 and 3)
@@ -50,14 +49,14 @@ the JavaScript has to change in the same commit.
    ``address_dynamic.html`` against the real payload.
 
    Design 2 is available from **Intro**, while design 3 is gated at
-   **Asastatser**. Design 1 is ungated at every tier by construction --- its registry
+   **Asastatser**. Design 1 is ungated at every tier by construction: its registry
    entry carries ``tier: None``, and ``normalized_layout`` falls back to it for
    both an unknown key and an unentitled one, so it is always renderable and
    always reachable.
 
 --------------------------------------------------------------------------------
 
-Tier 1 --- load-bearing names
+Tier 1: load-bearing names
 -----------------------------
 
 Renaming any of these breaks the page with no error and no failing test.
@@ -82,7 +81,7 @@ Page-level singletons
 | ``#id-nft-preview``| ``nftShowTooltip`` / ``nftHideTooltip``                       | NFT hover preview                                                                   |
 +--------------------+---------------------------------------------------------------+-------------------------------------------------------------------------------------+
 
-``.pricetip`` is read as ``$(".pricetip")[0]`` --- **the first match wins**. If a
+``.pricetip`` is read as ``$(".pricetip")[0]``, so **the first match wins**. If a
 layout ever renders two of them, the second is inert.
 
 Checkbox wrappers
@@ -104,9 +103,9 @@ Value spans rewritten by ``setCurrency``
 +--------------------+---------------------------------------------------------------+
 | ``span.val6``      | ``data-val``                                                  |
 +--------------------+---------------------------------------------------------------+
-| ``.val.pricealgo`` | ``data-val`` --- special-cased to render a rate               |
+| ``.val.pricealgo`` | ``data-val`` (special-cased to render a rate)                 |
 +--------------------+---------------------------------------------------------------+
-| ``.val.cons-value``| ``data-val`` --- only changes tooltip position                |
+| ``.val.cons-value``| ``data-val`` (only changes tooltip position)                  |
 +--------------------+---------------------------------------------------------------+
 | ``.price``         | ``data-val``, ``data-unit``                                   |
 +--------------------+---------------------------------------------------------------+
@@ -115,7 +114,7 @@ Value spans rewritten by ``setCurrency``
 
 **These elements must contain no markup of their own.** ``setCurrency``,
 ``togglePrice`` and ``toggleUnitPrice`` all assign ``innerHTML``, so any child element
-is destroyed on the first currency switch. This has already happened once --- it
+is destroyed on the first currency switch. This has already happened once, and it
 is why the screen-reader label for the total lives *outside* ``.pricetip``, and
 why ``test_the_label_is_not_inside_the_element_the_script_rewrites`` exists.
 
@@ -134,7 +133,7 @@ In-place controls
 | ``.price``,           | as above            | Flip to the reciprocal reading                                                     |
 | ``.unitprice``        |                     |                                                                                    |
 +-----------------------+---------------------+------------------------------------------------------------------------------------+
-| ``.copy``             | ---                 | Bound in **``site.js``**, not ``address.js``: this is a site-wide contract         |
+| ``.copy``             | ---                 | Bound in ``site.js``, not ``address.js``: this is a site-wide contract             |
 +-----------------------+---------------------+------------------------------------------------------------------------------------+
 
 ``data-distid`` values must be **unique and non-empty** across the page; there is
@@ -163,20 +162,20 @@ Four visibility wrappers toggled by ``setNftFloor``: ``#id-chart-ratio`` ·
 only.*
 
 Every chart function returns early when its canvas is absent, so a layout that
-omits the consolidated section is safe --- but only because each guard is
+omits the consolidated section is safe, but only because each guard is
 individually present. Keep them. It is also what lets designs 2 and 3 load
 ``address.js`` for the currency switch without its chart code finding anything
 to draw on.
 
-SVG charts --- designs 2 and 3
+SVG charts: designs 2 and 3
 """"""""""""""""""""""""""""""
 
 ``static/js/dynamic.js`` reads the same payload blocks and builds the donuts with
 ``createElement``. Its contract is small:
 
 ``#charts``
-  the ``<details>`` panel. Nothing is drawn until it is first opened --- six
-  donuts of SVG is a great deal of markup to hand a reader who never looks --
+  the ``<details>`` panel. Nothing is drawn until it is first opened (six
+  donuts of SVG is a great deal of markup to hand a reader who never looks),
   and it is drawn only once, since the payload does not change while the page
   is open. A panel that arrives already open (restored by the browser) is drawn
   immediately, because no ``toggle`` event is coming.
@@ -196,7 +195,7 @@ Four things about the geometry are worth not rediscovering:
 * **Shares are of magnitude.** A borrowed position is negative; summing signed
   values gives a total smaller than its parts and fractions over 1, which draws
   slices lapping the ring and painting over each other.
-* Labels are asset and collection names off the chain --- whatever their creator
+* Labels are asset and collection names off the chain, whatever their creator
   typed. They are set with ``textContent``, never ``innerHTML``. This is the one
   place on the page where markup could be smuggled in.
 * Each ``<path>`` carries a ``<title>``, and the ``<svg>`` an ``aria-label``. A
@@ -204,19 +203,19 @@ Four things about the geometry are worth not rediscovering:
 
 --------------------------------------------------------------------------------
 
-Tier 2 --- structural relationships
+Tier 2: structural relationships
 -----------------------------------
 
 These are not names but *arrangements*. They survive a rename and break on a
 re-nesting, which makes them the easiest thing to lose in a redesign.
 
-``.fitem`` --- the addressable entry
+``.fitem``: the addressable entry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Every asset entry, NFT collection entry and NFT item is a ``.fitem``.
 - **Each carries a unique ``id``.** The filter collects ids; ``checkOpened``
   and ``reloadPage`` reopen by id after a refresh.
-- ``.fitem`` is **nestable** --- an NFT item ``.fitem`` sits inside its collection
+- ``.fitem`` is **nestable**: an NFT item ``.fitem`` sits inside its collection
   ``.fitem``. ``getNodesThatContain`` calls ``.parents('.fitem')`` and takes the
   first, i.e. the nearest ancestor. Adding an intermediate ``.fitem`` changes
   which entry the filter thinks it found.
@@ -227,7 +226,7 @@ re-nesting, which makes them the easiest thing to lose in a redesign.
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``checkOpened`` does ``$('.' + section + 'sec').find('.fitem')``. It is a
-**descendant** walk, deliberately --- the rows sit inside a wrapper below the
+**descendant** walk, because the rows sit inside a wrapper below the
 section heading, so ``.children()`` would find the heading and never reach a row.
 Any depth is fine; leaving the section is not.
 
@@ -254,7 +253,7 @@ Break this and filtering an NFT collection shows the row with no image.
 
 - ``.nfticon`` needs ``data-path`` (full-size image for the hover preview).
 - ``img.nft`` needs ``data-src``; ``deferImages`` uses
-  ``getElementsByClassName('nft')``, so the bare class name matters ---
+  ``getElementsByClassName('nft')``, so the bare class name matters:
   ``nft-thumb`` would not be found.
 
 Item headers
@@ -378,7 +377,7 @@ The position component
 *Designs 2 and 3 only; the classic page uses ``snippets/asas/program.html``.*
 
 ``templates/snippets/dynamic/position.html`` renders one position. Its structure
-is a contract in both directions --- the scripts read it, and both designs
+is a contract in both directions: the scripts read it, and both designs
 depend on it.
 
 +------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
@@ -435,7 +434,7 @@ How the layout survives a shared cache
 *view* decorator, so it runs inside the middleware: ``SessionMiddleware`` appends
 ``Vary: Cookie`` in its ``process_response``, which happens after
 ``learn_cache_key`` has already recorded which headers to key the entry on. The
-header is on the finished response and plays no part in the lookup --- reading it
+header is on the finished response and plays no part in the lookup. Reading it
 as evidence of per-reader caching is an easy and expensive mistake.
 
 The layout escapes that by being folded into the **cache key prefix**:
@@ -448,7 +447,7 @@ The layout escapes that by being folded into the **cache key prefix**:
    )
 
 One entry per ``(address, layout)``; readers on the same layout still share one.
-``vary_on_cookie`` was the obvious alternative and is the wrong one --- it keys on
+``vary_on_cookie`` was the obvious alternative and is the wrong one: it keys on
 the whole cookie, so every session gets its own entry and the sharing is lost.
 
 The prefix is built from the **normalized** layout, which is what stops a paid
@@ -460,26 +459,16 @@ path by which design 2's bytes are served to someone who may not have it.
 
    The layout and its ``compact`` flag are the **only** reader-derived values the
    address context may carry, because they are the only ones the key accounts
-   for. Everything else about a reader --- their linked addresses, their router,
-   their tier --- would be handed to whoever asked next. That is why
+   for. Everything else about a reader (their linked addresses, their router,
+   their tier) would be handed to whoever asked next. That is why
    ``core.views.SwapEntryView`` is a separate non-cached partial, and why pins
    and the saved order live in ``localStorage`` and never reach the server.
-
-.. note::
-
-   This replaces an earlier design in which the layout arrived from a non-cached
-   ``/layout-preference/`` partial, was stamped onto ``<html>`` as
-   ``data-layout-position``, and was re-stamped before paint from
-   ``localStorage``. That existed only because the markup was assumed to be
-   unable to vary per reader. Keying the cache is the real answer, and it
-   removed ``LayoutPreferenceView``, its URL, ``_layout_preference.html``,
-   ``static/js/layout.js`` and the pre-paint stamp in ``base.html``.
 
 .. warning::
 
    ``core/tests/test_address_layout.py`` demonstrates the shared cache entry
    directly, and includes a test that fails if the suite is ever run with
-   caching disabled --- ``config.settings.development`` uses ``DummyCache``,
+   caching disabled: ``config.settings.development`` uses ``DummyCache``,
    under which every one of these tests passes vacuously and the page looks
    perfectly isolated. ``frontend/pytest.ini`` pins the automated-test settings
    for this reason. A probe run outside that rootdir does not get them.
@@ -495,8 +484,8 @@ Pinning a position
 *Designs 2 and 3 only.*
 
 ``[data-pin-position]`` pins one position. Two things happen: it floats to the
-top of its program group --- ``[data-positions]`` marks the list it reorders within
---- and a **copy** of it appears in the pinned band at the top of the page.
+top of its program group (``[data-positions]`` marks the list it reorders within)
+and a **copy** of it appears in the pinned band at the top of the page.
 
 The band holds copies, not the rows. Moving a position out of its asset would
 take it away from the money column it aligns to and the group subtotal it
@@ -505,7 +494,7 @@ contributes to, which are the two things that make its figure readable at all.
 Every position carries a control, including the only position in its group. That
 reversed an earlier rule: when pinning meant nothing but floating within a
 group, a group of one had no order to change and the control could not act. The
-band changes what pinning means --- for a lone position buried in an asset the
+band changes what pinning means: for a lone position buried in an asset the
 reader must scroll to and open, it is the case the band is *most* useful for.
 
 Positions are grouped by **program**, not by venue; the reasoning is under
@@ -520,7 +509,7 @@ names nothing a reader can act on.
 The hard part is saying *which* position. Three pids in the reference bundle name
 two rows each: two Lofty AMM entries, two Cometa stakes, two Gora.fi delegations.
 Every identifying field the payload carries is identical for both, and the only
-things that differ --- the value and the amount --- are the two things that change
+things that differ (the value and the amount) are the two things that change
 between loads. Those rows carry ``data-pid-ambiguous``.
 
 ``data-amount`` is the tiebreaker, and **it is deliberately not part of the
@@ -534,20 +523,20 @@ pid**:
   witness is stable in exactly the situation the pin has to survive.
 
 Restoration is: one pid match, use it; several, take the nearest amount, with an
-exact match winning outright. An ordinal was rejected --- unique but *unstable*,
+exact match winning outright. An ordinal was rejected: unique but *unstable*,
 so a pin follows the rank rather than the position and silently lands on the
 other row.
 
 .. note::
 
    This can still choose wrongly, but only if two positions of one program cross
-   in magnitude between visits --- far narrower than the ordinal, which breaks on
+   in magnitude between visits. That is far narrower than the ordinal, which breaks on
    *any* reordering, and the cost is a row appearing at the top of a list. The
    row says so: a pinned ambiguous position takes a warning-coloured stripe
    rather than the primary one.
 
    ``test_the_witness_is_not_part_of_the_identity`` asserts the ambiguous pairs
-   really do differ in amount --- and fails if the sample ever stops containing
+   really do differ in amount, and fails if the sample ever stops containing
    an ambiguous pair, so the fallback cannot quietly become untested.
 
 **What may never become a handle**: the value, the amount, the distribution, or
@@ -565,15 +554,10 @@ The asset header renders the grip and the pin as **direct children** of
 collapse both into one cell. ``static/js/pins.js`` reads them: the pin sends a
 row to the top of its section, the grip reorders it.
 
-There was a shared ``entry_controls.html`` snippet wrapping them in
-``.entry-controls``. It was written when the controls were going into design 1,
-and nothing included it once design 1 was restored to the untouched old page, so
-it and its stylesheet rules are gone.
-
 +--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | Selector                 | Required                                                           | Why                                                                                |
 +==========================+====================================================================+====================================================================================+
-| ``[data-pin]``           | the id of the ``.fitem`` it sits inside                            | The id is what survives a reload. An index or a row number does not --- the same   |
+| ``[data-pin]``           | the id of the ``.fitem`` it sits inside                            | The id is what survives a reload. An index or a row number does not. The same      |
 |                          |                                                                    | reasoning that produced ``pid`` for positions                                      |
 +--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | ``[data-pin]``           | ``aria-pressed="false"`` **as rendered**                           | The page is cached and shared; a pressed control here would be pressed for whoever |
@@ -586,13 +570,13 @@ it and its stylesheet rules are gone.
 
 **Only top-level entries carry a control.** An NFT item is itself a ``.fitem``
 nested inside its collection's ``.fitem``, and ``pins.js`` derives the container
-it reorders from the control's own entry --- so a control rendered on a nested
+it reorders from the control's own entry, so a control rendered on a nested
 entry would reorder a collection's items instead of the collections.
 ``test_nested_entries_have_no_control`` is what keeps that true.
 
 **Entries are moved in the DOM, not reordered with CSS ``order``.** ``order``
 would avoid a reflow, but it moves a row visually while leaving it where it was
-for a screen reader and for keyboard navigation --- the exact fault the position
+for a screen reader and for keyboard navigation, the exact fault the position
 component was rebuilt to remove, and it would be no more acceptable here. The
 served order is captured once before anything moves and every arrangement is
 rebuilt from it, so unpinning returns a row to where it belongs rather than to
@@ -601,7 +585,7 @@ wherever it ended up.
 The grip carries ``data-drag`` with the same id, and offers three ways to move a
 row: a pointer drag (Pointer Events, **not** HTML5 drag-and-drop, which does not
 fire on touch at all), the arrow keys, and Home/End. The keyboard path is not a
-courtesy --- a drag is unusable without sight and awkward with a tremor, and this
+courtesy: a drag is unusable without sight and awkward with a tremor, and this
 is the same operation. After a move the grip's own ``aria-label`` gains "Now 2 of
 7"; rewriting the label the reader's focus is already on beats a live region that
 can drift out of step with it.
@@ -618,7 +602,7 @@ this page stays separate for free.
 .. warning::
 
    **The served order is captured on the container element, and the handlers
-   bind once per document.** Both guard against this script running twice --- it
+   bind once per document.** Both guard against this script running twice: it
    is a plain ``<script>`` today, but the page already pulls one in through an
    htmx partial, and a second execution with module-scoped state binds a second
    set of delegated handlers. The symptom is silent: one arrow key moves a row
@@ -631,8 +615,8 @@ Folded rows
 page kept, because it is a fix rather than a redesign: it stops the page leading
 with seventy-six rows.
 
-A section shows its first ``settings.ADDRESS_INITIAL_ASSETS`` rows ---
-``ADDRESS_INITIAL_COLLECTIONS`` for collections --- and folds the rest behind a
+A section shows its first ``settings.ADDRESS_INITIAL_ASSETS`` rows
+(``ADDRESS_INITIAL_COLLECTIONS`` for collections) and folds the rest behind a
 control that reveals the same number again on each press.
 ``static/js/showmore.js`` reveals them on design 1; ``toolbar.js`` does it for
 designs 2 and 3, which fold from the toolbar because it also filters and sorts.
@@ -640,21 +624,15 @@ designs 2 and 3, which fold from the toolbar because it also filters and sorts.
 .. note::
 
    **A plain count, for all three designs, since 2026-08-28.** It replaced a
-   magnitude rule --- ``ADDRESS_SECTION_THRESHOLD`` with an
-   ``ADDRESS_SECTION_FLOOR`` under it, applied by a ``utils.cutoff`` module
-   that no longer exists --- which showed 33 rows on one address and 8 on the
-   next, and whose control then revealed the entire remainder in one press, so
-   a label reading "39 more" delivered an unfold rather than a batch. A reader
-   cannot see a rule, only its result, and a number they cannot predict reads
-   as arbitrary. ``config/settings/base.py`` carries the full reasoning beside
-   the two settings.
+   magnitude rule that no longer exists. The reasoning is beside the two settings
+   in ``config/settings/base.py`` and in ``docs/logbook.md``.
 
 +--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | Selector                 | Required                                                           | Why                                                                                |
 +==========================+====================================================================+====================================================================================+
 | ``[data-folding]``       | on the container of a section's rows                               | The class is toggled here, not on sixty rows individually                          |
 +--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
-| ``.fitem.folded``        | on every row past the cutoff                                       | Hidden by CSS, still in the document --- the filter has to be able to find it      |
+| ``.fitem.folded``        | on every row past the cutoff                                       | Hidden by CSS, still in the document: the filter has to be able to find it         |
 +--------------------------+--------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | ``[data-show-more]``     | ``aria-expanded="false"`` as rendered                              | The reader expands it; the stylesheet reads the attribute for the rows *and* for   |
 |                          |                                                                    | the button's own label, so the two cannot disagree                                 |
@@ -667,13 +645,13 @@ designs 2 and 3, which fold from the toolbar because it also filters and sorts.
 payload is in hand before the page renders, so a request to reveal dust would
 cost more than the markup does, and the reader gets an instant answer instead of
 a spinner. ``display: none`` rather than a height or an opacity, so a folded row
-is out of the accessibility tree and out of tab order --- a reader hearing sixty
+is out of the accessibility tree and out of tab order: a reader hearing sixty
 rows they cannot see is worse served than one who presses a button.
 
 .. note::
 
    Anything measuring geometry must unfold first. A hidden row has no box, so a
-   layout assertion reads zero and compares it against zero --- which passes as
+   layout assertion reads zero and compares it against zero, which passes as
    often as it fails. ``AssetRowLayoutTest._render`` clicks every control and
    then waits for ``document.images`` to settle, because ``deferImages`` assigns
    each ``src`` after load and every thumbnail that lands pushes the rows below
@@ -693,9 +671,8 @@ The NFT section
 *Designs 2 and 3 only.* ``snippets/dynamic/nfts.html``, ``collection.html`` and
 ``nft.html``.
 
-This section was design 1's markup included unchanged until pass 3, and the
-reason it had to be rebuilt is a measurement rather than a preference: design
-1's collection rows put the value wherever the text leaves room, so **the money
+This section is not design 1's markup, and the reason is a measurement rather
+than a preference: design 1's collection rows put the value wherever the text leaves room, so **the money
 column stopped at the assets**. Half a page aligned to a column and half not is
 not a page with a money column.
 
@@ -750,7 +727,7 @@ shown is a ratio, and a bar that stopped short would read as a third quantity.
 The toolbar
 ^^^^^^^^^^^
 
-*Designs 2 and 3 only.* Pass 2, ``snippets/dynamic/toolbar.html`` and
+*Designs 2 and 3 only.* ``snippets/dynamic/toolbar.html`` and
 ``static/js/toolbar.js``.
 
 Everything the toolbar does happens in the browser, on a page that is already
@@ -758,7 +735,7 @@ in the reader's hands. That is not an optimisation: this page's cache entry is
 shared by every reader on the layout, so the server cannot know what one reader
 has filtered to and must not render it. The state lives under ``view:<path>`` in
 their own browser, beside the pins and the saved order, and **every control
-ships in its default state** for the same reason --- a control rendered pressed
+ships in its default state** for the same reason: a control rendered pressed
 because *somebody* pressed it would be handed to whoever asked next.
 
 Load-bearing names:
@@ -774,12 +751,7 @@ Load-bearing names:
    published so the fold the template renders and every fold ``toolbar.js``
    renders afterwards are one rule rather than two copies.
 
-   All three designs use this count now. These two briefly carried the
-   prototype's 95%/99%/99.5%/All control, which was only ever a way to
-   demonstrate the page with everything on screen before a load-more existed
-   --- "show me the rows carrying 99.5% of the value" is not a sentence a
-   reader thinks in --- and design 1 briefly kept the magnitude rule described
-   above. Neither survives.
+   All three designs use this count.
 
    ``showmore.js`` stands down on ``.dynamic-page`` for the same reason: it
    reveals a whole tail in one press, and these reveal a batch.
@@ -787,7 +759,7 @@ Load-bearing names:
 ``data-sort-value`` / ``-amount`` / ``-name`` / ``-positions`` on ``.fitem``
    The sort keys. Rendered rather than read out of the row, because the visible
    figure is rounded and grouped, and Django's thousands separator is
-   locale-dependent --- a sort parsing it would silently tie rows that differ.
+   locale-dependent, so a sort parsing it would silently tie rows that differ.
 
 ``data-search`` on ``.fitem`` and ``.position``
    The haystack. Deliberately not the element's ``textContent``, which on a
@@ -804,7 +776,7 @@ Load-bearing names:
 ``data-owner`` on ``.position``
    The asset the row belongs to. On the row itself rather than inferred from its
    ancestors, because "Group by venue" moves the whole ``.pgroup`` out of its
-   asset --- for as long as that is on, a position's ancestors say nothing about
+   asset: for as long as that is on, a position's ancestors say nothing about
    which asset it is a holding of.
 
 ``#asset-list`` / ``#venue-list``
@@ -839,7 +811,7 @@ see what the rest adds up to. ``#band-readout`` is that number, and it appears
 only when it differs from the headline.
 
 **A switched-off category keeps its figure and its width.** Zeroing it would
-say "you hold none" when what happened is "you hid it" --- and a bar segment
+say "you hold none" when what happened is "you hid it", and a bar segment
 shrunk to nothing has no box left to press, so the control would disable
 itself. It dims instead.
 
@@ -854,7 +826,7 @@ whatever else is going on".
    ``snippets/show_more.html`` must stay the **immediately following sibling**
    of the list it unfolds. ``showmore.js`` finds its container by looking at the
    control wrapper's previous sibling. ``#venue-list`` was originally inserted
-   between the two, which pointed the control at the empty venue container ---
+   between the two, which pointed the control at the empty venue container,
    so "Show 38 more assets" revealed nothing and every measurement of a folded
    row read zero. It degrades to the right answer through a fallback; a fallback
    is not where this belongs.
@@ -862,7 +834,7 @@ whatever else is going on".
 .. note::
 
    ``address.js`` does not touch ``.dynamic-page``. Its ``setCurrency`` writes
-   ``innerHTML`` --- number *and* unit --- into every ``span.val``, which is
+   ``innerHTML`` (number *and* unit) into every ``span.val``, which is
    right for design 1, where the unit is part of the value's text. Here each
    figure pairs with a separate unit element, so it left asset headers reading
    "253.74 ALGO ALGO" and destroyed the nested ``<span class="unit">`` in every
@@ -872,7 +844,7 @@ whatever else is going on".
 
 --------------------------------------------------------------------------------
 
-Tier 3 --- free to change
+Tier 3: free to change
 -------------------------
 
 Everything not listed above: all Tailwind utilities, ``.itemrow`` / ``.itemleft`` /
@@ -880,11 +852,11 @@ Everything not listed above: all Tailwind utilities, ``.itemrow`` / ``.itemleft`
 ``asar`` as the ``.tdist`` toggle target), ``.icondiv``, spacing, ordering, wrappers.
 
 Some of these appear in ``functional_tests/test_address_page.py`` as convenient
-handles rather than as contracts --- update the test with the markup.
+handles rather than as contracts: update the test with the markup.
 
 --------------------------------------------------------------------------------
 
-Known-fragile --- fix rather than preserve
+Known-fragile: fix rather than preserve
 ------------------------------------------
 
 Do **not** carry these into the new layouts.
@@ -899,7 +871,7 @@ Do **not** carry these into the new layouts.
    if (!header.parent().hasClass("active"))
 
 Two problems. ``unit.parent().parent()`` assumes ``.unit`` sits exactly two levels
-below the clickable header. And **``active`` is a Materialize leftover** --- no
+below the clickable header. And ``active`` is a Materialize leftover: no
 address-page template emits it, so the condition is always true and the handler
 clicks a header that may already be open, closing it. Clicking a chart slice for
 an already-open asset collapses it.
@@ -916,7 +888,7 @@ designs 2 and 3 draw their charts as SVG and bind their own click handling.
 
 It toggles ``scale-in``, ``scale-out`` and ``valign-wrapper``, then does the real work
 inside a 300 ms ``setTimeout``. **None of those three classes has any CSS in the
-current build** --- the swap works only because the same function also sets inline
+current build**, and the swap works only because the same function also sets inline
 ``display``. So the delay is dead time, and the vertical centering
 ``valign-wrapper`` used to provide is simply gone.
 
@@ -950,7 +922,7 @@ the contract, change the test, change the JavaScript, in one commit.
 
 **And regenerate the jest fixture.** ``javascript_tests/address.html`` is a
 captured render, so any markup change leaves it describing a page the site no
-longer serves --- the original 3,000-line drift, exactly:
+longer serves. That is the original 3,000-line drift, exactly:
 
 .. code-block:: bash
 
@@ -967,7 +939,7 @@ and names things freely. DaisyUI ships components called ``card``, ``stack``,
 ``toggle`` and ``divider``, among others. Port that markup unchanged and the
 framework's rules apply to your elements, with no error of any kind.
 
-Both ``.card`` and ``.stack`` came over and had to be renamed --- to ``.mcard``
+Both ``.card`` and ``.stack`` came over and had to be renamed, to ``.mcard``
 and ``.allocation-bar``. ``.stack`` is the instructive one: DaisyUI sets
 ``display: grid`` with **every child in the same grid area**, so the
 five-segment allocation bar would have rendered as one segment covering the
@@ -978,13 +950,13 @@ deliberate doing it.
 class used in the four money-design templates must be either declared in
 ``static/css/input.css`` or named in an explicit allowlist of framework classes
 we chose to inherit. It catches collisions **and** classes that style nothing,
-in the same assertion --- on its first run it found ``btn-accent`` (the
+in the same assertion: on its first run it found ``btn-accent`` (the
 prototype's name; DaisyUI's is ``btn-primary``) and a never-declared
 ``addr-list``.
 
 ``.card`` and ``.stack`` also get their own named test, because the general
 check passes the moment somebody "fixes" a collision by declaring ``.card`` in
-``input.css`` --- which starts a specificity fight whose winner depends on
+``input.css``, which starts a specificity fight whose winner depends on
 source order.
 
 To check a name by hand:

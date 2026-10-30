@@ -10,7 +10,7 @@ The requirements necessary to use this project on a development machine are:
 
   sudo apt-get install git python3 python3-venv postgresql postgresql-contrib nodejs npm
 
-``nodejs`` and ``npm`` are needed for three separate things --- the wallet
+``nodejs`` and ``npm`` are needed for three separate things: the wallet
 package's Vite build, the jest suites, and ``build-static.sh``, which minifies
 our own JavaScript through ``npx esbuild``. The stylesheet needs neither: it is
 built by a standalone binary that ``website/fetch-tailwind.sh`` downloads, with
@@ -61,8 +61,8 @@ Initial packages installation:
 Linting
 ^^^^^^^
 
-To maintain code quality and consistent formatting, use `isort` and `black`. 
-First, navigate to the `website` directory:
+To maintain code quality and consistent formatting, use ``isort`` and ``black``.
+First, navigate to the ``website`` directory:
 
 .. code-block:: bash
 
@@ -74,7 +74,7 @@ Sort the Python imports alphabetically:
 
   isort .
 
-Run `black` for code formatting, making sure to explicitly exclude the submodules:
+Run ``black`` for code formatting, making sure to explicitly exclude the submodules:
 
 .. code-block:: bash
 
@@ -84,15 +84,15 @@ Run `black` for code formatting, making sure to explicitly exclude the submodule
 Submodules
 ^^^^^^^^^^
 
-This project utilizes submodules for isolated feature sets. The `widgets` submodule is an obligatory requirement, while the `permissiondapp` submodule is an optional addition used by the ASA Stats website.
+This project uses submodules for isolated feature sets. The ``widgets`` submodule is required; ``permissiondapp`` is optional and used by the ASA Stats website.
 
-To fetch the absolute latest version of the obligatory `widgets` submodule:
+To fetch the latest version of the ``widgets`` submodule:
 
 .. code-block:: bash
 
   git submodule update --remote website/widgets
 
-To fetch the absolute latest version of the optional `permissiondapp` submodule:
+To fetch the latest version of the optional ``permissiondapp`` submodule:
 
 .. code-block:: bash
 
@@ -155,7 +155,7 @@ pg_trgm extension is used for determining the similarity of text based on trigra
   postgres=# CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 
-Finally, under frontend web Python environemnt:
+Finally, in the frontend Python environment:
 
 .. code-block:: bash
 
@@ -210,7 +210,7 @@ Run project's functional tests:
 
 Run widgets submodule unit tests:
 
-The `widgets` submodule is an integral part of the project and depends heavily on
+The ``widgets`` submodule is an integral part of the project and depends heavily on
 the frontend repository. Therefore, testing widgets directly from within the frontend
 is an expected behavior for developers.
 
@@ -227,11 +227,11 @@ Invoke the following to show the related coverage report in terminal:
   pytest -v widgets -c widgets/pytest.ini --cov=widgets --cov-report=term-missing --cov-config=widgets/.coveragerc
 
 
-Typescript
+TypeScript
 ^^^^^^^^^^
 
 The TypeScript application is ``wallet/`` at the repository root; see
-:doc:`frontend`.
+:doc:`wallet`.
 
 .. code-block:: bash
 
@@ -241,7 +241,7 @@ The TypeScript application is ``wallet/`` at the repository root; see
   npm run test         # npm run test:coverage
 
 
-Javascript
+JavaScript
 ^^^^^^^^^^
 
 The site's own scripts, and the in-house widgets', are run by ``website``'s
@@ -253,9 +253,8 @@ jest:
   npm install
   npm run test         # npm run test:coverage
 
-That single invocation collects **every** ``*.test.js`` under ``website`` ---
-its own suites plus the ones inside ``widgets/inhouse/*/tests/javascript/``,
-because they sit under the same rootDir. So a package a widget suite requires
-has to be declared in ``website/package.json``, whatever the widget's own
-``package.json`` says: that is the file ``npm install`` reads here and in CI.
-``core/tests/test_jest_dependencies.py`` checks the two cannot drift.
+That single invocation collects **every** ``*.test.js`` under ``website``, including
+the widgets' suites in ``widgets/inhouse/*/tests/javascript/``. A package a widget
+suite requires must therefore be declared in ``website/package.json``; the widgets
+docs (*Development*, *Tests*) explain why, and
+``core/tests/test_jest_dependencies.py`` checks that the two manifests cannot drift.
