@@ -5,7 +5,7 @@ A TypeScript application, built with Vite, that provides the browser-side wallet
 experience: connecting a wallet, proving ownership of an address to the Django
 backend, expanding privileges on the manage page, and signing swap groups.
 
-It lives in **``wallet/``** at the repository root --- not under ``website/``,
+It lives in ``wallet/`` at the repository root --- not under ``website/``,
 because it is bundled rather than served from Django's static files, and not in
 a directory called ``frontend``, which is the repository itself.
 

@@ -23,7 +23,7 @@ the logs by issuing the following command:
   sudo journalctl -u gunicorn-production_website.service
 
 If you want logging to a file, replace the following variable in the settings
-file `website/config/settings/production.py``:
+file ``website/config/settings/production.py``:
 
 .. code-block:: python
 
@@ -50,7 +50,7 @@ You can then access the log with:
 
 .. code-block:: bash
 
-  sudo tail -n 50 /var/www/www.asastats.com/logs/django-warning.log
+  sudo tail -n 50 /var/www/asastats.com/logs/django-warning.log
 
 
 Invalid HTTP_HOST header
@@ -123,10 +123,11 @@ Check killed processes:
 
 .. code-block:: bash
 
-  sudo dmesg -T | egrep -i 'killed process'+
+  sudo dmesg -T | grep -Ei 'killed process'
 
 
-The following setting will prevent OOM from killing the process:
+To make the OOM killer much less likely to pick a service, add this to its
+systemd unit (``-1000`` exempts it entirely):
 
 .. code-block:: ini
 
@@ -178,6 +179,12 @@ Debugging using headers
 You can use a custom debugging middleware and inspect the headers
 through your browser's DevTools/Network tab.
 
+.. warning::
+
+  This middleware copies the session cookie and a hash of ``SECRET_KEY`` into
+  response headers. Use it on a development or testing host only, and remove it
+  before the code reaches production.
+
 .. code-block:: python
   :caption: website/config/settings/base.py
 
@@ -189,6 +196,9 @@ through your browser's DevTools/Network tab.
 
 .. code-block:: python
   :caption: website/core/middleware.py
+
+  from django.conf import settings
+
 
   class DebugEnvMiddleware:
       """Stamp every response with which settings/session/cache the *serving*

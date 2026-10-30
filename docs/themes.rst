@@ -18,9 +18,14 @@ design the rest of the site was moved onto.
 Stock DaisyUI
 -------------
 
-Registered by name in the ``@plugin "./daisyui.mjs"`` block: ``nord``, ``dim``,
-``abyss``, ``corporate``, ``retro``, ``cyberpunk``, ``valentine``, ``halloween``, ``garden``,
-``aqua``, ``lofi``, ``luxury``, ``dracula``, ``autumn``, ``business``, ``lemonade``, ``silk``.
+Registered by name in the ``@plugin "./daisyui.mjs"`` block (35 of them):
+``abyss``, ``acid``, ``aqua``, ``autumn``, ``black``, ``bumblebee``, ``business``,
+``caramellatte``, ``cmyk``, ``coffee``, ``corporate``, ``cupcake``, ``cyberpunk``,
+``dark``, ``dim``, ``dracula``, ``emerald``, ``fantasy``, ``forest``, ``garden``,
+``halloween``, ``lemonade``, ``light``, ``lofi``, ``luxury``, ``night``, ``nord``,
+``pastel``, ``retro``, ``silk``, ``sunset``, ``synthwave``, ``valentine``, ``winter``,
+``wireframe``. With ours (2), Dachi's (16) and Catppuccin's (4) that makes the 57 in
+``settings.AVAILABLE_THEMES``.
 
 These ship with DaisyUI (MIT) and need no separate attribution.
 
@@ -89,12 +94,13 @@ Adding one of ours or a stock one:
 2. add its name to ``settings.AVAILABLE_THEMES``;
 3. rebuild: ``./build-tailwind.sh``.
 
-Removing a third-party theme means removing **all four** of:
+Removing a third-party theme means removing all of:
 
 1. ``static/css/themes/<name>.css``;
 2. its ``@import`` in ``input.css``;
 3. its entry in ``settings.AVAILABLE_THEMES``;
-4. its entry in ``settings.THEME_ATTRIBUTION["themes"]``.
+4. its entry in ``settings.THEME_ATTRIBUTION["themes"]`` --- Dachi's themes only,
+   because the Catppuccin four are not in that list.
 
 ``test_core_context_processors_attributed_themes_are_offered`` fails if a
 vendored file is left uncredited, or if a credited theme is no longer offered.

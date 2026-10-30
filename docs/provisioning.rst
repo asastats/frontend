@@ -3,7 +3,7 @@ Provisioning
 
 ``Ansible`` is Python package used to deploy frontend infrastructure.
 
-This guide is made for ``Ubuntu Server 24.04.04 LTS`` hosts, but it's applicable for many other Debian based Linux/GNU distros.
+This guide is made for ``Ubuntu Server 24.04.4 LTS`` hosts, but it's applicable for many other Debian based Linux/GNU distros.
 
 
 Local machine requirements
@@ -58,7 +58,7 @@ Configuration for Ubuntu 24.04.4 server:
           - to: default
             via: 192.168.1.1
         nameservers:
-          addresses: [8.8.8.8, 4.4.4.4]
+          addresses: [8.8.8.8, 8.8.4.4]
 
 
 Configuration from above is activated by `sudo netplan apply`.

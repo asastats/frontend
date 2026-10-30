@@ -349,13 +349,8 @@ the bar and the figures tell different stories has no way to know which lied.
    stop reading as the same fact. They are defined as ``--c-*`` on
    ``.dynamic-page`` with a light/dark pair, not a per-theme value.
 
-.. note::
-
-   The segments and figures are **static elements, not buttons**, until the
-   toolbar lands. In the prototype each is a control that filters the whole
-   page, and that is what they will become, but a button that does nothing when
-   pressed is worse than a figure that never claimed it would. ``data-band`` is
-   already on them to bind to.
+The segments and figures are controls: ``data-band`` is the hook ``toolbar.js``
+binds to, and pressing one filters the whole page (see *The toolbar* below).
 
 Two filters feed all of this. Both are presentation rather than view context:
 design 1 renders the same payload ungrouped, and the serialized payload is
@@ -365,8 +360,9 @@ shared with the JSON API, which must not grow a website-shaped key.
   groups an asset's positions and subtotals them. **By program, not by venue**:
   ``program.name`` is a venue for most position types ("AlgoRai deposit",
   "CompX token stream") but the category ``Liquidity`` for LP positions, whose
-  venue lives in ``program.code``. The reference address puts 18 LP positions
-  across five venues under one heading.
+  venue lives in ``program.code`` ("Pact LP ALGO-EURS"). The reference address
+  puts 18 LP positions across five venues under one heading, because recovering
+  the venue would mean splitting a string the engine never promised the shape of.
 
 ``core_extras.allocation_bands``
   the five categories. Note the asymmetry it has to absorb: ``consolidated`` is
@@ -410,7 +406,7 @@ row put the breakdown first and pulled it back with ``order-1``/``order-2``,
 which bought a visual arrangement at the cost of the reading order.
 
 Where the presentation lives
-""""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **On the server, in the template it picks.** Each layout in
 ``utils/constants/core.py`` names a ``template`` and a ``compact`` flag;
@@ -433,7 +429,7 @@ handful of grid rules, and the first sign of the two drifting would be a reader
 reporting a figure on one that is missing from the other.
 
 How the layout survives a shared cache
-""""""""""""""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **The address page's cache entry is shared between readers.** ``cache_page`` is a
 *view* decorator, so it runs inside the middleware: ``SessionMiddleware`` appends
@@ -494,7 +490,7 @@ path by which design 2's bytes are served to someone who may not have it.
    inline after all. Do not weaken the assertions to make them pass.
 
 Pinning a position
-""""""""""""""""""
+^^^^^^^^^^^^^^^^^^
 
 *Designs 2 and 3 only.*
 
@@ -512,16 +508,8 @@ group, a group of one had no order to change and the control could not act. The
 band changes what pinning means --- for a lone position buried in an asset the
 reader must scroll to and open, it is the case the band is *most* useful for.
 
-.. note::
-
-   Positions are grouped by **program**, not by venue, and the difference is
-   worth knowing before reading a subtotal. ``program.name`` is a venue for most
-   position types --- "AlgoRai deposit", "CompX token stream", "Wallet balance"
-   --- but for liquidity positions it is the category ``Liquidity``, with the
-   venue inside ``program.code`` ("Pact LP ALGO-EURS"). The reference address
-   therefore shows 18 LP positions across five venues under one heading.
-   Recovering the venue would mean splitting a string the engine never promised
-   the shape of. See ``core.templatetags.core_extras.program_groups``.
+Positions are grouped by **program**, not by venue; the reasoning is under
+``core_extras.program_groups`` in *The allocation band*.
 
 A pin whose position is not on the page any more keeps its card, marked
 ``.stale``. Dropping it silently would tell the reader nothing about why the
@@ -682,10 +670,6 @@ a spinner. ``display: none`` rather than a height or an opacity, so a folded row
 is out of the accessibility tree and out of tab order --- a reader hearing sixty
 rows they cannot see is worse served than one who presses a button.
 
-**Magnitude, not value.** A borrow is negative by rule, so a signed running total
-sails past the threshold and back, hiding material rows on the way. An early
-version of this reported "the last -68.8% of value".
-
 .. note::
 
    Anything measuring geometry must unfold first. A hidden row has no box, so a
@@ -704,7 +688,7 @@ element the value span sits directly inside is a layout decision, and
 what gets toggled.
 
 The NFT section
-"""""""""""""""
+^^^^^^^^^^^^^^^
 
 *Designs 2 and 3 only.* ``snippets/dynamic/nfts.html``, ``collection.html`` and
 ``nft.html``.
@@ -764,7 +748,7 @@ children rather than widths, so the pair always fills the track -- what is being
 shown is a ratio, and a bar that stopped short would read as a third quantity.
 
 The toolbar
-"""""""""""
+^^^^^^^^^^^
 
 *Designs 2 and 3 only.* Pass 2, ``snippets/dynamic/toolbar.html`` and
 ``static/js/toolbar.js``.

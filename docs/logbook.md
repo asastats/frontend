@@ -5715,3 +5715,28 @@ to `https://api.x.com/oauth/authenticate` after the POST to `/accounts/twitter/l
 If X ever opens v2 user lookup to the Free plan again, or the project is paid
 for, switching back is a revert of this change. No `twitter_oauth2` social
 accounts existed, because no sign-up ever completed.
+
+## docs/address_page_dom.rst: "Folded rows" lost its "Magnitude, not value" paragraph (2026-10-30)
+
+The paragraph described the magnitude rule (`ADDRESS_SECTION_THRESHOLD` with a
+floor under it), which the same section's note records as replaced by a plain
+count on 2026-08-28. A borrow is negative by rule, so a signed running total
+sailed past the threshold and back and hid material rows on the way; an early
+version of the control reported "the last -68.8% of value". The page now folds
+by row count, so the paragraph described code that no longer exists. Removed
+rather than left to contradict the note above it. The unrelated "Shares are of
+magnitude" bullet under *SVG charts* is current and stays.
+
+## website/templates/subscriptions.html — no prices in the app (2026-10-30)
+
+Correction to the F10 entry (2026-10-24), which kept "the plans, features and
+prices" on `/subscriptions/` in the app. At the user's request the app now gets
+no prices either: with `PURCHASE_HIDDEN`, the four paid cards drop their whole
+`card-actions` strip (in the app it held only the price, the SUBSCRIBE button
+being hidden already), and the Free card drops "0 ASASTATS / Month" but keeps
+START. Plans, descriptions and features stay. The sentence that payments are
+made in ASASTATS (token ID) and processed via Subtopia stays: it names no
+amount. Browsers are unchanged.
+
+Tests: `core/tests/test_appclient.py::...::test_core_appclient_subscriptions_page_hides_prices_in_app`,
+`functional_tests/test_app_client.py::AppPurchaseLinksTest::test_subscriptions_page_shows_plans_without_buying`.
