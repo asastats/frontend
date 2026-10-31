@@ -22,17 +22,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     
-    <script>
-      (function () {
-        "use strict";
-        var saved = localStorage.getItem("theme");
-        if (saved) document.documentElement.setAttribute("data-theme", saved);
-        // The typeface override is stamped here for the same reason: applied
-        // after paint it would swap the font under the reader's eyes.
-        var face = localStorage.getItem("typeface");
-        if (face) document.documentElement.setAttribute("data-typeface", face);
-      })();
-    </script>
+    <script src="/static/js/preferences.js"></script>
     <title>ASA Stats</title>
     <meta name="description" content="ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development. Check it out.">
     <meta name="keywords" content="asastats,Algorand,ASA,token,portfolio,coin,evaluate,calculate,value,price,NFT,API,balance,account,address,amount">
@@ -60,11 +50,14 @@
 
     
     <link href="/static/css/style.tw.css" type="text/css" rel="stylesheet" media="screen">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="manifest" href="/site.webmanifest">
-    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#ababab">
+    
+    
+    
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2">
+    <link rel="manifest" href="/site.webmanifest?v=2">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg?v=2" color="#ababab">
     <meta name="msapplication-TileColor" content="#ababab">
     <meta name="theme-color" content="#ffffff">
 </head>
@@ -88,10 +81,10 @@
   </div>
   <div class="mt-8">
     <div>
-      <h1 class="index-slogan">Pinpoint the true value of your Algorand holdings across every protocol</h1>
+      <h1 class="index-slogan">The maximum value of your assets aggregated using the entire ecosystem liquidity</h1>
     </div>
     <form method="POST" action="." id="id_form">
-      <input type="hidden" name="csrfmiddlewaretoken" value="2JziyYCB8PeLwUJfVGFPy3nRkUwO4FLFh5V5aOyOI2r0ndI2S5hbHMTQ33Aw6Zc2">
+      <input type="hidden" name="csrfmiddlewaretoken" value="EAdEoiu2Amzq7zCbq9QalSR2YC2aLMZkbysDpTF6A3nN12IknhxhzcsGbdcuki01">
       <div class="mt-6 flex items-center gap-2 rounded-field border border-base-300 bg-base-100 px-3">
         
         <img class="prefix h-5 w-5 flex-none cursor-pointer opacity-60" src="/static/img/expand.png" alt="Click to expand" title="Enter several addresses">
@@ -117,10 +110,8 @@
   </div>
 </main>
 <footer class="mt-16 border-t border-base-300 bg-base-100">
-  
   <div class="mx-auto w-full max-w-6xl px-4 py-10 text-center">
 
-    
     <p class="text-sm text-base-content/60">
       &copy;&nbsp;2026&nbsp;ASA Stats
       <span class="mx-1.5 opacity-40" aria-hidden="true">&middot;</span>
@@ -135,22 +126,26 @@
           <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Product</h2>
           <ul class="mt-3 space-y-2 text-sm">
             <li><a class="link link-hover" href="/features/">Features</a></li>
+            <li><a class="link link-hover" href="/methodology/">P&L methodology</a></li>
             <li><a class="link link-hover" href="/subscriptions/">Subscriptions</a></li>
             <li><a class="link link-hover" href="/api/v2/schema/swagger-ui/">API</a></li>
             <li><a class="link link-hover" href="/faq/">FAQ</a></li>
+            
             <li><a class="link link-hover" href="https://apps.apple.com/us/app/asa-stats-mobile/id6443547246" target="_blank" rel="noopener">App&nbsp;Store</a></li>
             <li><a class="link link-hover" href="https://play.google.com/store/apps/details?id=com.asastats.app" target="_blank" rel="noopener">Play&nbsp;Store</a></li>
+            
           </ul>
         </div>
 
         <div>
           <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Token</h2>
-          
           <ul class="mt-3 space-y-2 text-sm">
             <li><a class="link link-hover" href="https://app.pact.fi/swap?pair=ALGO:0/ASA+STATS+TOKEN:393537671" target="_blank" rel="noopener">Buy ASASTATS</a></li>
             <li><a class="link link-hover" href="/tokenomics/">Tokenomics</a></li>
+            
             <li><a class="link link-hover" href="https://app.pact.fi/pool/2757667443" target="_blank" rel="noopener">Pact liquidity</a></li>
             <li><a class="link link-hover" href="https://app.tinyman.org/pool/UXOJX6NJDGLJ3KALT3JYGGGXFPXJIKMWJZTXSLB2KAVY5O7WJHPA2B3HJE/add-liquidity" target="_blank" rel="noopener">Tinyman liquidity</a></li>
+            
           </ul>
         </div>
 
@@ -169,13 +164,13 @@
           <h2 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">About</h2>
           <ul class="mt-3 space-y-2 text-sm">
             
-            
             <li><a class="link link-hover" href="#modalLogin">Log in</a></li>
             
             <li><a class="link link-hover" href="/about/">About</a></li>
             <li><a class="link link-hover" href="https://www.asastats.com/auth_privacy.html" target="_blank" rel="noopener">Privacy</a></li>
             <li><a class="link link-hover" href="/disclaimer/">Disclaimer</a></li>
             <li><a class="link link-hover" href="/sitemap/">Sitemap</a></li>
+            
           </ul>
         </div>
 
@@ -225,7 +220,7 @@
       
       <div id="modal-tab-login" class="modal-tab-panel is-active">
         <form class="login" id="modal_login_form" method="POST" action="/accounts/login/">
-          <input type="hidden" name="csrfmiddlewaretoken" value="2JziyYCB8PeLwUJfVGFPy3nRkUwO4FLFh5V5aOyOI2r0ndI2S5hbHMTQ33Aw6Zc2">
+          <input type="hidden" name="csrfmiddlewaretoken" value="EAdEoiu2Amzq7zCbq9QalSR2YC2aLMZkbysDpTF6A3nN12IknhxhzcsGbdcuki01">
           <input type="hidden" name="next" value="" id="id_modal_login_next" />
           <label class="block">
             <span class="mb-1 block text-sm">Login:</span>
@@ -237,10 +232,12 @@
             <input class="input w-full" id="id_password_modal" name="password"
                    autocomplete="off" placeholder="Password" type="password" required />
           </label>
+          
           <label class="mt-4 flex items-center gap-2 text-sm" title="Remember me on this computer">
             <input class="checkbox checkbox-sm" name="remember" type="checkbox">
             <span>Remember me</span>
           </label>
+          
           <div class="mt-5 text-center">
             <button class="btn btn-primary" id="id_cta_modal" type="submit">Log in</button>
           </div>
@@ -250,11 +247,14 @@
       
       <div id="modal-tab-social" class="modal-tab-panel" hidden>
         <div class="mx-auto flex max-w-sm flex-col gap-2">
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/discord/login/"><img class="h-5 w-5" src="/static/img/social/discord.png" alt="Discord logo" />Sign in with Discord</a>
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/twitter/login/"><img class="h-5 w-5" src="/static/img/social/twitter.png" alt="X logo" />Sign in with X</a>
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/reddit/login/"><img class="h-5 w-5" src="/static/img/social/reddit.png" alt="Reddit logo" />Sign in with Reddit</a>
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/github/login/"><img class="h-5 w-5" src="/static/img/social/github.png" alt="GitHub logo" />Sign in with GitHub</a>
-          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/google/login/"><img class="h-5 w-5" src="/static/img/social/google.png" alt="Google logo" />Sign in with Google</a>
+          
+
+
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/discord/login/" data-app-signin="discord"><img class="h-5 w-5" src="/static/img/social/discord.png" alt="Discord logo" />Sign in with Discord</a>
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/twitter/login/" data-app-signin="twitter_oauth2"><img class="h-5 w-5" src="/static/img/social/twitter.png" alt="X logo" />Sign in with X</a>
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/reddit/login/" data-app-signin="reddit"><img class="h-5 w-5" src="/static/img/social/reddit.png" alt="Reddit logo" />Sign in with Reddit</a>
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/github/login/" data-app-signin="github"><img class="h-5 w-5" src="/static/img/social/github.png" alt="GitHub logo" />Sign in with GitHub</a>
+          <a class="btn btn-outline justify-start gap-3" role="button" href="/accounts/google/login/" data-app-signin="google"><img class="h-5 w-5" src="/static/img/social/google.png" alt="Google logo" />Sign in with Google</a>
         </div>
       </div>
 
@@ -266,7 +266,7 @@
 
 
 <div id="wallet-connect" data-api-base="/api/v2/wallet/login">
-  <input type="hidden" name="csrfmiddlewaretoken" value="2JziyYCB8PeLwUJfVGFPy3nRkUwO4FLFh5V5aOyOI2r0ndI2S5hbHMTQ33Aw6Zc2">
+  <input type="hidden" name="csrfmiddlewaretoken" value="EAdEoiu2Amzq7zCbq9QalSR2YC2aLMZkbysDpTF6A3nN12IknhxhzcsGbdcuki01">
 
   <h5 class="text-lg font-semibold">Sign in with your wallet</h5>
   <p class="mt-2 text-sm text-base-content/80">Connect a wallet you have already linked to your
@@ -298,8 +298,8 @@
         </div>
 
         <label class="block">
-          
-          
+
+
           <select id="account-select-pera" class="select select-sm w-full">
             <option disabled selected>No accounts</option>
           </select>
@@ -332,8 +332,8 @@
         </div>
 
         <label class="block">
-          
-          
+
+
           <select id="account-select-defly" class="select select-sm w-full">
             <option disabled selected>No accounts</option>
           </select>
@@ -366,8 +366,8 @@
         </div>
 
         <label class="block">
-          
-          
+
+
           <select id="account-select-lute" class="select select-sm w-full">
             <option disabled selected>No accounts</option>
           </select>
@@ -400,8 +400,8 @@
         </div>
 
         <label class="block">
-          
-          
+
+
           <select id="account-select-kibisis" class="select select-sm w-full">
             <option disabled selected>No accounts</option>
           </select>
@@ -434,8 +434,8 @@
         </div>
 
         <label class="block">
-          
-          
+
+
           <select id="account-select-exodus" class="select select-sm w-full">
             <option disabled selected>No accounts</option>
           </select>
@@ -456,13 +456,13 @@
      data-api-base="/api/v2/wallet/login"
      data-wc-project-id="111111111111111111111"
      class="">
-  <input type="hidden" name="csrfmiddlewaretoken" value="2JziyYCB8PeLwUJfVGFPy3nRkUwO4FLFh5V5aOyOI2r0ndI2S5hbHMTQ33Aw6Zc2">
+  <input type="hidden" name="csrfmiddlewaretoken" value="EAdEoiu2Amzq7zCbq9QalSR2YC2aLMZkbysDpTF6A3nN12IknhxhzcsGbdcuki01">
 
   <h5>Other chains (EVM)</h5>
   <p>Connect an Ethereum-compatible wallet and prove control by signing a
     message. Nothing is sent on-chain and there is no fee.</p>
 
-  
+
 
   <div id="evm-app-error" data-notice="error" role="alert" style="display:none">
     No EVM wallet found. Install a browser wallet, or configure WalletConnect.
@@ -492,11 +492,13 @@
 <script src="/static/js/jquery-2.2.4.min.js"></script>
 <script src="/static/js/htmx.min.js"></script>
 <script src="/static/js/site.js"></script>
+<script src="/static/js/fiat.js"></script>
 <script src="/static/js/theme.js"></script>
 <script src="/static/js/authmodal.js"></script>
 <script type="module" src="/static/js/bundle.js"></script>
 
-<script type="application/ld+json">{"@context":"http://schema.org","@graph":[{"@type":"WebSite","name":"ASA Stats","url":"https://www.asastats.com","@id":"https://www.asastats.com/#site","description":"ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development.","publisher":{"@type":"Organization","@id":"https://www.asastats.com/#org","name":"ASA Stats"},"hasPart":[{"@type":"WebPage","name":"About","url":"https://www.asastats.com/about/","@id":"https://www.asastats.com/#about","description":"ASA Stats concept, goals and author/team/DAO"},{"@type":"WebPage","name":"Tokenomics","url":"https://www.asastats.com/tokenomics/","@id":"https://www.asastats.com/#tokenomics","description":"ASA Stats Token metrics"},{"@type":"WebPage","name":"Subscriptions","url":"https://www.asastats.com/subscriptions/","@id":"https://www.asastats.com/#subscriptions","description":"ASA Stats subscription model"},{"@type":"WebPage","name":"FAQ page","url":"https://www.asastats.com/faq/","@id":"https://www.asastats.com/#faq","description":"Frequently asked questions about ASA Stats project and token"},{"@type":"WebPage","name":"Features","url":"https://www.asastats.com/features/","@id":"https://www.asastats.com/#features","description":"ASA Stats features"},{"@type":"WebPage","name":"Disclaimer","url":"https://www.asastats.com/disclaimer/","@id":"https://www.asastats.com/#disclaimer","description":"Disclaimer for the https://www.asastats.com website"},{"@type":"WebPage","name":"ASA Stats Mobile Privacy Policy","url":"https://www.asastats.com/asm-privacy/","@id":"https://www.asastats.com/#asm-privacy","description":"Privacy Policy for the ASA Stats Mobile application"}]},{"@type":"Organization","name":"ASA Stats","description":"Responsible for development of the ASA Stats project","@id":"https://www.asastats.com/#org","image":"https://www.asastats.com/logo.png","logo":{"@type":"ImageObject","url":"https://www.asastats.com/icon.png","caption":"ASA Stats icon logo","width":512,"height":512},"url":"https://www.asastats.com","sameAs":["https://x.com/@asastatscom","https://www.reddit.com/r/asastats"]}]}</script>
+
+<script type="application/ld+json">{"@context":"http://schema.org","@graph":[{"@type":"WebSite","name":"ASA Stats","url":"https://www.asastats.com","@id":"https://www.asastats.com/#site","description":"ASA Stats evaluates and presents ASA and NFT price information on the Algorand blockchain. Portfolio Tracker, API and Feature-Driven Development.","publisher":{"@type":"Organization","@id":"https://www.asastats.com/#org","name":"ASA Stats"},"hasPart":[{"@type":"WebPage","name":"About","url":"https://www.asastats.com/about/","@id":"https://www.asastats.com/#about","description":"ASA Stats concept, goals and author/team/DAO"},{"@type":"WebPage","name":"Tokenomics","url":"https://www.asastats.com/tokenomics/","@id":"https://www.asastats.com/#tokenomics","description":"ASA Stats Token metrics"},{"@type":"WebPage","name":"Subscriptions","url":"https://www.asastats.com/subscriptions/","@id":"https://www.asastats.com/#subscriptions","description":"ASA Stats subscription model"},{"@type":"WebPage","name":"FAQ page","url":"https://www.asastats.com/faq/","@id":"https://www.asastats.com/#faq","description":"Frequently asked questions about ASA Stats project and token"},{"@type":"WebPage","name":"Features","url":"https://www.asastats.com/features/","@id":"https://www.asastats.com/#features","description":"ASA Stats features"},{"@type":"WebPage","name":"Disclaimer","url":"https://www.asastats.com/disclaimer/","@id":"https://www.asastats.com/#disclaimer","description":"Disclaimer for the https://www.asastats.com website"},{"@type":"WebPage","name":"ASA Stats app Privacy Policy","url":"https://www.asastats.com/asm-privacy/","@id":"https://www.asastats.com/#asm-privacy","description":"Privacy Policy for the ASA Stats app for iOS and Android"}]},{"@type":"Organization","name":"ASA Stats","description":"Responsible for development of the ASA Stats project","@id":"https://www.asastats.com/#org","image":"https://www.asastats.com/logo.png","logo":{"@type":"ImageObject","url":"https://www.asastats.com/icon.png","caption":"ASA Stats icon logo","width":512,"height":512},"url":"https://www.asastats.com","sameAs":["https://x.com/@asastatscom","https://www.reddit.com/r/asastats"]}]}</script>
 <script src="/static/js/index.js"></script>
 
 </body>

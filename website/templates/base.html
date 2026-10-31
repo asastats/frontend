@@ -10,7 +10,7 @@
 <html lang="en"{% if APP_CLIENT %} class="in-app" data-app-platform="{{ APP_CLIENT.platform }}"{% endif %}>{% load static %}{% load i18n %}
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0{% if APP_CLIENT %}, viewport-fit=cover{% endif %}"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0{% if APP_CLIENT %}, viewport-fit=cover, maximum-scale=1, user-scalable=no{% endif %}"/>
     {# Synchronous, in <head>: the reader's stored theme, typeface and folds must be stamped before paint. #}
     <script src="{% static 'js/preferences.js' %}"></script>
     <title>{% block title %}{{ WEBSITE_NAME }}{% endblock %}</title>
@@ -189,7 +189,7 @@
             <li><a class="link link-hover" href="#modalLogin">Log in</a></li>
             {% endif %}
             <li><a class="link link-hover" href="{% url 'about' %}">About</a></li>
-            <li><a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a></li>
+            <li>{% if APP_CLIENT %}<a class="link link-hover" href="{% url 'asm_privacy' %}">{% trans "Privacy" %}</a>{% else %}<a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener">{% trans "Privacy" %}</a>{% endif %}</li>
             <li><a class="link link-hover" href="{% url 'disclaimer' %}">Disclaimer</a></li>
             <li><a class="link link-hover" href="{% url 'sitemap' %}">Sitemap</a></li>
             {% if user.is_authenticated %}

@@ -41,7 +41,7 @@
             {% if field.name != 'remember' %}
               <label class="mb-1 block text-sm" for="{{ field.id_for_label }}">{{ field.label }}</label>
               {{ field }}
-            {% else %}
+            {% elif not APP_CLIENT %}{# the app always remembers: core.loginform #}
               <label class="flex items-center gap-2 text-sm" title="Remember me on this computer">
                 <input class="checkbox checkbox-sm" name="remember" type="checkbox"{% if form.initial.remember %} checked="checked"{% endif %}>
                 <span>Remember me</span>

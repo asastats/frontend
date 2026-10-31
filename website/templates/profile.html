@@ -103,7 +103,7 @@
     <dl class="divide-y divide-base-300">
       {% for link, text in subscriptions.items %}
       <div class="flex items-center justify-between gap-4 px-5 py-3 text-sm">
-        <dt>{{ link|safe }}</dt>
+        <dt>{% if PURCHASE_HIDDEN %}{{ link|striptags }}{% else %}{{ link|safe }}{% endif %}</dt>
         <dd{% if text == "EXPIRED" %} class="text-error"{% endif %}>{{ text }}</dd>
       </div>
       {% endfor %}

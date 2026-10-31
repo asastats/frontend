@@ -186,6 +186,8 @@ ACCOUNT_USER_DISPLAY = "utils.userhelpers.user_display"
 # to override allauth forms use following parameters
 # http://stackoverflow.com/a/25378883
 ACCOUNT_SIGNUP_FORM_CLASS = "core.forms.CustomSignupForm"
+# Not in core.forms: allauth imports that module for the signup form above.
+ACCOUNT_FORMS = {"login": "core.loginform.AppAwareLoginForm"}
 
 # Sign in with Apple (F5): Services ID, key id, team id and the .p8 key's path.
 APPLE_CLIENT_ID = get_env_variable("APPLE_CLIENT_ID", "")

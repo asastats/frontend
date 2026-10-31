@@ -50,7 +50,7 @@
   <section>
     <h2 id="policy">Privacy Policy and Terms of Use</h2>
     <div class="mt-3 space-y-4 text-base-content/80">
-      <p>Please read and confirm that our <a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Privacy Policy">Privacy Policy</a> and <a class="link link-hover" href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Terms of Use">Terms of Use</a> are in accordance with your usage of our site.</p>
+      <p>Please read and confirm that our {% if APP_CLIENT %}<a class="link link-hover" href="{% url 'asm_privacy' %}" title="{{ WEBSITE_NAME }} app privacy policy">Privacy Policy</a>{% else %}<a class="link link-hover" href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Privacy Policy">Privacy Policy</a>{% endif %} and <a class="link link-hover" href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Terms of Use">Terms of Use</a> are in accordance with your usage of our site.</p>
     </div>
   </section>
 

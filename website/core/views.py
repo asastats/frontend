@@ -23,6 +23,7 @@ from django.shortcuts import redirect, render
 from django.template import loader
 from django.template.defaultfilters import slugify
 from django.urls import reverse, reverse_lazy
+from django.utils.cache import patch_cache_control
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import cache_page, never_cache
@@ -42,7 +43,13 @@ from api.client import (
 )
 from api.main import fetch_and_serialize_account
 from api.widgets import bundle_and_addresses_from_path
-from core.appclient import app_cache_prefix, supported_wallets, widget_hidden
+from core.appclient import (
+    app_cache_prefix,
+    purchase_hidden,
+    subscriptions_redirect,
+    supported_wallets,
+    widget_hidden,
+)
 from core.context_processors import load_typefaces
 from core.forms import (
     DeactivateProfileForm,
@@ -473,7 +480,11 @@ class BaseAddressView(TemplateView):
         if app_cache_prefix(request):
             key_prefix = f"{app_cache_prefix(request)}-{key_prefix}"
         cached = cache_page(self.cache_timeout, key_prefix=key_prefix)(super().dispatch)
-        return cached(request, *args, **kwargs)
+        response = cached(request, *args, **kwargs)
+        # Server cache only for a signed-in reader: their settings change the page.
+        if getattr(getattr(request, "user", None), "is_authenticated", False):
+            _no_browser_cache(response)
+        return response
 
     def _live_holdings(self, url_value):
         """Return the engine's fingerprint of what this page holds.
@@ -650,6 +661,24 @@ class BaseAddressView(TemplateView):
         return context
 
 
+def _no_browser_cache(response):
+    """Mark `response` private and uncached, after ``cache_page`` stored it.
+
+    :param response: the address page's response
+    :type response: :class:`django.http.HttpResponse`
+    :return: None
+    """
+
+    def patch(rendered):
+        patch_cache_control(rendered, private=True, no_cache=True, max_age=0)
+
+    # A TemplateResponse is stored by a post-render callback; run after it.
+    if getattr(response, "is_rendered", True):
+        patch(response)
+    else:
+        response.add_post_render_callback(patch)
+
+
 class AddressView(BaseAddressView):
     """Addresses calls"""
 
@@ -728,6 +757,13 @@ class SubscriptionsView(BaseStaticPageView):
     """View for presenting Subscriptions page."""
 
     template_name = "subscriptions.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        """Answer not-found where purchases are hidden (the store apps)."""
+        if purchase_hidden(request):
+            raise Http404
+
+        return super().dispatch(request, *args, **kwargs)
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -1416,7 +1452,7 @@ class ProfileSettingsView(View):
 
         if section == "layout":
             if not profile.can_access_layout_setting():
-                return redirect("subscriptions")
+                return subscriptions_redirect(request, "profile_settings")
             form = ProfileLayoutForm(data=request.POST, instance=profile)
             if form.is_valid():
                 form.save()
@@ -1428,7 +1464,7 @@ class ProfileSettingsView(View):
 
         if section == "liverefresh":
             if not profile.can_access_live_refresh():
-                return redirect("subscriptions")
+                return subscriptions_redirect(request, "profile_settings")
             form = ProfileLiveRefreshForm(data=request.POST, instance=profile)
             if form.is_valid():
                 form.save()
@@ -1454,7 +1490,7 @@ class ProfileSettingsView(View):
 
         if section == "explorer":
             if not profile.can_access_explorer_setting():
-                return redirect("subscriptions")
+                return subscriptions_redirect(request, "profile_settings")
             form = ProfileExplorerForm(data=request.POST, instance=profile)
             if form.is_valid():
                 form.save()

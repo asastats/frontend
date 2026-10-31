@@ -88,3 +88,30 @@ def test_dynamic_nft_listing_chip_keeps_its_space_through_minification():
     )
     assert "escrowed</span>\xa0<a" in html
     assert "listed</span>\xa0<a" in html
+
+
+def _minified_classic(row):
+    import minify_html
+
+    return minify_html.minify(render_to_string("snippets/nfts/item.html", {"row": row}))
+
+
+def test_nft_item_estimated_value_is_not_glued_to_its_amount():
+    """The production minifier strips whitespace between a div's child tags."""
+    html = _minified_classic(_row())
+
+    assert "Estimated value</span><span" not in html
+    assert "Estimated value</span></span><span class=\"val" in html or (
+        "Estimated value</span></span><span class=val" in html
+    )
+
+
+def test_nft_item_floor_names_its_market_in_the_label():
+    row = _row()
+    row["nft"]["floor"] = [
+        {"price": "869.0", "market": {"name": "Downbad"}, "link": "https://x.y/1"}
+    ]
+    html = _minified_classic(row)
+
+    assert "Floor price on <a" in html
+    assert ">Downbad</a></span><span" in html

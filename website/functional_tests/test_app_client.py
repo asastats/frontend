@@ -132,7 +132,7 @@ class AppPurchaseLinksTest(FunctionalTest):
 
     def test_signed_out_pages_have_no_purchase_links(self):
         self._assert_no_purchase_links(
-            ["index", "faq", "subscriptions", "about", "features", "tokenomics"]
+            ["index", "faq", "about", "features", "tokenomics"]
         )
 
     def test_signed_in_pages_have_no_purchase_links(self):
@@ -141,13 +141,12 @@ class AppPurchaseLinksTest(FunctionalTest):
             ["home", "profile_settings", "profile_appearance", "profile_account"]
         )
 
-    def test_subscriptions_page_shows_plans_without_buying(self):
+    def test_subscriptions_page_is_page_not_found(self):
         self.browser.get(self.server_url + reverse("subscriptions"))
-        body = self.browser.find_element(By.TAG_NAME, "body").text
 
-        self.assertIn("Subscription Models", body)
-        self.assertNotIn("How to Subscribe", body)
-        self.assertNotIn("ASASTATS / Month", body)
+        self.assertEqual(self.browser.title, "Page not found")
+        body = self.browser.find_element(By.TAG_NAME, "body").text
+        self.assertNotIn("Subscription Models", body)
 
 
 @override_settings(

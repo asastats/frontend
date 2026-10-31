@@ -180,6 +180,42 @@ class TestBaseAddressViewDispatch:
         assert returned == mocked_super.return_value
 
 
+class TestBaseAddressViewBrowserCache:
+    """A signed-in reader's browser must not reuse the page (their settings change it)."""
+
+    def _response(self, mocker, user):
+        from django.core.cache import cache
+        from django.http import HttpResponse
+
+        cache.clear()
+        mocker.patch("core.views.check_forbidden_addresses")
+        mocker.patch.object(TemplateView, "dispatch", return_value=HttpResponse("page"))
+        view = _build_view(args=(ADDRESS,))
+        view.request.user = user
+        return view.dispatch(view.request)
+
+    def test_signed_in_reader_gets_private_no_cache(self, mocker):
+        user = mocker.Mock(is_authenticated=True)
+        mocker.patch("core.views.layout_for_user", return_value="classic")
+        mocker.patch("core.views.fiat_for_user", return_value={"code": "USD"})
+        mocker.patch.object(BaseAddressView, "_entitlement_key", return_value="e")
+
+        control = self._response(mocker, user)["Cache-Control"]
+
+        assert "private" in control
+        assert "no-cache" in control
+        assert "max-age=0" in control
+        assert "public" not in control
+
+    def test_anonymous_reader_keeps_the_max_age(self, mocker):
+        from django.contrib.auth.models import AnonymousUser
+
+        control = self._response(mocker, AnonymousUser())["Cache-Control"]
+
+        assert "private" not in control
+        assert "max-age=0" not in control
+
+
 class TestBaseAddressViewGetContextData:
     """Tests for :meth:`BaseAddressView.get_context_data`."""
 

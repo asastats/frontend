@@ -231,6 +231,7 @@ class TestCoreAppClientBaseTemplate:
 
         assert '<html lang="en" class="in-app" data-app-platform="android">' in html
         assert "viewport-fit=cover" in html
+        assert "user-scalable=no" in html
         assert "env(safe-area-inset-top)" in html
         assert "/static/js/app.js" in html
         assert "apps.apple.com" not in html
@@ -254,6 +255,7 @@ class TestCoreAppClientBaseTemplate:
         assert '<html lang="en">' in html
         assert "in-app" not in html
         assert "viewport-fit" not in html
+        assert "user-scalable" not in html
         assert "safe-area-inset" not in html
         assert "/static/js/app.js" not in html
         assert "apps.apple.com" in html
@@ -332,17 +334,39 @@ class TestCoreAppClientPurchaseHidden:
     def test_core_appclient_pages_keep_purchase_links_in_a_browser(self, name):
         assert _purchase_links(self._page(name, BROWSER_UA))
 
-    def test_core_appclient_subscriptions_page_keeps_the_plans_in_app(self):
-        html = self._page("subscriptions", IOS_UA)
+    @pytest.mark.parametrize("user_agent", [ANDROID_UA, IOS_UA])
+    def test_core_appclient_subscriptions_page_is_not_found_in_app(self, user_agent):
+        response = Client(HTTP_USER_AGENT=user_agent).get(reverse("subscriptions"))
 
-        assert "Subscription Models" in html
-        assert "How to Subscribe" not in html
-        assert "SUBSCRIBE</a>" not in html
+        assert response.status_code == 404
+        assert "Subscription Models" not in response.content.decode()
 
-    def test_core_appclient_subscriptions_page_hides_prices_in_app(self):
-        assert "ASASTATS / Month" not in self._page("subscriptions", ANDROID_UA)
-        assert "ASASTATS / Month" not in self._page("subscriptions", IOS_UA)
-        assert self._page("subscriptions", BROWSER_UA).count("ASASTATS / Month") == 5
+    def test_core_appclient_subscriptions_page_shows_prices_in_a_browser(self):
+        response = Client(HTTP_USER_AGENT=BROWSER_UA).get(reverse("subscriptions"))
+
+        assert response.status_code == 200
+        assert response.content.decode().count("ASASTATS / Month") == 5
+
+    @override_settings(APP_HIDE_PURCHASE=frozenset())
+    def test_core_appclient_subscriptions_page_served_when_switched_off(self):
+        response = Client(HTTP_USER_AGENT=ANDROID_UA).get(reverse("subscriptions"))
+
+        assert response.status_code == 200
+
+    def test_core_appclient_footer_privacy_is_the_app_policy_in_app(self):
+        html = self._page("faq", ANDROID_UA)
+
+        assert 'href="/asm-privacy/">Privacy</a>' in html
+        assert "auth_privacy.html" not in html
+
+    def test_core_appclient_footer_privacy_is_the_website_policy_in_a_browser(self):
+        html = self._page("faq", BROWSER_UA)
+
+        assert "/auth_privacy.html" in html
+
+    def test_core_appclient_disclaimer_links_the_app_policy_in_app(self):
+        assert "auth_privacy.html" not in self._page("disclaimer", IOS_UA)
+        assert "auth_privacy.html" in self._page("disclaimer", BROWSER_UA)
 
     @pytest.mark.parametrize("name", ["faq", "tokenomics", "subscriptions"])
     def test_core_appclient_pages_hide_paying_in_asastats_in_app(self, name):
@@ -376,6 +400,39 @@ class TestCoreAppClientPurchaseHidden:
     @override_settings(APP_HIDE_PURCHASE=frozenset())
     def test_core_appclient_purchase_links_return_when_switched_off(self):
         assert _purchase_links(self._page("faq", ANDROID_UA))
+
+
+@pytest.mark.django_db
+class TestCoreAppClientSubscriptionsRedirect:
+    """Refusals send the app elsewhere, never to the subscriptions page."""
+
+    def _redirect(self, user_agent, *args):
+        from django.contrib.messages.storage.fallback import FallbackStorage
+
+        from core.appclient import subscriptions_redirect
+
+        request = _request(user_agent)
+        request.session = {}
+        request._messages = FallbackStorage(request)
+        return request, subscriptions_redirect(request, *args)
+
+    def test_core_appclient_subscriptions_redirect_in_a_browser(self):
+        _, response = self._redirect(BROWSER_UA)
+
+        assert response.url == reverse("subscriptions")
+
+    def test_core_appclient_subscriptions_redirect_in_app_goes_home(self):
+        from core.appclient import PURCHASE_HIDDEN_TEXT
+
+        request, response = self._redirect(ANDROID_UA)
+
+        assert response.url == reverse("home")
+        assert [str(m) for m in request._messages] == [PURCHASE_HIDDEN_TEXT]
+
+    def test_core_appclient_subscriptions_redirect_in_app_to_fallback(self):
+        _, response = self._redirect(IOS_UA, "profile_settings")
+
+        assert response.url == reverse("profile_settings")
 
 
 @pytest.mark.django_db
@@ -484,3 +541,104 @@ class TestCoreAppClientWidgetShownFilter:
         from core.templatetags.core_extras import widget_shown
 
         assert widget_shown(request_value, "swapcore") is True
+
+
+@pytest.mark.django_db
+class TestCoreAppClientProfileTierLinks:
+    """The profile's subscription rows lose their buying links in the app."""
+
+    LINK = "<a href='https://subtopia.io/x' target='_blank'>Cluster</a>"
+
+    def _page(self, user_agent, django_user_model, mocker):
+        mocker.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        )
+        provider = mocker.patch("core.views.get_permission_provider")
+        provider.return_value.subscriptions.return_value = {self.LINK: "12 days left"}
+        user = django_user_model.objects.create_user(username="tiers", password="x")
+        user.profile.authorized = "A" * 58
+        user.profile.save()
+        client = Client(HTTP_USER_AGENT=user_agent)
+        client.force_login(user)
+        return client.get(reverse("profile")).content.decode()
+
+    def test_core_appclient_profile_tier_is_plain_text_in_app(
+        self, django_user_model, mocker
+    ):
+        html = self._page(ANDROID_UA, django_user_model, mocker)
+
+        assert "subtopia.io" not in html
+        assert "<dt>Cluster</dt>" in html
+
+    def test_core_appclient_profile_tier_is_a_link_in_a_browser(
+        self, django_user_model, mocker
+    ):
+        assert self.LINK in self._page(BROWSER_UA, django_user_model, mocker)
+
+
+@pytest.mark.django_db
+class TestCoreAppClientLoginRemembered:
+    """A password login from the app survives the WebView process (app/01)."""
+
+    @pytest.fixture(autouse=True)
+    def _capabilities(self, mocker):
+        mocker.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        )
+
+    def _login(self, user_agent, django_user_model):
+        django_user_model.objects.create_user(
+            username="remembered", email="r@example.com", password="Secret-12345"
+        )
+        client = Client(HTTP_USER_AGENT=user_agent)
+        response = client.post(
+            reverse("account_login"), {"login": "remembered", "password": "Secret-12345"}
+        )
+        assert response.status_code == 302
+        return client
+
+    def test_core_appclient_login_without_remember_persists_in_app(
+        self, django_user_model
+    ):
+        client = self._login(ANDROID_UA, django_user_model)
+
+        assert client.session.get_expire_at_browser_close() is False
+        assert client.cookies["sessionid"]["expires"]
+
+    def test_core_appclient_login_without_remember_ends_with_a_browser(
+        self, django_user_model
+    ):
+        client = self._login(BROWSER_UA, django_user_model)
+
+        assert client.session.get_expire_at_browser_close() is True
+        assert not client.cookies["sessionid"]["expires"]
+
+    def test_core_appclient_login_page_has_no_remember_box_in_app(self):
+        html = Client(HTTP_USER_AGENT=IOS_UA).get(reverse("account_login")).content
+        browser = Client(HTTP_USER_AGENT=BROWSER_UA).get(reverse("account_login")).content
+
+        assert b'name="remember"' not in html
+        assert b'name="remember"' in browser
+
+
+@pytest.mark.django_db
+class TestCoreAppClientIndexFocus:
+    """The app's index does not open the keyboard by itself (app/03)."""
+
+    @pytest.fixture(autouse=True)
+    def _capabilities(self, mocker):
+        mocker.patch(
+            "core.context_processors.fetch_capabilities", return_value={"permission": 0}
+        )
+
+    def _field(self, user_agent):
+        import re
+
+        html = Client(HTTP_USER_AGENT=user_agent).get(reverse("index")).content.decode()
+        return re.search(r'<input[^>]*id="id_address"[^>]*>', html).group(0)
+
+    def test_core_appclient_index_address_not_autofocused_in_app(self):
+        assert "autofocus" not in self._field(ANDROID_UA)
+
+    def test_core_appclient_index_address_autofocused_in_a_browser(self):
+        assert "autofocus" in self._field(BROWSER_UA)

@@ -36,10 +36,12 @@
             <input class="input w-full" id="id_password_modal" name="password"
                    autocomplete="off" placeholder="Password" type="password" required />
           </label>
+          {% if not APP_CLIENT %}
           <label class="mt-4 flex items-center gap-2 text-sm" title="Remember me on this computer">
             <input class="checkbox checkbox-sm" name="remember" type="checkbox">
             <span>Remember me</span>
           </label>
+          {% endif %}
           <div class="mt-5 text-center">
             <button class="btn btn-primary" id="id_cta_modal" type="submit">Log in</button>
           </div>

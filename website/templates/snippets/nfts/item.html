@@ -32,49 +32,53 @@
       {% endwith %}
     </div>
 
+    {% comment %} Label/value rows: flex gap, not inter-tag whitespace, separates them (the minifier strips that). {% endcomment %}
     <div class="space-y-2 text-sm md:text-right">
-      <div>
-        <span class="badge badge-ghost badge-sm align-middle">BETA</span>
-        <span class="text-xs opacity-60">Estimated value</span>
+      <div class="flex flex-wrap items-baseline justify-between gap-x-2">
+        <span><span class="badge badge-ghost badge-sm align-middle">BETA</span>&nbsp;<span class="text-xs opacity-60">Estimated value</span></span>
         <span class="val font-medium" data-val="{{ price }}">{{ price|floatformat:'2g' }} ALGO</span>
       </div>
       {% if nft.listings %}
         {% for ls in nft.listings %}
+          {% if ls.link|is_claim_link %}
           <div class="text-xs">
-            {% if ls.link|is_claim_link %}
             <a class="link link-hover" href="{{ ls.link }}" target="_blank" title="Claim the NFT from your {{ ls.market.name }} offer wallet">Claim on {{ ls.market.name }}</a>
-            {% else %}
-            {% if ls.link|is_escrow_link %}Escrowed by {% else %}Listed at {% endif %}<a class="link link-hover" href="{% program_url ls.link %}" target="_blank" title="{% if ls.link|is_escrow_link %}Show escrow in {% explorer_name %}{% else %}{{ ls.market.name }} link to NFT{% endif %}">{{ ls.market.name }}</a>:
-            <span class="val font-medium" data-val="{{ ls.price }}">{{ ls.price|floatformat:'2g' }} ALGO</span>
-            {% endif %}
           </div>
+          {% else %}
+          <div class="flex flex-wrap items-baseline justify-between gap-x-2 text-xs">
+            <span>{% if ls.link|is_escrow_link %}Escrowed by {% else %}Listed at {% endif %}<a class="link link-hover" href="{% program_url ls.link %}" target="_blank" title="{% if ls.link|is_escrow_link %}Show escrow in {% explorer_name %}{% else %}{{ ls.market.name }} link to NFT{% endif %}">{{ ls.market.name }}</a></span>
+            <span class="val font-medium" data-val="{{ ls.price }}">{{ ls.price|floatformat:'2g' }} ALGO</span>
+          </div>
+          {% endif %}
         {% endfor %}
       {% endif %}
       {% if nft.last_purchase %}
         <div class="space-y-0.5 text-xs">
-          <div>Last purchase: <span class="val font-medium" data-val="{{ nft.last_purchase.price }}">{{ nft.last_purchase.price|floatformat:'2g' }} ALGO</span></div>
-          <div class="text-base-content/70">
-            <span class="epoch" data-epoch="{{ nft.last_purchase.epoch }}"></span>
-            <a class="link link-hover" href="{% program_url nft.last_purchase.link %}" target="_blank" title="Show the purchase transaction">{{ nft.last_purchase.market.name }}</a>
+          <div class="flex flex-wrap items-baseline justify-between gap-x-2">
+            <span>Last purchase</span>
+            <span class="val font-medium" data-val="{{ nft.last_purchase.price }}">{{ nft.last_purchase.price|floatformat:'2g' }} ALGO</span>
+          </div>
+          <div class="text-right text-base-content/70">
+            <span class="epoch" data-epoch="{{ nft.last_purchase.epoch }}"></span><a class="link link-hover" href="{% program_url nft.last_purchase.link %}" target="_blank" title="Show the purchase transaction">{{ nft.last_purchase.market.name }}</a>
           </div>
         </div>
       {% endif %}
       {% if nft.max_purchase and nft.max_purchase.price > nft.last_purchase.price %}
         <div class="space-y-0.5 text-xs">
-          <div>Max purchase: <span class="val font-medium" data-val="{{ nft.max_purchase.price }}">{{ nft.max_purchase.price|floatformat:'2g' }} ALGO</span></div>
-          <div class="text-base-content/70">
-            <span class="epoch" data-epoch="{{ nft.max_purchase.epoch }}"></span>
-            <a class="link link-hover" href="{% program_url nft.max_purchase.link %}" target="_blank" title="Show the purchase transaction">{{ nft.max_purchase.market.name }}</a>
+          <div class="flex flex-wrap items-baseline justify-between gap-x-2">
+            <span>Max purchase</span>
+            <span class="val font-medium" data-val="{{ nft.max_purchase.price }}">{{ nft.max_purchase.price|floatformat:'2g' }} ALGO</span>
+          </div>
+          <div class="text-right text-base-content/70">
+            <span class="epoch" data-epoch="{{ nft.max_purchase.epoch }}"></span><a class="link link-hover" href="{% program_url nft.max_purchase.link %}" target="_blank" title="Show the purchase transaction">{{ nft.max_purchase.market.name }}</a>
           </div>
         </div>
       {% endif %}
       {% if nft.floor %}
         {% with floor=nft.floor.0 %}
-        <div class="space-y-0.5 text-xs">
-          <div>Floor price: <span class="val font-medium" data-val="{{ floor.price }}">{{ floor.price|floatformat:'2g' }} ALGO</span></div>
-          <div class="text-base-content/70">
-            <a class="link link-hover" href="{% program_url floor.link %}" target="_blank" title="{{ floor.market.name }} link to NFT">{{ floor.market.name }}</a>
-          </div>
+        <div class="flex flex-wrap items-baseline justify-between gap-x-2 text-xs">
+          <span>Floor price on <a class="link link-hover" href="{% program_url floor.link %}" target="_blank" title="{{ floor.market.name }} link to NFT">{{ floor.market.name }}</a></span>
+          <span class="val font-medium" data-val="{{ floor.price }}">{{ floor.price|floatformat:'2g' }} ALGO</span>
         </div>
         {% endwith %}
       {% endif %}

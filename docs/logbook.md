@@ -6128,3 +6128,139 @@ strings, and Flutter keeps the list as a `UserDefaults` array.
   entries; it never shows bad ones.
 - No functional test: Selenium has no native bridge, and without one `start()`
   wires nothing. The list's own functional tests cover what a seeded list shows.
+
+## Fixes from the 2026-10-31 app and website check round (capacitor/checks/)
+
+The reports are in the workspace's `capacitor/checks/` (`HANDOFF-FIXES.md`
+lists them A1..D). The entries below are the frontend side; the Historic and
+P&L changes are in the widgets logbook, the manifest and offline page in the
+mobile logbook.
+
+### website/core/views.py `SubscriptionsView`, website/core/appclient.py `subscriptions_redirect` (A1, 2026-10-31)
+
+`/subscriptions/` opened in the app when typed in. It had no prices or buy
+buttons, but it said "optional paid plans", "ASASTATS" and "START", which is
+what Apple 3.1.3(f) review looks for. The review notes promise "no links or
+instructions for buying". The user chose a 404 wherever `purchase_hidden()`
+(by default both platforms, `APP_HIDE_PURCHASE`) over a neutral notice. With
+`APP_HIDE_PURCHASE` emptied the page is served to the app again; the template's
+own `PURCHASE_HIDDEN` branches stay for that case.
+
+Eight refusals redirected to `subscriptions` (bundle names, API access,
+appearance, the Settings layout/live-refresh/explorer posts, P&L, Historic).
+They would now land on that 404, so they go through `subscriptions_redirect()`.
+In the app it sends the reader to `home`, or back to `profile_settings` for the
+Settings posts, with `PURCHASE_HIDDEN_TEXT` as an info message. The profile
+page's subscription rows render the Subtopia tier links as plain text in the
+app (`striptags`).
+
+The tests that asserted the plans page *stays* in the app
+(`test_core_appclient_subscriptions_page_keeps_the_plans_in_app`,
+`..._hides_prices_in_app`) were replaced: that was the earlier decision, and
+this one supersedes it.
+
+### website/templates/base.html, disclaimer.html: Privacy link in the app (A2, 2026-10-31)
+
+Both store forms give `/asm-privacy/` as the app's privacy policy, while the app
+footer linked the website's `/auth_privacy.html`. In app mode the footer and
+the disclaimer now link `asm_privacy`. The browser keeps `auth_privacy.html`.
+
+### website/core/views.py `BaseAddressView.dispatch`: browser cache (B2, 2026-10-31)
+
+The address page went out with `Cache-Control: max-age=60`. A signed-in reader
+who changed the layout (or the currency) in Settings got the old page back from
+the browser's or WebView's own cache for up to a minute: the cookie does not
+change, so `Vary: Cookie` does not help. Measured in the check round:
+822 ms for the first fetch, then 6-23 ms with identical bytes after each save.
+
+For a signed-in reader the response is now patched to
+`private, no-cache, max-age=0` *after* `cache_page` has answered. The server
+cache (keyed per layout, entitlement, fiat and live holdings) is untouched, so
+the patch costs a revalidation, not a render. Anonymous readers keep the
+`max-age`: nothing they can change alters the page.
+
+The patch must run *after* `cache_page` stores the entry. The page is a
+`TemplateResponse`, which `UpdateCacheMiddleware` stores from a post-render
+callback. Patching the unrendered response straight away made the stored entry
+unusable: `test_readers_still_share_an_entry_while_the_holdings_stand` built
+the page twice. `_no_browser_cache` therefore adds its own post-render callback,
+which runs after the store. A response served from the cache is already
+rendered and is patched at once.
+
+### website/core/loginform.py, `ACCOUNT_FORMS` (B1, 2026-10-31)
+
+A password sign-in without "Remember me" gave a session cookie with no expiry.
+When Android kills the app in the background (MIUI does it often) the WebView
+drops that cookie and the reader is signed out. Seen on the Redmi 9: killed at
+12:00:40 (`exit-info` reason 2, signal 9), reopened on `/accounts/login/`.
+With the box ticked the cookie had an expiry and survived `force-stop`.
+
+`AppAwareLoginForm` sets `remember` for app requests, so allauth calls
+`set_expiry(SESSION_COOKIE_AGE)` instead of `set_expiry(0)`. The checkbox is
+not rendered in the app (`account/base_auth.html`, `snippets/modal_login.html`).
+It is a separate module because allauth imports `core.forms` for the signup
+form, and importing allauth's forms there is circular.
+
+Not checked: whether social, wallet and native sign-ins in the app get a
+persistent cookie. They don't go through this form, and none has the checkbox.
+`core.sessiontrace` stays until a release build confirms the fix on a phone,
+as the handoff asked.
+
+### website/templates/snippets/nfts/item.html: value column (B7, B8, 2026-10-31)
+
+"Estimated value780.10 ALGO": django-minify-html drops whitespace-only text
+between a `<div>`'s child tags (it keeps one space inside `p`, `li`, `td`,
+`button`; checked with `minify_html.minify` on 2026-10-31). The label and value
+spans were separate lines inside a `<div>`, so nothing separated them.
+
+The right column was right-aligned from 768 px up and a left-aligned stack
+below, with the floor's market name on its own unlabelled line. Each figure is
+now a `flex justify-between gap-x-2` row: label left, value right, at every
+width. The market moved into the label ("Floor price on Downbad"). No
+`md:justify-end` because the committed build has no such rule. On desktop the
+column is a third of the card, so label/value rows read as a table there too.
+
+A sweep for other glued siblings (inline tags separated only by whitespace,
+nearest block a `div` without flex/grid) found 50 candidates. Most were block
+spans or flex/grid containers styled in `input.css`. Two were real: the
+collection header's BETA pill against its value
+(`snippets/nfts/collection.html`) and the P&L "Download PDF report" / "Ready."
+pair. Both got a `&nbsp;`.
+
+### website/static/css/input.css: phone rules (B6, B8, 2026-10-31)
+
+- `.item-header.token .itemleft .unit` is a block below 640 px. The Classic row
+  gives the amount and unit 45 % of the width (~149 px at 393), so
+  "163,981,414,047.6..." hid PHEZZIES completely. The unit is a sibling of
+  `q<id>`, which liverefresh swaps, so this is CSS only.
+- `.dynamic-page .nft-art` is centred in the single-column phone layout
+  (`width: 100%; justify-self: center` under its 12rem cap). It was
+  left-aligned with an empty strip on the right.
+
+`style.tw.css` was rebuilt with the pinned toolchain (the user approved the
+rebuild and commit on 2026-10-31). Checked at 393 and 1280 px in a headless
+harness built from the real templates and the rebuilt stylesheet.
+
+### website/templates/base.html viewport, index.html autofocus (B4, C1, 2026-10-31)
+
+- In app mode the viewport adds `maximum-scale=1, user-scalable=no`. A pinch on
+  the Historic candles zoomed the whole WebView to 5x in 2 of 2 fresh loads,
+  even though the canvas has `touch-action: none`, and the app has no way to
+  zoom back out. Browsers keep page zoom.
+- The index address field is not `autofocus`ed in the app. On the Redmi the
+  keyboard opened on every visit, covered half the screen and pushed the logo
+  under the status bar.
+
+### website/templates/about.html (B10, 2026-10-31)
+
+The bare roadmap URL was 432 px wide at 393: `break-all` on that link.
+
+### A5: Auto-refresh was not inert (2026-10-31)
+
+The check round reported the address page's Auto-refresh checkbox as doing
+nothing without Real-time refresh. That was wrong. `address.js`
+`timerIncrement` reloads after `REFRESH_AFTER_MS` (60 s) plus a 2 s pause in
+activity, and the round watched for only 22-40 s. Re-checked headless against
+production on 2026-10-31: the reload came after 61 s and the box stayed
+ticked. The user confirmed that a per-minute refresh is a wanted, separate
+choice from Real-time refresh. No change.

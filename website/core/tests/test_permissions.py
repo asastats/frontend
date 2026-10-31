@@ -46,15 +46,16 @@ class TestCorePermissionBaseMixins:
     def test_subscriberedirection_handle_no_permission_redirects_on_exception(
         self, mocker
     ):
-        mocked_redirect = mocker.patch("core.permissions.redirect")
+        mocked_redirect = mocker.patch("core.permissions.subscriptions_redirect")
         base = SubscribeRedirection()
+        base.request = mocker.MagicMock()
         with mock.patch(
             "core.permissions.UserPassesTestMixin.handle_no_permission"
         ) as mocked_super:
             mocked_super.side_effect = PermissionDenied("", "", 0)
             returned = base.handle_no_permission()
         assert returned == mocked_redirect.return_value
-        mocked_redirect.assert_called_once_with("subscriptions")
+        mocked_redirect.assert_called_once_with(base.request)
 
     # # BundleNamesRedirection
     def test_bundlenamesredirection_is_subclass_of_userpassestestmixin(
@@ -134,7 +135,7 @@ class TestCorePermissionUserMixins(BaseView):
     def test_bundlenamesredirection_handle_no_permission_redirects_to_subscriptions(
         self, mocker
     ):
-        mocked_redirect = mocker.patch("core.permissions.redirect")
+        mocked_redirect = mocker.patch("core.permissions.subscriptions_redirect")
         view = BundleNamesRedirection()
         self.request.user = mocker.MagicMock()
         self.request.user.profile.permission = SUBSCRIPTION_TIER_PERMISSIONS["Intro"] - 1
@@ -151,7 +152,7 @@ class TestCorePermissionUserMixins(BaseView):
             mocked_safe.assert_not_called()
             mocked_messages.assert_not_called()
         assert returned == mocked_redirect.return_value
-        mocked_redirect.assert_called_once_with("subscriptions")
+        mocked_redirect.assert_called_once_with(view.request)
 
 
 class TestCorePermissionMixins:

@@ -628,3 +628,37 @@ class TestCacheIsKeyedOnTheAppClient:
         assert "in-app" not in _render(None, payload)
 
         assert 'class="in-app' in self._render_as(payload, self.APP_UA)
+
+
+@pytest.mark.django_db
+class TestBrowserCacheForSignedInReaders:
+    """The browser must revalidate a signed-in reader's page (B2, 2026-10-31)."""
+
+    def _get(self, user, payload):
+        p1, p2, p3, p4 = _render_patches(payload)
+        with p1, p2, p3, p4:
+            client = _client_for(user) if user else Client()
+            return client.get(f"/{ADDRESS}")
+
+    def test_signed_in_page_is_private_and_still_shared_on_the_server(
+        self, payload, mocker
+    ):
+        cache.clear()
+        one = _user("browsercache-1", permission=ASASTATSER, layout="dynamic")
+        two = _user("browsercache-2", permission=ASASTATSER, layout="dynamic")
+        mocker.patch("core.views.cached_live_holdings", return_value="cafe")
+        built = mocker.spy(BaseAddressView, "get_context_data")
+
+        first = self._get(one, payload)
+        second = self._get(two, payload)
+
+        for response in (first, second):
+            assert "private" in response["Cache-Control"]
+            assert "max-age=0" in response["Cache-Control"]
+        assert built.call_count == 1
+
+    def test_anonymous_page_keeps_the_browser_cache(self, payload):
+        cache.clear()
+        response = self._get(None, payload)
+
+        assert "private" not in response.get("Cache-Control", "")

@@ -86,6 +86,25 @@ def purchase_hidden(request):
     return client is not None and client.platform in settings.APP_HIDE_PURCHASE
 
 
+def subscriptions_redirect(request, fallback="home"):
+    """Redirect to subscriptions, or to `fallback` with a notice in app mode.
+
+    :param request: Django request object
+    :type request: :class:`django.http.HttpRequest`
+    :param fallback: URL name used when purchases are hidden
+    :type fallback: str
+    :return: :class:`django.http.HttpResponseRedirect`
+    """
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    if purchase_hidden(request):
+        messages.info(request, PURCHASE_HIDDEN_TEXT)
+        return redirect(fallback)
+
+    return redirect("subscriptions")
+
+
 def hidden_widgets(request):
     """Return the names of the widgets switched off for `request`.
 

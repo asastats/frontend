@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.utils.safestring import mark_safe
 
-from core.appclient import purchase_hidden
+from core.appclient import purchase_hidden, subscriptions_redirect
 from utils.constants.users import (
     ADJUST_BUNDLE_NAMES_SIZE_ERROR,
     ADJUST_BUNDLE_NAMES_SIZE_ERROR_APP,
@@ -33,7 +33,7 @@ class BundleNamesRedirection(UserPassesTestMixin):
                     messages.error(self.request, mark_safe(ADJUST_BUNDLE_NAMES_SIZE_ERROR))
                 return redirect("home")
 
-            return redirect("subscriptions")
+            return subscriptions_redirect(self.request)
 
 
 class ProfileRedirection(UserPassesTestMixin):
@@ -57,7 +57,7 @@ class SubscribeRedirection(UserPassesTestMixin):
             return super().handle_no_permission()
 
         except PermissionDenied:
-            return redirect("subscriptions")
+            return subscriptions_redirect(self.request)
 
 
 class CanAccessApiMixin(SubscribeRedirection):

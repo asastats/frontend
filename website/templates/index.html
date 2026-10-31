@@ -48,7 +48,7 @@
            icon. Dropping the class removes the only way into multi-address entry.
         {% endcomment %}
         <img class="prefix h-5 w-5 flex-none cursor-pointer opacity-60" src="{% static 'img/expand.png' %}" alt="Click to expand" title="Enter several addresses">
-        <input class="input input-ghost w-full focus:outline-none" id="id_address"{% if form.bundle.errors %} value="{{ form.bundle.errors.0|escape }}"{% endif %} name="address" maxlength="58" autofocus="autofocus" placeholder="Enter Algorand address" type="text">
+        <input class="input input-ghost w-full focus:outline-none" id="id_address"{% if form.bundle.errors %} value="{{ form.bundle.errors.0|escape }}"{% endif %} name="address" maxlength="58"{% if not APP_CLIENT %} autofocus="autofocus"{% endif %} placeholder="Enter Algorand address" type="text">
         {% if form.address.errors %}<span class="text-error">{{ form.address.errors|escape }}</span>{% endif %}
         {{ form.bundle.as_hidden }}
         {% comment %} Provider icons come from the CDN through the `provider_icon` filter every

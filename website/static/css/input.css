@@ -2422,6 +2422,15 @@
   min-width: 0;
 }
 
+/* Phone: the unit on its own line, or the 45% column truncates it away. */
+@media (max-width: 640px) {
+  .item-header.token .itemleft .unit {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 /* ---- folded rows ----------------------------------------------------------
    The tail of a section: everything past the first `ADDRESS_INITIAL_*` rows,
    plus one batch of the same size for every press of "Show more".
@@ -3642,7 +3651,7 @@
 
 @media (max-width: 640px) {
   .dynamic-page .nft-body { grid-template-columns: minmax(0, 1fr); }
-  .dynamic-page .nft-art { max-width: 12rem; }
+  .dynamic-page .nft-art { max-width: 12rem; width: 100%; justify-self: center; }
 }
 
 /* ---- the toolbar ----------------------------------------------------------
