@@ -6062,3 +6062,46 @@ a line whose value is blank, so trimming first would leave the `#` at the start
 with no whitespace in front of it to match. A quoted value keeps everything
 inside the quotes, `#` too. The rest of the parser is in the 2026-09-27 section
 of this file above.
+
+## website/static/js/index.js, checked addresses in the app (2026-10-31)
+
+The app's index page offers the addresses and `.algo` names checked before, as
+a list under the address input: tap a row to fill the input, ✕ to forget one.
+Only in app mode (`html.in-app`): a browser keeps its own form history for
+`name="address"`, and the app's WebView keeps none (Android's `saveFormData` is
+a no-op since API 26), so before this the app forgot every address.
+
+This brings back what the Flutter app did (`mobileapp/lib/repository/
+auth_repo.dart` `saveAddress`, the typeahead in `screens/address/widget/
+address_field.dart`): every submitted entry, newest first, filtered by substring
+as the user types. The user had decided against it during the Capacitor work
+and reversed that on 2026-10-31.
+
+- Stored in localStorage `asastats.recentAddresses` (JSON array, at most 20,
+  newest first). Only entries that look like an address (58 characters of
+  `A-Z2-7`) or a `.algo` name (optionally `/ans` or `/nfd`) are kept, both when
+  written and when read, so a typo or anything that could be markup never comes
+  back. Rows are written with `.text()`, never as HTML.
+- Saved on form submit, before the server has checked the entry. A
+  well-formed address that is wrong passes; the ✕ removes it.
+- Textarea (multi-address) entries are stored one by one; the list itself is
+  offered only on the single-address input.
+- A custom list, not `<datalist>`: Android WebView and WKWebView popups for
+  `<datalist>` are unreliable, and the CI APK on the Redmi has WebView
+  debugging off, so it could not be checked there. The list uses only classes
+  already in the committed `style.tw.css` (no rebuild); position and
+  `max-height` are set through jQuery `.css()`, which CSP allows.
+- `mousedown` on the list is prevented so the input keeps focus and its `blur`
+  does not hide the list before the tap's `click` arrives.
+
+Not carried over: the old Flutter app's stored list (`flutter.address`, A7 in
+`capacitor/HANDOFF.md`). Seeding this key from it would be a native read.
+
+## website/functional_tests/test_index_page.py, address history (2026-10-31)
+
+The tests set the input's value by script instead of `send_keys`. On this
+Raspberry Pi, headless Chrome with chromedriver delivered extra key events
+while typing an upper-case address (`0 - Backspace Tab q w e`, the US keyboard
+row in order). The Tab moved focus to the footer after 17 characters. Logged with
+a `focusin`/`keydown` listener on 2026-10-31. `IndexPageTest` (which types)
+probably fails here for this reason as well as the missing engine.

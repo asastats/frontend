@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from core.models import BundleName
 
 from .base import TESTING_ADDRESS, FunctionalTest
+from .test_app_client import APP_USER_AGENT
 
 
 class IndexPageTest(FunctionalTest):
@@ -169,3 +170,90 @@ class IndexLogoTest(FunctionalTest):
         sizes = self._logo_and_field(393, 800)
 
         assert sizes["logo"] > sizes["viewport"] * 0.1
+
+
+
+def _enter_address(test, value):
+    # Set by script: chromedriver here sends Tab while typing capitals; logbook.
+    test.browser.execute_script(
+        "document.getElementById('id_address').value = arguments[0];", value
+    )
+    with test.wait_for_page_load(timeout=2):
+        test.find_elem_by_id("track").click()
+
+
+class IndexPageAddressHistoryTest(FunctionalTest):
+    """The app offers addresses checked before; see docs/logbook.md."""
+
+    def setup_platform(self):
+        super().setup_platform()
+        self.browser_options.add_argument(f"--user-agent={APP_USER_AGENT}")
+
+    def _history(self):
+        self.find_elem_by_id("id_address").click()
+        return [
+            row.get_attribute("data-entry")
+            for row in self.browser.find_elements(
+                By.CSS_SELECTOR, "#id_address_history .recent-entry"
+            )
+            if row.is_displayed()
+        ]
+
+    def test_a_checked_address_is_offered_on_the_next_visit(self):
+        self.browser.get(self.server_url + reverse("index"))
+        self.assertEqual(self._history(), [])
+
+        _enter_address(self, TESTING_ADDRESS)
+
+        self.browser.get(self.server_url + reverse("index"))
+        self.assertEqual(self._history(), [TESTING_ADDRESS])
+
+    def test_a_tapped_suggestion_fills_the_input(self):
+        self.browser.get(self.server_url + reverse("index"))
+        _enter_address(self, TESTING_ADDRESS)
+        self.browser.get(self.server_url + reverse("index"))
+        self._history()
+
+        self.browser.find_element(By.CSS_SELECTOR, ".recent-entry").click()
+
+        self.assertEqual(
+            self.find_elem_by_id("id_address").get_attribute("value"), TESTING_ADDRESS
+        )
+        self.assertFalse(self.find_elem_by_id("id_address_history").is_displayed())
+
+    def test_a_forgotten_suggestion_is_gone_on_the_next_visit(self):
+        self.browser.get(self.server_url + reverse("index"))
+        _enter_address(self, TESTING_ADDRESS)
+        self.browser.get(self.server_url + reverse("index"))
+        self._history()
+
+        self.browser.find_element(By.CSS_SELECTOR, ".recent-forget").click()
+
+        self.browser.get(self.server_url + reverse("index"))
+        self.assertEqual(self._history(), [])
+
+    def test_an_invalid_entry_is_not_offered(self):
+        self.browser.get(self.server_url + reverse("index"))
+
+        _enter_address(self, "not-an-address")
+
+        self.browser.get(self.server_url + reverse("index"))
+        self.assertEqual(self._history(), [])
+
+
+class IndexPageNoAddressHistoryInBrowserTest(FunctionalTest):
+    """A browser keeps its own form history, so the site adds none."""
+
+    def test_a_browser_gets_no_address_list(self):
+        self.browser.get(self.server_url + reverse("index"))
+
+        _enter_address(self, TESTING_ADDRESS)
+
+        self.browser.get(self.server_url + reverse("index"))
+        self.find_elem_by_id("id_address").click()
+        self.assertEqual(self.browser.find_elements(By.ID, "id_address_history"), [])
+        self.assertIsNone(
+            self.browser.execute_script(
+                "return localStorage.getItem('asastats.recentAddresses');"
+            )
+        )
