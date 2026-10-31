@@ -6105,3 +6105,26 @@ while typing an upper-case address (`0 - Backspace Tab q w e`, the US keyboard
 row in order). The Tab moved focus to the footer after 17 characters. Logged with
 a `focusin`/`keydown` listener on 2026-10-31. `IndexPageTest` (which types)
 probably fails here for this reason as well as the missing engine.
+
+## wallet/src/app/flutterAddresses.ts, seeding from the Flutter app (2026-10-31)
+
+The user asked for the old Flutter app's saved addresses to seed the index
+page's list (above). Both apps share the application id `com.asastats.app`, so
+an update over the Flutter app keeps its preferences. The native read is the
+mobile plugin `FlutterData` (`mobile/plugins/flutterdata`, details in the
+mobile logbook). `@capacitor/preferences` cannot do it: on iOS it reads only
+strings, and Flutter keeps the list as a `UserDefaults` array.
+
+- Once per install: `asastats.flutterSeeded` is set after a successful read, so
+  entries forgotten with ✕ later do not come back. A shell without the plugin
+  (builds before it) or a failed read leaves the flag unset, and a later start
+  tries again.
+- Flutter saved one string per search, so a multi-address search is one entry
+  (`A,B`). It is split, and only addresses and `.algo` names are kept.
+- The app's own entries go first, because they are newer than anything Flutter
+  saved. Then Flutter's, newest first as Flutter kept them. No repeats, at most 20.
+- The key, cap and both patterns are copied from `website/static/js/index.js`.
+  Change them together. index.js filters again on read, so a mismatch drops
+  entries; it never shows bad ones.
+- No functional test: Selenium has no native bridge, and without one `start()`
+  wires nothing. The list's own functional tests cover what a seeded list shows.

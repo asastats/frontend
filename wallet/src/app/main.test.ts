@@ -4,6 +4,7 @@ import { installAppLock } from "./appLock";
 import { installBackButton } from "./backButton";
 import { installDeepLinks } from "./deepLinks";
 import { download, installDownloads } from "./downloads";
+import { installFlutterAddresses } from "./flutterAddresses";
 import { installHaptics } from "./haptics";
 import { installLinks } from "./links";
 import { install, start } from "./main";
@@ -25,6 +26,7 @@ jest.mock("./downloads", () => ({
   download: jest.fn().mockResolvedValue(true),
   installDownloads: jest.fn(),
 }));
+jest.mock("./flutterAddresses", () => ({ installFlutterAddresses: jest.fn() }));
 jest.mock("./haptics", () => ({ installHaptics: jest.fn() }));
 jest.mock("./links", () => ({ installLinks: jest.fn() }));
 jest.mock("./push", () => ({
@@ -57,6 +59,7 @@ const installers = [
   installSignIn,
   installResume,
   installAppLock,
+  installFlutterAddresses,
 ];
 
 describe("app main", () => {

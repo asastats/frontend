@@ -9,6 +9,7 @@ import { installAppLock } from "./appLock";
 import { installBackButton } from "./backButton";
 import { installDeepLinks } from "./deepLinks";
 import { download, installDownloads } from "./downloads";
+import { installFlutterAddresses } from "./flutterAddresses";
 import { installHaptics } from "./haptics";
 import { installLinks } from "./links";
 import { installResume } from "./resume";
@@ -85,6 +86,7 @@ export function start(): boolean {
   installSignIn();
   installResume();
   installAppLock();
+  installFlutterAddresses();
   return true;
 }
 

@@ -11,6 +11,7 @@
 - [app/deepLinks](app/deepLinks/README.md)
 - [app/downloads](app/downloads/README.md)
 - [app/entry](app/entry/README.md)
+- [app/flutterAddresses](app/flutterAddresses/README.md)
 - [app/haptics](app/haptics/README.md)
 - [app/links](app/links/README.md)
 - [app/main](app/main/README.md)

@@ -8,7 +8,7 @@
 
 > **install**(`target?`): [`ASAStatsAppApi`](../interfaces/ASAStatsAppApi.md)
 
-Defined in: [app/main.ts:49](https://github.com/asastats/frontend/blob/main/wallet/src/app/main.ts#L49)
+Defined in: [app/main.ts:50](https://github.com/asastats/frontend/blob/main/wallet/src/app/main.ts#L50)
 
 Publish `window.ASAStatsApp` once.
 

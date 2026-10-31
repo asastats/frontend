@@ -8,7 +8,7 @@
 
 > **start**(): `boolean`
 
-Defined in: [app/main.ts:71](https://github.com/asastats/frontend/blob/main/wallet/src/app/main.ts#L71)
+Defined in: [app/main.ts:72](https://github.com/asastats/frontend/blob/main/wallet/src/app/main.ts#L72)
 
 Wire every native behaviour, if the native bridge is present.
 
