@@ -8,7 +8,7 @@
 
 > **isDark**(`color`): `boolean`
 
-Defined in: [app/statusBar.ts:17](https://github.com/asastats/frontend/blob/main/wallet/src/app/statusBar.ts#L17)
+Defined in: [app/statusBar.ts:42](https://github.com/asastats/frontend/blob/main/wallet/src/app/statusBar.ts#L42)
 
 Return whether a CSS colour is dark, by relative luminance.
 
@@ -18,7 +18,7 @@ Return whether a CSS colour is dark, by relative luminance.
 
 `string`
 
-a computed colour, `rgb(...)` or `rgba(...)`.
+a computed colour, `rgb(...)`, `rgba(...)` or `oklch(...)`.
 
 ## Returns
 

@@ -8,7 +8,7 @@
 
 > **syncStatusBar**(`doc?`): `void`
 
-Defined in: [app/statusBar.ts:33](https://github.com/asastats/frontend/blob/main/wallet/src/app/statusBar.ts#L33)
+Defined in: [app/statusBar.ts:62](https://github.com/asastats/frontend/blob/main/wallet/src/app/statusBar.ts#L62)
 
 Match the status bar to the body's background now.
 

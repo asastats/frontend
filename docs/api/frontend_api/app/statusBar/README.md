@@ -10,4 +10,5 @@
 
 - [installStatusBar](functions/installStatusBar.md)
 - [isDark](functions/isDark.md)
+- [oklchToLinear](functions/oklchToLinear.md)
 - [syncStatusBar](functions/syncStatusBar.md)

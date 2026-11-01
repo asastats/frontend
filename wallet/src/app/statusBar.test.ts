@@ -1,6 +1,6 @@
 import { StatusBar, Style } from "@capacitor/status-bar";
 
-import { installStatusBar, isDark, syncStatusBar } from "./statusBar";
+import { installStatusBar, isDark, oklchToLinear, syncStatusBar } from "./statusBar";
 
 jest.mock("@capacitor/status-bar", () => ({
   StatusBar: { setStyle: jest.fn().mockResolvedValue(undefined) },
@@ -13,9 +13,23 @@ describe("isDark", () => {
     ["rgba(0, 0, 0, 1)", true],
     ["rgb(255, 255, 255)", false],
     ["rgb(242 240 250)", false],
-    ["oklch(0.2 0.1 280)", false],
+    ["oklch(0.2 0.1 280)", true],
+    ["oklch(37% 0.146 265.522)", true],
+    ["oklch(94.51% 0.179 104.32)", false],
+    ["oklch(1 0 0)", false],
+    ["color(srgb 0 0 0)", false],
   ])("%s -> %s", (color, dark) => {
     expect(isDark(color)).toBe(dark);
+  });
+});
+
+describe("oklchToLinear", () => {
+  it("clamps out-of-gamut channels and ignores other colours", () => {
+    const [r, g, b] = oklchToLinear("oklch(94.51% 0.179 104.32)") as number[];
+    expect(r).toBe(1);
+    expect(g).toBeGreaterThan(0.8);
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(oklchToLinear("rgb(0, 0, 0)")).toBeNull();
   });
 });
 

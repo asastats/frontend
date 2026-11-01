@@ -6264,3 +6264,20 @@ activity, and the round watched for only 22-40 s. Re-checked headless against
 production on 2026-10-31: the reload came after 61 s and the box stayed
 ticked. The user confirmed that a per-minute refresh is a wanted, separate
 choice from Real-time refresh. No change.
+
+### `wallet/src/app/statusBar.ts`: dark status bar icons on oklch dark themes (2026-11-01)
+
+The mobile Screenshots run showed the iOS clock dark on dark blue in the
+`aqua` theme. `isDark` parsed only `rgb(...)`. daisyUI's built-in themes
+(aqua, dracula, cyberpunk and the rest) define their colours in oklch, and
+WebKit and Chrome return `getComputedStyle(body).backgroundColor` in the
+authored space, e.g. `oklch(37% .146 265.522)` for aqua. The regex then
+missed, `isDark` returned false, and every built-in dark theme got dark icons.
+Only our own themes in rgb/hex were right, which is why `asastats-dark` looked
+fine. `oklchToLinear` now converts oklch to linear sRGB (Björn Ottosson's
+OKLab matrices, clamped to gamut) and `isDark` uses the same 0.179 luminance
+threshold. The old test that asserted `oklch(...) -> false` encoded the bug.
+Other forms (`color(...)`, `lab(...)`) still read as light. Built with
+`npm run build`: only `js/app.js` and its `app-main` chunk changed (old chunk
+removed). Not yet seen on a device; the next Screenshots run's iOS
+`06-bundle` shows it.

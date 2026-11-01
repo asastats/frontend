@@ -8,7 +8,7 @@
 
 > **installStatusBar**(`doc?`): `MutationObserver`
 
-Defined in: [app/statusBar.ts:45](https://github.com/asastats/frontend/blob/main/wallet/src/app/statusBar.ts#L45)
+Defined in: [app/statusBar.ts:74](https://github.com/asastats/frontend/blob/main/wallet/src/app/statusBar.ts#L74)
 
 Sync now and whenever theme.js switches the theme (`data-theme` on `<html>`).
 
