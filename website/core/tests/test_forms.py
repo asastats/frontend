@@ -167,6 +167,18 @@ class TestExportForm:
         form = ExportForm()
         assert form.fields["provider"].choices == TAX_FORM_PROVIDERS
 
+    def test_exportform_provider_options_disabled_unless_implemented(self):
+        rendered = {
+            option["value"]: option["attrs"].get("disabled", False)
+            for option in ExportForm().fields["provider"].widget.options(
+                "provider", "koinly"
+            )
+        }
+        assert rendered == {
+            value: value not in TAX_FORM_IMPLEMENTED_PROVIDERS
+            for value, _ in TAX_FORM_PROVIDERS
+        }
+
     def test_exportform_provider_field_sets_initial_choice_to_koinly(self):
         form = ExportForm()
         assert form.fields["provider"].initial == "koinly"

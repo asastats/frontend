@@ -83,3 +83,19 @@ class TestCoreTaxprepareTemplate:
 
     def test_core_taxprepare_says_how_to_import_into_cointracking(self, rendered):
         assert ExportForm.cointracking_help_text in rendered
+
+    def test_core_taxprepare_tells_available_from_unavailable(self, rendered):
+        """Enabled providers carry "Available", the rest a visible "Not implemented
+        yet" and a disabled input -- not a tooltip alone."""
+        choices = ExportForm().fields["provider"].choices
+        implemented = [v for v, _ in choices if v in ExportForm.implemented_providers]
+        others = [v for v, _ in choices if v not in ExportForm.implemented_providers]
+        assert rendered.count(">Available</span>") == len(implemented)
+        assert rendered.count(">Not implemented yet</span>") == len(others)
+        for value in others:
+            assert f'value="{value}"' in rendered
+            tag = rendered.split(f'value="{value}"')[1].split(">")[0]
+            assert "disabled" in tag, f"{value} is selectable"
+        for value in implemented:
+            tag = rendered.split(f'value="{value}"')[1].split(">")[0]
+            assert "disabled" not in tag, f"{value} is disabled"

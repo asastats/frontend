@@ -6304,3 +6304,20 @@ appear as `A…` ASA-id codes, listed in the archive's assets file. The engine
 switched to those codes after a test import valued ARG as an unrelated
 football fan token (engine `docs/logbook.md`, `tax/postprocess.py`,
 "CoinTracking symbols by ASA id").
+
+## website/core/forms.py `ProviderRadioSelect`, website/templates/snippets/taxprepare.html — enabled vs not-implemented providers (2026-11-02)
+
+The four provider cards looked the same. Only a hover tooltip said which ones
+worked, and the others could still be selected, which the form then refused.
+Now `ProviderRadioSelect` renders every provider outside
+`TAX_FORM_IMPLEMENTED_PROVIDERS` with a `disabled` input. The template gives
+enabled ones a white card with an "Available" badge and the rest a faded grey
+card with "Not implemented yet" written under the name; the tooltip stays.
+
+Only classes already in the pinned `style.tw.css` are used (checked by grep),
+so no Tailwind rebuild is needed. `cursor-not-allowed`, `border-primary`,
+`bg-primary/10` and `has-[:checked]:` are not compiled. A first version put a
+`badge` with `ml-auto` on the same line as the name. Badges do not wrap, and
+at four columns the "Not implemented yet" badge overlapped the next card's
+radio. The functional test caught it as an intercepted click. Name and status
+are now stacked, and the long status is plain wrapping text.

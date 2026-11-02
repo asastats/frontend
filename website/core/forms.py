@@ -88,6 +88,27 @@ class ExportDownloadForm(Form):
     agree = BooleanField(required=True)
 
 
+class ProviderRadioSelect(RadioSelect):
+    """Radio select rendering the providers the engine cannot export as disabled.
+
+    :var ProviderRadioSelect.implemented: values of the providers that are enabled
+    :type ProviderRadioSelect.implemented: tuple
+    """
+
+    def __init__(self, *args, implemented=(), **kwargs):
+        """Keep the enabled `implemented` provider values."""
+        super().__init__(*args, **kwargs)
+        self.implemented = tuple(implemented)
+
+    def create_option(self, name, value, *args, **kwargs):
+        """Return the option, with `disabled` set unless `value` is implemented."""
+        option = super().create_option(name, value, *args, **kwargs)
+        if value not in self.implemented:
+            option["attrs"]["disabled"] = True
+
+        return option
+
+
 class ExportForm(Form):
     """Form class for entering arguments for CSV files processing.
 
@@ -104,7 +125,9 @@ class ExportForm(Form):
     implemented_providers = TAX_FORM_IMPLEMENTED_PROVIDERS
     cointracking_help_text = TAX_FORM_COINTRACKING_HELP_TEXT
     provider = ChoiceField(
-        widget=RadioSelect(attrs={"class": "with-gap"}),
+        widget=ProviderRadioSelect(
+            attrs={"class": "with-gap"}, implemented=TAX_FORM_IMPLEMENTED_PROVIDERS
+        ),
         choices=TAX_FORM_PROVIDERS,
         initial="koinly",
     )
