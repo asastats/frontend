@@ -52,6 +52,10 @@ class AppSignInButtonsTest(FunctionalTest):
         }
         expected = set(PROVIDERS) - {"apple"}  # Apple's keys are unset in tests.
         self.assertEqual(providers, expected)
+        # app.js loads main.ts with a dynamic import, after the load event.
+        self.wait_until(
+            lambda: self.browser.execute_script("return !!window.ASAStatsApp;")
+        )
         self.assertEqual(
             self.browser.execute_script("return typeof window.ASAStatsApp.signIn;"),
             "function",

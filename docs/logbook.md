@@ -6321,3 +6321,139 @@ so no Tailwind rebuild is needed. `cursor-not-allowed`, `border-primary`,
 at four columns the "Not implemented yet" badge overlapped the next card's
 radio. The functional test caught it as an intercepted click. Name and status
 are now stacked, and the long status is plain wrapping text.
+
+## website/templates/snippets/taxprepare.html — "Available" badge removed (2026-11-02)
+
+Correction to the entry above: the "Available" badge on enabled providers was
+judged redundant and removed. A plain white card already contrasts with the
+faded, disabled ones that say "Not implemented yet". The template test now
+asserts that no badge is rendered.
+
+## website/functional_tests/base.py `wait_until`, `wait_for_page_load` — stale-element flakes (2026-11-02)
+
+Two CI runs on Python 3.14 failed one functional test each, a different test
+each time, and the same tests passed on 3.12 in the same run:
+
+- run 41217768034, `test_pnl_download_tab.py::test_the_badge_waits_while_the_report_is_prepared`:
+  `StaleElementReferenceException` inside `wait_until`. The predicate found
+  `#id-pnl-report-badge`, htmx swapped the badge, then `.text` was read on the
+  detached node. `WebDriverWait` ignores only `NoSuchElementException` by
+  default, so one unlucky poll failed the test even though time was left.
+- run 41342374933, `test_index_page.py::test_an_invalid_entry_is_not_offered`:
+  `WebDriverException: unhandled inspector error ... Node with given id does
+  not belong to the document` from `EC.staleness_of` in `wait_for_page_load`.
+  The old `<html>` was already detached, which is the success condition.
+  Chromedriver reported it with a generic error instead of a stale-element one,
+  and `staleness_of` only catches the latter.
+
+Neither failure was a timeout, so longer timeouts would not have helped. Now
+`wait_until` ignores `StaleElementReferenceException` and polls again, and
+`wait_for_page_load` uses `_is_detached`, which also counts the "does not
+belong to the document" error as detached.
+
+## website/functional_tests/test_liverefresh_page.py `test_the_live_log_is_folded_and_hidden_until_the_reader_watches` — read before the partial landed (2026-11-02)
+
+CI run 41475187924 failed this test on Python 3.14 only, with
+`assert None == {'hidden': True, 'open': False}`. `#id-livelog` is in
+`_swap_entry.html`, the per-reader partial that is fetched after the page loads.
+`open_page` waits only for `window.asastatsToolbar`, which can be ready before
+that partial is swapped in. The test read the log once, straight away, and found
+nothing. The other live-log tests already polled for it. This one now uses
+`wait_until` as well, which also returns the state dict it asserts on.
+
+## .github/workflows/build.yml — codecov-action v5 → v7 in the JavaScript jobs (2026-11-02)
+
+Run 41488329724 printed "Node.js 20 is deprecated ... actions/github-script@60a0d83"
+on the `frontend` job and every `widgets <name> JavaScript` job, but not on the
+`main` jobs. `actions/github-script` is not referenced in the workflow. It runs
+inside `codecov/codecov-action`, whose v5 calls the Node 20 build and whose v7
+(already used by `main`) calls `github-script@ed59741`. The three v5 uses were
+moved to v7. Their inputs (`token`, `directory`, `flags`, `name`) are all in
+v7's `action.yml`.
+
+The other annotation, "ubuntu-latest will migrate to Ubuntu 26", is a notice.
+That run still got `ubuntu-24.04`. The label was left as it is.
+
+## website/functional_tests/test_app_signin.py `test_app_login_page_buttons_carry_data_app_signin` — read ASAStatsApp before main.ts ran (2026-11-03)
+
+CI run 41502489921 (Python 3.12) failed this test with "Cannot read properties
+of undefined" on `window.ASAStatsApp.signIn`. `wallet/src/app/entry.ts` (served
+as `app.js`) only does `import("./main")`. That chunk is fetched and run after
+the page's load event, which is all that `browser.get` waits for, so
+`ASAStatsApp` can still be missing when the test reads it. `test_app_client.py`
+already waited for `!!window.ASAStatsApp`. This test now does too.
+
+## website/functional_tests/ — audit for reads straight after a navigation (2026-11-03)
+
+After three flakes of the same shape (`test_liverefresh_page`, `test_index_page`,
+`test_app_signin`), all functional tests were scanned for a direct
+`execute_script` / `browser.find_element(s)` that follows `browser.get`,
+`open_page`, `_open`, `refresh` or a `wait_for_page_load` block with no wait in
+between. Same-file helpers that read without waiting counted as reads. There
+were 57 hits, and none needed a fix:
+
+- Writes, not reads: `window.__stillHere`, `arm()` (`localStorage`), `scrollTo`,
+  the clipboard stub, and the redeem forms the test builds itself.
+- Reads of server-rendered markup (`#nft-list`, `#asset-list`, `.cid-amt`, the
+  band, `[data-holdings]`, the theme picker, the sitemap) or of state set by
+  classic scripts (`pins.js`, jQuery, the head script). Those are in place by
+  the load event that `browser.get` waits for.
+- `test_app_client.py::test_browser_page_does_not_load_app_js` checks that
+  `ASAStatsApp` is absent on a page without `app.js`, so timing cannot change
+  the answer.
+
+What arrives after `load`, and so needs a `wait_until` before it is read: the
+`hx-trigger="load"` partials (`_swap_entry.html` on the address pages, the PnL
+body and chart) and anything `main.ts` publishes, because both `app.js` and
+`bundle.js` load it with a dynamic `import()` (`ASAStatsApp`, `asastatsWallet`,
+`asastatsSwap`). The scan did not cover reads after a click or another in-page
+action; the ones checked by hand (NFT `expand_first`) all wait.
+
+The scanner used for the audit above is kept in the workspace repository as
+`tools/scan_functional_reads.py`. Run it with `python3 -I
+tools/scan_functional_reads.py frontend/website/functional_tests` from the
+workspace root. (2026-11-03)
+
+## website/functional_tests/test_email_sending.py — every submit waits for the reload (2026-11-03)
+
+Moved here from a comment in `test_email_removing`, which had said: "Previously
+skipped as 'fails occasionaly without a proper reason'. The reason turned out
+not to be in this test: the module's intermittent failure is a webdriver
+page-load hang (a 120s read timeout inside `browser.get`) that lands on
+whichever test runs first, and it was `test_email_confirmation` when measured.
+Run on its own this test passed 5/5 and the whole module 4/5, with the one
+failure being that hang in another test's setup."
+
+Correction, 2026-11-03: that hang may well be real, but it was not the only
+cause. CI run 41596563593 (job 125785203168) failed `test_email_removing` with
+`StaleElementReferenceException` on the second `send_keys`. Pressing Enter in
+`#id_email` submits the allauth form and reloads the page. The next
+`find_elem_by_id("id_email")` can find the old page's input just before it is
+replaced, and typing into it then fails. The modal's `#id_confirm` reloads the
+page as well, because `emails.js` `submitEmailAction` re-triggers the real
+`action_remove` / `action_send` submit button. Every submit in the file (the
+eight Enter presses and confirm clicks) now runs inside `wait_for_page_load`,
+and the fixed `sleep()` that followed some of them is gone. The
+`action_remove` / `action_send` clicks only open the modal, so they keep their
+`sleep()`. Three local runs of the module: 4/4 passed each time.
+
+## website/functional_tests/test_pnl_overrides.py `_unfold` — a summary click lost to smooth scrolling (2026-11-03)
+
+CI run 41604391717 (job 125810513675) failed
+`test_a_reader_sets_and_removes_a_deposits_cost` with `ElementNotInteractableException`
+on `send_keys` into `.pnl-asset input[name=amount]`. The input was in the DOM
+but its `<details class="pnl-override">` was still closed: the single summary
+click before it had not opened it. The asset panel arrives by
+`hx-swap="innerHTML show:top"`, and `html:has(.pnl)` sets
+`scroll-behavior: smooth` (`static/css/input.css`), which `show:top` follows.
+So the page is still scrolling when Selenium clicks the summary at the position
+it worked out a moment earlier, and the click can land beside it without any
+error. This was not reproduced locally; the mechanism follows from the error
+and the CSS.
+
+All four override summaries in the file now go through `_unfold(selector)`.
+It looks the `<details>` up again on every poll and clicks its summary only
+while `open` is absent, until it is open, so a lost click is simply retried.
+Three local runs of the module: 7/7 passed each time.
+`test_pnl_widget.py`'s `pnl-issues` summary is clicked on a freshly loaded
+page with no htmx scroll under way, and was left alone.

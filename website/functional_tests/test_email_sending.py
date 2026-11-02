@@ -25,8 +25,8 @@ class EmailConfirmationTest(FunctionalTest):
         self.browser.get(self.server_url + "/accounts/email/")
 
         # He adds his email and confirms
-        self.find_elem_by_id("id_email").send_keys("emailconfirm@wayne.com\n")
-        self.sleep()
+        with self.wait_for_page_load(timeout=5):
+            self.find_elem_by_id("id_email").send_keys("emailconfirm@wayne.com\n")
         self.assertIn("Confirmation email sent to ", self.browser.page_source)
 
         # There's one email sent
@@ -61,7 +61,8 @@ class EmailConfirmationTest(FunctionalTest):
         self.browser.get(self.server_url + "/accounts/email/")
 
         # He adds his email and confirms
-        self.find_elem_by_id("id_email").send_keys("{}\n".format(email))
+        with self.wait_for_page_load(timeout=5):
+            self.find_elem_by_id("id_email").send_keys("{}\n".format(email))
 
         # He sees re-send button and clicks it.
         button = self.browser.find_element(By.NAME, "action_send")
@@ -79,8 +80,8 @@ class EmailConfirmationTest(FunctionalTest):
 
         # He confirms
         confirm = self.browser.find_element(By.ID, "id_confirm")
-        confirm.click()
-        self.sleep()
+        with self.wait_for_page_load(timeout=5):
+            confirm.click()
 
         # There's two emails sent
         self.assertEqual(len(mail.outbox), 2)
@@ -101,14 +102,7 @@ class EmailConfirmationTest(FunctionalTest):
         self.assertEqual(link.get_attribute("href"), "mailto:{}".format(email))
 
     def test_email_removing(self):
-        # Previously skipped as "fails occasionaly without a proper reason".
-        # The reason turned out not to be in this test: the module's
-        # intermittent failure is a webdriver page-load hang (a 120s read
-        # timeout inside `browser.get`) that lands on whichever test runs
-        # first, and it was `test_email_confirmation` when measured. Run on
-        # its own this test passed 5/5 and the whole module 4/5, with the one
-        # failure being that hang in another test's setup.
-        #
+        # Each submit reloads the page; see docs/logbook.md.
         # Sergei signs up
         email = "sergei@wayne.com"
         self.create_cookie_and_go_to_bundlename_add_page(email)
@@ -117,12 +111,13 @@ class EmailConfirmationTest(FunctionalTest):
         self.browser.get(self.server_url + "/accounts/email/")
 
         # He adds his email and confirms
-        self.find_elem_by_id("id_email").send_keys("{}\n".format(email))
+        with self.wait_for_page_load(timeout=5):
+            self.find_elem_by_id("id_email").send_keys("{}\n".format(email))
 
         # He adds another email
         email2 = "sergei2@wayne.com"
-        self.find_elem_by_id("id_email").send_keys("{}\n".format(email2))
-        self.sleep()
+        with self.wait_for_page_load(timeout=5):
+            self.find_elem_by_id("id_email").send_keys("{}\n".format(email2))
         # He clicks the new email
         radios = [
             elem
@@ -148,8 +143,8 @@ class EmailConfirmationTest(FunctionalTest):
 
         # He confirms
         confirm = self.browser.find_element(By.ID, "id_confirm")
-        confirm.click()
-        self.sleep()
+        with self.wait_for_page_load(timeout=5):
+            confirm.click()
 
         # Now he sees only the first email left
         radios = [
@@ -168,8 +163,8 @@ class EmailResetPasswordTest(FunctionalTest):
         # He adds an email
         self.browser.get(self.server_url + "/accounts/email/")
 
-        self.find_elem_by_id("id_email").send_keys("bruce1@bruce.com\n")
-        self.sleep()
+        with self.wait_for_page_load(timeout=5):
+            self.find_elem_by_id("id_email").send_keys("bruce1@bruce.com\n")
         # He logouts afterward
         with self.wait_for_page_load(timeout=5):
             self.find_elem_by_id("logout").click()
@@ -178,8 +173,8 @@ class EmailResetPasswordTest(FunctionalTest):
         self.browser.get(self.server_url + "/accounts/password/reset/")
 
         # He adds his email and confirms
-        self.find_elem_by_id("id_email").send_keys("bruce1@bruce.com\n")
-        self.sleep()
+        with self.wait_for_page_load(timeout=5):
+            self.find_elem_by_id("id_email").send_keys("bruce1@bruce.com\n")
         self.assertIn("We have sent you an email.", self.browser.page_source)
 
         # There's one email sent

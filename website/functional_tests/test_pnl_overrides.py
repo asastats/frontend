@@ -102,6 +102,19 @@ class PnlOverridesTest(FunctionalTest):
             time.sleep(0.1)
         self.assertTrue(condition())
 
+    def _unfold(self, details):
+        """Click `details`' summary until it is open; see docs/logbook.md."""
+
+        def opened():
+            element = self.browser.find_element(By.CSS_SELECTOR, details)
+            if element.get_attribute("open") is None:
+                element.find_element(By.CSS_SELECTOR, ":scope > summary").click()
+                return False
+            return True
+
+        self.find_elem_by_css(details)
+        self.wait_until(opened)
+
     def _sent_overrides(self):
         return [
             call.kwargs["json"]["overrides"]
@@ -113,7 +126,7 @@ class PnlOverridesTest(FunctionalTest):
         user = self._log_in(ASASTATSER)
         self._open()
         self.find_elem_by_css(".pnl-more-cell button").click()
-        self.find_elem_by_css("details.pnl-override > summary").click()
+        self._unfold("details.pnl-override")
         self.find_elem_by_css("details.pnl-override input[name=amount]").send_keys(
             "0.25"
         )
@@ -135,7 +148,7 @@ class PnlOverridesTest(FunctionalTest):
         self._open()
         self.find_elem_by_css(".pnl-more-cell button").click()
         self.find_elem_by_css(".pnl-table tbody th button.pnl-link").click()
-        self.find_elem_by_css(".pnl-asset details.pnl-override > summary").click()
+        self._unfold(".pnl-asset details.pnl-override")
         self.find_elem_by_css(".pnl-asset input[name=amount]").send_keys("50")
         Select(self.find_elem_by_css(".pnl-asset select[name=currency]")).select_by_value(
             "algo"
@@ -152,7 +165,7 @@ class PnlOverridesTest(FunctionalTest):
         self.find_elem_by_css(".pnl-table tbody th button.pnl-link").click()
         note = self.find_elem_by_css(".pnl-asset .pnl-cell-note")
         self.assertEqual(note.text, "you paid 50 ALGO")
-        self.find_elem_by_css(".pnl-asset details.pnl-override > summary").click()
+        self._unfold(".pnl-asset details.pnl-override")
         self.browser.find_element(
             By.XPATH, "//button[normalize-space()='Remove your cost']"
         ).click()
@@ -162,7 +175,7 @@ class PnlOverridesTest(FunctionalTest):
         user = self._log_in(ASASTATSER)
         self._open()
         self.find_elem_by_css(".pnl-more-cell button").click()
-        self.find_elem_by_css("details.pnl-override > summary").click()
+        self._unfold("details.pnl-override")
         field = self.find_elem_by_css("details.pnl-override input[name=amount]")
         # past the browser's own check: the server's answer shows in the form
         self.browser.execute_script("arguments[0].type = 'text';", field)

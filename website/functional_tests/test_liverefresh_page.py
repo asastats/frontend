@@ -1220,9 +1220,12 @@ class LiveRefreshTest(FunctionalTest):
         self.sign_in()
         self.open_page()
 
-        state = self.browser.execute_script(
-            "var log = document.getElementById('id-livelog');"
-            "return log ? {hidden: log.hidden, open: log.open} : null;"
+        # The log arrives in the per-reader partial, after the toolbar.
+        state = self.wait_until(
+            lambda: self.browser.execute_script(
+                "var log = document.getElementById('id-livelog');"
+                "return log ? {hidden: log.hidden, open: log.open} : null;"
+            )
         )
         assert state == {"hidden": True, "open": False}
 

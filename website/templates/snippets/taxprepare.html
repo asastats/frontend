@@ -19,10 +19,7 @@
       {% if radio.data.value in form.implemented_providers %}
       <label class="flex cursor-pointer items-center gap-2 rounded-field border border-base-300 bg-base-100 p-3 text-sm font-medium shadow-sm">
         {{ radio.tag }}
-        <span class="flex flex-col items-start gap-1">
-          <span>{{ radio.choice_label }}</span>
-          <span class="badge badge-success badge-sm">Available</span>
-        </span>
+        <span>{{ radio.choice_label }}</span>
       </label>
       {% else %}
       {% comment %} The input itself is disabled by ProviderRadioSelect. {% endcomment %}

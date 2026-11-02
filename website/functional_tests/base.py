@@ -18,6 +18,10 @@ from django.contrib.sessions.backends.db import SessionStore
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test.utils import override_settings
 from selenium import webdriver
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+    WebDriverException,
+)
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
@@ -378,7 +382,10 @@ class FunctionalTest(Setup):
         For state that no `expected_conditions` helper covers -- an attribute
         settling, a JS-driven re-render -- where polling beats a fixed sleep.
         """
-        return WebDriverWait(self.browser, timeout).until(lambda _: predicate())
+        # A re-render between finding an element and reading it is a retry.
+        return WebDriverWait(
+            self.browser, timeout, ignored_exceptions=[StaleElementReferenceException]
+        ).until(lambda _: predicate())
 
     #: Release the pin so the next assignment lands. The property is defined
     #: `configurable`, so `delete` restores an ordinary writable global.
@@ -575,7 +582,7 @@ class FunctionalTest(Setup):
     def wait_for_page_load(self, timeout=30):
         old_page = self.browser.find_element(By.TAG_NAME, "html")
         yield
-        WebDriverWait(self.browser, timeout).until(EC.staleness_of(old_page))
+        WebDriverWait(self.browser, timeout).until(lambda _: _is_detached(old_page))
 
     def check_for_entry_in_home_collection(self, name):
         cards = self.browser.find_elements(By.CLASS_NAME, "card-content")
@@ -678,3 +685,16 @@ class FunctionalTest(Setup):
 
         # This time user should present as logged in, on the authorize page.
         self.browser.get(self.server_url + "/profile/authorize/")
+
+
+def _is_detached(element):
+    """`EC.staleness_of`, also accepting chromedriver's mid-navigation error."""
+    try:
+        element.is_enabled()
+    except StaleElementReferenceException:
+        return True
+    except WebDriverException as error:
+        if "does not belong to the document" in str(error):
+            return True
+        raise
+    return False

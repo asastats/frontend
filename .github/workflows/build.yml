@@ -145,7 +145,7 @@ jobs:
           npm run test:coverage
 
       - name: Upload wallet Typescript coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: wallet/coverage
@@ -163,7 +163,7 @@ jobs:
           npm run test:coverage
 
       - name: Upload website's Javascript coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: website/javascript_tests/coverage
@@ -268,7 +268,7 @@ jobs:
         run: npm run test
 
       - name: Upload ${{ matrix.widget }} coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: website/widgets/inhouse/${{ matrix.widget }}/tests/javascript/coverage
