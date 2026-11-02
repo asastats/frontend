@@ -25,7 +25,10 @@ from core.models import BundleName, Profile
 from core.signals import user_deactivated
 from utils.constants.core import INVALID_ADDRESS_TEXT, MAX_BUNDLE_SIZE
 from utils.constants.tax import (
+    TAX_FORM_COINTRACKING_HELP_TEXT,
+    TAX_FORM_IMPLEMENTED_PROVIDERS,
     TAX_FORM_NON_ZERO_HELP_TEXT,
+    TAX_FORM_NOT_IMPLEMENTED_ERROR,
     TAX_FORM_PROVIDERS,
     TAX_FORM_USE_MVE_HELP_TEXT,
 )
@@ -94,8 +97,12 @@ class ExportForm(Form):
     :type ExportForm.use_mve: :class:`.BooleanField`
     :var ExportForm.non_zero: field indicating adding additional non-tero values CSV file
     :type ExportForm.non_zero: :class:`.BooleanField`
+    :var ExportForm.implemented_providers: providers the engine can export
+    :type ExportForm.implemented_providers: tuple
     """
 
+    implemented_providers = TAX_FORM_IMPLEMENTED_PROVIDERS
+    cointracking_help_text = TAX_FORM_COINTRACKING_HELP_TEXT
     provider = ChoiceField(
         widget=RadioSelect(attrs={"class": "with-gap"}),
         choices=TAX_FORM_PROVIDERS,
@@ -113,15 +120,15 @@ class ExportForm(Form):
     )
 
     def clean(self):
-        """Raise ValidationError if provider isn't Koinly.
+        """Raise ValidationError if provider isn't implemented yet.
 
         :var provider: provider field's value
         :type provider: str
         """
         cleaned_data = super().clean()
         provider = self.cleaned_data.get("provider")
-        if provider != "koinly":
-            raise ValidationError("Only Koinly is available as provider for now.")
+        if provider not in self.implemented_providers:
+            raise ValidationError(TAX_FORM_NOT_IMPLEMENTED_ERROR)
 
         return cleaned_data
 

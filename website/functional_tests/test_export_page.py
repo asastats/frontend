@@ -1,4 +1,4 @@
-"""Functional tests for the tax-export form's currency.
+"""Functional tests for the tax-export form's currency and format.
 
 The engine is patched: the page asks it for the export's status, and the form
 starts the export through it (the real calls are in
@@ -9,6 +9,7 @@ import time
 from unittest import mock
 
 from django.contrib.auth import get_user_model
+from selenium.webdriver.common.by import By
 
 from .base import COOKIE_SEED_URL, FunctionalTest
 
@@ -16,7 +17,7 @@ ADDRESS = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 
 
 class ExportPageCurrencyTest(FunctionalTest):
-    """The CSV's currency: said on the form, sent with the export."""
+    """The CSV's currency and format: said on the form, sent with the export."""
 
     def setUp(self):
         super().setUp()
@@ -72,3 +73,10 @@ class ExportPageCurrencyTest(FunctionalTest):
         self._log_in("USD")
         self._open()
         self.assertNotIn("fiat", self._submit())
+
+    def test_a_reader_starts_a_cointracking_export(self):
+        self._log_in("USD")
+        form = self._open()
+        self.assertIn("choose UTC as the time zone", form.text)
+        form.find_element(By.CSS_SELECTOR, 'input[value="cointracking"]').click()
+        self.assertEqual(self._submit().get("provider"), "cointracking")

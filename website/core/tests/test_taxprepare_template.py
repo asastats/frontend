@@ -71,3 +71,15 @@ class TestCoreTaxprepareTemplate:
     def test_core_taxprepare_offers_every_provider(self, rendered):
         for _, label in ExportForm().fields["provider"].choices:
             assert label in rendered, f"{label} is missing from the form"
+
+    def test_core_taxprepare_marks_only_unimplemented_providers(self, rendered):
+        # one tooltip per provider the engine cannot export yet
+        unimplemented = [
+            value
+            for value, _ in ExportForm().fields["provider"].choices
+            if value not in ExportForm.implemented_providers
+        ]
+        assert rendered.count('data-tip="Not implemented yet"') == len(unimplemented)
+
+    def test_core_taxprepare_says_how_to_import_into_cointracking(self, rendered):
+        assert ExportForm.cointracking_help_text in rendered

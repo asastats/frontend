@@ -40,7 +40,9 @@ from core.forms import (
 from core.models import BundleName, Profile
 from utils.constants.core import INVALID_ADDRESS_TEXT, MAX_BUNDLE_SIZE
 from utils.constants.tax import (
+    TAX_FORM_IMPLEMENTED_PROVIDERS,
     TAX_FORM_NON_ZERO_HELP_TEXT,
+    TAX_FORM_NOT_IMPLEMENTED_ERROR,
     TAX_FORM_PROVIDERS,
     TAX_FORM_USE_MVE_HELP_TEXT,
 )
@@ -214,9 +216,20 @@ class TestExportForm:
         returned = form.clean()
         assert returned == {"provider": "koinly", "use_mve": True, "non_zero": True}
 
+    def test_exportform_clean_accepts_cointracking(self):
+        form = ExportForm(
+            data={"provider": "cointracking", "use_mve": False, "non_zero": False}
+        )
+        assert form.is_valid()
+        assert form.cleaned_data["provider"] == "cointracking"
+
     @pytest.mark.parametrize(
         "provider",
-        [provider[0] for provider in TAX_FORM_PROVIDERS if provider[0] != "koinly"],
+        [
+            provider[0]
+            for provider in TAX_FORM_PROVIDERS
+            if provider[0] not in TAX_FORM_IMPLEMENTED_PROVIDERS
+        ],
     )
     def test_exportform_clean_raises_validationerror_for_not_implemented_provider(
         self, provider
@@ -227,7 +240,7 @@ class TestExportForm:
         form.is_valid()
         with pytest.raises(ValidationError) as exception:
             form.clean()
-        assert str(exception.value) == "['Only Koinly is available as provider for now.']"
+        assert str(exception.value) == f"['{TAX_FORM_NOT_IMPLEMENTED_ERROR}']"
 
 
 # # USERS

@@ -6,6 +6,13 @@ TAX_FORM_PROVIDERS = [
     ("cointracker", "CoinTracker"),
     ("cointracking", "CoinTracking"),
 ]
+#: Providers the engine exports; the form refuses and the template greys out the rest.
+TAX_FORM_IMPLEMENTED_PROVIDERS = ("koinly", "cointracking")
+TAX_FORM_NOT_IMPLEMENTED_ERROR = "Only Koinly and CoinTracking are available for now."
+TAX_FORM_COINTRACKING_HELP_TEXT = (
+    "CoinTracking: choose UTC as the time zone when importing, and keep your "
+    "CoinTracking account currency the same as the currency of the worth amounts below"
+)
 TAX_FORM_USE_MVE_HELP_TEXT = (
     "Select to calculate fiat values concerning available asset AMM liquidity "
     "at that time or leave it unselected for applying asset price per unit only"

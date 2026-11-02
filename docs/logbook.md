@@ -6281,3 +6281,20 @@ Other forms (`color(...)`, `lab(...)`) still read as light. Built with
 `npm run build`: only `js/app.js` and its `app-main` chunk changed (old chunk
 removed). Not yet seen on a device; the next Screenshots run's iOS
 `06-bundle` shows it.
+
+---
+
+## website/core/forms.py, website/templates/snippets/taxprepare.html — CoinTracking enabled (2026-11-02)
+
+`ExportForm` accepted only `"koinly"`, and the template greyed out every choice
+whose *label* was not "Koinly". Both now read
+`TAX_FORM_IMPLEMENTED_PROVIDERS`, compared by value, so enabling the next
+provider is one tuple entry here, plus its `TAX_CSV_COLUMNS` entry in the
+engine, which `_export_options` checks.
+
+The CoinTracking hint sits under the format choices, not in a tooltip, for the
+same reason as the option hints: a reader has to see it before importing. It
+asks for UTC because CoinTracking's import page has a time-zone select and the
+engine writes UTC. It asks for a matching account currency because
+CoinTracking's value columns are "in Account Currency" with no column naming
+it. Details: engine `docs/logbook.md`, `tax/postprocess.py` (2026-11-02).
