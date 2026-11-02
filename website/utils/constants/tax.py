@@ -11,7 +11,10 @@ TAX_FORM_IMPLEMENTED_PROVIDERS = ("koinly", "cointracking")
 TAX_FORM_NOT_IMPLEMENTED_ERROR = "Only Koinly and CoinTracking are available for now."
 TAX_FORM_COINTRACKING_HELP_TEXT = (
     "CoinTracking: choose UTC as the time zone when importing, and keep your "
-    "CoinTracking account currency the same as the currency of the worth amounts below"
+    "CoinTracking account currency the same as the currency of the worth amounts "
+    "below. Algorand assets other than ALGO, USDC and a few majors are named by "
+    "ASA ID (such as A13OCV6K) so CoinTracking cannot mistake them for other coins; "
+    "the assets file in the archive lists each one"
 )
 TAX_FORM_USE_MVE_HELP_TEXT = (
     "Select to calculate fiat values concerning available asset AMM liquidity "

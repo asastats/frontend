@@ -6298,3 +6298,9 @@ asks for UTC because CoinTracking's import page has a time-zone select and the
 engine writes UTC. It asks for a matching account currency because
 CoinTracking's value columns are "in Account Currency" with no column naming
 it. Details: engine `docs/logbook.md`, `tax/postprocess.py` (2026-11-02).
+
+Addendum (2026-11-02): the CoinTracking hint now also says that non-core ASAs
+appear as `A…` ASA-id codes, listed in the archive's assets file. The engine
+switched to those codes after a test import valued ARG as an unrelated
+football fan token (engine `docs/logbook.md`, `tax/postprocess.py`,
+"CoinTracking symbols by ASA id").
