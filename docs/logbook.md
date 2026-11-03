@@ -6457,3 +6457,22 @@ while `open` is absent, until it is open, so a lost click is simply retried.
 Three local runs of the module: 7/7 passed each time.
 `test_pnl_widget.py`'s `pnl-issues` summary is clicked on a freshly loaded
 page with no htmx scroll under way, and was left alone.
+
+## website/core/context_processors.py `_TYPEFACES_PATH` — read from static/build in production (2026-11-03)
+
+The live gunicorn log showed `Could not read
+/var/www/asastats.com/source/website/static/build/css/typefaces.json` with a
+`FileNotFoundError`. The path was `STATICFILES_DIRS[0] / "css" /
+"typefaces.json"`. `config/settings/production.py` (and `testing.py`) insert
+`static/build` at index 0 whenever that directory exists, and the deploy's
+`build-static.sh` always creates it (for the minified JS), so in production the
+lookup pointed at `static/build/css/`, where nothing writes. `build-typefaces.py`
+writes `static/css/typefaces.json`, which is committed. The warning-and-`{}`
+fallback kept pages up, but the Appearance page offered no typeface pairings in
+production. Development has no `static/build`, which is why it never showed.
+
+The path is now `BASE_DIR.parent / "static" / "css" / "typefaces.json"`, the
+same directory the script writes to. The staticfiles finders were the
+alternative; a fixed path was chosen because the file is read from disk, not
+served. `test_core_context_processors_typefaces_path_is_where_the_script_writes`
+pins the path against the script's own `HERE`.

@@ -1,5 +1,6 @@
 """Testing module for :py:mod:`core.context_processors` module."""
 
+import importlib.util
 import re
 from pathlib import Path
 from unittest import mock
@@ -36,6 +37,17 @@ class TestCoreContextProcessors:
         core.context_processors._TYPEFACES_CACHE = None
         yield
         core.context_processors._TYPEFACES_CACHE = None
+
+    def test_core_context_processors_typefaces_path_is_where_the_script_writes(self):
+        """Not STATICFILES_DIRS[0], which production points at static/build."""
+        script = Path(__file__).parents[2] / "build-typefaces.py"
+        spec = importlib.util.spec_from_file_location("build_typefaces", script)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        expected = module.HERE / "static" / "css" / "typefaces.json"
+        assert core.context_processors._TYPEFACES_PATH.resolve() == expected.resolve()
+        assert expected.is_file()
 
     def test_core_context_processors_load_typefaces_reads_the_build_output(self, mocker):
         path = mocker.patch.object(core.context_processors, "_TYPEFACES_PATH")

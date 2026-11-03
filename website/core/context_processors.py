@@ -13,8 +13,9 @@ from core import appclient
 logger = logging.getLogger(__name__)
 
 #: Written by build-typefaces.py beside the stylesheet it generates, so the
-#: pairings offered and the CSS backing them come from one run.
-_TYPEFACES_PATH = Path(settings.STATICFILES_DIRS[0]) / "css" / "typefaces.json"
+#: pairings offered and the CSS backing them come from one run. Not
+#: STATICFILES_DIRS[0]: production puts static/build first (see logbook).
+_TYPEFACES_PATH = settings.BASE_DIR.parent / "static" / "css" / "typefaces.json"
 _TYPEFACES_CACHE = None
 
 _CACHE_KEY = "deployment_capabilities"
