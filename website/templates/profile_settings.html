@@ -4,7 +4,7 @@
 {% load core_extras %}
 {% block title %}User settings - {{ WEBSITE_NAME }}{% endblock %}
 {% block description %}Manage your {{ WEBSITE_NAME }} settings.{% endblock %}
-{% block keywords %}settings,preferences,smart router,swap,router preference,currency,explorer,address page layout{% endblock %}
+{% block keywords %}settings,preferences,smart router,swap,router preference,currency,explorer,tooltips,address page layout{% endblock %}
 {% block profile_title %}User settings{% endblock %}
 {% block profile_content %}
 <div class="space-y-4">
@@ -63,6 +63,31 @@
         <button type="submit" class="btn btn-primary" id="id_save_fiat">Save</button>
       </div>
       {% include "snippets/messages_section.html" with section="fiat" %}
+    </form>
+    </div>
+  </section>
+
+  <section class="rounded-box border border-base-300 bg-base-100" id="id-section-tooltips">
+    <div class="border-b border-base-300 px-5 py-4">
+      <h2 class="text-base font-medium">Tooltips</h2>
+    </div>
+    <div class="space-y-4 px-5 py-5">
+      <p class="max-w-prose text-sm text-base-content/70">On an address page, show each figure in the other currency when you hover over it or tap it.</p>
+    <form method="post" action="{% url 'profile_settings' %}"
+      hx-post="{% url 'profile_settings' %}"
+      hx-target="#id-section-tooltips"
+      hx-select="#id-section-tooltips"
+      hx-swap="outerHTML">
+      {% csrf_token %}
+      <input type="hidden" name="section" value="tooltips">
+      <label class="flex cursor-pointer items-center gap-3">
+        {{ tooltips_form.show_tooltips }}
+        <span class="text-sm">Show tooltips</span>
+      </label>
+      <div class="mt-4">
+        <button type="submit" class="btn btn-primary" id="id_save_tooltips">Save</button>
+      </div>
+      {% include "snippets/messages_section.html" with section="tooltips" %}
     </form>
     </div>
   </section>

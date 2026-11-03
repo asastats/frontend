@@ -6476,3 +6476,76 @@ same directory the script writes to. The staticfiles finders were the
 alternative; a fixed path was chosen because the file is read from disk, not
 served. `test_core_context_processors_typefaces_path_is_where_the_script_writes`
 pins the path against the script's own `HERE`.
+
+## Address page figure tooltips: clipping, the dynamic layouts, and the setting (2026-11-03)
+
+Files: `website/templates/snippets/asas.html`, `snippets/nfts/collection.html`,
+`snippets/dynamic/asset.html`, `snippets/dynamic/collection.html`,
+`website/static/js/toolbar.js` (`tip`), `website/static/css/input.css`,
+`website/core/views.py` (`_shows_tooltips`, `BaseAddressView.dispatch`),
+`website/templates/address.html`, `address_dynamic.html`, `profile_settings.html`.
+
+### The header figure's tooltip was cut off
+
+Reported with a screenshot (`bugs/tooltip.png`, website and app, classic layout):
+the "29.17 USD" tip over an asset card's header figure was cut off at the card's
+top edge. DaisyUI opens a tooltip upwards by default, and the card clips its
+content: classic `details.fitem` carries `overflow-hidden` (it keeps the colour
+stripe inside the rounded corners) and the dynamic `.mcard` has
+`overflow: hidden` for the same reason. A closed card is only its header, so
+the upward tip always lands outside it. Removing the clipping was rejected
+because the corners and stripe depend on it.
+
+The header figures now carry `tooltip-left`, so the tip opens beside the number
+inside the header row. Two follow-ons:
+
+- `.dynamic-page .cval .v` is `display: block`, so `tooltip-left` measured from
+  the left edge of the whole money column and the tip floated about 100px from
+  the number (and outside a compact tile entirely, at x = -8 against a tile at
+  72.5). It is now `width: fit-content; margin-left: auto`: same right edge,
+  box as wide as the digits.
+- A closed compact tile is 180px wide, with no room beside the figure but
+  plenty above it, so `.rows.cards .mcard:not([open])` puts the tip back on
+  DaisyUI's top placement. An opened tile is a full-width row again and keeps
+  `tooltip-left`. This is CSS rather than a template condition because the
+  liverefresh fragment re-renders `#assetvalue` with `layout` in its context
+  but not `compact`.
+- The dynamic collection floor carries `tooltip-right` (it sits near the
+  card's left edge). In a compact tile `.cid-meta` is itself
+  `overflow: hidden` with an ellipsis, so that tip could only show in part
+  and is hidden there.
+
+`functional_tests/test_address_tooltips.py` measures the drawn `::before` box
+(offsets plus its transform) against the closed card in all three layouts.
+Without `tooltip-left` on classic it fails with "tip cut off at the top",
+which is the reported bug. Screenshots at 1280px and 390px were checked by
+eye in all three layouts.
+
+### The dynamic layouts had no figure tooltips
+
+`toolbar.js` writes every dynamic figure through `write()`, which now calls
+`tip()`: the `tooltip` class and a `data-tip` with the same amount in the other
+currency, as `setCurrency` does for design 1. There is no tip when the header
+has no rate. Because `write()` runs again from `repaintAfterSwap`, the tips
+come back after a live refresh replaces the spans. Compact inherits all of this.
+
+The dynamic headline still has no tooltip.
+`test_the_money_designs_need_none_of_it` asserts that, because `.total-sub`
+under it already prints the other currency and the rate for everyone.
+
+### The setting
+
+`Profile.show_tooltips`, default True, open to every signed-in reader. The
+address page is cached and shared between readers, so the setting is part of
+the cache key like `fiat`: `-notips` is appended only when the setting is off,
+so every existing entry keeps its key. When it is off the address templates
+render `<span hidden data-tooltips-off>`, and `input.css` hides
+`.tooltip::before/::after/.tooltip-content` under
+`:root:has([data-tooltips-off])`.
+
+A marker element rather than a class on `<body>`: `base.html` is also rendered
+by other `cache_page` views whose keys do not carry this setting, so a
+reader-derived class there would be served to the next reader. The marker
+lives only in the two templates whose cache entry is keyed on it. Only the
+address page's tooltips are affected; help-text tooltips elsewhere (e.g. the
+bundle form) are left alone.

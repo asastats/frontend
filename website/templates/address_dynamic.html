@@ -33,6 +33,8 @@
 {% block content %}
 {% comment %} The reader's fiat for fiat.js; the cache key carries `fiat.code`. {% endcomment %}
 <span hidden data-fiat="{{ fiat.code|default:'USD' }}" data-fiat-rate="{{ fiat.rate|default:1|unlocalize }}"></span>
+{% comment %} `input.css` hides every `.tooltip` while this is on the page; the cache key carries `show_tooltips`. {% endcomment %}
+{% if not show_tooltips %}<span hidden data-tooltips-off></span>{% endif %}
 {% comment %} One scope class for the whole design: every rule in the dynamic
    block of `input.css` is written under it, so nothing here reaches design 1's
    markup, which shares this base template and stylesheet. {% endcomment %}

@@ -414,6 +414,14 @@ class ProfileLiveRefreshForm(ModelForm):
         fields = ("live_refresh",)
 
 
+class ProfileTooltipsForm(ModelForm):
+    """Form for the address page's tooltips; open to every authenticated reader."""
+
+    class Meta:
+        model = Profile
+        fields = ("show_tooltips",)
+
+
 class ProfileFiatForm(ModelForm):
     """Form for the fiat shown instead of USD; open to every authenticated reader."""
 

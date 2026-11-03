@@ -795,6 +795,21 @@
     element.classList.toggle("neg", algo < 0);
     var unit = element.querySelector(".unit");
     if (unit) unit.textContent = state.ccy;
+    tip(element, algo);
+  }
+
+  /**
+   * Give a figure a tooltip with the same amount in the other currency.
+   * @param {Element} element - the value element.
+   * @param {number} algo - the figure, in ALGO.
+   */
+  function tip(element, algo) {
+    var other;
+    if (state.ccy !== "ALGO") other = plain(algo) + " ALGO";
+    else if (rate()) other = plain(algo * rate()) + " " + Fiat.code();
+    else return;
+    element.classList.add("tooltip");
+    if (element.getAttribute("data-tip") !== other) element.setAttribute("data-tip", other);
   }
 
   /**

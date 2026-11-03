@@ -85,13 +85,13 @@
         </span>
         {% comment %} "floor 0.00" would claim a floor of nothing, which is not
            the same as no marketplace reporting one. {% endcomment %}
-        {% if floor %}<span class="num">floor <span class="val" data-val="{{ floor }}">{{ floor|floatformat:'2g' }}</span></span>{% else %}<span class="num">no floor reported</span>{% endif %}
+        {% if floor %}<span class="num">floor <span class="val tooltip-right" data-val="{{ floor }}">{{ floor|floatformat:'2g' }}</span></span>{% else %}<span class="num">no floor reported</span>{% endif %}
         <span class="num">{{ coll.nfts|length }} item{{ coll.nfts|length|pluralize }}</span>
       </span>
     </span>
 
     <span class="cval">
-      <span class="v val" data-val="{{ coll.value }}">{{ coll.value|floatformat:'2g' }}</span>
+      <span class="v val tooltip-left" data-val="{{ coll.value }}">{{ coll.value|floatformat:'2g' }}</span>
       <span class="u unit">ALGO</span>
     </span>
 

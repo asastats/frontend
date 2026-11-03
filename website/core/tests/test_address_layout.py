@@ -46,6 +46,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.test import Client, RequestFactory
 
+import core.views
 from core.views import BaseAddressView
 from utils.constants.users import SUBSCRIPTION_TIER_PERMISSIONS
 from utils.layouts import layout_for_user
@@ -603,6 +604,62 @@ class TestCacheIsKeyedOnTheFiat:
         assert '<button type="button" data-ccy="EUR" aria-pressed="false">EUR</button>' in html
         assert " EUR/ALGO" in html
         assert " USD/ALGO" not in html
+
+
+@pytest.mark.django_db
+class TestCacheIsKeyedOnTheTooltips:
+    """The reader's tooltip setting is rendered into the page, so it is in the key."""
+
+    MARKER = "<span hidden data-tooltips-off></span>"
+
+    @staticmethod
+    def _tips_user(username, show, layout=""):
+        user = _user(username, permission=ASASTATSER, layout=layout)
+        user.profile.show_tooltips = show
+        user.profile.save()
+        return user
+
+    def test_a_page_without_tooltips_is_not_served_to_a_reader_with_them(self, payload):
+        cache.clear()
+        off_html = _render(self._tips_user("tipskey-1", False), payload)
+        on_html = _render(self._tips_user("tipskey-2", True), payload)
+
+        assert self.MARKER in off_html
+        assert self.MARKER not in on_html
+
+    def test_a_page_with_tooltips_is_not_served_to_a_reader_without_them(self, payload):
+        cache.clear()
+        on_html = _render(self._tips_user("tipskey-3", True), payload)
+        off_html = _render(self._tips_user("tipskey-4", False), payload)
+
+        assert self.MARKER not in on_html
+        assert self.MARKER in off_html
+
+    def test_readers_without_tooltips_still_share_an_entry(self, payload):
+        cache.clear()
+        first = _render(self._tips_user("tipskey-5", False), payload)
+        second = _render(self._tips_user("tipskey-6", False), payload)
+
+        assert first == second
+
+    def test_a_signed_out_reader_gets_tooltips(self, payload):
+        cache.clear()
+
+        assert self.MARKER not in _render(None, payload)
+
+    def test_the_dynamic_page_carries_the_marker_too(self, payload):
+        cache.clear()
+        html = _render(self._tips_user("tipskey-7", False, layout="dynamic"), payload)
+
+        assert self.MARKER in html
+
+    def test_a_reader_without_a_profile_gets_tooltips(self):
+        user = mock.Mock(is_authenticated=True, spec=["is_authenticated"])
+
+        assert core.views._shows_tooltips(user) is True
+
+    def test_no_user_at_all_gets_tooltips(self):
+        assert core.views._shows_tooltips(None) is True
 
 
 @pytest.mark.django_db

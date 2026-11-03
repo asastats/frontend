@@ -68,6 +68,8 @@ class Profile(models.Model):
     #: rather than the behaviour. When it is off - or the reader cannot have it -
     #: the "refresh data" control falls back to the sixty-second reload.
     live_refresh = models.BooleanField(default=False)
+    #: Whether the address page shows its figures' other-currency tooltips.
+    show_tooltips = models.BooleanField(default=True)
 
     #: Tokens issued before this moment are refused. Null means none are.
     #:

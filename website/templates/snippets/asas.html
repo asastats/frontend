@@ -57,7 +57,7 @@
              renders. Here the unit is inside this span; there it is beside it.
           {% endcomment %}
           {% partialdef classicvalue inline %}
-          <span id="v{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}class="val itemright font-medium" data-val="{{ value }}">{{ value|floatformat:'2g' }} ALGO</span>
+          <span id="v{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}class="val tooltip-left itemright font-medium" data-val="{{ value }}">{{ value|floatformat:'2g' }} ALGO</span>
           {% endpartialdef classicvalue %}
         </summary>
 

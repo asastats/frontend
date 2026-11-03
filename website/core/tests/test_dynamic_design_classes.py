@@ -49,6 +49,9 @@ FRAMEWORK = frozenset(
         "btn",
         "btn-circle",
         "btn-primary",
+        # Placement only; `toolbar.js` adds `tooltip` itself. Same in design 1.
+        "tooltip-left",
+        "tooltip-right",
         # Tailwind utilities.
         "sr-only",
         "cursor-default",

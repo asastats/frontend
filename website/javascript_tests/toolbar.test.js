@@ -843,6 +843,38 @@ describe("currency", () => {
 
     expect(element.classList.contains("neg")).toBe(true);
   });
+
+  test("an ALGO figure's tooltip is the same amount in fiat", () => {
+    load();
+
+    const value = document.querySelector("#f1 .cval .val");
+    expect(value.classList.contains("tooltip")).toBe(true);
+    expect(value.getAttribute("data-tip")).toBe("4.00 USD");
+  });
+
+  test("a fiat figure's tooltip is the same amount in ALGO", () => {
+    load();
+
+    document.querySelector('#tb-ccy [data-ccy="USD"]').click();
+
+    expect(document.querySelector("#f1 .cval .val").getAttribute("data-tip")).toBe(
+      "40.00 ALGO"
+    );
+    expect(document.querySelector("#f1 .pgroup-total").getAttribute("data-tip")).toBe(
+      "40.00 ALGO"
+    );
+  });
+
+  test("a page whose header carries no rate offers no fiat tooltip", () => {
+    document.querySelector(".pricetip").removeAttribute("data-pricealgo");
+    const toolbar = load();
+    const element = document.createElement("span");
+
+    toolbar.write(element, 12.5);
+
+    expect(element.hasAttribute("data-tip")).toBe(false);
+    expect(element.classList.contains("tooltip")).toBe(false);
+  });
 });
 
 describe("grouping by venue", () => {

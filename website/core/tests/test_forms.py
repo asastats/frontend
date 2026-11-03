@@ -35,6 +35,7 @@ from core.forms import (
     ProfileInlineForm,
     ProfileLayoutForm,
     ProfileRouterForm,
+    ProfileTooltipsForm,
     UpdateUserForm,
 )
 from core.models import BundleName, Profile
@@ -915,6 +916,17 @@ class TestProfileLayoutForm:
         )
         form = ProfileLayoutForm(instance=profile)
         assert form.initial["preferred_layout"] == "dynamic"
+
+
+class TestProfileTooltipsForm:
+    """Testing class for :class:`ProfileTooltipsForm`."""
+
+    def test_profiletooltipsform_issubclass_of_modelform(self):
+        assert issubclass(ProfileTooltipsForm, ModelForm)
+
+    def test_profiletooltipsform_meta_model_and_fields(self):
+        assert ProfileTooltipsForm.Meta.model is Profile
+        assert ProfileTooltipsForm.Meta.fields == ("show_tooltips",)
 
 
 class TestProfileFiatForm:

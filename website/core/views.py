@@ -60,6 +60,7 @@ from core.forms import (
     ProfileLayoutForm,
     ProfileLiveRefreshForm,
     ProfileRouterForm,
+    ProfileTooltipsForm,
     UpdateUserForm,
 )
 from core.helpers import (
@@ -418,6 +419,9 @@ class BaseAddressView(TemplateView):
     #: The reader's fiat, set by ``dispatch`` and part of the cache key.
     fiat = USD_FIAT
 
+    #: The reader's tooltip setting, set by ``dispatch`` and part of the cache key.
+    show_tooltips = True
+
     def dispatch(self, request, *args, **kwargs):
         """Validate URL value, resolve any bundle, render through the layout's
         own cache entry.
@@ -472,11 +476,15 @@ class BaseAddressView(TemplateView):
 
         self.layout = layout_for_user(getattr(request, "user", None))
         self.fiat = fiat_for_user(getattr(request, "user", None))
+        self.show_tooltips = _shows_tooltips(getattr(request, "user", None))
         self.live_holdings = self._live_holdings(url_value)
         key_prefix = (
             f"layout-{self.layout}-{self._entitlement_key(request)}"
             f"-fiat-{self.fiat['code']}-{self.live_holdings}"
         )
+        # Only when off, so every existing entry keeps its key.
+        if not self.show_tooltips:
+            key_prefix = f"{key_prefix}-notips"
         if app_cache_prefix(request):
             key_prefix = f"{app_cache_prefix(request)}-{key_prefix}"
         cached = cache_page(self.cache_timeout, key_prefix=key_prefix)(super().dispatch)
@@ -610,6 +618,7 @@ class BaseAddressView(TemplateView):
         context["layout"] = self.layout
         context["compact"] = layout_compact(self.layout)
         context["fiat"] = self.fiat
+        context["show_tooltips"] = self.show_tooltips
 
         # Not reader-derived: a property of the addresses, identical for
         # everyone looking at them. In the key as well, so the markup and the
@@ -659,6 +668,19 @@ class BaseAddressView(TemplateView):
         )
 
         return context
+
+
+def _shows_tooltips(user):
+    """Return whether `user` sees the address page's tooltips; on unless switched off.
+
+    :param user: request's user, or None
+    :type user: :class:`User`
+    :return: bool
+    """
+    if not getattr(user, "is_authenticated", False):
+        return True
+    profile = getattr(user, "profile", None)
+    return profile is None or profile.show_tooltips
 
 
 def _no_browser_cache(response):
@@ -1400,6 +1422,7 @@ class ProfileSettingsView(View):
             "layout_form": ProfileLayoutForm(instance=profile),
             "liverefresh_form": ProfileLiveRefreshForm(instance=profile),
             "fiat_form": ProfileFiatForm(instance=profile),
+            "tooltips_form": ProfileTooltipsForm(instance=profile),
             "can_access_liverefresh": profile.can_access_live_refresh(),
             # The refilling bucket's terms, or None where there is no limit.
             # The settings page turns it into the upgrade prompt; see
@@ -1476,6 +1499,16 @@ class ProfileSettingsView(View):
                 return redirect("profile_settings")
             context = self._context(request)
             context["liverefresh_form"] = form
+            return render(request, self.template_name, context)
+
+        if section == "tooltips":
+            form = ProfileTooltipsForm(data=request.POST, instance=profile)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Tooltip preference saved.", extra_tags="tooltips")
+                return redirect("profile_settings")
+            context = self._context(request)
+            context["tooltips_form"] = form
             return render(request, self.template_name, context)
 
         if section == "fiat":

@@ -2719,6 +2719,14 @@
   border-radius: calc(var(--radius-box) - 0.25rem);
 }
 
+/* The reader switched tooltips off: the address templates render
+   `[data-tooltips-off]` only then. See logbook. */
+:root:has([data-tooltips-off]) .tooltip::before,
+:root:has([data-tooltips-off]) .tooltip::after,
+:root:has([data-tooltips-off]) .tooltip > .tooltip-content {
+  display: none;
+}
+
 /* ---- charts ---------------------------------------------------------------
    Six charts, each a legend beside its canvas. The widths were six copies of
    an inline fraction on the address page (`w-1/6`, `w-1/4`, `w-3/4`) and one
@@ -3947,6 +3955,9 @@
   font-weight: 500;
   letter-spacing: -0.02em;
   display: block;
+  /* As wide as its digits, so `tooltip-left` opens beside the number. */
+  width: fit-content;
+  margin-left: auto;
 }
 
 .dynamic-page .cval .u {
@@ -4313,6 +4324,24 @@
 .dynamic-page .rows.cards .cval .v {
   font-size: 1.0625rem;
   letter-spacing: -0.025em;
+}
+
+/* A closed tile has room above its figure and none beside it, so the header
+   tooltip goes back to daisyUI's top placement. See logbook (2026-11-03). */
+.dynamic-page .rows.cards .mcard:not([open]) .cval .tooltip-left[data-tip]::before {
+  transform: translateX(var(--tt-trans, -50%)) translateY(var(--tt-pos, 0.25rem));
+  inset: auto auto var(--tt-off) 50%;
+}
+
+.dynamic-page .rows.cards .mcard:not([open]) .cval .tooltip-left::after {
+  transform: translateX(var(--tt-trans, -50%)) translateY(var(--tt-pos, 0.25rem));
+  inset: auto auto var(--tt-tail) 50%;
+}
+
+/* `.cid-meta` clips here, so a floor tooltip could only show in part. */
+.dynamic-page .rows.cards .cid-meta .tooltip::before,
+.dynamic-page .rows.cards .cid-meta .tooltip::after {
+  display: none;
 }
 
 /* An opened tile is back to full width, so the header can have its columns

@@ -586,6 +586,8 @@ class TestBaseAddressViewGetContextData:
             "compact",
             # Keyed too: the entry name carries `fiat-<code>`.
             "fiat",
+            # Keyed too: the entry name carries `-notips` when it is off.
+            "show_tooltips",
             "live_holdings",
         }
         assert set(context.keys()) == expected

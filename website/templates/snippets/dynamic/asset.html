@@ -81,7 +81,7 @@
          `toolbar.js` sorts on *this* span's `data-val` and falls back to the
          row attribute only when the cell is missing. {% endcomment %}
       {% partialdef assetvalue inline %}
-      <span id="v{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}class="v val" data-val="{{ value }}">{{ value|floatformat:'2g' }}</span>
+      <span id="v{{ asset_id }}" {% if oob %}hx-swap-oob="true" {% endif %}class="v val tooltip-left" data-val="{{ value }}">{{ value|floatformat:'2g' }}</span>
       {% endpartialdef assetvalue %}
       <span class="u unit">ALGO</span>
     </span>

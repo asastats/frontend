@@ -20,6 +20,7 @@ from core.forms import (
     ProfileBundleNameForm,
     ProfileFormSet,
     ProfileLiveRefreshForm,
+    ProfileTooltipsForm,
     UpdateUserForm,
 )
 from core.models import BundleName, Profile
@@ -1141,6 +1142,52 @@ class ProfileSettingsPageTest(TestCase):
             response = self.client.get(reverse("profile_settings"))
         assert 'id="id-section-fiat"' in response.content.decode()
         assert response.context["fiat_form"].instance == self.user.profile
+
+    def test_settings_page_tooltips_are_on_by_default(self):
+        assert self.user.profile.show_tooltips is True
+
+    def test_settings_page_tooltips_post_switches_them_off_on_no_tier(self):
+        assert self.user.profile.permission == 0
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.post(
+                reverse("profile_settings"), data={"section": "tooltips"}
+            )
+        self.assertRedirects(response, reverse("profile_settings"))
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.show_tooltips is False
+        tags = [m.extra_tags for m in get_messages(response.wsgi_request)]
+        assert tags == ["tooltips"]
+
+    def test_settings_page_tooltips_post_switches_them_back_on(self):
+        self.user.profile.show_tooltips = False
+        self.user.profile.save()
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            self.client.post(
+                reverse("profile_settings"),
+                data={"section": "tooltips", "show_tooltips": "on"},
+            )
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.show_tooltips is True
+
+    def test_settings_page_tooltips_post_invalid_rerenders_bound_form(self):
+        """Mocked for the reason the live refresh test gives: a boolean cannot fail."""
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            with mock.patch.object(ProfileTooltipsForm, "is_valid", return_value=False):
+                response = self.client.post(
+                    reverse("profile_settings"), data={"section": "tooltips"}
+                )
+        self.assertTemplateUsed(response, "profile_settings.html")
+        assert response.context["tooltips_form"].is_bound
+        self.user.profile.refresh_from_db()
+        assert self.user.profile.show_tooltips is True
+
+    def test_settings_page_renders_the_tooltips_section(self):
+        with mock.patch("core.forms.swap_routers", return_value=[("folks", "Folks")]):
+            response = self.client.get(reverse("profile_settings"))
+        content = response.content.decode()
+        assert 'id="id-section-tooltips"' in content
+        assert 'name="show_tooltips"' in content
+        assert response.context["tooltips_form"].instance == self.user.profile
 
     def test_settings_page_liverefresh_post_saves_for_entitled_user(self):
         """**Opt-in, and off by default even for a reader who may have it.**

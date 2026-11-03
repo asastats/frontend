@@ -339,6 +339,32 @@ class LiveRefreshSettingTest(FunctionalTest):
         ).is_selected()
 
 
+class TooltipsSettingTest(FunctionalTest):
+    """The address page's tooltips: on by default, and any reader may turn them off."""
+
+    def test_a_reader_on_no_tier_turns_tooltips_off_and_it_sticks(self):
+        self.create_cookie_and_go_to_index_page_tier("tooltips@example.com", permission=0)
+        self.browser.get(self.server_url + reverse("profile_settings"))
+        section = self.browser.find_element(By.ID, "id-section-tooltips")
+        checkbox = section.find_element(By.CSS_SELECTOR, 'input[name="show_tooltips"]')
+        assert checkbox.is_selected(), "tooltips are on until a reader turns them off"
+
+        checkbox.click()
+        section.find_element(By.ID, "id_save_tooltips").click()
+        self.wait_until(lambda: not _element_is_attached(section))
+
+        new_section = self.browser.find_element(By.ID, "id-section-tooltips")
+        assert "Tooltip preference saved." in new_section.text
+        assert not new_section.find_element(
+            By.CSS_SELECTOR, 'input[name="show_tooltips"]'
+        ).is_selected()
+
+        self.browser.get(self.server_url + reverse("profile_settings"))
+        assert not self.browser.find_element(
+            By.CSS_SELECTOR, "#id-section-tooltips input[name='show_tooltips']"
+        ).is_selected()
+
+
 def _element_is_attached(element):
     """Return True if the element is still attached to the DOM."""
     try:
