@@ -186,7 +186,7 @@ class TestProfileModel:
         provider.votes_and_permission.return_value = None
         # An address is required for the provider to be consulted at all, and
         # this test is about what happens to its answer.
-        profile = Profile(address=TEST_ADDRESS)
+        profile = Profile(address=TEST_ADDRESS, authorized="PROOF")
         save = mocker.patch.object(Profile, "save")
         profile.check_votes_and_permission()
         provider.votes_and_permission.assert_called_once_with(TEST_ADDRESS)
@@ -198,7 +198,7 @@ class TestProfileModel:
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 7)
         save = mocker.patch.object(Profile, "save")
-        profile = Profile(votes=5, permission=3, address="ADDRESS")
+        profile = Profile(votes=5, permission=3, address="ADDRESS", authorized="PROOF")
         profile.check_votes_and_permission()
         save.assert_not_called()
         assert profile.votes == 5
@@ -208,7 +208,7 @@ class TestProfileModel:
     def test_profile_model_check_votes_and_permission_updates(self, mocker):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (3, 100)
-        profile = Profile(votes=0, permission=0, address="A")
+        profile = Profile(votes=0, permission=0, address="A", authorized="PROOF")
         save = mocker.patch.object(Profile, "save")
         profile.check_votes_and_permission()
         assert (profile.votes, profile.permission) == (3, 100)
@@ -246,9 +246,34 @@ class TestProfileModel:
             Profile, "algorand_address", new_callable=mock.PropertyMock, return_value=""
         )
         save = mocker.patch.object(Profile, "save")
-        profile = Profile(votes=0, permission=100, address=TEST_ADDRESS_EVM)
+        profile = Profile(
+            votes=0, permission=100, address=TEST_ADDRESS_EVM, authorized="PROOF"
+        )
         profile.check_votes_and_permission()
         provider.votes_and_permission.assert_not_called()
+        save.assert_not_called()
+        assert profile.permission == 100
+
+    def test_profile_model_check_votes_and_permission_skips_unauthorized_address(
+        self, mocker
+    ):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (7, 500000)
+        save = mocker.patch.object(Profile, "save")
+        profile = Profile(votes=0, permission=0, address=TEST_ADDRESS, authorized="")
+        profile.check_votes_and_permission()
+        provider.votes_and_permission.assert_not_called()
+        save.assert_not_called()
+        assert (profile.votes, profile.permission) == (0, 0)
+
+    def test_profile_model_check_votes_and_permission_keeps_granted_when_unauthorized(
+        self, mocker
+    ):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (0, 0)
+        save = mocker.patch.object(Profile, "save")
+        profile = Profile(permission=100, address=TEST_ADDRESS, authorized="")
+        profile.check_votes_and_permission()
         save.assert_not_called()
         assert profile.permission == 100
 
@@ -263,7 +288,7 @@ class TestProfileModel:
             new_callable=mock.PropertyMock,
             return_value=TEST_ADDRESS2,
         )
-        profile = Profile(address=TEST_ADDRESS_EVM)
+        profile = Profile(address=TEST_ADDRESS_EVM, authorized="PROOF")
         profile.check_votes_and_permission()
         provider.votes_and_permission.assert_called_once_with(TEST_ADDRESS2)
 

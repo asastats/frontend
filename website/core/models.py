@@ -303,6 +303,11 @@ class Profile(models.Model):
         if not self.address:
             return
 
+        # `address` is free text on the profile form; only `authorized` proves
+        # ownership. See docs/logbook.md.
+        if not self.authorized:
+            return
+
         address = self.algorand_address
         if not address:
             return

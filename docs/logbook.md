@@ -6549,3 +6549,25 @@ reader-derived class there would be served to the next reader. The marker
 lives only in the two templates whose cache entry is keyed on it. Only the
 address page's tooltips are affected; help-text tooltips elsewhere (e.g. the
 bundle form) are left alone.
+
+---
+
+## website/core/models.py — `check_votes_and_permission`: only an authorized address (2026-11-04)
+
+Until today any signed-in user could take the permission and votes of any
+address. The profile form saves `address` with only a validity check, and
+`ProfilePermissionFetchView` requires only a login, so typing a subscriber's
+address and opening `/profile/permission/fetch/` by hand copied its on-chain
+values onto the account. The template hid the Refetch button from unauthorized
+profiles, and the login signal checked `authorized`, which made the route look
+closed. Reproduced through the real form and URLs in the test client, with the
+provider mocked; production was not tested.
+
+The guard is in the method rather than the view so every caller gets it.
+`update_authorized` sets `authorized` before calling it, so a fresh authorization
+still fetches. A permission set by hand on a profile with an unauthorized address
+now survives a refresh.
+
+The guard removes nothing already taken. Copied values stay until someone clears
+them; `reports/refetch-exposure-query.md` in the workspace repository lists the
+candidates.

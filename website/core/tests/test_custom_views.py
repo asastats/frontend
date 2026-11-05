@@ -1794,6 +1794,65 @@ class TestDbProfilePermissionFetchView(BaseUserCreatedView):
         mocked_fetch.assert_called_once_with()
 
 
+@pytest.mark.django_db
+class TestProfilePermissionFetchRequiresAuthorization:
+    """Refetch must not grant the permission of an address nobody proved."""
+
+    def test_core_views_profilepermissionfetch_refuses_unsigned_address(
+        self, client, mocker
+    ):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (7, 500000)
+        user = user_model.objects.create(
+            username="unsigned", email="unsigned@example.com"
+        )
+        client.force_login(user)
+        response = client.post(
+            reverse("profile"),
+            {
+                "first_name": "",
+                "last_name": "",
+                "profile-TOTAL_FORMS": "1",
+                "profile-INITIAL_FORMS": "1",
+                "profile-MIN_NUM_FORMS": "0",
+                "profile-MAX_NUM_FORMS": "1000",
+                "profile-0-id": str(user.profile.pk),
+                "profile-0-user": str(user.pk),
+                "profile-0-address": TEST_ADDRESS,
+            },
+        )
+        assert response.status_code == 302
+        user.profile.refresh_from_db()
+        assert user.profile.address == TEST_ADDRESS
+        assert user.profile.authorized == ""
+
+        response = client.get(reverse("profile_permission_fetch"))
+
+        assert response.status_code == 302
+        provider.votes_and_permission.assert_not_called()
+        user.profile.refresh_from_db()
+        assert (user.profile.votes, user.profile.permission) == (0, 0)
+
+    def test_core_views_profilepermissionfetch_updates_authorized_address(
+        self, client, mocker
+    ):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (7, 500000)
+        user = user_model.objects.create(username="signed", email="signed@example.com")
+        user.profile.address = TEST_ADDRESS
+        user.profile.authorized = "PROOF"
+        user.profile.save()
+        client.force_login(user)
+        provider.votes_and_permission.reset_mock()
+
+        response = client.get(reverse("profile_permission_fetch"))
+
+        assert response.status_code == 302
+        provider.votes_and_permission.assert_called_once_with(TEST_ADDRESS)
+        user.profile.refresh_from_db()
+        assert (user.profile.votes, user.profile.permission) == (7, 500000)
+
+
 class TestProfileDisplay:
     """Testing class for :class:`core.views.ProfileDisplay`."""
 
