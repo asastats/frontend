@@ -6617,3 +6617,14 @@ every `htmx:after:swap`, and the closed dialog was still in the DOM, so an unrel
 identified; a functional test dispatching a swap reproduced it. Closing now removes the dialog, including on Escape, through a
 capture listener because `close` does not bubble. Filtering on `event.target` did not work: in htmx 4 it is not the slot.
 
+### `deploy/roles/projectsetup/tasks/project_scripts.yml` - `assetfeedbackexport` mail (2026-11-05)
+
+Twice daily at 08:12 and 20:12, at the user's request. It relies on cron mailing stdout to the webapp user, so
+`assetfeedbackexport` prints nothing, not even the header, when there are no rows. Every `new` report repeats in each mail until
+it is resolved. The mail holds reporters' contact details in the webapp user's local mailbox, and resolving a report does not
+remove them from past mail, so `static/auth_privacy.html`'s retention wording does not cover those copies.
+
+*Correction to the mail note, 2026-11-05:* the cron now runs `assetfeedbackexport --no-contact` through
+`assetfeedbackmailcron.sh`, so contacts no longer reach the mailbox and the policy's retention wording holds. Reporter addresses
+stay in the mail: they are public chain addresses given for rewards. A manual export still includes the contact.
+

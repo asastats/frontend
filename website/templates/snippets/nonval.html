@@ -43,7 +43,7 @@
             <div>Unit name: {{ asset.unit }}</div>
             <div>Total supply: {{ asset.total|floatformat:"g" }}</div>
             <div>Decimals: {{ asset.decimals }}</div>
-            {% if asset.url %}<div class="truncate">URL: <a class="link link-hover" href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener{% if noteval.reason == 'curated:suspicious' %} nofollow{% endif %}" title="{% if noteval.reason == 'curated:suspicious' %}Not checked: reported as suspicious{% else %}Official URL{% endif %}">{{ asset.url }}</a></div>{% endif %}
+            {% if asset.url %}<div class="truncate">URL: <a class="link link-hover" href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener{% if noteval.reason == 'curated:suspicious' or noteval.reason == 'pera:suspicious' %} nofollow{% endif %}" title="{% if noteval.reason == 'curated:suspicious' or noteval.reason == 'pera:suspicious' %}Not checked: reported as suspicious{% else %}Official URL{% endif %}">{{ asset.url }}</a></div>{% endif %}
           </dl>
           {# Guarded: a payload cached before `id` has none for a null asset, and `url` raises NoReverseMatch. #}
           {% if feedback_id %}<button type="button" class="btn btn-xs btn-outline mt-2" hx-get="{% url 'asset_feedback' feedback_id %}?name={{ asset.name|urlencode }}" hx-target="#id-asset-feedback-slot" hx-swap="innerHTML">{% if noteval.reason %}Suggest a correction{% else %}Help evaluate this asset{% endif %}</button>{% endif %}

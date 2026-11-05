@@ -159,9 +159,7 @@ class TestAssetFeedbackPost:
 
     def _fill_limit(self, count):
         for asset_id in range(1, count + 1):
-            _post(
-                url=f"/asset-feedback/{asset_id}/", started=_token(asset_id=asset_id)
-            )
+            _post(url=f"/asset-feedback/{asset_id}/", started=_token(asset_id=asset_id))
 
     def test_anonymous_limit_requires_captcha(self):
         self._fill_limit(views.ANONYMOUS_HOURLY_LIMIT)
@@ -173,7 +171,10 @@ class TestAssetFeedbackPost:
         for forwarded in range(views.ANONYMOUS_HOURLY_LIMIT + 1):
             with override_settings(ALLAUTH_TRUSTED_CLIENT_IP_HEADER="X-Real-IP"):
                 client = Client(
-                    headers={"x-real-ip": "1.2.3.4", "x-forwarded-for": f"9.9.9.{forwarded}"}
+                    headers={
+                        "x-real-ip": "1.2.3.4",
+                        "x-forwarded-for": f"9.9.9.{forwarded}",
+                    }
                 )
                 response = _post(
                     client,
@@ -187,7 +188,11 @@ class TestAssetFeedbackPost:
         client = Client()
         client.force_login(user)
         for asset_id in range(1, views.USER_HOURLY_LIMIT + 1):
-            _post(client, url=f"/asset-feedback/{asset_id}/", started=_token(asset_id=asset_id))
+            _post(
+                client,
+                url=f"/asset-feedback/{asset_id}/",
+                started=_token(asset_id=asset_id),
+            )
         assert AssetFeedback.objects.filter(user=user).count() == views.USER_HOURLY_LIMIT
         response = _post(client)
         assert b"a lot of reports" in response.content
@@ -206,7 +211,12 @@ class TestAssetFeedbackPrivacy:
     def test_account_deletion_clears_contact_and_address(self):
         user = get_user_model().objects.create_user("reader", password="x")
         report = AssetFeedback.objects.create(
-            asset_id=1, kind="other", details="x", contact="c", reporter_address=ADDRESS, user=user
+            asset_id=1,
+            kind="other",
+            details="x",
+            contact="c",
+            reporter_address=ADDRESS,
+            user=user,
         )
         user.delete()
         report.refresh_from_db()
@@ -243,6 +253,36 @@ class TestAssetFeedbackCommands:
         assert rows[0]["reports_for_asset"] == "2"
         assert rows[2]["details"] == "'=HYPERLINK(1)"
 
+    def test_export_no_contact_leaves_out_only_the_contact(self):
+        AssetFeedback.objects.create(
+            asset_id=1,
+            kind="other",
+            details="d",
+            contact="me@example.com",
+            reporter_address=ADDRESS,
+        )
+        out = StringIO()
+        call_command("assetfeedbackexport", "--no-contact", stdout=out)
+        assert "me@example.com" not in out.getvalue()
+        row = next(csv.DictReader(StringIO(out.getvalue())))
+        assert "contact" not in row
+        assert (row["details"], row["reporter_address"]) == ("d", ADDRESS)
+
+    def test_export_keeps_the_contact_by_default(self):
+        AssetFeedback.objects.create(asset_id=1, kind="other", contact="me@example.com")
+        out = StringIO()
+        call_command("assetfeedbackexport", stdout=out)
+        assert (
+            next(csv.DictReader(StringIO(out.getvalue())))["contact"] == "me@example.com"
+        )
+
+    @pytest.mark.parametrize("args", [(), ("--rewards",)])
+    def test_export_is_silent_without_rows(self, args):
+        AssetFeedback.objects.create(asset_id=3, kind="other", status="rejected")
+        out = StringIO()
+        call_command("assetfeedbackexport", *args, stdout=out)
+        assert out.getvalue() == ""
+
     def test_export_rewards_is_first_accepted_with_address_per_asset(self):
         first = AssetFeedback.objects.create(
             asset_id=1, kind="other", status="accepted", reporter_address=ADDRESS
@@ -258,9 +298,15 @@ class TestAssetFeedbackCommands:
 
     def test_resolve_sets_status_and_clears_contact(self):
         report = AssetFeedback.objects.create(asset_id=1, kind="other", contact="c")
-        call_command("assetfeedbackresolve", report.pk, "accepted", note="ok", stdout=StringIO())
+        call_command(
+            "assetfeedbackresolve", report.pk, "accepted", note="ok", stdout=StringIO()
+        )
         report.refresh_from_db()
-        assert (report.status, report.reviewer_note, report.contact) == ("accepted", "ok", "")
+        assert (report.status, report.reviewer_note, report.contact) == (
+            "accepted",
+            "ok",
+            "",
+        )
 
     def test_resolve_unknown_report_raises(self):
         with pytest.raises(CommandError):
@@ -286,17 +332,23 @@ class TestNonvalButton:
         )
         assert f'hx-get="/asset-feedback/{ASSET}/' in html
 
-    def test_label_is_escaped_and_changes_button_and_link_title(self):
+    @pytest.mark.parametrize("reason", ["curated:suspicious", "pera:suspicious"])
+    def test_label_is_escaped_and_changes_button_and_link_title(self, reason):
         html = render_to_string(
             "snippets/nonval.html",
             {
                 "notevals": [
                     {
                         "id": ASSET,
-                        "asset": {"id": ASSET, "name": "A", "decimals": 0, "url": "https://x.example"},
+                        "asset": {
+                            "id": ASSET,
+                            "name": "A",
+                            "decimals": 0,
+                            "url": "https://x.example",
+                        },
                         "amount": 1,
                         "programs": [],
-                        "reason": "curated:suspicious",
+                        "reason": reason,
                         "note": "Reported <b>as suspicious",
                     }
                 ]
@@ -308,7 +360,9 @@ class TestNonvalButton:
         assert "nofollow" in html
 
     def test_no_label_keeps_the_default_button(self):
-        html = self._html({"id": ASSET, "name": "A", "decimals": 0, "url": "https://x.example"})
+        html = self._html(
+            {"id": ASSET, "name": "A", "decimals": 0, "url": "https://x.example"}
+        )
         assert "asset-note" not in html
         assert "Help evaluate this asset" in html
         assert "Official URL" in html

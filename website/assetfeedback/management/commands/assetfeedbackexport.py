@@ -45,10 +45,14 @@ class Command(BaseCommand):
             help="the first accepted report per asset that left an address",
         )
 
+        parser.add_argument(
+            "--no-contact",
+            action="store_true",
+            help="leave out the contact column, for output kept outside the database",
+        )
+
     def handle(self, *args, **options):
         """Write the CSV."""
-        writer = csv.writer(self.stdout)
-        writer.writerow(COLUMNS)
         if options["rewards"]:
             reports = (
                 AssetFeedback.objects.filter(status=AssetFeedback.Status.ACCEPTED)
@@ -63,25 +67,31 @@ class Command(BaseCommand):
             if not options["rewards"]
             else ()
         )
-        rows = sorted(reports, key=lambda r: (-counts.get(r.asset_id, 1), r.asset_id, r.pk))
+        rows = sorted(
+            reports, key=lambda r: (-counts.get(r.asset_id, 1), r.asset_id, r.pk)
+        )
+        # Silent without rows, header included: cron mails any output.
+        if not rows:
+            return
+        columns = [
+            column
+            for column in COLUMNS
+            if not (options["no_contact"] and column == "contact")
+        ]
+        writer = csv.writer(self.stdout)
+        writer.writerow(columns)
         for report in rows:
-            writer.writerow(
-                [
-                    report.pk,
-                    report.asset_id,
-                    counts.get(report.asset_id, 1),
-                    *(
-                        safe_cell(value)
-                        for value in (
-                            report.kind,
-                            report.link,
-                            report.details,
-                            report.contact,
-                            report.reporter_address,
-                            report.source,
-                            report.status,
-                        )
-                    ),
-                    report.created.isoformat(),
-                ]
-            )
+            row = {
+                "id": report.pk,
+                "asset_id": report.asset_id,
+                "reports_for_asset": counts.get(report.asset_id, 1),
+                "kind": safe_cell(report.kind),
+                "link": safe_cell(report.link),
+                "details": safe_cell(report.details),
+                "contact": safe_cell(report.contact),
+                "reporter_address": safe_cell(report.reporter_address),
+                "source": safe_cell(report.source),
+                "status": safe_cell(report.status),
+                "created": report.created.isoformat(),
+            }
+            writer.writerow([row[column] for column in columns])

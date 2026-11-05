@@ -112,6 +112,28 @@
   become: true
   tags: [project-setup, cronjobs]
 
+- name: Create the asset feedback mail script
+  ansible.builtin.template:
+    src: assetfeedbackmailcron.sh
+    dest: "{{ site_path }}/scripts/assetfeedbackmailcron.sh"
+    owner: "{{ webapp_user }}"
+    group: "{{ webapp_group }}"
+    mode: "0700"
+  become: true
+  become_user: "{{ webapp_user }}"
+  tags: [project-setup, cronjobs]
+
+# Cron mails any output to the webapp user; the command is silent without new reports.
+- name: Create twice-daily asset feedback report cron job
+  ansible.builtin.cron:
+    hour: "8,20"
+    minute: "12"
+    name: "{{ project_name }} new asset feedback reports (twice daily)"
+    user: "{{ webapp_user }}"
+    job: ": New asset feedback reports ; {{ site_path }}/scripts/assetfeedbackmailcron.sh"
+  become: true
+  tags: [project-setup, cronjobs]
+
 - name: Create output-checked management command cron scripts
   ansible.builtin.template:
     src: managementcommandoutputcron.sh
