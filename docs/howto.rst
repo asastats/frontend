@@ -161,3 +161,37 @@ It waits for each worker to come back before moving on to the next.
   }
 
   alias asgi-status="sudo supervisorctl status 'asgi:*'"
+
+
+Read asset feedback reports
+---------------------------
+
+Readers send reports about not-evaluated assets from the button on each card. They are stored in the ``AssetFeedback`` table
+and change nothing by themselves: an accepted report becomes engine work by hand.
+
+Run these on the frontend host, from the ``website`` directory, with ``--settings=config.settings.production``:
+
+.. list-table::
+  :header-rows: 1
+
+  * - Command
+    - What it does
+  * - ``assetfeedbackexport``
+    - CSV of new reports on stdout, the most reported assets first. Prints nothing when there are none.
+  * - ``assetfeedbackexport --no-contact``
+    - The same without the contact column. The cron mail uses this.
+  * - ``assetfeedbackexport --rewards``
+    - The first accepted report per asset that left an address, for entering in Rewards Suite by hand.
+  * - ``assetfeedbackresolve <id> <status> --note "why"``
+    - Sets ``accepted``, ``rejected``, ``duplicate`` or ``rewarded``, and clears the contact.
+  * - ``assetfeedbackpurge``
+    - Clears contacts older than 12 months. Runs weekly.
+
+Read a contact from a manual export before resolving the report, because resolving clears it.
+
+New reports reach the webapp user's mailbox at 08:12 and 20:12, and repeat until they are resolved. The mail has no contact
+column, so ``static/auth_privacy.html`` stays accurate about how long contacts are kept.
+
+A report needs details or a link. Anonymous readers get a captcha after 10 reports an hour, and signed-in readers are refused
+after 30. The app's form has no contact, address or reward wording.
+

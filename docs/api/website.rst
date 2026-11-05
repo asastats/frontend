@@ -142,6 +142,87 @@
   :show-inheritance:
 
 
+:mod:`assetfeedback` -- Readers' reports about not-evaluated assets
+*******************************************************************
+
+.. automodule:: assetfeedback
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`assetfeedback.apps` -- Module containing assetfeedback app configuration
+------------------------------------------------------------------------------
+
+.. automodule:: assetfeedback.apps
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`assetfeedback.forms` -- Module containing the asset feedback form
+-----------------------------------------------------------------------
+
+.. automodule:: assetfeedback.forms
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`assetfeedback.models` -- Module containing readers' reports about not-evaluated assets
+--------------------------------------------------------------------------------------------
+
+.. automodule:: assetfeedback.models
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`assetfeedback.urls` -- Module containing the assetfeedback app's URL configuration
+----------------------------------------------------------------------------------------
+
+.. automodule:: assetfeedback.urls
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`assetfeedback.views` -- Module containing the asset feedback view. See docs/logbook.md
+--------------------------------------------------------------------------------------------
+
+.. automodule:: assetfeedback.views
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`assetfeedback.management.commands.assetfeedbackexport` -- Django management command writing asset feedback reports as CSV to stdout
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+.. automodule:: assetfeedback.management.commands.assetfeedbackexport
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`assetfeedback.management.commands.assetfeedbackpurge` -- Django management command clearing contacts from reports older than 12 months
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+.. automodule:: assetfeedback.management.commands.assetfeedbackpurge
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`assetfeedback.management.commands.assetfeedbackresolve` -- Django management command setting a report's status and clearing its contact
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+.. automodule:: assetfeedback.management.commands.assetfeedbackresolve
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`config` -- Main configuration package
 *******************************************
 
@@ -173,6 +254,15 @@
 --------------------------------------------------
 
 .. automodule:: config.settings
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`config.settings.automated_tests` -- Django settings module used by the automated test suite
+-------------------------------------------------------------------------------------------------
+
+.. automodule:: config.settings.automated_tests
   :members:
   :undoc-members:
   :show-inheritance:
@@ -241,6 +331,15 @@
   :show-inheritance:
 
 
+:mod:`config.urls_automated_tests` -- Root URLconf for the automated suite: the site's own, plus served icons
+-------------------------------------------------------------------------------------------------------------
+
+.. automodule:: config.urls_automated_tests
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`config.wsgi` -- WSGI application module
 ---------------------------------------------
 
@@ -263,6 +362,24 @@
 ***************************************
 
 .. automodule:: core
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.appclient` -- Recognise requests made by the ASA Stats app and what it may be shown
+----------------------------------------------------------------------------------------------
+
+.. automodule:: core.appclient
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.apple` -- Sign in with Apple's REST API: revoking a user's tokens (F5), exchanging
+---------------------------------------------------------------------------------------------
+
+.. automodule:: core.apple
   :members:
   :undoc-members:
   :show-inheritance:
@@ -317,6 +434,15 @@
 ------------------------------------------------------
 
 .. automodule:: core.helpers
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.loginform` -- The site's allauth login form (``ACCOUNT_FORMS["login"]``)
+-----------------------------------------------------------------------------------
+
+.. automodule:: core.loginform
   :members:
   :undoc-members:
   :show-inheritance:
@@ -448,6 +574,15 @@
   :show-inheritance:
 
 
+:mod:`core.sessions` -- Session engine: cache first, the database behind it, keeping sessions made before
+---------------------------------------------------------------------------------------------------------
+
+.. automodule:: core.sessions
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`core.signals` -- Database signals and triggers module
 -----------------------------------------------------------
 
@@ -493,10 +628,46 @@
   :show-inheritance:
 
 
+:mod:`core.urls_appauth` -- URLs of the app's sign-in, mounted at ``app/auth/``: system browser (F4), native (O3)
+-----------------------------------------------------------------------------------------------------------------
+
+.. automodule:: core.urls_appauth
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
 :mod:`core.views` -- Main application views module
 --------------------------------------------------
 
 .. automodule:: core.views
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.views_app` -- Views the ASA Stats app depends on: Universal Links and App Links documents
+----------------------------------------------------------------------------------------------------
+
+.. automodule:: core.views_app
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.views_appauth` -- System-browser sign-in for the ASA Stats app: a one-time ticket (F4)
+-------------------------------------------------------------------------------------------------
+
+.. automodule:: core.views_appauth
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`core.views_appnative` -- Native Sign in with Apple and Google in the ASA Stats app (O3)
+---------------------------------------------------------------------------------------------
+
+.. automodule:: core.views_appnative
   :members:
   :undoc-members:
   :show-inheritance:
@@ -704,6 +875,15 @@
 -------------------------------------------------
 
 .. automodule:: utils.explorers
+  :members:
+  :undoc-members:
+  :show-inheritance:
+
+
+:mod:`utils.fiat` -- Module with the reader's fiat currency and its latest rate from USD
+----------------------------------------------------------------------------------------
+
+.. automodule:: utils.fiat
   :members:
   :undoc-members:
   :show-inheritance:

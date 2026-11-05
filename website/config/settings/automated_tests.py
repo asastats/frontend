@@ -1,7 +1,7 @@
 """Django settings module used by the automated test suite.
 
 Not to be confused with ``testing.py``, which configures the deployed staging
-host (see deploy/molecule/*/molecule.yml). This module is what pytest.ini
+host (see ``deploy/molecule/*/molecule.yml``). This module is what pytest.ini
 points at, and it exists for one reason: the cache.
 
 ``development.py`` sets ``DummyCache``, which discards every write. That is the

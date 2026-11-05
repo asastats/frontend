@@ -657,6 +657,20 @@ rows they cannot see is worse served than one who presses a button.
    each ``src`` after load and every thumbnail that lands pushes the rows below
    it down.
 
+Not-evaluated cards
+^^^^^^^^^^^^^^^^^^^
+
+``snippets/nonval.html`` renders one card per asset.
+
+- ``.copy`` stays directly after the asset id link, because ``site.js`` copies the previous element's text.
+- ``#id-asset-feedback-slot`` sits outside the ``<details>``, once per page. The button's ``hx-get`` swaps the modal into it.
+- ``#id-asset-feedback-dialog`` is what ``openAssetFeedbackDialog`` opens after a swap. Closing removes it, including on Escape,
+  so that a later swap on the page cannot reopen it.
+- ``[data-asset-feedback-close]`` marks its close button.
+- ``.asset-note`` holds the engine's public label. It has no styling of its own, and tests read it.
+- ``noteval.id`` falls back to ``asset.id`` through ``firstof``, because a filter argument raises on a null asset, and a payload
+  cached before the engine change has no ``id``.
+
 ``[data-program-panel]``
 ^^^^^^^^^^^^^^^^^^^^^^^^
 

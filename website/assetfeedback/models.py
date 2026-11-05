@@ -54,7 +54,7 @@ def clear_contact_of_deleted_user(sender, instance, **kwargs):
     """Clear contact details before `SET_NULL` unlinks the reports.
 
     :param sender: user model
-    :type sender: type
+    :type sender: :class:`django.db.models.Model`
     :param instance: user being deleted
     :type instance: :class:`django.contrib.auth.models.User`
     """
