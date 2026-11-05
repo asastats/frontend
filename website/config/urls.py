@@ -115,6 +115,8 @@ urlpatterns = [
     re_path(r"^accounts/", include("allauth.urls")),
     # captcha namespace
     re_path(r"^captcha/", include("captcha.urls")),
+    # assetfeedback app; ahead of the catch-all.
+    re_path(r"^asset-feedback/", include("assetfeedback.urls")),
     # widgets app namespace
     re_path(r"^widgets/", include(widget_urls)),
     # Root-level browser assets, ahead of the catch-all that would other-

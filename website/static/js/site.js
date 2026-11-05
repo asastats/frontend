@@ -210,6 +210,21 @@ function initMessageToasts() {
 }
 
 
+/**
+ * Open the asset feedback dialog when htmx swaps it into its slot.
+ *
+ * @function openAssetFeedbackDialog
+ */
+function openAssetFeedbackDialog() {
+  var dialog = document.getElementById('id-asset-feedback-dialog');
+  if (dialog && dialog.showModal && !dialog.open) dialog.showModal();
+}
+document.addEventListener('htmx:after:swap', openAssetFeedbackDialog);
+document.addEventListener('click', function (event) {
+  var close = event.target.closest && event.target.closest('[data-asset-feedback-close]');
+  if (close) close.closest('dialog').close();
+});
+
 /*
  * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * SECTION: exports needed by jest testing framework
@@ -223,6 +238,7 @@ if (typeof exports !== 'undefined') {
     swapLoginGate,
     showSwapErrorToast,
     initMessageToasts,
+    openAssetFeedbackDialog,
     MESSAGE_TOAST_MILLISECONDS
   };
 }

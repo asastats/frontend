@@ -257,3 +257,29 @@ describe("in SECTION: Proprietary widgets", function () {
     });
   });
 });
+
+describe('openAssetFeedbackDialog', () => {
+  const addDialog = () => {
+    const dialog = document.createElement('dialog');
+    dialog.id = 'id-asset-feedback-dialog';
+    dialog.showModal = jest.fn(() => { dialog.open = true; });
+    dialog.close = jest.fn();
+    dialog.innerHTML = '<button data-asset-feedback-close></button>';
+    document.body.appendChild(dialog);
+    return dialog;
+  };
+
+  it('opens the dialog once and ignores a page without one', () => {
+    expect(() => site.openAssetFeedbackDialog()).not.toThrow();
+    const dialog = addDialog();
+    site.openAssetFeedbackDialog();
+    site.openAssetFeedbackDialog();
+    expect(dialog.showModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes on its close button', () => {
+    const dialog = addDialog();
+    dialog.querySelector('button').click();
+    expect(dialog.close).toHaveBeenCalledTimes(1);
+  });
+});

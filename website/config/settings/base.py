@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "widgets.apps.WidgetsConfig",
     "walletauth.apps.WalletauthConfig",
+    "assetfeedback.apps.AssetfeedbackConfig",
     "daphne",
     "template_partials",
     "django.contrib.auth",

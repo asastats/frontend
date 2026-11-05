@@ -611,9 +611,12 @@ class NotevalItemSerializer(Serializer):
     :type NotevalItemSerializer.programs: :class:`AsaItemProgramSerializer`
     """
 
+    id = IntegerField()
     asset = AsaSerializer()
     amount = IntegerField()
     programs = AsaItemProgramSerializer(many=True)
+    reason = CharField()
+    note = CharField()
 
 
 @extend_schema_serializer(component_name="Total")

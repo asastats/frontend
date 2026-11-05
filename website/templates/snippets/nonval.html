@@ -13,14 +13,17 @@
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {% for noteval in notevals %}
         {% with asset=noteval.asset %}
-        <div id="{{ asset.id }}" class="fitem min-w-0 rounded-box border border-base-300 p-3 text-sm">
+        {# `firstof`, not `default`: a filter argument raises on a null asset. #}
+        {% firstof noteval.id asset.id as feedback_id %}
+        <div id="{{ feedback_id }}" class="fitem min-w-0 rounded-box border border-base-300 p-3 text-sm">
           <div class="flex items-center gap-2">
             <img src="{{ noteval|asa_icon }}" alt="{{ asset.name }} logo" class="asaicon h-8 w-8 flex-none rounded-full" loading="lazy" decoding="async" data-fallback="{{ BASE_CDN_URL }}/icons/empty.png" />
             <span class="title truncate font-medium">{{ asset.name }}</span>
           </div>
+          {% if noteval.note %}<p class="asset-note mt-2 text-xs font-medium">{{ noteval.note }}</p>{% endif %}
           <dl class="mt-2 space-y-1 text-xs text-base-content/70">
             <div>
-              <a class="link link-hover" href="{% explorer_url 'asset' asset.id %}" target="_blank" title="Show in {% explorer_name %}">{{ asset.id }}</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
+              <a class="link link-hover" href="{% explorer_url 'asset' feedback_id %}" target="_blank" title="Show in {% explorer_name %}">{{ feedback_id }}</a><span class="copy cursor-pointer" title="Copy asset id">&nbsp;&#128203;</span>
             </div>
             {% comment %} **Guarded, because a filter argument is not forgiving.** Django
                swallows a failed lookup in `{{ a.b }}` but not one in a
@@ -40,13 +43,17 @@
             <div>Unit name: {{ asset.unit }}</div>
             <div>Total supply: {{ asset.total|floatformat:"g" }}</div>
             <div>Decimals: {{ asset.decimals }}</div>
-            {% if asset.url %}<div class="truncate">URL: <a class="link link-hover" href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener" title="Official URL">{{ asset.url }}</a></div>{% endif %}
+            {% if asset.url %}<div class="truncate">URL: <a class="link link-hover" href="{% if asset.url|slice:':4' != 'http' %}https://{% endif %}{{ asset.url }}" target="_blank" rel="noopener{% if noteval.reason == 'curated:suspicious' %} nofollow{% endif %}" title="{% if noteval.reason == 'curated:suspicious' %}Not checked: reported as suspicious{% else %}Official URL{% endif %}">{{ asset.url }}</a></div>{% endif %}
           </dl>
+          {# Guarded: a payload cached before `id` has none for a null asset, and `url` raises NoReverseMatch. #}
+          {% if feedback_id %}<button type="button" class="btn btn-xs btn-outline mt-2" hx-get="{% url 'asset_feedback' feedback_id %}?name={{ asset.name|urlencode }}" hx-target="#id-asset-feedback-slot" hx-swap="innerHTML">{% if noteval.reason %}Suggest a correction{% else %}Help evaluate this asset{% endif %}</button>{% endif %}
         </div>
         {% endwith %}
       {% endfor %}
       </div>
     </div>
   </details>
+  {# Outside the <details>; assetfeedback/_modal.html is swapped in here. #}
+  <div id="id-asset-feedback-slot"></div>
 </div>
 {% endif %}

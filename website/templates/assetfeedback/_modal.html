@@ -1,0 +1,24 @@
+{% comment %} Swapped into #id-asset-feedback-slot. site.js opens #id-asset-feedback-dialog after the swap. {% endcomment %}
+<dialog id="id-asset-feedback-dialog" class="w-full max-w-md rounded-box border-0 bg-base-100 p-0 text-base-content">
+  <form method="post" action="{% url 'asset_feedback' asset_id %}" hx-post="{% url 'asset_feedback' asset_id %}" hx-target="#id-asset-feedback-slot" hx-swap="innerHTML" class="space-y-3 p-6 text-left text-sm">
+    {% csrf_token %}
+    <h3 class="text-lg font-semibold">Help evaluate {% if name %}{{ name }}{% else %}this asset{% endif %}</h3>
+    <p class="text-base-content/70">Asset {{ asset_id }}. Tell us what you know, and we will review it.</p>
+    {{ form.non_field_errors }}
+    {% for field in form.visible_fields %}{% if field.name != "website" %}
+    <div>
+      <label class="mb-1 block font-medium" for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% for error in field.errors %}<p class="mt-1 text-error">{{ error }}</p>{% endfor %}
+    </div>
+    {% endif %}{% endfor %}
+    {% if show_personal %}<p class="text-xs text-base-content/70">Leave an Algorand address to be considered for community rewards if your report helps us evaluate this asset. See our <a class="link" href="{% url 'html_file' 'auth_privacy.html' %}#asset-reports" target="_blank" rel="noopener">privacy policy</a>.</p>{% endif %}
+    <div class="hidden" aria-hidden="true"><label for="{{ form.website.id_for_label }}">Leave this empty</label>{{ form.website }}</div>
+    {{ form.started }}
+    <input type="hidden" name="name" value="{{ name }}">
+    <div class="flex justify-end gap-2 pt-2">
+      <button type="button" class="btn btn-ghost btn-sm" data-asset-feedback-close>Close</button>
+      <button type="submit" class="btn btn-primary btn-sm">Send</button>
+    </div>
+  </form>
+</dialog>

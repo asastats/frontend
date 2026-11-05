@@ -6571,3 +6571,38 @@ now survives a refresh.
 The guard removes nothing already taken. Copied values stay until someone clears
 them; `reports/refetch-exposure-query.md` in the workspace repository lists the
 candidates.
+
+---
+
+## website/assetfeedback/
+
+### The app (2026-11-05)
+
+Readers' reports about not-evaluated assets. The plan and decisions are in the workspace's
+`feedback/PLAN.md`. A separate app because widgets are toggled per reader and this must reach anonymous visitors.
+
+- **The button is on a cached page,** so the form, its CSRF token and its signed `started` token arrive only in the
+  `never_cache` fragment. A hidden `csrf_token` in the form replaces the plan's `hx-headers`; it reaches the same check.
+- **Throttles key on `ALLAUTH_TRUSTED_CLIENT_IP_HEADER`** (`X-Real-IP` in production, which
+  `deploy/roles/nginx/templates/proxy_headers.conf` sets from `$remote_addr`). `X-Forwarded-For` can be extended by
+  the client, so it is never read. This settles the plan's open check on DRF's `get_ident`. Identities reach the cache only hashed.
+- **Captcha only after the anonymous limit.** A signed-in reader over the limit is refused instead.
+- **The app omits contact, address and reward wording** to keep store declarations and review unchanged.
+- **Nothing automatic follows from a report.** Accepted ones become engine work by hand, so a bad report cannot move a valuation.
+- `link` accepts only http and https and is never fetched or shown as a link. The export escapes formula prefixes.
+- `assetfeedbackpurge` enforces the 12-month limit on contacts, and has no cron yet.
+
+### `website/config/tests/test_urls.py` - pattern count 13 (2026-11-05)
+
+`asset-feedback/` must sit ahead of the catch-all, or it would resolve as a bundle name.
+
+### `website/templates/snippets/nonval.html` - labels (2026-11-05)
+
+`note` is engine text, escaped here. Payloads cached before the engine deploy lack `id`, `reason` and `note`, so the
+card falls back to `asset.id`, no label and the default button. A `curated:suspicious` card drops the "Official URL"
+title and adds `nofollow`: an on-chain URL is whatever its creator wrote.
+
+*Correction to the assetfeedback note, 2026-11-05:* the first version put the report text in `asm-privacy.html` and linked
+it from the form. That page is only for the mobile app, and the app form collects no contact or address. The text now
+lives in `static/auth_privacy.html`, and `asm-privacy.html` is back as it was.
+
