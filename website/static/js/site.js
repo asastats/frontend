@@ -211,7 +211,8 @@ function initMessageToasts() {
 
 
 /**
- * Open the asset feedback dialog when htmx swaps it into its slot.
+ * Open the asset feedback dialog once htmx has swapped it in. Any swap on the
+ * page runs this, which is safe because closing removes the dialog.
  *
  * @function openAssetFeedbackDialog
  */
@@ -219,9 +220,21 @@ function openAssetFeedbackDialog() {
   var dialog = document.getElementById('id-asset-feedback-dialog');
   if (dialog && dialog.showModal && !dialog.open) dialog.showModal();
 }
+
+/**
+ * Empty the slot when the dialog closes, by its button or by the Escape key.
+ *
+ * @function removeClosedAssetFeedbackDialog
+ * @param {Event} event close event, which does not bubble
+ */
+function removeClosedAssetFeedbackDialog(event) {
+  if (event.target.id === 'id-asset-feedback-dialog') event.target.remove();
+}
+
 document.addEventListener('htmx:after:swap', openAssetFeedbackDialog);
+document.addEventListener('close', removeClosedAssetFeedbackDialog, true);
 document.addEventListener('click', function (event) {
-  var close = event.target.closest && event.target.closest('[data-asset-feedback-close]');
+  var close = event.target.closest('[data-asset-feedback-close]');
   if (close) close.closest('dialog').close();
 });
 
@@ -239,6 +252,7 @@ if (typeof exports !== 'undefined') {
     showSwapErrorToast,
     initMessageToasts,
     openAssetFeedbackDialog,
+    removeClosedAssetFeedbackDialog,
     MESSAGE_TOAST_MILLISECONDS
   };
 }

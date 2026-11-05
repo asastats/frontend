@@ -6606,3 +6606,14 @@ title and adds `nofollow`: an on-chain URL is whatever its creator wrote.
 it from the form. That page is only for the mobile app, and the app form collects no contact or address. The text now
 lives in `static/auth_privacy.html`, and `asm-privacy.html` is back as it was.
 
+### `deploy/roles/projectsetup/tasks/project_scripts.yml` - `assetfeedbackpurge` (2026-11-05)
+
+Weekly, five minutes after `clearsessions`. It enforces the 12-month contact limit stated in `static/auth_privacy.html`.
+
+### `website/static/js/site.js` - the feedback dialog reopened after Close (2026-11-05)
+
+Found by the user: Close worked, then the dialog came back when the pointer moved to the top of the page. The listener ran on
+every `htmx:after:swap`, and the closed dialog was still in the DOM, so an unrelated swap reopened it. The exact swap was not
+identified; a functional test dispatching a swap reproduced it. Closing now removes the dialog, including on Escape, through a
+capture listener because `close` does not bubble. Filtering on `event.target` did not work: in htmx 4 it is not the slot.
+

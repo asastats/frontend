@@ -57,3 +57,26 @@ class AssetFeedbackFormTest(FunctionalTest):
                 By.CSS_SELECTOR, "#id-asset-feedback-dialog[open]"
             )
         )
+
+    @mock.patch("core.context_processors.fetch_capabilities")
+    @mock.patch("core.views.check_export_status")
+    @mock.patch("core.views.fetch_and_serialize_account")
+    def test_closed_modal_stays_closed_after_another_swap(
+        self, mocked_fetch, mocked_status, mocked_caps
+    ):
+        cache.clear()
+        mocked_fetch.return_value = _sample_payload()
+        mocked_status.return_value = {}
+        mocked_caps.return_value = {"permission": 0}
+
+        self._open_modal()
+        self.browser.find_element(By.CSS_SELECTOR, "[data-asset-feedback-close]").click()
+        self.browser.execute_script(
+            "document.body.dispatchEvent("
+            "new CustomEvent('htmx:after:swap', {bubbles: true}));"
+        )
+        WebDriverWait(self.browser, 5).until(
+            lambda browser: not browser.find_elements(
+                By.CSS_SELECTOR, "#id-asset-feedback-dialog"
+            )
+        )

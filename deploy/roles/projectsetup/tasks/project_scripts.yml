@@ -10,6 +10,7 @@
     - migrate
     - collectstatic
     - clearsessions
+    - assetfeedbackpurge
   become: true
   become_user: "{{ webapp_user }}"
   tags: [project-setup, create-scripts]
@@ -97,6 +98,17 @@
     name: "{{ project_name }} clearsessions (weekly)"
     user: "{{ webapp_user }}"
     job: ": Clear sessions weekly ; /usr/bin/nice -n 10 {{ site_path }}/scripts/clearsessions.sh"
+  become: true
+  tags: [project-setup, cronjobs]
+
+- name: Create weekly asset feedback contact purge cron job
+  ansible.builtin.cron:
+    weekday: "2"
+    hour: "5"
+    minute: "52"
+    name: "{{ project_name }} asset feedback contact purge (weekly)"
+    user: "{{ webapp_user }}"
+    job: ": Asset feedback contact purge ; /usr/bin/nice -n 10 {{ site_path }}/scripts/assetfeedbackpurge.sh"
   become: true
   tags: [project-setup, cronjobs]
 
