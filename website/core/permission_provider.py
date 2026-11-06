@@ -31,6 +31,31 @@ class PermissionProvider:
         """
         return None
 
+    def earned_permission(self, profile):
+        """Return the permission a profile gets without a subscription.
+
+        :param profile: authorized profile
+        :type profile: :class:`core.models.Profile`
+        :return: int
+        """
+        return 0
+
+    def holding_terms(self):
+        """Return the published terms for permission from holding, if any.
+
+        :return: dict, or None
+        """
+        return None
+
+    def holding_status(self, profile):
+        """Return what the profile page shows about a holding, if anything.
+
+        :param profile: authorized profile
+        :type profile: :class:`core.models.Profile`
+        :return: dict, or None
+        """
+        return None
+
     def subscriptions(self, address):
         """Return render-ready subscription data for the profile page.
 

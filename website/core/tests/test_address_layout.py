@@ -113,6 +113,7 @@ def _client_for(user):
     """
     client = Client()
     with mock.patch("core.models.get_permission_provider") as provider:
+        provider.return_value.earned_permission.return_value = 0
         provider.return_value.votes_and_permission.return_value = [
             0,
             user.profile.permission,

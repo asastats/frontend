@@ -307,6 +307,7 @@ class HomePageTest(TestCase):
         self.user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="testprofile", password="12345o")
 
     def test_home_page_uses_home_template(self):
@@ -385,6 +386,7 @@ class HomeProfileLinkTest(TestCase):
         user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="linktest", password="12345o")
         return user
 
@@ -487,6 +489,7 @@ class HomeProfileLinkTest(TestCase):
         user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="same@example.com", password="12345o")
 
         text = self._link(self.client.get(reverse("home")))
@@ -504,6 +507,7 @@ class EditProfilePageTest(TestCase):
         self.user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="profilepage", password="12345o")
 
     def post_invalid_input(self):
@@ -590,6 +594,7 @@ class ProfileAccountPageTest(TestCase):
         self.user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="profile_account", password="12345o")
 
     def test_profile_page_profile_account_uses_profile_account_template(self):
@@ -611,6 +616,7 @@ class DeactivateProfilePageTest(TestCase):
         self.user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="deactivate_profile", password="12345o")
 
     def post_invalid_input(self):
@@ -697,6 +703,7 @@ class BundleNameAddPageTest(TestCase):
         self.user.profile.permission = 258_885_438_201
         self.user.profile.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
+            mocked_provider.return_value.earned_permission.return_value = 0
             mocked_provider.return_value.votes_and_permission.return_value = [
                 self.user.profile.votes,
                 self.user.profile.permission,
@@ -852,6 +859,7 @@ class BundleNameEditPageTest(TestCase):
         self.bundlename.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="bundlenameedit1", password="12345o")
 
     def post_invalid_input(self):
@@ -912,6 +920,7 @@ class BundleNameDeletePageTest(TestCase):
         self.bundlename.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="bundlenamedelete1", password="12345o")
 
     def test_bundlename_delete_uses_bundlename_delete_template(self):
@@ -958,6 +967,7 @@ class BundleNamePageTest(TestCase):
         )
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="bundlename1", password="12345o")
 
     def test_bundlename_redirects_to_home_page_for_no_bundle(self):
@@ -1090,6 +1100,7 @@ class ProfileSettingsPageTest(TestCase):
         self.user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="settingspage", password="12345o")
 
     def test_settings_page_uses_settings_template(self):
@@ -1493,6 +1504,7 @@ class SwapEntryViewTest(TestCase):
     def _login(self):
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="swapentry", password="12345o")
 
     def test_swap_entry_anonymous_renders_nothing(self):
@@ -1935,6 +1947,7 @@ class SwapSourceRedirectViewTest(TestCase):
     def _login(self):
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="swapsrc", password="12345o")
 
     def test_swap_source_anonymous_redirects(self):
@@ -2224,6 +2237,7 @@ class SwapEntryHiddenWidgetsTest(TestCase):
         self.user.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="swaphidden", password="12345o")
 
     def _get(self, hidden, router="folks"):

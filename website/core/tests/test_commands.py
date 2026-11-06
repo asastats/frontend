@@ -70,3 +70,19 @@ class TestPermissionUpdaterCommand:
             call_command("permissionsupdater")
             output.assert_called_once_with("Permissions updater exited")
         mocked_run.assert_called_once_with()
+
+
+class TestSyncHoldingsCommand:
+    """Testing class for management command
+
+    :py:mod:`core.management.commands.syncholdings`."""
+
+    def test_syncholdings_command_output(self, mocker):
+        mocked_sync = mocker.patch(
+            "core.management.commands.syncholdings.sync_holdings",
+            return_value=(3, 1),
+        )
+        with mock.patch("django.core.management.base.OutputWrapper.write") as output:
+            call_command("syncholdings")
+            output.assert_called_once_with("Recorded 3, updated 1")
+        mocked_sync.assert_called_once_with()

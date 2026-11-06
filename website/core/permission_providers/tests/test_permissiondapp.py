@@ -34,10 +34,18 @@ class TestCorePermissiondappDeserializedBoxValue:
         assert _deserialized_box_value(client, 1, "box") == [5, 100]
         deserialize.assert_called_once_with("payload")
 
-    def test_core_permissiondapp_deserialized_box_value_on_http_error(self, mocker):
+    def test_core_permissiondapp_deserialized_box_value_for_missing_box(self, mocker):
         client = mocker.MagicMock()
-        client.application_box_by_name.side_effect = AlgodHTTPError("boom")
+        client.application_box_by_name.side_effect = AlgodHTTPError("gone", code=404)
         assert _deserialized_box_value(client, 1, "box") is None
+
+    def test_core_permissiondapp_deserialized_box_value_raises_on_node_error(
+        self, mocker
+    ):
+        client = mocker.MagicMock()
+        client.application_box_by_name.side_effect = AlgodHTTPError("boom", code=500)
+        with pytest.raises(AlgodHTTPError):
+            _deserialized_box_value(client, 1, "box")
 
 
 class TestCorePermissiondappFormatTierNameAsLink:
@@ -65,6 +73,22 @@ class TestCorePermissiondappPermissionDappProvider:
         mocker.patch(f"{MODULE}.box_name_from_address", return_value="box")
         mocker.patch(f"{MODULE}._deserialized_box_value", return_value=None)
         assert PermissionDappProvider().votes_and_permission("ADDRESS") == (0, 0)
+
+    def test_core_permissiondapp_votes_and_permission_on_node_error(self, mocker):
+        mocker.patch(f"{MODULE}._mainnet_algod_client")
+        mocker.patch(f"{MODULE}.box_name_from_address", return_value="box")
+        mocker.patch(
+            f"{MODULE}._deserialized_box_value",
+            side_effect=AlgodHTTPError("boom", code=500),
+        )
+        assert PermissionDappProvider().votes_and_permission("ADDRESS") is None
+
+    def test_core_permissiondapp_earned_permission_and_page_data(self, mocker):
+        mocked = mocker.patch(f"{MODULE}.holdings")
+        provider = PermissionDappProvider()
+        assert provider.earned_permission("p") == mocked.earned_permission.return_value
+        assert provider.holding_terms() == mocked.holding_terms.return_value
+        assert provider.holding_status("p") == mocked.holding_status.return_value
 
     def test_core_permissiondapp_subscriptions_with_data(self, mocker):
         mocker.patch(f"{MODULE}._mainnet_algod_client")

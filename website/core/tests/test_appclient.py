@@ -555,6 +555,7 @@ class TestCoreAppClientProfileTierLinks:
         )
         provider = mocker.patch("core.views.get_permission_provider")
         provider.return_value.subscriptions.return_value = {self.LINK: "12 days left"}
+        provider.return_value.holding_status.return_value = None
         user = django_user_model.objects.create_user(username="tiers", password="x")
         user.profile.authorized = "A" * 58
         user.profile.save()

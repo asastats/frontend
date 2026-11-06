@@ -55,6 +55,8 @@ class Profile(models.Model):
     authorized_at = models.DateTimeField(null=True, blank=True)
     votes = models.BigIntegerField(default=0, blank=True)
     permission = models.BigIntegerField(default=0, blank=True)
+    #: The part of `permission` that holding gives; 0 when it adds nothing.
+    earned_permission = models.BigIntegerField(default=0, blank=True)
     currency = models.CharField(max_length=5, blank=True, default="ALGO")
     #: Fiat the site shows instead of USD; one of `settings.FIAT_CURRENCIES`.
     fiat = models.CharField(max_length=3, default="USD")
@@ -317,12 +319,20 @@ class Profile(models.Model):
             return
 
         votes, permission = result
-        if self.votes != votes or self.permission != permission:
+        provider = get_permission_provider()
+        earned = provider.earned_permission(self)
+        permission = max(permission, earned)
+        if (
+            self.votes != votes
+            or self.permission != permission
+            or self.earned_permission != earned
+        ):
             if self.votes and votes == 0:
                 return
 
             self.votes = votes
             self.permission = permission
+            self.earned_permission = earned
             self.save()
 
     def save(self, **kwargs):
@@ -334,6 +344,7 @@ class Profile(models.Model):
                 self.auth_method = ""
                 self.authorized_at = None
                 self.permission = 0
+                self.earned_permission = 0
 
         super().save(**kwargs)
 
@@ -876,6 +887,25 @@ class BundleName(models.Model):
         :return: Boolean
         """
         return can_access_widget("historic", self.profile, self.size)
+
+
+class AddressHolding(models.Model):
+    """Holding of one address from this moment until its next row.
+
+    Rows are append-only: the waiting period is measured from them.
+    """
+
+    address = models.CharField(max_length=ADDRESS_LEN)
+    #: ASASTATS base units, with an LP position at its total value.
+    weight = models.BigIntegerField()
+    at = models.DateTimeField()
+
+    class Meta:
+        indexes = [models.Index(fields=["address", "at"])]
+
+    def __str__(self):
+        """Return the address, the holding and its moment."""
+        return f"{self.address} {self.weight} {self.at}"
 
 
 class LiveAllowanceBucket(models.Model):

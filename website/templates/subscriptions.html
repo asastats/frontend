@@ -1,4 +1,4 @@
-{% extends 'base.html' %}{% load static %}
+{% extends 'base.html' %}{% load static %}{% load core_extras %}
 {% block title %}ASA Stats - Subscription Plans{% endblock %}
 {% block description %}ASA Stats Subscription Plans - subscribe to one of our tiers to use the ASA Stats advanced features.{% endblock %}
 {% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,subscription plans,subscription tiers,subscribe{% endblock %}
@@ -215,6 +215,42 @@
         </div>
     </div>
   </div>
+{% if holding_terms %}
+<section id="holding" class="mx-auto mt-10 max-w-3xl">
+  <h2 class="text-lg font-semibold">Holding instead of subscribing</h2>
+  <p class="mt-2 text-sm text-base-content/70">From {{ holding_terms.start|date:"F j, Y" }}, an address you have authorized on your profile gets the same permission as a subscription while it holds the amounts below. Tokens are never locked: you can move them at any time, and the permission ends when the holding falls below the amount.</p>
+  <div class="mt-4 overflow-x-auto">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Permission equal to</th>
+          <th class="text-right">ASASTATS in your wallet</th>
+          <th class="text-right">ASASTATS in a liquidity pool</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in holding_terms.rows %}
+        <tr>
+          <td>{{ row.tier }}</td>
+          <td class="text-right">{{ row.wallet|integer_comma }}</td>
+          <td class="text-right">{{ row.pool|integer_comma }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <ul class="mt-4 list-disc pl-5 text-sm text-base-content/70">
+    <li><strong>No wait in the first week.</strong> A holding that starts by {{ holding_terms.last_no_wait_day|date:"F j, Y" }} (UTC), or that already exists, counts immediately.</li>
+    <li><strong>{{ holding_terms.waiting_days }} days after that.</strong> A holding that starts later gives its permission after {{ holding_terms.waiting_days }} days without falling below the amount.</li>
+    <li><strong>Falling below the amount</strong> ends the permission and restarts the wait.</li>
+    <li><strong>Pools that count:</strong> the ALGO/ASASTATS pools on Pact and Tinyman v2, with LP tokens held in your wallet. LP tokens in a farm or another contract do not count.</li>
+    <li><strong>Pool amounts</strong> use a fixed reference price, so price moves alone do not change your position. The pool amount assumes the same value of ALGO beside the ASASTATS.</li>
+    <li><strong>All your verified addresses</strong> on one account are added together, and each address counts for one account only.</li>
+    <li>A subscription and a holding do not add up: you get the higher of the two.</li>
+    <li>We may change these amounts for a valid reason, with at least 90 days' notice. Holding ASASTATS gives access to this service only, and nothing else.</li>
+  </ul>
+</section>
+{% endif %}
 </article>
 
 {% endblock %}

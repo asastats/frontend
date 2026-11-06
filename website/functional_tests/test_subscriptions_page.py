@@ -107,3 +107,12 @@ class SubscriptionsPageTest(FunctionalTest):
 
         self.assertEqual(len(heights), 4)
         self.assertEqual(len(set(heights)), 1, f"description rows differ: {heights}")
+
+    def test_the_holding_table_shows_the_amounts_per_tier(self):
+        rows = self.browser.find_elements(By.CSS_SELECTOR, "#holding tbody tr")
+        self.assertEqual(
+            [r.find_elements(By.TAG_NAME, "td")[0].text for r in rows],
+            ["Intro", "Asastatser", "Professional", "Cluster"],
+        )
+        cells = rows[1].find_elements(By.TAG_NAME, "td")
+        self.assertEqual([c.text for c in cells[1:]], ["500,000", "250,000"])

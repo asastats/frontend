@@ -204,6 +204,7 @@ class TestWalletLinkVerifyAPIView:
         WalletNonce.objects.create(user=user, address=evm_addr, nonce="ok", chain="evm")
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 0)
+        provider.earned_permission.return_value = 0
         response = post(
             WalletLinkVerifyAPIView,
             {"nonce": "ok", "chain": "evm", "signature": sig},
@@ -231,6 +232,7 @@ class TestWalletLinkVerifyAPIView:
         WalletNonce.objects.create(user=user, address=evm_addr, nonce="rd", chain="evm")
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 0)
+        provider.earned_permission.return_value = 0
         with override_settings(WALLET_LINK_REDIRECT_URL="/account/addresses/"):
             response = post(
                 WalletLinkVerifyAPIView,

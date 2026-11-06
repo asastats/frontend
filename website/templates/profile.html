@@ -79,6 +79,12 @@
           <span class="font-medium text-base-content">{{ form.instance.profile.permission|integer_comma }}</span>
         </span>
 
+        {% if holding_status and not PURCHASE_HIDDEN %}
+        <span id="holding-status" class="text-base-content/70">Holding
+          <span class="font-medium text-base-content">{{ holding_status.held|integer_comma }} ASASTATS</span>{% if holding_status.tier %} gives {{ holding_status.tier }}{% endif %}{% if holding_status.next_tier %}, {{ holding_status.next_tier }} from {{ holding_status.next_date|date:"F j, Y" }}{% endif %}
+        </span>
+        {% endif %}
+
         {% if form.instance.profile.votes %}
         <span class="text-base-content/70">DAO votes
           <span class="font-medium text-base-content">{{ form.instance.profile.votes|integer_comma }}</span>

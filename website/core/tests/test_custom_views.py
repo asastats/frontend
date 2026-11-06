@@ -1803,6 +1803,7 @@ class TestProfilePermissionFetchRequiresAuthorization:
     ):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (7, 500000)
+        provider.earned_permission.return_value = 0
         user = user_model.objects.create(
             username="unsigned", email="unsigned@example.com"
         )
@@ -1838,6 +1839,7 @@ class TestProfilePermissionFetchRequiresAuthorization:
     ):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (7, 500000)
+        provider.earned_permission.return_value = 0
         user = user_model.objects.create(username="signed", email="signed@example.com")
         user.profile.address = TEST_ADDRESS
         user.profile.authorized = "PROOF"

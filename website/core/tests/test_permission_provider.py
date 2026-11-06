@@ -27,6 +27,11 @@ class TestCorePermissionProviderPermissionProvider:
     def test_core_permission_provider_votes_and_permission_default(self):
         assert PermissionProvider().votes_and_permission("ADDRESS") is None
 
+    def test_core_permission_provider_holding_defaults(self):
+        assert PermissionProvider().earned_permission("profile") == 0
+        assert PermissionProvider().holding_terms() is None
+        assert PermissionProvider().holding_status("profile") is None
+
     def test_core_permission_provider_subscriptions_default(self):
         assert PermissionProvider().subscriptions("ADDRESS") is None
 

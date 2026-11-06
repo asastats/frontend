@@ -787,6 +787,15 @@ class SubscriptionsView(BaseStaticPageView):
 
         return super().dispatch(request, *args, **kwargs)
 
+    def get_context_data(self, **kwargs):
+        """Add the terms for permission from holding.
+
+        :return: dict
+        """
+        context = super().get_context_data(**kwargs)
+        context["holding_terms"] = get_permission_provider().holding_terms()
+        return context
+
 
 @method_decorator(csrf_protect, name="dispatch")
 class TokenomicsView(TemplateView):
@@ -1642,11 +1651,15 @@ class ProfileDisplay(DetailView):
         """
         context = super().get_context_data(*args, **kwargs)
         if self.request.user.profile.authorized:
-            subscriptions = get_permission_provider().subscriptions(
+            provider = get_permission_provider()
+            subscriptions = provider.subscriptions(
                 self.request.user.profile.algorand_address
             )
             if subscriptions:
                 context["subscriptions"] = subscriptions
+            context["holding_status"] = provider.holding_status(
+                self.request.user.profile
+            )
         return context
 
     def get_form(self, form_class=None):

@@ -11,6 +11,7 @@
     - collectstatic
     - clearsessions
     - assetfeedbackpurge
+    - syncholdings
   become: true
   become_user: "{{ webapp_user }}"
   tags: [project-setup, create-scripts]
@@ -109,6 +110,15 @@
     name: "{{ project_name }} asset feedback contact purge (weekly)"
     user: "{{ webapp_user }}"
     job: ": Asset feedback contact purge ; /usr/bin/nice -n 10 {{ site_path }}/scripts/assetfeedbackpurge.sh"
+  become: true
+  tags: [project-setup, cronjobs]
+
+- name: Create holdings sync cron job
+  ansible.builtin.cron:
+    minute: "*/15"
+    name: "{{ project_name }} holdings sync"
+    user: "{{ webapp_user }}"
+    job: ": Holdings sync ; /usr/bin/nice -n 10 {{ site_path }}/scripts/syncholdings.sh > /dev/null"
   become: true
   tags: [project-setup, cronjobs]
 

@@ -6628,3 +6628,36 @@ remove them from past mail, so `static/auth_privacy.html`'s retention wording do
 `assetfeedbackmailcron.sh`, so contacts no longer reach the mailbox and the policy's retention wording holds. Reporter addresses
 stay in the mail: they are public chain addresses given for rewards. A manual export still includes the contact.
 
+
+### `website/core/permission_providers/holdings.py` - permission from holding (2026-11-06)
+
+Owner's decisions, 2026-11-06: start Monday 2026-11-09 with subscription prices unchanged. A holding that exists or starts
+before 2026-11-16 00:00 UTC has no wait; later ones wait 30 days. Wallet holders and LPs both count, with no DAO vote.
+Research and rejected options: `asastats-incentive/` and `reports/ASASTATS liquidity incentive design.md` at the workspace root.
+
+**Amounts.** 50K, 500K, 5M and 50M. The upper three are the staking boundaries `SUBSCRIPTION_PERMISSIONS` already derives its
+permission values from; Intro's permission is a tenth of Asastatser's, so its amount is a tenth too. The report said Cluster
+should stay paid. It is in the table because 50M can't be bought cheaply (report: 18-30% of pool inventory) and the owner said
+the top LP wallets are DAO members who already have Cluster. Whether it stays is still the owner's call; removing the row from
+`HOLDING_THRESHOLDS` also removes it from the page.
+
+**LP value.** `2 x share x sqrt(x*y*r)`, with `r` fixed at 6020 ASASTATS per ALGO, measured 2026-11-06 (Pact v201 6021, Pact v100
+6029 and 6020). The report proposed a 30-day median price, which needs a price history and lets price moves remove access.
+A fixed `r` makes the value proportional to LP share and `sqrt(k)`: swaps do not change it, so a holder only drops by
+withdrawing. A large re-rating needs `r` reviewed. Non-ALGO pools, Tinyman v1.1 and LP in farms are not counted.
+
+**Polling instead of the report's transfer ledger.** `syncholdings` reads complete balance lists every 15 minutes and appends
+changes to `AddressHolding`, for all addresses, so someone holding during the week can authorize later and still count. A dip
+between two reads is invisible, which the ledger would close. `DROP_GRACE` exists because the reads are not atomic: tokens moving
+between pages can be missed once. Any failed read aborts the cycle, as a partial list would read as everyone selling.
+
+**Only profiles whose holding result changed are refreshed.** A sync over every authorized profile would also close the slow
+revocation of lapsed subscriptions, but it would zero hand-granted permissions on authorized addresses within minutes, where
+today that happens at the next login. Slow revocation of subscriptions is still open.
+
+**Non-404 node errors.** `_deserialized_box_value` used to treat every `AlgodHTTPError` as "no box", so a node error read as
+`(0, 0)` and could zero a subscriber. It now raises unless the code is 404, and `votes_and_permission` returns None, which leaves
+the profile unchanged. The periodic sync made this urgent.
+
+**Provenance.** `Profile.earned_permission` records the holding's part, so later rules can tell it from paid permission. No
+surface uses it yet: earned tiers get the same widgets, alerts and API limits as paid ones, at the owner's request.

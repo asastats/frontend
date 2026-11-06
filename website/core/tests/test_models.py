@@ -13,7 +13,7 @@ from django.db.utils import IntegrityError
 from django.http import Http404
 from django.utils import timezone
 
-from core.models import BundleName, LiveAllowanceBucket, Profile
+from core.models import AddressHolding, BundleName, LiveAllowanceBucket, Profile
 from utils.constants.users import (
     DUPLICATE_BUNDLE_ERROR,
     DUPLICATE_BUNDLE_NAME_ERROR,
@@ -184,6 +184,7 @@ class TestProfileModel:
     def test_profile_model_check_votes_and_permission_skips_on_none(self, mocker):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = None
+        provider.earned_permission.return_value = 0
         # An address is required for the provider to be consulted at all, and
         # this test is about what happens to its answer.
         profile = Profile(address=TEST_ADDRESS, authorized="PROOF")
@@ -197,6 +198,7 @@ class TestProfileModel:
     ):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 7)
+        provider.earned_permission.return_value = 0
         save = mocker.patch.object(Profile, "save")
         profile = Profile(votes=5, permission=3, address="ADDRESS", authorized="PROOF")
         profile.check_votes_and_permission()
@@ -208,11 +210,24 @@ class TestProfileModel:
     def test_profile_model_check_votes_and_permission_updates(self, mocker):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (3, 100)
+        provider.earned_permission.return_value = 0
         profile = Profile(votes=0, permission=0, address="A", authorized="PROOF")
         save = mocker.patch.object(Profile, "save")
         profile.check_votes_and_permission()
         assert (profile.votes, profile.permission) == (3, 100)
         save.assert_called_once()
+
+    def test_profile_model_check_votes_and_permission_uses_the_higher_value(self, mocker):
+        provider = mocker.patch("core.models.get_permission_provider").return_value
+        provider.votes_and_permission.return_value = (3, 100)
+        provider.earned_permission.return_value = 500
+        profile = Profile(votes=0, permission=0, address="A", authorized="PROOF")
+        mocker.patch.object(Profile, "save")
+        profile.check_votes_and_permission()
+        assert (profile.permission, profile.earned_permission) == (500, 500)
+        provider.votes_and_permission.return_value = (3, 900)
+        profile.check_votes_and_permission()
+        assert (profile.permission, profile.earned_permission) == (900, 500)
 
     def test_profile_model_check_votes_and_permission_skips_without_address(self, mocker):
         provider = mocker.patch("core.models.get_permission_provider").return_value
@@ -230,6 +245,7 @@ class TestProfileModel:
         # otherwise answer with `(0, 0)` - "entitled to nothing".
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 0)
+        provider.earned_permission.return_value = 0
         save = mocker.patch.object(Profile, "save")
         profile = Profile(votes=0, permission=258885438200, address="")
         profile.check_votes_and_permission()
@@ -259,6 +275,7 @@ class TestProfileModel:
     ):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (7, 500000)
+        provider.earned_permission.return_value = 0
         save = mocker.patch.object(Profile, "save")
         profile = Profile(votes=0, permission=0, address=TEST_ADDRESS, authorized="")
         profile.check_votes_and_permission()
@@ -271,6 +288,7 @@ class TestProfileModel:
     ):
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = (0, 0)
+        provider.earned_permission.return_value = 0
         save = mocker.patch.object(Profile, "save")
         profile = Profile(permission=100, address=TEST_ADDRESS, authorized="")
         profile.check_votes_and_permission()
@@ -282,6 +300,7 @@ class TestProfileModel:
         # stored EVM one.
         provider = mocker.patch("core.models.get_permission_provider").return_value
         provider.votes_and_permission.return_value = None
+        provider.earned_permission.return_value = 0
         mocker.patch.object(
             Profile,
             "algorand_address",
@@ -2915,3 +2934,12 @@ class TestLiveAllowanceBucket:
             bucket.current_balance(self.CAPACITY, self.PER_SECOND, now=earlier)
             == self.CAPACITY
         )
+
+
+class TestAddressHoldingModel:
+    """Testing class for :class:`core.models.AddressHolding`."""
+
+    def test_address_holding_model_str(self):
+        at = datetime.datetime(2026, 11, 9, tzinfo=datetime.UTC)
+        holding = AddressHolding(address="ADDRESS", weight=5, at=at)
+        assert str(holding) == f"ADDRESS 5 {at}"

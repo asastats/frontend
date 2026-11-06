@@ -15,6 +15,7 @@ from algosdk.error import AlgodHTTPError
 from algosdk.v2client.algod import AlgodClient
 
 from core.permission_provider import PermissionProvider
+from core.permission_providers import holdings
 from permissiondapp.dapp.configuration import (
     PERMISSION_APP_ID,
     SUBSCRIPTION_PERMISSIONS,
@@ -103,7 +104,11 @@ def _deserialized_box_value(client, app_id, box_name):
     """
     try:
         response = client.application_box_by_name(app_id, box_name)
-    except AlgodHTTPError:
+    except AlgodHTTPError as error:
+        # Only a 404 means no box; anything else must not read as "no permission".
+        if error.code != 404:
+            raise
+
         return None
     return deserialize_values_data(base64.b64decode(response.get("value")).decode("utf8"))
 
@@ -123,10 +128,39 @@ class PermissionDappProvider(PermissionProvider):
         :return: two-tuple
         """
         box_name = box_name_from_address(address)
-        values = _deserialized_box_value(
-            _mainnet_algod_client(), PERMISSION_APP_ID, box_name
-        )
+        try:
+            values = _deserialized_box_value(
+                _mainnet_algod_client(), PERMISSION_APP_ID, box_name
+            )
+        except AlgodHTTPError:
+            return None
+
         return tuple(values[:2]) if values is not None else (0, 0)
+
+    def earned_permission(self, profile):
+        """Return the permission the profile's ASASTATS holding gives.
+
+        :param profile: authorized profile
+        :type profile: :class:`core.models.Profile`
+        :return: int
+        """
+        return holdings.earned_permission(profile)
+
+    def holding_terms(self):
+        """Return the published terms for permission from holding.
+
+        :return: dict
+        """
+        return holdings.holding_terms()
+
+    def holding_status(self, profile):
+        """Return what the profile page shows about a holding.
+
+        :param profile: authorized profile
+        :type profile: :class:`core.models.Profile`
+        :return: dict, or None
+        """
+        return holdings.holding_status(profile)
 
     def subscriptions(self, address):
         """Fetch and format the address's subscriptions for the profile page.

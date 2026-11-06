@@ -64,6 +64,7 @@ class TestCoreSignalsPostLogin(TestCase):
         user.profile.save()
         with mock.patch("core.models.get_permission_provider") as mocked_provider:
             mocked_provider.return_value.votes_and_permission.return_value = [0, 0]
+            mocked_provider.return_value.earned_permission.return_value = 0
             self.client.login(username="post_login", password="12345o")
             mocked_provider.return_value.votes_and_permission.assert_called_once_with(
                 TEST_ADDRESS
