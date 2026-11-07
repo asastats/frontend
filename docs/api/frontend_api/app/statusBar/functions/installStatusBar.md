@@ -8,9 +8,10 @@
 
 > **installStatusBar**(`doc?`): `MutationObserver`
 
-Defined in: [app/statusBar.ts:74](https://github.com/asastats/frontend/blob/main/wallet/src/app/statusBar.ts#L74)
+Defined in: [app/statusBar.ts:75](https://github.com/asastats/frontend/blob/main/wallet/src/app/statusBar.ts#L75)
 
-Sync now and whenever theme.js switches the theme (`data-theme` on `<html>`).
+Sync now, when theme.js switches the theme (`data-theme` on `<html>`), and when
+the page is shown again: Back restores it from the back-forward cache with no script rerun.
 
 ## Parameters
 

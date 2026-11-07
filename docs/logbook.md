@@ -6856,3 +6856,24 @@ as the change does not alter what a reader agrees to.
 `/auth_terms.html` and `/auth_privacy.html` work through Django, as on a machine without nginx. The
 old unit test mocked `render` and asserted the broken call, which is why it never failed.
 Production is unchanged, as nginx's exact locations still answer first.
+
+## wallet/src/app/statusBar.ts, app_safe_area.html: the reporter's second round (2026-11-07)
+
+The reporter confirmed on an iPhone that the top strip is better and the Back link works, so the
+inferred cause above held, for iOS at least. Two more requests.
+
+**Status bar lost after the API page. A regression from this work.** Loading `app.js` on the API
+pages made them set dark icons for their light background, as intended. Back then restores the
+previous page from the back-forward cache: no script reruns, so nothing set the icons back. On a
+dark theme that left a dark clock on a dark strip. `installStatusBar` now also syncs on `pageshow`.
+`test_page_restored_from_the_back_forward_cache_syncs_the_status_bar` failed before the fix. It drives
+the real `app.js` against a fake native bridge and fires `pageshow` by hand, because a real Back in
+Chrome reloads the page and passes either way. `app.js` is rebuilt, so this reaches readers
+with a deploy.
+
+**Bottom strip: no hard cutoff.** It is now the page's colour under a fade (`mask-image`) with a
+slight `backdrop-filter` blur, 1.5 times the inset tall so the fade can be seen, and `pointer-events:
+none`, since content now shows through it. It takes the body's colour everywhere: most of a page's
+scrolling is over the body, and the footer's colour was the visible band in the reporter's screenshot. At the very end
+of a page it therefore tints the footer slightly. The top strip stays opaque, as the clock needs it.
+The look has not been seen on iOS; Chrome only.

@@ -66,6 +66,25 @@ describe("installStatusBar", () => {
     observer.disconnect();
   });
 
+  it("syncs when the page is restored from the back-forward cache", () => {
+    document.body.style.backgroundColor = "rgb(255, 255, 255)";
+    const observer = installStatusBar(document);
+    document.body.style.backgroundColor = "rgb(0, 0, 0)";
+    window.dispatchEvent(new Event("pageshow"));
+    expect(StatusBar.setStyle).toHaveBeenLastCalledWith({ style: Style.Dark });
+    observer.disconnect();
+  });
+
+  it("listens on the global window for a document without a view", () => {
+    const detached = document.implementation.createHTMLDocument();
+    const observer = installStatusBar(detached);
+    document.body.style.backgroundColor = "rgb(0, 0, 0)";
+    detached.body.style.backgroundColor = "rgb(255, 255, 255)";
+    window.dispatchEvent(new Event("pageshow"));
+    expect(StatusBar.setStyle).toHaveBeenCalled();
+    observer.disconnect();
+  });
+
   it("defaults to the global document", () => {
     installStatusBar().disconnect();
     expect(StatusBar.setStyle).toHaveBeenCalled();

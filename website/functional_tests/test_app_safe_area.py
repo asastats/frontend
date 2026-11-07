@@ -16,7 +16,8 @@ BOTTOM = 34
 STRIP = """
 var style = getComputedStyle(document.body, arguments[0]);
 return {position: style.position, height: parseFloat(style.height),
-        background: style.backgroundColor};
+        background: style.backgroundColor, mask: style.maskImage,
+        taps: style.pointerEvents};
 """
 RECT = "return document.querySelector(arguments[0]).getBoundingClientRect().toJSON();"
 LONG_PAGE = "document.body.style.minHeight = '9000px';"
@@ -58,7 +59,7 @@ class AppSafeAreaEveryPageTest(SafeAreaTestCase):
         super().setup_platform()
         self.browser_options.add_argument(f"--user-agent={APP_USER_AGENT}")
 
-    def _assert_safe_area(self, path, top_colour, bottom_colour, page_padding=0):
+    def _assert_safe_area(self, path, top_colour, page_padding=0):
         self._open(path)
         self.assertEqual(
             self._style("body", "padding-top"), f"{TOP + page_padding}px"
@@ -71,24 +72,25 @@ class AppSafeAreaEveryPageTest(SafeAreaTestCase):
         bottom = self.browser.execute_script(STRIP, "::after")
 
         self.assertEqual((top["position"], top["height"]), ("fixed", TOP))
-        self.assertEqual((bottom["position"], bottom["height"]), ("fixed", BOTTOM))
+        self.assertEqual(bottom["position"], "fixed")
+        self.assertEqual(bottom["height"], BOTTOM * 1.5)
         for strip in (top, bottom):
             self.assertNotEqual(strip["background"], "rgba(0, 0, 0, 0)")
         self.assertEqual(top["background"], self._style(*top_colour))
-        self.assertEqual(bottom["background"], self._style(*bottom_colour))
+        self.assertEqual(bottom["background"], self._style("body", "background-color"))
+        self.assertIn("linear-gradient", bottom["mask"])
+        self.assertEqual(top["mask"], "none")
 
-    def test_page_with_the_site_header_takes_the_header_and_footer_colours(self):
+    def test_page_with_the_site_header_takes_the_header_colour_at_the_top(self):
         self._assert_safe_area(
             reverse("faq"),
             ("body > header", "background-color"),
-            ("body > footer", "background-color"),
         )
 
-    def test_terms_page_takes_the_header_and_footer_colours(self):
+    def test_terms_page_takes_the_header_colour_at_the_top(self):
         self._assert_safe_area(
             reverse("terms"),
             ("body > header", "background-color"),
-            ("body > footer", "background-color"),
         )
 
     def test_signup_links_open_in_place_on_pages_with_the_safe_area(self):
@@ -96,13 +98,7 @@ class AppSafeAreaEveryPageTest(SafeAreaTestCase):
             with self.subTest(link=text):
                 self._open(reverse("account_signup"))
 
-                link = self.browser.find_element(By.LINK_TEXT, text)
-                # A reader scrolls it out from behind the bottom strip; Selenium does not.
-                self.browser.execute_script(
-                    "arguments[0].scrollIntoView({block: 'center', behavior: 'instant'});",
-                    link,
-                )
-                link.click()
+                self.browser.find_element(By.LINK_TEXT, text).click()
 
                 self.wait_until(
                     lambda: self.browser.current_url
@@ -124,13 +120,11 @@ class AppSafeAreaEveryPageTest(SafeAreaTestCase):
         self._assert_safe_area(
             reverse("index"),
             ("body", "background-color"),
-            ("body > footer", "background-color"),
         )
 
     def test_error_page_takes_the_body_colour(self):
         self._assert_safe_area(
             "/no/such/page/",
-            ("body", "background-color"),
             ("body", "background-color"),
             page_padding=24,
         )
@@ -140,7 +134,6 @@ class AppSafeAreaEveryPageTest(SafeAreaTestCase):
             with self.subTest(page=name):
                 self._assert_safe_area(
                     reverse(name),
-                    ("body", "background-color"),
                     ("body", "background-color"),
                 )
 
@@ -185,6 +178,17 @@ class AppSafeAreaEveryPageTest(SafeAreaTestCase):
 
         rect = self.browser.execute_script(RECT, "#warranty")
         self.assertGreaterEqual(rect["top"], TOP)
+
+    def test_bottom_strip_lets_taps_through_to_the_content_under_it(self):
+        self._open(reverse("faq"))
+        self._insert(
+            '<a id="under" href="#" style="position: fixed; bottom: 0; left: 0; '
+            'right: 0; height: 20px; z-index: 1">x</a>'
+        )
+        hit = self.browser.execute_script(
+            "return document.elementFromPoint(100, innerHeight - 5).id;"
+        )
+        self.assertEqual(hit, "under")
 
     def test_sticky_toolbar_stops_below_the_top_strip(self):
         self._open(reverse("faq"))
@@ -367,6 +371,69 @@ class AppApiBackLinkTest(ApiBackLinkMixin, SafeAreaTestCase):
             TOP // 2,
         )
         self.assertEqual(hit, "BODY")
+
+
+#: Stands in for the native side, before the page's scripts run: Capacitor then
+#: believes it is on Android and records what would reach the status bar plugin.
+FAKE_NATIVE_BRIDGE = """
+window.statusBarStyles = [];
+window.androidBridge = {postMessage: function () {}};
+window.Capacitor = {
+  PluginHeaders: [{name: "StatusBar", methods: [{name: "setStyle", rtype: "promise"}]}],
+  nativePromise: function (plugin, method, options) {
+    if (plugin === "StatusBar") window.statusBarStyles.push(options.style);
+    return Promise.resolve({});
+  },
+};
+"""
+
+
+class AppStatusBarAfterApiPageTest(ApiBackLinkMixin, SafeAreaTestCase):
+    """The report: after the API page the status bar kept that page's dark icons."""
+
+    def setup_platform(self):
+        super().setup_platform()
+        self.browser_options.add_argument(f"--user-agent={APP_USER_AGENT}")
+
+    def setUp(self):
+        super().setUp()
+        self.browser.execute_cdp_cmd(
+            "Page.addScriptToEvaluateOnNewDocument", {"source": FAKE_NATIVE_BRIDGE}
+        )
+        self._open(reverse("faq"))
+        self.browser.execute_script("localStorage.setItem('theme', 'asastats-dark');")
+
+    def _styles(self):
+        return self.browser.execute_script("return window.statusBarStyles;")
+
+    def _wait_for_style(self, style):
+        self.wait_until(lambda: (self._styles() or [None])[-1] == style, timeout=10)
+
+    def test_api_pages_ask_for_dark_icons_and_the_page_before_gets_light_ones_back(self):
+        for name, drawn in self.PAGES:
+            with self.subTest(page=name):
+                self._open_api_page_from_faq(name, drawn)
+                self._wait_for_style("LIGHT")
+
+                self.browser.find_element(By.ID, "api-back").click()
+
+                self.wait_until(
+                    lambda: self.browser.current_url
+                    == self.server_url + reverse("faq")
+                )
+                self._wait_for_style("DARK")
+
+    def test_page_restored_from_the_back_forward_cache_syncs_the_status_bar(self):
+        # What iOS does on history.back(): no script reruns, only pageshow fires.
+        self._open(reverse("faq"))
+        self._wait_for_style("DARK")
+        self.browser.execute_script("window.statusBarStyles.length = 0;")
+
+        self.browser.execute_script(
+            "window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted: true}));"
+        )
+
+        self._wait_for_style("DARK")
 
 
 class BrowserSafeAreaTest(ApiBackLinkMixin, SafeAreaTestCase):

@@ -5,8 +5,9 @@
   body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   body::before, body::after { content: ""; position: fixed; left: 0; right: 0; z-index: 9999; background: inherit; }
   body::before { top: 0; height: env(safe-area-inset-top); }
-  body::after { bottom: 0; height: env(safe-area-inset-bottom); }
-  body:has(> header)::before, body:has(> footer)::after { background: var(--color-base-100); }
+  body:has(> header)::before { background: var(--color-base-100); }
+  {# Fades, and taller than the inset so the fade shows; content passes under it, so it must not take taps. #}
+  body::after { bottom: 0; height: calc(env(safe-area-inset-bottom) * 1.5); pointer-events: none; -webkit-mask-image: linear-gradient(to top, #000 50%, transparent); mask-image: linear-gradient(to top, #000 50%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
   :root { --app-safe-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
   dialog { top: env(safe-area-inset-top); bottom: env(safe-area-inset-bottom); max-height: var(--app-safe-height); }
   {# Their other caps are copied from input.css: min() cannot read a rule it replaces. #}
