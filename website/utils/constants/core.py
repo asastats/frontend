@@ -30,15 +30,15 @@ DEFAULT_SLEEP_INTERVAL = 1
 ASASTATS_SLOGANS = (
     "All your Algorand assets on one dashboard",
     "Your entire Algorand portfolio in one place",
-    "The maximum value of your assets aggregated using the entire ecosystem liquidity",
+    "The maximum value of your assets across all Algorand liquidity",
     "Real-time valuations for your ASAs, NFTs, and liquidity pool positions",
-    "Pinpoint the true value of your Algorand holdings across every protocol",
-    "Instantly visualize any Algorand wallet without connecting a thing",
-    "The community-driven portfolio visualizer built for the Algorand ecosystem",
-    "Accurate, live asset pricing powered by Algorand's decentralized exchanges",
-    "Built by the community, for the community—transparent Algorand analytics",
-    "The ultimate command center for monitoring your Algorand wealth",
-    "Seamlessly track and aggregate multiple Algorand accounts simultaneously",
+    "See what your Algorand holdings are worth across every protocol",
+    "See any Algorand wallet without connecting a thing",
+    "The community-built portfolio visualizer for Algorand",
+    "Live asset prices from Algorand's decentralized exchanges",
+    "Algorand analytics built by the community, for the community",
+    "Keep an eye on your Algorand wealth",
+    "Track multiple Algorand accounts as one portfolio",
 )
 
 BANNERS = [

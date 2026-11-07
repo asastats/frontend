@@ -253,6 +253,62 @@ class TestPools:
         client.account_info.assert_called_once_with(holdings.TINYMAN_POOL)
 
 
+def _key_value(**state):
+    """Return `state` the way the Indexer lists an application state."""
+    return [
+        {
+            "key": base64.b64encode(key.encode()).decode(),
+            "value": {"uint": value},
+        }
+        for key, value in state.items()
+    ]
+
+
+class TestFarmStakes:
+    """Testing class for :py:func:`holdings._farm_stakes`."""
+
+    def _client(self, mocker, pages, total):
+        client = mocker.MagicMock()
+        client.accounts.side_effect = pages
+        client.applications.return_value = {
+            "application": {"params": {"global-state": _key_value(total_staked=total)}}
+        }
+        return client
+
+    def _account(self, address, app_id=55, **state):
+        return {
+            "address": address,
+            "apps-local-state": [{"id": app_id, "key-value": _key_value(**state)}],
+        }
+
+    def test_farm_stakes_reads_every_page(self, mocker):
+        pages = [
+            {"accounts": [self._account(ADDRESS, staked=3)], "next-token": "more"},
+            {"accounts": [self._account(OTHER, staked=4)]},
+        ]
+        client = self._client(mocker, pages, 7)
+        stakes = holdings._farm_stakes(client, 55, "staked", "total_staked")
+        assert stakes == {ADDRESS: 3, OTHER: 4}
+        assert client.accounts.call_args_list[1].kwargs["next_page"] == "more"
+        assert client.accounts.call_args_list[0].kwargs["application_id"] == 55
+
+    def test_farm_stakes_skips_empty_and_other_states(self, mocker):
+        accounts = [
+            self._account(ADDRESS, staked=0),
+            self._account(OTHER, app_id=66, staked=9),
+            {"address": "NOSTATE"},
+            {"address": "NOKEYS", "apps-local-state": [{"id": 55}]},
+        ]
+        client = self._client(mocker, [{"accounts": accounts}], 0)
+        assert holdings._farm_stakes(client, 55, "staked", "total_staked") == {}
+
+    def test_farm_stakes_refuses_a_list_that_misses_the_total(self, mocker):
+        pages = [{"accounts": [self._account(ADDRESS, staked=3)]}]
+        client = self._client(mocker, pages, 4)
+        with pytest.raises(ValueError):
+            holdings._farm_stakes(client, 55, "staked", "total_staked")
+
+
 class TestReadWeights:
     """Testing class for :py:func:`holdings.read_weights`."""
 
@@ -289,6 +345,18 @@ class TestReadWeights:
         mocker.patch(f"{MODULE}._pools", return_value=[(7, "POOL", algo * 4, tokens // 4, 10)])
         client = self._client(mocker, {ADDRESS: holdings.ASASTATS_SUPPLY}, {7: {OTHER: 1}})
         assert holdings.read_weights(client)[OTHER] == 2 * tokens // 10
+
+    def test_read_weights_counts_farmed_lp_like_wallet_lp(self, mocker):
+        algo = 1_000 * holdings.MICRO
+        tokens = algo * holdings.REFERENCE_ASASTATS_PER_ALGO
+        mocker.patch(f"{MODULE}._pools", return_value=[(7, "POOL", algo, tokens, 10)])
+        mocker.patch(f"{MODULE}.PACT_FARMS", ((7, 55, "staked", "total"), (8, 66, "s", "t")))
+        farm = mocker.patch(f"{MODULE}._farm_stakes", return_value={OTHER: 1, "STAKER": 2})
+        client = self._client(mocker, {ADDRESS: holdings.ASASTATS_SUPPLY}, {7: {OTHER: 1}})
+        weights = holdings.read_weights(client)
+        assert weights[OTHER] == 2 * 2 * tokens // 10
+        assert weights["STAKER"] == 2 * 2 * tokens // 10
+        farm.assert_called_once_with(client, 55, "staked", "total")
 
     def test_read_weights_refuses_incomplete_balances(self, mocker):
         client = self._client(mocker, {ADDRESS: 5})
@@ -414,7 +482,13 @@ class TestHoldingStatusAndTerms:
 
     def test_holding_terms_pool_amount_is_half_of_the_wallet_amount(self):
         rows = holdings.holding_terms()["rows"]
-        assert rows[0] == {"tier": "Intro", "wallet": 50_000, "pool": 25_000}
+        assert rows[0] == {
+            "tier": "Intro",
+            "wallet": 50_000,
+            "pool": 25_000,
+            "pool_algo": "4.2",
+        }
+        assert [row["pool_algo"] for row in rows] == ["4.2", "42", "420", "4,200"]
         assert [row["tier"] for row in rows][-1] == "Cluster"
 
 
@@ -429,7 +503,9 @@ class TestHoldingPages:
         )
         content = client.get("/subscriptions/").content.decode()
         assert 'id="holding"' in content
-        assert "250,000" in content
+        assert "250,000 + about 42" in content
+        assert "6,020 ASASTATS per ALGO" in content
+        assert "we will not lower it for a position you already hold" in content
 
     def test_profile_page_shows_the_holding_status(self, client, mocker):
         mocker.patch(

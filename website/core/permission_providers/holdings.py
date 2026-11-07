@@ -48,8 +48,29 @@ PACT_POOLS = (
     (2757667448, 2757667443, ("A", "B", "L")),
     (1129173576, 1129173571, ("A", "B", "L")),
 )
+#: (LP asset, farm application, staked key in the wallet's state, total staked key).
+#: A farm has to be listed before it opens: unlisted, staking reads as selling.
+PACT_FARMS = (
+    (3684485531, 3736990647, "staked", "total_staked"),
+    (3684485531, 3689996789, "Staked", "TotalStaked"),
+    (2757667448, 2966663202, "Staked", "TotalStaked"),
+    (1129173576, 1140566471, "Staked", "TotalStaked"),
+)
 TINYMAN_LP = 1002623676
 TINYMAN_KEYS = ("asset_1_reserves", "asset_2_reserves", "issued_pool_tokens")
+
+
+def _state_uints(key_value):
+    """Return the unsigned integers of an on-chain state, keyed by decoded key.
+
+    :param key_value: application state items, as the Indexer returns them
+    :type key_value: list
+    :return: dict
+    """
+    return {
+        base64.b64decode(item["key"]).decode("latin1"): item["value"].get("uint")
+        for item in key_value
+    }
 
 
 def _state_values(key_value, keys):
@@ -61,10 +82,7 @@ def _state_values(key_value, keys):
     :type keys: tuple
     :return: list
     """
-    state = {
-        base64.b64decode(item["key"]).decode("latin1"): item["value"].get("uint")
-        for item in key_value
-    }
+    state = _state_uints(key_value)
     return [state[key] for key in keys]
 
 
@@ -90,6 +108,70 @@ def _asset_balances(client, asset_id):
         next_page = response.get("next-token")
         if not next_page:
             return balances
+
+
+def _farm_stakes(client, farm_app, staked_key, total_key):
+    """Return every non-zero stake in a Pact farm, keyed by the staker's wallet.
+
+    Raises if the stakes miss the farm's total, as a partial list would read as selling.
+
+    :param client: Indexer client
+    :type client: :class:`algosdk.v2client.indexer.IndexerClient`
+    :param farm_app: farm application identifier
+    :type farm_app: int
+    :param staked_key: key of the stake in the wallet's local state
+    :type staked_key: str
+    :param total_key: key of the farm's total in its global state
+    :type total_key: str
+    :return: dict
+    """
+    stakes, next_page = {}, None
+    while True:
+        response = client.accounts(
+            application_id=farm_app,
+            limit=1000,
+            next_page=next_page,
+            exclude="assets,created-assets,created-apps",
+        )
+        for account in response["accounts"]:
+            for state in account.get("apps-local-state", []):
+                if state["id"] == farm_app:
+                    staked = _state_uints(state.get("key-value", [])).get(staked_key)
+                    if staked:
+                        stakes[account["address"]] = staked
+
+        next_page = response.get("next-token")
+        if not next_page:
+            break
+
+    app_state = client.applications(farm_app)["application"]["params"]["global-state"]
+    if sum(stakes.values()) != _state_values(app_state, (total_key,))[0]:
+        raise ValueError(f"Incomplete stakes in Pact farm {farm_app}")
+
+    return stakes
+
+
+def _lp_positions(client, lp_asset, pool_address):
+    """Return each address's LP tokens, in its wallet plus staked in listed farms.
+
+    :param client: Indexer client
+    :type client: :class:`algosdk.v2client.indexer.IndexerClient`
+    :param lp_asset: LP asset identifier
+    :type lp_asset: int
+    :param pool_address: pool account, left out
+    :type pool_address: str
+    :return: dict
+    """
+    positions = defaultdict(int, _asset_balances(client, lp_asset))
+    positions.pop(pool_address, None)
+    # Farms after wallets: staking mid-read then counts high, never low.
+    for farm_lp, farm_app, staked_key, total_key in PACT_FARMS:
+        if farm_lp == lp_asset:
+            stakes = _farm_stakes(client, farm_app, staked_key, total_key)
+            for address, staked in stakes.items():
+                positions[address] += staked
+
+    return positions
 
 
 def _pools(client):
@@ -132,9 +214,8 @@ def read_weights(client=None):
     weights = defaultdict(int, wallets)
     for lp_asset, pool_address, reserve_x, reserve_y, issued in _pools(client):
         root = isqrt(reserve_x * reserve_y * REFERENCE_ASASTATS_PER_ALGO)
-        for address, amount in _asset_balances(client, lp_asset).items():
-            if address != pool_address:
-                weights[address] += 2 * amount * root // issued
+        for address, amount in _lp_positions(client, lp_asset, pool_address).items():
+            weights[address] += 2 * amount * root // issued
 
     return dict(weights)
 
@@ -332,6 +413,16 @@ def holding_status(profile, now=None):
     return status
 
 
+def _pool_algo(tokens):
+    """Return the ALGO beside the pool side of `tokens`, to two significant digits.
+
+    :param tokens: wallet amount in whole tokens
+    :type tokens: int
+    :return: str
+    """
+    return f"{float(f'{tokens / 2 / REFERENCE_ASASTATS_PER_ALGO:.2g}'):,g}"
+
+
 def holding_terms():
     """Return the published terms: thresholds and dates.
 
@@ -339,9 +430,15 @@ def holding_terms():
     """
     return {
         "rows": [
-            {"tier": tier, "wallet": tokens, "pool": tokens // 2}
+            {
+                "tier": tier,
+                "wallet": tokens,
+                "pool": tokens // 2,
+                "pool_algo": _pool_algo(tokens),
+            }
             for tier, tokens in reversed(HOLDING_THRESHOLDS)
         ],
+        "reference_price": REFERENCE_ASASTATS_PER_ALGO,
         "start": HOLDING_START,
         "last_no_wait_day": NO_WAIT_END - timedelta(days=1),
         "waiting_days": WAITING_PERIOD.days,

@@ -6661,3 +6661,26 @@ the profile unchanged. The periodic sync made this urgent.
 
 **Provenance.** `Profile.earned_permission` records the holding's part, so later rules can tell it from paid permission. No
 surface uses it yet: earned tiers get the same widgets, alerts and API limits as paid ones, at the owner's request.
+
+*Pool column, 2026-11-07:* `/subscriptions/` now shows the ALGO beside the pool amount. "50,000 / 25,000" read as half price for
+LPs, when both routes take the same value at the reference price. The ALGO is rounded to two significant digits, which today
+lands slightly above the exact 4.15, 41.5, 415 and 4,153. The cost comparison with holding, on the notes' assumed inputs, depends
+on the user: a believer pays less by holding, and report section "Why counting LP at total value" compares LP only with subscribing.
+
+*Farms and Cluster, 2026-11-07:* owner's decisions. Cluster stays holdable, so the "still the owner's call" above is closed. LP in a
+Pact farm counts like LP in the wallet, replacing "LP in farms are not counted". Both farm generations keep the stake in the
+staker's own local state, not an escrow: read off Mainnet the same day, the four farms on these LP tokens have stakes summing
+exactly to their totals, and the top stakers are ordinary wallets holding no LP themselves. An opted-in account can list no state for
+the farm, seen on 5 of 61 on farm 3737015135 with the sum still exact, so a missing state is no stake. The owner plans a new farm: a
+row in `PACT_FARMS` has to deploy before it opens, or moving LP into it reads as a sale and restarts the wait. Tinyman farms stay
+out, as their custody was never confirmed.
+
+*How fixed `r` is, 2026-11-07:* a constant, changed only by our deploy. Pools read 6023-6058 that day. Since value goes with
+`sqrt(r)`, it is a trade-off after a re-rating: at 2x price a stale `r` lets a new LP in at 71% of a holder's capital and at 4x at
+50%, while updating `r` cuts every existing LP's value by 29% or 50%. The 90-day clause on the page names amounts, not this rate.
+
+*Rate promise, 2026-11-07:* owner's decision. `/subscriptions/` and the launch article now say the rate will not be lowered for a
+position already held, because a live or averaged rate would take access from LPs during a price rise. So `REFERENCE_ASASTATS_PER_ALGO`
+can only go up by a plain edit. Lowering it needs a second weight stream first: the existing column stays at the old rate for holdings
+unbroken since before the change, and new holdings use a new column. The cost is that new LPs pay less than holders after a rise,
+half at 4x. An automatic upward ratchet was rejected, as it cannot be undone and the pools are thin enough to push.
