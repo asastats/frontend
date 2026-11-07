@@ -1,0 +1,4 @@
+{% load static %}
+{# Second viewport meta on purpose: the last one wins, and the package's own cannot be edited. #}
+{% if APP_CLIENT %}<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script type="module" src="{% static 'js/app.js' %}"></script>{% endif %}

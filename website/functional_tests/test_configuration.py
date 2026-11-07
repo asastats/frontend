@@ -1,3 +1,5 @@
+from django.urls import reverse
+from selenium.webdriver.common.by import By
 from utils.helpers import load_transparency_reports
 
 from .base import COOKIE_SEED_URL, FunctionalTest
@@ -10,6 +12,7 @@ SITEMAP_URLS = (
     "subscriptions",
     "disclaimer",
     "asm-privacy",
+    "terms",
     "accounts/signup",
     "accounts/login",
     "accounts/password/reset",
@@ -22,9 +25,26 @@ class ConfigurationTest(FunctionalTest):
         self.browser.get(self.server_url + "/static/auth_privacy.html")
         self.assertIn("<h1>Privacy policy</h1>", self.browser.page_source)
 
-    def test_auth_terms_file(self):
-        self.browser.get(self.server_url + "/static/auth_terms.html")
-        self.assertIn("<h1>Terms of use</h1>", self.browser.page_source)
+    def test_old_auth_terms_addresses_go_to_the_terms_page(self):
+        # The first is the file nginx serves at the second; Django answers without nginx.
+        for path in ("/static/auth_terms.html", "/auth_terms.html"):
+            with self.subTest(path=path):
+                self.browser.get(self.server_url + path)
+
+                self.wait_until(
+                    lambda: self.browser.current_url
+                    == self.server_url + reverse("terms")
+                )
+                self.assertEqual(
+                    self.browser.find_element(By.TAG_NAME, "h1").text, "Terms of use"
+                )
+
+    def test_auth_privacy_address_shows_the_policy(self):
+        self.browser.get(self.server_url + "/auth_privacy.html")
+
+        self.assertEqual(
+            self.browser.find_element(By.TAG_NAME, "h1").text, "Privacy policy"
+        )
 
     def test_sitemap_urls(self):
         self.browser.get(self.server_url + "/sitemap.xml")

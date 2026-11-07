@@ -253,6 +253,12 @@ class TestCoreUrls:
         assert url.lookup_str == "core.views.ASMPrivacyView"
         assert url.name == "asm_privacy"
 
+    def test_core_urls_terms(self):
+        url = self._url_from_pattern(r"^terms/$")
+        assert isinstance(url, URLPattern)
+        assert url.lookup_str == "core.views.TermsView"
+        assert url.name == "terms"
+
     def test_core_urls_export_address(self):
         url = self._url_from_pattern(r"^export/([0-9A-Za-z]{58})/$")
         assert isinstance(url, URLPattern)
@@ -301,7 +307,7 @@ class TestCoreUrls:
         assert url.name == "alerts_service_worker"
 
     def test_core_urls_patterns_count(self):
-        assert len(urls.urlpatterns) == 45
+        assert len(urls.urlpatterns) == 46
 
 
 class RootAssetUrlTest(TestCase):

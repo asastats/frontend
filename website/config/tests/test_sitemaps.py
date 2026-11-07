@@ -67,7 +67,7 @@ class SitemapTest(TestCase):
         self.check_for_item_with_args(("html_file", ["auth_privacy.html"]))
 
     def test_sitemap_covers_terms_page(self):
-        self.check_for_item_with_args(("html_file", ["auth_terms.html"]))
+        self.check_for_sole_item("terms")
 
     def test_sitemap_covers_account_signup_page(self):
         self.check_for_sole_item("account_signup")

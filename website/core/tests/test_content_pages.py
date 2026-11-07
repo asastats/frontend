@@ -39,6 +39,7 @@ TEMPLATES = (
     "faq.html",
     "features.html",
     "subscriptions.html",
+    "terms.html",
     "tokenomics.html",
 )
 

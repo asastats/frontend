@@ -1,0 +1,20 @@
+{% comment %} The app draws under the system bars. One copy for every page that knows APP_CLIENT;
+   core/tests/test_appclient.py checks each page includes it. Why here and why inline: docs/logbook.md. {% endcomment %}
+{% if APP_CLIENT %}<style>
+  html { scroll-padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  body { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  body::before, body::after { content: ""; position: fixed; left: 0; right: 0; z-index: 9999; background: inherit; }
+  body::before { top: 0; height: env(safe-area-inset-top); }
+  body::after { bottom: 0; height: env(safe-area-inset-bottom); }
+  body:has(> header)::before, body:has(> footer)::after { background: var(--color-base-100); }
+  :root { --app-safe-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  dialog { top: env(safe-area-inset-top); bottom: env(safe-area-inset-bottom); max-height: var(--app-safe-height); }
+  {# Their other caps are copied from input.css: min() cannot read a rule it replaces. #}
+  html .dustsweep-modal { max-height: min(88vh, 800px, var(--app-safe-height)); }
+  html .swap-modal { max-height: min(88vh, 780px, var(--app-safe-height)); }
+  html .alerts-modal { max-height: min(40rem, var(--app-safe-height)); }
+  #api-back, html .dynamic-page .toolbar { top: env(safe-area-inset-top); }
+  #scroll-to-top { bottom: calc(1.5rem + env(safe-area-inset-bottom)); right: calc(1.5rem + env(safe-area-inset-right)); }
+  .alert.fixed { bottom: calc(1rem + env(safe-area-inset-bottom)); }
+  .toast { bottom: env(safe-area-inset-bottom); }
+</style>{% endif %}

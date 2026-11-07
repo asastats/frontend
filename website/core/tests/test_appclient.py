@@ -1,6 +1,9 @@
 """Testing module for :py:mod:`core.appclient` module."""
 
+from pathlib import Path
+
 import pytest
+from django.conf import settings
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
@@ -237,6 +240,34 @@ class TestCoreAppClientBaseTemplate:
         assert "apps.apple.com" not in html
         assert "play.google.com" not in html
 
+    @pytest.mark.parametrize(
+        "path", ["/faq/", "/no/such/page/", "/api/v2/schema/swagger-ui/", "/api/v2/schema/redoc/"]
+    )
+    def test_core_appclient_page_has_the_safe_area_in_app_mode(self, path):
+        html = Client(HTTP_USER_AGENT=ANDROID_UA).get(path).content.decode()
+
+        assert "viewport-fit=cover" in html
+        assert "body::before" in html
+        assert "/static/js/app.js" in html
+
+    @pytest.mark.parametrize(
+        "path", ["/faq/", "/no/such/page/", "/api/v2/schema/swagger-ui/", "/api/v2/schema/redoc/"]
+    )
+    def test_core_appclient_page_has_no_safe_area_in_a_browser(self, path):
+        html = Client(HTTP_USER_AGENT=BROWSER_UA).get(path).content.decode()
+
+        assert "viewport-fit" not in html
+        assert "safe-area-inset" not in html
+        assert "/static/js/app.js" not in html
+
+    def test_core_appclient_every_page_knowing_app_client_has_the_safe_area(self):
+        # 500, 401, 503: rendered with no APP_CLIENT, so the snippet could not apply.
+        root = Path(settings.BASE_DIR) / "templates"
+        for path in root.rglob("*.html"):
+            source = path.read_text()
+            if "<html" in source.lower() and "APP_CLIENT" in source:
+                assert "snippets/app_safe_area.html" in source, path
+
     def test_core_appclient_404_page_in_app_mode(self):
         html = Client(HTTP_USER_AGENT=ANDROID_UA).get("/no/such/page/").content.decode()
 
@@ -363,6 +394,21 @@ class TestCoreAppClientPurchaseHidden:
         html = self._page("faq", BROWSER_UA)
 
         assert "/auth_privacy.html" in html
+
+    @pytest.mark.django_db
+    def test_core_appclient_signup_links_in_app(self):
+        html = self._page("account_signup", IOS_UA)
+        assert 'href="/terms/" title' in html
+        assert 'href="/asm-privacy/"' in html
+        assert "auth_terms.html" not in html
+        assert "auth_privacy.html" not in html
+
+    @pytest.mark.django_db
+    def test_core_appclient_signup_links_in_a_browser(self):
+        html = self._page("account_signup", BROWSER_UA)
+        assert 'href="/terms/" target="_blank"' in html
+        assert "/auth_privacy.html" in html
+        assert "auth_terms.html" not in html
 
     def test_core_appclient_disclaimer_links_the_app_policy_in_app(self):
         assert "auth_privacy.html" not in self._page("disclaimer", IOS_UA)

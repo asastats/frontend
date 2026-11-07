@@ -16,7 +16,7 @@
         {% if url.item.0 == "assets_file" %}
             <li><a class="link link-hover" href="{{ url.location }}">{{ url.item.1.0 }}</a></li>
         {% elif url.item.0 == "html_file" %}
-            <li><a class="link link-hover" href="{{ url.location }}">{% if "privacy" in url.item.1.0 %}Privacy Policy{% else %}Terms of Use{% endif %} </a></li>
+            <li><a class="link link-hover" href="{{ url.location }}">Privacy Policy </a></li>
         {% endif %}
     {% else %}
         {% if url.item.0 == "about" %}
@@ -31,6 +31,8 @@
             <li><a class="link link-hover" href="{{ url.location }}">Features page</a></li>
         {% elif url.item.0 == "disclaimer" %}
             <li><a class="link link-hover" href="{{ url.location }}">Disclaimer</a></li>
+        {% elif url.item.0 == "terms" %}
+            <li><a class="link link-hover" href="{{ url.location }}">Terms of Use</a></li>
         {% elif url.item.0 == "account_deletion" %}
             <li><a class="link link-hover" href="{{ url.location }}">Delete your account</a></li>
         {% elif url.item.0 == "asm_privacy" %}

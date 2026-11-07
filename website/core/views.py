@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ValidationError
+from django.contrib.staticfiles import finders
 from django.http import (
     Http404,
     HttpResponse,
@@ -190,8 +191,15 @@ def service_worker(request):
 
 
 def html_file(request, filename):
-    """Return html content defined by provided `filename`."""
-    return render(request, f"static/{filename}")
+    """Return the static html file defined by provided `filename`.
+
+    Production's nginx answers these addresses first (docs/logbook.md).
+    """
+    path = finders.find(filename)
+    if path is None:
+        raise Http404
+    with open(path, encoding="utf-8") as html:
+        return HttpResponse(html.read(), content_type="text/html; charset=utf-8")
 
 
 @cache_page(CACHE_TTL)
@@ -833,6 +841,12 @@ class ASMPrivacyView(BaseStaticPageView):
     """View for presenting ASA Stats Mobile Privacy Policy Page."""
 
     template_name = "asm-privacy.html"
+
+
+class TermsView(BaseStaticPageView):
+    """View for presenting the Terms of Use page."""
+
+    template_name = "terms.html"
 
 
 # # TAX

@@ -6732,3 +6732,127 @@ with no history, so a browser reader arriving that way goes to the start page.
 *Hidden until launch, 2026-11-07:* owner's decision, reversing "the table is public from the deploy" of 2026-11-06. `/subscriptions/` and
 the profile status show nothing before `HOLDING_PUBLIC_FROM`. A date rather than a switch, so a forgotten flip cannot hide the launch.
 `syncholdings` keeps recording, which the no-wait rule needs. To show it earlier, set the constant to an earlier moment.
+
+## website/templates/snippets/app_safe_area.html: a safe area on every app page (2026-11-07)
+
+A reader reported that the API page's Back link cannot be tapped and asked for a safe
+area at the top and bottom of every screen, coloured like the current page.
+
+**Cause, from reading the code; not reproduced on a device.** The Swagger page extends
+drf-spectacular's template, whose viewport has no `viewport-fit=cover`, and it did not get
+`base.html`'s padding. Capacitor's iOS default is `contentInsetAdjustmentBehavior = never`
+(`CAPInstanceDescriptor.m`), so the page starts at the screen's top edge. The link is 48 px
+tall at `top: 0`, inside the 59 pt status bar of a Dynamic Island iPhone. The reporter's
+platform is not known. On Android, a page without `cover` gets the decor view's native
+padding (`SystemBars.java`), so the link should have been clear of the bar there.
+
+**Sites of the same fault, all fixed in the one snippet:**
+- The strips: `body` padding alone left them transparent once a page scrolled, so content
+  ran behind the clock. The screenshot test had worked around this with its own cover
+  (mobile logbook, 2026-11-02); that cover is now redundant but harmless. `body::before`
+  and `::after` are opaque and fixed.
+- Sticky and fixed elements ignore `body` padding: the address toolbar, `#scroll-to-top`,
+  `.alert.fixed` from `site.js`, toasts and modal dialogs each take the inset themselves.
+- Tall dialogs. `top`/`bottom` narrow the area a dialog centres in, but one taller than
+  that area still rides up by half the excess, so `max-height` is capped as well. The swap,
+  dust sweep and alerts modals set their own caps, which the snippet has to repeat.
+
+**Colour.** The top strip takes the header's colour and the bottom one the footer's where
+the page has them, otherwise the body's, so a strip follows the theme with no script. The
+status bar icons are still chosen from the body colour in `statusBar.ts`. That stays right:
+`style.tw.css`'s 57 themes were checked with `isDark`'s formula, and none has base-100 and
+base-200 on different sides of its threshold. A scrolled page therefore shows the footer's
+colour in the bottom strip over base-200 content.
+
+**Why the web layer rather than the shell.** The reporter suggested wrapping the root.
+`ios.contentInset` and `SystemBars.insetsHandling: native` would do that for every page, but
+the strips would then be native views that do not follow the theme, and it needs a store
+review. This reaches readers with a deploy and needs no `app.js` rebuild. Inline rather
+than in `style.tw.css` for the reason `base.html` already had: the Tailwind rebuild is
+pinned and asked about separately.
+
+**The API pages load `app.js` in the app**, as `404.html` does, so the status bar icons are
+set for their light background; before this a dark theme left a white clock on `#fafafa`.
+They also get a second viewport meta, since the package's cannot be edited: the last one
+wins in browsers and in Capacitor's own check. `redoc` gets the same head (and now has its
+own template) but still no Back link.
+
+**Pages without the snippet.** `500.html` and `500r.html` render without context processors,
+and `401`, `403_csrf` and `503r` have no `APP_CLIENT` either, so they cannot tell the app from a
+browser, and browsers must stay unchanged. Their content is centred, so it stays clear of the bars. `offline.html`
+has its own padding and does not scroll.
+
+**Known limit.** With an Android WebView below 140, `SystemBars` pads the decor view and
+`env()` is 0, so the strips there are native and keep the window's colour. Not checked on a device.
+
+**Tests.** `functional_tests/test_app_safe_area.py` sets real insets through CDP's
+`Emulation.setSafeAreaInsetsOverride`, so `env()` resolves in Chrome. With the snippet
+emptied, the three Back link tests fail (`0 != 59`). Chrome is not WKWebView: this proves
+the layout, not how iOS hit-tests the status bar.
+
+### Correction, 2026-11-07: Redoc gets the Back link, and its strips were transparent
+
+The owner wants the link on Redoc too, in the app and in browsers, which reverses the "not
+done" in the first entry about the link. The link, its style and its script are now shared
+partials under `templates/api/`.
+
+**A bug in the entry above.** The package's Redoc page sets no background, so `background:
+inherit` made both strips transparent and content ran behind the clock, while the status bar
+read transparent as dark and chose white icons on a white page. The test passed because it only
+compared the strip with the body, and both were `rgba(0, 0, 0, 0)`. `redoc.html` now sets a
+white body, invisible in browsers, and the test requires an opaque strip.
+
+**`{% block body %}` is replaced, not extended.** Redoc's sticky menu sits at `top: 0`, so the
+sticky link would cover it. `scroll-y-offset="#api-back"` moves the menu below the link, and it
+must be on the tag when the bundle runs, which `block.super` does not allow. `schema_url` and
+`redoc_standalone` are the package's context names; `test_redoc_has_a_way_back_with_no_inline_script`
+fails if an upgrade renames them. The package's `REDOC_UI_SETTINGS` branch is dropped with it; this project
+sets none, and that branch's script would be inline, which the CSP forbids.
+
+Redoc measures the offset once, at load. On an Android WebView of 140 or above, `env()` may
+still be 0 then (`SystemBars` learns about `cover` at `onPageCommitVisible`), so the phone
+menu could open up to one status bar too high under the link. From reading the source; not seen.
+
+`#scroll-to-top` also takes the right inset now: in landscape a notch can sit on that side.
+
+**Audit of what the snippet does not reach, 2026-11-07, from reading the code:**
+- `static/auth_terms.html`: `signup.html` links it, and `links.ts` opens a same-site
+  `target="_blank"` in place. It is a static file, so it has no safe area and no way back on
+  iOS, and it has no viewport meta at all. **Open.**
+- `AppLockSettingsActivity` sets no insets while target SDK 36 forces edge-to-edge on Android
+  15 and above. AppCompat's action bar normally handles the top; not checked on a device.
+- iOS's App Lock settings pin to `safeAreaLayoutGuide`, and its lock cover centres its button.
+
+## website/templates/terms.html, static/auth_terms.html: the Terms page is a site page (2026-11-07)
+
+The owner chose this over the in-app browser sheet, closing the first open item in the audit
+above. `/terms/` extends `base.html`, so it has the header, footer, themes and safe area. The
+wording is unchanged: the rendered text was compared with the old file and is identical, including
+the Contact section's "our Privacy policy", which reads oddly on this page and was left for the owner.
+
+`static/auth_terms.html` stays as a short meta-refresh page, so `/auth_terms.html` keeps working
+with no nginx change (`favicon.conf` aliases it). A 301 in nginx would be cleaner but needs the
+nginx role run alongside the deploy. The sitemap now lists `/terms/`.
+
+**A second fix in `account/signup.html`.** Its "Privacy Policy" link pointed at `auth_terms.html`,
+so readers agreeing to the policy were shown the terms. It now follows `base.html`: `asm_privacy`
+in the app, `auth_privacy.html` in browsers.
+
+**Found, not fixed.** `core.views.html_file` renders `static/<filename>`, which is in no
+template directory, so through Django both `/auth_terms.html` and `/auth_privacy.html` raise
+`TemplateDoesNotExist`. Production never reaches it, because nginx's exact locations answer first.
+`/auth_privacy.html` in the app is still a static page; the app links `asm_privacy` instead.
+
+`app_safe_area.html` also sets `scroll-padding` on `html` (same date): an in-page anchor otherwise
+landed behind the top strip. `test_anchor_jump_lands_below_the_top_strip` fails without it.
+
+### Correction, 2026-11-07: Terms wording and `core.views.html_file`
+
+The owner asked for both items left open above. The Contact section of `terms.html` now says
+"about these Terms of use" instead of "our Privacy policy". The effective date was left as it is,
+as the change does not alter what a reader agrees to.
+
+`html_file` now reads the file through `staticfiles.finders` rather than rendering a template, so
+`/auth_terms.html` and `/auth_privacy.html` work through Django, as on a machine without nginx. The
+old unit test mocked `render` and asserted the broken call, which is why it never failed.
+Production is unchanged, as nginx's exact locations still answer first.

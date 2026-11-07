@@ -1,0 +1,16 @@
+{% extends "drf_spectacular/redoc.html" %}
+{% comment %} The way out, as on Swagger (docs/logbook.md). {% endcomment %}
+{% block head %}
+{{ block.super }}
+{% include "api/_app_head.html" %}
+{% include "api/_back_style.html" %}
+{# The safe-area strips inherit this; the package's page sets none. #}
+<style>body { background: #fff; }</style>
+{% include "snippets/app_safe_area.html" %}
+{% endblock head %}
+{% block body %}
+{% include "api/_back_link.html" %}
+{# Not block.super: Redoc reads scroll-y-offset once, so the attribute must be on the tag when its bundle runs. #}
+<redoc spec-url="{{ schema_url }}" scroll-y-offset="#api-back"></redoc>
+<script src="{{ redoc_standalone }}"></script>
+{% endblock %}

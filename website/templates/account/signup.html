@@ -15,8 +15,8 @@
     <a class="secondaryAction link link-hover"
         href="{% url 'account_login' %}">Already have an account?</a>
     <p class="mt-4 text-sm text-base-content/70">
-        By clicking Sign up button on this page, you agree to the <a href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Terms of Use">Terms of use</a> and that you have read the {{ WEBSITE_NAME }} 
-        <a href="{{ WEBSITE_URL }}/auth_terms.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Privacy Policy">Privacy Policy</a>, including use of cookies.</p>
+        By clicking Sign up button on this page, you agree to the <a href="{% url 'terms' %}"{% if not APP_CLIENT %} target="_blank" rel="noopener"{% endif %} title="{{ WEBSITE_NAME }} Terms of Use">Terms of use</a> and that you have read the {{ WEBSITE_NAME }}
+        {% if APP_CLIENT %}<a href="{% url 'asm_privacy' %}" title="{{ WEBSITE_NAME }} app privacy policy">Privacy Policy</a>{% else %}<a href="{{ WEBSITE_URL }}/auth_privacy.html" target="_blank" rel="noopener" title="{{ WEBSITE_NAME }} Privacy Policy">Privacy Policy</a>{% endif %}, including use of cookies.</p>
     {% endblock %}
 
     {% block submit_text %}Sign up{% endblock %}

@@ -71,3 +71,15 @@ def test_swagger_ui_has_a_way_back_with_no_inline_script(headers):
     assert "js/api-back" in html
     assert 'id="swagger-ui"' in html
     assert list(inline_scripts(html)) == []
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("headers", [{}, {"HTTP_USER_AGENT": APP_USER_AGENT}])
+def test_redoc_has_a_way_back_with_no_inline_script(headers):
+    html = Client(**headers).get("/api/v2/schema/redoc/").content.decode()
+    assert 'id="api-back"' in html
+    assert "js/api-back" in html
+    assert 'spec-url="/api/v2/schema/"' in html
+    assert 'scroll-y-offset="#api-back"' in html
+    assert "redoc.standalone.js" in html
+    assert list(inline_scripts(html)) == []

@@ -55,6 +55,52 @@ class StaticPagesTest(FunctionalTest):
             with self.subTest(anchor=anchor):
                 self.assertTrue(self.browser.find_elements(By.ID, anchor))
 
+    def test_terms_page_is_a_site_page_with_its_sections(self):
+        self.browser.get(self.server_url + reverse("terms"))
+
+        self.assertEqual(
+            self.browser.find_element(By.TAG_NAME, "h1").text, "Terms of use"
+        )
+        self.browser.find_element(By.CSS_SELECTOR, "body > header")
+        self.browser.find_element(By.CSS_SELECTOR, "body > footer")
+        for anchor in (
+            "introduction",
+            "disclaimer",
+            "restrictions",
+            "termination",
+            "changes",
+            "contact",
+        ):
+            with self.subTest(anchor=anchor):
+                self.assertTrue(self.browser.find_elements(By.ID, anchor))
+
+    def test_terms_page_contact_section_is_about_the_terms(self):
+        self.browser.get(self.server_url + reverse("terms"))
+
+        text = self.browser.find_element(By.CSS_SELECTOR, "#contact + div").text
+        self.assertIn("about these Terms of use", text)
+        self.assertNotIn("Privacy policy", text)
+
+    def test_signup_terms_link_opens_the_terms_page_in_a_new_tab(self):
+        self.browser.get(self.server_url + reverse("account_signup"))
+
+        self.browser.find_element(By.LINK_TEXT, "Terms of use").click()
+
+        self.wait_until(lambda: len(self.browser.window_handles) == 2)
+        self.browser.switch_to.window(self.browser.window_handles[-1])
+        self.wait_until(
+            lambda: self.browser.current_url == self.server_url + reverse("terms")
+        )
+        self.assertEqual(
+            self.browser.find_element(By.TAG_NAME, "h1").text, "Terms of use"
+        )
+
+    def test_signup_privacy_link_points_at_the_website_policy(self):
+        self.browser.get(self.server_url + reverse("account_signup"))
+
+        privacy = self.browser.find_element(By.LINK_TEXT, "Privacy Policy")
+        self.assertTrue(privacy.get_attribute("href").endswith("/auth_privacy.html"))
+
     def test_app_privacy_policy_covers_what_the_stores_ask(self):
         # The store listings point at this URL; App Review and Play's Data
         # safety review read it against what the app collects.

@@ -31,6 +31,7 @@ CONTENT_PAGES = [
     "faq.html",
     "asm-privacy.html",
     "subscriptions.html",
+    "terms.html",
     "export.html",
 ]
 

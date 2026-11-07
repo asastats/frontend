@@ -161,6 +161,7 @@ urlpatterns = [
         name="account_deletion",
     ),
     re_path(r"^asm-privacy/$", core_views.ASMPrivacyView.as_view(), name="asm_privacy"),
+    re_path(r"^terms/$", core_views.TermsView.as_view(), name="terms"),
     re_path(r"^features/$", core_views.FeaturesView.as_view(), name="features"),
     re_path(
         r"^methodology/$", core_views.MethodologyView.as_view(), name="methodology"

@@ -5,9 +5,12 @@
     <title>Page not found</title>
     <meta name="description" content="{{ WEBSITE_URL }} error page">
     <meta name="keywords" content="error">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1{% if APP_CLIENT %}, viewport-fit=cover{% endif %}">
     <meta name="referrer" content="no-referrer">
     {% include "snippets/error_style.html" %}
+    {% include "snippets/app_safe_area.html" %}
+    {# After app_safe_area: keeps this page's own 1.5rem as well as the inset. #}
+    {% if APP_CLIENT %}<style>body { padding: calc(1.5rem + env(safe-area-inset-top)) calc(1.5rem + env(safe-area-inset-right)) calc(1.5rem + env(safe-area-inset-bottom)) calc(1.5rem + env(safe-area-inset-left)); }</style>{% endif %}
 </head>
 
 <body>

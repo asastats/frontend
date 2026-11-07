@@ -43,6 +43,7 @@ from core.views import (
     AddressViewCustom,
     AnsView,
     ASMPrivacyView,
+    TermsView,
     BaseAddressView,
     BaseStaticPageView,
     BundleNameAddDisplay,
@@ -258,11 +259,21 @@ class BaseUserCreatedView(BaseView):
 class TestCoreViewsHtmlFile(BaseView):
     """Testing class for :func:`core.views.html_file`."""
 
-    def test_core_views_html_file_functionality(self, mocker):
-        mocked_render = mocker.patch("core.views.render")
+    def test_core_views_html_file_returns_the_file(self):
+        returned = html_file(self.request, "auth_privacy.html")
+        assert returned.status_code == 200
+        assert returned["Content-Type"] == "text/html; charset=utf-8"
+        assert b"<h1>Privacy policy</h1>" in returned.content
+
+    def test_core_views_html_file_for_the_old_terms_address_forwards(self):
         returned = html_file(self.request, "auth_terms.html")
-        assert returned == mocked_render.return_value
-        mocked_render.assert_called_once_with(self.request, "static/auth_terms.html")
+        assert returned.status_code == 200
+        assert b'content="0; url=/terms/"' in returned.content
+
+    def test_core_views_html_file_raises_404_for_a_missing_file(self, mocker):
+        mocker.patch("core.views.finders.find", return_value=None)
+        with pytest.raises(Http404):
+            html_file(self.request, "auth_terms.html")
 
 
 class TestIndexView(BaseView):
@@ -725,6 +736,16 @@ class TestASMPrivacyView:
 
     def test_core_views_asmprivacyview_sets_template_name(self):
         assert ASMPrivacyView.template_name == "asm-privacy.html"
+
+
+class TestTermsView:
+    """Testing class for :class:`core.views.TermsView`."""
+
+    def test_core_views_termsview_is_subclass_of_basestaticpageview(self):
+        assert issubclass(TermsView, BaseStaticPageView)
+
+    def test_core_views_termsview_sets_template_name(self):
+        assert TermsView.template_name == "terms.html"
 
 
 # # TAX

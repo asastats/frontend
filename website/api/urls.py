@@ -74,7 +74,9 @@ schema_view = SpectacularAPIView.as_view()
 swagger_view = SpectacularSwaggerSplitView.as_view(
     url_name="api_schema", template_name="api/swagger_ui.html"
 )
-redoc_view = SpectacularRedocView.as_view(url_name="api_schema")
+redoc_view = SpectacularRedocView.as_view(
+    url_name="api_schema", template_name="api/redoc.html"
+)
 schema_view = no_html_minification(schema_view)
 swagger_view = no_html_minification(swagger_view)
 redoc_view = no_html_minification(redoc_view)

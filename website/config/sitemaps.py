@@ -41,7 +41,7 @@ class StaticViewSitemap(sitemaps.Sitemap):
             ("subscriptions", ()),
             ("disclaimer", ()),
             ("html_file", ["auth_privacy.html"]),
-            ("html_file", ["auth_terms.html"]),
+            ("terms", ()),
             ("asm_privacy", ()),
             ("account_signup", ()),
             ("account_login", ()),
