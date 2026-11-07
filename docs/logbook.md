@@ -6684,3 +6684,51 @@ position already held, because a live or averaged rate would take access from LP
 can only go up by a plain edit. Lowering it needs a second weight stream first: the existing column stays at the old rate for holdings
 unbroken since before the change, and new holdings use a new column. The cost is that new LPs pay less than holders after a rise,
 half at 4x. An automatic upward ratchet was rejected, as it cannot be undone and the pools are thin enough to push.
+
+## website/templates/api/swagger_ui.html, website/static/js/app-back.js: a way back from the API page in the app (2026-11-07)
+
+A reader reported that the API entry in the app's hamburger menu is a dead end, with
+killing the app the only way out. The Swagger page is drf-spectacular's standalone
+template, so it has no site header or footer, and iOS has no back button or back
+gesture in the WebView (`allowsBackForwardNavigationGestures` stays off). Android
+has its hardware Back, which Capacitor applies when no `app.js` is listening.
+
+The page now extends the package's template (`template_name` in `api/urls.py`) and,
+only with `APP_CLIENT`, adds a sticky Back link. The link calls `history.back()` so
+the reader returns to where they were, such as an address deep in a portfolio. With
+no history, as after a deep link, it follows its `href` to the start page. The script
+is a file because the CSP allows no inline script, and `test_csp_inline_scripts`
+checks the rendered page. Browsers get the page unchanged.
+
+Not done: the iOS swipe gesture, which would cover every page but needs a store build
+and competes with horizontal swipes near the screen edge. `schema/redoc/` has no Back
+link either; it is reached only through the FAQ's link row and was not reported.
+
+## website/static/js/address.js `timerIncrement`: no reload while hidden (2026-11-07)
+
+Part of the "No connection after switching apps" report; the rest is in the mobile
+logbook. `setInterval` keeps ticking in a hidden page, so with auto-refresh on, a due
+minute reloaded a page nobody was looking at. In the app, a main-frame load started in
+the background can fail, and the WebView then replaces the page with `offline.html`.
+This was found by reading the code, not reproduced on a device.
+
+The refresh now stays due while hidden and `refreshOnReturn` catches up. This also
+changes browsers: a hidden tab no longer reloads each minute, it reloads when shown.
+
+### Correction, 2026-11-07: `timerIncrement`'s hidden guard is app only
+
+The entry above changed browsers too: a hidden tab stopped reloading each minute. The
+owner rejected that. The guard now also requires the `in-app` class on `<html>`, so a
+hidden browser tab reloads every minute as before, and only the app waits for
+`refreshOnReturn`.
+
+### Correction, 2026-11-07: the API page's Back link is for browsers too
+
+The first entry made the link app only. The owner wants it on the website as well, so
+the `APP_CLIENT` condition is gone and it shows for every reader. The script is now
+`static/js/api-back.js` and the id `api-back`. The FAQ opens this page in a new tab
+with no history, so a browser reader arriving that way goes to the start page.
+
+*Hidden until launch, 2026-11-07:* owner's decision, reversing "the table is public from the deploy" of 2026-11-06. `/subscriptions/` and
+the profile status show nothing before `HOLDING_PUBLIC_FROM`. A date rather than a switch, so a forgotten flip cannot hide the launch.
+`syncholdings` keeps recording, which the no-wait rule needs. To show it earlier, set the constant to an earlier moment.

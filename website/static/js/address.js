@@ -1845,6 +1845,10 @@ function timerIncrement() {
     lastRefreshAt = now;
     return;
   }
+  if (document.visibilityState === 'hidden' && document.documentElement.classList.contains('in-app')) {
+    // App only; a hidden browser tab keeps reloading. Stays due: refreshOnReturn catches up. See logbook.
+    return;
+  }
   if (now - lastRefreshAt < REFRESH_AFTER_MS) {
     return;
   }

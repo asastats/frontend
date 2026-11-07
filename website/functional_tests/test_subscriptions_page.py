@@ -7,10 +7,15 @@ and the tests below exist to make sure the "not included" half cannot quietly
 disappear.
 """
 
+from datetime import UTC, datetime
+from unittest import mock
+
 from django.urls import reverse
 from selenium.webdriver.common.by import By
 
 from .base import FunctionalTest
+
+HOLDING_PUBLIC_FROM = "core.permission_providers.holdings.HOLDING_PUBLIC_FROM"
 
 
 class SubscriptionsPageTest(FunctionalTest):
@@ -108,11 +113,18 @@ class SubscriptionsPageTest(FunctionalTest):
         self.assertEqual(len(heights), 4)
         self.assertEqual(len(set(heights)), 1, f"description rows differ: {heights}")
 
+    @mock.patch(HOLDING_PUBLIC_FROM, datetime(9999, 1, 1, tzinfo=UTC))
+    def test_the_holding_section_is_hidden_before_it_is_public(self):
+        self.browser.get(self.server_url + reverse("subscriptions"))
+        self.assertEqual(self.browser.find_elements(By.ID, "holding"), [])
+
+    @mock.patch(HOLDING_PUBLIC_FROM, datetime(2000, 1, 1, tzinfo=UTC))
     def test_the_holding_table_shows_the_amounts_per_tier(self):
+        self.browser.get(self.server_url + reverse("subscriptions"))
         rows = self.browser.find_elements(By.CSS_SELECTOR, "#holding tbody tr")
         self.assertEqual(
             [r.find_elements(By.TAG_NAME, "td")[0].text for r in rows],
             ["Intro", "Asastatser", "Professional", "Cluster"],
         )
         cells = rows[1].find_elements(By.TAG_NAME, "td")
-        self.assertEqual([c.text for c in cells[1:]], ["500,000", "250,000"])
+        self.assertEqual([c.text for c in cells[1:]], ["500,000", "250,000 + about 42"])

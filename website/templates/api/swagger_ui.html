@@ -1,0 +1,14 @@
+{% extends "drf_spectacular/swagger_ui.html" %}
+{% load static %}
+{% comment %} The way out: this page has no site header (docs/logbook.md). {% endcomment %}
+{% block head %}
+{{ block.super }}
+<style>
+  #api-back { position: sticky; top: 0; z-index: 10; display: block; padding: .75rem 1rem; background: #fafafa; border-bottom: 1px solid #d9d9d9; color: #3b4151; font: 600 1rem/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-decoration: none; }
+</style>
+{% endblock head %}
+{% block body %}
+<a id="api-back" href="{% url 'index' %}">&lsaquo; Back</a>
+<script src="{% static 'js/api-back.js' %}"></script>
+{{ block.super }}
+{% endblock %}

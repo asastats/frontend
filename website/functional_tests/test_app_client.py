@@ -65,6 +65,22 @@ class AppClientPagesTest(FunctionalTest):
         )
 
 
+    def test_app_api_page_back_link_returns_to_the_page_before(self):
+        self.browser.get(self.server_url + reverse("faq"))
+        self.browser.execute_script(
+            "var a = document.createElement('a'); a.id = 'to-api';"
+            f"a.href = '{reverse('swagger-ui')}'; a.textContent = 'x';"
+            "document.body.prepend(a);"
+        )
+        self.browser.find_element(By.ID, "to-api").click()
+        self.wait_until(lambda: self.browser.find_elements(By.ID, "swagger-ui"))
+
+        self.browser.find_element(By.ID, "api-back").click()
+
+        self.wait_until(
+            lambda: self.browser.current_url == self.server_url + reverse("faq")
+        )
+
     def test_app_page_keeps_app_lock_hidden_without_the_plugin(self):
         # Chrome has no native bridge, as an app build from before the plugin.
         self.browser.get(self.server_url + reverse("faq"))
@@ -87,6 +103,53 @@ class BrowserPagesTest(FunctionalTest):
         self.assertIsNone(html.get_attribute("data-app-platform"))
         viewport = self.browser.find_element(By.CSS_SELECTOR, "meta[name=viewport]")
         self.assertNotIn("viewport-fit", viewport.get_attribute("content"))
+
+    def _open_api_page_from_faq(self, attributes=""):
+        self.browser.get(self.server_url + reverse("faq"))
+        self.browser.execute_script(
+            "var a = document.createElement('a'); a.id = 'to-api';"
+            f"a.href = '{reverse('swagger-ui')}'; a.textContent = 'x';"
+            f"{attributes}"
+            "document.body.prepend(a);"
+        )
+        self.browser.find_element(By.ID, "to-api").click()
+
+    def test_browser_api_page_back_link_returns_to_the_page_before(self):
+        self._open_api_page_from_faq()
+        self.wait_until(lambda: self.browser.find_elements(By.ID, "swagger-ui"))
+
+        self.browser.find_element(By.ID, "api-back").click()
+
+        self.wait_until(
+            lambda: self.browser.current_url == self.server_url + reverse("faq")
+        )
+
+    def test_browser_api_page_back_link_stays_in_view_while_scrolling(self):
+        self.browser.get(self.server_url + reverse("swagger-ui"))
+        self.wait_until(
+            lambda: self.browser.find_elements(By.CSS_SELECTOR, ".opblock")
+        )
+
+        self.browser.execute_script("window.scrollTo(0, 800);")
+
+        self.wait_until(lambda: self.browser.execute_script("return scrollY;") > 0)
+        top = self.browser.execute_script(
+            "return document.getElementById('api-back').getBoundingClientRect().top;"
+        )
+        self.assertEqual(top, 0)
+
+    def test_browser_api_page_in_a_new_tab_goes_back_to_the_start_page(self):
+        # The FAQ's link opens it this way: a tab with no history to go back through.
+        self._open_api_page_from_faq("a.target = '_blank'; a.rel = 'noopener';")
+        self.wait_until(lambda: len(self.browser.window_handles) == 2)
+        self.browser.switch_to.window(self.browser.window_handles[-1])
+        self.wait_until(lambda: self.browser.find_elements(By.ID, "swagger-ui"))
+
+        self.browser.find_element(By.ID, "api-back").click()
+
+        self.wait_until(
+            lambda: self.browser.current_url == self.server_url + reverse("index")
+        )
 
     def test_browser_page_has_no_app_lock_entry(self):
         self.browser.get(self.server_url + reverse("faq"))

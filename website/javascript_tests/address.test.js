@@ -1037,6 +1037,42 @@ describe("auto refresh", function () {
       delete document.visibilityState;
     });
 
+    describe('a hidden page', function () {
+      beforeEach(function () {
+        Object.defineProperty(document, 'visibilityState', {
+          configurable: true,
+          get: function () { return 'hidden'; },
+        });
+      });
+
+      afterEach(function () {
+        delete document.visibilityState;
+        document.documentElement.classList.remove('in-app');
+      });
+
+      it('in the app waits, and catches up on return', function () {
+        document.documentElement.classList.add('in-app');
+        elapse(61000);
+
+        address.timerIncrement();
+
+        expect(reloaded()).toBe(false);
+        delete document.visibilityState;
+
+        address.refreshOnReturn();
+
+        expect(reloaded()).toBe(true);
+      });
+
+      it('in a browser still reloads every minute', function () {
+        elapse(61000);
+
+        address.timerIncrement();
+
+        expect(reloaded()).toBe(true);
+      });
+    });
+
     it('recovers when the clock moves backwards', function () {
       // An NTP correction or a laptop waking with a corrected time leaves a
       // stamp in the future, and `now - then` then reads as "just now" for as

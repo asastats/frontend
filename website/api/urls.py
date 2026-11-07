@@ -71,7 +71,9 @@ def _nested_account_patterns(type):
 
 schema_view = SpectacularAPIView.as_view()
 # The split view serves its config script as a file: the CSP allows no inline script.
-swagger_view = SpectacularSwaggerSplitView.as_view(url_name="api_schema")
+swagger_view = SpectacularSwaggerSplitView.as_view(
+    url_name="api_schema", template_name="api/swagger_ui.html"
+)
 redoc_view = SpectacularRedocView.as_view(url_name="api_schema")
 schema_view = no_html_minification(schema_view)
 swagger_view = no_html_minification(swagger_view)

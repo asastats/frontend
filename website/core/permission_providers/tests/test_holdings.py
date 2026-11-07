@@ -17,6 +17,7 @@ ADDRESS = "A" * 58
 OTHER = "B" * 58
 INSIDE_WEEK = datetime(2026, 11, 12, tzinfo=UTC)
 AFTER_WEEK = datetime(2026, 11, 20, tzinfo=UTC)
+BEFORE_START = datetime(2026, 11, 8, tzinfo=UTC)
 
 
 def _tokens(amount):
@@ -480,8 +481,17 @@ class TestHoldingStatusAndTerms:
             "next_date": moment + timedelta(days=30),
         }
 
+    def test_holding_status_is_none_before_it_is_public(self):
+        profile = _profile()
+        _hold(ADDRESS, 500_000, BEFORE_START)
+        assert holdings.holding_status(profile, BEFORE_START) is None
+
+    def test_holding_terms_is_none_before_it_is_public(self):
+        assert holdings.holding_terms(BEFORE_START) is None
+        assert holdings.holding_terms(holdings.HOLDING_PUBLIC_FROM) is not None
+
     def test_holding_terms_pool_amount_is_half_of_the_wallet_amount(self):
-        rows = holdings.holding_terms()["rows"]
+        rows = holdings.holding_terms(INSIDE_WEEK)["rows"]
         assert rows[0] == {
             "tier": "Intro",
             "wallet": 50_000,
@@ -496,11 +506,24 @@ class TestHoldingStatusAndTerms:
 class TestHoldingPages:
     """Testing class for the holding markup on the subscriptions and profile pages."""
 
+    def test_subscriptions_page_hides_the_holding_table_before_it_is_public(
+        self, client, mocker
+    ):
+        mocker.patch(
+            "core.context_processors.fetch_capabilities",
+            return_value={"permission": 0},
+        )
+        mocker.patch(f"{MODULE}.HOLDING_PUBLIC_FROM", datetime(9999, 1, 1, tzinfo=UTC))
+        content = client.get("/subscriptions/").content.decode()
+        assert 'id="holding"' not in content
+        assert "ASASTATS per ALGO" not in content
+
     def test_subscriptions_page_shows_the_holding_table(self, client, mocker):
         mocker.patch(
             "core.context_processors.fetch_capabilities",
             return_value={"permission": 0},
         )
+        mocker.patch(f"{MODULE}.HOLDING_PUBLIC_FROM", datetime(2000, 1, 1, tzinfo=UTC))
         content = client.get("/subscriptions/").content.decode()
         assert 'id="holding"' in content
         assert "250,000 + about 42" in content
@@ -512,6 +535,7 @@ class TestHoldingPages:
             "core.context_processors.fetch_capabilities",
             return_value={"permission": 0},
         )
+        mocker.patch(f"{MODULE}.HOLDING_PUBLIC_FROM", datetime(2000, 1, 1, tzinfo=UTC))
         mocker.patch(
             "core.permission_providers.permissiondapp."
             "PermissionDappProvider.subscriptions",

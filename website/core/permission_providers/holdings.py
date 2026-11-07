@@ -31,6 +31,8 @@ HOLDING_THRESHOLDS = (
     ("Intro", 50_000),
 )
 HOLDING_START = datetime(2026, 11, 9, tzinfo=UTC)
+#: Pages say nothing about holding before this moment: the launch is a surprise.
+HOLDING_PUBLIC_FROM = HOLDING_START
 #: A holding that starts before this moment has no waiting period.
 NO_WAIT_END = datetime(2026, 11, 16, tzinfo=UTC)
 WAITING_PERIOD = timedelta(days=30)
@@ -384,7 +386,7 @@ def holding_status(profile, now=None):
     :return: dict
     """
     now = now or timezone.now()
-    if not profile.authorized:
+    if not profile.authorized or now < HOLDING_PUBLIC_FROM:
         return None
 
     rows = _rows(profile)
@@ -423,11 +425,16 @@ def _pool_algo(tokens):
     return f"{float(f'{tokens / 2 / REFERENCE_ASASTATS_PER_ALGO:.2g}'):,g}"
 
 
-def holding_terms():
-    """Return the published terms: thresholds and dates.
+def holding_terms(now=None):
+    """Return the published terms: thresholds and dates, or None before they are public.
 
+    :param now: moment of the check
+    :type now: :class:`datetime.datetime`
     :return: dict
     """
+    if (now or timezone.now()) < HOLDING_PUBLIC_FROM:
+        return None
+
     return {
         "rows": [
             {

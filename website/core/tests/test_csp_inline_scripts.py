@@ -58,3 +58,16 @@ def test_swagger_ui_loads_its_config_as_a_script_file():
     script = Client().get("/api/v2/schema/swagger-ui/?script=")
     assert script.status_code == 200
     assert "SwaggerUIBundle" in script.content.decode()
+
+
+APP_USER_AGENT = "Mozilla/5.0 ASAStatsApp/1.1.0 (ios)"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("headers", [{}, {"HTTP_USER_AGENT": APP_USER_AGENT}])
+def test_swagger_ui_has_a_way_back_with_no_inline_script(headers):
+    html = Client(**headers).get("/api/v2/schema/swagger-ui/").content.decode()
+    assert 'id="api-back"' in html
+    assert "js/api-back" in html
+    assert 'id="swagger-ui"' in html
+    assert list(inline_scripts(html)) == []
