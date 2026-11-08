@@ -31,8 +31,8 @@ HOLDING_THRESHOLDS = (
     ("Intro", 50_000),
 )
 HOLDING_START = datetime(2026, 11, 9, tzinfo=UTC)
-#: Pages say nothing about holding before this moment: the launch is a surprise.
-HOLDING_PUBLIC_FROM = HOLDING_START
+#: Pages say nothing about holding before this moment (20:30 CET): the launch is a surprise.
+HOLDING_PUBLIC_FROM = datetime(2026, 11, 8, 19, 30, tzinfo=UTC)
 #: A holding that starts before this moment has no waiting period.
 NO_WAIT_END = datetime(2026, 11, 16, tzinfo=UTC)
 WAITING_PERIOD = timedelta(days=30)

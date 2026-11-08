@@ -735,10 +735,19 @@ class BaseStaticPageView(TemplateView):
         :type request: :class:`django.http.HttpRequest`
         :return: :class:`django.http.HttpResponse`
         """
-        cached = cache_page(CACHE_TTL, key_prefix=app_cache_prefix(request))(
+        cached = cache_page(CACHE_TTL, key_prefix=self.cache_key_prefix(request))(
             csrf_protect(super().dispatch)
         )
         return cached(request, *args, **kwargs)
+
+    def cache_key_prefix(self, request):
+        """Return the ``cache_page`` key prefix for `request`.
+
+        :param request: Django request object
+        :type request: :class:`django.http.HttpRequest`
+        :return: str or None
+        """
+        return app_cache_prefix(request)
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -794,6 +803,19 @@ class SubscriptionsView(BaseStaticPageView):
             raise Http404
 
         return super().dispatch(request, *args, **kwargs)
+
+    def cache_key_prefix(self, request):
+        """Change the key once the holding terms are public, so no copy cached before outlives it.
+
+        :param request: Django request object
+        :type request: :class:`django.http.HttpRequest`
+        :return: str or None
+        """
+        prefix = super().cache_key_prefix(request)
+        if get_permission_provider().holding_terms() is None:
+            return prefix
+
+        return f"{prefix or ''}holding"
 
     def get_context_data(self, **kwargs):
         """Add the terms for permission from holding.

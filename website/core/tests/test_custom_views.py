@@ -1,6 +1,7 @@
 """Testing module for :py:mod:`website.core.views` module."""
 
 import time
+from datetime import datetime, timezone
 from unittest import mock
 
 import pytest
@@ -650,6 +651,18 @@ class TestSubscriptionsFaqView:
 
     def test_core_views_subscriptionsview_sets_template_name(self):
         assert SubscriptionsView.template_name == "subscriptions.html"
+
+    def test_core_views_subscriptionsview_cache_key_changes_at_the_reveal(
+        self, rf, mocker
+    ):
+        public_from = "core.permission_providers.holdings.HOLDING_PUBLIC_FROM"
+        request = rf.get("/subscriptions/")
+        mocker.patch(public_from, datetime(9999, 1, 1, tzinfo=timezone.utc))
+        before = SubscriptionsView().cache_key_prefix(request)
+        mocker.patch(public_from, datetime(2000, 1, 1, tzinfo=timezone.utc))
+        after = SubscriptionsView().cache_key_prefix(request)
+        assert before is None
+        assert after == "holding"
 
 
 class TestTokenomicsView(BaseView):

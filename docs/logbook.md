@@ -6877,3 +6877,22 @@ none`, since content now shows through it. It takes the body's colour everywhere
 scrolling is over the body, and the footer's colour was the visible band in the reporter's screenshot. At the very end
 of a page it therefore tints the footer slightly. The top strip stays opaque, as the clock needs it.
 The look has not been seen on iOS; Chrome only.
+
+## website/core/permission_providers/holdings.py, core/views.py: holding terms public at 20:30 CET (2026-11-08)
+
+The owner moved the reveal of the holding section (subscriptions page) and the profile's holding
+status from 00:00 UTC on 2026-11-09 to 20:30 CET on 2026-11-08, which is 19:30 UTC. Access itself
+still starts at `HOLDING_START`, 00:00 UTC on the 9th. Between the two, a profile holding enough shows
+the amount and "<tier> from November 9, 2026", because `_available_from` returns `HOLDING_START`.
+
+**The cache would have hidden the reveal.** Production answers `/subscriptions/` with
+`cache-control: max-age=5310` and no cookie (checked with curl the same day), so `cache_page` keeps a
+copy for about 88 minutes. A copy rendered just before the reveal would have been served until about
+22:00 CET, and the same was true of the original 00:00 UTC plan. `SubscriptionsView.cache_key_prefix`
+now adds `holding` to the key once `holding_terms()` is not None, so the first request after the
+reveal renders fresh. Before the reveal the key is unchanged; other static pages keep theirs.
+
+The test checks the key, not a cached response, because under `automated_tests` every response sets
+the CSRF cookie again, and Django's `UpdateCacheMiddleware` never caches a response that sets a cookie
+while varying on Cookie. A test client request is therefore never cached, and a client-level test
+passed with the fix removed.
