@@ -93,6 +93,15 @@ describe("in SECTION: Helper functions", function () {
       expect(index.isRememberable("Sub.Name.algo/nfd")).toBe(true);
       expect(index.isRememberable("name.algo/ans")).toBe(true);
     });
+    it('accepts a bundle of addresses and names joined by commas', function () {
+      expect(index.isRememberable(ADDRESS + "," + OTHER + ",x.algo")).toBe(true);
+    });
+    it('rejects a bundle with an invalid or empty part', function () {
+      expect(index.isRememberable(ADDRESS + ",junk")).toBe(false);
+      expect(index.isRememberable(ADDRESS + ",")).toBe(false);
+      expect(index.isRememberable(ADDRESS + ", " + OTHER)).toBe(false);
+      expect(index.isSingleEntry(ADDRESS + "," + OTHER)).toBe(false);
+    });
     it('rejects anything else', function () {
       expect(index.isRememberable(ADDRESS.toLowerCase())).toBe(false);
       expect(index.isRememberable(ADDRESS.slice(1))).toBe(false);
@@ -134,11 +143,25 @@ describe("in SECTION: Helper functions", function () {
       index.rememberEntries();
       expect(stored()).toEqual([ADDRESS, OTHER]);
     });
-    it('stores every valid entry from the textarea', function () {
+    it('stores the valid textarea entries as one bundle', function () {
       $('#id_address').replaceWith('<textarea id="id_addresses"></textarea>');
-      $('#id_addresses').val(ADDRESS + ",\n bad " + OTHER + " x.algo");
+      $('#id_addresses').val(ADDRESS + ",\n bad " + OTHER + " x.algo " + ADDRESS);
       index.rememberEntries();
-      expect(stored()).toEqual([ADDRESS, OTHER, "x.algo"]);
+      expect(stored()).toEqual([ADDRESS + "," + OTHER + ",x.algo"]);
+    });
+    it('stores a textarea with one valid entry as that entry', function () {
+      $('#id_address').replaceWith('<textarea id="id_addresses"></textarea>');
+      $('#id_addresses').val("bad\n" + ADDRESS);
+      index.rememberEntries();
+      expect(stored()).toEqual([ADDRESS]);
+    });
+    it('moves a bundle entered in another order to the top', function () {
+      localStorage.setItem("asastats.recentAddresses",
+        JSON.stringify(["a.algo", ADDRESS + "," + OTHER, OTHER]));
+      $('#id_address').replaceWith('<textarea id="id_addresses"></textarea>');
+      $('#id_addresses').val(OTHER + "\n" + ADDRESS);
+      index.rememberEntries();
+      expect(stored()).toEqual([OTHER + "," + ADDRESS, "a.algo", OTHER]);
     });
     it('stores nothing for invalid input', function () {
       $('#id_address').val("not an address");
@@ -257,6 +280,41 @@ describe("in SECTION: Helper functions", function () {
       localStorage.setItem.mockImplementationOnce(() => { throw new Error("full"); });
       expect(() => index.forgetEntry(OTHER)).not.toThrow();
       expect(JSON.parse(localStorage.getItem(KEY)).length).toBe(3);
+    });
+    it('shows a bundle as one shortened row and keeps the entry whole', function () {
+      const bundle = ADDRESS + "," + OTHER + ",abc.algo";
+      localStorage.setItem(KEY, JSON.stringify([bundle, ADDRESS]));
+      $('#id_address').trigger('click');
+      const row = $('#id_address_history .recent-entry').eq(0);
+      expect(row.attr('data-entry')).toBe(bundle);
+      expect(row.text()).toBe("Bundle of 3: VW55\u2026CBSU, 2UEQ\u2026QFHM, abc.algo");
+      expect(row.hasClass('font-semibold')).toBe(true);
+      expect($('#id_address_history .recent-entry').eq(1).hasClass('font-semibold')).toBe(false);
+      expect($('#id_address_history .recent-forget').eq(0).attr('aria-label'))
+        .toBe("Forget Bundle of 3: VW55\u2026CBSU, 2UEQ\u2026QFHM, abc.algo");
+    });
+    it('finds a bundle by any of its addresses', function () {
+      localStorage.setItem(KEY, JSON.stringify([ADDRESS + "," + OTHER, "abc.algo"]));
+      $('#id_address').val("2ueq").trigger('input');
+      expect(rows()).toEqual([ADDRESS + "," + OTHER]);
+    });
+    it('submits a chosen bundle with its addresses in the textarea', function () {
+      localStorage.setItem(KEY, JSON.stringify([ADDRESS + "," + OTHER]));
+      const submitted = jest.fn((event) => event.preventDefault());
+      $('#id_form').on('submit', submitted);
+      $('#id_address').val("2ueq").trigger('input');
+      $('#id_address_history .recent-entry').eq(0).trigger('click');
+      expect($('#id_address').length).toBe(0);
+      expect($('#id_addresses').val()).toBe(ADDRESS + "\n" + OTHER);
+      expect($('#id_bundle').val()).toBe(ADDRESS + "\n" + OTHER);
+      expect($('#id_address_history').hasClass('hidden')).toBe(true);
+      expect(submitted).toHaveBeenCalledTimes(1);
+    });
+    it('forgets a bundle by its whole entry', function () {
+      localStorage.setItem(KEY, JSON.stringify([ADDRESS + "," + OTHER, ADDRESS]));
+      $('#id_address').trigger('click');
+      $('#id_address_history .recent-forget').eq(0).trigger('click');
+      expect(JSON.parse(localStorage.getItem(KEY))).toEqual([ADDRESS]);
     });
     it('writes entries as text, never as markup', function () {
       localStorage.setItem(KEY, JSON.stringify(["a-b.algo"]));

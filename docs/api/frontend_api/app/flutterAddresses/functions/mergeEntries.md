@@ -6,25 +6,25 @@
 
 # Function: mergeEntries()
 
-> **mergeEntries**(`own`, `flutter`): `string`[]
+> **mergeEntries**(`first`, `second`): `string`[]
 
-Defined in: [app/flutterAddresses.ts:45](https://github.com/asastats/frontend/blob/main/wallet/src/app/flutterAddresses.ts#L45)
+Defined in: [app/flutterAddresses.ts:63](https://github.com/asastats/frontend/blob/main/wallet/src/app/flutterAddresses.ts#L63)
 
-The app's own entries first (they are newer), then Flutter's; no repeats, capped.
+The first list's entries first, then the second's; no repeats, capped.
 
 ## Parameters
 
-### own
+### first
 
 `string`[]
 
-what the list holds now.
+entries that go on top.
 
-### flutter
+### second
 
 `string`[]
 
-what the Flutter app saved.
+entries that follow.
 
 ## Returns
 

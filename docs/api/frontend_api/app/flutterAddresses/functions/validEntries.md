@@ -8,10 +8,10 @@
 
 > **validEntries**(`saved`): `string`[]
 
-Defined in: [app/flutterAddresses.ts:31](https://github.com/asastats/frontend/blob/main/wallet/src/app/flutterAddresses.ts#L31)
+Defined in: [app/flutterAddresses.ts:33](https://github.com/asastats/frontend/blob/main/wallet/src/app/flutterAddresses.ts#L33)
 
-Split saved entries (Flutter kept a multi-address search as one string) and keep
-the addresses and .algo names.
+Keep each saved search's addresses and .algo names; a search of several becomes
+one bundle entry joined by commas, as index.js stores it.
 
 ## Parameters
 

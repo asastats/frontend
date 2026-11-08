@@ -151,14 +151,82 @@ function setTextarea(event) {
 
 /**
  * Return true for an Algorand address or a .algo name
+ * @function isSingleEntry
+ *
+ * @param {*} entry value to check
+ * @return {Boolean}
+ */
+function isSingleEntry(entry) {
+  return typeof entry === 'string' &&
+    (ADDRESS_PATTERN.test(entry) || NAME_PATTERN.test(entry));
+}
+
+
+/**
+ * Return true for an address, a .algo name, or a bundle of them joined by commas
  * @function isRememberable
  *
  * @param {*} entry value to check
  * @return {Boolean}
  */
 function isRememberable(entry) {
-  return typeof entry === 'string' &&
-    (ADDRESS_PATTERN.test(entry) || NAME_PATTERN.test(entry));
+  return typeof entry === 'string' && entry.split(',').every(isSingleEntry);
+}
+
+
+/**
+ * Return a stored entry's addresses and names
+ * @function entryParts
+ *
+ * @param {String} entry stored entry
+ * @return {Array}
+ */
+function entryParts(entry) {
+  return entry.split(',');
+}
+
+
+/**
+ * Return the key two entries share when they hold the same addresses in any order
+ * @function entryKey
+ *
+ * @param {String} entry stored entry
+ * @return {String}
+ */
+function entryKey(entry) {
+  return entryParts(entry).slice().sort().join(',');
+}
+
+
+/**
+ * Return entries without repeats, keeping the first of each
+ * @function uniqueEntries
+ *
+ * @param {Array} entries stored entries
+ * @return {Array}
+ */
+function uniqueEntries(entries) {
+  var keys = entries.map(entryKey);
+  return entries.filter(function (entry, position) {
+    return keys.indexOf(keys[position]) === position;
+  });
+}
+
+
+/**
+ * Return the text a row shows for an entry
+ * @function entryLabel
+ *
+ * @param {String} entry stored entry
+ * @return {String}
+ */
+function entryLabel(entry) {
+  var parts = entryParts(entry);
+  if (parts.length === 1)
+    return entry;
+  return 'Bundle of ' + parts.length + ': ' + parts.map(function (part) {
+    return ADDRESS_PATTERN.test(part) ? part.slice(0, 4) + '\u2026' + part.slice(-4) : part;
+  }).join(', ');
 }
 
 
@@ -179,18 +247,19 @@ function recentEntries() {
 
 
 /**
- * Store the addresses and names being submitted, newest first
+ * Store what is being submitted, newest first: several entries as one bundle
  * @function rememberEntries
  *
  */
 function rememberEntries() {
   var source = $('#id_addresses').length ? $('#id_addresses') : $('#id_address');
-  var entered = String(source.val() || '').split(/[\s,]+/).filter(isRememberable);
+  var entered = String(source.val() || '').split(/[\s,]+/).filter(isSingleEntry)
+    .filter(function (entry, position, all) {
+      return all.indexOf(entry) === position;
+    });
   if (!entered.length)
     return;
-  var entries = entered.concat(recentEntries()).filter(function (entry, position, all) {
-    return all.indexOf(entry) === position;
-  }).slice(0, RECENT_LIMIT);
+  var entries = uniqueEntries([entered.join(',')].concat(recentEntries())).slice(0, RECENT_LIMIT);
   try {
     localStorage.setItem(RECENT_KEY, JSON.stringify(entries));
   } catch (error) {
@@ -245,10 +314,11 @@ function renderRecentEntries() {
   }
   matches.forEach(function (entry) {
     var row = $('<li class="flex min-w-0 items-center gap-1 rounded-field hover:bg-base-200"></li>');
+    var label = entryLabel(entry);
     row.append($('<button type="button" class="recent-entry min-w-0 flex-1 truncate px-3 py-2 text-left text-sm"></button>')
-      .attr('data-entry', entry).text(entry));
+      .attr('data-entry', entry).toggleClass('font-semibold', label !== entry).text(label));
     row.append($('<button type="button" class="recent-forget btn btn-ghost btn-xs btn-circle">&#x2715;</button>')
-      .attr({'data-entry': entry, 'aria-label': 'Forget ' + entry}));
+      .attr({'data-entry': entry, 'aria-label': 'Forget ' + label}));
     list.append(row);
   });
   list.removeClass('hidden');
@@ -270,9 +340,31 @@ function chooseRecentEntry(event) {
     renderRecentEntries();
     return;
   }
-  $('#id_address').val(target.attr('data-entry')).focus();
+  var entry = target.attr('data-entry');
   removeError(null);
+  if (entryParts(entry).length > 1) {
+    hideRecentEntries();
+    checkBundle(entry);
+    return;
+  }
+  // Focus first: it re-renders the list, which the hide then closes.
+  $('#id_address').val(entry).focus();
   hideRecentEntries();
+}
+
+
+/**
+ * Put a bundle's addresses in the textarea and submit them
+ * @function checkBundle
+ *
+ * @param {String} entry stored bundle
+ */
+function checkBundle(entry) {
+  $('#id_address').val('');
+  replaceTextarea();
+  $('#id_addresses').val(entryParts(entry).join('\n'));
+  updateBundle();
+  $('#track').trigger('click');
 }
 
 
@@ -328,11 +420,15 @@ function updateBundle() {
 /* istanbul ignore next */
 if (typeof exports !== 'undefined') {
   module.exports = {
+    checkBundle,
     chooseRecentEntry,
     closeRecentOnEscape,
+    entryKey,
+    entryLabel,
     forgetEntry,
     hideRecentEntries,
     isRememberable,
+    isSingleEntry,
     mainIndex,
     recentEntries,
     rememberEntries,
@@ -342,6 +438,7 @@ if (typeof exports !== 'undefined') {
     setProgress,
     setTextarea,
     showRecentEntries,
+    uniqueEntries,
     updateBundle
   };
 }

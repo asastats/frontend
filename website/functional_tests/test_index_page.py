@@ -1,11 +1,17 @@
+import json
+
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from selenium.webdriver.common.by import By
 
 from core.models import BundleName
 
+from utils.helpers import bundle_from_addresses
+
 from .base import TESTING_ADDRESS, FunctionalTest
 from .test_app_client import APP_USER_AGENT
+
+OTHER_ADDRESS = "VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU"
 
 
 class IndexPageTest(FunctionalTest):
@@ -231,6 +237,26 @@ class IndexPageAddressHistoryTest(FunctionalTest):
 
         self.browser.get(self.server_url + reverse("index"))
         self.assertEqual(self._history(), [])
+
+    def test_a_tapped_bundle_opens_the_bundle_and_stays_first(self):
+        bundle = f"{TESTING_ADDRESS},{OTHER_ADDRESS}"
+        self.browser.get(self.server_url + reverse("index"))
+        self.browser.execute_script(
+            "localStorage.setItem('asastats.recentAddresses', arguments[0]);",
+            json.dumps([TESTING_ADDRESS, bundle]),
+        )
+        self.browser.get(self.server_url + reverse("index"))
+        self.assertEqual(self._history(), [TESTING_ADDRESS, bundle])
+        row = self.browser.find_elements(By.CSS_SELECTOR, ".recent-entry")[1]
+        self.assertEqual(row.text, "Bundle of 2: 2EVG\u2026NSIU, VW55\u2026CBSU")
+
+        with self.wait_for_page_load(timeout=5):
+            row.click()
+
+        hash_ = bundle_from_addresses(f"{TESTING_ADDRESS} {OTHER_ADDRESS}")
+        self.assertTrue(self.browser.current_url.endswith(reverse("bundle", args=[hash_])))
+        self.browser.get(self.server_url + reverse("index"))
+        self.assertEqual(self._history(), [bundle, TESTING_ADDRESS])
 
     def test_an_invalid_entry_is_not_offered(self):
         self.browser.get(self.server_url + reverse("index"))

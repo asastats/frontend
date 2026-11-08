@@ -6910,3 +6910,50 @@ has no `matchMedia`. `app.js` rebuilt; only the main chunk changed
 (`app-main-Bg1n3y9J.js` -> `app-main-iqhNXdYg.js`). The new functional test
 (`test_app_safe_area.py`, CDP `Emulation.setEmulatedMedia`) failed with the old
 `app.js` and passes with the new one. Needs a deploy, no store build.
+
+### website/static/js/index.js, checked bundles kept whole in the app (2026-11-08)
+
+Correction to "checked addresses in the app (2026-10-31)" above. Storing a textarea
+search one entry per address lost the bundle. A reader who came from the Flutter app
+reported it (capacitor handoff, 2026-11-08): "It saves all my wallets, but I can only
+click on one and then the others disappear… I don't want to have to copy and paste every
+wallet, each time I open the app." The user asked for the old bundles to come back,
+presented however suits best, not necessarily Flutter's way.
+
+- A search of two or more valid entries is stored as **one** entry, joined by commas
+  (`A,B,x.algo`), with repeats in it dropped. One valid entry is stored as before. The
+  separate addresses are no longer stored as well, which would fill the 20 slots.
+- `isRememberable` accepts such a bundle only when every part is an address or `.algo`
+  name, so the read-side filter still drops anything else.
+- Repeats are found by `entryKey` (the parts sorted), so the same bundle entered in
+  another order moves to the top instead of taking a second row. The newer order is kept.
+- The row shows `Bundle of N: ABCD…WXYZ, x.algo, …` in `font-semibold`. `data-entry`
+  holds the whole entry, and a typed fragment of any address finds the bundle. The ✕
+  forgets the whole bundle.
+- Tapping a bundle swaps in the textarea, fills it one entry per line, copies it to the
+  hidden `bundle` field, and clicks Track. Unlike a single row, which only fills the input,
+  one tap opens the bundle. The submit handler then moves the bundle to the top.
+- The server keeps the first `MAX_BUNDLE_SIZE` (5) entries of a longer bundle without an
+  error (`_normalize_collection`), so a longer Flutter bundle opens with its first five.
+- No new CSS classes (`font-semibold` was already in `style.tw.css`).
+
+### wallet/src/app/flutterAddresses.ts, Flutter bundles seeded whole (2026-11-08)
+
+Correction to "seeding from the Flutter app (2026-10-31)" above. A multi-address Flutter
+entry is no longer split. `validEntries` keeps its valid parts as one comma-joined
+bundle, the format `index.js` now stores (entry above).
+
+Installs seeded before this already have the split addresses and `asastats.flutterSeeded`
+set. The native plugin only reads `flutter.address` and never removes it, so the bundles
+can still be read. A second flag, `asastats.flutterBundlesSeeded`, gates the seeding:
+
+- Neither flag set: as before, the app's own entries first, then Flutter's, now with bundles whole.
+- Only the old flag set: just Flutter's **bundles** are added, and they go on **top**.
+  The single entries were copied already, or the reader forgot them with ✕. The bundles
+  go first because they are what such a reader is missing. Below the app's own entries,
+  a full list of 20 would drop them.
+- The split addresses already in such a list stay, because nothing tells them apart
+  from addresses the reader checked alone. ✕ removes them.
+
+`app.js` rebuilt; only the main chunk changed (`app-main-iqhNXdYg.js` ->
+`app-main-g3_QmsOX.js`). Needs a deploy, no store build.

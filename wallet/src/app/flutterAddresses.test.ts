@@ -1,10 +1,12 @@
 import { Capacitor } from "@capacitor/core";
 
 import {
+  BUNDLES_KEY,
   FlutterData,
   RECENT_KEY,
   SEEDED_KEY,
   installFlutterAddresses,
+  isBundle,
   mergeEntries,
   seedFlutterAddresses,
   validEntries,
@@ -22,20 +24,24 @@ const B = "VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU";
 const stored = () => JSON.parse(localStorage.getItem(RECENT_KEY) ?? "null");
 
 describe("validEntries", () => {
-  it("splits multi-address strings and keeps addresses and .algo names", () => {
-    expect(validEntries([`${A},${B}`, "x.algo/nfd", 7, "bad", A.toLowerCase(), `${A} y.algo`])).toEqual([
-      A,
-      B,
-      "x.algo/nfd",
-      A,
-      "y.algo",
-    ]);
+  it("keeps a multi-address search as one bundle of its addresses and .algo names", () => {
+    expect(
+      validEntries([`${A},${B}`, "x.algo/nfd", 7, "bad", A.toLowerCase(), `${A} y.algo, bad,${A}`, `bad,${B}`]),
+    ).toEqual([`${A},${B}`, "x.algo/nfd", `${A},y.algo`, B]);
+  });
+});
+
+describe("isBundle", () => {
+  it("tells a bundle from a single entry", () => {
+    expect(isBundle(`${A},${B}`)).toBe(true);
+    expect(isBundle(A)).toBe(false);
   });
 });
 
 describe("mergeEntries", () => {
-  it("puts the app's own first, drops repeats and caps at twenty", () => {
+  it("puts the first list first, drops repeats and caps at twenty", () => {
     expect(mergeEntries(["a.algo", A], [A, "b.algo"])).toEqual(["a.algo", A, "b.algo"]);
+    expect(mergeEntries([`${A},${B}`], [`${B},${A}`, A])).toEqual([`${A},${B}`, A]);
     const many = Array.from({ length: 25 }, (_, i) => `n${i}.algo`);
     expect(mergeEntries([A], many)).toHaveLength(20);
   });
@@ -48,17 +54,37 @@ describe("seedFlutterAddresses", () => {
     read.mockReset().mockResolvedValue({ addresses: [`${A},${B}`, "old.algo"] });
   });
 
-  it("merges Flutter's entries after the app's own and sets the flag", async () => {
+  it("merges Flutter's entries after the app's own and sets both flags", async () => {
     localStorage.setItem(RECENT_KEY, JSON.stringify(["new.algo", B]));
 
     await expect(seedFlutterAddresses()).resolves.toBe(true);
-    expect(stored()).toEqual(["new.algo", B, A, "old.algo"]);
+    expect(stored()).toEqual(["new.algo", B, `${A},${B}`, "old.algo"]);
     expect(localStorage.getItem(SEEDED_KEY)).toBe("1");
+    expect(localStorage.getItem(BUNDLES_KEY)).toBe("1");
   });
 
   it("seeds an empty list", async () => {
     await seedFlutterAddresses();
-    expect(stored()).toEqual([A, B, "old.algo"]);
+    expect(stored()).toEqual([`${A},${B}`, "old.algo"]);
+  });
+
+  it("gives a list seeded before only Flutter's bundles, on top", async () => {
+    localStorage.setItem(SEEDED_KEY, "1");
+    localStorage.setItem(RECENT_KEY, JSON.stringify(["new.algo", A, B]));
+
+    await expect(seedFlutterAddresses()).resolves.toBe(true);
+    expect(stored()).toEqual([`${A},${B}`, "new.algo", A, B]);
+    expect(localStorage.getItem(BUNDLES_KEY)).toBe("1");
+  });
+
+  it("leaves a list seeded before alone when Flutter saved no bundle", async () => {
+    localStorage.setItem(SEEDED_KEY, "1");
+    localStorage.setItem(RECENT_KEY, JSON.stringify(["new.algo"]));
+    read.mockResolvedValue({ addresses: [A, "old.algo"] });
+
+    await expect(seedFlutterAddresses()).resolves.toBe(true);
+    expect(stored()).toEqual(["new.algo"]);
+    expect(localStorage.getItem(BUNDLES_KEY)).toBe("1");
   });
 
   it("runs only once", async () => {
@@ -76,6 +102,7 @@ describe("seedFlutterAddresses", () => {
     await expect(seedFlutterAddresses()).resolves.toBe(false);
     expect(read).not.toHaveBeenCalled();
     expect(localStorage.getItem(SEEDED_KEY)).toBeNull();
+    expect(localStorage.getItem(BUNDLES_KEY)).toBeNull();
   });
 
   it("leaves the flag unset when the read fails", async () => {
@@ -104,12 +131,12 @@ describe("seedFlutterAddresses", () => {
   it("replaces a stored list it cannot read", async () => {
     localStorage.setItem(RECENT_KEY, "{");
     await seedFlutterAddresses();
-    expect(stored()).toEqual([A, B, "old.algo"]);
+    expect(stored()).toEqual([`${A},${B}`, "old.algo"]);
 
     localStorage.clear();
     localStorage.setItem(RECENT_KEY, JSON.stringify({ a: 1 }));
     await seedFlutterAddresses();
-    expect(stored()).toEqual([A, B, "old.algo"]);
+    expect(stored()).toEqual([`${A},${B}`, "old.algo"]);
   });
 
   it("returns false when storage is unavailable", async () => {
