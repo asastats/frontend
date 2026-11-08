@@ -66,8 +66,9 @@ export function syncStatusBar(doc: Document = document): void {
 }
 
 /**
- * Sync now, when theme.js switches the theme (`data-theme` on `<html>`), and when
- * the page is shown again: Back restores it from the back-forward cache with no script rerun.
+ * Sync now, when theme.js switches the theme (`data-theme` on `<html>`), when
+ * the page is shown again (Back restores it from the back-forward cache with no script rerun),
+ * and when the phone switches light/dark: the default theme follows it with no `data-theme` change.
  *
  * @param doc - the document.
  * @returns the observer, for tests.
@@ -76,6 +77,8 @@ export function installStatusBar(doc: Document = document): MutationObserver {
   syncStatusBar(doc);
   const observer = new MutationObserver(() => syncStatusBar(doc));
   observer.observe(doc.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  (doc.defaultView ?? window).addEventListener("pageshow", () => syncStatusBar(doc));
+  const view = doc.defaultView ?? window;
+  view.addEventListener("pageshow", () => syncStatusBar(doc));
+  view.matchMedia?.("(prefers-color-scheme: dark)").addEventListener("change", () => syncStatusBar(doc));
   return observer;
 }

@@ -435,6 +435,18 @@ class AppStatusBarAfterApiPageTest(ApiBackLinkMixin, SafeAreaTestCase):
 
         self._wait_for_style("DARK")
 
+    def test_phone_switching_to_dark_mode_syncs_the_status_bar(self):
+        # The default theme follows the phone with no data-theme change (mobile CI, 2026-11-08).
+        self.browser.execute_script("localStorage.removeItem('theme');")
+        media = "Emulation.setEmulatedMedia"
+        self.browser.execute_cdp_cmd(media, {"features": [{"name": "prefers-color-scheme", "value": "light"}]})
+        self._open(reverse("faq"))
+        self._wait_for_style("LIGHT")
+
+        self.browser.execute_cdp_cmd(media, {"features": [{"name": "prefers-color-scheme", "value": "dark"}]})
+
+        self._wait_for_style("DARK")
+
 
 class BrowserSafeAreaTest(ApiBackLinkMixin, SafeAreaTestCase):
     """A browser on a phone with the same insets gets the plain website."""

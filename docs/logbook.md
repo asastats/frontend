@@ -6896,3 +6896,17 @@ The test checks the key, not a cached response, because under `automated_tests` 
 the CSRF cookie again, and Django's `UpdateCacheMiddleware` never caches a response that sets a cookie
 while varying on Cookie. A test client request is therefore never cached, and a client-level test
 passed with the fix removed.
+
+### wallet/src/app/statusBar.ts: resync when the phone switches light/dark (2026-11-08)
+
+Found by the mobile repository's new Appium test
+(`test_system_dark_mode_keeps_the_status_bar_readable`, Functional Android run of
+2026-11-08): with no saved theme, the site's default theme follows the phone, so
+switching the phone to dark mode darkened the page with no `data-theme` change and no
+`pageshow`. Nothing resynced, and the status bar kept dark icons ("LIGHT") over a
+dark page. `installStatusBar` now also listens to
+`matchMedia('(prefers-color-scheme: dark)')` changes. Optional chaining because jsdom
+has no `matchMedia`. `app.js` rebuilt; only the main chunk changed
+(`app-main-Bg1n3y9J.js` -> `app-main-iqhNXdYg.js`). The new functional test
+(`test_app_safe_area.py`, CDP `Emulation.setEmulatedMedia`) failed with the old
+`app.js` and passes with the new one. Needs a deploy, no store build.

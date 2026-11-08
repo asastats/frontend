@@ -75,6 +75,24 @@ describe("installStatusBar", () => {
     observer.disconnect();
   });
 
+  it("syncs when the phone switches between light and dark", () => {
+    let onChange: () => void = () => undefined;
+    const query = { addEventListener: jest.fn((_type: string, listener: () => void) => { onChange = listener; }) };
+    window.matchMedia = jest.fn().mockReturnValue(query);
+    try {
+      document.body.style.backgroundColor = "rgb(255, 255, 255)";
+      const observer = installStatusBar(document);
+      expect(window.matchMedia).toHaveBeenCalledWith("(prefers-color-scheme: dark)");
+      expect(query.addEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+      document.body.style.backgroundColor = "rgb(0, 0, 0)";
+      onChange();
+      expect(StatusBar.setStyle).toHaveBeenLastCalledWith({ style: Style.Dark });
+      observer.disconnect();
+    } finally {
+      delete (window as { matchMedia?: unknown }).matchMedia;
+    }
+  });
+
   it("listens on the global window for a document without a view", () => {
     const detached = document.implementation.createHTMLDocument();
     const observer = installStatusBar(detached);
