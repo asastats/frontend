@@ -6957,3 +6957,18 @@ can still be read. A second flag, `asastats.flutterBundlesSeeded`, gates the see
 
 `app.js` rebuilt; only the main chunk changed (`app-main-iqhNXdYg.js` ->
 `app-main-g3_QmsOX.js`). Needs a deploy, no store build.
+
+## deploy/roles/postgresql/templates/pg_backup_rotated.sh: weekly and monthly backups never ran (2026-11-09)
+
+Found by againer's restore drill (againer `docs/logbook.md`, "deploy/roles/postgresql/:
+backup and restore drill"), which uses a copy of this script. `HOUR_OF_DAY` comes
+from `date +%H`, which is zero-padded ("04"), and the weekly and monthly checks
+compared it as a string with `= 4` and `= 3`. Those never match, so in those
+slots the script fell through to an hourly dump. Only the daily slot (19)
+worked, because it has two digits. Retention on the servers was therefore 24
+hours of hourly dumps plus 8 daily ones, never the weekly (5 weeks) or monthly
+copies. The comparisons are now `-eq` (test's `-eq` reads "08" as decimal).
+Checked with a stubbed `date`: Friday 04:00 makes a `-weekly` folder, the 1st at
+03:00 a `-monthly` one, any other hour an hourly one. Takes effect on the next
+provisioning run that copies the backup files (`postgresql` role, backup tasks).
+The servers' backup folders hold no weekly or monthly copies until then.
