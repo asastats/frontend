@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import pytest
-from django.conf import settings
+from django.template.loader import render_to_string
 from django.test import Client, RequestFactory, override_settings
 from django.urls import reverse
 
@@ -262,7 +262,7 @@ class TestCoreAppClientBaseTemplate:
 
     def test_core_appclient_every_page_knowing_app_client_has_the_safe_area(self):
         # 500, 401, 503: rendered with no APP_CLIENT, so the snippet could not apply.
-        root = Path(settings.BASE_DIR) / "templates"
+        root = Path(__file__).parents[2] / "templates"
         for path in root.rglob("*.html"):
             source = path.read_text()
             if "<html" in source.lower() and "APP_CLIENT" in source:
@@ -689,3 +689,25 @@ class TestCoreAppClientIndexFocus:
 
     def test_core_appclient_index_address_autofocused_in_a_browser(self):
         assert "autofocus" in self._field(BROWSER_UA)
+
+
+class TestCoreAppClientPullRefresh:
+    """templates/snippets/app_pull_refresh.html on the address pages."""
+
+    SNIPPET = "snippets/app_pull_refresh.html"
+
+    def test_core_appclient_pull_refresh_in_app_mode(self):
+        html = render_to_string(self.SNIPPET, {"APP_CLIENT": parse_app_client(IOS_UA)})
+
+        assert "/static/js/pullrefresh.js" in html
+        assert "#pull-refresh" in html
+
+    def test_core_appclient_pull_refresh_not_in_a_browser(self):
+        assert render_to_string(self.SNIPPET, {"APP_CLIENT": None}).strip() == ""
+
+    @pytest.mark.parametrize("name", ["address.html", "address_dynamic.html"])
+    def test_core_appclient_pull_refresh_on_both_address_designs(self, name):
+        source = (Path(__file__).parents[2] / "templates" / name).read_text()
+
+        # After address.js: pullrefresh.js calls its reloadPage.
+        assert source.index("js/address.js") < source.index(self.SNIPPET)

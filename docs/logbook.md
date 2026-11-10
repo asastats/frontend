@@ -6972,3 +6972,76 @@ Checked with a stubbed `date`: Friday 04:00 makes a `-weekly` folder, the 1st at
 03:00 a `-monthly` one, any other hour an hourly one. Takes effect on the next
 provisioning run that copies the backup files (`postgresql` role, backup tasks).
 The servers' backup folders hold no weekly or monthly copies until then.
+
+## website/static/js/pullrefresh.js, website/templates/snippets/app_pull_refresh.html: pull down to refresh on the address pages (2026-11-10)
+
+The owner asked for pull-to-refresh on the address page in the app. Neither
+WKWebView nor Android's WebView has it built in (Chrome's comes from the browser,
+not from the WebView), so a pull did nothing; on iOS the page only bounced.
+
+**Built in the page, not in the app.** Two ways were weighed. A native control
+(`UIRefreshControl` on the WebView's scroll view on iOS, `SwipeRefreshLayout` on
+Android) looks exactly like the system's. But it needs a store build and review
+on both platforms. It also acts on every page unless the native code checks the
+address, and on Android it fights with boxes inside the page that scroll on
+their own. The same trade-off left out the iOS swipe-back gesture on 2026-11-07.
+The script ships with a deploy and can be tuned after readers try it.
+
+**App only, both address designs.** Two gates: the snippet renders nothing
+without `APP_CLIENT`, and the script returns at once without `in-app` (which is
+also what makes it testable under Jest). App pages have their own `cache_page`
+entries (`app_cache_prefix`), so a browser never gets the app's HTML. Bundle
+pages use the same templates, so they have it too.
+
+**The reload is `address.js`'s `reloadPage`.** It records the open sections
+first, as the auto-refresh does, so the reader comes back to what they had open.
+That is why the snippet comes after `address.js` in both templates;
+`core/tests/test_appclient.py` asserts the order. Without `reloadPage` the script
+falls back to `location.reload()`. The page is cached for `CACHE_TTL_ADDRESS`
+(60 s): a pull within a minute of the last render gets the same figures. That
+matches the server's refresh period and the auto-refresh's minute, and was left as is.
+
+**When a pull starts.** One finger, the page at the very top (`scrollY <= 0`;
+iOS goes negative while bouncing), no open `<dialog>`, not on a form field, and
+not inside a box that is itself scrolled down (the pull belongs to that box).
+The first move must be downward and more down than sideways, or it is a scroll
+or a swipe. A second finger, an upward first move or the page scrolling cancels
+the pull. The listeners are passive and never call `preventDefault`: the page
+keeps scrolling smoothly, and on iOS the system bounce stays visible under the indicator.
+
+**Numbers.** The indicator moves half as far as the finger (`DAMPING` 0.5), is
+ready at 64 px (128 px of finger travel, close to UIKit's feel) and stops at
+96 px. These were picked by eye, not measured on a phone.
+
+**Indicator.** A round button with a circular arrow, in the theme's colours. It
+turns `--color-primary` when ready and spins after release until the page goes.
+It sits at `z-index` 9998, under the safe-area strip (9999), so it slides out
+from behind the strip. `dragging` turns the transition off so it follows the
+finger. `pageshow` clears it, so a page restored from the back-forward cache
+does not keep spinning. The style is inline in the snippet like the safe area,
+so no Tailwind rebuild was needed. CSP allows inline styles, not inline scripts,
+hence the separate file.
+
+**Tests.** Jest `javascript_tests/pullrefresh.test.js` (100 %). Functional
+`functional_tests/test_app_pull_refresh.py` sends real touches through CDP
+`Input.dispatchTouchEvent`. A long pull reloads and keeps the open section; a
+short one does not; a pull lower down the page does not; a browser gets nothing.
+Both the reload test and the scrolled-page test were run without the feature
+and failed. Not tried on a phone: how it feels next to the iOS bounce, and
+Android's stretch overscroll, are the things to look at.
+
+## website/core/tests/test_appclient.py: the every-page safe-area check scans nothing (2026-11-10)
+
+Found while adding the pull-refresh tests.
+`test_core_appclient_every_page_knowing_app_client_has_the_safe_area` walks
+`Path(settings.BASE_DIR) / "templates"`. `BASE_DIR` is `website/config`, and
+`website/config/templates` does not exist, so `rglob` yields nothing and the test
+passes without checking anything. Not changed (not asked); the pull-refresh
+test uses `Path(__file__).parents[2] / "templates"`.
+
+**Correction, 2026-11-10 (owner asked for the fix):** the test now walks
+`Path(__file__).parents[2] / "templates"`, the real template folder. It scans
+`base.html` and `404.html`, the two pages that build `<html>` and know
+`APP_CLIENT`. Both include the snippet, so it passes. With the include taken
+out of `404.html` it failed, so it now checks something. The `settings` import
+it used is gone.

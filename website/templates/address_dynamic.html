@@ -236,6 +236,7 @@
 {% block otherfooter %}
 {% comment %} No `chart.min.js` here: this design draws its own charts. {% endcomment %}
 <script src="{% static 'js/address.js' %}"></script>
+{% include "snippets/app_pull_refresh.html" %}
 <script src="{% static 'js/showmore.js' %}"></script>
 <script src="{% static 'js/pins.js' %}"></script>
 <script src="{% static 'js/dynamic.js' %}"></script>
