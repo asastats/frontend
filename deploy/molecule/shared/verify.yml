@@ -63,6 +63,14 @@
         fail_msg: "Gunicorn service file not found at /etc/systemd/system/gunicorn-{{ env_name }}.service"
         success_msg: "Gunicorn service file found"
 
+    - name: Assert openresty, not the distribution nginx, starts at boot
+      ansible.builtin.assert:
+        that:
+          - "ansible_facts.services['openresty.service'].status == 'enabled'"
+          - "ansible_facts.services.get('nginx.service', {}).get('status') != 'enabled'"
+        fail_msg: "openresty is not enabled, or nginx is enabled too (they race for the ports at boot)"
+        success_msg: "openresty is enabled and nginx is not"
+
     - name: Assert the Gunicorn service is running and enabled
       ansible.builtin.assert:
         that:

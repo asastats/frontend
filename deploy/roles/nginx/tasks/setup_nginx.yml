@@ -87,9 +87,10 @@
   notify: Restart openresty
   tags: [nginx-conf]
 
-- name: Enable nginx
+# openresty.service runs this nginx; both enabled race for the ports at boot (logbook, 2026-11-11).
+- name: Keep the distribution nginx service disabled at boot
   ansible.builtin.systemd:
     name: nginx
-    enabled: true
+    enabled: false
   become: true
   tags: [nginx-conf]

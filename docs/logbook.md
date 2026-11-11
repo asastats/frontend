@@ -7125,3 +7125,30 @@ Takes effect with the next provisioning run that runs projectsetup and nginx
 **Correction, 2026-11-11:** the render needs `create-scripts` as well. That task
 writes `rendererrorpages.sh` and is not tagged `update-project-code`. A tagged
 run is `--tags create-scripts,update-project-code,nginx-snippets`; a full run needs no tags.
+
+## deploy/roles/nginx/tasks/setup_nginx.yml, setup_openresty.yml: openresty, not nginx, starts at boot (2026-11-11)
+
+After the 2026-11-11 reboot of liveserver, `nginx.service` held ports 80/443 and
+`openresty.service` kept failing with "Address already in use". Both units were
+enabled: this role's "Enable nginx" task enabled the distribution unit, and
+openresty was enabled by its package preset. Whichever started first at boot
+won. A hand-made `/etc/systemd/system/nginx.service.d/override.conf` on the
+server (no repo creates it) makes `nginx.service` run the OpenResty binary with
+`pid /run/nginx.pid`, so the site kept working. But every deploy handler (this
+repo's `nginx` and `projectsetup` roles, the backend's `apisite`) reloads or
+restarts `openresty`, and the first deploy after the reboot failed at
+"Reload openresty". The owner switched by hand: `systemctl disable nginx`, then
+`stop nginx && start openresty`.
+
+The role now disables `nginx` at boot (`setup_nginx.yml`) and enables
+`openresty` (`setup_openresty.yml`, after its override is written, because
+OpenResty is installed after `setup_nginx.yml` runs). Neither task stops or
+starts anything, so a deploy does not take the site down; starting is left to
+the "Restart openresty" handler as before. Molecule's verify asserts openresty
+is enabled and nginx is not. Not run: Molecule runs only in GitHub Actions.
+
+**Correction to "2026-09-27 — OpenResty/Lua runtime rationale" under
+`deploy/roles/nginx/tasks/setup_openresty.yml`:** the role overrides
+`openresty.service` (`nginx_service_override.conf` →
+`openresty.service.d/override.conf`), not `nginx.service`. The deploy repos use
+the `openresty` unit, not `nginx`. Believed the other way round until 2026-11-11.
