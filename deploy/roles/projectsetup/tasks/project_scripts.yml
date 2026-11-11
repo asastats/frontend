@@ -9,6 +9,7 @@
   loop:
     - migrate
     - collectstatic
+    - rendererrorpages
     - clearsessions
     - assetfeedbackpurge
     - syncholdings
@@ -81,6 +82,17 @@
   changed_when: "'0 static files copied to' not in projectsetup_collectstatic_command.stdout"
   tags: [project-setup, run-project-scripts, update-project-code]
   # See docs/logbook.md#deployrolesprojectsetuptasksproject_scriptsyml
+
+# nginx serves these files for its own error pages (site_server_block.conf).
+- name: Render the error pages nginx serves
+  ansible.builtin.command: ./rendererrorpages.sh
+  args:
+    chdir: "{{ site_path }}/scripts/"
+  become: true
+  become_user: "{{ webapp_user }}"
+  register: projectsetup_rendererrorpages_command
+  changed_when: "not projectsetup_rendererrorpages_command.stdout.startswith('0 error pages')"
+  tags: [project-setup, run-project-scripts, update-project-code]
 
 - name: Ensure SHELL variable is present in crontab
   ansible.builtin.cron:

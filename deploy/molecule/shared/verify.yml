@@ -63,12 +63,13 @@
         fail_msg: "Gunicorn service file not found at /etc/systemd/system/gunicorn-{{ env_name }}.service"
         success_msg: "Gunicorn service file found"
 
-    - name: Assert the Gunicorn service is running
+    - name: Assert the Gunicorn service is running and enabled
       ansible.builtin.assert:
         that:
           - "ansible_facts.services['gunicorn-' + env_name + '.service'].state == 'running'"
-        fail_msg: "Gunicorn service is not running"
-        success_msg: "Gunicorn service is running"
+          - "ansible_facts.services['gunicorn-' + env_name + '.service'].status == 'enabled'"
+        fail_msg: "Gunicorn service is not running or not enabled"
+        success_msg: "Gunicorn service is running and enabled"
 
     - name: Fetch the Django about page from nginx to verify the app responds
       ansible.builtin.uri:
@@ -84,6 +85,23 @@
           - "'<html' in verify_about.content.lower()"
         fail_msg: "Nginx did not return the Django about HTML page."
         success_msg: "Nginx served the Django about page."
+
+    - name: Fetch the error page nginx serves for a 502
+      ansible.builtin.uri:
+        url: "http://localhost/500.html"
+        return_content: true
+        status_code: [200]
+      register: verify_error_page
+      changed_when: false
+
+    - name: Ensure the error page is rendered, not a raw template
+      ansible.builtin.assert:
+        that:
+          - "'Internal server error' in verify_error_page.content"
+          - "'WEBSITE_URL' not in verify_error_page.content"
+          - "'snippets/error_style.html' not in verify_error_page.content"
+        fail_msg: "nginx served /500.html with template tags left in it."
+        success_msg: "nginx served the rendered /500.html."
 
     - name: Verify a collected static asset is served
       ansible.builtin.uri:

@@ -7045,3 +7045,83 @@ test uses `Path(__file__).parents[2] / "templates"`.
 `APP_CLIENT`. Both include the snippet, so it passes. With the include taken
 out of `404.html` it failed, so it now checks something. The `settings` import
 it used is gone.
+
+## deploy/roles/gunicorn/tasks/main.yml, deploy/roles/redis/tasks/web_cache.yml, deploy/roles/projectsetup/tasks/project_services.yml: units kept enabled on every run (2026-11-11)
+
+After the owner rebooted both servers on 2026-11-11, www answered 502: nginx was
+up and gunicorn was not. `systemctl is-enabled gunicorn-production_website` on
+liveserver said `disabled`, and the boot journal had no lines for the unit
+before the owner's manual `systemctl start` at 06:57. It was simply never
+started at boot.
+
+These three units were enabled only by the handler their template task
+notifies. A handler runs only when the unit file changes, so once the file
+existed, no provisioning run looked at whether the unit was still enabled. How
+production's gunicorn came to be disabled is not known (a manual `disable`, or
+a unit installed before the handler enabled it); the role could not have
+noticed either way. Each role now has a task that sets `enabled: true` on every
+run. It sets no `state`, so when the service starts or restarts is unchanged:
+the handlers still do that. Molecule's verify now asserts gunicorn is enabled as
+well as running (the web cache was already checked). Not run: Molecule runs in
+GitHub Actions only.
+
+The odd-looking 502 page is a separate, older issue: nginx's `error_page 500 502 504`
+serves `templates/500.html` as a file, and since `708f415` (2026-08-23) that file
+is a Django template, so its `{{ }}` and `{% include %}` show raw. Not changed.
+
+**Correction, 2026-11-11 (owner):** gunicorn was disabled by a manual switch on
+the server, not by anything the roles did or failed to do. The three
+"keep enabled" tasks were not needed and the owner removed them; the handlers
+alone enable the units again. Molecule's assertion that gunicorn is enabled as
+well as running stays.
+
+**Correction, 2026-11-11, later (owner):** the gunicorn and permissions-updater
+tasks are back, now as "Ensure … is running and enabled" (`state: started`,
+`enabled: true`): a provisioning run also starts a unit someone stopped by
+hand, not only one left disabled. They run after the code, venv and migrations
+are in place (gunicorn role after projectsetup; `project_services.yml` last in
+projectsetup), and the handlers still restart on a unit change. The web-cache
+Redis task was not restored.
+
+## website/core/management/commands/rendererrorpages.py, deploy/roles/nginx/templates/site_server_block.conf: nginx serves rendered error pages (2026-11-11)
+
+After the 2026-11-11 reboot, the 502 page showed `{% include "snippets/error_style.html" %}`
+as text, with no styling. nginx's `error_page` locations have always served
+`404.html`, `403_csrf.html`, `500.html` and `503r.html` straight from
+`templates/`, unrendered. Until `708f415` (2026-08-23) that was invisible: the only tags
+were inside attributes (`content=`, `href=`, `alt=`) and the CSS was inline, so
+the page looked right. The only flaw was that the logo and button linked to the
+literal `{{ WEBSITE_URL }}`. `708f415` moved the CSS into an `{% include %}`.
+Served raw, that tag is text and the page has no style. The nginx config was
+not wrong for years; it was the change to the template that made raw serving
+show.
+
+**Fix:** `manage.py rendererrorpages` renders the four pages with the context
+`custom_server_error` uses (`WEBSITE_URL`, no request, so no app parts in
+`404.html`) into `settings.ERROR_PAGES_ROOT`. That is `STATIC_ROOT / "errorpages"`, an
+existing directory, at the owner's request. The projectsetup role runs it right
+after `collectstatic` (which does not `--clear`, and runs first anyway), and
+the four nginx locations use `root {{ site_path }}/static/errorpages/`.
+projectsetup runs before nginx in the playbook, so on a first provisioning the
+files exist before nginx points at them. Exact `location =` matches win over
+`/static`, so these pages get no cache headers from the static locations. They
+are also reachable at `/static/errorpages/*.html`, which is harmless.
+
+The command writes only pages whose HTML changed (atomically, mode 0644 so
+nginx can read whatever the web user's umask) and prints
+"N error pages written to …". The deploy's `changed_when` reads that line.
+`core/tests/test_commands.py` asserts the page list equals the nginx config's
+`location = /….html` entries, so a page added to one and not the other fails.
+Molecule's verify fetches `/500.html` from nginx and fails if template names are
+left in it. Not run: Molecule runs only in GitHub Actions.
+
+Rejected: putting the CSS back inline in `500.html` (owner chose rendering).
+That would have copied the palette again, and `404.html`'s `{% if APP_CLIENT %}`
+parts would still show raw when nginx serves a 404 itself.
+
+Takes effect with the next provisioning run that runs projectsetup and nginx
+(the `update-project-code` tag covers the render, but the nginx template needs the nginx role).
+
+**Correction, 2026-11-11:** the render needs `create-scripts` as well. That task
+writes `rendererrorpages.sh` and is not tagged `update-project-code`. A tagged
+run is `--tags create-scripts,update-project-code,nginx-snippets`; a full run needs no tags.

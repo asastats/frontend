@@ -299,6 +299,8 @@ STATICFILES_DIRS = [
     BASE_DIR.parent / "static",
 ]
 STATIC_ROOT = BASE_DIR.parent.parent.parent / "static"
+#: Error pages rendered by `rendererrorpages` for nginx to serve as files.
+ERROR_PAGES_ROOT = STATIC_ROOT / "errorpages"
 
 # Static files are served under a content-hashed name in production, so a
 # changed file is a changed URL and can be cached indefinitely. This replaces

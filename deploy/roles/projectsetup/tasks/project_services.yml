@@ -9,3 +9,12 @@
   become: true
   notify: "Enable and restart permissionsupdater"
   tags: [permissionsupdater, project-services]
+
+- name: Ensure permissions updater is running and enabled
+  ansible.builtin.systemd:
+    name: "permissionsupdater-{{ env_name }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  become: true
+  tags: [permissionsupdater, project-services]
