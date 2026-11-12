@@ -54,6 +54,7 @@ PACT_POOLS = (
 #: A farm has to be listed before it opens: unlisted, staking reads as selling.
 PACT_FARMS = (
     (3684485531, 3736990647, "staked", "total_staked"),
+    (3684485531, 3767131033, "staked", "total_staked"),
     (3684485531, 3689996789, "Staked", "TotalStaked"),
     (2757667448, 2966663202, "Staked", "TotalStaked"),
     (1129173576, 1140566471, "Staked", "TotalStaked"),

@@ -7152,3 +7152,7 @@ is enabled and nginx is not. Not run: Molecule runs only in GitHub Actions.
 `openresty.service` (`nginx_service_override.conf` →
 `openresty.service.d/override.conf`), not `nginx.service`. The deploy repos use
 the `openresty` unit, not `nginx`. Believed the other way round until 2026-11-11.
+
+## website/core/permission_providers/holdings.py - `PACT_FARMS`, the fifth farm (2026-11-12)
+
+Pact opened a new ALGO/ASASTATS farm, app 3767131033, on the LP token 3684485531. The discovery bot added it to `_PACT_FACTORY_ASC_APPS` in the dapps repository as `(3684485531, True)`. Read on Mainnet on 2026-11-12: its `input_assets` holds that one asset, its approval program is byte for byte the one of 3736990647 (the factory farm already listed), so the keys are `staked` and `total_staked`. `total_staked` was 0 and no account had opted in, so no holder's timeline had broken yet. Rewards run until 1810125240 (2027-05-12 UTC). The row has to be live before 2026-11-16 UTC: from then on a holder who stakes into an unlisted farm waits 30 days.
