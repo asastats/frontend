@@ -10,6 +10,7 @@ extend-exclude = '''
   | website/nameservice/xchain\.py
   | website/nameservice/anssdk
   | website/permissiondapp
+  | website/votingdapp
   | website/widgets
 )/?$
 '''
@@ -35,6 +36,7 @@ skip_glob = [
     "*/migrations/*",
     "docs/*",
     "*/website/permissiondapp/*",
+    "*/website/votingdapp/*",
     "*/website/widgets/*",
 ]
 
@@ -46,6 +48,7 @@ line-length = 90
 extend-exclude = [
     "website/nameservice/anssdk",
     "website/permissiondapp",
+    "website/votingdapp",
     "website/widgets",
 ]
 

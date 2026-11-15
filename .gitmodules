@@ -4,3 +4,6 @@
 [submodule "website/widgets"]
 	path = website/widgets
 	url = https://github.com/asastats/widgets.git
+[submodule "website/daovoting"]
+	path = website/votingdapp
+	url = https://github.com/asastats/voting-dapp.git
