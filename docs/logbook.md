@@ -7156,3 +7156,33 @@ the `openresty` unit, not `nginx`. Believed the other way round until 2026-11-11
 ## website/core/permission_providers/holdings.py - `PACT_FARMS`, the fifth farm (2026-11-12)
 
 Pact opened a new ALGO/ASASTATS farm, app 3767131033, on the LP token 3684485531. The discovery bot added it to `_PACT_FACTORY_ASC_APPS` in the dapps repository as `(3684485531, True)`. Read on Mainnet on 2026-11-12: its `input_assets` holds that one asset, its approval program is byte for byte the one of 3736990647 (the factory farm already listed), so the keys are `staked` and `total_staked`. `total_staked` was 0 and no account had opted in, so no holder's timeline had broken yet. Rewards run until 1810125240 (2027-05-12 UTC). The row has to be live before 2026-11-16 UTC: from then on a holder who stakes into an unlisted farm waits 30 days.
+
+## website/api/vestige.py, website/api/urls_vestige.py - Vestige-compatible current prices (2026-11-16)
+
+Vestige closes its services on 2026-12-31 and ASA Stats said publicly that it may help builders with a price API. `GET /api/vestige/assets/price` is Vestige's v4 `GET /assets/price` under another base URL, so a builder changes `https://api.vestigelabs.org` to `https://www.asastats.com/api/vestige` and nothing else. The one developer who had answered by today calls exactly this, one asset in USDC, "to get current price of the asset". The plan and the evidence are in the workspace's `priceapi/HANDOFF.md` (section 9) and the responses saved from Vestige on 2026-11-15 in `priceapi/vestige/`, four of which are copied to `api/tests/fixtures/vestige/` because they cannot be fetched again after the closure.
+
+**What "compatible" means here:** the parameters, the bare JSON array in request order, the keys in Vestige's order, the types (floats, never null), zeros for an asset nobody can price, and the refusals: 422 with FastAPI's body for a missing `asset_ids` or a parameter that is not a number, 400 `Invalid asset list`, 406 `Too many assets`. The contract tests compare ours with the saved bodies. The values are ours: the engine's live price (`internal/prices/latest/`, scope `prices:read`), `confidence` 1.0 or 0.0 because we have no such measure, `total_lockup` the units in the pools we price from (0.11 goBTC where Vestige said 2.02). The description in the API docs says all of that.
+
+**Decided by the user:** no key, 60 requests a minute per IP (Vestige allowed 120, burst 180), the `/api/vestige/` prefix on the main host so no DNS or certificate work, denominating assets 0 and 31566704 only. Ours alone: a `network_id` other than 0 and another denominating asset are refused with 400 and a sentence, since what Vestige answered there was never recorded; more than 100 assets is the 406.
+
+**It is not a DRF-shaped API view on purpose.** No authentication classes (a stale `Authorization` header from a wallet must not turn into a 401), JSON only, and refusals built by hand instead of raised, because DRF's exception bodies are not Vestige's. `Access-Control-Allow-Origin: *` is set by the view on every response, refusals and 429 included: several callers are browser wallets, and the site-wide `corsheaders` configuration allows no foreign origin. A GET without custom headers needs no preflight.
+
+**The throttle keys on `X-Real-IP`.** nginx sets that header itself from the peer address, while it appends to `X-Forwarded-For` whatever the client sent, and DRF's default identity is the whole forwarded string when `NUM_PROXIES` is unset, so a caller could reset its count with a made-up header. `X-RateLimit-Limit` and `X-RateLimit-Remaining` are Vestige's header names. Every request counts, refused ones too. In nginx the path falls in no `limit_req` location (those match single-segment paths and address-shaped API reads), so this throttle is the only limit; it needs the Redis cache, and under development's `DummyCache` it never refuses.
+
+**Three seconds of cache** (`VESTIGE_PRICE_CACHE_SECONDS`), keyed on the denomination and the exact list of ids. The user's requirement is that the current price is "absolutely fresh", and the engine reads the collector's live pool cache on every call; three seconds is about one Algorand block, so nothing a caller could have seen is skipped, while many wallets asking for the same asset in the same block cost the engine one request. The engine API has nine workers and every call holds one while it waits. A failure is never cached.
+
+**The schema shows the path with a trailing slash** (`/api/vestige/assets/price/`), which is how drf-spectacular prints the optional slash of the pattern. Both forms are served; Vestige's has none.
+
+**Adding another Vestige path** is a row in `VESTIGE_PATHS`, a view on `VestigeView`, and a saved response in the fixtures. Candles are the likely next.
+
+**Not built:** a higher limit for a caller who sends a token.
+
+## website/functional_tests/test_custom_login.py - `WalletHandoffTest` no longer asserts the Sign in button (2026-11-17)
+
+`test_it_comes_back_when_the_connection_lands` failed for the user and here: three runs of three at first, then about one in six. The failing line was the last one, `auth-button-pera` displayed.
+
+The test stands in for a connection by setting that button's `style.display` to `block` by hand, which is the cue `authmodal.js` watches. But the click on `connect-button-pera` before it starts a real Pera connect, and `wallet/src/walletComponent.ts` rewrites all four buttons on every wallet state change: `authBtn.style.display = isConnected && isActive ? "block" : "none"`. Nothing is connected in the test, so whenever the wallet's state changed after the test's script ran, the button was hidden again before Selenium read it. The dialog had come back on the wallet tab in every failing run (state printed at each step), so the handoff worked and only the test's own stand-in was undone.
+
+First guess, wrong: the dialog's fade-in making the panel "not displayed" to Selenium. Waiting for it changed nothing; the failing wait was the button's, and it timed out after ten seconds.
+
+The assertion on the button is removed. What the test is about, the dialog open again and on the wallet tab, is still asserted. In real use the wallet package reveals the button itself, so there is no race for a reader.

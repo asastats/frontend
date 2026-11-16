@@ -432,6 +432,7 @@ REST_FRAMEWORK = {
         "walletauth-login": "5/min",  # sign-in (per IP)
         "app-auth-redeem": "10/min",  # app sign-in ticket (per IP)
         "app-auth-native": "10/min",  # app native sign-in (per IP)
+        "vestige": "60/min",  # Vestige-compatible prices, no key (per IP)
     },
 }
 

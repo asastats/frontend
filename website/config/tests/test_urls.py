@@ -43,6 +43,14 @@ class TestAsastatsUrls:
         assert isinstance(url, URLResolver)
         assert "api.urls" in str(url.urlconf_name)
 
+    def test_config_urls_vestige_endpoints_precede_the_catch_all(self):
+        url = self._url_from_pattern(r"^api/vestige/")
+        assert isinstance(url, URLResolver)
+        assert "api.urls_vestige" in str(url.urlconf_name)
+        assert urls.urlpatterns.index(url) < urls.urlpatterns.index(
+            self._url_from_pattern(r"^")
+        )
+
     def test_config_urls_widgets_app(self):
         url = self._url_from_pattern(r"^widgets/")
         assert isinstance(url, URLResolver)
@@ -54,7 +62,8 @@ class TestAsastatsUrls:
         assert "core.urls" in str(url.urlconf_name)
 
     def test_config_urls_patterns_count(self):
-        """Twelve since the app's sign-in under `app/auth/` (2026-10-26), eleven
+        """Fourteen since the Vestige-compatible prices under `api/vestige/`
+        (2026-11-16), twelve since the app's sign-in under `app/auth/` (2026-10-26), eleven
         since the app's two `.well-known` documents (2026-10-24), nine
         since the root assets joined: the count is a guard, not a fact.
 
@@ -65,7 +74,7 @@ class TestAsastatsUrls:
         number moves with a reason recorded, rather than being edited to make a
         red test green.
         """
-        assert len(urls.urlpatterns) == 13
+        assert len(urls.urlpatterns) == 14
 
     def test_config_urls_defines_custom_handler500(self):
         assert getattr(urls, "handler500") == "core.views.custom_server_error"

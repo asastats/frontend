@@ -129,6 +129,25 @@ def fetch_price():
     return _request("GET", "/api/v2/price/").json().get("price")
 
 
+def prices_latest(asset_ids, quote):
+    """Return the engine's latest price entry of each asset, in the order given.
+
+    :param asset_ids: Algorand standard asset identifiers, 0 for ALGO
+    :type asset_ids: list
+    :param quote: "algo", "usd" or "eur"
+    :type quote: str
+    :return: list
+    """
+    return _request(
+        "GET",
+        "/api/v2/internal/prices/latest/",
+        params={
+            "asset_ids": ",".join(str(asset_id) for asset_id in asset_ids),
+            "quote": quote,
+        },
+    ).json()["prices"]
+
+
 def fetch_serialized_account(value, addresses="", light=False, permission=0):
     """Return serialized_data for a single address or a bundle.
 

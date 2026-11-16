@@ -326,6 +326,56 @@ SETTINGS_DESCRIPTION = (
     "endpoint that this view supersedes; payload shape is identical."
 )
 
+VESTIGE_TAG = "Vestige compatibility"
+#: Assets priced per request; more is refused with Vestige's 406.
+VESTIGE_MAX_ASSETS = 100
+VESTIGE_MAX_ASSET_ID = 2**64 - 1
+#: About one Algorand block; docs/logbook.md, api/vestige.py.
+VESTIGE_PRICE_CACHE_SECONDS = 3
+VESTIGE_ASSET_PRICES_DESCRIPTION = (
+    "**Moving from Vestige.** This is Vestige's `GET /assets/price` with the "
+    "same parameters, the same response and the same status codes: replace "
+    "`https://api.vestigelabs.org` with `https://www.asastats.com/api/vestige` "
+    "and keep the rest of the URL.\n\n"
+    "No token is needed. Calls are limited per IP address; the limit and what "
+    "is left of it are in the `X-RateLimit-Limit` and `X-RateLimit-Remaining` "
+    "response headers. Browsers may call it from any origin.\n\n"
+    "What differs from Vestige:\n\n"
+    "* `price` is ASA Stats' own current price, calculated from the reserves "
+    "of the asset's on-chain liquidity pools, so the value differs a little "
+    "from the one Vestige gave.\n"
+    "* `confidence` is 1.0 when the asset has a price and 0.0 when it has not.\n"
+    "* `total_lockup` is the amount of the asset in the pools ASA Stats "
+    "prices it from, which is fewer pools than Vestige counted.\n"
+    "* `denominating_asset_id` is 0 (ALGO) or 31566704 (USDC), and "
+    "`network_id` is 0 (Algorand mainnet).\n\n"
+    "An asset that cannot be priced is not an error: it is returned with "
+    "zeros, as Vestige returned it."
+)
+VESTIGE_ASSET_PRICES_PARAMETERS = [
+    OpenApiParameter(
+        name="asset_ids",
+        description="Asset identifiers separated by commas, 0 for ALGO; at most 100.",
+        required=True,
+        type=OpenApiTypes.STR,
+        examples=[OpenApiExample("goBTC, USDC and ALGO", value="386192725,31566704,0")],
+    ),
+    OpenApiParameter(
+        name="network_id",
+        description="Only 0, Algorand mainnet.",
+        required=False,
+        type=OpenApiTypes.INT,
+        default=0,
+    ),
+    OpenApiParameter(
+        name="denominating_asset_id",
+        description="Asset the prices are in: 0 for ALGO or 31566704 for USDC.",
+        required=False,
+        type=OpenApiTypes.INT,
+        default=0,
+    ),
+]
+
 SPECTACULAR_DESCRIPTION = (
     r"""By using the ASA Stats API, developers and enthusiasts can """
     r"""create apps and websites that take advantage of all the capabilities offered """
@@ -351,6 +401,9 @@ You can get access to our API if you:
     r"""Governance staking program</a> before June, 2024
 * <a href="https://github.com/asastats/channel/wiki/GovernorCandidates#description">"""
     r"""have contributed</a> to the ASA Stats project
+
+The current prices under __Vestige compatibility__ are the exception: they need
+no token.
 
 __What your tier includes:__
 

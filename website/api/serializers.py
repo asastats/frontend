@@ -8,6 +8,7 @@ from rest_framework.serializers import (
     CharField,
     ChoiceField,
     DecimalField,
+    FloatField,
     IntegerField,
     ListField,
     Serializer,
@@ -730,3 +731,29 @@ class EvaluatedAccountSerializer(Serializer):
     asaitems = AsaItemSerializer(many=True)
     nftcollections = NftCollectionSerializer(many=True)
     notevals = NotevalItemSerializer(many=True)
+
+
+@extend_schema_serializer(component_name="VestigeAssetPrice")
+class VestigeAssetPriceSerializer(Serializer):
+    """Describe one price object of the Vestige-compatible prices, for the schema.
+
+    :var VestigeAssetPriceSerializer.network_id: always 0, Algorand mainnet
+    :type VestigeAssetPriceSerializer.network_id: :class:`IntegerField`
+    :var VestigeAssetPriceSerializer.asset_id: asset identifier, 0 for ALGO
+    :type VestigeAssetPriceSerializer.asset_id: :class:`IntegerField`
+    :var VestigeAssetPriceSerializer.denominating_asset_id: asset the price is in
+    :type VestigeAssetPriceSerializer.denominating_asset_id: :class:`IntegerField`
+    :var VestigeAssetPriceSerializer.price: price of one whole unit, 0.0 if none
+    :type VestigeAssetPriceSerializer.price: :class:`FloatField`
+    :var VestigeAssetPriceSerializer.confidence: 1.0 with a price, 0.0 without
+    :type VestigeAssetPriceSerializer.confidence: :class:`FloatField`
+    :var VestigeAssetPriceSerializer.total_lockup: whole units in the priced pools
+    :type VestigeAssetPriceSerializer.total_lockup: :class:`FloatField`
+    """
+
+    network_id = IntegerField()
+    asset_id = IntegerField()
+    denominating_asset_id = IntegerField()
+    price = FloatField()
+    confidence = FloatField()
+    total_lockup = FloatField()

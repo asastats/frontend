@@ -269,9 +269,10 @@ class WalletHandoffTest(FunctionalTest):
         self._connection_lands()
 
         self.wait_until(self._dialog_open, timeout=10)
-        # ...and on the wallet tab, where Sign in is.
+        # ...and on the wallet tab, where Sign in is. The button itself is not
+        # asserted: the click started a real connect, and the wallet package
+        # hides it again on its next state change (docs/logbook.md).
         self.assertTrue(self.find_elem_by_id("modal-tab-wallet").is_displayed())
-        self.assertTrue(self.find_elem_by_id("auth-button-pera").is_displayed())
 
     def test_it_stays_away_while_nothing_has_connected(self):
         """The cue is a connection, not any activity on the card at all.

@@ -109,6 +109,8 @@ urlpatterns = [
     re_path(r"^app/auth/", include("core.urls_appauth")),
     # walletauth app namespace
     re_path(r"^api/v2/wallet/", include(walletauth_urls)),
+    # Vestige-compatible price endpoints; ahead of the catch-all.
+    re_path(r"^api/vestige/", include("api.urls_vestige")),
     # api app namespace
     re_path(r"^api/v2/", include(api_urls)),
     # allauth

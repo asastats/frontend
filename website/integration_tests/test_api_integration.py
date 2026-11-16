@@ -1,6 +1,5 @@
 """Integration testing module for :py:mod:`api.views` module."""
 
-import os
 import uuid
 from math import isclose
 
@@ -370,6 +369,18 @@ class TestIntegrationNftCollectionIdApiV2(TestSetup):
             assert "id" in collection
 
 
+#: Seven addresses: wider than Asastatser's five, within Cluster's twenty.
+WIDE_BUNDLE_ADDRESSES = (
+    "22H3OXKMTTRPFSBYT3T3ASMR6PP2ZWJQBI45ABQ2BYGJTPV6XFARUVO3MA",
+    "22T47MKF2YHPJVOJN4PKSAD5EPRBWWL4VZ4G6I6XIDFI5FS7OZYYY3PPWU",
+    "24F3WEUNYWDI35KGIVZEA3DLXYD2MRKND7B45HXK5IU5FF6NZJPMXXHECI",
+    "2BDZD6CL3K4O2J2SMU5SOVAGTZSXNNPGBFNSOL26HH4MBUKLR7LSN6SLDQ",
+    "2EG4WVSSNSTDIKYHUM3SI2HM7RPXRZKDMWILNCB5KXUWIU2DFPWEMWRZWM",
+    "2EQJYOEOZK3GYWDTBPHTZHSK25HOY2IUBUKOXQAOA4SRJFL5LSO4NZCRN4",
+    "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU",
+)
+
+
 class TestIntegrationApiTierAddressLimit(TestCase):
     """The per-request address cap, exercised through a real bundle.
 
@@ -386,14 +397,8 @@ class TestIntegrationApiTierAddressLimit(TestCase):
         self.client.credentials(
             HTTP_AUTHORIZATION=f"Bearer {AccessToken.for_user(self.user)}"
         )
-        addresses = [
-            line.split()[0]
-            for line in open(
-                os.path.expanduser("~/claude/live/all-addresses.txt")
-            ).readlines()[:7]
-        ]
-        self.wide = create_bundle(" ".join(addresses))
-        self.narrow = create_bundle(" ".join(addresses[:3]))
+        self.wide = create_bundle(" ".join(WIDE_BUNDLE_ADDRESSES))
+        self.narrow = create_bundle(" ".join(WIDE_BUNDLE_ADDRESSES[:3]))
 
     def tearDown(self):
         self.user.profile.permission = self.original

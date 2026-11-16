@@ -17,6 +17,7 @@ from api.client import (
     fetch_price,
     fetch_serialized_account,
     pnl_state,
+    prices_latest,
     reset_export,
     start_export,
 )
@@ -172,6 +173,17 @@ class TestApiClientFunctions:
         returned = fetch_price()
         assert returned == 0.25
         mocked_request.assert_called_once_with("GET", "/api/v2/price/")
+
+    # # prices_latest
+    def test_api_client_prices_latest_functionality(self, mocker):
+        mocked_request = mocker.patch("api.client._request")
+        mocked_request.return_value.json.return_value = {"quote": "usd", "prices": [1]}
+        assert prices_latest([386192725, 0], "usd") == [1]
+        mocked_request.assert_called_once_with(
+            "GET",
+            "/api/v2/internal/prices/latest/",
+            params={"asset_ids": "386192725,0", "quote": "usd"},
+        )
 
     # # fetch_serialized_account
     def test_api_client_fetch_serialized_account_without_addresses(self, mocker):
