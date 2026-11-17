@@ -7186,3 +7186,9 @@ The test stands in for a connection by setting that button's `style.display` to 
 First guess, wrong: the dialog's fade-in making the panel "not displayed" to Selenium. Waiting for it changed nothing; the failing wait was the button's, and it timed out after ten seconds.
 
 The assertion on the button is removed. What the test is about, the dialog open again and on the wallet tab, is still asserted. In real use the wallet package reveals the button itself, so there is no race for a reader.
+
+## website/utils/constants/apiv2.py - VESTIGE_ASSET_PRICES_DESCRIPTION says what the price is (2026-11-17)
+
+The sentence on `price` now says it is the reserve ratio of the asset's on-chain pools before fees, and that it can sit a fraction of a percent from exchange prices.
+
+Why: on production our prices in USDC ran about 0.57% under Vestige's, and Coinbase, Binance and Kraken sided with Vestige. We tried every on-chain valuation the engine has (the reserve ratio, the site's `Carrier.unit_price`, middle prices over the site's pool set) on liveserver at one moment; none closed the gap. Vestige's own `/pools` reserves for USDC/ALGO pool to 12.557 ALGO per USDC, our number, while its price endpoint said 12.484. So the gap is between the on-chain market and exchange-like prices, not a defect in our pools; a reader should be told rather than surprised. Evidence: `priceapi/PROGRESS.md` in the workspace, "Live comparison on liveserver"; the engine side is in `backend/docs/logbook.md` under `engine/prices/live.py`.
