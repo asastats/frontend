@@ -98,8 +98,8 @@ def check_authorization_transaction(profile):
     :type note: str
     :var params: arguments to search transactions Indexer method
     :type params: dict
-    :var results: current set of results
-    :type results: dict
+    :var transactions: all matching payment transactions
+    :type transactions: list
     :var transaction: currently processed transaction
     :type transaction: dict
     :return: str
@@ -112,17 +112,12 @@ def check_authorization_transaction(profile):
         "address": ADMPOOL_ADDRESS,
         "address_role": "receiver",
     }
-    results = search_transactions(params, indexer_client, delay=0.05)
-    while results.get("transactions"):
-        for transaction in results.get("transactions"):
-            if transaction.get("sender") == profile.address and base64_to_utf(
-                transaction.get("note", "")
-            ) in (note, note.upper()):
-                return transaction.get("id")
-
-        results = search_transactions(
-            params, indexer_client, next_page=results.get("next-token"), delay=0.05
-        )
+    transactions = search_transactions(params, indexer_client, delay=0.05)
+    for transaction in transactions:
+        if transaction.get("sender") == profile.address and base64_to_utf(
+            transaction.get("note", "")
+        ) in (note, note.upper()):
+            return transaction.get("id")
 
     return ""
 

@@ -194,44 +194,31 @@ class TestUtilsUserHelpersFunctions:
             "address": ADMPOOL_ADDRESS,
             "address_role": "receiver",
         }
-        next_token1, next_token2 = "next_token1", "next_token2"
-        txns1 = {
-            "transactions": [
-                {
-                    "sender": "address1",
-                },
-                {
-                    "sender": "address2",
-                },
-            ],
-            "next-token": next_token1,
-        }
-        txns2 = {
-            "transactions": [
-                {
-                    "sender": "address3",
-                },
-                {
-                    "sender": "address4",
-                },
-            ],
-            "next-token": next_token2,
-        }
+        txns1 = [
+            {
+                "sender": "address1",
+            },
+            {
+                "sender": "address2",
+            },
+        ]
+        txns2 = [
+            {
+                "sender": "address3",
+            },
+            {
+                "sender": "address4",
+            },
+        ]
         mocked_search = mocker.patch(
             "utils.userhelpers.search_transactions",
-            side_effect=[txns1, txns2, {}],
+            return_value=txns1 + txns2,
         )
         returned = check_authorization_transaction(profile)
         assert returned == ""
         mocked_client.assert_called_once_with()
         profile.address_authorization_note.assert_called_once_with()
-        calls = [
-            mocker.call(params, indexer_client, delay=0.05),
-            mocker.call(params, indexer_client, next_page=next_token1, delay=0.05),
-            mocker.call(params, indexer_client, next_page=next_token2, delay=0.05),
-        ]
-        mocked_search.assert_has_calls(calls, any_order=True)
-        assert mocked_search.call_count == 3
+        mocked_search.assert_called_once_with(params, indexer_client, delay=0.05)
 
     def test_utils_userhelpers_check_authorization_transaction_for_no_note(self, mocker):
         profile = mocker.MagicMock()
@@ -249,42 +236,29 @@ class TestUtilsUserHelpersFunctions:
             "address": ADMPOOL_ADDRESS,
             "address_role": "receiver",
         }
-        next_token1, next_token2 = "next_token1", "next_token2"
-        txns1 = {
-            "transactions": [
-                {
-                    "sender": address,
-                },
-                {
-                    "sender": "address2",
-                },
-            ],
-            "next-token": next_token1,
-        }
-        txns2 = {
-            "transactions": [
-                {
-                    "sender": "address3",
-                },
-                {"sender": address, "note": "dGV4dA=="},
-            ],
-            "next-token": next_token2,
-        }
+        txns1 = [
+            {
+                "sender": address,
+            },
+            {
+                "sender": "address2",
+            },
+        ]
+        txns2 = [
+            {
+                "sender": "address3",
+            },
+            {"sender": address, "note": "dGV4dA=="},
+        ]
         mocked_search = mocker.patch(
             "utils.userhelpers.search_transactions",
-            side_effect=[txns1, txns2, {}],
+            return_value=txns1 + txns2,
         )
         returned = check_authorization_transaction(profile)
         assert returned == ""
         mocked_client.assert_called_once_with()
         profile.address_authorization_note.assert_called_once_with()
-        calls = [
-            mocker.call(params, indexer_client, delay=0.05),
-            mocker.call(params, indexer_client, next_page=next_token1, delay=0.05),
-            mocker.call(params, indexer_client, next_page=next_token2, delay=0.05),
-        ]
-        mocked_search.assert_has_calls(calls, any_order=True)
-        assert mocked_search.call_count == 3
+        mocked_search.assert_called_once_with(params, indexer_client, delay=0.05)
 
     def test_utils_userhelpers_check_authorization_transaction_uppercase(self, mocker):
         profile = mocker.MagicMock()
@@ -302,42 +276,30 @@ class TestUtilsUserHelpersFunctions:
             "address": ADMPOOL_ADDRESS,
             "address_role": "receiver",
         }
-        next_token1, next_token2 = "next_token1", "next_token2"
         transaction_id = "transaction_id"
-        txns1 = {
-            "transactions": [
-                {
-                    "sender": address,
-                },
-                {
-                    "sender": "address2",
-                },
-            ],
-            "next-token": next_token1,
-        }
-        txns2 = {
-            "transactions": [
-                {
-                    "sender": "address3",
-                },
-                {"sender": address, "note": "Tk9URQ==", "id": transaction_id},
-            ],
-            "next-token": next_token2,
-        }
+        txns1 = [
+            {
+                "sender": address,
+            },
+            {
+                "sender": "address2",
+            },
+        ]
+        txns2 = [
+            {
+                "sender": "address3",
+            },
+            {"sender": address, "note": "Tk9URQ==", "id": transaction_id},
+        ]
         mocked_search = mocker.patch(
             "utils.userhelpers.search_transactions",
-            side_effect=[txns1, txns2, {}],
+            return_value=txns1 + txns2,
         )
         returned = check_authorization_transaction(profile)
         assert returned == transaction_id
         mocked_client.assert_called_once_with()
         profile.address_authorization_note.assert_called_once_with()
-        calls = [
-            mocker.call(params, indexer_client, delay=0.05),
-            mocker.call(params, indexer_client, next_page=next_token1, delay=0.05),
-        ]
-        mocked_search.assert_has_calls(calls, any_order=True)
-        assert mocked_search.call_count == 2
+        mocked_search.assert_called_once_with(params, indexer_client, delay=0.05)
 
     def test_utils_userhelpers_check_authorization_transaction_lowercase(self, mocker):
         profile = mocker.MagicMock()
@@ -355,42 +317,30 @@ class TestUtilsUserHelpersFunctions:
             "address": ADMPOOL_ADDRESS,
             "address_role": "receiver",
         }
-        next_token1, next_token2 = "next_token1", "next_token2"
         transaction_id = "transaction_id"
-        txns1 = {
-            "transactions": [
-                {
-                    "sender": address,
-                },
-                {
-                    "sender": "address2",
-                },
-            ],
-            "next-token": next_token1,
-        }
-        txns2 = {
-            "transactions": [
-                {
-                    "sender": "address3",
-                },
-                {"sender": address, "note": "bm90ZQ==", "id": transaction_id},
-            ],
-            "next-token": next_token2,
-        }
+        txns1 = [
+            {
+                "sender": address,
+            },
+            {
+                "sender": "address2",
+            },
+        ]
+        txns2 = [
+            {
+                "sender": "address3",
+            },
+            {"sender": address, "note": "bm90ZQ==", "id": transaction_id},
+        ]
         mocked_search = mocker.patch(
             "utils.userhelpers.search_transactions",
-            side_effect=[txns1, txns2, {}],
+            return_value=txns1 + txns2,
         )
         returned = check_authorization_transaction(profile)
         assert returned == transaction_id
         mocked_client.assert_called_once_with()
         profile.address_authorization_note.assert_called_once_with()
-        calls = [
-            mocker.call(params, indexer_client, delay=0.05),
-            mocker.call(params, indexer_client, next_page=next_token1, delay=0.05),
-        ]
-        mocked_search.assert_has_calls(calls, any_order=True)
-        assert mocked_search.call_count == 2
+        mocked_search.assert_called_once_with(params, indexer_client, delay=0.05)
 
     # # decode_unique_hash
     def test_utils_userhelpers_decode_unique_hash_returns_0_for_wrong_uid(self):

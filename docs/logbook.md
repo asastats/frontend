@@ -7192,3 +7192,9 @@ The assertion on the button is removed. What the test is about, the dialog open 
 The sentence on `price` now says it is the reserve ratio of the asset's on-chain pools before fees, and that it can sit a fraction of a percent from exchange prices.
 
 Why: on production our prices in USDC ran about 0.57% under Vestige's, and Coinbase, Binance and Kraken sided with Vestige. We tried every on-chain valuation the engine has (the reserve ratio, the site's `Carrier.unit_price`, middle prices over the site's pool set) on liveserver at one moment; none closed the gap. Vestige's own `/pools` reserves for USDC/ALGO pool to 12.557 ALGO per USDC, our number, while its price endpoint said 12.484. So the gap is between the on-chain market and exchange-like prices, not a defect in our pools; a reader should be told rather than surprised. Evidence: `priceapi/PROGRESS.md` in the workspace, "Live comparison on liveserver"; the engine side is in `backend/docs/logbook.md` under `engine/prices/live.py`.
+
+## website/utils/userhelpers.py - `check_authorization_transaction` reads a list (2026-11-18)
+
+`/profile/authorize/check/` returned 500 in production (`AttributeError: 'list' object has no attribute 'get'`, gunicorn log of 2026-11-16). `utils.clients.search_transactions` was changed to page through the indexer itself and return the full list of transactions, but this function still treated its result as one indexer page (`results.get("transactions")`, `next-token`, a `next_page=` argument), so every call failed. It now loops over the returned list; the tests mock the list.
+
+Also in that log, `Not Found: /@id/__vite-browser-external:` (2026-11-17 23:42, 2026-11-18 00:24): an internet scanner probing for exposed Vite dev servers with a JavaScript injection payload. We run none, Django answers 404, nothing to fix.
