@@ -90,6 +90,11 @@ describe("walletAdapters", () => {
       expect(manager).toBeInstanceOf(WalletManager);
       expect(manager.wallets.length).toBe(1);
       expect(manager.wallets[0].id).toBe("pera");
+      expect(manager.activeNetwork).toBe("mainnet");
+    });
+
+    it("uses the network a page asks for", () => {
+      expect(createWalletManager([{ id: "pera" }], "testnet").activeNetwork).toBe("testnet");
     });
   });
 

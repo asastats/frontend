@@ -7237,3 +7237,45 @@ files byte for byte so anyone can hash them. Not built here: the vote panel and 
 - Tests: `daovoting/tests/` (fake provider `daovoting.tests.fakes.FakeProvider`, 100 % of the new modules;
   the votingdapp provider tests skip when the submodule is absent) and `functional_tests/test_dao_pages.py`. No
   integration test: the pages do not call the engine, and the integration suite starts the engine.
+
+## wallet/src/voteBridge.ts, wallet/src/voteBootstrap.ts, website/daovoting/panel.py, website/templates/daovoting/_vote_panel.html - the vote panel (2026-11-22)
+
+Step 4 of the DAO voting plan's §3 (workspace `dao-voting/IMPLEMENTATION-PLAN.md` §6): on `/dao/session/<id>/`, a
+signed-in user sees one card per seat they hold and, while voting is open, signs the Voting dApp's `vote` call from it.
+Authentication only decides what the page shows; the on-chain call is the authority, and the card says so to visitors.
+
+- **Which seats.** `panel.linked_seats`: the user's `LinkedAddress` rows with `chain="algorand"` whose address has
+  votes in the Permission dApp. EVM-linked rows are left out on purpose: the seat would be their lsig counterpart,
+  which use-wallet cannot sign for. Primary and secondary links both count: a seat is a fact about the address, and
+  `vote` checks the signer, not the profile.
+- **What a card shows.** Votes (Permission dApp), ASASTATS in the snapshot (the ballot box's `eligible`, the
+  contract's own number), the weight it would get voting now (`min(votes × 10⁶, eligible)`, current votes as the
+  contract reads them again on every vote), a note when the snapshot amount is below the votes' cap, and the seat's
+  current ballot. Venue lines come from the published `snapshot.json` (the engine's `daosnapshot` output,
+  `seats.<address>.venues`) and only when that file's hash matches the session box: a file that differs from what
+  was sealed must not explain the number. Venue keys are shown as written (`gat 1047879402`), except `wallet` and
+  `lp <token>`; the program names live in the engine, not here.
+- **No panel in the `?live=1` partial.** The panel sits outside `id-dao-live`, so the 30-second poll never replaces
+  buttons under a reader's finger; the card's "Your vote" refreshes on the next page load, the ballots table on the
+  next poll (the provider caches ballots for `DAO_CACHE_SECONDS`).
+- **The call.** `voteBridge.buildVoteTransaction`: an app call with the ARC-4 selector and uint64 arguments, the method
+  signature taken from the committed ARC-56 file by `VotingDappProvider.vote_method()` and handed to the page in
+  `data-vote-method`, so a contract change cannot leave a hand-written selector behind. Box references: `s`+id and
+  `v`+id+seat on the dApp, the seat's 32-byte key on the Permission dApp (its `votes_of` box), and the Permission
+  dApp in foreign apps; fee flat at twice the minimum for the inner call. All three match `dapp/network.py::vote`.
+  The encoded transaction carries the dApp's own boxes as index 0 and the Permission box as foreign app 1 (checked
+  by decoding in the test).
+- **Signing.** `castVote` refuses unless the seat is among the connected accounts, then makes it the active account
+  of the wallet holding it. The panel renders "Connect <wallet>" buttons for the wallets `/wallets/` lists *and*
+  use-wallet knows (the list still carries Exodus, which has no adapter). The manager is the panel's own, on
+  `data-network`: `createWalletManager` gained an optional network argument (default mainnet, every other caller
+  unchanged). use-wallet 5 does not persist the active network unless `persistNetwork` is set, so a testnet manager
+  here cannot switch the swap or sign-in pages to testnet. Not tried: whether Pera signs a testnet call while
+  connected in this mode.
+- **`window.asastatsVote`.** The click handler reads it at click time; `initVotePanel` keeps one that is already
+  there. The functional tests install a stub after load and assert what `castVote` was handed.
+- **Bundle.** Rebuilt with `npm run build` (the build of the unchanged sources first reproduced the committed files
+  exactly); `js/bundle.js`, `main` and seven shared chunks changed, the eight replaced chunks are removed. The new
+  algosdk imports (`ABIMethod`, `makeApplicationNoOpTxnFromObject`) moved the shared chunks' contents.
+- **CSS.** `style.tw.css` is pinned and not rebuilt: the template uses only classes that already exist in it
+  (`my-3`, `sm:p-6` and `text-warning` did not, and were replaced).

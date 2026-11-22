@@ -14,7 +14,12 @@ from core.dao_provider import DaoProvider
 from permissiondapp.dapp.helpers import environment_variables
 from permissiondapp.dapp.network import permission_dapp_values_from_boxes
 from votingdapp.dapp.configuration import VOTING_APP_ID, VOTING_APP_ID_TESTNET
-from votingdapp.dapp.helpers import permission_dapp_id
+from votingdapp.dapp.helpers import (
+    ARTIFACTS,
+    DAPP_NAME,
+    permission_dapp_id,
+    read_json,
+)
 from votingdapp.dapp.network import (
     app_global_state,
     session_ballots,
@@ -32,8 +37,10 @@ class VotingDappProvider(DaoProvider):
         self.app_id = (
             VOTING_APP_ID if self.network == "mainnet" else VOTING_APP_ID_TESTNET
         )
+        self.permission_app_id = permission_dapp_id(self.network)
         self.timeout = getattr(settings, "DAO_CACHE_SECONDS", 30)
         self._client = None
+        self._vote_method = None
 
     def _algod(self):
         """Return the algod client for the configured network, built once.
@@ -133,6 +140,20 @@ class VotingDappProvider(DaoProvider):
             return {address: row[0] for address, row in values.items() if row[0] > 0}
 
         return self._cached("seats", read)
+
+    def vote_method(self):
+        """Return `vote`'s ARC-4 signature from the committed ARC-56 file, read once.
+
+        :var spec: the ARC-56 entry of the `vote` method
+        :type spec: dict
+        :return: str
+        """
+        if self._vote_method is None:
+            contract = read_json(ARTIFACTS / f"{DAPP_NAME}.arc56.json")
+            spec = next(m for m in contract["methods"] if m["name"] == "vote")
+            arguments = ",".join(argument["type"] for argument in spec["args"])
+            self._vote_method = f"vote({arguments}){spec['returns']['type']}"
+        return self._vote_method
 
     def document(self, session_id, name):
         """Return a published file from ``DAO_DOCUMENTS_DIR/<session id>/``.

@@ -4,12 +4,14 @@ import hashlib
 from unittest import mock
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 
 from core.dao_provider import DaoProvider, get_dao_provider
-from daovoting import summary
+from daovoting import panel, summary
 from daovoting.templatetags.dao_tags import micro, short_address
 from daovoting.tests import fakes
+from walletauth.models import LinkedAddress
 
 FAKE = "daovoting.tests.fakes.FakeProvider"
 MAINNET_FAKE = "daovoting.tests.fakes.MainnetFakeProvider"
@@ -141,6 +143,8 @@ class TestDaovotingProviderDefault:
         assert provider.ballots(1) == {}
         assert provider.seat_votes() == {}
         assert provider.document(1, "proposal.md") is None
+        assert provider.vote_method() is None
+        assert provider.permission_app_id is None
 
     @override_settings(DAO_PROVIDER="")
     def test_daovoting_get_dao_provider_without_setting(self):
@@ -316,6 +320,19 @@ class TestDaovotingVotingDappProvider:
         ballots.assert_called_once_with(client, provider.app_id, 2)
         boxes.assert_called_once()
 
+    def test_daovoting_votingdapp_provider_permission_app_and_vote_method(
+        self, module, provider, settings
+    ):
+        assert provider.permission_app_id == module.permission_dapp_id("testnet")
+        assert provider.vote_method() == "vote(uint64,uint64)void"
+        with mock.patch.object(module, "read_json") as read_json:
+            assert provider.vote_method() == "vote(uint64,uint64)void"
+        read_json.assert_not_called()
+        settings.DAO_NETWORK = "mainnet"
+        assert module.VotingDappProvider().permission_app_id == module.permission_dapp_id(
+            "mainnet"
+        )
+
     def test_daovoting_votingdapp_provider_document(
         self, module, provider, settings, tmp_path
     ):
@@ -326,3 +343,145 @@ class TestDaovotingVotingDappProvider:
         assert provider.document(1, "proposal.md") == b"text"
         assert provider.document(1, "snapshot.json") is None
         assert provider.document(1, "../secret") is None
+
+
+def _user_with(*rows):
+    user = get_user_model().objects.create_user(username="governor", password="x")
+    for address, chain in rows:
+        LinkedAddress.objects.create(
+            profile=user.profile,
+            address=address,
+            canonical_address=address if chain == "algorand" else f"C{address[1:]}",
+            chain=chain,
+            auth_method="algorand_wallet" if chain == "algorand" else "evm_xchain",
+        )
+    return user
+
+
+class TestDaovotingPanel:
+    def test_daovoting_panel_linked_seats(self):
+        votes = {fakes.SEAT_A: 300, fakes.SEAT_B: 0, fakes.SEAT_C: 5}
+        assert panel.linked_seats(mock.MagicMock(is_authenticated=False), votes) == []
+        user = _user_with(
+            (fakes.SEAT_C, "algorand"),
+            (fakes.SEAT_A, "algorand"),
+            (fakes.SEAT_B, "algorand"),
+            ("0xabc", "evm"),
+        )
+        assert panel.linked_seats(user, {**votes, "0xabc": 9}) == [
+            fakes.SEAT_C,
+            fakes.SEAT_A,
+        ]
+
+    def test_daovoting_panel_snapshot_venues(self):
+        venues = panel.snapshot_venues(fakes.SNAPSHOT)
+        assert venues[fakes.SEAT_B] == {"wallet": 40_000_000}
+        assert len(venues[fakes.SEAT_A]) == 3
+        assert panel.snapshot_venues(
+            b'{"seats": {"A": 1, "B": {"venues": 2}, "C": {"venues": {"wallet": 1}}}}'
+        ) == {"C": {"wallet": 1}}
+
+    @pytest.mark.parametrize(
+        "content", [None, b"not json", b"{}", b'{"seats": []}', b"[1]"]
+    )
+    def test_daovoting_panel_snapshot_venues_unreadable(self, content):
+        assert panel.snapshot_venues(content) == {}
+
+    def test_daovoting_panel_venue_label(self):
+        assert panel.venue_label("wallet") == "Wallet"
+        assert panel.venue_label("lp 1234") == "LP token 1234"
+        assert panel.venue_label("gat 1047879402") == "gat 1047879402"
+
+    def test_daovoting_panel_vote_cards(self):
+        rows = [
+            {"address": fakes.SEAT_A, "eligible": 50_000_000, "voted": True, "option": 1},
+            {
+                "address": fakes.SEAT_B,
+                "eligible": 90_000_000,
+                "voted": False,
+                "option": None,
+            },
+        ]
+        votes = {fakes.SEAT_A: 300, fakes.SEAT_B: 20, fakes.SEAT_C: 5}
+        venues = {fakes.SEAT_A: {"wallet": 50_000_000}}
+        cards = panel.vote_cards(
+            [fakes.SEAT_A, fakes.SEAT_B, fakes.SEAT_C], rows, votes, venues
+        )
+        assert cards[0] == {
+            "address": fakes.SEAT_A,
+            "votes": 300,
+            "in_snapshot": True,
+            "eligible": 50_000_000,
+            "weight": 50_000_000,
+            "below_max": True,
+            "voted_option": 1,
+            "venues": [{"name": "Wallet", "amount": 50_000_000}],
+        }
+        assert cards[1]["weight"] == 20_000_000
+        assert cards[1]["below_max"] is False
+        assert cards[1]["voted_option"] is None
+        assert cards[1]["venues"] == []
+        assert cards[2] == {"address": fakes.SEAT_C, "votes": 5, "in_snapshot": False}
+
+
+class TestDaovotingVotePanelViews:
+    @pytest.fixture(autouse=True)
+    def _fake(self, settings):
+        settings.DAO_PROVIDER = FAKE
+
+    @pytest.fixture
+    def client(self):
+        client = Client()
+        client.force_login(
+            _user_with((fakes.SEAT_A, "algorand"), (fakes.SEAT_C, "algorand"))
+        )
+        return client
+
+    def test_daovoting_vote_panel_open_session(self, client):
+        response = client.get("/dao/session/2/")
+        vote_panel = response.context["vote_panel"]
+        assert vote_panel["can_vote"] is True
+        assert list(vote_panel["options"]) == [0, 1]
+        assert [card["address"] for card in vote_panel["cards"]] == [
+            fakes.SEAT_C,
+            fakes.SEAT_A,
+        ]
+        content = response.content.decode()
+        assert 'id="id-dao-vote-panel"' in content
+        assert 'data-permission-app-id="750094865"' in content
+        assert 'data-vote-method="vote(uint64,uint64)void"' in content
+        assert 'data-network="testnet"' in content
+        assert content.count("data-vote-option=") == 2
+        assert "gat 1047879402" in content and "LP token 1234" in content
+        assert "not in the session's snapshot" in content
+        assert "data-vote-below-max" in content
+
+    def test_daovoting_vote_panel_without_matching_snapshot(self, client):
+        with mock.patch.object(fakes.FakeProvider, "document", return_value=b"edited"):
+            response = client.get("/dao/session/2/")
+        assert response.context["vote_panel"]["cards"][1]["venues"] == []
+        assert b"Venue lines appear once" in response.content
+
+    def test_daovoting_vote_panel_closed_and_review(self, client):
+        response = client.get("/dao/session/1/")
+        assert response.context["vote_panel"]["can_vote"] is False
+        assert b"data-vote-option=" not in response.content
+        assert b"data-vote-wallets" not in response.content
+        with mock.patch.object(fakes, "CURRENT_ROUND", 1500):
+            response = client.get("/dao/session/2/")
+        assert b"Voting has not started yet." in response.content
+
+    def test_daovoting_vote_panel_without_seats(self):
+        client = Client()
+        client.force_login(_user_with((fakes.SEAT_B, "evm")))
+        response = client.get("/dao/session/2/")
+        assert response.context["vote_panel"]["cards"] == []
+        assert b"holds a governor seat" in response.content
+
+    def test_daovoting_vote_panel_not_for_visitors_or_the_live_partial(self, client):
+        response = Client().get("/dao/session/2/")
+        assert response.context["vote_panel"] is None
+        assert b'id="id-dao-sign-in"' in response.content
+        assert b'id="id-dao-sign-in"' not in Client().get("/dao/session/1/").content
+        response = client.get("/dao/session/2/?live=1")
+        assert b"id-dao-vote-panel" not in response.content

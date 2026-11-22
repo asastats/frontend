@@ -17,6 +17,7 @@ class DaoProvider:
 
     network = ""
     app_id = None
+    permission_app_id = None
 
     def available(self):
         """Return True if this site reads a deployed Voting dApp.
@@ -63,6 +64,13 @@ class DaoProvider:
         :return: dict
         """
         return {}
+
+    def vote_method(self):
+        """Return the ARC-4 signature of the dApp's `vote` method, None if unknown.
+
+        :return: str
+        """
+        return None
 
     def document(self, session_id, name):
         """Return a session's published file (``proposal.md``, ``snapshot.json``).

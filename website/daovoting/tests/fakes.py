@@ -8,7 +8,13 @@ SEAT_A = "VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU"
 SEAT_B = "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU"
 SEAT_C = "HKLGS7UL3W33J53KZ5SKOIRHDPPUVMVLEPZNDBVHHS5AEJ35TVKCD7NLMY"
 PROPOSAL = b"Raise the fee.\n\nOption 0: yes\nOption 1: no\n"
-SNAPSHOT = b'{"snapshot_round": 1000, "asset_id": 393537671, "seats": {}}\n'
+SNAPSHOT = (
+    b'{"snapshot_round": 1000, "asset_id": 393537671, "seats": {'
+    b'"VW55KZ3NF4GDOWI7IPWLGZDFWNXWKSRD5PETRLDABZVU5XPKRJJRK3CBSU": {"total": 50000000,'
+    b' "venues": {"gat 1047879402": 20000000, "lp 1234": 5000000, "wallet": 25000000}},'
+    b' "2EVGZ4BGOSL3J64UYDE2BUGTNTBZZZLI54VUQQNZZLYCDODLY33UGXNSIU": {"total": 40000000,'
+    b' "venues": {"wallet": 40000000}}}}\n'
+)
 CURRENT_ROUND = 5000
 ZERO = "0" * 64
 
@@ -79,6 +85,10 @@ class FakeProvider(DaoProvider):
 
     network = "testnet"
     app_id = 775947805
+    permission_app_id = 750094865
+
+    def vote_method(self):
+        return "vote(uint64,uint64)void"
 
     def available(self):
         return True

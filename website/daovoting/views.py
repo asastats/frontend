@@ -4,6 +4,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import render
 
 from core.dao_provider import get_dao_provider
+from daovoting.panel import linked_seats, snapshot_venues, vote_cards
 from daovoting.summary import governor_rows, hash_check, session_summary
 
 CONTENT_TYPES = {"proposal.md": "text/markdown", "snapshot.json": "application/json"}
@@ -42,6 +43,36 @@ def _summary(provider, session_id, current_round, seat_votes):
     return session_summary(
         session_id, session, provider.ballots(session_id), seat_votes, current_round
     )
+
+
+def _vote_panel(user, provider, summary, snapshot, snapshot_check):
+    """Return the vote panel's context for a signed-in user, None for a visitor.
+
+    :param user: requesting user
+    :type user: :class:`django.contrib.auth.models.User`
+    :param provider: DAO provider instance
+    :type provider: :class:`core.dao_provider.DaoProvider`
+    :param summary: the session's summary
+    :type summary: dict
+    :param snapshot: published snapshot file, None if not published here
+    :type snapshot: bytes
+    :param snapshot_check: how the file compares with its on-chain hash
+    :type snapshot_check: str
+    :return: dict
+    """
+    if not getattr(user, "is_authenticated", False):
+        return None
+    seat_votes = provider.seat_votes()
+    venues = snapshot_venues(snapshot) if snapshot_check == "match" else {}
+    return {
+        "cards": vote_cards(
+            linked_seats(user, seat_votes), summary["rows"], seat_votes, venues
+        ),
+        "can_vote": summary["phase"] == "voting",
+        "options": range(summary["session"]["options_count"]),
+        "permission_app_id": provider.permission_app_id,
+        "vote_method": provider.vote_method(),
+    }
 
 
 def dao_index(request):
@@ -102,6 +133,10 @@ def dao_session(request, session_id):
     template = "daovoting/session.html"
     if request.GET.get("live"):
         template += "#live"
+    else:
+        context["vote_panel"] = _vote_panel(
+            request.user, provider, summary, snapshot, context["snapshot_check"]
+        )
     return render(request, template, context)
 
 

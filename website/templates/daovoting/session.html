@@ -31,6 +31,9 @@
   {% if snapshot_published %}<p class="text-sm"><a href="{% url 'dao_document' s.id 'snapshot.json' %}" class="link">The snapshot file as published</a></p>{% endif %}
   <p class="text-sm">Quorum {{ s.quorum|micro }}; an option wins with more than {{ s.threshold }} of the votes cast.</p>
 
+  {% if vote_panel %}{% include "daovoting/_vote_panel.html" %}
+  {% elif s.phase == "voting" and not user.is_authenticated %}<p class="text-sm" id="id-dao-sign-in">Governors: sign in to vote here with a linked seat. Any wallet can also call the Voting dApp directly; that vote counts the same.</p>{% endif %}
+
   {% partialdef live inline %}
   {# id-dao-live: polled every 30 s and replaced whole (outerHTML) #}
   <div id="id-dao-live"{% if s.phase == "voting" %} hx-get="{% url 'dao_session' s.id %}?live=1" hx-trigger="every 30s" hx-swap="outerHTML"{% endif %}>

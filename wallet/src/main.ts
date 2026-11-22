@@ -5,6 +5,7 @@ import { install as installTestHarness } from "./walletTestHarness";
 import { initEvm } from "./evmBootstrap";
 import { initManageAddresses } from "./manageBootstrap";
 import { initSwapBridge } from "./swapBootstrap";
+import { initVotePanel } from "./voteBootstrap";
 import {
   RESUMABLE,
   inApp,
@@ -220,6 +221,19 @@ export class App {
   document.body.addEventListener("htmx:after:settle", () => {
     void initSwapBridge();
   });
+}
+
+/* istanbul ignore next -- bootstrap glue; orchestration is tested in voteBootstrap.test */
+{
+  // The DAO vote panel; a no-op on pages without #id-dao-vote-panel.
+  const bootstrapVote = () => {
+    void initVotePanel();
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrapVote);
+  } else {
+    bootstrapVote();
+  }
 }
 
 // Test-only: when the page sets `window.__WALLET_TEST__` (emitted solely under

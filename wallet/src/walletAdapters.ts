@@ -42,17 +42,19 @@ export function getWalletAdapters(
 }
 
 /**
- * Creates a mainnet WalletManager instance configured with adapters matching the given IDs.
+ * Creates a WalletManager instance configured with adapters matching the given IDs.
  *
  * @param descriptors - Array of wallet IDs or `{ id: string }` descriptors.
+ * @param network - Network id; mainnet unless a page asks otherwise (the DAO panel on testnet).
  * @returns Configured WalletManager instance.
  */
 export function createWalletManager(
-  descriptors?: Array<string | { id: string }>
+  descriptors?: Array<string | { id: string }>,
+  network: string = NetworkId.MAINNET
 ): WalletManager {
   return new WalletManager({
     wallets: getWalletAdapters(descriptors),
-    defaultNetwork: NetworkId.MAINNET,
+    defaultNetwork: network,
   });
 }
 

@@ -42,6 +42,8 @@ That split is why the suite can cover the logic without driving a wallet.
 | `manageBootstrap.ts` | browser wiring for the manage page, including CSRF |
 | `swapBootstrap.ts` | opt-in handling, partial-group signing, the wallet manager |
 | `swapBridge.ts` | pure orchestration of a prepared swap: sign, submit, wait for confirmation |
+| `voteBridge.ts` | the DAO Voting dApp's `vote` call: build, sign, submit, wait for confirmation |
+| `voteBootstrap.ts` | wires the DAO vote panel on `/dao/session/<id>/` to a wallet manager on the panel's network |
 | `notify.ts` | framework-free notification seam |
 | `walletTestHarness.ts` | **test-only** mock wallet, in `src/` because the tests drive it as one |
 
