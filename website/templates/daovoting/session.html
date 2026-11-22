@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load dao_tags partials %}
+{% block title %}{{ WEBSITE_NAME }} - DAO voting session {{ s.id }}{% endblock %}
+{% block description %}ASA Stats DAO voting session {{ s.id }}: proposal, options, totals and ballots{% endblock %}
+{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,DAO,governance,voting,ASASTATS{% endblock %}
+{% block content %}
+<header class="mx-auto mb-10 max-w-3xl text-center">
+  <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Session {{ s.id }}</h1>
+  <p class="mt-3 text-lg text-base-content/70"><span class="badge badge-outline" data-phase="{{ s.phase }}">{{ s.phase_label }}</span></p>
+</header>
+<article class="mx-auto max-w-4xl text-left">
+  <p class="text-sm"><a href="{% url 'dao_index' %}" class="link">All sessions</a> · <a href="{% url 'dao_governors' %}" class="link">Governors</a></p>
+
+  <h2 id="rounds">Rounds</h2>
+  <p>Snapshot at round {{ s.session.snapshot_round }}; voting from round {{ s.session.start_round }} to round {{ s.session.end_round }}{% if current_round %}; now round {{ current_round }}{% endif %}.</p>
+  {% if s.phase == "snapshot" and s.to_snapshot %}<p>Snapshot in {{ s.to_snapshot.rounds }} rounds (about {{ s.to_snapshot.days }} days).</p>
+  {% elif s.phase == "review" or s.phase == "sealed" %}{% if s.to_start %}<p>Voting starts in {{ s.to_start.rounds }} rounds (about {{ s.to_start.days }} days).</p>{% endif %}
+  {% elif s.phase == "voting" and s.to_end %}<p>Voting ends in {{ s.to_end.rounds }} rounds (about {{ s.to_end.days }} days).</p>{% endif %}
+
+  <h2 id="proposal">Proposal</h2>
+  {% include "daovoting/_hash_badge.html" with check=proposal_check id="id-proposal-check" %}
+  <p class="text-xs break-all text-base-content/60">sha256 on chain: {{ s.session.proposal_hash }}</p>
+  {% if proposal_text %}
+  <div class="mt-4">{{ proposal_text|linebreaks }}</div>
+  <p class="text-sm"><a href="{% url 'dao_document' s.id 'proposal.md' %}" class="link">The proposal file as published</a></p>
+  {% endif %}
+
+  <h2 id="snapshot">Snapshot</h2>
+  {% include "daovoting/_hash_badge.html" with check=snapshot_check id="id-snapshot-check" %}
+  {% if s.session.snapshot_hash != "0000000000000000000000000000000000000000000000000000000000000000" %}<p class="text-xs break-all text-base-content/60">sha256 on chain: {{ s.session.snapshot_hash }}</p>{% endif %}
+  {% if snapshot_published %}<p class="text-sm"><a href="{% url 'dao_document' s.id 'snapshot.json' %}" class="link">The snapshot file as published</a></p>{% endif %}
+  <p class="text-sm">Quorum {{ s.quorum|micro }}; an option wins with more than {{ s.threshold }} of the votes cast.</p>
+
+  {% partialdef live inline %}
+  {# id-dao-live: polled every 30 s and replaced whole (outerHTML) #}
+  <div id="id-dao-live"{% if s.phase == "voting" %} hx-get="{% url 'dao_session' s.id %}?live=1" hx-trigger="every 30s" hx-swap="outerHTML"{% endif %}>
+    <h2 id="totals">Totals</h2>
+    <p>{{ s.voters }} of {{ s.seats }} seats voted; {{ s.turnout|micro }} of {{ s.possible|micro }} possible weight ({{ s.turnout_share }} %). Quorum {{ s.quorum_share }} % reached.</p>
+    <progress class="progress progress-primary" value="{{ s.quorum_share }}" max="100"></progress>
+    <div class="overflow-x-auto">
+      <table class="table" id="id-dao-options">
+        <thead><tr><th>Option</th><th class="text-right">Weight</th><th class="text-right">Share</th></tr></thead>
+        <tbody>
+          {% for o in s.options %}
+          <tr data-option="{{ o.index }}"><td>Option {{ o.index }}{% if o.winner %} <span class="badge badge-success">winner</span>{% endif %}</td><td class="text-right tabular-nums">{{ o.total|micro }}</td><td class="text-right tabular-nums">{{ o.share }} %</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="ballots">Ballots</h2>
+    <p class="text-sm text-base-content/70">Weight is min(votes × 1,000,000, eligible ASASTATS); for a seat that has not voted it is the weight it would have now.</p>
+    <div class="overflow-x-auto">
+      <table class="table" id="id-dao-ballots">
+        <thead><tr><th>Seat</th><th class="text-right">Eligible ASASTATS</th><th class="text-right">Votes</th><th>Option</th><th class="text-right">Weight</th></tr></thead>
+        <tbody>
+          {% for row in s.rows %}
+          <tr data-seat="{{ row.address }}">
+            <td class="whitespace-nowrap">{% if network == "mainnet" %}<a href="{% url 'address' row.address %}" class="link link-hover" title="{{ row.address }}">{{ row.address|short_address }}</a>{% else %}<span title="{{ row.address }}">{{ row.address|short_address }}</span>{% endif %}</td>
+            <td class="text-right tabular-nums">{{ row.eligible|micro }}</td>
+            <td class="text-right tabular-nums">{{ row.max_votes }}</td>
+            <td>{% if row.voted %}Option {{ row.option }}{% else %}<span class="text-base-content/60">not voted</span>{% endif %}</td>
+            <td class="text-right tabular-nums">{{ row.weight|micro }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">No seat is in the snapshot yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endpartialdef live %}
+</article>
+{% endblock %}

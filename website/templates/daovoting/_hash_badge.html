@@ -1,0 +1,2 @@
+{# data-check values are asserted by the functional tests #}
+<p id="{{ id }}" data-check="{{ check }}">{% if check == "match" %}<span class="badge badge-success">matches the hash on chain</span>{% elif check == "differs" %}<span class="badge badge-error">differs from the hash on chain</span>{% elif check == "missing" %}<span class="badge badge-warning">file not published on this site</span>{% else %}<span class="badge badge-ghost">no hash on chain yet</span>{% endif %}</p>

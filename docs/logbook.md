@@ -7198,3 +7198,42 @@ Why: on production our prices in USDC ran about 0.57% under Vestige's, and Coinb
 `/profile/authorize/check/` returned 500 in production (`AttributeError: 'list' object has no attribute 'get'`, gunicorn log of 2026-11-16). `utils.clients.search_transactions` was changed to page through the indexer itself and return the full list of transactions, but this function still treated its result as one indexer page (`results.get("transactions")`, `next-token`, a `next_page=` argument), so every call failed. It now loops over the returned list; the tests mock the list.
 
 Also in that log, `Not Found: /@id/__vite-browser-external:` (2026-11-17 23:42, 2026-11-18 00:24): an internet scanner probing for exposed Vite dev servers with a JavaScript injection payload. We run none, Django answers 404, nothing to fix.
+
+## website/daovoting/ and website/core/dao_provider.py - read-only DAO voting pages (2026-11-22)
+
+Step 2 of the DAO voting plan's §3 (workspace `dao-voting/IMPLEMENTATION-PLAN.md` §6): `/dao/` (sessions, newest
+first, with phase, turnout and quorum progress), `/dao/session/<id>/` (rounds and countdown, proposal and snapshot
+hash checks, option totals, every seat's ballot) and `/dao/governors/` (every seat with votes, eligible ASASTATS of
+the latest session with ballots, sessions voted in). `/dao/session/<id>/proposal.md|snapshot.json` serve the published
+files byte for byte so anyone can hash them. Not built here: the vote panel and `voteBridge.ts` (plan step 4).
+
+- **Provider, like the permission provider.** `settings.DAO_PROVIDER` names the backend; empty (the default) gives
+  `DaoProvider`, which says "not available" on every page. The ASA Stats backend is
+  `core.dao_providers.votingdapp.VotingDappProvider`. It is not the default because the voting-dapp submodule is not
+  registered in this repository yet (2026-11-22): production would fail to import it. Turn it on with
+  `DAO_PROVIDER=core.dao_providers.votingdapp.VotingDappProvider` once the submodule is deployed.
+- **Network.** `DAO_NETWORK` (default `mainnet`). Mainnet's `VOTING_APP_ID` is `None` until the DAO approves the
+  deploy, so on mainnet the pages say "not available". Algod comes from the permission dApp's `.env`
+  (`algod_address_<network>`), the file the permission provider already reads.
+- **Reads** are the voting dApp's own readers (`session_values`, `session_ballots`, `app_global_state`) and the
+  permission dApp's `permission_dapp_values_from_boxes` (votes are the first value; seats are addresses with votes > 0).
+  Each is cached `DAO_CACHE_SECONDS` (30) under a key with network and app id. Reading every permission box is the
+  expensive one (139 seats with votes on testnet, more boxes in all).
+- **Published files.** Nothing on chain says where the proposal text and the snapshot file live; the review's
+  proposal to commit them to the dao-discussion repo was never accepted. So the provider reads
+  `DAO_DOCUMENTS_DIR/<session id>/proposal.md` and `snapshot.json` (empty setting = not published here), and the page
+  says whether each matches the sha256 on chain ("unset" before the seal, "missing", "match", "differs"). The proposal
+  is shown through `linebreaks` (escaped), not rendered as Markdown.
+- **Phases** follow the contract's asserts: status 0 before the snapshot round is "snapshot", after it "review",
+  and once the start round has passed "lapsed" (the contract refuses both the seal and votes then; testnet session 2
+  is one, found by the first real read). Status 1 is "sealed", "voting" or "ended" by the start and end rounds.
+- **Weights shown** for a seat that has not voted are `min(votes × 10⁶, eligible)` with today's votes, as `vote`
+  would compute them; for a voted seat the ballot's own `max_votes` and `weight`. Turnout share is the sum of the
+  totals over the sum of those weights; quorum share is the sum of the totals over `quorum` (as `finalize`).
+- **Seats** link to the address page on mainnet only. No NFD names: the site has no address-to-name lookup.
+- **`dao` is now a reserved path:** `is_system_reserved_url_path` reads `config.urls`, so no new bundle can be called
+  `dao`; a bundle that already had that name would be hidden behind these pages (not checked in production's data).
+- Checked against testnet app 775947805 on 2026-11-22: 2 sessions (1 passed, 2 lapsed), 139 seats with votes.
+- Tests: `daovoting/tests/` (fake provider `daovoting.tests.fakes.FakeProvider`, 100 % of the new modules;
+  the votingdapp provider tests skip when the submodule is absent) and `functional_tests/test_dao_pages.py`. No
+  integration test: the pages do not call the engine, and the integration suite starts the engine.

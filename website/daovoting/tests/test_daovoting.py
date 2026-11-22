@@ -1,0 +1,328 @@
+"""Tests of the daovoting app: summaries, filters, views and providers."""
+
+import hashlib
+from unittest import mock
+
+import pytest
+from django.test import Client, override_settings
+
+from core.dao_provider import DaoProvider, get_dao_provider
+from daovoting import summary
+from daovoting.templatetags.dao_tags import micro, short_address
+from daovoting.tests import fakes
+
+FAKE = "daovoting.tests.fakes.FakeProvider"
+MAINNET_FAKE = "daovoting.tests.fakes.MainnetFakeProvider"
+pytestmark = pytest.mark.django_db
+
+
+def _session(**values):
+    return fakes._session(**values)
+
+
+class TestDaovotingSummaryPhase:
+    @pytest.mark.parametrize(
+        "values,current_round,expected",
+        [
+            ({"status": 2}, 1, "passed"),
+            ({"status": 3}, 1, "failed"),
+            ({"status": 0}, 999, "snapshot"),
+            ({"status": 0}, 1000, "review"),
+            ({"status": 0}, 2000, "lapsed"),
+            ({"status": 0}, None, "snapshot"),
+            ({"status": 1}, 1999, "sealed"),
+            ({"status": 1}, 2000, "voting"),
+            ({"status": 1}, 9000, "voting"),
+            ({"status": 1}, 9001, "ended"),
+        ],
+    )
+    def test_daovoting_summary_phase(self, values, current_round, expected):
+        assert summary.phase(_session(**values), current_round) == expected
+
+
+class TestDaovotingSummaryHelpers:
+    def test_daovoting_summary_countdown(self):
+        assert summary.countdown(1000, None) is None
+        assert summary.countdown(1000, 1000) is None
+        assert summary.countdown(61_000, 1000) == {"rounds": 60_000, "days": 2.0}
+
+    def test_daovoting_summary_potential_weight(self):
+        assert summary.potential_weight(5_000_000, 10) == 5_000_000
+        assert summary.potential_weight(50_000_000, 10) == 10_000_000
+
+    def test_daovoting_summary_hash_check(self):
+        digest = hashlib.sha256(b"x").hexdigest()
+        assert summary.hash_check(b"x", summary.EMPTY_HASH) == "unset"
+        assert summary.hash_check(None, digest) == "missing"
+        assert summary.hash_check(b"x", digest) == "match"
+        assert summary.hash_check(b"y", digest) == "differs"
+
+    def test_daovoting_summary_ballot_rows_uses_current_votes_for_unvoted(self):
+        rows = summary.ballot_rows(fakes.BALLOTS[2], {fakes.SEAT_B: 20})
+        assert [row["address"] for row in rows] == [fakes.SEAT_A, fakes.SEAT_B]
+        assert rows[0]["voted"] and rows[0]["option"] == 0
+        assert rows[1] == {
+            "address": fakes.SEAT_B,
+            "eligible": 40_000_000,
+            "voted": False,
+            "option": None,
+            "max_votes": 20,
+            "weight": 20_000_000,
+        }
+
+    def test_daovoting_summary_session_summary(self):
+        result = summary.session_summary(
+            2, _session(), fakes.BALLOTS[2], {fakes.SEAT_B: 20}, 5000
+        )
+        assert result["phase"] == "voting"
+        assert result["seats"] == 2 and result["voters"] == 1
+        assert result["turnout"] == 50_000_000
+        assert result["possible"] == 70_000_000
+        assert result["turnout_share"] == 71.43
+        assert result["quorum_share"] == 50.0
+        assert result["threshold"] == "1/2"
+        assert result["to_end"] == {"rounds": 4001, "days": 0.1}
+        assert result["options"][0] == {
+            "index": 0,
+            "total": 50_000_000,
+            "share": 100.0,
+            "winner": False,
+        }
+
+    def test_daovoting_summary_session_summary_winner_and_empty(self):
+        passed = summary.session_summary(1, fakes.SESSIONS[1], {}, {}, 5000)
+        assert [option["winner"] for option in passed["options"]] == [True, False]
+        empty = summary.session_summary(
+            3, _session(totals=[0, 0], quorum=0), {}, {}, 5000
+        )
+        assert empty["turnout_share"] == 0
+        assert empty["quorum_share"] == 100
+        assert [option["share"] for option in empty["options"]] == [0, 0]
+
+    def test_daovoting_summary_governor_rows(self):
+        rows, latest = summary.governor_rows(
+            {fakes.SEAT_A: 300, fakes.SEAT_B: 20, fakes.SEAT_C: 5}, fakes.BALLOTS
+        )
+        assert latest == 2
+        assert [row["address"] for row in rows] == [
+            fakes.SEAT_A,
+            fakes.SEAT_B,
+            fakes.SEAT_C,
+        ]
+        assert rows[0]["voted"] == [1, 2] and rows[0]["eligible"] == 50_000_000
+        assert rows[1]["in_snapshot"] == [1, 2] and rows[1]["voted"] == [1]
+        assert rows[2]["in_snapshot"] == [] and rows[2]["eligible"] == 0
+
+    def test_daovoting_summary_governor_rows_without_snapshot(self):
+        rows, latest = summary.governor_rows({fakes.SEAT_A: 3}, {1: {}})
+        assert latest is None
+        assert rows[0]["eligible"] is None
+
+
+class TestDaovotingFilters:
+    def test_daovoting_filters_micro(self):
+        assert micro(None) == "-"
+        assert micro(0) == "0"
+        assert micro(1_234_567_890_000) == "1,234,567.89"
+        assert micro(1) == "0.000001"
+
+    def test_daovoting_filters_short_address(self):
+        assert short_address(fakes.SEAT_A) == "VW55KZ…K3CBSU"
+        assert short_address("SHORT") == "SHORT"
+
+
+class TestDaovotingProviderDefault:
+    def test_daovoting_default_provider_degrades_safely(self):
+        provider = DaoProvider()
+        assert provider.available() is False
+        assert provider.current_round() is None
+        assert provider.session_count() == 0
+        assert provider.session(1) is None
+        assert provider.ballots(1) == {}
+        assert provider.seat_votes() == {}
+        assert provider.document(1, "proposal.md") is None
+
+    @override_settings(DAO_PROVIDER="")
+    def test_daovoting_get_dao_provider_without_setting(self):
+        assert type(get_dao_provider()) is DaoProvider
+
+    @override_settings(DAO_PROVIDER=FAKE)
+    def test_daovoting_get_dao_provider_with_setting(self):
+        assert isinstance(get_dao_provider(), fakes.FakeProvider)
+
+
+class TestDaovotingViewsUnavailable:
+    @override_settings(DAO_PROVIDER="")
+    @pytest.mark.parametrize("url", ["/dao/", "/dao/governors/"])
+    def test_daovoting_pages_without_provider(self, url):
+        response = Client().get(url)
+        assert response.status_code == 200
+        assert b'id="id-dao-unavailable"' in response.content
+
+    @override_settings(DAO_PROVIDER="")
+    def test_daovoting_session_without_provider_is_404(self):
+        assert Client().get("/dao/session/1/").status_code == 404
+
+
+class TestDaovotingViews:
+    @pytest.fixture(autouse=True)
+    def _fake(self, settings):
+        settings.DAO_PROVIDER = FAKE
+
+    def test_daovoting_index_lists_newest_first(self):
+        response = Client().get("/dao/")
+        assert [s["id"] for s in response.context["sessions"]] == [3, 2, 1]
+        assert [s["phase"] for s in response.context["sessions"]] == [
+            "snapshot",
+            "voting",
+            "passed",
+        ]
+        assert b"Snapshot in 3000 rounds" in response.content
+        assert b"Voting ends in 4001 rounds" in response.content
+
+    def test_daovoting_index_skips_missing_session(self):
+        with mock.patch.object(fakes.FakeProvider, "session_count", return_value=4):
+            response = Client().get("/dao/")
+        assert [s["id"] for s in response.context["sessions"]] == [3, 2, 1]
+
+    def test_daovoting_index_without_sessions(self):
+        with mock.patch.object(fakes.FakeProvider, "session_count", return_value=0):
+            response = Client().get("/dao/")
+        assert b'id="id-dao-no-sessions"' in response.content
+
+    def test_daovoting_session_page(self):
+        response = Client().get("/dao/session/2/")
+        assert response.status_code == 200
+        assert response.context["proposal_check"] == "match"
+        assert response.context["snapshot_check"] == "match"
+        assert b"Raise the fee." in response.content
+        assert b'hx-trigger="every 30s"' in response.content
+        assert f'data-seat="{fakes.SEAT_B}"'.encode() in response.content
+        assert b"/" + fakes.SEAT_A.encode() + b'"' not in response.content
+
+    def test_daovoting_session_page_live_partial(self):
+        response = Client().get("/dao/session/2/?live=1")
+        assert b"<html" not in response.content
+        assert b'id="id-dao-live"' in response.content
+        assert b"<h1" not in response.content
+
+    def test_daovoting_session_page_unsealed_and_unpublished(self):
+        response = Client().get("/dao/session/3/")
+        assert response.context["proposal_check"] == "missing"
+        assert response.context["snapshot_check"] == "unset"
+        assert b"hx-trigger" not in response.content
+        assert b"No seat is in the snapshot yet." in response.content
+
+    def test_daovoting_session_page_differs(self):
+        with mock.patch.object(fakes.FakeProvider, "document", return_value=b"edited"):
+            response = Client().get("/dao/session/1/")
+        assert response.context["proposal_check"] == "differs"
+        assert b"winner" in response.content
+
+    def test_daovoting_session_missing_is_404(self):
+        assert Client().get("/dao/session/9/").status_code == 404
+
+    def test_daovoting_document(self):
+        response = Client().get("/dao/session/1/proposal.md")
+        assert response.status_code == 200
+        assert response.content == fakes.PROPOSAL
+        assert response["Content-Type"] == "text/markdown; charset=utf-8"
+        response = Client().get("/dao/session/1/snapshot.json")
+        assert response["Content-Type"] == "application/json; charset=utf-8"
+
+    @pytest.mark.parametrize(
+        "url", ["/dao/session/3/proposal.md", "/dao/session/1/x.txt"]
+    )
+    def test_daovoting_document_missing_is_404(self, url):
+        assert Client().get(url).status_code == 404
+
+    def test_daovoting_governors(self):
+        response = Client().get("/dao/governors/")
+        assert response.context["latest"] == 2
+        assert response.context["session_count"] == 3
+        assert len(response.context["rows"]) == 3
+        assert b"in no snapshot" in response.content
+
+
+@override_settings(DAO_PROVIDER=MAINNET_FAKE)
+def test_daovoting_mainnet_seats_link_to_address_pages():
+    response = Client().get("/dao/session/2/")
+    assert f'href="/{fakes.SEAT_A}"'.encode() in response.content
+    response = Client().get("/dao/governors/")
+    assert f'href="/{fakes.SEAT_C}"'.encode() in response.content
+
+
+class TestDaovotingVotingDappProvider:
+    @pytest.fixture
+    def module(self):
+        return pytest.importorskip("core.dao_providers.votingdapp")
+
+    @pytest.fixture
+    def provider(self, module, settings):
+        settings.DAO_NETWORK = "testnet"
+        settings.DAO_CACHE_SECONDS = 30
+        settings.DAO_DOCUMENTS_DIR = ""
+        return module.VotingDappProvider()
+
+    def test_daovoting_votingdapp_provider_network_and_app(self, module, settings):
+        settings.DAO_NETWORK = "testnet"
+        provider = module.VotingDappProvider()
+        assert provider.available() and provider.app_id == module.VOTING_APP_ID_TESTNET
+        settings.DAO_NETWORK = "mainnet"
+        with mock.patch.object(module, "VOTING_APP_ID", None):
+            provider = module.VotingDappProvider()
+        assert not provider.available()
+        assert provider.session_count() == 0
+        assert provider.session(1) is None
+        assert provider.ballots(1) == {}
+
+    def test_daovoting_votingdapp_provider_algod_built_once(self, module, provider):
+        env = {"algod_token_testnet": None, "algod_address_testnet": "http://node"}
+        with (
+            mock.patch.object(module, "environment_variables", return_value=env),
+            mock.patch.object(module, "AlgodClient") as client,
+        ):
+            assert provider._algod() is provider._algod()
+        client.assert_called_once_with("", "http://node")
+
+    def test_daovoting_votingdapp_provider_reads_are_cached(self, module, provider):
+        client = mock.MagicMock()
+        client.status.return_value = {"last-round": 77}
+        provider._client = client
+        with (
+            mock.patch.object(
+                module, "app_global_state", return_value={"session_count": 2}
+            ) as state,
+            mock.patch.object(module, "session_values", return_value={"s": 1}) as values,
+            mock.patch.object(
+                module, "session_ballots", return_value={"a": 1}
+            ) as ballots,
+            mock.patch.object(
+                module,
+                "permission_dapp_values_from_boxes",
+                return_value={"A": [3, 0], "B": [0, 5]},
+            ) as boxes,
+        ):
+            for _ in range(2):
+                assert provider.current_round() == 77
+                assert provider.session_count() == 2
+                assert provider.session(2) == {"s": 1}
+                assert provider.session(3) is None
+                assert provider.ballots(2) == {"a": 1}
+                assert provider.seat_votes() == {"A": 3}
+        client.status.assert_called_once()
+        state.assert_called_once_with(client, provider.app_id)
+        values.assert_called_once_with(client, provider.app_id, 2)
+        ballots.assert_called_once_with(client, provider.app_id, 2)
+        boxes.assert_called_once()
+
+    def test_daovoting_votingdapp_provider_document(
+        self, module, provider, settings, tmp_path
+    ):
+        assert provider.document(1, "proposal.md") is None
+        settings.DAO_DOCUMENTS_DIR = str(tmp_path)
+        (tmp_path / "1").mkdir()
+        (tmp_path / "1" / "proposal.md").write_bytes(b"text")
+        assert provider.document(1, "proposal.md") == b"text"
+        assert provider.document(1, "snapshot.json") is None
+        assert provider.document(1, "../secret") is None

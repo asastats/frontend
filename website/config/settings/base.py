@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "widgets.apps.WidgetsConfig",
     "walletauth.apps.WalletauthConfig",
     "assetfeedback.apps.AssetfeedbackConfig",
+    "daovoting.apps.DaovotingConfig",
     "daphne",
     "template_partials",
     "django.contrib.auth",
@@ -806,6 +807,13 @@ TEMPLATES[0]["DIRS"] += [
 ]
 
 PERMISSION_PROVIDER = "core.permission_providers.permissiondapp.PermissionDappProvider"
+
+# DAO voting pages (docs/logbook.md): empty provider = "not available"; the
+# votingdapp provider needs the voting-dapp submodule checked out.
+DAO_PROVIDER = get_env_variable("DAO_PROVIDER", "")
+DAO_NETWORK = get_env_variable("DAO_NETWORK", "mainnet")
+DAO_DOCUMENTS_DIR = get_env_variable("DAO_DOCUMENTS_DIR", "")
+DAO_CACHE_SECONDS = 30
 
 WALLET_TEST_MODE = False  # default; set True only in the functional-test settings
 

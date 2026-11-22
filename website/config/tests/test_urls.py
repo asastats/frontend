@@ -62,7 +62,8 @@ class TestAsastatsUrls:
         assert "core.urls" in str(url.urlconf_name)
 
     def test_config_urls_patterns_count(self):
-        """Fourteen since the Vestige-compatible prices under `api/vestige/`
+        """Fifteen since the DAO voting pages under `dao/` (2026-11-22), fourteen
+        since the Vestige-compatible prices under `api/vestige/`
         (2026-11-16), twelve since the app's sign-in under `app/auth/` (2026-10-26), eleven
         since the app's two `.well-known` documents (2026-10-24), nine
         since the root assets joined: the count is a guard, not a fact.
@@ -74,7 +75,7 @@ class TestAsastatsUrls:
         number moves with a reason recorded, rather than being edited to make a
         red test green.
         """
-        assert len(urls.urlpatterns) == 14
+        assert len(urls.urlpatterns) == 15
 
     def test_config_urls_defines_custom_handler500(self):
         assert getattr(urls, "handler500") == "core.views.custom_server_error"

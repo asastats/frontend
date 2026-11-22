@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load dao_tags %}
+{% block title %}{{ WEBSITE_NAME }} - DAO voting{% endblock %}
+{% block description %}ASA Stats DAO voting sessions: proposals, totals, turnout and quorum{% endblock %}
+{% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,DAO,governance,voting,ASASTATS{% endblock %}
+{% block content %}
+<header class="mx-auto mb-10 max-w-3xl text-center">
+  <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">DAO voting</h1>
+  <p class="mt-3 text-lg text-base-content/70">Sessions of the {{ WEBSITE_NAME }} DAO, read from the Voting dApp</p>
+</header>
+<article class="mx-auto max-w-4xl text-left">
+  {% if not available %}
+  <p id="id-dao-unavailable">Voting is not available on this site yet.</p>
+  {% else %}
+  <p class="text-sm text-base-content/70">Voting dApp {{ app_id }} on {{ network }}{% if current_round %}, round {{ current_round }}{% endif %}. <a href="{% url 'dao_governors' %}" class="link">Governors</a></p>
+  {% if not sessions %}
+  <p id="id-dao-no-sessions" class="mt-6">No voting session has been created yet.</p>
+  {% endif %}
+  {% for s in sessions %}
+  {# data-phase: asserted by the functional tests #}
+  <section class="card mt-6 border border-base-300" data-session="{{ s.id }}" data-phase="{{ s.phase }}">
+    <div class="card-body">
+      <h2 class="card-title"><a href="{% url 'dao_session' s.id %}" class="link link-hover">Session {{ s.id }}</a>
+        <span class="badge badge-outline">{{ s.phase_label }}</span></h2>
+      <p class="text-sm">{{ s.voters }} of {{ s.seats }} seats voted; {{ s.turnout|micro }} of {{ s.possible|micro }} possible weight ({{ s.turnout_share }} %).</p>
+      <p class="text-sm">Quorum {{ s.quorum|micro }}: {{ s.quorum_share }} % reached.</p>
+      <progress class="progress progress-primary" value="{{ s.quorum_share }}" max="100"></progress>
+      {% if s.phase == "snapshot" and s.to_snapshot %}<p class="text-sm text-base-content/70">Snapshot in {{ s.to_snapshot.rounds }} rounds (about {{ s.to_snapshot.days }} days).</p>
+      {% elif s.phase == "review" or s.phase == "sealed" %}{% if s.to_start %}<p class="text-sm text-base-content/70">Voting starts in {{ s.to_start.rounds }} rounds (about {{ s.to_start.days }} days).</p>{% endif %}
+      {% elif s.phase == "voting" and s.to_end %}<p class="text-sm text-base-content/70">Voting ends in {{ s.to_end.rounds }} rounds (about {{ s.to_end.days }} days).</p>{% endif %}
+    </div>
+  </section>
+  {% endfor %}
+  {% endif %}
+</article>
+{% endblock %}
