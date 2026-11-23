@@ -7279,3 +7279,23 @@ Authentication only decides what the page shows; the on-chain call is the author
   algosdk imports (`ABIMethod`, `makeApplicationNoOpTxnFromObject`) moved the shared chunks' contents.
 - **CSS.** `style.tw.css` is pinned and not rebuilt: the template uses only classes that already exist in it
   (`my-3`, `sm:p-6` and `text-warning` did not, and were replaced).
+
+## website/core/dao_providers/votingdapp.py — parallel box reads and longer caches (2026-11-23)
+
+The first view of `/dao/session/3/` on testnet (testnet dry-run session, 86 ballots) took about half a minute. Every
+box was one algod request, made in turn: the session's 86 ballot boxes (`session_ballots`) and the Permission dApp's
+139 boxes for the votes column (`permission_dapp_values_from_boxes`), about 0.14 s each against
+`testnet-api.algonode.cloud`: 12.5 s + 19.3 s. `DAO_CACHE_SECONDS` (30) let it expire between most visits, and
+visitors arriving together each repeated the reads.
+
+Now the provider lists the boxes once and reads them `READ_WORKERS` (16) at a time (`_box_values`), with the
+voting-dapp's `_box_value`/`decode_ballot` and the permission-dapp's `deserialize_values_data`; neither submodule
+changed, so the permission updater daemon is untouched. Measured against testnet: 86 ballots 2.3 s, 139 seats 2.7 s.
+
+Caches: the Permission votes for `DAO_SEATS_CACHE_SECONDS` (600; they change only when the updater writes boxes).
+A sealed session's ballots under a key made of the session box's status, voters count and totals, for
+`DAO_SEALED_BALLOTS_CACHE_SECONDS` (86400): after the seal a ballot changes only through `vote`, and every vote
+changes `totals` (a changed option moves weight) or `voters_count`. One exception, accepted: a seat voting again for
+the same option with the same weight but a different `votes_of` (weight capped by its snapshot amount) changes only
+its ballot's `max_votes`, which the page then shows stale until another vote. Before the seal (`status` 0) the
+snapshot writes change ballots without touching the session box, so those keep the 30 s cache.

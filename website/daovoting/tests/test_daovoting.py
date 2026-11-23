@@ -1,9 +1,11 @@
 """Tests of the daovoting app: summaries, filters, views and providers."""
 
+import base64
 import hashlib
 from unittest import mock
 
 import pytest
+from algosdk.encoding import decode_address
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 
@@ -289,36 +291,118 @@ class TestDaovotingVotingDappProvider:
             assert provider._algod() is provider._algod()
         client.assert_called_once_with("", "http://node")
 
+    @staticmethod
+    def _boxes(*names):
+        return {"boxes": [{"name": base64.b64encode(name).decode()} for name in names]}
+
     def test_daovoting_votingdapp_provider_reads_are_cached(self, module, provider):
         client = mock.MagicMock()
         client.status.return_value = {"last-round": 77}
         provider._client = client
+        prefix = b"v" + (2).to_bytes(8, "big")
+        seat = decode_address(fakes.SEAT_A)
+        client.application_boxes.side_effect = lambda app_id: (
+            self._boxes(prefix + seat)
+            if app_id == provider.app_id
+            else self._boxes(decode_address(fakes.SEAT_A), decode_address(fakes.SEAT_B))
+        )
+        ballot = bytes(8) + bytes([255]) + bytes(16)
+        values = {
+            prefix + seat: ballot,
+            decode_address(fakes.SEAT_A): b"permission A",
+            decode_address(fakes.SEAT_B): b"permission B",
+        }
+        rows = {"permission A": [3, 0], "permission B": [0, 5]}
         with (
             mock.patch.object(
                 module, "app_global_state", return_value={"session_count": 2}
             ) as state,
-            mock.patch.object(module, "session_values", return_value={"s": 1}) as values,
             mock.patch.object(
-                module, "session_ballots", return_value={"a": 1}
-            ) as ballots,
+                module, "session_values", return_value={"status": 0}
+            ) as session,
             mock.patch.object(
-                module,
-                "permission_dapp_values_from_boxes",
-                return_value={"A": [3, 0], "B": [0, 5]},
-            ) as boxes,
+                module, "_box_value", side_effect=lambda c, a, name: values[name]
+            ) as box,
+            mock.patch.object(
+                module, "deserialize_values_data", side_effect=rows.get
+            ) as decode,
         ):
             for _ in range(2):
                 assert provider.current_round() == 77
                 assert provider.session_count() == 2
-                assert provider.session(2) == {"s": 1}
+                assert provider.session(2) == {"status": 0}
                 assert provider.session(3) is None
-                assert provider.ballots(2) == {"a": 1}
-                assert provider.seat_votes() == {"A": 3}
+                assert provider.ballots(2) == {
+                    fakes.SEAT_A: {
+                        "eligible": 0,
+                        "option": 255,
+                        "max_votes": 0,
+                        "weight": 0,
+                    }
+                }
+                assert provider.seat_votes() == {fakes.SEAT_A: 3}
         client.status.assert_called_once()
         state.assert_called_once_with(client, provider.app_id)
-        values.assert_called_once_with(client, provider.app_id, 2)
-        ballots.assert_called_once_with(client, provider.app_id, 2)
-        boxes.assert_called_once()
+        session.assert_called_once_with(client, provider.app_id, 2)
+        assert client.application_boxes.call_count == 2
+        assert box.call_count == 3
+        assert decode.call_count == 2
+
+    def test_daovoting_votingdapp_provider_box_values(self, module, provider):
+        client = mock.MagicMock()
+        provider._client = client
+        client.application_boxes.return_value = self._boxes(b"va", b"vb", b"vc", b"s1")
+        raw = {b"va": b"1", b"vb": None, b"vc": b"3"}  # vb deleted meanwhile
+        with mock.patch.object(
+            module, "_box_value", side_effect=lambda c, a, name: raw[name]
+        ) as box:
+            assert provider._box_values(5, b"v") == {b"va": b"1", b"vc": b"3"}
+        assert sorted(call.args[2] for call in box.call_args_list) == [
+            b"va",
+            b"vb",
+            b"vc",
+        ]
+        client.application_boxes.return_value = self._boxes(b"s1")
+        assert provider._box_values(5, b"v") == {}
+
+    def test_daovoting_votingdapp_provider_seat_votes_without_boxes(
+        self, module, provider
+    ):
+        provider._client = mock.MagicMock()
+        provider._client.application_boxes.return_value = {"boxes": []}
+        assert provider.seat_votes() == {}
+
+    def test_daovoting_votingdapp_provider_sealed_ballots_follow_the_session_box(
+        self, module, provider, settings
+    ):
+        settings.DAO_SEALED_BALLOTS_CACHE_SECONDS = 86400
+        provider = module.VotingDappProvider()
+        sealed = {"status": 1, "voters_count": 1, "totals": [5, 0]}
+        with (
+            mock.patch.object(provider, "session", return_value=sealed),
+            mock.patch.object(provider, "_box_values", return_value={}) as read,
+            mock.patch.object(module.cache, "set", wraps=module.cache.set) as cache_set,
+        ):
+            provider.ballots(1)
+            provider.ballots(1)
+            assert read.call_count == 1
+            assert cache_set.call_args.args[2] == 86400
+            sealed.update(voters_count=2, totals=[5, 7])  # a vote
+            provider.ballots(1)
+            assert read.call_count == 2
+            assert cache_set.call_args.args[0].endswith("ballots:1:1:2:5,7")
+
+    def test_daovoting_votingdapp_provider_open_snapshot_ballots_use_short_cache(
+        self, module, provider
+    ):
+        with (
+            mock.patch.object(provider, "session", return_value={"status": 0}),
+            mock.patch.object(provider, "_box_values", return_value={}),
+            mock.patch.object(module.cache, "set") as cache_set,
+        ):
+            provider.ballots(4)
+        assert cache_set.call_args.args[0].endswith(":ballots:4")
+        assert cache_set.call_args.args[2] == 30
 
     def test_daovoting_votingdapp_provider_permission_app_and_vote_method(
         self, module, provider, settings

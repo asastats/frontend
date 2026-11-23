@@ -814,6 +814,8 @@ DAO_PROVIDER = get_env_variable("DAO_PROVIDER", "")
 DAO_NETWORK = get_env_variable("DAO_NETWORK", "mainnet")
 DAO_DOCUMENTS_DIR = get_env_variable("DAO_DOCUMENTS_DIR", "")
 DAO_CACHE_SECONDS = 30
+DAO_SEATS_CACHE_SECONDS = 600  # Permission dApp votes
+DAO_SEALED_BALLOTS_CACHE_SECONDS = 86400  # keyed by the session box
 
 WALLET_TEST_MODE = False  # default; set True only in the functional-test settings
 

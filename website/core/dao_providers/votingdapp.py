@@ -1,32 +1,32 @@
 """ASA Stats DAO provider backed by the voting-dapp and permission-dapp submodules.
 
-Imported only when ``settings.DAO_PROVIDER`` names it. Reads are cached for
-``settings.DAO_CACHE_SECONDS``; see docs/logbook.md.
+Imported only when ``settings.DAO_PROVIDER`` names it. Reads are cached (the
+``DAO_*_CACHE_SECONDS`` settings) and boxes are read in parallel; see docs/logbook.md.
 """
 
+import base64
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from algosdk.encoding import encode_address
 from algosdk.v2client.algod import AlgodClient
 from django.conf import settings
 from django.core.cache import cache
 
 from core.dao_provider import DaoProvider
-from permissiondapp.dapp.helpers import environment_variables
-from permissiondapp.dapp.network import permission_dapp_values_from_boxes
+from permissiondapp.dapp.helpers import deserialize_values_data, environment_variables
 from votingdapp.dapp.configuration import VOTING_APP_ID, VOTING_APP_ID_TESTNET
 from votingdapp.dapp.helpers import (
     ARTIFACTS,
     DAPP_NAME,
+    decode_ballot,
     permission_dapp_id,
     read_json,
 )
-from votingdapp.dapp.network import (
-    app_global_state,
-    session_ballots,
-    session_values,
-)
+from votingdapp.dapp.network import _box_value, app_global_state, session_values
 
 DOCUMENT_NAMES = ("proposal.md", "snapshot.json")
+READ_WORKERS = 16  # box reads in flight at once against the node
 
 
 class VotingDappProvider(DaoProvider):
@@ -39,6 +39,8 @@ class VotingDappProvider(DaoProvider):
         )
         self.permission_app_id = permission_dapp_id(self.network)
         self.timeout = getattr(settings, "DAO_CACHE_SECONDS", 30)
+        self.seats_timeout = getattr(settings, "DAO_SEATS_CACHE_SECONDS", 600)
+        self.sealed_timeout = getattr(settings, "DAO_SEALED_BALLOTS_CACHE_SECONDS", 86400)
         self._client = None
         self._vote_method = None
 
@@ -57,21 +59,52 @@ class VotingDappProvider(DaoProvider):
             )
         return self._client
 
-    def _cached(self, key, read):
+    def _cached(self, key, read, timeout=None):
         """Return `read()`'s value, cached under a key unique to this dApp.
 
         :param key: cache key suffix
         :type key: str
         :param read: function doing the network read
         :type read: callable
+        :param timeout: seconds to keep it, ``DAO_CACHE_SECONDS`` when omitted
+        :type timeout: int
         :return: object
         """
         full_key = f"dao:{self.network}:{self.app_id}:{key}"
         value = cache.get(full_key)
         if value is None:
             value = read()
-            cache.set(full_key, value, self.timeout)
+            cache.set(full_key, value, self.timeout if timeout is None else timeout)
         return value
+
+    def _box_values(self, app_id, prefix=b""):
+        """Return the raw values of `app_id`'s boxes whose names start with `prefix`.
+
+        :param app_id: application identifier
+        :type app_id: int
+        :param prefix: box name prefix
+        :type prefix: bytes
+        :var names: matching box names
+        :type names: list
+        :return: dict
+        """
+        client = self._algod()
+        names = [
+            name
+            for name in (
+                base64.b64decode(box.get("name"))
+                for box in client.application_boxes(app_id).get("boxes", [])
+            )
+            if name.startswith(prefix)
+        ]
+        if not names:
+            return {}
+
+        with ThreadPoolExecutor(min(READ_WORKERS, len(names))) as executor:
+            values = executor.map(lambda name: _box_value(client, app_id, name), names)
+            return {
+                name: value for name, value in zip(names, values) if value is not None
+            }
 
     def available(self):
         """Return True if the Voting dApp is deployed on the configured network.
@@ -122,10 +155,26 @@ class VotingDappProvider(DaoProvider):
         """
         if not self.available():
             return {}
-        return self._cached(
-            f"ballots:{session_id}",
-            lambda: session_ballots(self._algod(), self.app_id, session_id),
+
+        def read():
+            prefix = b"v" + session_id.to_bytes(8, "big")
+            return {
+                encode_address(name[len(prefix) :]): decode_ballot(value)
+                for name, value in self._box_values(self.app_id, prefix).items()
+            }
+
+        session = self.session(session_id)
+        if (
+            session is None or session["status"] == 0
+        ):  # snapshot writes don't touch the session box
+            return self._cached(f"ballots:{session_id}", read)
+
+        # sealed: ballots change only with a vote, and every vote changes the session box
+        totals = ",".join(str(total) for total in session["totals"])
+        key = (
+            f"ballots:{session_id}:{session['status']}:{session['voters_count']}:{totals}"
         )
+        return self._cached(key, read, self.sealed_timeout)
 
     def seat_votes(self):
         """Return every address with votes in the Permission dApp.
@@ -134,12 +183,15 @@ class VotingDappProvider(DaoProvider):
         """
 
         def read():
-            values = permission_dapp_values_from_boxes(
-                self._algod(), permission_dapp_id(self.network)
-            )
-            return {address: row[0] for address, row in values.items() if row[0] > 0}
+            rows = {
+                encode_address(name): deserialize_values_data(value.decode("utf8"))
+                for name, value in self._box_values(self.permission_app_id).items()
+            }
+            return {
+                address: row[0] for address, row in rows.items() if row and row[0] > 0
+            }
 
-        return self._cached("seats", read)
+        return self._cached("seats", read, self.seats_timeout)
 
     def vote_method(self):
         """Return `vote`'s ARC-4 signature from the committed ARC-56 file, read once.
