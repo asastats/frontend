@@ -7359,3 +7359,13 @@ hand-edited `.env` on the server, and this deploy dropped them. Without `DAO_NET
 whose `VOTING_APP_ID` is None, so `available()` is False and `dao_session` raises 404. Now `DAO_PROVIDER`,
 `DAO_NETWORK` and `DAO_DOCUMENTS_DIR` are on the list. Their values go in `deploy/.env.production`, which is
 git-ignored and so never travels in a patch.
+
+## website/templates/daovoting/_vote_panel.html, wallet/src/voteBootstrap.ts - the card says the vote is counted (2026-11-25)
+
+After voting in testnet session 3, the user saw the vote in Totals but felt nothing on the seat card said so. The
+card did show "Your vote: Option 1", but as a plain line, and the buttons still read "Vote Option N". Now a seat that
+has voted shows the option as a success badge plus "counted in the totals". The chosen option's button is outlined,
+reads "Option N (your vote)" and carries `data-vote-chosen`, and the others read "Change to Option N". It stays
+enabled: voting the same option again is harmless, re-reads `votes_of`, and `test_a_refused_vote_shows_the_reason`
+clicks it. `markVoted` does the same in the browser once a vote confirms, so the card is right without a reload. The
+template and `markVoted` must produce the same labels.

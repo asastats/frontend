@@ -1,5 +1,5 @@
 {% load dao_tags %}
-{# id-dao-vote-panel and every data-vote-* attribute are read by wallet/src/voteBootstrap.ts #}
+{# id-dao-vote-panel and every data-vote-* attribute are read by wallet/src/voteBootstrap.ts; button labels mirror its markVoted #}
 <h2 id="vote">Your seat</h2>
 <section id="id-dao-vote-panel" class="rounded-box border border-base-300 p-4" data-session-id="{{ s.id }}" data-app-id="{{ app_id }}" data-permission-app-id="{{ vote_panel.permission_app_id }}" data-network="{{ network }}" data-vote-method="{{ vote_panel.vote_method }}">
   {% if not vote_panel.cards %}
@@ -22,7 +22,7 @@
           <dt>Votes</dt><dd class="tabular-nums" data-vote-votes>{{ card.votes|grouped }}</dd>
           <dt>ASASTATS in the snapshot</dt><dd class="tabular-nums" data-vote-eligible>{{ card.eligible|micro }}</dd>
           <dt>Weight</dt><dd class="tabular-nums" data-vote-weight>{{ card.weight|micro }}</dd>
-          <dt>Your vote</dt><dd data-vote-current>{% if card.voted_option is not None %}Option {{ card.voted_option }}{% else %}not voted{% endif %}</dd>
+          <dt>Your vote</dt><dd>{% if card.voted_option is not None %}<span class="badge badge-success" data-vote-current>Option {{ card.voted_option }}</span> <span data-vote-counted>counted in the totals</span>{% else %}<span data-vote-current>not voted</span> <span data-vote-counted hidden>counted in the totals</span>{% endif %}</dd>
         </dl>
         {% if card.below_max %}<p class="alert alert-warning text-sm" data-vote-below-max>The snapshot holds less ASASTATS than this seat's votes allow, so its weight is the snapshot amount.</p>{% endif %}
         {% if card.venues %}
@@ -37,7 +37,7 @@
         {% endif %}
         {% if vote_panel.can_vote %}
         <div class="card-actions mt-2">
-          {% for index in vote_panel.options %}<button type="button" class="btn btn-sm btn-primary" data-vote-option="{{ index }}">Vote Option {{ index }}</button>{% endfor %}
+          {% for index in vote_panel.options %}{% if card.voted_option == index %}<button type="button" class="btn btn-sm btn-primary btn-outline" data-vote-option="{{ index }}" data-vote-chosen>Option {{ index }} (your vote)</button>{% elif card.voted_option is not None %}<button type="button" class="btn btn-sm btn-primary" data-vote-option="{{ index }}">Change to Option {{ index }}</button>{% else %}<button type="button" class="btn btn-sm btn-primary" data-vote-option="{{ index }}">Vote Option {{ index }}</button>{% endif %}{% endfor %}
         </div>
         <p class="text-sm break-all" data-vote-status aria-live="polite"></p>
         {% elif s.phase == "review" or s.phase == "sealed" %}

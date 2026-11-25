@@ -187,6 +187,31 @@ export function voteRequest(panel: HTMLElement, card: HTMLElement, option: numbe
 }
 
 /**
+ * Show `option` as the card's vote, as `_vote_panel.html` renders a seat that has voted.
+ *
+ * @param card - The seat card.
+ * @param option - Option index just confirmed.
+ */
+export function markVoted(card: HTMLElement, option: number): void {
+  const current = card.querySelector<HTMLElement>("[data-vote-current]");
+  if (current) {
+    current.textContent = `Option ${option}`;
+    current.classList.add("badge", "badge-success");
+  }
+  const counted = card.querySelector<HTMLElement>("[data-vote-counted]");
+  if (counted) {
+    counted.hidden = false;
+  }
+  card.querySelectorAll<HTMLButtonElement>("button[data-vote-option]").forEach((button) => {
+    const index = Number(button.dataset.voteOption);
+    const chosen = index === option;
+    button.classList.toggle("btn-outline", chosen);
+    button.toggleAttribute("data-vote-chosen", chosen);
+    button.textContent = chosen ? `Option ${index} (your vote)` : `Change to Option ${index}`;
+  });
+}
+
+/**
  * Cast the vote of the clicked option button's card; report in its `[data-vote-status]`.
  *
  * @param panel - The panel.
@@ -209,6 +234,7 @@ export async function onVote(panel: HTMLElement, button: HTMLButtonElement): Pro
   try {
     const txid = await api.castVote(voteRequest(panel, card, option));
     card.dataset.voteSent = String(option);
+    markVoted(card, option);
     say(
       card,
       "[data-vote-status]",

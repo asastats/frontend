@@ -107,6 +107,17 @@ class DaoVotePanelTest(FunctionalTest):
         self._stub_and_vote(1)
         self.wait_until(lambda: "STUBTXID" in self._status())
         self.assertIn("Vote for Option 1 confirmed", self._status())
+        card = self._card()
+        self.assertEqual(
+            card.find_element(By.CSS_SELECTOR, "[data-vote-current]").text, "Option 1"
+        )
+        self.assertEqual(
+            [
+                b.text
+                for b in card.find_elements(By.CSS_SELECTOR, "button[data-vote-option]")
+            ],
+            ["Change to Option 0", "Option 1 (your vote)"],
+        )
         request = self.browser.execute_script("return window.__votes[0];")
         self.assertEqual(
             request,

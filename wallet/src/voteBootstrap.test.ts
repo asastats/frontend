@@ -23,6 +23,7 @@ import {
   buildVoteDeps,
   connectedAccounts,
   initVotePanel,
+  markVoted,
   onConnect,
   onDisconnect,
   onVote,
@@ -236,6 +237,34 @@ describe("panel rendering", () => {
       0,
     );
     expect([bare.seat, bare.method]).toEqual(["", ""]);
+  });
+});
+
+describe("markVoted", () => {
+  it("shows the option as the vote and relabels the buttons", () => {
+    document.body.innerHTML = `
+      <div data-vote-seat="S">
+        <span data-vote-current>not voted</span> <span data-vote-counted hidden>counted</span>
+        <button class="btn" data-vote-option="0">Vote Option 0</button>
+        <button class="btn btn-outline" data-vote-option="1" data-vote-chosen>Option 1 (your vote)</button>
+      </div>`;
+    const card = document.querySelector<HTMLElement>("[data-vote-seat]")!;
+    markVoted(card, 0);
+    const current = card.querySelector<HTMLElement>("[data-vote-current]")!;
+    expect(current.textContent).toBe("Option 0");
+    expect(current.classList.contains("badge-success")).toBe(true);
+    expect(card.querySelector<HTMLElement>("[data-vote-counted]")!.hidden).toBe(false);
+    const buttons = Array.from(card.querySelectorAll<HTMLButtonElement>("button"));
+    expect(buttons.map((b) => b.textContent)).toEqual(["Option 0 (your vote)", "Change to Option 1"]);
+    expect(buttons.map((b) => b.classList.contains("btn-outline"))).toEqual([true, false]);
+    expect(buttons.map((b) => b.hasAttribute("data-vote-chosen"))).toEqual([true, false]);
+  });
+
+  it("tolerates a card without the vote line", () => {
+    document.body.innerHTML = '<div data-vote-seat="S"><button data-vote-option="2">x</button></div>';
+    const card = document.querySelector<HTMLElement>("[data-vote-seat]")!;
+    markVoted(card, 2);
+    expect(card.querySelector("button")!.textContent).toBe("Option 2 (your vote)");
   });
 });
 

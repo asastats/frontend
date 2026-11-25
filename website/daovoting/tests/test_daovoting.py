@@ -601,6 +601,12 @@ class TestDaovotingVotePanelViews:
         assert "data-vote-below-max" in content
         assert '<h2 id="vote">Your seat</h2>' in content
         assert "data-vote-votes>300</dd>" in content
+        assert '<span class="badge badge-success" data-vote-current>Option 0</span>' in (
+            content
+        )
+        assert "data-vote-chosen>Option 0 (your vote)</button>" in content
+        assert '">Change to Option 1</button>' in content
+        assert ">Vote Option" not in content
 
     def test_daovoting_vote_panel_without_matching_snapshot(self, client):
         with mock.patch.object(fakes.FakeProvider, "document", return_value=b"edited"):
