@@ -7328,3 +7328,24 @@ drop it: Connect on an already connected wallet does not start a new session. Tw
   had; the reader connects again there when needed.
 
 The governor's way through: Disconnect, switch the wallet app to TestNet, Connect again on the panel.
+
+## website/daovoting/templatetags/dao_tags.py, website/templates/daovoting/ - proposal as Markdown, "Your seat", grouped votes (2026-11-25)
+
+Reported by the user from testnet session 3:
+
+- **The proposal is Markdown but showed as plain text** (`linebreaks`). It is now rendered by `markdown-it-py`
+  (new line in `requirements/base.txt`; it was already installed as a dependency of other packages, but never
+  required here). CommonMark plus tables, `html=False`, so raw HTML in a proposal is escaped; markdown-it's own link
+  check refuses `javascript:`, `vbscript:`, `file:` and non-image `data:` links. Links get `rel="nofollow noopener"`.
+  Standard line handling, not `breaks`: the published proposals hard-wrap their paragraphs, and `breaks` would put
+  a `<br>` in the middle of a sentence.
+  - The site has no typography plugin (`.prose` only sets daisyUI colour variables), and Preflight strips list
+    bullets and margins. So a core rule adds classes from `MARKDOWN_CLASSES`, using only utilities `style.tw.css`
+    already contains (checked one by one), so no Tailwind rebuild is needed. A class not already in the CSS would do
+    nothing until a rebuild.
+  - markdown-it puts a fenced block's attributes on `<code>` and an indented block's on `<pre>`; `block` makes both
+    render alike.
+- **"Your seats" is now "Your seat"**: a governor holds one seat. The loop over cards stays: a profile can link more
+  than one address, so in principle it can show more than one card.
+- **Votes on the card use thousands separators** (`grouped` filter), like Weight. Votes are whole numbers, not
+  micro-units, so `micro` does not apply. The ballots table's Votes column is unchanged.

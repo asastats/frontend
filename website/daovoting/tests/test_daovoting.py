@@ -11,7 +11,12 @@ from django.test import Client, override_settings
 
 from core.dao_provider import DaoProvider, get_dao_provider
 from daovoting import panel, summary
-from daovoting.templatetags.dao_tags import micro, short_address
+from daovoting.templatetags.dao_tags import (
+    grouped,
+    markdown,
+    micro,
+    short_address,
+)
 from daovoting.tests import fakes
 from walletauth.models import LinkedAddress
 
@@ -130,6 +135,32 @@ class TestDaovotingFilters:
         assert micro(1_234_567_890_000) == "1,234,567.89"
         assert micro(1) == "0.000001"
 
+    def test_daovoting_filters_grouped(self):
+        assert grouped(None) == "-"
+        assert grouped(0) == "0"
+        assert grouped(7298923) == "7,298,923"
+
+    def test_daovoting_filters_markdown(self):
+        html = markdown(
+            "# Title\n\nText **bold**\n\n- a\n\n1. b\n\n> q\n\n"
+            "| x |\n|---|\n| 1 |\n\n```\ncode\n```\n\n    indented\n\n"
+            "[ok](https://asastats.com) [bad](javascript:alert(1)) <script>x</script>"
+        )
+        assert '<h1 class="mt-6 mb-3">Title</h1>' in html
+        assert '<p class="mt-3">Text <strong>bold</strong></p>' in html
+        assert '<ul class="list-disc pl-6 mt-3">' in html
+        assert '<ol class="list-decimal pl-6 mt-3">' in html
+        assert '<blockquote class="border-l-4' in html
+        assert '<table class="table mt-3">' in html
+        assert html.count('class="block bg-base-200') == 2
+        assert (
+            '<a href="https://asastats.com" class="link" rel="nofollow noopener">ok</a>'
+            in html
+        )
+        assert "javascript:" in html and 'href="javascript' not in html
+        assert "&lt;script&gt;" in html and "<script>" not in html
+        assert markdown(None) == ""
+
     def test_daovoting_filters_short_address(self):
         assert short_address(fakes.SEAT_A) == "VW55KZ…K3CBSU"
         assert short_address("SHORT") == "SHORT"
@@ -201,7 +232,9 @@ class TestDaovotingViews:
         assert response.status_code == 200
         assert response.context["proposal_check"] == "match"
         assert response.context["snapshot_check"] == "match"
-        assert b"Raise the fee." in response.content
+        assert b'id="id-proposal-text"><p class="mt-3">Raise the fee.</p>' in (
+            response.content
+        )
         assert b'hx-trigger="every 30s"' in response.content
         assert f'data-seat="{fakes.SEAT_B}"'.encode() in response.content
         assert b"/" + fakes.SEAT_A.encode() + b'"' not in response.content
@@ -566,6 +599,8 @@ class TestDaovotingVotePanelViews:
         assert "gat 1047879402" in content and "LP token 1234" in content
         assert "not in the session's snapshot" in content
         assert "data-vote-below-max" in content
+        assert '<h2 id="vote">Your seat</h2>' in content
+        assert "data-vote-votes>300</dd>" in content
 
     def test_daovoting_vote_panel_without_matching_snapshot(self, client):
         with mock.patch.object(fakes.FakeProvider, "document", return_value=b"edited"):

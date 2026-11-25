@@ -27,6 +27,8 @@ drf-spectacular>=0.29.0  # TODO: pin an exact/latest version in production
 drf-spectacular-sidecar>=2026.6.1
 djangorestframework-xml>=2.0.0
 djangorestframework-yaml>=2.0.0
+## DAO proposal Markdown (daovoting/templatetags/dao_tags.py)
+markdown-it-py>=4.0.0
 
 ## Web push, for the alerts widget
 # pywebpush brings py_vapid, which is also what generates the key pair - see

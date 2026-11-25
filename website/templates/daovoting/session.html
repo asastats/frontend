@@ -21,7 +21,7 @@
   {% include "daovoting/_hash_badge.html" with check=proposal_check id="id-proposal-check" %}
   <p class="text-xs break-all text-base-content/60">sha256 on chain: {{ s.session.proposal_hash }}</p>
   {% if proposal_text %}
-  <div class="mt-4">{{ proposal_text|linebreaks }}</div>
+  <div class="mt-4" id="id-proposal-text">{{ proposal_text|markdown }}</div>
   <p class="text-sm"><a href="{% url 'dao_document' s.id 'proposal.md' %}" class="link">The proposal file as published</a></p>
   {% endif %}
 

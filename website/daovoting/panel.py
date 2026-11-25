@@ -21,9 +21,9 @@ def linked_seats(user, seat_votes):
     if not getattr(user, "is_authenticated", False):
         return []
     addresses = set(
-        LinkedAddress.objects.filter(
-            profile__user=user, chain="algorand"
-        ).values_list("address", flat=True)
+        LinkedAddress.objects.filter(profile__user=user, chain="algorand").values_list(
+            "address", flat=True
+        )
     )
     profile = getattr(user, "profile", None)
     if profile is not None and profile.address and profile.authorized:

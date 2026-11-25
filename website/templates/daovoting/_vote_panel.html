@@ -1,6 +1,6 @@
 {% load dao_tags %}
 {# id-dao-vote-panel and every data-vote-* attribute are read by wallet/src/voteBootstrap.ts #}
-<h2 id="vote">Your seats</h2>
+<h2 id="vote">Your seat</h2>
 <section id="id-dao-vote-panel" class="rounded-box border border-base-300 p-4" data-session-id="{{ s.id }}" data-app-id="{{ app_id }}" data-permission-app-id="{{ vote_panel.permission_app_id }}" data-network="{{ network }}" data-vote-method="{{ vote_panel.vote_method }}">
   {% if not vote_panel.cards %}
   <p>None of the Algorand addresses linked to your profile holds a governor seat. <a href="{% url 'profile_addresses' %}" class="link">Your linked addresses</a></p>
@@ -19,7 +19,7 @@
         <p>This seat is not in the session's snapshot, so it cannot vote in this session.</p>
         {% else %}
         <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-          <dt>Votes</dt><dd class="tabular-nums">{{ card.votes }}</dd>
+          <dt>Votes</dt><dd class="tabular-nums" data-vote-votes>{{ card.votes|grouped }}</dd>
           <dt>ASASTATS in the snapshot</dt><dd class="tabular-nums" data-vote-eligible>{{ card.eligible|micro }}</dd>
           <dt>Weight</dt><dd class="tabular-nums" data-vote-weight>{{ card.weight|micro }}</dd>
           <dt>Your vote</dt><dd data-vote-current>{% if card.voted_option is not None %}Option {{ card.voted_option }}{% else %}not voted{% endif %}</dd>
