@@ -7299,3 +7299,15 @@ changes `totals` (a changed option moves weight) or `voters_count`. One exceptio
 the same option with the same weight but a different `votes_of` (weight capped by its snapshot amount) changes only
 its ballot's `max_votes`, which the page then shows stale until another vote. Before the seal (`status` 0) the
 snapshot writes change ballots without touching the session box, so those keep the 30 s cache.
+
+## website/daovoting/panel.py - `linked_seats` counts the authorized profile address (2026-11-25)
+
+Testnet session 3 opened for voting, but governors saw no Connect buttons on `/dao/session/3/`. The panel took the
+seats only from `LinkedAddress` rows. A governor whose seat is the authorized `Profile.address` from before the
+wallet registry existed has no such row until they re-link it in the wallet flow (`walletauth/linking.py` creates the
+primary row only then; `walletauth/signals.py` never creates it). For them the panel said "None of the Algorand
+addresses linked to your profile holds a governor seat" and drew neither wallet nor vote buttons. Governance itself
+reads `Profile.address` (`Profile.votes_and_permission`, which requires `authorized`), so the panel now does the same:
+`profile.algorand_address` is added when `profile.address` and `profile.authorized` are both set. An unauthorized
+profile address (free text on the profile form) still does not count. The panel offers only the buttons; the contract
+checks that the signer is the seat.

@@ -9,6 +9,9 @@ from walletauth.models import LinkedAddress
 def linked_seats(user, seat_votes):
     """Return the user's Algorand-linked addresses that hold votes, sorted.
 
+    The authorized profile address counts too: legacy profiles have no
+    LinkedAddress row for it (logbook, 2026-11-25).
+
     :param user: requesting user
     :type user: :class:`django.contrib.auth.models.User`
     :param seat_votes: maximum votes keyed by seat address
@@ -17,10 +20,15 @@ def linked_seats(user, seat_votes):
     """
     if not getattr(user, "is_authenticated", False):
         return []
-    addresses = LinkedAddress.objects.filter(
-        profile__user=user, chain="algorand"
-    ).values_list("address", flat=True)
-    return sorted(address for address in set(addresses) if seat_votes.get(address, 0) > 0)
+    addresses = set(
+        LinkedAddress.objects.filter(
+            profile__user=user, chain="algorand"
+        ).values_list("address", flat=True)
+    )
+    profile = getattr(user, "profile", None)
+    if profile is not None and profile.address and profile.authorized:
+        addresses.add(profile.algorand_address)
+    return sorted(address for address in addresses if seat_votes.get(address, 0) > 0)
 
 
 def snapshot_venues(snapshot):

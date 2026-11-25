@@ -457,6 +457,33 @@ class TestDaovotingPanel:
             fakes.SEAT_A,
         ]
 
+    def test_daovoting_panel_linked_seats_authorized_profile_address(self):
+        votes = {fakes.SEAT_A: 300, fakes.SEAT_C: 5}
+        user = _user_with()
+        profile = user.profile
+        profile.address = fakes.SEAT_A
+        profile.save()
+        assert panel.linked_seats(user, votes) == []
+        profile.authorized = "nonce"
+        profile.save()
+        assert panel.linked_seats(user, votes) == [fakes.SEAT_A]
+        LinkedAddress.objects.create(
+            profile=profile,
+            address=fakes.SEAT_A,
+            canonical_address=fakes.SEAT_A,
+            chain="algorand",
+            auth_method="algorand_wallet",
+            is_primary=True,
+            login_enabled=True,
+        )
+        assert panel.linked_seats(user, votes) == [fakes.SEAT_A]
+
+    def test_daovoting_panel_linked_seats_without_profile(self):
+        user = mock.MagicMock(is_authenticated=True, profile=None)
+        with mock.patch.object(panel.LinkedAddress.objects, "filter") as filt:
+            filt.return_value.values_list.return_value = [fakes.SEAT_C]
+            assert panel.linked_seats(user, {fakes.SEAT_C: 5}) == [fakes.SEAT_C]
+
     def test_daovoting_panel_snapshot_venues(self):
         venues = panel.snapshot_venues(fakes.SNAPSHOT)
         assert venues[fakes.SEAT_B] == {"wallet": 40_000_000}
