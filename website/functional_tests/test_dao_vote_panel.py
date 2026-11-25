@@ -95,7 +95,9 @@ class DaoVotePanelTest(FunctionalTest):
         self._sign_in_with_seat()
         panel = self._open_session()
         buttons = self.wait_until(
-            lambda: panel.find_elements(By.CSS_SELECTOR, "[data-vote-wallets] button")
+            lambda: panel.find_elements(
+                By.CSS_SELECTOR, "[data-vote-wallets] button[data-vote-connect]"
+            )
         )
         self.assertTrue(all(b.text.startswith("Connect ") for b in buttons))
 

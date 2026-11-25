@@ -24,6 +24,7 @@ import {
   connectedAccounts,
   initVotePanel,
   onConnect,
+  onDisconnect,
   onVote,
   renderWallets,
   showAccounts,
@@ -59,6 +60,7 @@ function manager(wallets: ReturnType<typeof wallet>[], client = algod()) {
     signTransactions: jest.fn().mockResolvedValue([Uint8Array.of(1)]),
     getWallet: (id: string) => wallets.find((w) => w.id === id),
     resumeSessions: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
   } as any;
 }
 
@@ -88,6 +90,7 @@ function api(overrides: Partial<VoteApi> = {}): VoteApi {
   return {
     accounts: jest.fn(() => [SEAT]),
     connect: jest.fn().mockResolvedValue([SEAT]),
+    disconnect: jest.fn().mockResolvedValue(undefined),
     castVote: jest.fn().mockResolvedValue("TX9"),
     ...overrides,
   };
@@ -155,6 +158,12 @@ describe("buildVoteApi", () => {
     expect(castVote).toHaveBeenCalledWith(req, expect.objectContaining({ accounts: expect.any(Function) }));
   });
 
+  it("disconnects through the manager", async () => {
+    const m = manager([]);
+    await buildVoteApi(m).disconnect();
+    expect(m.disconnect).toHaveBeenCalled();
+  });
+
   it("refuses an unknown wallet", async () => {
     await expect(buildVoteApi(manager([])).connect("exodus")).rejects.toThrow("Unknown wallet: exodus");
   });
@@ -192,7 +201,14 @@ describe("panel rendering", () => {
     expect(Array.from(buttons, (b) => [b.dataset.voteConnect, b.textContent, b.type])).toEqual([
       ["pera", "Connect Pera", "button"],
       ["x", "Connect <b>X</b>", "button"],
+      [undefined, "Disconnect", "button"],
     ]);
+    const disconnect = p.querySelector<HTMLButtonElement>("button[data-vote-disconnect]")!;
+    expect(disconnect.hidden).toBe(true);
+    showAccounts(p, [SEAT]);
+    expect(disconnect.hidden).toBe(false);
+    showAccounts(p, []);
+    expect(disconnect.hidden).toBe(true);
   });
 
   it("renders no wallet buttons without their container", () => {
@@ -309,6 +325,32 @@ describe("onConnect", () => {
   });
 });
 
+describe("onDisconnect", () => {
+  it("disconnects and refreshes the accounts", async () => {
+    const p = panel();
+    window.asastatsVote = api({ accounts: jest.fn(() => []) });
+    await onDisconnect(p);
+    expect(window.asastatsVote.disconnect).toHaveBeenCalled();
+    expect(p.querySelector("[data-vote-accounts]")!.textContent).toBe(
+      "No wallet is connected in this browser.",
+    );
+  });
+
+  it.each([
+    [new Error("Disconnect failed"), "Disconnect failed"],
+    ["closed", "closed"],
+  ])("reports a failed disconnect (%p)", async (failure, message) => {
+    const p = panel();
+    window.asastatsVote = api({ disconnect: jest.fn().mockRejectedValue(failure) });
+    await onDisconnect(p);
+    expect(p.querySelector("[data-vote-accounts]")!.textContent).toBe(message);
+  });
+
+  it("does nothing before the wallet loads", async () => {
+    await expect(onDisconnect(panel())).resolves.toBeUndefined();
+  });
+});
+
 describe("initVotePanel", () => {
   const fetchMock = jest.fn();
   beforeEach(() => {
@@ -347,7 +389,8 @@ describe("initVotePanel", () => {
     expect(window.asastatsVote!.accounts()).toEqual([SEAT]);
     expect(
       Array.from(p.querySelectorAll("[data-vote-wallets] button"), (b) => b.textContent),
-    ).toEqual(["Connect Pera"]);
+    ).toEqual(["Connect Pera", "Disconnect"]);
+    expect(p.querySelector<HTMLButtonElement>("button[data-vote-disconnect]")!.hidden).toBe(false);
     expect(p.querySelector<HTMLElement>("[data-vote-seat]")!.dataset.voteConnected).toBe("true");
     expect(ready).toHaveBeenCalled();
 
@@ -394,6 +437,10 @@ describe("initVotePanel", () => {
     p.querySelector<HTMLButtonElement>("[data-vote-wallets] button")!.click();
     await flush();
     expect(stub.connect).toHaveBeenCalledWith("pera");
+
+    p.querySelector<HTMLButtonElement>("button[data-vote-disconnect]")!.click();
+    await flush();
+    expect(stub.disconnect).toHaveBeenCalledTimes(1);
 
     p.querySelector<HTMLElement>("[data-vote-accounts]")!.click();
     await flush();

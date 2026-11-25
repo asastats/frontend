@@ -7311,3 +7311,20 @@ reads `Profile.address` (`Profile.votes_and_permission`, which requires `authori
 `profile.algorand_address` is added when `profile.address` and `profile.authorized` are both set. An unauthorized
 profile address (free text on the profile form) still does not count. The panel offers only the buttons; the contract
 checks that the signer is the seat.
+
+## wallet/src/walletAdapters.ts, wallet/src/voteBootstrap.ts - testnet chain id and a Disconnect button on the vote panel (2026-11-25)
+
+Testnet session 3: a governor who had connected Pera on mainnet (to link the seat address) opened the testnet vote
+panel and could not sign. Every `WalletManager` on the site persists to the same localStorage key
+(`@txnlab/use-wallet:v5`), so the panel's testnet manager resumed the mainnet session, and the panel had no way to
+drop it: Connect on an already connected wallet does not start a new session. Two changes:
+
+- `createWalletManager(..., network)` passes `chainId` to Pera and Defly for testnet (416002) and betanet (416003)
+  through `withChainId`. Without it the adapters send no chain id, so a session opened from the testnet panel was not
+  asked for testnet. Mainnet adapters are returned unchanged, so every mainnet page behaves as before. Lute and
+  Kibisis take no chain id.
+- `renderWallets` adds a "Disconnect" button (`data-vote-disconnect`, hidden while nothing is connected); it calls
+  `WalletManager.disconnect()`. Because the storage is shared, this also ends the wallet session the rest of the site
+  had; the reader connects again there when needed.
+
+The governor's way through: Disconnect, switch the wallet app to TestNet, Connect again on the panel.

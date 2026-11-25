@@ -53,8 +53,30 @@ export function createWalletManager(
   network: string = NetworkId.MAINNET
 ): WalletManager {
   return new WalletManager({
-    wallets: getWalletAdapters(descriptors),
+    wallets: withChainId(getWalletAdapters(descriptors), network),
     defaultNetwork: network,
+  });
+}
+
+/** WalletConnect chain ids of the non-mainnet networks; mainnet keeps the adapters' default. */
+export const CHAIN_IDS: Record<string, 416002 | 416003> = { testnet: 416002, betanet: 416003 };
+
+/**
+ * Asks Pera and Defly for `network`'s chain, so their session signs there (logbook, 2026-11-25).
+ *
+ * @param adapters - Adapter configs from {@link getWalletAdapters}.
+ * @param network - Network id.
+ * @returns The configs, unchanged on mainnet.
+ */
+export function withChainId(adapters: WalletAdapterConfig[], network: string): WalletAdapterConfig[] {
+  const chainId = CHAIN_IDS[network];
+  if (!chainId) {
+    return adapters;
+  }
+  return adapters.map((config) => {
+    if (config.id === "pera") return pera({ chainId });
+    if (config.id === "defly") return defly({ chainId });
+    return config;
   });
 }
 

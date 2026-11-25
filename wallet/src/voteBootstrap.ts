@@ -19,6 +19,8 @@ export interface VoteApi {
   accounts: () => string[];
   /** Connect the wallet `walletId`; resolves with its accounts. */
   connect: (walletId: string) => Promise<string[]>;
+  /** Disconnect every connected wallet. */
+  disconnect: () => Promise<void>;
   /** Sign and submit one vote; resolves with the confirmed transaction id. */
   castVote: (req: VoteRequest) => Promise<string>;
 }
@@ -96,6 +98,7 @@ export function buildVoteApi(manager: WalletManager): VoteApi {
       }
       return (await wallet.connect()).map((account) => account.address);
     },
+    disconnect: () => manager.disconnect(),
     castVote: (req) => castVote(req, deps),
   };
 }
@@ -128,10 +131,13 @@ export function showAccounts(panel: HTMLElement, accounts: string[]): void {
   panel.querySelectorAll<HTMLElement>("[data-vote-seat]").forEach((card) => {
     card.dataset.voteConnected = String(accounts.includes(card.dataset.voteSeat || ""));
   });
+  panel.querySelectorAll<HTMLElement>("button[data-vote-disconnect]").forEach((button) => {
+    button.hidden = accounts.length === 0;
+  });
 }
 
 /**
- * One "Connect <wallet>" button per supported wallet, into `[data-vote-wallets]`.
+ * One "Connect <wallet>" button per supported wallet and a "Disconnect" button, into `[data-vote-wallets]`.
  *
  * @param doc - Document creating the buttons.
  * @param panel - The panel.
@@ -142,6 +148,12 @@ export function renderWallets(doc: Document, panel: HTMLElement, wallets: Wallet
   if (!box) {
     return;
   }
+  const disconnect = doc.createElement("button");
+  disconnect.type = "button";
+  disconnect.className = "btn btn-sm btn-ghost";
+  disconnect.dataset.voteDisconnect = "";
+  disconnect.textContent = "Disconnect";
+  disconnect.hidden = true;
   box.replaceChildren(
     ...wallets.map((wallet) => {
       const button = doc.createElement("button");
@@ -151,6 +163,7 @@ export function renderWallets(doc: Document, panel: HTMLElement, wallets: Wallet
       button.textContent = `Connect ${wallet.name}`;
       return button;
     }),
+    disconnect,
   );
 }
 
@@ -228,6 +241,24 @@ export async function onConnect(panel: HTMLElement, button: HTMLButtonElement): 
 }
 
 /**
+ * Disconnect every wallet, then refresh the connected accounts.
+ *
+ * @param panel - The panel.
+ */
+export async function onDisconnect(panel: HTMLElement): Promise<void> {
+  const api = window.asastatsVote;
+  if (!api) {
+    return;
+  }
+  try {
+    await api.disconnect();
+    showAccounts(panel, api.accounts());
+  } catch (error) {
+    say(panel, "[data-vote-accounts]", error instanceof Error ? error.message : String(error));
+  }
+}
+
+/**
  * Bind the panel's buttons, then build the wallet manager and publish `window.asastatsVote`.
  *
  * A no-op without the panel or when already bound. A `window.asastatsVote` set
@@ -253,6 +284,11 @@ export async function initVotePanel(doc: Document = document): Promise<void> {
     if (connect) {
       event.preventDefault();
       void onConnect(panel, connect);
+      return;
+    }
+    if (target.closest("button[data-vote-disconnect]")) {
+      event.preventDefault();
+      void onDisconnect(panel);
     }
   });
 

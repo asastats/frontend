@@ -7,6 +7,7 @@ import {
   getWalletAdapters,
   createWalletManager,
   uint8ArrayToBase64,
+  withChainId,
 } from "./walletAdapters";
 import { WalletManager } from "@txnlab/use-wallet";
 
@@ -95,6 +96,25 @@ describe("walletAdapters", () => {
 
     it("uses the network a page asks for", () => {
       expect(createWalletManager([{ id: "pera" }], "testnet").activeNetwork).toBe("testnet");
+    });
+  });
+
+  describe("withChainId", () => {
+    it("keeps mainnet adapters unchanged", () => {
+      const adapters = getWalletAdapters(["pera", "defly"]);
+      expect(withChainId(adapters, "mainnet")).toBe(adapters);
+    });
+
+    it.each([
+      ["testnet", 416002],
+      ["betanet", 416003],
+    ])("asks Pera and Defly for the %s chain", (network, chainId) => {
+      const configs = withChainId(getWalletAdapters(["pera", "defly", "lute"]), network);
+      expect(configs.map((c) => [c.id, (c.options as any)?.chainId])).toEqual([
+        ["pera", chainId],
+        ["defly", chainId],
+        ["lute", undefined],
+      ]);
     });
   });
 
