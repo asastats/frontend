@@ -3,6 +3,7 @@ source = .
 omit =
     */tests/*
     website/permissiondapp/*
+    website/votingdapp/*
     website/widgets/*
     website/manage.py
     */__init__.py

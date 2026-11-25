@@ -7369,3 +7369,6 @@ reads "Option N (your vote)" and carries `data-vote-chosen`, and the others read
 enabled: voting the same option again is harmless, re-reads `votes_of`, and `test_a_refused_vote_shows_the_reason`
 clicks it. `markVoted` does the same in the browser once a vote confirms, so the card is right without a reload. The
 template and `markVoted` must produce the same labels.
+
+*Correction, 2026-11-25, later:* "counted in the totals" next to the badge is removed at the user's request; the badge
+alone marks the vote. `markVoted` no longer touches `[data-vote-counted]`, which no longer exists.

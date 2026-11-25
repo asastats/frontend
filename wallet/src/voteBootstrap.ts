@@ -198,10 +198,6 @@ export function markVoted(card: HTMLElement, option: number): void {
     current.textContent = `Option ${option}`;
     current.classList.add("badge", "badge-success");
   }
-  const counted = card.querySelector<HTMLElement>("[data-vote-counted]");
-  if (counted) {
-    counted.hidden = false;
-  }
   card.querySelectorAll<HTMLButtonElement>("button[data-vote-option]").forEach((button) => {
     const index = Number(button.dataset.voteOption);
     const chosen = index === option;
