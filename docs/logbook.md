@@ -7349,3 +7349,13 @@ Reported by the user from testnet session 3:
   than one address, so in principle it can show more than one card.
 - **Votes on the card use thousands separators** (`grouped` filter), like Weight. Votes are whole numbers, not
   micro-units, so `micro` does not apply. The ballots table's Votes column is unchanged.
+
+## deploy/roles/projectsetup/tasks/environment.yml - the DAO_* keys in env_var_keys (2026-11-25)
+
+After the deploy of `a9f0ce1`, `/dao/` said voting is "not available on this site yet" and every session page
+returned 404. The role rewrites `website/.env` from `env_var_keys`, which had no `DAO_*` entry. Step 0.4 of
+`dao-voting/testnet-dry-run/TESTNET-DRY-RUN.md` (workspace) asked for exactly this, but the keys lived only in a
+hand-edited `.env` on the server, and this deploy dropped them. Without `DAO_NETWORK` the provider reads mainnet,
+whose `VOTING_APP_ID` is None, so `available()` is False and `dao_session` raises 404. Now `DAO_PROVIDER`,
+`DAO_NETWORK` and `DAO_DOCUMENTS_DIR` are on the list. Their values go in `deploy/.env.production`, which is
+git-ignored and so never travels in a patch.
