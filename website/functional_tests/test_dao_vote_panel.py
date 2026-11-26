@@ -66,7 +66,7 @@ class DaoVotePanelTest(FunctionalTest):
     def _status(self):
         return self._card().find_element(By.CSS_SELECTOR, "[data-vote-status]").text
 
-    def test_a_governor_sees_their_seat_with_its_snapshot_venues(self):
+    def test_a_governor_sees_their_seat_with_its_venues_so_far(self):
         self._sign_in_with_seat()
         panel = self._open_session()
         self.assertEqual(panel.get_attribute("data-permission-app-id"), "750094865")
@@ -75,10 +75,10 @@ class DaoVotePanelTest(FunctionalTest):
         )
         card = self._card()
         self.assertEqual(
-            card.find_element(By.CSS_SELECTOR, "[data-vote-eligible]").text, "50"
+            card.find_element(By.CSS_SELECTOR, "[data-vote-amount]").text, "50"
         )
         self.assertEqual(
-            card.find_element(By.CSS_SELECTOR, "[data-vote-weight]").text, "50"
+            card.find_element(By.CSS_SELECTOR, "[data-vote-weight]").text, "at most 50"
         )
         self.assertEqual(
             card.find_element(By.CSS_SELECTOR, "[data-vote-current]").text, "Option 0"
@@ -88,7 +88,7 @@ class DaoVotePanelTest(FunctionalTest):
         self.assertIn("Wallet", venues)
         self.assertIn("gat 1047879402", venues)
         self.assertEqual(
-            len(card.find_elements(By.CSS_SELECTOR, "button[data-vote-option]")), 2
+            len(card.find_elements(By.CSS_SELECTOR, "button[data-vote-option]")), 3
         )
 
     def test_the_wallet_buttons_come_from_the_supported_wallets(self):
@@ -116,7 +116,7 @@ class DaoVotePanelTest(FunctionalTest):
                 b.text
                 for b in card.find_elements(By.CSS_SELECTOR, "button[data-vote-option]")
             ],
-            ["Change to Option 0", "Option 1 (your vote)"],
+            ["Change to Option 0", "Option 1 (your vote)", "Change to Option 2"],
         )
         request = self.browser.execute_script("return window.__votes[0];")
         self.assertEqual(

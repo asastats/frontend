@@ -25,7 +25,7 @@ from votingdapp.dapp.helpers import (
 )
 from votingdapp.dapp.network import _box_value, app_global_state, session_values
 
-DOCUMENT_NAMES = ("proposal.md", "snapshot.json")
+DOCUMENT_NAMES = ("proposal.md", "final.json", "sofar.json")
 READ_WORKERS = 16  # box reads in flight at once against the node
 
 
@@ -164,12 +164,10 @@ class VotingDappProvider(DaoProvider):
             }
 
         session = self.session(session_id)
-        if (
-            session is None or session["status"] == 0
-        ):  # snapshot writes don't touch the session box
+        if session is None or session["status"] == 0:  # a changed vote leaves it alone
             return self._cached(f"ballots:{session_id}", read)
 
-        # sealed: ballots change only with a vote, and every vote changes the session box
+        # sealed: the ballots can't change any more
         totals = ",".join(str(total) for total in session["totals"])
         key = (
             f"ballots:{session_id}:{session['status']}:{session['voters_count']}:{totals}"

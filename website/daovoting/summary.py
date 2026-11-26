@@ -1,22 +1,21 @@
 """Render-ready values computed from the Voting dApp's boxes; no network here."""
 
 import hashlib
+import json
 
 MICRO = 1_000_000
 NOT_VOTED = 255
-ROUNDS_PER_DAY = 30_000  # the Voting dApp README's figure
+ROUNDS_PER_DAY = 31_900  # testnet, measured 2026-11-26 (docs/logbook.md)
 EMPTY_HASH = "0" * 64
 
-STATUS_SNAPSHOT_OPEN, STATUS_SEALED, STATUS_PASSED, STATUS_FAILED = 0, 1, 2, 3
+STATUS_OPEN, STATUS_SEALED, STATUS_PASSED, STATUS_FAILED = 0, 1, 2, 3
 
 #: phase key -> label; the keys are asserted by the functional tests
 PHASES = {
-    "snapshot": "Snapshot not taken yet",
-    "review": "Snapshot under review",
-    "lapsed": "Not sealed before the start, no voting",
-    "sealed": "Snapshot sealed, voting not started",
+    "upcoming": "Voting not started",
     "voting": "Voting open",
-    "ended": "Voting ended, result not recorded",
+    "weighing": "Voting ended, weights under review",
+    "sealed": "Weights sealed, result not recorded",
     "passed": "Passed",
     "failed": "Failed",
 }
@@ -36,14 +35,12 @@ def phase(session, current_round):
         return "passed"
     if status == STATUS_FAILED:
         return "failed"
-    now = current_round or 0
-    if status == STATUS_SNAPSHOT_OPEN:
-        if now >= session["start_round"]:
-            return "lapsed"  # the contract refuses both the seal and votes now
-        return "snapshot" if now < session["snapshot_round"] else "review"
-    if now < session["start_round"]:
+    if status == STATUS_SEALED:
         return "sealed"
-    return "voting" if now <= session["end_round"] else "ended"
+    now = current_round or 0
+    if now < session["start_round"]:
+        return "upcoming"
+    return "voting" if now <= session["end_round"] else "weighing"
 
 
 def countdown(target_round, current_round):
@@ -61,16 +58,16 @@ def countdown(target_round, current_round):
     return {"rounds": rounds, "days": round(rounds / ROUNDS_PER_DAY, 1)}
 
 
-def potential_weight(eligible, votes):
-    """Return a seat's weight if it voted now: min(votes × 10⁶, eligible).
+def potential_weight(amount, votes):
+    """Return min(votes × 10⁶, amount), the weight a seat's lowest amount gives.
 
-    :param eligible: micro-ASASTATS in the snapshot
-    :type eligible: int
+    :param amount: lowest micro-ASASTATS held
+    :type amount: int
     :param votes: the seat's maximum votes
     :type votes: int
     :return: int
     """
-    return min(votes * MICRO, eligible)
+    return min(votes * MICRO, amount)
 
 
 def hash_check(document, onchain_hash):
@@ -89,37 +86,85 @@ def hash_check(document, onchain_hash):
     return "match" if hashlib.sha256(document).hexdigest() == onchain_hash else "differs"
 
 
-def ballot_rows(ballots, seat_votes):
-    """Return one row per seat in the snapshot, the largest eligible first.
+def period_file(document):
+    """Return a published final or so-far file's rounds and seats, None if unreadable.
+
+    :param document: content of ``final.json`` or ``sofar.json`` (``daosnapshot --to``)
+    :type document: bytes
+    :return: dict
+    """
+    try:
+        data = json.loads(document)
+        seats = {
+            address: {"total": int(values["total"]), "venues": dict(values["venues"])}
+            for address, values in data["seats"].items()
+        }
+        return {
+            "end_round": int(data["end_round"]),
+            "end_timestamp": int(data.get("end_timestamp") or 0),
+            "seats": seats,
+        }
+    except (TypeError, ValueError, KeyError, AttributeError):
+        return None
+
+
+def ballot_rows(ballots, seat_votes, amounts):
+    """Return one row per seat with votes or a ballot, the most votes first.
+
+    A written final amount wins; otherwise the weight comes from `amounts` (the
+    so-far file) as an upper bound, and is None without it.
 
     :param ballots: decoded ballots keyed by seat address
     :type ballots: dict
     :param seat_votes: maximum votes keyed by seat address
     :type seat_votes: dict
+    :param amounts: lowest micro-ASASTATS so far keyed by seat, None if unknown
+    :type amounts: dict
     :return: list
     """
     rows = []
-    for address, ballot in ballots.items():
-        voted = ballot["option"] != NOT_VOTED
-        rows.append(
-            {
-                "address": address,
-                "eligible": ballot["eligible"],
-                "voted": voted,
-                "option": ballot["option"] if voted else None,
-                "max_votes": ballot["max_votes"] if voted else seat_votes.get(address, 0),
-                "weight": (
-                    ballot["weight"]
-                    if voted
-                    else potential_weight(ballot["eligible"], seat_votes.get(address, 0))
-                ),
-            }
-        )
-    return sorted(rows, key=lambda row: (-row["eligible"], row["address"]))
+    for address in set(seat_votes) | set(ballots):
+        ballot = ballots.get(address)
+        votes = ballot["max_votes"] if ballot else seat_votes.get(address, 0)
+        row = {
+            "address": address,
+            "voted": ballot is not None,
+            "option": ballot["option"] if ballot else None,
+            "max_votes": votes,
+            "final": bool(ballot and ballot["weighed"]),
+            "amount": None,
+            "weight": None,
+        }
+        if row["final"]:
+            row.update({"amount": ballot["eligible"], "weight": ballot["weight"]})
+        elif amounts is not None:
+            amount = amounts.get(address, 0)
+            row.update({"amount": amount, "weight": potential_weight(amount, votes)})
+        rows.append(row)
+    return sorted(rows, key=lambda row: (-row["max_votes"], row["address"]))
 
 
-def session_summary(session_id, session, ballots, seat_votes, current_round):
+def _provisional_totals(rows, options_count):
+    """Return the so-far totals per option from the voters' rows.
+
+    :param rows: ballot rows
+    :type rows: list
+    :param options_count: number of options
+    :type options_count: int
+    :return: list
+    """
+    totals = [0] * options_count
+    for row in rows:
+        if row["voted"] and row["weight"] is not None and row["option"] < options_count:
+            totals[row["option"]] += row["weight"]
+    return totals
+
+
+def session_summary(session_id, session, ballots, seat_votes, current_round, sofar=None):
     """Return everything the index and session pages show about one session.
+
+    Before any final amount is written, the totals are those of the so-far file
+    (`provisional`, an upper bound), or unknown without one.
 
     :param session_id: voting session identifier
     :type session_id: int
@@ -131,20 +176,36 @@ def session_summary(session_id, session, ballots, seat_votes, current_round):
     :type seat_votes: dict
     :param current_round: latest round, None if unknown
     :type current_round: int
+    :param sofar: the published so-far file, read by :func:`period_file`
+    :type sofar: dict
     :return: dict
     """
-    rows = ballot_rows(ballots, seat_votes)
-    turnout = sum(session["totals"])
-    possible = sum(row["weight"] for row in rows)
     key = phase(session, current_round)
+    on_chain = session["status"] != STATUS_OPEN or session["weighed_count"] > 0
+    amounts = None
+    if sofar is not None and not on_chain:
+        amounts = {address: seat["total"] for address, seat in sofar["seats"].items()}
+    rows = ballot_rows(ballots, seat_votes, amounts)
+    if on_chain:
+        totals = session["totals"]
+    elif amounts is not None:
+        totals = _provisional_totals(rows, session["options_count"])
+    else:
+        totals = None
+
+    turnout = sum(totals) if totals is not None else None
+    weights = [row["weight"] for row in rows if row["weight"] is not None]
+    possible = sum(weights) if weights else None
+    abstain = session["abstain"]
     options = [
         {
             "index": index,
+            "abstain": index == abstain,
             "total": total,
             "share": round(100 * total / turnout, 2) if turnout else 0,
             "winner": key == "passed" and index == session["winner"],
         }
-        for index, total in enumerate(session["totals"])
+        for index, total in enumerate(totals or [None] * session["options_count"])
     ]
     quorum = session["quorum"]
     return {
@@ -156,20 +217,29 @@ def session_summary(session_id, session, ballots, seat_votes, current_round):
         "rows": rows,
         "seats": len(rows),
         "voters": session["voters_count"],
+        "weighed": session["weighed_count"],
+        "provisional": totals is not None and not on_chain,
+        "sofar_round": sofar["end_round"] if amounts is not None else None,
+        "sofar_timestamp": sofar["end_timestamp"] if amounts is not None else None,
         "turnout": turnout,
         "possible": possible,
-        "turnout_share": round(100 * turnout / possible, 2) if possible else 0,
+        "turnout_share": (
+            round(100 * turnout / possible, 2) if turnout is not None and possible else 0
+        ),
         "quorum": quorum,
-        "quorum_share": min(100, round(100 * turnout / quorum, 2)) if quorum else 100,
+        "quorum_share": (
+            min(100, round(100 * turnout / quorum, 2)) if quorum and turnout else 0
+        ),
         "threshold": f"{session['threshold_num']}/{session['threshold_den']}",
-        "to_snapshot": countdown(session["snapshot_round"], current_round),
+        "has_abstain": abstain < session["options_count"],
         "to_start": countdown(session["start_round"], current_round),
         "to_end": countdown(session["end_round"] + 1, current_round),
+        "to_seal": countdown(session["seal_round"], current_round),
     }
 
 
 def governor_rows(seat_votes, sessions_ballots):
-    """Return one row per seat: votes, latest snapshot amount, participation.
+    """Return one row per seat: votes and the sessions it voted in.
 
     :param seat_votes: maximum votes keyed by seat address
     :type seat_votes: dict
@@ -177,31 +247,16 @@ def governor_rows(seat_votes, sessions_ballots):
     :type sessions_ballots: dict
     :return: list
     """
-    latest = max(
-        (sid for sid, ballots in sessions_ballots.items() if ballots), default=None
-    )
-    rows = []
-    for address, votes in seat_votes.items():
-        in_snapshot = [
-            sid for sid in sorted(sessions_ballots) if address in sessions_ballots[sid]
-        ]
-        voted = [
-            sid
-            for sid in in_snapshot
-            if sessions_ballots[sid][address]["option"] != NOT_VOTED
-        ]
-        eligible = (
-            sessions_ballots[latest].get(address, {}).get("eligible", 0)
-            if latest is not None
-            else None
-        )
-        rows.append(
-            {
-                "address": address,
-                "votes": votes,
-                "eligible": eligible,
-                "in_snapshot": in_snapshot,
-                "voted": voted,
-            }
-        )
-    return sorted(rows, key=lambda row: (-row["votes"], row["address"])), latest
+    rows = [
+        {
+            "address": address,
+            "votes": votes,
+            "voted": [
+                sid
+                for sid in sorted(sessions_ballots)
+                if address in sessions_ballots[sid]
+            ],
+        }
+        for address, votes in seat_votes.items()
+    ]
+    return sorted(rows, key=lambda row: (-row["votes"], row["address"]))

@@ -7379,3 +7379,24 @@ Testnet session 3 had quorum 0, and both pages said "Quorum 100 % reached" with 
 set and met (`quorum_share` is 100 when there is no quorum, so the summary stays a number). The pages now say "No
 quorum" when the session's quorum is 0, and the bar shows the turnout share of the possible weight instead. With a
 quorum set, nothing changes.
+
+## website/daovoting/, website/templates/daovoting/, website/core/dao_providers/votingdapp.py - weight from the lowest amount held while voting (2026-11-26)
+
+The Voting dApp no longer has a snapshot (voting-dapp logbook, same date): a vote records only the option, the
+admin writes each voter's lowest ASASTATS after the end round, and seals the final file after a review. The pages
+follow:
+
+- **Phases** are `upcoming`, `voting`, `weighing` (ended, weights written and reviewed), `sealed`, `passed`,
+  `failed`. `snapshot`, `review`, `lapsed` and `ended` are gone with the snapshot.
+- **Published files** are `proposal.md`, `final.json` (hash on chain at the seal) and `sofar.json`, the engine's
+  `daosnapshot START … --to <latest>` output, published during voting so the page can show totals before any final
+  amount exists. A seat's lowest amount so far can only go down, so those totals and weights are labelled "at most".
+  Once any final amount is written, the on-chain totals are used and the so-far file is ignored.
+- **Rows** are every seat with votes, not the seats of a snapshot; any of them can vote.
+- **Abstain** is labelled in the options table and the rule line; the vote buttons keep "Option N", because
+  `markVoted` in `voteBootstrap.ts` rewrites those labels and does not know about Abstain.
+- The vote panel shows the lowest amount (so far or final) and the venues where it was found, from the final file
+  when it matches the chain, else from the so-far file.
+- `ROUNDS_PER_DAY` is 31,900, measured on testnet over session 3 (2.706 s a round).
+- Nothing in `wallet/` changes: `vote(uint64,uint64)void` and its box references are the same, and the ballot box
+  that the call now creates has the same name.

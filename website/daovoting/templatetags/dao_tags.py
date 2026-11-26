@@ -1,5 +1,6 @@
 """Template filters for the DAO voting pages."""
 
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from django import template
@@ -83,3 +84,16 @@ def short_address(address):
     :return: str
     """
     return f"{address[:6]}…{address[-6:]}" if len(address) > 14 else address
+
+
+@register.filter
+def utc_time(timestamp):
+    """Return a block timestamp as ``YYYY-MM-DD HH:MM UTC``, "" when unknown.
+
+    :param timestamp: seconds since the epoch
+    :type timestamp: int
+    :return: str
+    """
+    if not timestamp:
+        return ""
+    return datetime.fromtimestamp(timestamp, UTC).strftime("%Y-%m-%d %H:%M UTC")

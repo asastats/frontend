@@ -22,14 +22,15 @@
     <div class="card-body">
       <h2 class="card-title"><a href="{% url 'dao_session' s.id %}" class="link link-hover">Session {{ s.id }}</a>
         <span class="badge badge-outline">{{ s.phase_label }}</span></h2>
-      <p class="text-sm">{{ s.voters }} of {{ s.seats }} seats voted; {{ s.turnout|micro }} of {{ s.possible|micro }} possible weight ({{ s.turnout_share }} %).</p>
+      {% if s.turnout is None %}<p class="text-sm">{{ s.voters }} seats voted; weights are known after voting ends.</p>
+      {% else %}<p class="text-sm">{{ s.voters }} of {{ s.seats }} seats voted; {% if s.provisional %}at most {% endif %}{{ s.turnout|micro }} of {{ s.possible|micro }} possible weight ({{ s.turnout_share }} %).</p>
       {% if s.quorum %}<p class="text-sm">Quorum {{ s.quorum|micro }}: {{ s.quorum_share }} % reached.</p>
       <progress class="progress progress-primary" value="{{ s.quorum_share }}" max="100"></progress>
       {% else %}<p class="text-sm">No quorum.</p>
-      <progress class="progress progress-primary" value="{{ s.turnout_share }}" max="100"></progress>{% endif %}
-      {% if s.phase == "snapshot" and s.to_snapshot %}<p class="text-sm text-base-content/70">Snapshot in {{ s.to_snapshot.rounds }} rounds (about {{ s.to_snapshot.days }} days).</p>
-      {% elif s.phase == "review" or s.phase == "sealed" %}{% if s.to_start %}<p class="text-sm text-base-content/70">Voting starts in {{ s.to_start.rounds }} rounds (about {{ s.to_start.days }} days).</p>{% endif %}
-      {% elif s.phase == "voting" and s.to_end %}<p class="text-sm text-base-content/70">Voting ends in {{ s.to_end.rounds }} rounds (about {{ s.to_end.days }} days).</p>{% endif %}
+      <progress class="progress progress-primary" value="{{ s.turnout_share }}" max="100"></progress>{% endif %}{% endif %}
+      {% if s.phase == "upcoming" and s.to_start %}<p class="text-sm text-base-content/70">Voting starts in {{ s.to_start.rounds }} rounds (about {{ s.to_start.days }} days).</p>
+      {% elif s.phase == "voting" and s.to_end %}<p class="text-sm text-base-content/70">Voting ends in {{ s.to_end.rounds }} rounds (about {{ s.to_end.days }} days).</p>
+      {% elif s.phase == "weighing" and s.to_seal %}<p class="text-sm text-base-content/70">Weights under review; sealing possible in {{ s.to_seal.rounds }} rounds (about {{ s.to_seal.days }} days).</p>{% endif %}
     </div>
   </section>
   {% endfor %}

@@ -73,7 +73,7 @@ class DaoProvider:
         return None
 
     def document(self, session_id, name):
-        """Return a session's published file (``proposal.md``, ``snapshot.json``).
+        """Return a session's published file (``proposal.md``, ``final.json``, ``sofar.json``).
 
         :param session_id: voting session identifier
         :type session_id: int

@@ -1,8 +1,6 @@
 """The vote panel: one card per seat the signed-in user has linked; see docs/logbook.md."""
 
-import json
-
-from daovoting.summary import MICRO, potential_weight
+from daovoting.summary import MICRO
 from walletauth.models import LinkedAddress
 
 
@@ -31,26 +29,8 @@ def linked_seats(user, seat_votes):
     return sorted(address for address in addresses if seat_votes.get(address, 0) > 0)
 
 
-def snapshot_venues(snapshot):
-    """Return each seat's venues from a published snapshot file, {} if unreadable.
-
-    :param snapshot: content of ``snapshot.json`` (the engine's ``daosnapshot`` output)
-    :type snapshot: bytes
-    :return: dict
-    """
-    try:
-        seats = json.loads(snapshot)["seats"]
-        return {
-            address: dict(values["venues"])
-            for address, values in seats.items()
-            if isinstance(values, dict) and isinstance(values.get("venues"), dict)
-        }
-    except (TypeError, ValueError, KeyError, AttributeError):
-        return {}
-
-
 def venue_label(name):
-    """Return a reader's label for a snapshot venue key.
+    """Return a reader's label for a venue key of the engine's period file.
 
     :param name: ``wallet``, ``lp <token>`` or ``<code> <dApp>[ lp <token>]``
     :type name: str
@@ -64,7 +44,7 @@ def venue_label(name):
 
 
 def vote_cards(seats, rows, seat_votes, venues):
-    """Return one card per seat: votes, snapshot amount, venues, weight, own ballot.
+    """Return one card per seat: votes, lowest amount, venues, weight, own ballot.
 
     :param seats: the user's seat addresses
     :type seats: list
@@ -72,7 +52,7 @@ def vote_cards(seats, rows, seat_votes, venues):
     :type rows: list
     :param seat_votes: maximum votes keyed by seat address
     :type seat_votes: dict
-    :param venues: venues keyed by seat, from a snapshot file that matches the chain
+    :param venues: venues keyed by seat, from the final or so-far file
     :type venues: dict
     :return: list
     """
@@ -80,20 +60,21 @@ def vote_cards(seats, rows, seat_votes, venues):
     cards = []
     for address in seats:
         votes = seat_votes[address]
-        row = by_address.get(address)
-        card = {"address": address, "votes": votes, "in_snapshot": row is not None}
-        if row is not None:
-            card.update(
-                {
-                    "eligible": row["eligible"],
-                    "weight": potential_weight(row["eligible"], votes),
-                    "below_max": row["eligible"] < votes * MICRO,
-                    "voted_option": row["option"] if row["voted"] else None,
-                    "venues": [
-                        {"name": venue_label(name), "amount": amount}
-                        for name, amount in venues.get(address, {}).items()
-                    ],
-                }
-            )
-        cards.append(card)
+        row = by_address.get(address, {})
+        amount = row.get("amount")
+        cards.append(
+            {
+                "address": address,
+                "votes": votes,
+                "amount": amount,
+                "weight": row.get("weight"),
+                "final": row.get("final", False),
+                "below_max": amount is not None and amount < votes * MICRO,
+                "voted_option": row.get("option"),
+                "venues": [
+                    {"name": venue_label(name), "amount": value}
+                    for name, value in venues.get(address, {}).items()
+                ],
+            }
+        )
     return cards

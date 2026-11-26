@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load dao_tags %}
 {% block title %}{{ WEBSITE_NAME }} - DAO governors{% endblock %}
-{% block description %}ASA Stats DAO governor seats: votes, eligible ASASTATS and participation{% endblock %}
+{% block description %}ASA Stats DAO governor seats: votes and participation{% endblock %}
 {% block keywords %}{{ WEBSITE_SHORT_NAME }},Algorand,DAO,governance,governors,ASASTATS{% endblock %}
 {% block content %}
 <header class="mx-auto mb-10 max-w-3xl text-center">
@@ -13,20 +13,19 @@
   {% if not available %}
   <p id="id-dao-unavailable">Voting is not available on this site yet.</p>
   {% else %}
-  <p class="text-sm text-base-content/70">{{ rows|length }} seats. {% if latest %}Eligible ASASTATS are those of session {{ latest }}'s snapshot.{% else %}No snapshot has been written yet.{% endif %}</p>
+  <p class="text-sm text-base-content/70">{{ rows|length }} seats, {{ session_count }} sessions.</p>
   <div class="overflow-x-auto">
     <table class="table" id="id-dao-governors">
-      <thead><tr><th>Seat</th><th class="text-right">Votes</th><th class="text-right">Eligible ASASTATS</th><th>Voted in</th></tr></thead>
+      <thead><tr><th>Seat</th><th class="text-right">Votes</th><th>Voted in</th></tr></thead>
       <tbody>
         {% for row in rows %}
         <tr data-seat="{{ row.address }}">
           <td class="whitespace-nowrap">{% if network == "mainnet" %}<a href="{% url 'address' row.address %}" class="link link-hover" title="{{ row.address }}">{{ row.address|short_address }}</a>{% else %}<span title="{{ row.address }}">{{ row.address|short_address }}</span>{% endif %}</td>
           <td class="text-right tabular-nums">{{ row.votes }}</td>
-          <td class="text-right tabular-nums">{{ row.eligible|micro }}</td>
-          <td>{% if row.in_snapshot %}{{ row.voted|length }} of {{ row.in_snapshot|length }}{% for sid in row.voted %} <a href="{% url 'dao_session' sid %}" class="link">#{{ sid }}</a>{% endfor %}{% else %}<span class="text-base-content/60">in no snapshot</span>{% endif %}</td>
+          <td>{% if row.voted %}{{ row.voted|length }} of {{ session_count }}{% for sid in row.voted %} <a href="{% url 'dao_session' sid %}" class="link">#{{ sid }}</a>{% endfor %}{% else %}<span class="text-base-content/60">not voted yet</span>{% endif %}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="4">No seat has votes.</td></tr>
+        <tr><td colspan="3">No seat has votes.</td></tr>
         {% endfor %}
       </tbody>
     </table>

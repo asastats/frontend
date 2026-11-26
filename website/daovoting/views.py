@@ -4,10 +4,19 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import render
 
 from core.dao_provider import get_dao_provider
-from daovoting.panel import linked_seats, snapshot_venues, vote_cards
-from daovoting.summary import governor_rows, hash_check, session_summary
+from daovoting.panel import linked_seats, vote_cards
+from daovoting.summary import (
+    governor_rows,
+    hash_check,
+    period_file,
+    session_summary,
+)
 
-CONTENT_TYPES = {"proposal.md": "text/markdown", "snapshot.json": "application/json"}
+CONTENT_TYPES = {
+    "proposal.md": "text/markdown",
+    "final.json": "application/json",
+    "sofar.json": "application/json",
+}
 
 
 def _base_context(provider):
@@ -40,12 +49,18 @@ def _summary(provider, session_id, current_round, seat_votes):
     session = provider.session(session_id)
     if session is None:
         return None
+    sofar = provider.document(session_id, "sofar.json")
     return session_summary(
-        session_id, session, provider.ballots(session_id), seat_votes, current_round
+        session_id,
+        session,
+        provider.ballots(session_id),
+        seat_votes,
+        current_round,
+        period_file(sofar) if sofar else None,
     )
 
 
-def _vote_panel(user, provider, summary, snapshot, snapshot_check):
+def _vote_panel(user, provider, summary, venues):
     """Return the vote panel's context for a signed-in user, None for a visitor.
 
     :param user: requesting user
@@ -54,22 +69,20 @@ def _vote_panel(user, provider, summary, snapshot, snapshot_check):
     :type provider: :class:`core.dao_provider.DaoProvider`
     :param summary: the session's summary
     :type summary: dict
-    :param snapshot: published snapshot file, None if not published here
-    :type snapshot: bytes
-    :param snapshot_check: how the file compares with its on-chain hash
-    :type snapshot_check: str
+    :param venues: venues keyed by seat from the file that applies, {} for none
+    :type venues: dict
     :return: dict
     """
     if not getattr(user, "is_authenticated", False):
         return None
     seat_votes = provider.seat_votes()
-    venues = snapshot_venues(snapshot) if snapshot_check == "match" else {}
     return {
         "cards": vote_cards(
             linked_seats(user, seat_votes), summary["rows"], seat_votes, venues
         ),
         "can_vote": summary["phase"] == "voting",
         "options": range(summary["session"]["options_count"]),
+        "abstain": summary["session"]["abstain"],
         "permission_app_id": provider.permission_app_id,
         "vote_method": provider.vote_method(),
     }
@@ -119,24 +132,36 @@ def dao_session(request, session_id):
 
     session = summary["session"]
     proposal = provider.document(session_id, "proposal.md")
-    snapshot = provider.document(session_id, "snapshot.json")
+    final = provider.document(session_id, "final.json")
+    final_check = hash_check(final, session["final_hash"])
+    if final_check == "match":
+        venues_file, venues_source = period_file(final), "final"
+    else:
+        sofar = provider.document(session_id, "sofar.json")
+        venues_file, venues_source = (
+            (period_file(sofar), "sofar") if sofar else (None, None)
+        )
+    venues = (
+        {address: seat["venues"] for address, seat in venues_file["seats"].items()}
+        if venues_file
+        else {}
+    )
     context.update(
         {
             "s": summary,
             "current_round": current_round,
             "proposal_text": proposal.decode("utf-8", "replace") if proposal else None,
             "proposal_check": hash_check(proposal, session["proposal_hash"]),
-            "snapshot_check": hash_check(snapshot, session["snapshot_hash"]),
-            "snapshot_published": snapshot is not None,
+            "final_check": final_check,
+            "final_published": final is not None,
+            "venues_source": venues_source if venues else None,
         }
     )
     template = "daovoting/session.html"
     if request.GET.get("live"):
         template += "#live"
     else:
-        context["vote_panel"] = _vote_panel(
-            request.user, provider, summary, snapshot, context["snapshot_check"]
-        )
+        context["vote_panel"] = _vote_panel(request.user, provider, summary, venues)
     return render(request, template, context)
 
 
@@ -160,7 +185,7 @@ def dao_document(request, session_id, name):
 
 
 def dao_governors(request):
-    """Render every seat: maximum votes, latest snapshot amount, participation.
+    """Render every seat: maximum votes and the sessions it voted in.
 
     :param request: Django request object
     :type request: :class:`django.http.HttpRequest`
@@ -168,13 +193,13 @@ def dao_governors(request):
     """
     provider = get_dao_provider()
     context = _base_context(provider)
-    rows, latest = [], None
+    rows = []
     if context["available"]:
         sessions_ballots = {
             session_id: provider.ballots(session_id)
             for session_id in range(1, provider.session_count() + 1)
         }
-        rows, latest = governor_rows(provider.seat_votes(), sessions_ballots)
+        rows = governor_rows(provider.seat_votes(), sessions_ballots)
         context["session_count"] = len(sessions_ballots)
-    context.update({"rows": rows, "latest": latest})
+    context["rows"] = rows
     return render(request, "daovoting/governors.html", context)

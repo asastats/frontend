@@ -16,6 +16,7 @@ from daovoting.templatetags.dao_tags import (
     markdown,
     micro,
     short_address,
+    utc_time,
 )
 from daovoting.tests import fakes
 from walletauth.models import LinkedAddress
@@ -35,14 +36,12 @@ class TestDaovotingSummaryPhase:
         [
             ({"status": 2}, 1, "passed"),
             ({"status": 3}, 1, "failed"),
-            ({"status": 0}, 999, "snapshot"),
-            ({"status": 0}, 1000, "review"),
-            ({"status": 0}, 2000, "lapsed"),
-            ({"status": 0}, None, "snapshot"),
-            ({"status": 1}, 1999, "sealed"),
-            ({"status": 1}, 2000, "voting"),
-            ({"status": 1}, 9000, "voting"),
-            ({"status": 1}, 9001, "ended"),
+            ({"status": 1}, 1, "sealed"),
+            ({"status": 0}, 1999, "upcoming"),
+            ({"status": 0}, None, "upcoming"),
+            ({"status": 0}, 2000, "voting"),
+            ({"status": 0}, 9000, "voting"),
+            ({"status": 0}, 9001, "weighing"),
         ],
     )
     def test_daovoting_summary_phase(self, values, current_round, expected):
@@ -53,7 +52,7 @@ class TestDaovotingSummaryHelpers:
     def test_daovoting_summary_countdown(self):
         assert summary.countdown(1000, None) is None
         assert summary.countdown(1000, 1000) is None
-        assert summary.countdown(61_000, 1000) == {"rounds": 60_000, "days": 2.0}
+        assert summary.countdown(64_800, 1000) == {"rounds": 63_800, "days": 2.0}
 
     def test_daovoting_summary_potential_weight(self):
         assert summary.potential_weight(5_000_000, 10) == 5_000_000
@@ -66,66 +65,132 @@ class TestDaovotingSummaryHelpers:
         assert summary.hash_check(b"x", digest) == "match"
         assert summary.hash_check(b"y", digest) == "differs"
 
-    def test_daovoting_summary_ballot_rows_uses_current_votes_for_unvoted(self):
-        rows = summary.ballot_rows(fakes.BALLOTS[2], {fakes.SEAT_B: 20})
-        assert [row["address"] for row in rows] == [fakes.SEAT_A, fakes.SEAT_B]
-        assert rows[0]["voted"] and rows[0]["option"] == 0
-        assert rows[1] == {
-            "address": fakes.SEAT_B,
-            "eligible": 40_000_000,
-            "voted": False,
-            "option": None,
-            "max_votes": 20,
-            "weight": 20_000_000,
+    def test_daovoting_summary_period_file(self):
+        result = summary.period_file(fakes.SOFAR_2)
+        assert result["end_round"] == 67_100_000
+        assert result["end_timestamp"] == 1_795_280_000
+        assert result["seats"][fakes.SEAT_B] == {
+            "total": 40_000_000,
+            "venues": {"wallet": 40_000_000},
+        }
+        assert summary.period_file(
+            b'{"end_round": 5, "seats": {"A": {"total": 1, "venues": {}}}}'
+        ) == {
+            "end_round": 5,
+            "end_timestamp": 0,
+            "seats": {"A": {"total": 1, "venues": {}}},
         }
 
-    def test_daovoting_summary_session_summary(self):
-        result = summary.session_summary(
-            2, _session(), fakes.BALLOTS[2], {fakes.SEAT_B: 20}, 5000
-        )
-        assert result["phase"] == "voting"
-        assert result["seats"] == 2 and result["voters"] == 1
-        assert result["turnout"] == 50_000_000
-        assert result["possible"] == 70_000_000
-        assert result["turnout_share"] == 71.43
-        assert result["quorum_share"] == 50.0
-        assert result["threshold"] == "1/2"
-        assert result["to_end"] == {"rounds": 4001, "days": 0.1}
-        assert result["options"][0] == {
-            "index": 0,
-            "total": 50_000_000,
-            "share": 100.0,
-            "winner": False,
-        }
+    @pytest.mark.parametrize(
+        "content",
+        [None, b"not json", b"{}", b'{"end_round": 1, "seats": []}', b"[1]"],
+    )
+    def test_daovoting_summary_period_file_unreadable(self, content):
+        assert summary.period_file(content) is None
 
-    def test_daovoting_summary_session_summary_winner_and_empty(self):
-        passed = summary.session_summary(1, fakes.SESSIONS[1], {}, {}, 5000)
-        assert [option["winner"] for option in passed["options"]] == [True, False]
-        empty = summary.session_summary(
-            3, _session(totals=[0, 0], quorum=0), {}, {}, 5000
+    def test_daovoting_summary_ballot_rows(self):
+        votes = {fakes.SEAT_A: 300, fakes.SEAT_B: 20, fakes.SEAT_C: 5}
+        rows = summary.ballot_rows(
+            fakes.BALLOTS[4], votes, {fakes.SEAT_A: 1, fakes.SEAT_B: 7_000_000}
         )
-        assert empty["turnout_share"] == 0
-        assert empty["quorum_share"] == 100
-        assert [option["share"] for option in empty["options"]] == [0, 0]
-
-    def test_daovoting_summary_governor_rows(self):
-        rows, latest = summary.governor_rows(
-            {fakes.SEAT_A: 300, fakes.SEAT_B: 20, fakes.SEAT_C: 5}, fakes.BALLOTS
-        )
-        assert latest == 2
         assert [row["address"] for row in rows] == [
             fakes.SEAT_A,
             fakes.SEAT_B,
             fakes.SEAT_C,
         ]
-        assert rows[0]["voted"] == [1, 2] and rows[0]["eligible"] == 50_000_000
-        assert rows[1]["in_snapshot"] == [1, 2] and rows[1]["voted"] == [1]
-        assert rows[2]["in_snapshot"] == [] and rows[2]["eligible"] == 0
+        assert rows[0] == {  # the written final amount wins over the so-far one
+            "address": fakes.SEAT_A,
+            "voted": True,
+            "option": 0,
+            "max_votes": 300,
+            "final": True,
+            "amount": 10_000_000,
+            "weight": 10_000_000,
+        }
+        assert (rows[1]["final"], rows[1]["amount"], rows[1]["weight"]) == (
+            False,
+            7_000_000,
+            7_000_000,
+        )
+        assert rows[2]["voted"] is False and rows[2]["weight"] == 0
+        unknown = summary.ballot_rows(fakes.BALLOTS[2], votes, None)
+        assert [(row["amount"], row["weight"]) for row in unknown] == [(None, None)] * 3
 
-    def test_daovoting_summary_governor_rows_without_snapshot(self):
-        rows, latest = summary.governor_rows({fakes.SEAT_A: 3}, {1: {}})
-        assert latest is None
-        assert rows[0]["eligible"] is None
+    def test_daovoting_summary_session_summary_with_sofar(self):
+        result = summary.session_summary(
+            2,
+            fakes.SESSIONS[2],
+            fakes.BALLOTS[2],
+            {fakes.SEAT_A: 300, fakes.SEAT_B: 20, fakes.SEAT_C: 5},
+            5000,
+            summary.period_file(fakes.SOFAR_2),
+        )
+        assert result["phase"] == "voting"
+        assert result["provisional"] is True
+        assert result["sofar_round"] == 67_100_000
+        assert result["sofar_timestamp"] == 1_795_280_000
+        assert result["seats"] == 3 and result["voters"] == 1
+        assert result["turnout"] == 50_000_000
+        assert result["possible"] == 70_000_000
+        assert result["turnout_share"] == 71.43
+        assert result["quorum_share"] == 50.0
+        assert result["has_abstain"] is True
+        assert result["to_end"] == {"rounds": 4001, "days": 0.1}
+        assert result["options"] == [
+            {
+                "index": 0,
+                "abstain": False,
+                "total": 50_000_000,
+                "share": 100.0,
+                "winner": False,
+            },
+            {"index": 1, "abstain": False, "total": 0, "share": 0.0, "winner": False},
+            {"index": 2, "abstain": True, "total": 0, "share": 0.0, "winner": False},
+        ]
+
+    def test_daovoting_summary_session_summary_without_sofar(self):
+        result = summary.session_summary(
+            2, fakes.SESSIONS[2], fakes.BALLOTS[2], {fakes.SEAT_A: 300}, 5000
+        )
+        assert result["turnout"] is None and result["possible"] is None
+        assert result["provisional"] is False and result["sofar_round"] is None
+        assert result["turnout_share"] == 0 and result["quorum_share"] == 0
+        assert [option["total"] for option in result["options"]] == [None] * 3
+
+    def test_daovoting_summary_session_summary_on_chain_totals(self):
+        weighing = summary.session_summary(
+            4,
+            fakes.SESSIONS[4],
+            fakes.BALLOTS[4],
+            {fakes.SEAT_A: 300, fakes.SEAT_B: 20},
+            5000,
+            summary.period_file(fakes.SOFAR_2),  # ignored once amounts are written
+        )
+        assert weighing["phase"] == "weighing"
+        assert weighing["provisional"] is False and weighing["sofar_round"] is None
+        assert weighing["turnout"] == 10_000_000 and weighing["weighed"] == 1
+        assert weighing["to_seal"] == {"rounds": 1000, "days": 0.0}
+        passed = summary.session_summary(1, fakes.SESSIONS[1], {}, {}, 5000)
+        assert [option["winner"] for option in passed["options"]] == [True, False, False]
+        assert passed["possible"] is None and passed["turnout_share"] == 0
+        no_abstain = summary.session_summary(
+            1, _session(abstain=255, status=1, totals=[0, 0, 0]), {}, {}, 5000
+        )
+        assert no_abstain["has_abstain"] is False
+        assert [option["share"] for option in no_abstain["options"]] == [0, 0, 0]
+
+    def test_daovoting_summary_governor_rows(self):
+        rows = summary.governor_rows(
+            {fakes.SEAT_A: 300, fakes.SEAT_B: 20, fakes.SEAT_C: 5}, fakes.BALLOTS
+        )
+        assert [row["address"] for row in rows] == [
+            fakes.SEAT_A,
+            fakes.SEAT_B,
+            fakes.SEAT_C,
+        ]
+        assert rows[0]["voted"] == [1, 2, 4]
+        assert rows[1]["voted"] == [1, 4]
+        assert rows[2]["voted"] == []
 
 
 class TestDaovotingFilters:
@@ -160,6 +225,10 @@ class TestDaovotingFilters:
         assert "javascript:" in html and 'href="javascript' not in html
         assert "&lt;script&gt;" in html and "<script>" not in html
         assert markdown(None) == ""
+
+    def test_daovoting_filters_utc_time(self):
+        assert utc_time(1_795_280_000) == "2026-11-21 16:53 UTC"
+        assert utc_time(0) == "" and utc_time(None) == ""
 
     def test_daovoting_filters_short_address(self):
         assert short_address(fakes.SEAT_A) == "VW55KZ…K3CBSU"
@@ -208,36 +277,49 @@ class TestDaovotingViews:
 
     def test_daovoting_index_lists_newest_first(self):
         response = Client().get("/dao/")
-        assert [s["id"] for s in response.context["sessions"]] == [3, 2, 1]
+        assert [s["id"] for s in response.context["sessions"]] == [4, 3, 2, 1]
         assert [s["phase"] for s in response.context["sessions"]] == [
-            "snapshot",
+            "weighing",
+            "upcoming",
             "voting",
             "passed",
         ]
-        assert b"Snapshot in 3000 rounds" in response.content
-        assert b"Voting ends in 4001 rounds" in response.content
+        content = response.content.decode()
+        assert "Voting starts in 4000 rounds" in content
+        assert "Voting ends in 4001 rounds" in content
+        assert "sealing possible in 1000 rounds" in content
+        assert "at most 50 of 70 possible weight (71.43 %)" in content
+        assert "0 seats voted; weights are known after voting ends." in content
 
     def test_daovoting_index_skips_missing_session(self):
-        with mock.patch.object(fakes.FakeProvider, "session_count", return_value=4):
+        with mock.patch.object(fakes.FakeProvider, "session_count", return_value=5):
             response = Client().get("/dao/")
-        assert [s["id"] for s in response.context["sessions"]] == [3, 2, 1]
+        assert [s["id"] for s in response.context["sessions"]] == [4, 3, 2, 1]
 
     def test_daovoting_index_without_sessions(self):
         with mock.patch.object(fakes.FakeProvider, "session_count", return_value=0):
             response = Client().get("/dao/")
         assert b'id="id-dao-no-sessions"' in response.content
 
-    def test_daovoting_session_page(self):
+    def test_daovoting_session_page_while_voting(self):
         response = Client().get("/dao/session/2/")
         assert response.status_code == 200
         assert response.context["proposal_check"] == "match"
-        assert response.context["snapshot_check"] == "match"
-        assert b'id="id-proposal-text"><p class="mt-3">Raise the fee.</p>' in (
-            response.content
+        assert response.context["final_check"] == "unset"
+        assert response.context["venues_source"] == "sofar"
+        content = response.content.decode()
+        assert 'id="id-proposal-text"><p class="mt-3">Raise the fee.</p>' in content
+        assert 'hx-trigger="every 30s"' in content
+        assert "lowest amounts up to mainnet round 67100000 (2026-11-21 16:53 UTC)" in (
+            content
         )
-        assert b'hx-trigger="every 30s"' in response.content
-        assert f'data-seat="{fakes.SEAT_B}"'.encode() in response.content
-        assert b"/" + fakes.SEAT_A.encode() + b'"' not in response.content
+        assert "(mainnet holdings, at the same times" in content
+        assert 'id="id-dao-provisional"' in content
+        assert "Option 2 (Abstain) counts toward the turnout and the quorum" in content
+        assert "<td>Option 2 (Abstain)</td>" in content
+        assert f'data-seat="{fakes.SEAT_C}"' in content
+        assert '<span class="text-base-content/60">at most</span> 50</td>' in content
+        assert "/" + fakes.SEAT_A + '"' not in content
 
     def test_daovoting_session_page_live_partial(self):
         response = Client().get("/dao/session/2/?live=1")
@@ -245,36 +327,58 @@ class TestDaovotingViews:
         assert b'id="id-dao-live"' in response.content
         assert b"<h1" not in response.content
 
-    def test_daovoting_session_page_unsealed_and_unpublished(self):
+    def test_daovoting_session_page_without_sofar(self):
+        with mock.patch.dict(fakes.DOCUMENTS, {2: {"proposal.md": fakes.PROPOSAL}}):
+            content = Client().get("/dao/session/2/").content.decode()
+        assert 'id="id-dao-no-totals"' in content
+        assert "Weights are known after voting ends, or once weights so far" in content
+        assert 'id="id-dao-sofar"' not in content
+
+    def test_daovoting_session_page_upcoming(self):
         response = Client().get("/dao/session/3/")
         assert response.context["proposal_check"] == "missing"
-        assert response.context["snapshot_check"] == "unset"
-        assert b"hx-trigger" not in response.content
-        assert b"No seat is in the snapshot yet." in response.content
+        content = response.content.decode()
+        assert "hx-trigger" not in content
+        assert "Voting starts in 4000 rounds" in content
+        assert "Weights are known after voting ends.</p>" in content
 
-    def test_daovoting_session_page_differs(self):
+    def test_daovoting_session_page_weighing(self):
+        content = Client().get("/dao/session/4/").content.decode()
+        assert "sealing possible in 1000 rounds" in content
+        assert "Final amounts written for 1 of 2 voters." in content
+        assert 'id="id-dao-provisional"' not in content
+        assert 'id="id-dao-sofar"' not in content
+
+    def test_daovoting_session_page_passed(self):
+        response = Client().get("/dao/session/1/")
+        assert response.context["final_check"] == "match"
+        content = response.content.decode()
+        assert "The final file as published" in content
+        assert "winner" in content
+        assert "Quorum 100; an option wins" in content
+        assert "Quorum 100 % reached.</p>" in content
+        assert "No quorum" not in content
         with mock.patch.object(fakes.FakeProvider, "document", return_value=b"edited"):
             response = Client().get("/dao/session/1/")
         assert response.context["proposal_check"] == "differs"
-        assert b"winner" in response.content
+        assert response.context["final_check"] == "differs"
 
     def test_daovoting_pages_without_quorum(self):
-        sessions = {**fakes.SESSIONS, 1: {**fakes.SESSIONS[1], "quorum": 0}}
+        sessions = {
+            **fakes.SESSIONS,
+            1: {**fakes.SESSIONS[1], "quorum": 0, "abstain": 255},
+        }
         with mock.patch.dict(fakes.SESSIONS, sessions):
             index = Client().get("/dao/").content.decode()
             page = Client().get("/dao/session/1/").content.decode()
         assert index.count("No quorum.") == 1
         assert index.count("% reached.") == 2
-        assert "No quorum; an option wins" in page
-        assert "possible weight (100.0 %). No quorum.</p>" in page
+        assert (
+            "No quorum; an option wins with more than 1/2 of the votes cast.</p>" in page
+        )
+        assert "Abstain" not in page
+        assert "No quorum.</p>" in page
         assert "% reached." not in page
-        assert 'value="100.0" max="100"' in page
-
-    def test_daovoting_session_page_with_quorum(self):
-        page = Client().get("/dao/session/1/").content.decode()
-        assert "Quorum 100; an option wins" in page
-        assert "Quorum 100 % reached.</p>" in page
-        assert "No quorum" not in page
 
     def test_daovoting_session_missing_is_404(self):
         assert Client().get("/dao/session/9/").status_code == 404
@@ -284,21 +388,28 @@ class TestDaovotingViews:
         assert response.status_code == 200
         assert response.content == fakes.PROPOSAL
         assert response["Content-Type"] == "text/markdown; charset=utf-8"
-        response = Client().get("/dao/session/1/snapshot.json")
+        response = Client().get("/dao/session/1/final.json")
         assert response["Content-Type"] == "application/json; charset=utf-8"
+        assert Client().get("/dao/session/2/sofar.json").content == fakes.SOFAR_2
 
     @pytest.mark.parametrize(
-        "url", ["/dao/session/3/proposal.md", "/dao/session/1/x.txt"]
+        "url",
+        [
+            "/dao/session/3/proposal.md",
+            "/dao/session/1/x.txt",
+            "/dao/session/1/snapshot.json",
+        ],
     )
     def test_daovoting_document_missing_is_404(self, url):
         assert Client().get(url).status_code == 404
 
     def test_daovoting_governors(self):
         response = Client().get("/dao/governors/")
-        assert response.context["latest"] == 2
-        assert response.context["session_count"] == 3
+        assert response.context["session_count"] == 4
         assert len(response.context["rows"]) == 3
-        assert b"in no snapshot" in response.content
+        content = response.content.decode()
+        assert "not voted yet" in content
+        assert "3 of 4" in content
 
 
 @override_settings(DAO_PROVIDER=MAINNET_FAKE)
@@ -357,7 +468,7 @@ class TestDaovotingVotingDappProvider:
             if app_id == provider.app_id
             else self._boxes(decode_address(fakes.SEAT_A), decode_address(fakes.SEAT_B))
         )
-        ballot = bytes(8) + bytes([255]) + bytes(16)
+        ballot = bytes([1]) + bytes(25)
         values = {
             prefix + seat: ballot,
             decode_address(fakes.SEAT_A): b"permission A",
@@ -385,10 +496,11 @@ class TestDaovotingVotingDappProvider:
                 assert provider.session(3) is None
                 assert provider.ballots(2) == {
                     fakes.SEAT_A: {
-                        "eligible": 0,
-                        "option": 255,
+                        "option": 1,
                         "max_votes": 0,
+                        "eligible": 0,
                         "weight": 0,
+                        "weighed": False,
                     }
                 }
                 assert provider.seat_votes() == {fakes.SEAT_A: 3}
@@ -443,7 +555,7 @@ class TestDaovotingVotingDappProvider:
             assert read.call_count == 2
             assert cache_set.call_args.args[0].endswith("ballots:1:1:2:5,7")
 
-    def test_daovoting_votingdapp_provider_open_snapshot_ballots_use_short_cache(
+    def test_daovoting_votingdapp_provider_open_session_ballots_use_short_cache(
         self, module, provider
     ):
         with (
@@ -476,6 +588,7 @@ class TestDaovotingVotingDappProvider:
         (tmp_path / "1").mkdir()
         (tmp_path / "1" / "proposal.md").write_bytes(b"text")
         assert provider.document(1, "proposal.md") == b"text"
+        assert provider.document(1, "final.json") is None
         assert provider.document(1, "snapshot.json") is None
         assert provider.document(1, "../secret") is None
 
@@ -535,55 +648,44 @@ class TestDaovotingPanel:
             filt.return_value.values_list.return_value = [fakes.SEAT_C]
             assert panel.linked_seats(user, {fakes.SEAT_C: 5}) == [fakes.SEAT_C]
 
-    def test_daovoting_panel_snapshot_venues(self):
-        venues = panel.snapshot_venues(fakes.SNAPSHOT)
-        assert venues[fakes.SEAT_B] == {"wallet": 40_000_000}
-        assert len(venues[fakes.SEAT_A]) == 3
-        assert panel.snapshot_venues(
-            b'{"seats": {"A": 1, "B": {"venues": 2}, "C": {"venues": {"wallet": 1}}}}'
-        ) == {"C": {"wallet": 1}}
-
-    @pytest.mark.parametrize(
-        "content", [None, b"not json", b"{}", b'{"seats": []}', b"[1]"]
-    )
-    def test_daovoting_panel_snapshot_venues_unreadable(self, content):
-        assert panel.snapshot_venues(content) == {}
-
     def test_daovoting_panel_venue_label(self):
         assert panel.venue_label("wallet") == "Wallet"
         assert panel.venue_label("lp 1234") == "LP token 1234"
         assert panel.venue_label("gat 1047879402") == "gat 1047879402"
 
     def test_daovoting_panel_vote_cards(self):
-        rows = [
-            {"address": fakes.SEAT_A, "eligible": 50_000_000, "voted": True, "option": 1},
-            {
-                "address": fakes.SEAT_B,
-                "eligible": 90_000_000,
-                "voted": False,
-                "option": None,
-            },
-        ]
         votes = {fakes.SEAT_A: 300, fakes.SEAT_B: 20, fakes.SEAT_C: 5}
-        venues = {fakes.SEAT_A: {"wallet": 50_000_000}}
+        rows = summary.ballot_rows(fakes.BALLOTS[4], votes, {fakes.SEAT_B: 90_000_000})
+        venues = {fakes.SEAT_A: {"wallet": 10_000_000}}
         cards = panel.vote_cards(
-            [fakes.SEAT_A, fakes.SEAT_B, fakes.SEAT_C], rows, votes, venues
+            [fakes.SEAT_A, fakes.SEAT_B, "UNKNOWN"], rows, {**votes, "UNKNOWN": 1}, venues
         )
         assert cards[0] == {
             "address": fakes.SEAT_A,
             "votes": 300,
-            "in_snapshot": True,
-            "eligible": 50_000_000,
-            "weight": 50_000_000,
+            "amount": 10_000_000,
+            "weight": 10_000_000,
+            "final": True,
             "below_max": True,
-            "voted_option": 1,
-            "venues": [{"name": "Wallet", "amount": 50_000_000}],
+            "voted_option": 0,
+            "venues": [{"name": "Wallet", "amount": 10_000_000}],
         }
-        assert cards[1]["weight"] == 20_000_000
-        assert cards[1]["below_max"] is False
-        assert cards[1]["voted_option"] is None
-        assert cards[1]["venues"] == []
-        assert cards[2] == {"address": fakes.SEAT_C, "votes": 5, "in_snapshot": False}
+        assert (cards[1]["weight"], cards[1]["final"], cards[1]["below_max"]) == (
+            20_000_000,
+            False,
+            False,
+        )
+        assert cards[1]["voted_option"] == 2 and cards[1]["venues"] == []
+        assert cards[2] == {
+            "address": "UNKNOWN",
+            "votes": 1,
+            "amount": None,
+            "weight": None,
+            "final": False,
+            "below_max": False,
+            "voted_option": None,
+            "venues": [],
+        }
 
 
 class TestDaovotingVotePanelViews:
@@ -603,7 +705,9 @@ class TestDaovotingVotePanelViews:
         response = client.get("/dao/session/2/")
         vote_panel = response.context["vote_panel"]
         assert vote_panel["can_vote"] is True
-        assert list(vote_panel["options"]) == [0, 1]
+        assert list(vote_panel["options"]) == [0, 1, 2]
+        assert vote_panel["abstain"] == 2
+        assert response.context["venues_source"] == "sofar"
         assert [card["address"] for card in vote_panel["cards"]] == [
             fakes.SEAT_C,
             fakes.SEAT_A,
@@ -613,32 +717,46 @@ class TestDaovotingVotePanelViews:
         assert 'data-permission-app-id="750094865"' in content
         assert 'data-vote-method="vote(uint64,uint64)void"' in content
         assert 'data-network="testnet"' in content
-        assert content.count("data-vote-option=") == 2
+        assert content.count("data-vote-option=") == 6  # both seats can vote
         assert "gat 1047879402" in content and "LP token 1234" in content
-        assert "not in the session's snapshot" in content
+        assert "Where the lowest amount was found (so far)" in content
         assert "data-vote-below-max" in content
+        assert "Keep the ASASTATS on the seat address until voting ends." in content
         assert '<h2 id="vote">Your seat</h2>' in content
         assert "data-vote-votes>300</dd>" in content
+        assert "Lowest ASASTATS so far</dt>" in content
+        assert "data-vote-weight>at most 50</dd>" in content
+        assert "data-vote-amount>0</dd>" in content  # seat C holds nothing so far
         assert '<span class="badge badge-success" data-vote-current>Option 0</span>' in (
             content
         )
         assert "data-vote-chosen>Option 0 (your vote)</button>" in content
         assert '">Change to Option 1</button>' in content
-        assert ">Vote Option" not in content
+        assert '">Vote Option 0</button>' in content  # seat C hasn't voted
 
-    def test_daovoting_vote_panel_without_matching_snapshot(self, client):
-        with mock.patch.object(fakes.FakeProvider, "document", return_value=b"edited"):
+    def test_daovoting_vote_panel_without_sofar(self, client):
+        with mock.patch.dict(fakes.DOCUMENTS, {2: {"proposal.md": fakes.PROPOSAL}}):
             response = client.get("/dao/session/2/")
-        assert response.context["vote_panel"]["cards"][1]["venues"] == []
-        assert b"Venue lines appear once" in response.content
+        assert response.context["venues_source"] is None
+        content = response.content.decode()
+        assert "not measured yet" in content
+        assert "known after voting ends</span>" in content
+        assert "Where the lowest amount" not in content
 
-    def test_daovoting_vote_panel_closed_and_review(self, client):
+    def test_daovoting_vote_panel_final_venues(self, client):
+        response = client.get("/dao/session/1/")
+        assert response.context["venues_source"] == "final"
+        content = response.content.decode()
+        assert "Where the lowest amount was found</summary>" in content
+        assert "Lowest ASASTATS</dt>" in content
+        assert "data-vote-weight>300</dd>" in content
+
+    def test_daovoting_vote_panel_closed_and_upcoming(self, client):
         response = client.get("/dao/session/1/")
         assert response.context["vote_panel"]["can_vote"] is False
         assert b"data-vote-option=" not in response.content
         assert b"data-vote-wallets" not in response.content
-        with mock.patch.object(fakes, "CURRENT_ROUND", 1500):
-            response = client.get("/dao/session/2/")
+        response = client.get("/dao/session/3/")
         assert b"Voting has not started yet." in response.content
 
     def test_daovoting_vote_panel_without_seats(self):

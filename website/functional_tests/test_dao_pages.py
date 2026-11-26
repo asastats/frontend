@@ -22,7 +22,7 @@ class DaoPagesTest(FunctionalTest):
                 (card.get_attribute("data-session"), card.get_attribute("data-phase"))
                 for card in cards
             ],
-            [("3", "snapshot"), ("2", "voting"), ("1", "passed")],
+            [("4", "weighing"), ("3", "upcoming"), ("2", "voting"), ("1", "passed")],
         )
 
     def test_a_session_card_leads_to_its_page(self):
@@ -34,13 +34,24 @@ class DaoPagesTest(FunctionalTest):
         )
         self.assertEqual(self.browser.find_element(By.TAG_NAME, "h1").text, "Session 2")
 
-    def test_the_session_page_checks_both_files_against_the_chain(self):
+    def test_the_session_page_checks_the_proposal_and_shows_weights_so_far(self):
         self.browser.get(self.server_url + reverse("dao_session", args=[2]))
-        for element_id in ("id-proposal-check", "id-snapshot-check"):
-            with self.subTest(element_id=element_id):
-                check = self.browser.find_element(By.ID, element_id)
-                self.assertEqual(check.get_attribute("data-check"), "match")
+        check = self.browser.find_element(By.ID, "id-proposal-check")
+        self.assertEqual(check.get_attribute("data-check"), "match")
+        self.assertEqual(
+            self.browser.find_element(By.ID, "id-final-check").get_attribute(
+                "data-check"
+            ),
+            "unset",
+        )
+        self.assertIn("67100000", self.browser.find_element(By.ID, "id-dao-sofar").text)
+        self.assertTrue(self.browser.find_element(By.ID, "id-dao-provisional"))
         self.assertIn("Raise the fee.", self.browser.page_source)
+
+    def test_a_passed_session_checks_its_final_file(self):
+        self.browser.get(self.server_url + reverse("dao_session", args=[1]))
+        check = self.browser.find_element(By.ID, "id-final-check")
+        self.assertEqual(check.get_attribute("data-check"), "match")
 
     def test_the_session_page_lists_every_ballot(self):
         self.browser.get(self.server_url + reverse("dao_session", args=[2]))
@@ -48,13 +59,16 @@ class DaoPagesTest(FunctionalTest):
             By.CSS_SELECTOR, "#id-dao-ballots tr[data-seat]"
         )
         self.assertEqual(
-            [row.get_attribute("data-seat") for row in rows], [fakes.SEAT_A, fakes.SEAT_B]
+            [row.get_attribute("data-seat") for row in rows],
+            [fakes.SEAT_A, fakes.SEAT_B, fakes.SEAT_C],
         )
         self.assertIn("not voted", rows[1].text)
+        self.assertIn("at most", rows[0].text)
         options = self.browser.find_elements(
             By.CSS_SELECTOR, "#id-dao-options tr[data-option]"
         )
-        self.assertEqual(len(options), 2)
+        self.assertEqual(len(options), 3)
+        self.assertIn("(Abstain)", options[2].text)
 
     def test_an_open_session_refreshes_its_totals(self):
         self.browser.get(self.server_url + reverse("dao_session", args=[2]))
@@ -87,7 +101,7 @@ class DaoPagesTest(FunctionalTest):
             [row.get_attribute("data-seat") for row in rows],
             [fakes.SEAT_A, fakes.SEAT_B, fakes.SEAT_C],
         )
-        self.assertIn("in no snapshot", rows[2].text)
+        self.assertIn("not voted yet", rows[2].text)
 
 
 @override_settings(DAO_PROVIDER="")

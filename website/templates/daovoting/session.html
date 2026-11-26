@@ -12,10 +12,10 @@
   <p class="text-sm"><a href="{% url 'dao_index' %}" class="link">All sessions</a> · <a href="{% url 'dao_governors' %}" class="link">Governors</a></p>
 
   <h2 id="rounds">Rounds</h2>
-  <p>Snapshot at round {{ s.session.snapshot_round }}; voting from round {{ s.session.start_round }} to round {{ s.session.end_round }}{% if current_round %}; now round {{ current_round }}{% endif %}.</p>
-  {% if s.phase == "snapshot" and s.to_snapshot %}<p>Snapshot in {{ s.to_snapshot.rounds }} rounds (about {{ s.to_snapshot.days }} days).</p>
-  {% elif s.phase == "review" or s.phase == "sealed" %}{% if s.to_start %}<p>Voting starts in {{ s.to_start.rounds }} rounds (about {{ s.to_start.days }} days).</p>{% endif %}
-  {% elif s.phase == "voting" and s.to_end %}<p>Voting ends in {{ s.to_end.rounds }} rounds (about {{ s.to_end.days }} days).</p>{% endif %}
+  <p>Voting from round {{ s.session.start_round }} to round {{ s.session.end_round }}; the weights can be sealed from round {{ s.session.seal_round }}{% if current_round %}; now round {{ current_round }}{% endif %}.</p>
+  {% if s.phase == "upcoming" and s.to_start %}<p>Voting starts in {{ s.to_start.rounds }} rounds (about {{ s.to_start.days }} days).</p>
+  {% elif s.phase == "voting" and s.to_end %}<p>Voting ends in {{ s.to_end.rounds }} rounds (about {{ s.to_end.days }} days).</p>
+  {% elif s.phase == "weighing" and s.to_seal %}<p>Review of the weights: sealing possible in {{ s.to_seal.rounds }} rounds (about {{ s.to_seal.days }} days).</p>{% endif %}
 
   <h2 id="proposal">Proposal</h2>
   {% include "daovoting/_hash_badge.html" with check=proposal_check id="id-proposal-check" %}
@@ -25,11 +25,14 @@
   <p class="text-sm"><a href="{% url 'dao_document' s.id 'proposal.md' %}" class="link">The proposal file as published</a></p>
   {% endif %}
 
-  <h2 id="snapshot">Snapshot</h2>
-  {% include "daovoting/_hash_badge.html" with check=snapshot_check id="id-snapshot-check" %}
-  {% if s.session.snapshot_hash != "0000000000000000000000000000000000000000000000000000000000000000" %}<p class="text-xs break-all text-base-content/60">sha256 on chain: {{ s.session.snapshot_hash }}</p>{% endif %}
-  {% if snapshot_published %}<p class="text-sm"><a href="{% url 'dao_document' s.id 'snapshot.json' %}" class="link">The snapshot file as published</a></p>{% endif %}
-  <p class="text-sm">{% if s.quorum %}Quorum {{ s.quorum|micro }}{% else %}No quorum{% endif %}; an option wins with more than {{ s.threshold }} of the votes cast.</p>
+  <h2 id="weights">How weights are counted</h2>
+  <p>A seat's weight is the smaller of its votes × 1 ASASTATS and the lowest ASASTATS it held on the seat address while voting was open{% if network != "mainnet" %} (mainnet holdings, at the same times as this session's rounds){% endif %}. Buying during voting adds nothing; selling or moving ASASTATS off the seat address lowers the weight. The weights are written after voting ends, reviewed, and then sealed.</p>
+  <p class="text-sm">{% if s.quorum %}Quorum {{ s.quorum|micro }}{% else %}No quorum{% endif %}; an option wins with more than {{ s.threshold }} of the votes cast{% if s.has_abstain %} for options other than Abstain. Option {{ s.session.abstain }} (Abstain) counts toward the turnout{% if s.quorum %} and the quorum{% endif %} but cannot win{% endif %}.</p>
+  <h3 id="final">Final weights</h3>
+  {% include "daovoting/_hash_badge.html" with check=final_check id="id-final-check" %}
+  {% if s.session.final_hash != "0000000000000000000000000000000000000000000000000000000000000000" %}<p class="text-xs break-all text-base-content/60">sha256 on chain: {{ s.session.final_hash }}</p>{% endif %}
+  {% if final_published %}<p class="text-sm"><a href="{% url 'dao_document' s.id 'final.json' %}" class="link">The final file as published</a></p>{% endif %}
+  {% if s.sofar_round %}<p class="text-sm" id="id-dao-sofar">Weights so far: lowest amounts up to mainnet round {{ s.sofar_round }}{% if s.sofar_timestamp %} ({{ s.sofar_timestamp|utc_time }}){% endif %}. They can only go down until voting ends. <a href="{% url 'dao_document' s.id 'sofar.json' %}" class="link">The file</a></p>{% endif %}
 
   {% if vote_panel %}{% include "daovoting/_vote_panel.html" %}
   {% elif s.phase == "voting" and not user.is_authenticated %}<p class="text-sm" id="id-dao-sign-in">Governors: sign in to vote here with a linked seat. Any wallet can also call the Voting dApp directly; that vote counts the same.</p>{% endif %}
@@ -38,35 +41,41 @@
   {# id-dao-live: polled every 30 s and replaced whole (outerHTML) #}
   <div id="id-dao-live"{% if s.phase == "voting" %} hx-get="{% url 'dao_session' s.id %}?live=1" hx-trigger="every 30s" hx-swap="outerHTML"{% endif %}>
     <h2 id="totals">Totals</h2>
+    {% if s.turnout is None %}
+    <p id="id-dao-no-totals">{{ s.voters }} seats voted. Weights are known after voting ends{% if s.phase == "voting" %}, or once weights so far are published{% endif %}.</p>
+    {% else %}
+    {% if s.provisional %}<p class="text-sm" id="id-dao-provisional">At most: these totals use the lowest amounts so far, which can only go down.</p>{% endif %}
+    {% if s.phase == "weighing" and s.weighed < s.voters %}<p class="text-sm" id="id-dao-weighing">Final amounts written for {{ s.weighed }} of {{ s.voters }} voters.</p>{% endif %}
     <p>{{ s.voters }} of {{ s.seats }} seats voted; {{ s.turnout|micro }} of {{ s.possible|micro }} possible weight ({{ s.turnout_share }} %).{% if s.quorum %} Quorum {{ s.quorum_share }} % reached.{% else %} No quorum.{% endif %}</p>
     <progress class="progress progress-primary" value="{% if s.quorum %}{{ s.quorum_share }}{% else %}{{ s.turnout_share }}{% endif %}" max="100"></progress>
+    {% endif %}
     <div class="overflow-x-auto">
       <table class="table" id="id-dao-options">
         <thead><tr><th>Option</th><th class="text-right">Weight</th><th class="text-right">Share</th></tr></thead>
         <tbody>
           {% for o in s.options %}
-          <tr data-option="{{ o.index }}"><td>Option {{ o.index }}{% if o.winner %} <span class="badge badge-success">winner</span>{% endif %}</td><td class="text-right tabular-nums">{{ o.total|micro }}</td><td class="text-right tabular-nums">{{ o.share }} %</td></tr>
+          <tr data-option="{{ o.index }}"><td>Option {{ o.index }}{% if o.abstain %} (Abstain){% endif %}{% if o.winner %} <span class="badge badge-success">winner</span>{% endif %}</td><td class="text-right tabular-nums">{{ o.total|micro }}</td><td class="text-right tabular-nums">{% if o.total is None %}-{% else %}{{ o.share }} %{% endif %}</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
 
     <h2 id="ballots">Ballots</h2>
-    <p class="text-sm text-base-content/70">Weight is min(votes × 1,000,000, eligible ASASTATS); for a seat that has not voted it is the weight it would have now.</p>
+    <p class="text-sm text-base-content/70">Weight is min(votes × 1,000,000, lowest ASASTATS). Until a seat's final amount is written it uses the lowest amount so far, as an upper bound; for a seat that has not voted it is the weight it would have.</p>
     <div class="overflow-x-auto">
       <table class="table" id="id-dao-ballots">
-        <thead><tr><th>Seat</th><th class="text-right">Eligible ASASTATS</th><th class="text-right">Votes</th><th>Option</th><th class="text-right">Weight</th></tr></thead>
+        <thead><tr><th>Seat</th><th class="text-right">Votes</th><th>Option</th><th class="text-right">Lowest ASASTATS</th><th class="text-right">Weight</th></tr></thead>
         <tbody>
           {% for row in s.rows %}
-          <tr data-seat="{{ row.address }}">
+          <tr data-seat="{{ row.address }}"{% if row.final %} data-final{% endif %}>
             <td class="whitespace-nowrap">{% if network == "mainnet" %}<a href="{% url 'address' row.address %}" class="link link-hover" title="{{ row.address }}">{{ row.address|short_address }}</a>{% else %}<span title="{{ row.address }}">{{ row.address|short_address }}</span>{% endif %}</td>
-            <td class="text-right tabular-nums">{{ row.eligible|micro }}</td>
             <td class="text-right tabular-nums">{{ row.max_votes }}</td>
             <td>{% if row.voted %}Option {{ row.option }}{% else %}<span class="text-base-content/60">not voted</span>{% endif %}</td>
-            <td class="text-right tabular-nums">{{ row.weight|micro }}</td>
+            <td class="text-right tabular-nums">{{ row.amount|micro }}</td>
+            <td class="text-right tabular-nums">{% if row.weight is not None and not row.final %}<span class="text-base-content/60">at most</span> {% endif %}{{ row.weight|micro }}</td>
           </tr>
           {% empty %}
-          <tr><td colspan="5">No seat is in the snapshot yet.</td></tr>
+          <tr><td colspan="5">No seat has votes.</td></tr>
           {% endfor %}
         </tbody>
       </table>
