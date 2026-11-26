@@ -7372,3 +7372,10 @@ template and `markVoted` must produce the same labels.
 
 *Correction, 2026-11-25, later:* "counted in the totals" next to the badge is removed at the user's request; the badge
 alone marks the vote. `markVoted` no longer touches `[data-vote-counted]`, which no longer exists.
+
+## website/templates/daovoting/index.html, website/templates/daovoting/session.html - "No quorum" (2026-11-26)
+
+Testnet session 3 had quorum 0, and both pages said "Quorum 100 % reached" with a full bar, as if a quorum had been
+set and met (`quorum_share` is 100 when there is no quorum, so the summary stays a number). The pages now say "No
+quorum" when the session's quorum is 0, and the bar shows the turnout share of the possible weight instead. With a
+quorum set, nothing changes.

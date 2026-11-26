@@ -258,6 +258,24 @@ class TestDaovotingViews:
         assert response.context["proposal_check"] == "differs"
         assert b"winner" in response.content
 
+    def test_daovoting_pages_without_quorum(self):
+        sessions = {**fakes.SESSIONS, 1: {**fakes.SESSIONS[1], "quorum": 0}}
+        with mock.patch.dict(fakes.SESSIONS, sessions):
+            index = Client().get("/dao/").content.decode()
+            page = Client().get("/dao/session/1/").content.decode()
+        assert index.count("No quorum.") == 1
+        assert index.count("% reached.") == 2
+        assert "No quorum; an option wins" in page
+        assert "possible weight (100.0 %). No quorum.</p>" in page
+        assert "% reached." not in page
+        assert 'value="100.0" max="100"' in page
+
+    def test_daovoting_session_page_with_quorum(self):
+        page = Client().get("/dao/session/1/").content.decode()
+        assert "Quorum 100; an option wins" in page
+        assert "Quorum 100 % reached.</p>" in page
+        assert "No quorum" not in page
+
     def test_daovoting_session_missing_is_404(self):
         assert Client().get("/dao/session/9/").status_code == 404
 

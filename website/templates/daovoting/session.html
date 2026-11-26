@@ -29,7 +29,7 @@
   {% include "daovoting/_hash_badge.html" with check=snapshot_check id="id-snapshot-check" %}
   {% if s.session.snapshot_hash != "0000000000000000000000000000000000000000000000000000000000000000" %}<p class="text-xs break-all text-base-content/60">sha256 on chain: {{ s.session.snapshot_hash }}</p>{% endif %}
   {% if snapshot_published %}<p class="text-sm"><a href="{% url 'dao_document' s.id 'snapshot.json' %}" class="link">The snapshot file as published</a></p>{% endif %}
-  <p class="text-sm">Quorum {{ s.quorum|micro }}; an option wins with more than {{ s.threshold }} of the votes cast.</p>
+  <p class="text-sm">{% if s.quorum %}Quorum {{ s.quorum|micro }}{% else %}No quorum{% endif %}; an option wins with more than {{ s.threshold }} of the votes cast.</p>
 
   {% if vote_panel %}{% include "daovoting/_vote_panel.html" %}
   {% elif s.phase == "voting" and not user.is_authenticated %}<p class="text-sm" id="id-dao-sign-in">Governors: sign in to vote here with a linked seat. Any wallet can also call the Voting dApp directly; that vote counts the same.</p>{% endif %}
@@ -38,8 +38,8 @@
   {# id-dao-live: polled every 30 s and replaced whole (outerHTML) #}
   <div id="id-dao-live"{% if s.phase == "voting" %} hx-get="{% url 'dao_session' s.id %}?live=1" hx-trigger="every 30s" hx-swap="outerHTML"{% endif %}>
     <h2 id="totals">Totals</h2>
-    <p>{{ s.voters }} of {{ s.seats }} seats voted; {{ s.turnout|micro }} of {{ s.possible|micro }} possible weight ({{ s.turnout_share }} %). Quorum {{ s.quorum_share }} % reached.</p>
-    <progress class="progress progress-primary" value="{{ s.quorum_share }}" max="100"></progress>
+    <p>{{ s.voters }} of {{ s.seats }} seats voted; {{ s.turnout|micro }} of {{ s.possible|micro }} possible weight ({{ s.turnout_share }} %).{% if s.quorum %} Quorum {{ s.quorum_share }} % reached.{% else %} No quorum.{% endif %}</p>
+    <progress class="progress progress-primary" value="{% if s.quorum %}{{ s.quorum_share }}{% else %}{{ s.turnout_share }}{% endif %}" max="100"></progress>
     <div class="overflow-x-auto">
       <table class="table" id="id-dao-options">
         <thead><tr><th>Option</th><th class="text-right">Weight</th><th class="text-right">Share</th></tr></thead>
