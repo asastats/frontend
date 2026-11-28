@@ -7400,3 +7400,16 @@ follow:
 - `ROUNDS_PER_DAY` is 31,900, measured on testnet over session 3 (2.706 s a round).
 - Nothing in `wallet/` changes: `vote(uint64,uint64)void` and its box references are the same, and the ballot box
   that the call now creates has the same name.
+
+## deploy/site_playbook.yml - root check skipped in production (2026-11-28)
+
+At the single-server cutover (step 9) play 2's root ping got the controller
+banned by liveserver's fail2ban (maxretry 3 / 120 min): root login is off there,
+and one ping offers several keys. The backend has had the same skip since
+2026-11-24 (`rootcheck_skip`, backend `05b24c8` + `13a30e8`). Now the frontend
+ends play 2 for hosts with `rootcheck_skip: true`, set for production.
+
+Correction (2026-11-28, same day): the ban came from fail2ban's `sshd-ddos` jail,
+not `sshd`. A client that offers too many keys is cut off before authentication
+("Too many authentication failures"), and `sshd-ddos` counts those disconnects.
+Same cause, so the skip still applies; check both jails when unbanning.
